@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 django = "*"
+uvicorn = "*"
 
 [dev-packages]
 pylint = "*"

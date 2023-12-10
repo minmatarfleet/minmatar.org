@@ -1,0 +1,55 @@
+version: '2.0'
+
+services:
+    db:
+      image: mariadb
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: example
+      volumes:
+          - database:/var/lib/mysql
+          - ./dev/mariadb:/docker-entrypoint-initdb.d
+
+    # redis:
+    #     image: redis:6.0.9-alpine
+    #     volumes:
+    #         - "redis:/var/lib/redis"
+    #         - "redis:/data"
+
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        command: pipenv run uvicorn app.asgi:application --host 0.0.0.0 --port 8000
+        env_file:
+            - .env
+        ports:
+            - "8000:8000"
+        depends_on:
+            - db
+
+    # beat:
+    #     build:
+    #         context: .
+    #         dockerfile: Dockerfile
+    #     restart: always
+    #     env_file: .env
+    #     command: celery -A tools beat -l info
+    #     depends_on:
+    #         - db
+    #         - app
+    
+    # celery:
+    #     build:
+    #         context: .
+    #         dockerfile: Dockerfile
+    #     restart: always
+    #     env_file: .env
+    #     command: celery -A tools worker -l info
+    #     depends_on:
+    #         - db
+    #         - app 
+
+volumes:
+    database: {}
+    redis: {}
