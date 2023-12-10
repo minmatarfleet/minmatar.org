@@ -9,11 +9,11 @@ BROKER_URL = 'redis://localhost:6379/1' # Allianceauth uses 0
 # CELERY_IMPORTS = ('contracts_v2.tasks', 'notifications.tasks', 'fleets.tasks', 'rosters.tasks', 'logistics.tasks')
 
 # Crispy forms
-# CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-# CRISPY_TEMPLATE_PACK = "bootstrap5"
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # ESI
-LOGIN_URL="/authentication/login"
+# LOGIN_URL="/authentication/login"
 
 # Application definition
 INSTALLED_APPS = [
@@ -27,16 +27,24 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 
     # Django packages
-    # 'django_extensions',
-    # 'django_celery_beat',
-    # 'crispy_forms',
-    # 'crispy_bootstrap5',
+    'django_extensions',
+    'django_celery_beat',
+    'crispy_forms',
+    'crispy_bootstrap5',
+
+    # Discord auth
+    'discordlogin.apps.DiscordloginConfig',
+
+
     # 'esi',
     # 'eve_auth',
     # 'eveuniverse',
     # 'colorfield',
     # "bootstrap_datepicker_plus",
 ]
+
+# Discord Login
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

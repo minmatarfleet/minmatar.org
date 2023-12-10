@@ -9,8 +9,8 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-from tools.settings_common import * # noqa
-from tools.settings_celery import * # noqa
+from app.settings_common import * # noqa
+from app.settings_celery import * # noqa
 from pathlib import Path
 import os
 
@@ -35,6 +35,9 @@ CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
+DISCORD_REDIRECT_URL = os.environ.get("DISCORD_REDIRECT_URL", "")
 
 # ESI
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
@@ -44,11 +47,20 @@ ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get("DB_NAME", "tools"),
-        'USER': os.environ.get("DB_USER", "tools"),
-        'PASSWORD': os.environ.get("DB_PASSWORD", "local"),
-        'HOST': os.environ.get("DB_HOST", "db"),
+        'NAME': os.environ.get("DB_NAME", "minmatar"),
+        'USER': os.environ.get("DB_USER", "root"),
+        'PASSWORD': os.environ.get("DB_PASSWORD", "example"),
+        'HOST': os.environ.get("DB_HOST", "127.0.01"),
         'PORT': os.environ.get("DB_PORT", "3306"),
         'OPTIONS': {'charset': 'utf8mb4'},
     },
 }
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+LOGIN_URL = '/oauth2/login/'
+LOGOUT_REDIRECT_URL = '/oauth2/login/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static', )

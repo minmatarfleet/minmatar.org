@@ -6,6 +6,12 @@ name = "pypi"
 [packages]
 django = "*"
 uvicorn = "*"
+celery = "*"
+mysqlclient = "==2.1.1"
+crispy-bootstrap5 = "*"
+django-extensions = "*"
+django-celery-beat = "*"
+requests = "*"
 
 [dev-packages]
 pylint = "*"
