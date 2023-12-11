@@ -25,7 +25,6 @@ class EveCorporation(models.Model):
         "esi-corporations.read_blueprints.v1",
         "esi-corporations.read_contacts.v1",
         "esi-corporations.read_container_logs.v1",
-        "esi-corporations.read_corporation_roles.v1",
         "esi-corporations.read_divisions.v1",
         "esi-corporations.read_facilities.v1",
         "esi-corporations.read_fw_stats.v1",
@@ -58,12 +57,20 @@ class EveCorporation(models.Model):
         return self.name
 
     def active(self):
-        if Token.objects.filter(character_id=self.ceo_id).exists():
+        if Token.objects.filter(
+            character_id=self.ceo_id,
+            scopes__name="esi-contracts.read_corporation_contracts.v1",
+        ).exists():
             # check if has required scopes
-            ceo_token = Token.objects.get(character_id=self.ceo_id)
-            if set(self.required_ceo_scopes).issubset(
-                set(ceo_token.scopes.all())
-            ):
+            ceo_token = Token.objects.get(
+                character_id=self.ceo_id,
+                scopes__name="esi-contracts.read_corporation_contracts.v1",
+            )
+            token_scopes = set(
+                [scope.name for scope in ceo_token.scopes.all()]
+            )
+            required_scopes = set(self.required_ceo_scopes)
+            if token_scopes.issuperset(required_scopes):
                 return True
         return False
 
@@ -88,3 +95,24 @@ class EveCorporation(models.Model):
         else:
             self.type = "public"
         super(EveCorporation, self).save(*args, **kwargs)
+
+
+class EveCorporationApplication(models.Model):
+    """Corporation application model"""
+
+    status_choices = (
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("rejected", "Rejected"),
+    )
+    status = models.CharField(
+        max_length=10, choices=status_choices, default="pending"
+    )
+    description = models.TextField(blank=True)
+    corporation = models.ForeignKey(EveCorporation, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.user.eve_primary_token.token.character_name

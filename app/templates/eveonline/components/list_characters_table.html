@@ -1,0 +1,38 @@
+<h1>Characters</h1>
+<table
+    id="dtBasicExample"
+    class="table table-striped table-bordered table-sm"
+    cellspacing="0"
+    width="100%"
+>
+    <thead>
+    <tr>
+        <th class="th-sm">Character Name</th>
+        <th class="th-sm">Type</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for character in characters %}
+    <tr>
+        <td>
+        <div class="row">
+            <div class="container">
+            <img src="https://images.evetech.net/characters/{{character.character_id}}/portrait?size=32" class="img-fluid" />
+            {{character.character_name}}
+            {% if character.is_primary %}
+            <span class="badge bg-primary">Primary</span>
+            {% endif %}
+            </div>
+        </div>
+        </td>
+        <td>
+            {% if character.type.value != required_type %}
+            <span class="badge bg-danger">Incorrect Token Type</span>
+            {% else %}
+            {{character.type.value}}
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tfoot>
+</table>

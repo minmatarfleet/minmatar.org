@@ -29,7 +29,29 @@
   <body>
     {% include 'navigation.html' %}
 
-    <br />
+    {% if messages %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                {% if message.tags == 'error' %}
+                <div class="alert alert-danger" role="alert">
+                {% elif message.tags == 'warning' %}
+                <div class="alert alert-warning" role="alert">
+                {% elif message.tags == 'info' %}
+                <div class="alert alert-info" role="alert">
+                {% elif message.tags == 'success' %}
+                <div class="alert alert-success" role="alert">
+                {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
     <div class="container">
       <!-- Content here -->
       {% block content %} {% endblock %}

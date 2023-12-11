@@ -15,7 +15,12 @@
         Some quick example text to build on the card title and make up the bulk of the
         card's content.
         </p>
-        <a href="#!" class="btn btn-primary">Read</a>
+        {% if corporation.active %}
+        <a href="{% url 'eveonline-corporations-apply' corporation.pk %}" class="btn btn-primary">Submit Application</a>
+        {% else %}
+        <a href="{% url 'eveonline-corporations-update' corporation.pk %}" class="btn btn-danger">Missing Corporation Token</a>
+        {% endif %}
+
     </div>
     </div>
 </div>

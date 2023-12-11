@@ -19,6 +19,25 @@ from . import views
 
 urlpatterns = [
     path("characters", views.list_characters, name="eveonline-characters"),
-    path("characters/add", views.add_character, name="eveonline-characters-add"),
-    path("corporations", views.list_corporations, name="eveonline-corporations"),
+    path(
+        "characters/add", views.add_character, name="eveonline-characters-add"
+    ),
+    path(
+        "characters/add-alliance-character",
+        views.add_alliance_character,
+        name="eveonline-characters-add-alliance-character",
+    ),
+    path(
+        "corporations", views.list_corporations, name="eveonline-corporations"
+    ),
+    path(
+        "corporations/<int:corporation_pk>/update",
+        views.update_corporation,
+        name="eveonline-corporations-update",
+    ),
+    path(
+        "corporations/<int:corporation_pk>/apply",
+        views.create_corporation_application,
+        name="eveonline-corporations-apply",
+    ),
 ]
