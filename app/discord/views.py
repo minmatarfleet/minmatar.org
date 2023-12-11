@@ -11,24 +11,6 @@ import requests
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"
 
 
-def home(request: HttpRequest) -> JsonResponse:
-    return JsonResponse({"msg": "Hello World"})
-
-
-def get_authenticated_user(request: HttpRequest):
-    print(request.user)
-    user = request.user
-    return JsonResponse(
-        {
-            "id": user.id,
-            "username": user.username,
-            "discord_id": user.discord_user.id,
-            "discord_tag": user.discord_user.discord_tag,
-            "avatar": user.discord_user.avatar,
-        }
-    )
-
-
 def discord_login(request: HttpRequest):
     return redirect(auth_url_discord)
 
@@ -43,7 +25,6 @@ def discord_login_redirect(request: HttpRequest):
     from .models import DiscordUser
 
     code = request.GET.get("code")
-    print(code)
     user = exchange_code(code)
 
     if DiscordUser.objects.filter(id=user["id"]).exists():
@@ -91,14 +72,11 @@ def exchange_code(code: str):
     response = requests.post(
         "https://discord.com/api/oauth2/token", data=data, headers=headers
     )
-    print(response)
     credentials = response.json()
     access_token = credentials["access_token"]
     response = requests.get(
         "https://discord.com/api/v6/users/@me",
         headers={"Authorization": "Bearer %s" % access_token},
     )
-    print(response)
     user = response.json()
-    print(user)
     return user

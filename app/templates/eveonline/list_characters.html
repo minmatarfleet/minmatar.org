@@ -1,0 +1,30 @@
+{% extends "base.html" %} 
+
+{% block content %}
+{{ characters }}
+<table
+  id="dtBasicExample"
+  class="table table-striped table-bordered table-sm"
+  cellspacing="0"
+  width="100%"
+>
+  <thead>
+    <tr>
+      <th class="th-sm">Character Name</th>
+      <th class="th-sm">Type</th>
+      <th class="th-sm">Specializations</th>
+      <th class="th-sm">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      {% for token in tokens %}
+      <td>{{token.character_name}}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      {% endfor %}
+    </tr>
+  </tfoot>
+</table>
+{% endblock %}

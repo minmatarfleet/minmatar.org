@@ -14,18 +14,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
-from discord import views
-from django.conf import settings
-from django.conf.urls.static import static
-from django.views.generic.base import RedirectView
-from .views import index
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path("", index, name="index"),
-    path("admin/", admin.site.urls),
-    path('sso/', include('esi.urls')),
-    path('oauth2/', include('discord.urls')),
-    path('eveonline/', include('eveonline.urls')),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path("characters", views.list_characters, name="eveonline-characters"),
+    path("characters/add", views.add_character, name="eveonline-characters-add"),
+]

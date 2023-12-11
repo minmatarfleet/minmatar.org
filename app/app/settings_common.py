@@ -31,12 +31,11 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'crispy_forms',
     'crispy_bootstrap5',
+    'esi',
 
     # Discord auth
-    'discordlogin.apps.DiscordloginConfig',
-
-
-    # 'esi',
+    'discord.apps.DiscordConfig',
+    'eveonline.apps.EveonlineConfig',
     # 'eve_auth',
     # 'eveuniverse',
     # 'colorfield',
