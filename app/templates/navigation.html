@@ -1,0 +1,99 @@
+{% load static %}
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-body-tertiary">
+  <!-- Container wrapper -->
+  <div class="container-fluid">
+    <!-- Toggle button -->
+    <button
+      data-mdb-collapse-init
+      class="navbar-toggler"
+      type="button"
+      data-mdb-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Collapsible wrapper -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <!-- Navbar brand -->
+      <a class="navbar-brand mt-2 mt-lg-0" href="#">
+        <!-- <img src="{% static 'logo.svg' %}" alt="Minmtar Fleet Logo" height="32"> -->
+        <span class="ms-2">Minmatar Fleet</span>
+      </a>
+      <!-- Left links -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="#">Blog</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Corporations</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Ships</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Fleets</a>
+        </li>
+      </ul>
+      <!-- Left links -->
+    </div>
+    <!-- Collapsible wrapper -->
+
+    <!-- Right elements -->
+    <div class="d-flex align-items-center">
+      {% if user.is_authenticated %}
+      <!-- Avatar -->
+      <div class="dropdown">
+        <a
+          data-mdb-dropdown-init
+          class="dropdown-toggle d-flex align-items-center hidden-arrow"
+          href="#"
+          id="navbarDropdownMenuAvatar"
+          role="button"
+          aria-expanded="false"
+        >
+          <img
+            src="https://cdn.discordapp.com/avatars/{{user.discord_user.id}}/{{user.discord_user.avatar}}.png"
+            class="rounded-circle"
+            height="25"
+            alt="Your discord avatar"
+            loading="lazy"
+          />
+        </a>
+        <ul
+          class="dropdown-menu dropdown-menu-end"
+          aria-labelledby="navbarDropdownMenuAvatar"
+        >
+          <li>
+            <a class="dropdown-item" href="#">My characters</a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#">My applications</a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#">My groups</a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="/oauth2/logout">Logout</a>
+          </li>
+        </ul>
+      </div>
+      {% else %}
+      <button
+        data-mdb-ripple-init
+        type="button"
+        class="btn btn-link px-3 me-2"
+        onclick="window.location.href='/oauth2/login'"
+      >
+        Login
+      </button>
+      {% endif %}
+    </div>
+    <!-- Right elements -->
+  </div>
+  <!-- Container wrapper -->
+</nav>
+<!-- Navbar -->

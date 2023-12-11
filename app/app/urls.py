@@ -20,11 +20,14 @@ from discordlogin import views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
+from home.views import index
 
 urlpatterns = [
+    path("", index, name="index"),
     path("admin/", admin.site.urls),
     path("oauth2", views.home, name="oauth2"),
     path("oauth2/login", views.discord_login, name="oauth_login"),
+    path("oauth2/logout", views.discord_logout, name="oauth_logout"),
     path(
         "oauth2/login/redirect",
         views.discord_login_redirect,

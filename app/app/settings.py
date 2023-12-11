@@ -9,8 +9,8 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-from app.settings_common import * # noqa
-from app.settings_celery import * # noqa
+from app.settings_common import *  # noqa
+from app.settings_celery import *  # noqa
 from pathlib import Path
 import os
 
@@ -45,14 +45,14 @@ ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get("DB_NAME", "minmatar"),
-        'USER': os.environ.get("DB_USER", "root"),
-        'PASSWORD': os.environ.get("DB_PASSWORD", "example"),
-        'HOST': os.environ.get("DB_HOST", "127.0.01"),
-        'PORT': os.environ.get("DB_PORT", "3306"),
-        'OPTIONS': {'charset': 'utf8mb4'},
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", "minmatar"),
+        "USER": os.environ.get("DB_USER", "root"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "example"),
+        "HOST": os.environ.get("DB_HOST", "127.0.01"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
+        "OPTIONS": {"charset": "utf8mb4"},
     },
 }
 
@@ -60,7 +60,15 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-LOGIN_URL = '/oauth2/login/'
-LOGOUT_REDIRECT_URL = '/oauth2/login/'
+LOGIN_URL = "/oauth2/login/"
+LOGOUT_REDIRECT_URL = "/oauth2/login/"
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static', )
+# Add these new lines
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "staticfiles"),
+)
+
+STATIC_ROOT = os.path.join(
+    BASE_DIR,
+    "static",
+)

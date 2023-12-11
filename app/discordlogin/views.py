@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 import requests
@@ -33,6 +33,11 @@ def discord_login(request: HttpRequest):
     return redirect(auth_url_discord)
 
 
+def discord_logout(request: HttpRequest):
+    logout(request)
+    return redirect("/")
+
+
 def discord_login_redirect(request: HttpRequest):
     from django.contrib.auth.models import User
     from .models import DiscordUser
@@ -56,7 +61,7 @@ def discord_login_redirect(request: HttpRequest):
 
         login(request, django_user)
 
-        return redirect("/auth/user")
+        return redirect("/")
 
     django_user = User.objects.create(username=user["username"])
     django_user.username = user["username"]
@@ -70,7 +75,7 @@ def discord_login_redirect(request: HttpRequest):
     )
 
     login(request, django_user)
-    return redirect("/auth/user")
+    return redirect("/")
 
 
 def exchange_code(code: str):
