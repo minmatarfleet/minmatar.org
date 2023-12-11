@@ -50,7 +50,7 @@ class EveCorporation(models.Model):
     type = models.CharField(max_length=10, choices=types, blank=True)
     member_count = models.IntegerField(blank=True)
     ceo_id = models.IntegerField(blank=True)
-    alliance_id = models.IntegerField(blank=True)
+    alliance_id = models.IntegerField(blank=True, null=True)
     faction_id = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
@@ -95,6 +95,59 @@ class EveCorporation(models.Model):
         else:
             self.type = "public"
         super(EveCorporation, self).save(*args, **kwargs)
+
+
+class EveCharacter(models.Model):
+    """Character model"""
+
+    character_id = models.IntegerField()
+    character_name = models.CharField(max_length=255, blank=True)
+    corporation = models.ForeignKey(
+        EveCorporation, on_delete=models.CASCADE, blank=True, null=True
+    )
+
+    # data
+    skills_json = models.TextField(blank=True)
+
+    @property
+    def tokens(self):
+        return Token.objects.filter(character_id=self.character_id)
+
+    def __str__(self):
+        return self.character_name
+    
+    def save(self, *args, **kwargs):
+        esi_character = esi.client.Character.get_characters_character_id(
+            character_id=self.character_id
+        ).results()
+        self.character_name = esi_character["name"]
+        if EveCorporation.objects.filter(
+            corporation_id=esi_character["corporation_id"]
+        ).exists():
+            self.corporation = EveCorporation.objects.get(
+                corporation_id=esi_character["corporation_id"]
+            )
+        else:
+            corporation = EveCorporation(
+                corporation_id=esi_character["corporation_id"]
+            ).save()
+            self.corporation = corporation
+        # fetch skills
+        if self.tokens.exists():
+            required_scopes = ["esi-skills.read_skills.v1"]
+            token = Token.objects.filter(
+                character_id=self.character_id,
+                scopes__name__in=required_scopes,
+            ).first()
+            if token:
+                self.skills_json = (
+                    esi.client.Skills.get_characters_character_id_skills(
+                        character_id=self.character_id,
+                        token=token.valid_access_token(),
+                    ).results()
+                )
+
+        super(EveCharacter, self).save(*args, **kwargs)
 
 
 class EveCorporationApplication(models.Model):

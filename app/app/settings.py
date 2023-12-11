@@ -60,8 +60,8 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-LOGIN_URL = "/oauth2/login/"
-LOGOUT_REDIRECT_URL = "/oauth2/login/"
+LOGIN_URL = "/oauth2/login"
+LOGOUT_REDIRECT_URL = "/oauth2/login"
 
 # Add these new lines
 STATICFILES_DIRS = (
