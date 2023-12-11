@@ -1,30 +1,124 @@
 {% extends "base.html" %} 
 
 {% block content %}
-{{ characters }}
-<table
-  id="dtBasicExample"
-  class="table table-striped table-bordered table-sm"
-  cellspacing="0"
-  width="100%"
->
-  <thead>
-    <tr>
-      <th class="th-sm">Character Name</th>
-      <th class="th-sm">Type</th>
-      <th class="th-sm">Specializations</th>
-      <th class="th-sm">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      {% for token in tokens %}
-      <td>{{token.character_name}}</td>
-      <td></td>
-      <td></td>
-      <td></td>
-      {% endfor %}
-    </tr>
-  </tfoot>
-</table>
+<div class="container">
+<!-- Pills navs -->
+<h1>Enlistment Type</h1>
+<ul class="nav nav-pills nav-justified mb-3" id="ex1" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a
+        data-mdb-pill-init
+        class="nav-link active"
+        id="ex3-tab-1"
+        href="#ex3-pills-1"
+        role="tab"
+        aria-controls="ex3-pills-1"
+        aria-selected="true"
+        disabled
+        >Militia</a
+      >
+    </li>
+    <li class="nav-item" role="presentation">
+      <a
+        data-mdb-pill-init
+        class="nav-link"
+        id="ex3-tab-2"
+        href="#ex3-pills-2"
+        role="tab"
+        aria-controls="ex3-pills-2"
+        aria-selected="false"
+        disabled
+        >Associate</a
+      >
+    </li>
+    <li class="nav-item" role="presentation">
+      <a
+        data-mdb-pill-init
+        class="nav-link"
+        id="ex3-tab-3"
+        href="#ex3-pills-3"
+        role="tab"
+        aria-controls="ex3-pills-3"
+        aria-selected="false"
+        disabled
+        >Alliance</a
+      >
+    </li>
+  </ul>
+  <!-- Pills navs -->
+  
+  <!-- Pills content -->
+  <div class="tab-content" id="ex2-content">
+    <div
+      class="tab-pane fade show active"
+      id="ex3-pills-1"
+      role="tabpanel"
+      aria-labelledby="ex3-tab-1"
+    >
+      You are a member of the Minmatar miltia. EVE Character token requirements are limited, and you are not required to provide any additional information.
+    </div>
+    <div
+      class="tab-pane fade"
+      id="ex3-pills-2"
+      role="tabpanel"
+      aria-labelledby="ex3-tab-2"
+    >
+      You are an associate of Minmatar Fleet. EVE Character token requirements are more advanced, and you will have advanced access to our website.
+    </div>
+    <div
+      class="tab-pane fade"
+      id="ex3-pills-3"
+      role="tabpanel"
+      aria-labelledby="ex3-tab-3"
+    >
+      You are a member of an alliance. You have complete access to our services, but your token requirements are very strict
+    </div>
+  </div>
+<!-- Pills content -->
+</div>
+<hr>
+<div class="container">
+    <h1>Characters</h1>
+    <table
+      id="dtBasicExample"
+      class="table table-striped table-bordered table-sm"
+      cellspacing="0"
+      width="100%"
+    >
+      <thead>
+        <tr>
+          <th class="th-sm">Character Name</th>
+          <th class="th-sm">Type</th>
+          <th class="th-sm">Specialization</th>
+          <th class="th-sm">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for character in characters %}
+        <tr>
+          <td>
+            <div class="row">
+              <div class="container">
+                {{character.character_name}}
+                {% if character.is_primary %}
+                <span class="badge bg-primary">Primary</span>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="row">
+              <div class="container">
+                {{character.type}}
+              </div>
+            </div>
+          </td>
+          <td></td>
+          <td>
+          </td>
+        </tr>
+        {% endfor %}
+      </tfoot>
+    </table>
+</div>
 {% endblock %}

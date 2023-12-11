@@ -20,4 +20,5 @@ from . import views
 urlpatterns = [
     path("characters", views.list_characters, name="eveonline-characters"),
     path("characters/add", views.add_character, name="eveonline-characters-add"),
+    path("corporations", views.list_corporations, name="eveonline-corporations"),
 ]

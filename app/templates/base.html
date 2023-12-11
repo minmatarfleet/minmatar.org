@@ -17,6 +17,14 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.min.css"
       rel="stylesheet"
     />
+    <!-- Datatables -->
+    <link
+      href="https://cdn.datatables.net/1.13.5/css/dataTables.bootstrap5.min.css"
+      rel="stylesheet"
+    />
+    <!-- Jquery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.slim.min.js" integrity="sha256-tG5mcZUtJsZvyKAxYLVXrmjKBVLd6VpVccqz/r4ypFE=" crossorigin="anonymous"></script>
+
   </head>
   <body>
     {% include 'navigation.html' %}
@@ -32,5 +40,17 @@
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.1.0/mdb.umd.min.js"
     ></script>
+    <!-- Datatables -->
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+      $(function () {
+          $('.datatable').DataTable({
+              {% block datatable_options %}
+              order: []
+              {% endblock %}
+          });
+      });
+    </script>
   </body>
 </html>
