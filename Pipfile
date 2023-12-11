@@ -12,6 +12,7 @@ crispy-bootstrap5 = "*"
 django-extensions = "*"
 django-celery-beat = "*"
 requests = "*"
+django-esi = "*"
 
 [dev-packages]
 pylint = "*"
