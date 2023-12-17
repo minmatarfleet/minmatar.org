@@ -28,7 +28,7 @@
   </head>
   <body>
     {% include 'navigation.html' %}
-
+    
     {% if messages %}
     <div class="container-fluid">
         <div class="row">
@@ -50,9 +50,8 @@
         </div>
     </div>
     {% endif %}
-
-
     <div class="container">
+      
       <!-- Content here -->
       {% block content %} {% endblock %}
     </div>

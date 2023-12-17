@@ -36,6 +36,11 @@ urlpatterns = [
         "corporations", views.list_corporations, name="eveonline-corporations"
     ),
     path(
+        "corporations/<int:corporation_pk>/view",
+        views.view_corporation,
+        name="eveonline-corporations-view",
+    ),
+    path(
         "corporations/<int:corporation_pk>/update",
         views.update_corporation,
         name="eveonline-corporations-update",

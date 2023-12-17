@@ -16,6 +16,7 @@ from typing import List
 from django.contrib import messages
 from eveonline.helpers.characters import (
     get_character_list,
+    get_corporation_character_list,
     ALLIANCE_SCOPES,
     TokenType,
 )
@@ -45,7 +46,9 @@ def list_characters(request):
         "characters": characters,
     }
 
-    return render(request, "eveonline/list_characters.html", context)
+    return render(
+        request, "eveonline/characters/list_characters.html", context
+    )
 
 
 @login_required
@@ -68,7 +71,7 @@ def view_character(request, character_id):
             {
                 "skillset": skillset,
                 "missing_skills": "\n".join(missing_skills),
-                "progress": {'value': progress, 'color': progress_color},
+                "progress": {"value": progress, "color": progress_color},
             }
         )
 
@@ -77,7 +80,7 @@ def view_character(request, character_id):
         "skillsets": skillsets_response,
     }
 
-    return render(request, "eveonline/view_character.html", context)
+    return render(request, "eveonline/characters/view_character.html", context)
 
 
 @login_required
@@ -130,7 +133,21 @@ def list_corporations(request):
         "militia_corporation_chunks": militia_corporations,
     }
 
-    return render(request, "eveonline/list_corporations.html", context)
+    return render(
+        request, "eveonline/corporations/list_corporations.html", context
+    )
+
+
+def view_corporation(request, corporation_pk):
+    corporation = EveCorporation.objects.get(pk=corporation_pk)
+    characters = get_corporation_character_list(corporation)
+    context = {
+        "corporation": corporation,
+        "characters": characters,
+    }
+    return render(
+        request, "eveonline/corporations/view_corporation.html", context
+    )
 
 
 @login_required
@@ -205,7 +222,9 @@ def create_corporation_application(request, corporation_pk):
         "existing_application": existing_application,
     }
     return render(
-        request, "eveonline/create_corporation_application.html", context
+        request,
+        "eveonline/applications/create_corporation_application.html",
+        context,
     )
 
 
@@ -222,7 +241,9 @@ def view_corporation_application(request, application_pk):
         "discord_thread_link": f"https://discord.com/channels/1041384161505722368/{application.discord_thread_id}",
     }
     return render(
-        request, "eveonline/view_corporation_application.html", context
+        request,
+        "eveonline/applications/view_corporation_application.html",
+        context,
     )
 
 

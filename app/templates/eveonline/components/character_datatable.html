@@ -1,0 +1,33 @@
+<table
+    id="dtBasicExample"
+    class="table table-striped table-bordered table-sm datatable"
+    cellspacing="0"
+    width="100%"
+>
+    <thead>
+    <tr>
+        <th class="th-sm">Character Name</th>
+        <th class="th-sm">Registered</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for character in characters %}
+    <tr>
+        <td>
+        <div class="row">
+            <div class="container">
+            <img src="https://images.evetech.net/characters/{{character.character_id}}/portrait?size=32" class="img-fluid" />
+            <a href="{% url 'eveonline-characters-view' character.character_id %}">{{character.character_name}}</a>
+            {% if character.is_primary %}
+            <span class="badge bg-primary">Primary</span>
+            {% endif %}
+            </div>
+        </div>
+        </td>
+        <td>
+            {{character.is_registered}}
+        </td>
+    </tr>
+    {% endfor %}
+    </tfoot>
+</table>

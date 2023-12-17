@@ -18,7 +18,10 @@
         card's content.
         </p>
         {% if corporation.active %}
-        <a href="{% url 'eveonline-corporations-apply' corporation.pk %}" class="btn btn-primary">Submit Application</a>
+        <div class="btn-group" role="group" aria-label="Basic example">
+            <a href="{% url 'eveonline-corporations-view' corporation.pk %}" class="btn btn-info">View</a>
+            <a href="{% url 'eveonline-corporations-apply' corporation.pk %}" class="btn btn-warning">Apply</a>
+        </div>
         {% else %}
         <a href="{% url 'eveonline-corporations-update' corporation.pk %}" class="btn btn-danger">Missing Corporation Token</a>
         {% endif %}
