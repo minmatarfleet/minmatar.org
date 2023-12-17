@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from esi.decorators import token_required
 from .models import EvePrimaryToken, EveCorporation, EveCorporationApplication
@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from typing import List
 from django.contrib import messages
 from .helpers import (
-    get_token_type_for_scopes_list,
     get_character_list,
     ALLIANCE_SCOPES,
     TokenType,
@@ -112,7 +111,9 @@ def create_corporation_application(request, corporation_pk):
     corporation = EveCorporation.objects.get(pk=corporation_pk)
     characters = get_character_list(request.user)
     if EveCorporationApplication.objects.filter(
-        corporation=corporation, user=request.user, created_at__gt=timezone.now() - timedelta(days=30)
+        corporation=corporation,
+        user=request.user,
+        created_at__gt=timezone.now() - timedelta(days=30),
     ).exists():
         existing_application = EveCorporationApplication.objects.get(
             corporation=corporation,
@@ -166,3 +167,38 @@ def create_corporation_application(request, corporation_pk):
     return render(
         request, "eveonline/create_corporation_application.html", context
     )
+
+
+@login_required
+@permission_required("eveonline.view_evecorporationapplication")
+def view_corporation_application(request, application_pk):
+    application = EveCorporationApplication.objects.get(pk=application_pk)
+    discord_user = request.user.discord_user
+    characters = get_character_list(application.user)
+    context = {
+        "application": application,
+        "discord_user": discord_user,
+        "characters": characters,
+        "discord_thread_link": f"https://discord.com/channels/1041384161505722368/{application.discord_thread_id}",
+    }
+    return render(
+        request, "eveonline/view_corporation_application.html", context
+    )
+
+
+@login_required
+@permission_required("eveonline.view_evecorporationapplication")
+def approve_corporation_application(request, application_pk):
+    application = EveCorporationApplication.objects.get(pk=application_pk)
+    application.status = "accepted"
+    application.save()
+    return redirect("eveonline-corporations-applications-view", application_pk)
+
+
+@login_required
+@permission_required("eveonline.view_evecorporationapplication")
+def reject_corporation_application(request, application_pk):
+    application = EveCorporationApplication.objects.get(pk=application_pk)
+    application.status = "rejected"
+    application.save()
+    return redirect("eveonline-corporations-applications-view", application_pk)

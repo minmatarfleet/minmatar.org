@@ -40,4 +40,19 @@ urlpatterns = [
         views.create_corporation_application,
         name="eveonline-corporations-apply",
     ),
+    path(
+        "corporations/applications/<int:application_pk>",
+        views.view_corporation_application,
+        name="eveonline-corporations-applications-view",
+    ),
+    path(
+        "corporations/applications/<int:application_pk>/approve",
+        views.approve_corporation_application,
+        name="eveonline-corporations-applications-approve",
+    ),
+    path(
+        "corporations/applications/<int:application_pk>/reject",
+        views.reject_corporation_application,
+        name="eveonline-corporations-applications-reject",
+    ),
 ]

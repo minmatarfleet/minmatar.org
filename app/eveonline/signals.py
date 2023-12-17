@@ -40,7 +40,7 @@ def eve_corporation_application_post_save(
         message += f"Applying to: {instance.corporation.name}\n"
         message += f"Description: {instance.description}\n"
         application_url = settings.SITE_URL + reverse(
-            "eveonline-corporations-apply", args=[instance.corporation.pk]
+            "eveonline-corporations-applications-view", args=[instance.application.pk]
         )
         message += f"{application_url}\n"
         response = discord.create_forum_thread(
