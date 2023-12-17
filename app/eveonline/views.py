@@ -2,12 +2,19 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from esi.decorators import token_required
-from .models import EvePrimaryToken, EveCorporation, EveCorporationApplication
+from eveonline.helpers.skills import compare_skills_to_skillset
+from .models import (
+    EvePrimaryToken,
+    EveCorporation,
+    EveCorporationApplication,
+    EveCharacter,
+    EveCharacterSkillset,
+)
 from .forms import EveCorporationApplicationForm
 from pydantic import BaseModel
 from typing import List
 from django.contrib import messages
-from .helpers import (
+from eveonline.helpers.characters import (
     get_character_list,
     ALLIANCE_SCOPES,
     TokenType,
@@ -31,6 +38,7 @@ class CorporationResponse(BaseModel):
 
 
 # Create your views here.
+@login_required
 def list_characters(request):
     characters = get_character_list(request.user)
     context = {
@@ -38,6 +46,38 @@ def list_characters(request):
     }
 
     return render(request, "eveonline/list_characters.html", context)
+
+
+@login_required
+@permission_required("eveonline.view_evecharacter")
+def view_character(request, character_id):
+    character = EveCharacter.objects.get(character_id=character_id)
+    skillsets = EveCharacterSkillset.objects.all()
+
+    skillsets_response = []
+    for skillset in skillsets:
+        missing_skills, progress = compare_skills_to_skillset(
+            character, skillset
+        )
+        progress_color = "success"
+        if progress < 50:
+            progress_color = "danger"
+        elif progress < 100:
+            progress_color = "warning"
+        skillsets_response.append(
+            {
+                "skillset": skillset,
+                "missing_skills": "\n".join(missing_skills),
+                "progress": {'value': progress, 'color': progress_color},
+            }
+        )
+
+    context = {
+        "character": character,
+        "skillsets": skillsets_response,
+    }
+
+    return render(request, "eveonline/view_character.html", context)
 
 
 @login_required

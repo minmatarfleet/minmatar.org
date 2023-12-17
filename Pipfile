@@ -14,6 +14,7 @@ django-celery-beat = "*"
 requests = "*"
 django-esi = "*"
 pydantic = "*"
+django-eveuniverse = "*"
 
 [dev-packages]
 pylint = "*"

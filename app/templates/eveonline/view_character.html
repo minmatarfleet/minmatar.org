@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <img src="https://images.evetech.net/characters/{{character.character_id}}/portrait?size=256" alt="avatar"
+                        class="rounded-circle img-fluid" style="width: 150px;">
+                    <h5 class="my-3">{{character.character_name}}</h5>
+                    <div class="d-flex justify-content-center mb-2">
+                        <button type="button" class="btn btn-info">zKillboard</button>
+                        <button type="button" class="btn btn-info ms-1">Eve Who</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="row">
+                <div class="card mb-4 mb-md-0">
+                    <div class="card-body">
+                        <p class="mb-4">Skillsets
+                        </p>
+                        {% for skillset in skillsets %}
+                        <p class="mb-1" style="font-size: .77rem;">{{skillset.skillset.name}}</p>
+                        <div title="{{skillset.missing_skills}}" class="progress rounded" style="height: 5px;">
+                            <div class="progress-bar bg-{{skillset.progress.color}}" role="progressbar" style="width: {{skillset.progress.value}}%" aria-valuenow="80"
+                                aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <br>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

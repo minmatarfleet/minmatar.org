@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from esi.clients import EsiClientProvider
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -148,14 +149,26 @@ class EveCharacter(models.Model):
                 scopes__name__in=required_scopes,
             ).first()
             if token:
-                self.skills_json = (
+                response = (
                     esi.client.Skills.get_characters_character_id_skills(
                         character_id=self.character_id,
                         token=token.valid_access_token(),
                     ).results()
                 )
+                self.skills_json = json.dumps(response)
 
         super(EveCharacter, self).save(*args, **kwargs)
+
+
+class EveCharacterSkillset(models.Model):
+    """List of skills to compare character skills against for progression"""
+
+    name = models.CharField(max_length=255)
+    skills = models.TextField(blank=True)
+    total_skill_points = models.BigIntegerField()
+
+    def __str__(self):
+        return str(self.name)
 
 
 class EveCorporationApplication(models.Model):

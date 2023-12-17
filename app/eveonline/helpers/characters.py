@@ -2,7 +2,7 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import List
 from django.contrib.auth.models import User
-from .models import EvePrimaryToken
+from eveonline.models import EvePrimaryToken
 
 
 class TokenType(Enum):

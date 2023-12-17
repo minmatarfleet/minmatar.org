@@ -18,7 +18,7 @@
         <div class="row">
             <div class="container">
             <img src="https://images.evetech.net/characters/{{character.character_id}}/portrait?size=32" class="img-fluid" />
-            {{character.character_name}}
+            <a href="{% url 'eveonline-characters-view' character.character_id %}">{{character.character_name}}</a>
             {% if character.is_primary %}
             <span class="badge bg-primary">Primary</span>
             {% endif %}

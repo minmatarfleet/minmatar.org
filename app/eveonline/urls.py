@@ -20,6 +20,11 @@ from . import views
 urlpatterns = [
     path("characters", views.list_characters, name="eveonline-characters"),
     path(
+        "characters/<int:character_id>/view",
+        views.view_character,
+        name="eveonline-characters-view",
+    ),
+    path(
         "characters/add", views.add_character, name="eveonline-characters-add"
     ),
     path(

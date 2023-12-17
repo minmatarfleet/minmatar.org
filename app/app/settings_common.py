@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     "discord.apps.DiscordConfig",
     "eveonline.apps.EveonlineConfig",
     # 'eve_auth',
-    # 'eveuniverse',
+    "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
 ]
@@ -124,3 +124,6 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# EVE Universe Settings
+EVEUNIVERSE_LOAD_DOGMAS = True

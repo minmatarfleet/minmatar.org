@@ -77,48 +77,5 @@
 <!-- Pills content -->
 </div>
 <hr>
-<div class="container">
-    <h1>Characters</h1>
-    <table
-      id="dtBasicExample"
-      class="table table-striped table-bordered table-sm"
-      cellspacing="0"
-      width="100%"
-    >
-      <thead>
-        <tr>
-          <th class="th-sm">Character Name</th>
-          <th class="th-sm">Type</th>
-          <th class="th-sm">Specialization</th>
-          <th class="th-sm">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for character in characters %}
-        <tr>
-          <td>
-            <div class="row">
-              <div class="container">
-                {{character.character_name}}
-                {% if character.is_primary %}
-                <span class="badge bg-primary">Primary</span>
-                {% endif %}
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="row">
-              <div class="container">
-                {{character.type}}
-              </div>
-            </div>
-          </td>
-          <td></td>
-          <td>
-          </td>
-        </tr>
-        {% endfor %}
-      </tfoot>
-    </table>
-</div>
+{% include 'eveonline/components/list_characters_table.html' %}
 {% endblock %}
