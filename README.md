@@ -24,4 +24,4 @@ Once you set this up once it will keep your db setup between development instanc
 
 
 # Commands
-- `for x in $(sed -e 's/#.*//' .env | grep '=') ; do export $x ; done` for populating env from .env
+- `for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done` for populating env from .env

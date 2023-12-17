@@ -2,7 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from esi.models import Token
 from esi.clients import EsiClientProvider
+import logging
 
+logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
 
@@ -115,12 +117,16 @@ class EveCharacter(models.Model):
 
     def __str__(self):
         return self.character_name
-    
+
     def save(self, *args, **kwargs):
         esi_character = esi.client.Character.get_characters_character_id(
             character_id=self.character_id
         ).results()
+        logger.debug("Setting character name to %s", esi_character["name"])
         self.character_name = esi_character["name"]
+        logger.debug(
+            "Setting corporation to %s", esi_character["corporation_id"]
+        )
         if EveCorporation.objects.filter(
             corporation_id=esi_character["corporation_id"]
         ).exists():
@@ -128,12 +134,14 @@ class EveCharacter(models.Model):
                 corporation_id=esi_character["corporation_id"]
             )
         else:
-            corporation = EveCorporation(
+            corporation = EveCorporation.objects.create(
                 corporation_id=esi_character["corporation_id"]
-            ).save()
+            )
             self.corporation = corporation
+
         # fetch skills
         if self.tokens.exists():
+            logger.debug("Fetching skills for %s", self.character_name)
             required_scopes = ["esi-skills.read_skills.v1"]
             token = Token.objects.filter(
                 character_id=self.character_id,
@@ -166,6 +174,7 @@ class EveCorporationApplication(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    discord_thread_id = models.BigIntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.user.eve_primary_token.token.character_name

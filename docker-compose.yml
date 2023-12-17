@@ -12,24 +12,24 @@ services:
       ports:
           - "3306:3306"
 
-    # redis:
-    #     image: redis:6.0.9-alpine
-    #     volumes:
-    #         - "redis:/var/lib/redis"
-    #         - "redis:/data"
+    redis:
+        image: redis:6.0.9-alpine
+        volumes:
+            - "redis:/var/lib/redis"
+            - "redis:/data"
 
-    app:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        working_dir: /opt/minmatar/app
-        command: uvicorn app.asgi:application --host 0.0.0.0 --port 8000
-        env_file:
-            - .env
-        ports:
-            - "8000:8000"
-        depends_on:
-            - db
+    # app:
+    #     build:
+    #         context: .
+    #         dockerfile: Dockerfile
+    #     working_dir: /opt/minmatar/app
+    #     command: python3 -m uvicorn app.asgi:application --host 0.0.0.0 --port 8000
+    #     env_file:
+    #         - .env
+    #     ports:
+    #         - "8000:8000"
+    #     depends_on:
+    #         - db
 
     # beat:
     #     build:

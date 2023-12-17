@@ -118,6 +118,8 @@ def create_corporation_application(request, corporation_pk):
             corporation=corporation,
             user=request.user,
         )
+    else:
+        existing_application = None
     for character in characters:
         if character.type != TokenType.ALLIANCE:
             messages.warning(

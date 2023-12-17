@@ -13,6 +13,7 @@ django-extensions = "*"
 django-celery-beat = "*"
 requests = "*"
 django-esi = "*"
+pydantic = "*"
 
 [dev-packages]
 pylint = "*"
