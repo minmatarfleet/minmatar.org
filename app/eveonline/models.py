@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from esi.models import Token
 from esi.clients import EsiClientProvider
+from eveuniverse.models import EveFaction
 import logging
 import json
 
@@ -100,6 +101,29 @@ class EveCorporation(models.Model):
         super(EveCorporation, self).save(*args, **kwargs)
 
 
+class EveAlliance(models.Model):
+    """Alliance model"""
+
+    alliance_id = models.IntegerField()
+
+    # autopopulated
+    name = models.CharField(max_length=255, blank=True)
+    ticker = models.CharField(max_length=255, blank=True)
+    executor_corporation_id = models.IntegerField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
+            alliance_id=self.alliance_id
+        ).results()
+        self.name = esi_alliance["name"]
+        self.ticker = esi_alliance["ticker"]
+        self.executor_corporation_id = esi_alliance["executor_corporation_id"]
+        super(EveAlliance, self).save(*args, **kwargs)
+
+
 class EveCharacter(models.Model):
     """Character model"""
 
@@ -191,3 +215,20 @@ class EveCorporationApplication(models.Model):
 
     def __str__(self):
         return self.user.eve_primary_token.token.character_name
+
+
+class EveGroup(models.Model):
+    """Group model"""
+
+    group = models.OneToOneField(Group, on_delete=models.CASCADE)
+    corporations = models.ManyToManyField(EveCorporation, blank=True)
+    alliances = models.ManyToManyField(EveAlliance, blank=True)
+    factions = models.ManyToManyField(EveFaction, blank=True)
+    priority = models.IntegerField(default=0)
+    unique = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("priority", "unique")
+
+    def __str__(self):
+        return str(self.group.name)

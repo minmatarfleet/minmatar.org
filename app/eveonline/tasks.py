@@ -1,12 +1,12 @@
 from app.celery import app
-from .models import EveCorporation, EveCharacter
+from .models import EveCorporation, EveCharacter, EveGroup
+from django.contrib.auth.models import User
 from esi.models import Token
 from esi.clients import EsiClientProvider
 import logging
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
-
 
 @app.task
 def update_corporations():
