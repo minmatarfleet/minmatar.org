@@ -33,24 +33,25 @@ class DiscordRole(models.Model):
 
     def save(self, *args, **kwargs):
         logger.info("Saving DiscordRole with role_id %s", self.role_id)
-        if not self.role_id:
-            logger.info(
-                "No role_id, creating role based on group name %s",
-                self.group.name,
-            )
-            role = discord.create_role(self.group.name)
-            logger.info("Role created: %s", role.json())
-            self.role_id = role.json()["id"]
+        if not self.role_id:  # skip when importing a role
+            # resolve existing role from discord server
+            roles = discord.get_roles()
+            existing_role = False
+            for role in roles:
+                if role["name"] == self.name:
+                    logger.info("Found existing role with name %s", self.name)
+                    self.role_id = role["id"]
+                    existing_role = True
+                    break
 
-        if self.group and not self.name:
-            logger.info(
-                "No name, setting name to group name %s", self.group.name
-            )
-            self.name = self.group.name
+            # create role if no existing role on discord server
+            if not existing_role:
+                logger.info(
+                    "No role_id, creating role based on group name %s",
+                    self.group.name,
+                )
+                role = discord.create_role(self.group.name)
+                logger.info("Role created: %s", role.json())
+                self.role_id = role.json()["id"]
 
-        if not self.group:
-            logger.info(
-                "No group, creating group based on role name %s", self.name
-            )
-            self.group = Group.objects.create(name=self.name)
         super().save(*args, **kwargs)

@@ -8,8 +8,12 @@ logging = logging.getLogger(__name__)
 
 
 @app.task()
-def poll_external_roles():
+def import_external_roles():
     roles = discord.get_roles()
     for role in roles:
+        if role['managed']:
+            continue
+        if role['name'] == '@everyone':
+            continue
         if not Group.objects.filter(name=role["name"]).exists():
             Group.objects.create(name=role["name"])
