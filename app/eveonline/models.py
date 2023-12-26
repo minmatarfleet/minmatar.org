@@ -215,20 +215,3 @@ class EveCorporationApplication(models.Model):
 
     def __str__(self):
         return self.user.eve_primary_token.token.character_name
-
-
-class EveGroup(models.Model):
-    """Group model"""
-
-    group = models.OneToOneField(Group, on_delete=models.CASCADE)
-    corporations = models.ManyToManyField(EveCorporation, blank=True)
-    alliances = models.ManyToManyField(EveAlliance, blank=True)
-    factions = models.ManyToManyField(EveFaction, blank=True)
-    priority = models.IntegerField(default=0)
-    unique = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = ("priority", "unique")
-
-    def __str__(self):
-        return str(self.group.name)

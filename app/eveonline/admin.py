@@ -4,7 +4,6 @@ from .models import (
     EveCorporationApplication,
     EveCharacter,
     EveCharacterSkillset,
-    EveGroup,
     EveAlliance
 )
 
@@ -13,5 +12,4 @@ admin.site.register(EveCorporation)
 admin.site.register(EveCharacter)
 admin.site.register(EveCharacterSkillset)
 admin.site.register(EveCorporationApplication)
-admin.site.register(EveGroup)
 admin.site.register(EveAlliance)

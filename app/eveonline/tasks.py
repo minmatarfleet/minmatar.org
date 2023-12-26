@@ -1,6 +1,5 @@
 from app.celery import app
-from .models import EveCorporation, EveCharacter, EveGroup
-from django.contrib.auth.models import User
+from .models import EveCorporation, EveCharacter
 from esi.models import Token
 from esi.clients import EsiClientProvider
 import logging
