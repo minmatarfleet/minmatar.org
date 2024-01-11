@@ -23,6 +23,7 @@ services:
             context: .
             dockerfile: Dockerfile
         working_dir: /opt/minmatar/app
+        command: ./app-start.sh
         env_file:
             - .env
         ports:

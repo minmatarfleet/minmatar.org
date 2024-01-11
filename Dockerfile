@@ -10,11 +10,11 @@ COPY ./ /opt/minmatar/
 WORKDIR /opt/minmatar/app
 RUN adduser --disabled-password --gecos '' minmatar && \
   cp /opt/minmatar/app/app/settings.py.example /opt/minmatar/app/app/settings.py && \
-  chmod +x container-start.sh && \
+  chmod +x app-start.sh && \
   pip install pipenv && \
   pipenv requirements > requirements.txt && \
   pip3 install -r requirements.txt && \
   python3 manage.py collectstatic --noinput
 
-
-ENTRYPOINT ["./container-start.sh"]
+# keep open for debugging
+CMD ["tail", "-f", "/dev/null"]
