@@ -18,8 +18,7 @@ Platform for Minmatar Fleet
   - Get the auth database password from BearThatCares
 3. Run `docker compose up -d` to create and start the containers. In the background this sets up the needed database users and database.
   - Append the `--build app` flag to the compose command to rebuild the image if you've made code changes.
-4. Run `docker compose exec app python3 manage.py migrate`. This creates all the tables in the database for you.
-5. Navigate to http://localhost:8000 and you should see the website.
+4. Navigate to http://localhost:8000 and you should see the website.
 
 This isn't a perfect setup and we're still working on streamlining it. If you have issues reach out to the technology team and we'll do our best to help.
 Once you set this up once it will keep your db setup between development instances and you will only need to migrate if you change the database structure.
