@@ -11,6 +11,13 @@ services:
           - ./sql:/docker-entrypoint-initdb.d
       ports:
           - "3306:3306"
+      healthcheck:
+        test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+        start_period: 1m
+        start_interval: 10s
+        interval: 1m
+        timeout: 5s
+        retries: 3
 
     redis:
         image: redis:6.0.9-alpine
@@ -18,40 +25,41 @@ services:
             - "redis:/var/lib/redis"
             - "redis:/data"
 
-    # app:
-    #     build:
-    #         context: .
-    #         dockerfile: Dockerfile
-    #     working_dir: /opt/minmatar/app
-    #     command: python3 -m uvicorn app.asgi:application --host 0.0.0.0 --port 8000
-    #     env_file:
-    #         - .env
-    #     ports:
-    #         - "8000:8000"
-    #     depends_on:
-    #         - db
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        working_dir: /opt/minmatar/app
+        command: ./app-start.sh
+        env_file:
+            - .env
+        ports:
+            - "8000:8000"
+        depends_on:
+            db:
+                condition: service_healthy
 
-    # beat:
-    #     build:
-    #         context: .
-    #         dockerfile: Dockerfile
-    #     restart: always
-    #     env_file: .env
-    #     command: celery -A tools beat -l info
-    #     depends_on:
-    #         - db
-    #         - app
+    beat:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app beat -l info
+        depends_on:
+            - db
+            - app
     
-    # celery:
-    #     build:
-    #         context: .
-    #         dockerfile: Dockerfile
-    #     restart: always
-    #     env_file: .env
-    #     command: celery -A tools worker -l info
-    #     depends_on:
-    #         - db
-    #         - app 
+    celery:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app worker -l info
+        depends_on:
+            - db
+            - app 
 
 volumes:
     database: {}
