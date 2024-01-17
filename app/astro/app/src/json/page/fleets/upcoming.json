@@ -1,0 +1,52 @@
+[
+    {
+        "id": 1,
+        "fleet_commander_name": "Beautiful Mim",
+        "fleet_commander_portrait": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "fleet_commander_portrait_small": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "type": "Strategic operations",
+        "audience": "Alliance",
+        "eve_time": "2024-01-15 11:40:00",
+        "href": "/fleets/upcoming/fleet_201/"
+    },
+    {
+        "id": 2,
+        "fleet_commander_name": "Beautiful Mim",
+        "fleet_commander_portrait": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "fleet_commander_portrait_small": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "type": "Strategic operations",
+        "audience": "Alliance",
+        "eve_time": "2024-01-16 05:20:00",
+        "href": "/fleets/upcoming/fleet_201/"
+    },
+    {
+        "id": 3,
+        "fleet_commander_name": "Beautiful Mim",
+        "fleet_commander_portrait": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "fleet_commander_portrait_small": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "type": "Strategic operations",
+        "audience": "Alliance",
+        "eve_time": "2024-01-16 10:30:00",
+        "href": "/fleets/upcoming/fleet_201/"
+    },
+    {
+        "id": 4,
+        "fleet_commander_name": "Beautiful Mim",
+        "fleet_commander_portrait": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "fleet_commander_portrait_small": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "type": "Strategic operations",
+        "audience": "Alliance",
+        "eve_time": "2024-01-17 12:30:00",
+        "href": "/fleets/upcoming/fleet_201/"
+    },
+    {
+        "id": 5,
+        "fleet_commander_name": "Beautiful Mim",
+        "fleet_commander_portrait": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "fleet_commander_portrait_small": "https://images.evetech.net/characters/2121103796/portrait?size=512",
+        "type": "Strategic operations",
+        "audience": "Alliance",
+        "eve_time": "2024-01-18 01:10:00",
+        "href": "/fleets/upcoming/fleet_201/"
+    }
+]

@@ -1,0 +1,119 @@
+[
+    {
+        "doctrine_name": "Heavy Armor",
+        "href": "/doctrines/alliance/heavy_armor",
+        "tags": [{
+            "name": "Large Fleet",
+            "color": "fleet-red",
+            "description": "Optimal for 15 or more pilots, usually 30+"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/17732_64.png",
+            "alt": "Tempest Fleet Issue",
+            "name": "[ADV-30] Tempest Fleet Issue",
+            "href": "/fitting/list/adv-30-tempest-fleet-issue/"
+        }, {
+            "image": "https://image.eveonline.com/Render/17740_64.png",
+            "alt": "Vindicator",
+            "name": "[ADV-30] Vindicator"
+        }, {
+            "image": "https://image.eveonline.com/Render/33472_64.png",
+            "alt": "Nestor",
+            "name": "[ADV-30] Nestor"
+        }, {
+            "image": "https://image.eveonline.com/Render/11987_64.png",
+            "alt": "Guardian",
+            "name": "[ADV-30] Guardian"
+        }, {
+            "image": "https://image.eveonline.com/Render/12017_64.png",
+            "alt": "Devoter",
+            "name": "[ADV-30] Devoter"
+        }, {
+            "image": "https://image.eveonline.com/Render/17920_64.png",
+            "alt": "Bhaalgorn",
+            "name": "[ADV-30] Bhaalgorn"
+        }, {
+            "image": "https://image.eveonline.com/Render/32311_64.png",
+            "alt": "Typhoon Fleet Issue",
+            "name": "[ADV-30] Typhoon Fleet Issue"
+        }]
+    }, {
+        "doctrine_name": "Kikis",
+        "href": "/",
+        "tags": [{
+            "name": "Low Projection",
+            "color": "alliance-blue",
+            "description": "Optimal for brawling"
+        }, {
+            "name": "Large Fleet",
+            "color": "fleet-red",
+            "description": "Optimal for 15 or more pilots, usually 30+"
+        }, {
+            "name": "Easy to FC",
+            "color": "green",
+            "description": "Great for someone trying to learn how to lead fleets"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/11198_64.png",
+            "alt": "Stiletto",
+            "name": "[ADV-5] Stiletto"
+        }, {
+            "image": "https://image.eveonline.com/Render/49710_64.png",
+            "alt": "Kikimora",
+            "name": "[ADV-30] Kikimora"
+        }, {
+            "image": "https://image.eveonline.com/Render/37458_64.png",
+            "alt": "Kirin",
+            "name": "[ADV-30] Kirin"
+        }, {
+            "image": "https://image.eveonline.com/Render/11387_64.png",
+            "alt": "Hyena",
+            "name": "[ADV-30] Hyena"
+        }, {
+            "image": "https://image.eveonline.com/Render/11194_64.png",
+            "alt": "Kitsune",
+            "name": "[ADV-30] Kitsune"
+        }, {
+            "image": "https://image.eveonline.com/Render/11381_64.png",
+            "alt": "Harpy",
+            "name": "[ADV-30] Harpy"
+        }]
+    }, {
+        "doctrine_name": "Sleipnir",
+        "href": "/",
+        "tags": [{
+            "name": "High Projection",
+            "color": "militia-purple",
+            "description": "Optimal for brawling"
+        }, {
+            "name": "Large Fleet",
+            "color": "fleet-red",
+            "description": "Optimal for 15 or more pilots, usually 30+"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/22468_64.png",
+            "alt": "Claymore",
+            "name": "[ADV-30] Claymore"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/20125_64.png",
+            "alt": "Curse",
+            "name": "[ADV-30] Curse"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/11985_64.png",
+            "alt": "Basilisk",
+            "name": "[ADV-30] Basilisk"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/11963_64.png",
+            "alt": "Rapier",
+            "name": "[ADV-30] Rapier"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/22444_64.png",
+            "alt": "Sleipnir",
+            "name": "[ADV-30] Sleipnir"
+        }]
+    }
+]

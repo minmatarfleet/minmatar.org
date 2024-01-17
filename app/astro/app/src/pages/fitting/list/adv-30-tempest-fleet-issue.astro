@@ -1,0 +1,65 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import fit_details from '@json/page/fitting/list/adv-30-tempest-fleet-issue.json';
+import { get_item_icon_by_name } from '@lib/eve_image_server';
+
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Button from '@components/blocks/Button.astro';
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+import Fit from '@components/blocks/Fit.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+import PageHeader from '@components/page/PageHeader.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageBody from '@components/page/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+const page_title = fit_details.name;
+---
+
+<Viewport title={page_title}>
+    <PageCover
+        image="/images/fits-cover.jpg"
+        image_990="/images/fits-cover-990.jpg"
+        alt={t('fitting.cover_alt')}
+        animated={false}
+        scrollable={true}
+        overlay={true}
+    />
+
+	<main id="content">
+        <PageHeader max_width="var(--max-content-width)">
+            <FlexInline justification='space-between'>
+                <FlexInline>
+                    <img height="64" width="64" src={get_item_icon_by_name(fit_details.alt)} alt={fit_details.alt}>
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </FlexInline>
+                <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
+                    <ClipboardIcon slot="icon" />
+                    {t('copy_to_clipboard')}
+                </Button>
+            </FlexInline>
+        </PageHeader>
+
+        <PageBody max_width="var(--max-content-width)">
+            <Wrapper class="[ !pt-0 ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="var(--space-xl)">
+                <p>{fit_details.description}</p>
+            </Wrapper>
+            <Fit fitting={fit_details.fitting_eft} />
+        </PageBody>
+	</main>
+</Viewport>
+
+<textarea id="fit-clipboard" set:html={fit_details.fitting_eft}></textarea>
+
+<style>
+    #fit-clipboard {
+        display: none;
+    }
+</style>

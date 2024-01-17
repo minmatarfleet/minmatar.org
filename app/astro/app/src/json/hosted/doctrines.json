@@ -1,0 +1,179 @@
+{
+    "16": {
+        "name": "Heavy Armor",
+            "fittings": [{
+                "image": "https://images.evetech.net/types/17732/icon?size=64",
+                "alt": "[ADV-30] Tempest Fleet Issue"
+            }, {
+                "image": "https://images.evetech.net/types/17740/icon?size=64",
+                "alt": "[ADV-30] Vindicator"
+            }, {
+                "image": "https://images.evetech.net/types/33472/icon?size=64",
+                "alt": "[ADV-30] Nestor"
+            }, {
+                "image": "https://images.evetech.net/types/11987/icon?size=64",
+                "alt": "[ADV-30] Guardian"
+            }, {
+                "image": "https://images.evetech.net/types/12017/icon?size=64",
+                "alt": "[ADV-30] Devoter"
+            }, {
+                "image": "https://images.evetech.net/types/17920/icon?size=64",
+                "alt": "[ADV-30] Bhaalgorn"
+            }, {
+                "image": "https://images.evetech.net/types/32311/icon?size=64",
+                "alt": "[ADV-30] Typhoon Fleet Issue"
+            }
+        ]
+    },
+    "23": {
+        "name": "Kikis",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/11198/icon?size=64",
+                "alt": "[ADV-5] Stiletto"
+            }, {
+                "image": "https://images.evetech.net/types/49710/icon?size=64",
+                "alt": "[ADV-30] Kikimora"
+            }, {
+                "image": "https://images.evetech.net/types/37458/icon?size=64",
+                "alt": "[ADV-30] Kirin"
+            }, {
+                "image": "https://images.evetech.net/types/11387/icon?size=64",
+                "alt": "[ADV-30] Hyena"
+            }, {
+                "image": "https://images.evetech.net/types/11194/icon?size=64",
+                "alt": "[ADV-30] Kitsune"
+            }, {
+                "image": "https://images.evetech.net/types/11381/icon?size=64",
+                "alt": "[ADV-30] Harpy"
+            }
+        ]
+    },
+    "24": {
+        "name": "Sleipnir",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/22468/icon?size=64",
+                "alt": "[ADV-30] Claymore"
+            },
+            {
+                "image": "https://images.evetech.net/types/20125/icon?size=64",
+                "alt": "[ADV-30] Curse"
+            },
+            {
+                "image": "https://images.evetech.net/types/11985/icon?size=64",
+                "alt": "[ADV-30] Basilisk"
+            },
+            {
+                "image": "https://images.evetech.net/types/11963/icon?size=64",
+                "alt": "[ADV-30] Rapier"
+            },
+            {
+                "image": "https://images.evetech.net/types/22444/icon?size=64",
+                "alt": "[ADV-30] Sleipnir"
+            }
+        ]
+    },
+    "9": {
+        "name": "Flyclones",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/11978/icon?size=64",
+                "alt": "[ADV-30] Scimitar"
+            },
+            {
+                "image": "https://images.evetech.net/types/72811/icon?size=64",
+                "alt": "[NVY-30] Cyclone Fleet Issue"
+            },
+            {
+                "image": "https://images.evetech.net/types/11961/icon?size=64",
+                "alt": "[ADV-30] Huginn"
+            },
+            {
+                "image": "https://images.evetech.net/types/11971/icon?size=64",
+                "alt": "[ADV-30] Lachesis"
+            },
+            {
+                "image": "https://images.evetech.net/types/22468/icon?size=64",
+                "alt": "[ADV-30] Claymore"
+            }
+        ]
+    },
+    "17": {
+        "name": "Projeqs",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/29344/icon?size=64",
+                "alt": "[NVY-30] Exequror Navy Issue"
+            },
+            {
+                "image": "https://images.evetech.net/types/634/icon?size=64",
+                "alt": "[NVY-30] Exequror"
+            },
+            {
+                "image": "https://images.evetech.net/types/633/icon?size=64",
+                "alt": "[NVY-30] Celestis"
+            }
+        ]
+    },
+    "19": {
+        "name": "Longboiis",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/32878/icon?size=64",
+                "alt":"[NVY-30] Talwar"
+            },
+            {
+                "image": "https://images.evetech.net/types/599/icon?size=64",
+                "alt":"[FL33T] Burst"
+            },
+            {
+                "image": "https://images.evetech.net/types/609/icon?size=64",
+                "alt":"[NVY-30] Maulus"
+            }
+        ]
+    },
+    "18": {
+        "name": "Universal Support Doctrine",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/29344/icon?size=64",
+                "alt": "[NVY-30] Exequror Navy Issue"
+            },
+            {
+                "image": "https://images.evetech.net/types/634/icon?size=64",
+                "alt": "[NVY-30] Exequror"
+            },
+            {
+                "image": "https://images.evetech.net/types/633/icon?size=64",
+                "alt": "[NVY-30] Celestis"
+            }
+        ]
+    },
+    "14": {
+        "name": "Pochven",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/29344/icon?size=64",
+                "alt": "[NVY-30] Exequror Navy Issue"
+            },
+            {
+                "image": "https://images.evetech.net/types/634/icon?size=64",
+                "alt": "[NVY-30] Exequror"
+            },
+            {
+                "image": "https://images.evetech.net/types/633/icon?size=64",
+                "alt": "[NVY-30] Celestis"
+            }
+        ]
+    },
+    "22": {
+        "name": "TFIs",
+        "fittings": [{
+                "image": "https://images.evetech.net/types/29344/icon?size=64",
+                "alt": "[NVY-30] Exequror Navy Issue"
+            },
+            {
+                "image": "https://images.evetech.net/types/634/icon?size=64",
+                "alt": "[NVY-30] Exequror"
+            },
+            {
+                "image": "https://images.evetech.net/types/633/icon?size=64",
+                "alt": "[NVY-30] Celestis"
+            }
+        ]
+    }
+}

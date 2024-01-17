@@ -1,0 +1,71 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { get_item_icon_by_name } from '@lib/eve_image_server';
+
+import type { DoctrineItem } from '@dtypes/LayoutComponents';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import VerticalCenter from './VerticalCenter.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import SmallThumbText from './SmallThumbText.astro';
+
+interface Props {
+    doctrine: DoctrineItem;
+}
+
+const {
+    doctrine,
+} = Astro.props
+---
+
+<Wrapper class="[ card component ][ light-transparency ]" padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width='100%'>
+    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+        <h2>{doctrine.doctrine_name}</h2>
+        <Grid class="[ w-full ]" min_item_width='270px' row_gap='var(--space-s-m)' column_gap='var(--space-s-m)'>
+            {doctrine.fits.map((fit) => 
+                <a href={fit.href}>
+                    <SmallThumbText image={get_item_icon_by_name(fit.alt)} alt={fit.alt} text={fit.name} />
+                </a>
+            )}
+        </Grid>
+        <FlexInline class="[ w-full ]" gap='var(--space-m)' justification='space-between'>
+            <VerticalCenter>
+                <Flexblock gap="var(--space-3xs)">
+                    <FlexInline>
+                        {doctrine.tags.map((tag) => 
+                            <Tag title={tag.description} text={tag.name} color={tag.color} />
+                        )}
+                    </FlexInline>
+                </Flexblock>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <Button href={doctrine.href}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_details')}
+                </Button>
+            </VerticalCenter>
+        </FlexInline>
+    </Flexblock>
+</Wrapper>
+
+<style lang="scss">
+    .wrapper {
+        display: flex;
+        align-items: center;
+    }
+
+    a[href] {
+        text-decoration: none;
+        color: var(--highlight);
+    }
+</style>

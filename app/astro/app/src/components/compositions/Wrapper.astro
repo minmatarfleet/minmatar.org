@@ -1,0 +1,54 @@
+---
+interface Props {
+    padding_inline?: string;
+    padding_block?: string;
+    max_width?: string;
+    centered?: boolean;
+    neocom?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    padding_inline = 'var(--space-2xl-3xl)',
+    padding_block = 'var(--space-2xl)',
+    max_width = '80rem',
+    centered = false,
+    neocom = false,
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+
+const padding_inline_end = neocom ? 'var(--space-l-xl)' : padding_inline;
+---
+
+<div class:list={['wrapper', Astro.props.class]} {...attributes} data-mod={centered ? 'centered' : ''}>
+    <slot />
+</div>
+
+<style lang="scss" define:vars={{
+    wrapper_padding_inline: padding_inline,
+    wrapper_padding_inline_end: padding_inline_end,
+    wrapper_padding_block: padding_block,
+    wrapper_max_width: max_width
+}}>
+    .wrapper {
+        padding-block: var(--wrapper_padding_block);
+        padding-inline-start: var(--wrapper_padding_inline);
+        padding-inline-end: var(--wrapper_padding_inline_end);
+        max-width: 60ch;
+        max-inline-size: var(--wrapper_max_width);
+    }
+</style>
+
+<style lang="scss" is:global>
+    .wrapper {
+        display: block;
+        padding: 1em;
+
+        &[data-mod="centered"] {
+            margin-left: auto;
+            margin-right: auto;
+        }
+    }
+</style>

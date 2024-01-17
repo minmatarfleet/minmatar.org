@@ -1,0 +1,20 @@
+---
+import Flexblock from "@components/compositions/Flexblock.astro";
+
+---
+
+<Flexblock class="[ button-stack ]" gap="var(--space-2xs)">
+    <slot />
+</Flexblock>
+
+<style lang="scss" is:global>
+    .button-stack {
+        display: flex;
+        width: fit-content;
+
+        button,
+        a {
+            width: 100%;
+        }
+    }
+</style>

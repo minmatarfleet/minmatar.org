@@ -1,0 +1,51 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Button from '@components/blocks/Button.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+
+const page_title = t('doctrines.page_title');
+const page_description = t('doctrines.leading_text');
+---
+
+<Viewport title={page_title} meta_description={page_description}>
+    <PageCover
+        image="/images/doctrines-cover.jpg"
+        image_990="/images/doctrines-cover-990.jpg"
+        alt={t('doctrines.cover_alt')}
+        overlay={true}
+    />
+
+	<main id="content">
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
+            <Flexblock gap='var(--space-2xl)'>
+                <Flexblock>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+                
+                <ButtonStack>
+                    <Button color={'alliance-blue'} href={translatePath('/doctrines/alliance')}>
+                        <FleetIcon slot="icon" />
+                        {t('alliance_doctrines')}
+                    </Button>
+                    
+                    <Button color={'militia-purple'} href={translatePath('/doctrines/militia')}>
+                        <FleetIcon slot="icon" />
+                        {t('militia_doctrines')}
+                    </Button>
+                </ButtonStack>
+            </Flexblock>
+		</Wrapper>
+	</main>
+</Viewport>

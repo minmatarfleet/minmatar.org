@@ -1,0 +1,89 @@
+---
+import CaretIcon from '@components/icons/CaretIcon.astro';
+interface Props {
+    width?: string;
+    [propName: string]: any;
+}
+
+const {
+    width = '100%',
+    ...attributes
+} = Astro.props
+---
+
+<div class="max-h-[66px] relative">
+    <select {...attributes}
+        onfocus='this.size=(this.childElementCount < 10 ? this.childElementCount : 10)'
+        onblur='this.size=0'
+        onchange='this.size=1; this.blur()'
+    >
+        <slot />
+    </select>
+    
+    <CaretIcon />
+</div>
+
+<style lang="scss" define:vars={{ width }}>
+    select {
+        max-width: var(--width);
+    }
+</style>
+
+<style lang="scss">
+    svg {
+        color: var(--highlight);
+        position: absolute;
+        right: var(--space-xs);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    [size="1"] + svg {
+        z-index: 10;
+    }
+
+    select {
+        --background-color: var(--color_prop);
+        --flex-inline--gap: var(--space-xs);
+
+        padding: var(--space-s) var(--space-s-m);
+        padding-right: var(--space-m-l);
+        border: none;
+        color: var(--form-color);
+        background-color: transparent;
+        border: solid 1px var(--border-color);
+        background-color: rgba(85, 85, 85, 0.1);
+        transition: var(--fast-transition);
+        position: relative;
+        width: 100%;
+
+        -webkit-appearance: none;
+        appearance: none;
+
+        &:hover {
+            border-color: var(--border-color-hover);
+        }
+
+        &:focus-visible {
+            outline: none;
+            background-color: var(--component-background);
+        }
+    }
+
+    select[size] {
+        z-index: 10;
+    }
+
+    select[size="0"] {
+        z-index: 0;
+    }
+
+    :global(select option) {
+        padding: var(--space-3xs) var(--space-2xs);
+    }
+
+    :global(select option:focus),
+    :global(select option:hover) {
+        background-color: var(--fleet-red);
+    }
+</style>

@@ -1,0 +1,22 @@
+---
+import Flexblock from "@components/compositions/Flexblock.astro";
+
+interface Props {
+    title?:             string;
+    text?:              string;
+    gap?:               string;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    text,
+    gap = 'var(--space-3xs)',
+    ...attributes
+} = Astro.props
+---
+
+<Flexblock gap={gap}>
+    <h4>{title}</h4>
+    <p set:html={text} {...attributes}></p>
+</Flexblock>

@@ -1,0 +1,26 @@
+---
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+interface Props {
+    padding_block?: string;
+    padding_inline?: string;
+    [propName: string]: any;
+}
+
+const {
+    padding_block = 'var(--space-l)',
+    padding_inline = 'var(--space-l-xl)',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<Wrapper
+    class:list={['[ card component ][ light-transparency ]', Astro.props.class]}
+    padding_block={padding_block}
+    padding_inline={padding_inline}
+    max_width='100%'
+    {...attributes}>
+    <slot />
+</Wrapper>

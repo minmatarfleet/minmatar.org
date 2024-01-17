@@ -1,0 +1,24 @@
+.fixed-fluid-l {
+    --fixed-fluid--width: 20rem;
+    --fixed-fluid--breakpoint: 50%;
+    --fixed-fluid--gap: var(--space-400);
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fixed-fluid--gap);
+
+    &[data-mod="no-stretch"] {
+        align-items: flex-start;
+    }
+
+    > :first-child {
+        flex-basis: var(--fixed-fluid--width);
+        flex-grow: 1;
+    }
+
+    > :last-child {
+        flex-basis: 0;
+        flex-grow: 999;
+        min-width: var(--fixed-fluid--breakpoint);
+    }
+}

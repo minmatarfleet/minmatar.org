@@ -1,0 +1,51 @@
+---
+interface Props {
+    width?: string;
+    [propName: string]: any;
+}
+
+const {
+    width = '100%',
+    ...attributes
+} = Astro.props
+
+const TextareaElement = 'textarea';
+---
+
+<TextareaElement {...attributes}><slot /></TextareaElement>
+
+<style lang="scss">
+    textarea {
+        --background-color: var(--color_prop);
+        --flex-inline--gap: var(--space-xs);
+
+        resize: vertical;
+        padding: var(--space-s) var(--space-s-m);
+        border: none;
+        color: var(--form-color);
+        background-color: transparent;
+        border: solid 1px var(--border-color);
+        background-color: rgba(85, 85, 85, 0.1);
+        transition: var(--fast-transition);
+        width: 100%;
+
+        &:hover {
+            border-color: var(--border-color-hover);
+        }
+
+        &:focus-visible {
+            outline: none;
+            background-color: rgba(85, 85, 85, 0.2);
+        }
+
+        &.collapsible {
+            width: var(--space-l);
+            padding: var(--space-s) var(--space-3xs);
+
+            &:focus {
+                width: auto;
+                padding: var(--space-s) var(--space-s-l);
+            }
+        }
+    }
+</style>

@@ -1,0 +1,17 @@
+:root {
+    --fleet-yellow:     #F1D9A0;
+    --fleet-red:        #B53620;
+    --alliance-blue:    #2051B5;
+    --militia-purple:   #7342B2;
+    --green:            #198754;
+
+    --foreground:               var(--fleet-yellow);
+    --background:             #121212;
+    --component-background:   rgb(25, 25, 25);
+    --highlight:    white;
+
+    --form-color:           var(--fleet-yellow);
+    --button-color:         var(--fleet-yellow);
+    --border-color:         rgb(255, 255, 255, 0.05);
+    --border-color-hover:   rgb(255, 255, 255, 0.1);
+}

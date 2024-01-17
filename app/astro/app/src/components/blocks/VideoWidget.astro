@@ -1,0 +1,44 @@
+---
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+interface Props {
+    src:        string;
+    credits?:   string;
+}
+
+const {
+    src,
+    credits,
+} = Astro.props
+---
+
+<Wrapper class="[ shadow relative ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+    <div class="[ video-frame ]">
+        <iframe class="[ max-w-full h-full ]" width="960" height="401" src={src} title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+    {credits && <p>Credits: <span>{credits}</span></p>}
+</Wrapper>
+
+<style lang="scss">
+    .video-frame {
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        aspect-ratio: 960/401;
+    }
+
+    .shadow {
+        box-shadow: 0 0 200px 60px black, inset 0 0 200px 200px black;
+    }
+
+    span {
+        color: var(--highlight);
+    }
+
+    p {
+        position: absolute;
+        bottom: -25px;
+        right: 0;
+        font-size: var(--step--2);
+    }
+</style>

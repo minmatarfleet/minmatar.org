@@ -1,0 +1,37 @@
+---
+interface Props {
+    max_width?: string;
+    [propName: string]: any;
+}
+
+const {
+    max_width = '80rem',
+} = Astro.props;
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+---
+
+<div class="[ post-header dark-transparency ]">
+    <Wrapper padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
+        <slot />
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    :global(.post-header > .wrapper > .flex-inline) {
+        width: 100%;
+    }
+    
+    .post-header {
+        position: sticky;
+        top: 0;
+        z-index: var(--sticky-z-index);
+    }
+
+    .wrapper {
+        min-height: var(--space-xl-2xl);
+        display: flex;
+        width: 100%;
+        justify-content: stretch;
+    }
+</style>

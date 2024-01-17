@@ -1,0 +1,33 @@
+[
+    {
+        "timer": "21:00",
+        "id": 35835,
+        "type": "Athanor",
+        "name": "Blaster",
+        "system": "Y9-MDG",
+        "region": "Providence",
+        "alliance_id": 1988009451,
+        "alliance": "Curatores Veritatis Alliance",
+        "href": "/intel/structures/y9_mdg_blaster/"
+    },
+    {
+        "timer": "21:00",
+        "id": 35835,
+        "type": "Athanor",
+        "name": "Cerulean Cave",
+        "system": "TU-O0T",
+        "region": "Providence",
+        "alliance_id": 1988009451,
+        "alliance": "Curatores Veritatis Alliance"
+    },
+    {
+        "timer": "20:00",
+        "id": 35835,
+        "type": "Athanor",
+        "name": "Rock Sucker 1",
+        "system": "E-YCML",
+        "region": "Providence",
+        "alliance_id": 99011978,
+        "alliance": "Minmatar FL33T"
+    }
+]

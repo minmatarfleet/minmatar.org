@@ -1,0 +1,42 @@
+---
+import { countdown } from '@lib/countdown';
+
+interface Props {
+    id?: string;
+    date: string;
+    [propName: string]: any;
+}
+
+const {
+    id = 'countdown',
+    date
+} = Astro.props;
+
+const {
+    text,
+    expired
+} = countdown(date)
+---
+
+<p class:list={[ 'countdown', { expired: expired } ]} id={id}>{text}</p>
+
+<script define:vars={{ id, date }}>
+    countdown(`#${id}`, date);
+</script>
+
+<style lang="scss">
+	p {
+		font-family: var(--countdown-font);
+        font-family: 'Cute Font', sans-serif;
+        font-family: 'Qahiri', sans-serif;
+		font-size: var(--step-4);
+		letter-spacing: 12px;
+        text-indent: 12px;
+		line-height: 1;
+        white-space: nowrap;
+
+        &.expired{
+            color: var(--fleet-red);
+        }
+	}
+</style>

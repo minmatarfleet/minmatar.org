@@ -1,0 +1,14 @@
+{
+    "current": {
+        "total_contracts": 2,
+        "total_volume": 648994,
+        "total_collateral": 5500000000,
+        "total_reward": 72000000
+    },
+    "history": {
+        "total_contracts": 316,
+        "total_volume": 23390394,
+        "total_collateral": 625800792083,
+        "total_reward": 22091471617
+    }
+}

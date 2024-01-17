@@ -1,0 +1,78 @@
+---
+interface Props {
+    image: string;
+    image_990: string;
+    alt?: string;
+    animated?: boolean;
+    scrollable?: boolean;
+    overlay?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    image,
+    image_990,
+    alt,
+    animated = true,
+    scrollable = false,
+    overlay = false,
+} = Astro.props
+
+const optional_attributes = {
+    ...(animated && { "class": 'slide-in' }),
+    ...(alt && { "alt": alt }),
+}
+---
+
+<picture class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]} class="[ viewport-cover ]">
+    <source srcset={image_990} media="(max-width: 990px)">
+    <img src={image} {...optional_attributes} />
+</picture>
+
+<style lang="scss" is:global>
+    .viewport-cover {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        z-index: -1;
+
+        &.scrollable {
+            position: absolute;
+        }
+
+        &.overlay:after {
+            content: ' ';
+            inset: 0;
+            position: absolute;
+            background-image: linear-gradient(
+                to bottom,
+                hsla(0, 0%, 7%, 0) 0%,
+                hsla(0, 0%, 7%, 0.187) 9.8%,
+                hsla(0, 0%, 7%, 0.349) 19.6%,
+                hsla(0, 0%, 7%, 0.488) 29.2%,
+                hsla(0, 0%, 7%, 0.606) 38.6%,
+                hsla(0, 0%, 7%, 0.704) 47.7%,
+                hsla(0, 0%, 7%, 0.784) 56.4%,
+                hsla(0, 0%, 7%, 0.848) 64.5%,
+                hsla(0, 0%, 7%, 0.898) 72.1%,
+                hsla(0, 0%, 7%, 0.936) 78.9%,
+                hsla(0, 0%, 7%, 0.963) 85%,
+                hsla(0, 0%, 7%, 0.981) 90.1%,
+                hsla(0, 0%, 7%, 0.992) 94.3%,
+                hsla(0, 0%, 7%, 0.998) 97.4%,
+                hsl(0, 0%, 7%) 99.3%,
+                hsl(0, 0%, 7%) 100%
+            );
+        }
+
+        img {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+</style>

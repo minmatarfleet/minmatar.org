@@ -1,0 +1,61 @@
+---
+interface Props {
+    gap?: string;
+    width?: string;
+    breakpoint?: string;
+    centered?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    gap = 'var(--space-s)',
+    width = '20rem',
+    breakpoint = '50%',
+    centered = false,
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div class:list={['fixed-fluid', Astro.props.class]} {...attributes} data-mod={ centered ? 'centered' : ''}>
+    <slot />
+</div>
+
+<style lang="scss" define:vars={{
+    fixed_fluid_gap: gap,
+    fixed_fluid_width: width,
+    fixed_fluid_breakpoint: breakpoint,
+}}>
+    .fixed-fluid {
+        gap: var(--fixed_fluid_gap);
+    }
+
+    .fixed-fluid :global(> :first-child) {
+        flex-basis: var(--fixed_fluid_width);
+    }
+
+    .fixed-fluid :global(> :last-child ) {
+        min-width: var(--fixed_fluid_breakpoint);
+    }
+</style>
+
+<style lang="scss" is:global>
+    .fixed-fluid {
+        display: flex;
+        flex-wrap: wrap;
+
+        &[data-mod="no-stretch"] {
+            align-items: flex-start;
+        }
+
+        > :first-child {
+            flex-grow: 1;
+        }
+
+        > :last-child {
+            flex-basis: 0;
+            flex-grow: 999;
+        }
+    }
+</style>

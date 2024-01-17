@@ -1,0 +1,82 @@
+[
+    {
+        "doctrine_name": "Flyclones",
+        "href": "/",
+        "tags": [{
+            "name": "High Projection",
+            "color": "militia-purple",
+            "description": "Optimal for kiting or mixed-range engagements"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/11978_256.png",
+            "alt": "Scimitar",
+            "name": "[ADV-30] Scimitar"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/72811_256.png",
+            "alt": "Cyclone Fleet Issue",
+            "name": "[NVY-30] Cyclone Fleet Issue"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/11961_256.png",
+            "alt": "Huginn",
+            "name": "[ADV-30] Huginn"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/11971_256.png",
+            "alt": "Lachesis",
+            "name": "[ADV-30] Lachesis"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/22468_256.png",
+            "alt": "Claymore",
+            "name": "[ADV-30] Claymore"
+        }]
+    }, {
+        "doctrine_name": "Projeqs",
+        "href": "/",
+        "tags": [{
+            "name": "High Projection",
+            "color": "militia-purple",
+            "description": "Optimal for kiting or mixed-range engagements"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/29344_256.png",
+            "alt": "Exequror Navy Issue",
+            "name": "[NVY-30] Exequror Navy Issue"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/634_256.png",
+            "alt": "Exequror",
+            "name": "[NVY-30] Exequror"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/633_256.png",
+            "alt": "Celestis",
+            "name": "[NVY-30] Celestis"
+        }]
+    }, {
+        "doctrine_name": "Longboiis",
+        "href": "/",
+        "tags": [{
+            "name": "High Projection",
+            "color": "militia-purple",
+            "description": "Optimal for kiting or mixed-range engagements"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/32878_256.png",
+            "alt": "Talwar",
+            "name":"[NVY-30] Talwar"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/599_256.png",
+            "alt": "Burst",
+            "name":"[FL33T] Burst"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/609_256.png",
+            "alt": "Maulus",
+            "name":"[NVY-30] Maulus"
+        }]
+    }
+]

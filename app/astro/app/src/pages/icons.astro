@@ -1,0 +1,86 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Button from '@components/blocks/Button.astro';
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+
+import Input from '@components/blocks/Input.astro';
+
+const page_title = 'Icons';
+---
+
+<Viewport title={page_title}>
+	<main id="content" x-data={`{ id: 6, item_id: 18 }`}>
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
+            <Flexblock gap='var(--space-2xl)'>
+                <Flexblock>
+                    <h1>Player ID</h1>
+                    <Input x-model="id" />
+                    <Button onclick="copyPlayerImage()">
+                        <ClipboardIcon slot="icon" />
+                        {t('copy_to_clipboard')}
+                    </Button>
+                    <textarea id="player-clipboard" x-model="`https://image.eveonline.com/Render/${id}_256.png`"></textarea>
+                </Flexblock>
+
+                <div data-tippy-content="Lolai">
+                    <img x-bind:src="`https://image.eveonline.com/Render/${id}_256.png`" />
+                </div>
+
+                <Flexblock>
+                    <h1>Item ID</h1>
+                    <Input x-model="item_id" />
+                    <Button onclick="copyItemImage()">
+                        <ClipboardIcon slot="icon" />
+                        {t('copy_to_clipboard')}
+                    </Button>
+                    <textarea id="item-clipboard" x-model="`https://images.evetech.net/types/${item_id}/icon?size=64`"></textarea>
+                </Flexblock>
+
+                <div>
+                    <img x-bind:src="`https://images.evetech.net/types/${item_id}/icon?size=64`" />
+                </div>
+            </Flexblock>
+		</Wrapper>
+	</main>
+</Viewport>
+
+<style>
+    #item-clipboard,
+    #player-clipboard {
+        display: none;
+    }
+
+    [title]:before {
+        content: attr(title)
+    }
+</style>
+
+<script is:inline>
+    function copyPlayerImage() {
+        var copyText = document.getElementById("player-clipboard");
+
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+
+        navigator.clipboard.writeText(copyText.value);
+
+        alert("Icon url copied: " + copyText.value);
+    }
+    function copyItemImage() {
+        var copyText = document.getElementById("item-clipboard");
+
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+
+        navigator.clipboard.writeText(copyText.value);
+
+        alert("Icon url copied: " + copyText.value);
+    }
+</script>

@@ -1,0 +1,962 @@
+[
+    {
+        "image": "https://image.eveonline.com/Render/11969_256.png",
+        "fitting_name": "[ADV-30] Arazu",
+        "fitting_type": "ADV-30",
+        "ship_type": "Force Recon Ship",
+        "ship_name": "Arazu",
+        "href": "/fitting/list/adv-30-arazu/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/643_256.png",
+        "fitting_name": "[ADV-30] Armageddon",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Armageddon",
+        "href": "/fitting/fits/adv-30-armageddon/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/37483_256.png",
+        "fitting_name": "[ADV-30] Backpack Magus",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer",
+        "ship_name": "Magus",
+        "href": "/fitting/fits/adv-30-backpack-magus/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11985_256.png",
+        "fitting_name": "[ADV-30] Basilisk",
+        "fitting_type": "ADV-30",
+        "ship_type": "Logistics",
+        "ship_name": "Basilisk",
+        "href": "/fitting/fits/adv-30-basilisk/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22474_256.png",
+        "fitting_name": "[ADV-30] Battle Damnation",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Ship",
+        "ship_name": "Damnation",
+        "href": "/fitting/fits/adv-30-battle-damnation/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17920_256.png",
+        "fitting_name": "[ADV-30] Bhaalgorn",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Bhaalgorn",
+        "href": "/fitting/fits/adv-30-bhaalgorn/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/37480_256.png",
+        "fitting_name": "[ADV-30] Bifrost",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer",
+        "ship_name": "Bifrost",
+        "href": "/fitting/fits/adv-30-bifrost/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12013_256.png",
+        "fitting_name": "[ADV-30] Broadsword",
+        "fitting_type": "ADV-30",
+        "ship_type": "Heavy Interdiction Cruiser",
+        "ship_name": "Broadsword",
+        "href": "/fitting/fits/adv-30-broadsword/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22468_256.png",
+        "fitting_name": "[ADV-30] Claymore",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Ship",
+        "ship_name": "Claymore",
+        "href": "/fitting/fits/adv-30-claymore/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/20125_256.png",
+        "fitting_name": "[ADV-30] Curse",
+        "fitting_type": "ADV-30",
+        "ship_type": "Combat Recon Ship",
+        "ship_name": "Curse",
+        "href": "/fitting/fits/adv-30-curse/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12017_256.png",
+        "fitting_name": "[ADV-30] Devoter",
+        "fitting_type": "ADV-30",
+        "ship_type": "Heavy Interdiction Cruiser",
+        "ship_name": "Devoter",
+        "href": "/fitting/fits/adv-30-devoter/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/49711_256.png",
+        "fitting_name": "[ADV-30] Drekavac",
+        "fitting_type": "ADV-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Drekavac",
+        "href": "/fitting/fits/adv-30-drekavac/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29990_256.png",
+        "fitting_name": "[ADV-30] Flyclone Loki",
+        "fitting_type": "ADV-30",
+        "ship_type": "Strategic Cruiser",
+        "ship_name": "Loki",
+        "href": "/fitting/fits/adv-30-flyclone-loki/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11987_256.png",
+        "fitting_name": "[ADV-30] Guardian",
+        "fitting_type": "ADV-30",
+        "ship_type": "Logistics",
+        "ship_name": "Guardian",
+        "href": "/fitting/fits/adv-30-guardian/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11381_256.png",
+        "fitting_name": "[ADV-30] Harpy",
+        "fitting_type": "ADV-30",
+        "ship_type": "Assault Frigate",
+        "ship_name": "Harpy",
+        "href": "/fitting/fits/adv-30-harpy/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29990_256.png",
+        "fitting_name": "[ADV-30] Heavy Armor Web Loki",
+        "fitting_type": "ADV-30",
+        "ship_type": "Strategic Cruiser",
+        "ship_name": "Loki",
+        "href": "/fitting/fits/adv-30-heavy-armor-web-loki/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22452_256.png",
+        "fitting_name": "[ADV-30] Heretic",
+        "fitting_type": "ADV-30",
+        "ship_type": "Interdictor",
+        "ship_name": "Heretic",
+        "href": "/fitting/fits/adv-30-heretic/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12034_256.png",
+        "fitting_name": "[ADV-30] Hound",
+        "fitting_type": "ADV-30",
+        "ship_type": "Stealth Bomber",
+        "ship_name": "Hound",
+        "href": "/fitting/fits/adv-30-hound/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11961_256.png",
+        "fitting_name": "[ADV-30] Huginn",
+        "fitting_type": "ADV-30",
+        "ship_type": "Combat Recon Ship",
+        "ship_name": "Huginn",
+        "href": "/fitting/fits/adv-30-huginn/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11387_256.png",
+        "fitting_name": "[ADV-30] Hyena",
+        "fitting_type": "ADV-30",
+        "ship_type": "Electronic Attack Ship",
+        "ship_name": "Hyena",
+        "href": "/fitting/fits/adv-30-hyena/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/49710_256.png",
+        "fitting_name": "[ADV-30] Kikimora",
+        "fitting_type": "ADV-30",
+        "ship_type": "Destroyer",
+        "ship_name": "Kikimora",
+        "href": "/fitting/fits/adv-30-kikimora/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/37458_256.png",
+        "fitting_name": "[ADV-30] Kirin",
+        "fitting_type": "ADV-30",
+        "ship_type": "Logistics Frigate",
+        "ship_name": "Kirin",
+        "href": "/fitting/fits/adv-30-kirin/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11194_256.png",
+        "fitting_name": "[ADV-30] Kitsune",
+        "fitting_type": "ADV-30",
+        "ship_type": "Electronic Attack Ship",
+        "ship_name": "Kitsune",
+        "href": "/fitting/fits/adv-30-kitsune/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11971_256.png",
+        "fitting_name": "[ADV-30] Lachesis",
+        "fitting_type": "ADV-30",
+        "ship_type": "Combat Recon Ship",
+        "ship_name": "Lachesis",
+        "href": "/fitting/fits/adv-30-lachesis/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22474_256.png",
+        "fitting_name": "[ADV-30] Link Damnation",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Ship",
+        "ship_name": "Damnation",
+        "href": "/fitting/fits/adv-30-link-damnation/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22442_256.png",
+        "fitting_name": "[ADV-30] Link Eos",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Ship",
+        "ship_name": "Eos",
+        "href": "/fitting/fits/adv-30-link-eos/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12032_256.png",
+        "fitting_name": "[ADV-30] Manticore",
+        "fitting_type": "ADV-30",
+        "ship_type": "Stealth Bomber",
+        "ship_name": "Manticore",
+        "href": "/fitting/fits/adv-30-manticore/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12015_256.png",
+        "fitting_name": "[ADV-30] Muninn",
+        "fitting_type": "ADV-30",
+        "ship_type": "Heavy Assault Cruiser",
+        "ship_name": "Muninn",
+        "href": "/fitting/fits/adv-30-muninn/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11377_256.png",
+        "fitting_name": "[ADV-30] Nemesis",
+        "fitting_type": "ADV-30",
+        "ship_type": "Stealth Bomber",
+        "ship_name": "Nemesis",
+        "href": "/fitting/fits/adv-30-nemesis/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33472_256.png",
+        "fitting_name": "[ADV-30] Nestor",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Nestor",
+        "href": "/fitting/fits/adv-30-nestor/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12038_256.png",
+        "fitting_name": "[ADV-30] Purifier",
+        "fitting_type": "ADV-30",
+        "ship_type": "Stealth Bomber",
+        "ship_name": "Purifier",
+        "href": "/fitting/fits/adv-30-purifier/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11963_256.png",
+        "fitting_name": "[ADV-30] Rapier",
+        "fitting_type": "ADV-30",
+        "ship_type": "Force Recon Ship",
+        "ship_name": "Rapier",
+        "href": "/fitting/fits/adv-30-rapier/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/12019_256.png",
+        "fitting_name": "[ADV-30] Sacrilege",
+        "fitting_type": "ADV-30",
+        "ship_type": "Heavy Assault Cruiser",
+        "ship_name": "Sacrilege",
+        "href": "/fitting/fits/adv-30-sacrilege/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11978_256.png",
+        "fitting_name": "[ADV-30] Scimitar",
+        "fitting_type": "ADV-30",
+        "ship_type": "Logistics",
+        "ship_name": "Scimitar",
+        "href": "/fitting/fits/adv-30-scimitar/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/640_256.png",
+        "fitting_name": "[ADV-30] Scorpion",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Scorpion",
+        "href": "/fitting/fits/adv-30-scorpion/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/22444_256.png",
+        "fitting_name": "[ADV-30] Sleipnir",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Ship",
+        "ship_name": "Sleipnir",
+        "href": "/fitting/fits/adv-30-sleipnir/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17732_256.png",
+        "fitting_name": "[ADV-30] Tempest Fleet Issue",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Tempest Fleet Issue",
+        "href": "/fitting/fits/adv-30-tempest-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17732_256.png",
+        "fitting_name": "[ADV-30] Tempest Fleet Issue - AC refit",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Tempest Fleet Issue",
+        "href": "/fitting/fits/adv-30-tempest-fleet-issue-ac-refit/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32311_256.png",
+        "fitting_name": "[ADV-30] Typhoon Fleet Issue",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Typhoon Fleet Issue",
+        "href": "/fitting/fits/adv-30-typhoon-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17722_256.png",
+        "fitting_name": "[ADV-30] Vigilant",
+        "fitting_type": "ADV-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Vigilant",
+        "href": "/fitting/fits/adv-30-vigilant/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17740_256.png",
+        "fitting_name": "[ADV-30] Vindicator",
+        "fitting_type": "ADV-30",
+        "ship_type": "Battleship",
+        "ship_name": "Vindicator",
+        "href": "/fitting/fits/adv-30-vindicator/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11174_256.png",
+        "fitting_name": "[ADV-5] Keres",
+        "fitting_type": "ADV-5",
+        "ship_type": "Electronic Attack Ship",
+        "ship_name": "Keres",
+        "href": "/fitting/fits/adv-5-keres/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11186_256.png",
+        "fitting_name": "[ADV-5] Malediction",
+        "fitting_type": "ADV-5",
+        "ship_type": "Interceptor",
+        "ship_name": "Malediction",
+        "href": "/fitting/fits/adv-5-malediction/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11393_256.png",
+        "fitting_name": "[ADV-5] Retribution",
+        "fitting_type": "ADV-5",
+        "ship_type": "Assault Frigate",
+        "ship_name": "Retribution",
+        "href": "/fitting/fits/adv-5-retribution/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/11198_256.png",
+        "fitting_name": "[ADV-5] Stiletto",
+        "fitting_type": "ADV-5",
+        "ship_type": "Interceptor",
+        "ship_name": "Stiletto",
+        "href": "/fitting/fits/adv-5-stiletto/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32872_256.png",
+        "fitting_name": "[FL33T] Algos",
+        "fitting_type": "FL33T",
+        "ship_type": "Destroyer",
+        "ship_name": "Algos",
+        "href": "/fitting/fits/fl33t-algos/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/599_256.png",
+        "fitting_name": "[FL33T] Burst",
+        "fitting_type": "FL33T",
+        "ship_type": "Frigate",
+        "ship_name": "Burst",
+        "href": "/fitting/fits/fl33t-burst/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32874_256.png",
+        "fitting_name": "[FL33T] Dragoon",
+        "fitting_type": "FL33T",
+        "ship_type": "Destroyer",
+        "ship_name": "Dragoon",
+        "href": "/fitting/fits/fl33t-dragoon/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/597_256.png",
+        "fitting_name": "[FL33T] Punisher",
+        "fitting_type": "FL33T",
+        "ship_type": "Frigate",
+        "ship_name": "Punisher",
+        "href": "/fitting/fits/fl33t-punisher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/587_256.png",
+        "fitting_name": "[FL33T] Rifter",
+        "fitting_type": "FL33T",
+        "ship_type": "Frigate",
+        "ship_name": "Rifter",
+        "href": "/fitting/fits/fl33t-rifter/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19724_256.png",
+        "fitting_name": "[FL33T] T1 Anti-Cap Moros",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Moros",
+        "href": "/fitting/fits/fl33t-t1-anti-cap-moros/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19722_256.png",
+        "fitting_name": "[FL33T] T1 Anti-Cap Naglfar",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Naglfar",
+        "href": "/fitting/fits/fl33t-t1-anti-cap-naglfar/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19726_256.png",
+        "fitting_name": "[FL33T] T1 Anti-Cap Phoenix",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Phoenix",
+        "href": "/fitting/fits/fl33t-t1-anti-cap-phoenix/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19720_256.png",
+        "fitting_name": "[FL33T] T1 Anti-Cap Revelation",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Revelation",
+        "href": "/fitting/fits/fl33t-t1-anti-cap-revelation/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19724_256.png",
+        "fitting_name": "[FL33T] T2 Anti-Cap Moros",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Moros",
+        "href": "/fitting/fits/fl33t-t2-anti-cap-moros/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19722_256.png",
+        "fitting_name": "[FL33T] T2 Anti-Cap Naglfar",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Naglfar",
+        "href": "/fitting/fits/fl33t-t2-anti-cap-naglfar/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19726_256.png",
+        "fitting_name": "[FL33T] T2 Anti-Cap Phoenix",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Phoenix",
+        "href": "/fitting/fits/fl33t-t2-anti-cap-phoenix/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/19720_256.png",
+        "fitting_name": "[FL33T] T2 Anti-Cap Revelation",
+        "fitting_type": "FL33T",
+        "ship_type": "Dreadnought",
+        "ship_name": "Revelation",
+        "href": "/fitting/fits/fl33t-t2-anti-cap-revelation/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/16242_256.png",
+        "fitting_name": "[FL33T] Thrasher",
+        "fitting_type": "FL33T",
+        "ship_type": "Destroyer",
+        "ship_name": "Thrasher",
+        "href": "/fitting/fits/fl33t-thrasher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/593_256.png",
+        "fitting_name": "[FL33T] Tristan",
+        "fitting_type": "FL33T",
+        "ship_type": "Frigate",
+        "ship_name": "Tristan",
+        "href": "/fitting/fits/fl33t-tristan/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/73796_256.png",
+        "fitting_name": "[NVY-1] 10mn Catalyst Navy Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Destroyer",
+        "ship_name": "Catalyst Navy Issue",
+        "href": "/fitting/fits/nvy-1-10mn-catalyst-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/73796_256.png",
+        "fitting_name": "[NVY-1] Blaster Catalyst Navy Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Destroyer",
+        "ship_name": "Catalyst Navy Issue",
+        "href": "/fitting/fits/nvy-1-blaster-catalyst-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/598_256.png",
+        "fitting_name": "[NVY-1] Breacher",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Breacher",
+        "href": "/fitting/fits/nvy-1-breacher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17619_256.png",
+        "fitting_name": "[NVY-1] Caldari Navy Hookbill",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Caldari Navy Hookbill",
+        "href": "/fitting/fits/nvy-1-caldari-navy-hookbill/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/73789_256.png",
+        "fitting_name": "[NVY-1] Coercer Navy Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Destroyer",
+        "ship_name": "Coercer Navy Issue",
+        "href": "/fitting/fits/nvy-1-coercer-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17841_256.png",
+        "fitting_name": "[NVY-1] Federation Navy Comet",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Federation Navy Comet",
+        "href": "/fitting/fits/nvy-1-federation-navy-comet/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17703_256.png",
+        "fitting_name": "[NVY-1] Imperial Navy Slicer",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Imperial Navy Slicer",
+        "href": "/fitting/fits/nvy-1-imperial-navy-slicer/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/602_256.png",
+        "fitting_name": "[NVY-1] Kestrel",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Kestrel",
+        "href": "/fitting/fits/nvy-1-kestrel/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/628_256.png",
+        "fitting_name": "[NVY-1] RendezVous Arbitrator",
+        "fitting_type": "NVY-1",
+        "ship_type": "Cruiser",
+        "ship_name": "Arbitrator",
+        "href": "/fitting/fits/nvy-1-rendezvous-arbitrator/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/626_256.png",
+        "fitting_name": "[NVY-1] RendezVous Vexor",
+        "fitting_type": "NVY-1",
+        "ship_type": "Cruiser",
+        "ship_name": "Vexor",
+        "href": "/fitting/fits/nvy-1-rendezvous-vexor/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17812_256.png",
+        "fitting_name": "[NVY-1] Republic Fleet Firetail",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Republic Fleet Firetail",
+        "href": "/fitting/fits/nvy-1-republic-fleet-firetail/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/587_256.png",
+        "fitting_name": "[NVY-1] Rifter",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Rifter",
+        "href": "/fitting/fits/nvy-1-rifter/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29336_256.png",
+        "fitting_name": "[NVY-1] Scythe Fleet Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Cruiser",
+        "ship_name": "Scythe Fleet Issue",
+        "href": "/fitting/fits/nvy-1-scythe-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17713_256.png",
+        "fitting_name": "[NVY-1] Stabber Fleet Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Cruiser",
+        "ship_name": "Stabber Fleet Issue",
+        "href": "/fitting/fits/nvy-1-stabber-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/73794_256.png",
+        "fitting_name": "[NVY-1] Thrasher Fleet Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Destroyer",
+        "ship_name": "Thrasher Fleet Issue",
+        "href": "/fitting/fits/nvy-1-thrasher-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/593_256.png",
+        "fitting_name": "[NVY-1] Tristan",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Tristan",
+        "href": "/fitting/fits/nvy-1-tristan/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17843_256.png",
+        "fitting_name": "[NVY-1] Vexor Navy Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Cruiser",
+        "ship_name": "Vexor Navy Issue",
+        "href": "/fitting/fits/nvy-1-vexor-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/37454_256.png",
+        "fitting_name": "[NVY-1] Vigil Fleet Issue",
+        "fitting_type": "NVY-1",
+        "ship_type": "Frigate",
+        "ship_name": "Vigil Fleet Issue",
+        "href": "/fitting/fits/nvy-1-vigil-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/625_256.png",
+        "fitting_name": "[NVY-30] Augoror",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Augoror",
+        "href": "/fitting/fits/nvy-30-augoror/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29337_256.png",
+        "fitting_name": "[NVY-30] Augoror Navy Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Augoror Navy Issue",
+        "href": "/fitting/fits/nvy-30-augoror-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/634_256.png",
+        "fitting_name": "[NVY-30] Battle Exequror",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Exequror",
+        "href": "/fitting/fits/nvy-30-battle-exequror/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/621_256.png",
+        "fitting_name": "[NVY-30] Caracal",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Caracal",
+        "href": "/fitting/fits/nvy-30-caracal/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/633_256.png",
+        "fitting_name": "[NVY-30] Celestis",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Celestis",
+        "href": "/fitting/fits/nvy-30-celestis/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/2161_256.png",
+        "fitting_name": "[NVY-30] Crucifier",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate",
+        "ship_name": "Crucifier",
+        "href": "/fitting/fits/nvy-30-crucifier/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/72811_256.png",
+        "fitting_name": "[NVY-30] Cyclone Fleet Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Cyclone Fleet Issue",
+        "href": "/fitting/fits/nvy-30-cyclone-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/24698_256.png",
+        "fitting_name": "[NVY-30] Drake",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Drake",
+        "href": "/fitting/fits/nvy-30-drake/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33153_256.png",
+        "fitting_name": "[NVY-30] Drake Navy Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Drake Navy Issue",
+        "href": "/fitting/fits/nvy-30-drake-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/634_256.png",
+        "fitting_name": "[NVY-30] Exequror",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Exequror",
+        "href": "/fitting/fits/nvy-30-exequror/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29344_256.png",
+        "fitting_name": "[NVY-30] Exequror Navy Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Exequror Navy Issue",
+        "href": "/fitting/fits/nvy-30-exequror-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/16227_256.png",
+        "fitting_name": "[NVY-30] Ferox",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Ferox",
+        "href": "/fitting/fits/nvy-30-ferox/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/584_256.png",
+        "fitting_name": "[NVY-30] Griffin",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate",
+        "ship_name": "Griffin",
+        "href": "/fitting/fits/nvy-30-griffin/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/24702_256.png",
+        "fitting_name": "[NVY-30] Hurricane",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Hurricane",
+        "href": "/fitting/fits/nvy-30-hurricane/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33157_256.png",
+        "fitting_name": "[NVY-30] Hurricane Fleet Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Hurricane Fleet Issue",
+        "href": "/fitting/fits/nvy-30-hurricane-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/602_256.png",
+        "fitting_name": "[NVY-30] Kestrel",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate",
+        "ship_name": "Kestrel",
+        "href": "/fitting/fits/nvy-30-kestrel/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/609_256.png",
+        "fitting_name": "[NVY-30] Maulus",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate",
+        "ship_name": "Maulus",
+        "href": "/fitting/fits/nvy-30-maulus/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/620_256.png",
+        "fitting_name": "[NVY-30] Osprey",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Osprey",
+        "href": "/fitting/fits/nvy-30-osprey/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17713_256.png",
+        "fitting_name": "[NVY-30] Stabber Fleet Issue",
+        "fitting_type": "NVY-30",
+        "ship_type": "Cruiser",
+        "ship_name": "Stabber Fleet Issue",
+        "href": "/fitting/fits/nvy-30-stabber-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32878_256.png",
+        "fitting_name": "[NVY-30] Talwar",
+        "fitting_type": "NVY-30",
+        "ship_type": "Destroyer",
+        "ship_name": "Talwar",
+        "href": "/fitting/fits/nvy-30-talwar/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/16242_256.png",
+        "fitting_name": "[NVY-30] Thrasher",
+        "fitting_type": "NVY-30",
+        "ship_type": "Destroyer",
+        "ship_name": "Thrasher",
+        "href": "/fitting/fits/nvy-30-thrasher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/3766_256.png",
+        "fitting_name": "[NVY-30] Vigil",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate",
+        "ship_name": "Vigil",
+        "href": "/fitting/fits/nvy-30-vigil/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32872_256.png",
+        "fitting_name": "[NVY-5] Algos",
+        "fitting_type": "NVY-5",
+        "ship_type": "Destroyer",
+        "ship_name": "Algos",
+        "href": "/fitting/fits/nvy-5-algos/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/608_256.png",
+        "fitting_name": "[NVY-5] Atron",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Atron",
+        "href": "/fitting/fits/nvy-5-atron/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33151_256.png",
+        "fitting_name": "[NVY-5] Blaster Brutix Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Brutix Navy Issue",
+        "href": "/fitting/fits/nvy-5-blaster-brutix-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29344_256.png",
+        "fitting_name": "[NVY-5] Blaster Exequror Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Exequror Navy Issue",
+        "href": "/fitting/fits/nvy-5-blaster-exequror-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/16240_256.png",
+        "fitting_name": "[NVY-5] Catalyst",
+        "fitting_type": "NVY-5",
+        "ship_type": "Destroyer",
+        "ship_name": "Catalyst",
+        "href": "/fitting/fits/nvy-5-catalyst/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/32874_256.png",
+        "fitting_name": "[NVY-5] Dragoon",
+        "fitting_type": "NVY-5",
+        "ship_type": "Destroyer",
+        "ship_name": "Dragoon",
+        "href": "/fitting/fits/nvy-5-dragoon/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29344_256.png",
+        "fitting_name": "[NVY-5] Exequror Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Exequror Navy Issue",
+        "href": "/fitting/fits/nvy-5-exequror-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17841_256.png",
+        "fitting_name": "[NVY-5] Federation Navy Comet",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Federation Navy Comet",
+        "href": "/fitting/fits/nvy-5-federation-navy-comet/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33155_256.png",
+        "fitting_name": "[NVY-5] Harbinger Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Harbinger Navy Issue",
+        "href": "/fitting/fits/nvy-5-harbinger-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/590_256.png",
+        "fitting_name": "[NVY-5] Inquisitor",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Inquisitor",
+        "href": "/fitting/fits/nvy-5-inquisitor/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/609_256.png",
+        "fitting_name": "[NVY-5] Maulus",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Maulus",
+        "href": "/fitting/fits/nvy-5-maulus/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/17709_256.png",
+        "fitting_name": "[NVY-5] Omen Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Omen Navy Issue",
+        "href": "/fitting/fits/nvy-5-omen-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29340_256.png",
+        "fitting_name": "[NVY-5] Osprey Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Osprey Navy Issue",
+        "href": "/fitting/fits/nvy-5-osprey-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/597_256.png",
+        "fitting_name": "[NVY-5] Punisher",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Punisher",
+        "href": "/fitting/fits/nvy-5-punisher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/33151_256.png",
+        "fitting_name": "[NVY-5] Rail Brutix Navy Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Combat Battlecruiser",
+        "ship_name": "Brutix Navy Issue",
+        "href": "/fitting/fits/nvy-5-rail-brutix-navy-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/631_256.png",
+        "fitting_name": "[NVY-5] Scythe",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Scythe",
+        "href": "/fitting/fits/nvy-5-scythe/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/29336_256.png",
+        "fitting_name": "[NVY-5] Scythe Fleet Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Cruiser",
+        "ship_name": "Scythe Fleet Issue",
+        "href": "/fitting/fits/nvy-5-scythe-fleet-issue/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/585_256.png",
+        "fitting_name": "[NVY-5] Slasher",
+        "fitting_type": "NVY-5",
+        "ship_type": "Frigate",
+        "ship_name": "Slasher",
+        "href": "/fitting/fits/nvy-5-slasher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/16242_256.png",
+        "fitting_name": "[NVY-5] Thrasher",
+        "fitting_type": "NVY-5",
+        "ship_type": "Destroyer",
+        "ship_name": "Thrasher",
+        "href": "/fitting/fits/nvy-5-thrasher/"
+    },
+    {
+        "image": "https://image.eveonline.com/Render/73794_256.png",
+        "fitting_name": "[NVY-5] Thrasher Fleet Issue",
+        "fitting_type": "NVY-5",
+        "ship_type": "Destroyer",
+        "ship_name": "Thrasher Fleet Issue",
+        "href": "/fitting/fits/nvy-5-thrasher-fleet-issue/"
+    }
+]

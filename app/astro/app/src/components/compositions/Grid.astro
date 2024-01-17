@@ -1,0 +1,46 @@
+---
+interface Props {
+    row_gap?: string;
+    column_gap?: string;
+    min_item_width?: string;
+    [propName: string]: any;
+}
+
+const {
+    row_gap = 'var(--space-s)',
+    column_gap = 'var(--space-s)',
+    min_item_width = '10rem',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div class:list={['grid', Astro.props.class]} {...attributes}>
+    <slot />
+</div>
+
+<style lang="scss" define:vars={{
+    grid_row_gap: row_gap,
+    grid_column_gap: column_gap,
+    grid_min_item_width: min_item_width,
+}}>
+</style>
+
+<style lang="scss" is:global>
+    .grid {
+        display: grid;
+        grid-row-gap: var(--grid_row_gap);
+        grid-column-gap: var(--grid_column_gap);
+        
+        @supports (width: min(10rem, 100%)) {
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--grid_min_item_width), 100%), 1fr));
+        }
+
+        &.grid-fill {
+            @supports (width: min(10rem, 100%)) {
+                grid-template-columns: repeat(auto-fill, minmax(min(var(--grid_min_item_width), 100%), 1fr));
+            }
+        }
+    }
+</style>

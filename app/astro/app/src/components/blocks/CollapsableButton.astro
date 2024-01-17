@@ -1,0 +1,32 @@
+---
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import CaretIcon from '@components/icons/CaretIcon.astro';
+
+interface Props {
+
+}
+---
+
+<button {...Astro.props}>
+    <FluidFixed width="20px" gap="var(--space-s)" class="[ items-center ]">
+        <slot />
+
+        <CaretIcon :class="expanded ? '' : 'collapsed'" />
+    </FluidFixed>
+</button>
+
+<style lang="scss">
+    button {
+        all: unset;
+        color: var(--highlight);
+        cursor: pointer;
+
+        &:focus {
+            outline: revert;
+        }
+
+        .collapsed {
+            transform: rotate(180deg);
+        }
+    }
+</style>

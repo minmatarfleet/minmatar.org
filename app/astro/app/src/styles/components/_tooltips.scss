@@ -1,0 +1,99 @@
+[data-tooltip] {
+    --tooltip-background-color:     #212121;
+    --tooltip-border-color:         #333;
+    --tooltip-color:                var(--highlight);
+    position:relative; /* making the [tooltip] span a container for the tooltip text */
+    filter: drop-shadow(2px 4px 6px black);
+
+    &:before {
+        all: initial;
+        content: attr(data-tooltip); /* here's the magic */
+        position:absolute;
+        font-size: var(--step--2);
+        font-family: var(--content-font);
+        color: var(--tooltip-color);
+        text-align: left;
+        width: max-content;
+        max-width: 200px;
+    
+        /* vertically center */
+        top:50%;
+        transform:translateY(-50%);
+    
+        /* move to right */
+        left:100%;
+        margin-left:15px; /* and add a small left margin */
+    
+        /* basic styles */
+        padding: var(--space-2xs);
+        border-radius:0px;
+        border: solid 1px var(--tooltip-border-color);
+        background-color: var(--tooltip-background-color);
+        text-align:center;
+    
+        //display:none; /* hide by default */
+    }
+    
+    &:hover:before {
+        display:block;
+    }
+    
+    &.left:before {
+        /* reset defaults */
+        left:initial;
+        margin:initial;
+    
+        /* set new values */
+        right:100%;
+        margin-right:15px;
+    }
+    
+    &:after {
+        content: " ";
+        position:absolute;
+    
+        height: 10px;
+        width: 10px;
+    
+        /* position tooltip correctly */
+        left:100%;
+        margin-left:10px;
+    
+        /* vertically center */
+        top:50%;
+        transform:translateY(-50%) rotate(45deg);
+    
+        /* the arrow */
+        background-color: var(--tooltip-background-color);
+        border: solid 1px var(--tooltip-border-color);
+        border-style: none none solid solid;
+    
+        //display:none;
+    }
+    
+    &:hover:before, &:hover:after {
+        display:block;
+    }
+    
+    &:before {
+        /* other styles */
+    
+        /*  display:none; */
+    
+        opacity:1;
+        transition:.3s opacity;   
+    }
+    
+    &:hover:before {
+        opacity:1;
+    }
+    
+    &:after {
+        opacity:1;
+        transition:.3s;
+    }
+    
+    &:hover:after {
+        opacity:1;
+    }
+}

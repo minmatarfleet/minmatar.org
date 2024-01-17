@@ -1,0 +1,43 @@
+---
+import type { FittingGroups } from '@dtypes/LayoutComponents';
+
+import { parse_structure_fit } from '@lib/structure-fit-parser.ts';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FitSlot from '@components/blocks/FitSlot.astro';
+
+interface Props {
+    fitting: string;
+}
+
+const {
+    fitting,
+} = Astro.props
+
+const fitting_groups:FittingGroups[] = parse_structure_fit(fitting)
+---
+
+<Flexblock gap='var(--space-3xs)'>
+
+    {fitting_groups.map((fitting_group) =>
+        <Wrapper class="[ card component ][ light-transparency ]" padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width="var(--max-text-width)">
+            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                <h2>{fitting_group.name}</h2>
+                <Flexblock gap="var(--space-3xs)">
+                    {fitting_group.fittables.map((fittable) =>
+                        <FitSlot fittable={fittable} />
+                    )}
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+    )}
+
+</Flexblock>
+
+<style lang="scss">
+    .wrapper {
+        display: flex;
+        align-items: center;
+    }
+</style>

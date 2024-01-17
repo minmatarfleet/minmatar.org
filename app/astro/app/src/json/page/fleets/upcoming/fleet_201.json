@@ -1,0 +1,177 @@
+{
+    "name": "201",
+    "fleet_commander_name": "BearThatCares",
+    "fleet_commander_portrait": "https://images.evetech.net/characters/634915984/portrait?size=32",
+    "tracking": "Forming",
+    "members": 27,
+    "doctrine": {
+        "doctrine_name": "Heavy Armor Doctrine",
+        "href": "/doctrines/alliance/heavy_armor",
+        "tags": [{
+            "name": "Large Fleet",
+            "color": "fleet-red",
+            "description": "Optimal for 15 or more pilots, usually 30+"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/17732_64.png",
+            "alt": "Tempest Fleet Issue",
+            "name": "[ADV-30] Tempest Fleet Issue",
+            "href": "/fitting/list/adv-30-tempest-fleet-issue/"
+        }, {
+            "image": "https://image.eveonline.com/Render/17740_64.png",
+            "alt": "Vindicator",
+            "name": "[ADV-30] Vindicator"
+        }, {
+            "image": "https://image.eveonline.com/Render/33472_64.png",
+            "alt": "Nestor",
+            "name": "[ADV-30] Nestor"
+        }, {
+            "image": "https://image.eveonline.com/Render/11987_64.png",
+            "alt": "Guardian",
+            "name": "[ADV-30] Guardian"
+        }, {
+            "image": "https://image.eveonline.com/Render/12017_64.png",
+            "alt": "Devoter",
+            "name": "[ADV-30] Devoter"
+        }, {
+            "image": "https://image.eveonline.com/Render/17920_64.png",
+            "alt": "Bhaalgorn",
+            "name": "[ADV-30] Bhaalgorn"
+        }, {
+            "image": "https://image.eveonline.com/Render/32311_64.png",
+            "alt": "Typhoon Fleet Issue",
+            "name": "[ADV-30] Typhoon Fleet Issue"
+        }]
+    },
+    "composition": [
+        {
+            "ship_name": "Monitor",
+            "ship_id": 45534,
+            "fitting": "[ ADV-30 ] Monitor",
+            "pilots": [
+                {
+                    "name": "BearThatCares",
+                    "id": 634915984
+                }
+            ]
+        },
+        {
+            "ship_name": "Sleipnir",
+            "ship_id": 22444,
+            "fitting": "[ ADV-30 ] Sleipnir",
+            "pilots": [
+                {
+                    "name": "Aliventi",
+                    "id": 1857216100
+                },
+                {
+                    "name": "Faye Vaelent",
+                    "id": 2120834555
+                },
+                {
+                    "name": "Grann Thefauto",
+                    "id": 462070029
+                },
+                {
+                    "name": "Ibn Khatab",
+                    "id": 1978535095
+                },
+                {
+                    "name": "XVSSBR",
+                    "id": 345180234
+                },
+                {
+                    "name": "Shotz11",
+                    "id": 1651521364
+                },
+                {
+                    "name": "Zigg Omelo",
+                    "id": 684108979
+                },
+                {
+                    "name": "3xar Kun",
+                    "id": 95980078
+                },
+                {
+                    "name": "A'Songala",
+                    "id": 2120647389
+                },
+                {
+                    "name": "Casper Sullivan",
+                    "id": 2120307642
+                },
+                {
+                    "name": "Drogo Dris",
+                    "id": 1003886686
+                },
+                {
+                    "name": "Erik Sinulf",
+                    "id": 94335465
+                },
+                {
+                    "name": "Furl0w",
+                    "id": 2120153200
+                },
+                {
+                    "name": "g0ldent0y",
+                    "id": 2113569716
+                },
+                {
+                    "name": "Hakodan Skor",
+                    "id": 2118863213
+                },
+                {
+                    "name": "Marcel Tayn",
+                    "id": 94892948
+                },
+                {
+                    "name": "Rafaella Carra",
+                    "id": 454273965
+                },
+                {
+                    "name": "Teysha Blackblade",
+                    "id": 92004354
+                },
+                {
+                    "name": "Xadr Twitch",
+                    "id": 2114499753
+                },
+                {
+                    "name": "Richard Stallmanu's Waifu",
+                    "id": 96604863
+                }
+            ]
+        },
+        {
+            "ship_name": "Guardian",
+            "ship_id": 11987,
+            "fitting": "[ ADV-30 ] Guardian",
+            "pilots": [
+                {
+                    "name": "Beautiful Mim",
+                    "id": 2121103796
+                },
+                {
+                    "name": "Kae2",
+                    "id": 95628204
+                },
+                {
+                    "name": "Skipp Veli",
+                    "id": 94833164
+                },
+                {
+                    "name": "The Freyr",
+                    "id": 2121124941
+                },
+                {
+                    "name": "Vengo Rin",
+                    "id": 94716101
+                },
+                {
+                    "name": "Zeidaks",
+                    "id": 91529251
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+---
+interface Props {
+    space?: string;
+    minHeight?: string;
+    noPad?: boolean;
+    neocom?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    space = 'var(--space-2xl-3xl)',
+    neocom = true,
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+
+const space_inline_end = neocom ? 'var(--space-l-xl)' : space;
+---
+
+<div class:list={['cover', Astro.props.class]} {...attributes}>
+    <slot name="header" />
+    <div class="[ cover-body ]">
+        <slot />
+    </div>
+    <slot name="footer" />
+</div>
+
+<style lang="scss" define:vars={{ cover_space: space, cover_space_inline_end: space_inline_end }}>
+    .cover {
+
+    }
+</style>
+
+<style lang="scss" is:global>
+    .cover {
+        display: flex;
+        flex-direction: column;
+        min-block-size: 100vh;
+        padding: var(--cover_space);
+        padding-inline-end: var(--cover_space_inline_end);
+        padding-block: var(--space-s);
+    }
+
+    .cover > * {
+        margin-block: var(--space-s);
+    }
+
+    .cover > :first-child:not(.cover-body) {
+        margin-block-end: 0;
+    }
+
+    .cover > :last-child:not(.cover-body) {
+        margin-block-end: 0;
+    }
+
+    .cover > .cover-body {
+        margin-block: auto;
+    }
+</style>

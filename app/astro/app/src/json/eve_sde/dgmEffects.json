@@ -1,0 +1,26 @@
+{
+  "11": {
+    "effectID": 11,
+    "displayName": "Low power"
+  },
+  "12": {
+    "effectID": 12,
+    "displayName": "High power"
+  },
+  "13": {
+    "effectID": 13,
+    "displayName": "Medium power"
+  },
+  "2663": {
+    "effectID": 2663,
+    "displayName": "Rig Slot"
+  },
+  "3772": {
+    "effectID": 3772,
+    "displayName": "Sub System"
+  },
+  "6306": {
+    "effectID": 6306,
+    "displayName": "Service Slot"
+  }
+}

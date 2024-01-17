@@ -1,0 +1,81 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import fleets from '@json/page/fleets/history.json';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Button from '@components/blocks/Button.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+import PageHeader from '@components/page/PageHeader.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageBody from '@components/page/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FleetItem from '@components/blocks/FleetItem.astro';
+
+const page_title = t('fleets.history.page_title');
+---
+
+<Viewport title={page_title}>
+    <PageCover
+        image="/images/fleets-cover.jpg"
+        image_990="/images/fleets-cover-990.jpg"
+        alt={t('fleets.cover_alt')}
+        animated={false}
+        scrollable={true}
+        overlay={true}
+    />
+
+	<main id="content">
+        <PageHeader max_width="var(--max-content-width)">
+            <FlexInline justification='space-between'>
+                <FlexInline>
+                    <Flexblock gap="var(--space-3xs)">
+                        <PageTitle>
+                            {page_title}
+                        </PageTitle>
+                        <small>{fleets.length} {t('record').toLowerCase()}{fleets.length != 1 ? 's' : ''}</small>
+                    </Flexblock>
+                </FlexInline>
+                <FlexInline>
+                    <Button href={translatePath('/fleets/upcoming')} class="[ !hidden md:!flex ]">
+                        <FleetIcon slot="icon" />
+                        {t('upcoming_fleets')}
+                    </Button>
+                    <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add')}>
+                        <AddIcon slot="icon" />
+                        {t('schedule_fleet')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+        </PageHeader>
+
+        <PageBody max_width="var(--max-content-width)">
+            <Flexblock gap='var(--space-3xs)'>
+
+                {fleets.length == 0 &&
+                    <Flexblock gap='var(--space-xl)' class="text-center">
+                        <p>{t('fleets.history.empty_message')}</p>
+                        
+                        <Button color={'green'} href={translatePath('/fleets/add')} class="!justify-center">
+                            <AddIcon slot="icon" />
+                            {t('schedule_fleet')}
+                        </Button>
+                    </Flexblock>
+                }
+                
+                {fleets.map((fleet) =>
+                    <FleetItem fleet={fleet} history={true} />
+                )}
+
+            </Flexblock>
+        </PageBody>
+	</main>
+</Viewport>

@@ -1,0 +1,7 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<img src="/images/icons/48px-Shiphangar.png" width="48" height="48" alt={t('icon.doctrines.alt')} />

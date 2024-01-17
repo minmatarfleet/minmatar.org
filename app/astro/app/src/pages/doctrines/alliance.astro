@@ -1,0 +1,73 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import doctrines from '@json/page/doctrines/alliance.json';
+import { marked } from 'marked';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Button from '@components/blocks/Button.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+import PageHeader from '@components/page/PageHeader.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageBody from '@components/page/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+
+const page_title = t('doctrines.alliance.page_title');
+---
+
+<Viewport title={page_title}>
+    <PageCover
+        image="/images/doctrines-cover.jpg"
+        image_990="/images/doctrines-cover-990.jpg"
+        alt={t('doctrines.cover_alt')}
+        animated={false}
+        scrollable={true}
+        overlay={true}
+    />
+
+	<main id="content">
+        <PageHeader max_width="var(--max-content-width)">
+            <FlexInline justification='space-between'>
+                <FlexInline>
+                    <Flexblock gap="var(--space-3xs)">
+                        <PageTitle>
+                            {page_title}
+                        </PageTitle>
+                        <small>{doctrines.length} {t('doctrine').toLowerCase()}{doctrines.length != 1 ? 's' : ''}</small>
+                    </Flexblock>
+                </FlexInline>
+                <FlexInline>
+                    <Button color={'militia-purple'} href={translatePath('/doctrines/militia')} class="[ !hidden md:!flex ]">
+                        <FleetIcon slot="icon" />
+                        {t('militia_doctrines')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+        </PageHeader>
+
+        <PageBody max_width="var(--max-content-width)">
+            <Wrapper
+                class="[ !pt-0 ]"
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="var(--space-xl)"
+                set:html={marked.parse(t('doctrines.alliance.page_leading_text'))}
+            />
+            <Flexblock gap='var(--space-3xs)'>
+                
+                {doctrines.map((doctrine) =>
+                    <DoctrineItem doctrine={doctrine} />
+                )}
+
+            </Flexblock>
+        </PageBody>
+	</main>
+</Viewport>

@@ -1,0 +1,32 @@
+.fluid-fixed-l {
+    --fluid-fixed--width: 20rem;
+    --fluid-fixed--breakpoint: 50%;
+    --fluid-fixed--gap: var(--space-400);
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fluid-fixed--gap);
+
+    &[data-mod="top"] {
+        align-items: flex-start;
+    }
+
+    &[data-mod="center"] {
+        align-items: center;
+    }
+
+    &[data-mod="bottom"] {
+        align-items: flex-end;
+    }
+
+    > :last-child {
+        flex-basis: var(--fluid-fixed--width);
+        flex-grow: 1;
+    }
+
+    > :first-child {
+        flex-basis: 0;
+        flex-grow: 999;
+        min-width: var(--fluid-fixed--breakpoint);
+    }
+}

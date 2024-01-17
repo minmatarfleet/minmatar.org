@@ -1,0 +1,233 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+// TODO: Replace the static JSON below with the endpoint request using the id
+const { id } = Astro.params;
+console.log(`TODO: Fetch endpoint with id: ${id}`)
+// Replace me 👇
+import fleet from '@json/page/fleets/upcoming/fleet_201.json';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Button from '@components/blocks/Button.astro';
+import FleetComposition from '@components/blocks/FleetComposition.astro';
+import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+import PageHeader from '@components/page/PageHeader.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageBody from '@components/page/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+const page_title = `${t('fleet')} ${fleet.name}`;
+---
+
+<Viewport title={page_title}>
+    <PageCover
+        image="/images/fleets-cover.jpg"
+        image_990="/images/fleets-cover-990.jpg"
+        alt={t('fleets.cover_alt')}
+        animated={false}
+        scrollable={true}
+        overlay={true}
+    />
+
+	<main id="content">
+        <PageHeader max_width="var(--max-content-width)">
+            <FlexInline justification='space-between'>
+                <FlexInline>
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </FlexInline>
+                <FlexInline>
+                    <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming')}>
+                        <FleetIcon slot="icon" />
+                        {t('upcoming_fleets')}
+                    </Button>
+                    <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add')}>
+                        <AddIcon slot="icon" />
+                        {t('schedule_fleet')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+        </PageHeader>
+
+        <PageBody max_width="var(--max-content-width)">
+            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
+                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                    <Flexblock gap="var(--space-3xs)">
+                        <ComponentBlock>
+                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                <h2>{t('fleet_information')}</h2>
+        
+                                <VerticalCenter>
+                                    <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                                        <h4>{t('fleet_commander')}</h4>
+                                        <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
+                                            <img src={fleet.fleet_commander_portrait} width="32" height="32" />
+                                            <p>{fleet.fleet_commander_name}</p>
+                                        </FixedFluid>
+                                    </Flexblock>
+                                </VerticalCenter>
+        
+                                <VerticalCenter>
+                                    <TextGroup title={t('tracking')} text={fleet.tracking} class:list={[ { loading: (fleet.tracking == t('forming')) } ]} />
+                                </VerticalCenter>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <DoctrineItem doctrine={fleet.doctrine} />    
+                    </Flexblock>
+                </Wrapper>
+
+                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                    <ComponentBlock>
+                        <Flexblock
+                            data-composition-context
+                            gap="var(--space-l)"
+                            x-data={`{
+                                global_collapse: false,
+                                members: ${fleet.members}
+                            }`}
+                        >
+                            <FlexInline
+                                justification='space-between'
+                                gap="var(--space-s)"
+                            >
+                                <Flexblock gap="var(--space-3xs)">
+                                    <h2>{t('members')}</h2>
+                                    {fleet.members != -1 &&
+                                        <small class="!mt-[var(--space-3xs)]" x-text={'`${members} '+t('pilot').toLowerCase()+'${members != 1 ? `s` : ``}`'}>{fleet.members} {t('pilot').toLowerCase()}{fleet.members != 1 ? `s` : ``}</small>
+                                    }
+                                </Flexblock>
+
+                                {fleet.composition.length > 0 && <FlexInline class="[ items-center ]" gap="var(--space-s)">
+                                    <Button
+                                        size='sm'
+                                        hx-post={translatePath(`/partials/fleet_composition/${id}`)}
+                                        hx-target="#fleet-composition-component"
+                                        hx-indicator="#fleet-composition-component"
+                                        hx-on::before-request="this.setAttribute('disabled','');start_dscan_animation()"
+                                        hx-on::after-request="this.removeAttribute('disabled');update_members_count()"
+                                    >
+                                        <RefreshIcon slot="icon" />
+                                        {t('reload')}
+                                    </Button>
+
+                                    <Button size='sm' @click="global_collapse = true" class="[ hidden sm:block ]">
+                                        {t('collapse_all')}
+                                    </Button>
+                                </FlexInline>}
+                            </FlexInline>
+
+                            <Flexblock id="fleet-composition-component" gap="var(--space-l)">
+                                {fleet.composition.length == 0 && <p>{t('members_visibility_hint')}</p>}
+    
+                                {fleet.composition.length > 0 &&
+                                    <FleetComposition composition={fleet.composition} />
+                                }
+                            </Flexblock>
+                        </Flexblock>
+                    </ComponentBlock>
+                </Wrapper>
+            </FixedFluid>
+        </PageBody>
+	</main>
+</Viewport>
+
+<script is:inline>
+    const DSCAN_DURATION_MS = 3000
+    let remove_dscan_class_timer = null
+
+    function update_members_count() {
+        $context = document.querySelector('[data-composition-context]')
+        $context._x_dataStack[0].$data.members = document.querySelectorAll('[data-member]').length
+    }
+
+    function start_dscan_animation() {
+        $container = document.getElementById('fleet-composition-component')
+        $container.classList.remove('dscan')
+
+        if (remove_dscan_class_timer) clearTimeout(remove_dscan_class_timer)
+
+        setTimeout(function ($container) {
+            $container.classList.add('dscan')
+            const audio = new Audio(`/sounds/dscan.mp3`)
+            audio.play()
+        }, 0, $container)
+
+        remove_dscan_class_timer = setTimeout(function ($container) {
+            $container.classList.remove('dscan')
+        }, DSCAN_DURATION_MS, $container)
+    }
+</script>
+
+<style lang="scss">
+    :global(#fleet-composition-component > div) {
+        transition: var(--slow-transition);
+    }
+    :global(#fleet-composition-component.htmx-request > div) {
+        opacity: 0.5;
+    }
+
+    #fleet-composition-component {
+        position: relative;
+
+        &.dscan {
+            &:before {
+                content: '';
+                z-index: 1;
+                opacity: 0;
+                animation: dscan 3s;
+                animation-iteration-count: 1;
+                inset: calc(var(--space-2xs) * -1) calc(var(--space-s-l) * -1);
+                position: absolute;
+                background-image: linear-gradient(
+                    to right,
+                    hsla(132.12, 43.23%, 44.9%, 0) 0%,
+                    hsla(132.12, 43.23%, 44.9%, 0.013) 4.8%,
+                    hsla(132.12, 43.23%, 44.9%, 0.049) 10.9%,
+                    hsla(132.12, 43.23%, 44.9%, 0.104) 18.1%,
+                    hsla(132.12, 43.23%, 44.9%, 0.175) 26.1%,
+                    hsla(132.12, 43.23%, 44.9%, 0.259) 34.8%,
+                    hsla(132.12, 43.23%, 44.9%, 0.352) 43.8%,
+                    hsla(132.12, 43.23%, 44.9%, 0.45) 53%,
+                    hsla(132.12, 43.23%, 44.9%, 0.55) 62%,
+                    hsla(132.12, 43.23%, 44.9%, 0.648) 70.6%,
+                    hsla(132.12, 43.23%, 44.9%, 0.741) 78.5%,
+                    hsla(132.12, 43.23%, 44.9%, 0.825) 85.6%,
+                    hsla(132.12, 43.23%, 44.9%, 0.896) 91.5%,
+                    hsla(132, 46.94%, 51.96%, 0.951) 96.1%,
+                    hsla(132, 46.94%, 51.96%, 0.987) 99%,
+                    hsl(131, 100%, 88%) 100%
+                );
+            }
+        }
+    }
+
+    @keyframes dscan {
+        from {
+            left: calc(var(--space-s-l) * -1);
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+            left: 75%;
+        }
+    }
+</style>

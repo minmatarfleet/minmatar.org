@@ -1,0 +1,38 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+
+const page_title = t('contracts.page_title');
+const page_description = t('contracts.leading_text');
+---
+
+<Viewport title={page_title} meta_description={page_description}>
+    <PageCover
+        image="/images/contract-service-cover.jpg"
+        image_990="/images/contract-service-cover-990.jpg"
+        alt={t('contracts.cover_alt')}
+        overlay={true}
+    />
+
+	<main id="content">
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
+            <Flexblock gap='var(--space-2xl)'>
+                <Flexblock>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+            </Flexblock>
+		</Wrapper>
+	</main>
+</Viewport>
+
+<style lang="scss">
+</style>

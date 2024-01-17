@@ -1,0 +1,29 @@
+.wrapper-l {
+    --wrapper--padding-inline: var(--space-400);
+    --wrapper--padding-block: var(--space-600);
+    --wrapper--max-width: 118rem;
+
+    display: block;
+    padding: 1em;
+    padding-block: var(--wrapper--padding-block);
+    padding-inline: var(--wrapper--padding-inline);
+    max-width: 60ch;
+    max-inline-size: var(--wrapper--max-width);
+    margin-left: auto;
+    margin-right: auto;
+
+    &[data-mod="left"] {
+        margin-left: 0;
+        margin-right: auto;
+    }
+
+    &[data-mod="center"] {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    &[data-mod="right"] {
+        margin-left: auto;
+        margin-right: 0;
+    }
+}

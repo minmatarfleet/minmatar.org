@@ -1,0 +1,196 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { ViewTransitions } from 'astro:transitions';
+import Neocom from '@components/blocks/Neocom.astro';
+
+interface Props {
+	title: string;
+	meta_image?: string;
+	meta_description?: string;
+	neocom?: boolean;
+}
+
+const {
+	title,
+	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
+	meta_description = t('generic.meta_description'),
+	neocom = true
+} = Astro.props;
+
+import 'tippy.js/dist/tippy.css';
+import '../styles/base.scss';
+
+import sounds from '@json/hosted/sound.list.json'
+
+import SkipToContent from '@components/blocks/SkipToContent.astro';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		{meta_description && <meta name="description" content={meta_description} />}
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<ViewTransitions />
+
+		<meta property="og:title" content={title}>
+		{meta_description && <meta property="og:description" content={meta_description} />}
+		<meta property="og:image" content={meta_image}>
+		<meta property="og:type" content="website">
+		<meta property="og:url" content={Astro.url}>
+		<meta name="twitter:title" content={title}>
+		{meta_description && <meta name="twitter:description" content={meta_description} />}
+		<meta name="twitter:image" content={meta_image}>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Qahiri&display=swap" rel="stylesheet">
+
+		<link rel="manifest" href="/site.webmanifest">
+
+		<script is:inline src="/js/countdown.js"></script>
+		
+		<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+		<script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
+		
+		<link rel="preload" href="/images/contract-service-cover.jpg" as="image" />
+		<link rel="preload" href="/images/contract-service-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/doctrines-cover.jpg" as="image" />
+		<link rel="preload" href="/images/doctrines-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/fits-cover.jpg" as="image" />
+		<link rel="preload" href="/images/fits-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/fleets-cover.jpg" as="image" />
+		<link rel="preload" href="/images/fleets-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/freight-service-cover.jpg" as="image" />
+		<link rel="preload" href="/images/freight-service-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/intel-cover.jpg" as="image" />
+		<link rel="preload" href="/images/intel-cover-990.jpg" as="image" />
+		<link rel="preload" href="/images/404-cover.jpg" as="image" />
+		<link rel="preload" href="/images/404-cover-990.jpg" as="image" />
+	</head>
+	<body class="[ viewport-layout ]">
+		<SkipToContent />
+		{neocom && <Neocom />}
+		<slot />
+		<canvas id="confetti-canvas" transition:persist></canvas>
+
+		<script is:inline src="/js/clipboard.js"></script>
+		<script is:inline src="/js/numbers.js"></script>
+
+		<!-- Tippy.js -->
+		<script is:inline src="https://unpkg.com/@popperjs/core@2"></script>
+		<script is:inline src="https://unpkg.com/tippy.js@6"></script>
+		<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+
+		<script is:inline>
+			const canvas = document.getElementById("confetti-canvas");
+
+			(async () => {
+				canvas.confetti = canvas.confetti || (await confetti.create(canvas, { resize: true }));
+			})();
+		
+			function launch_confetti(images) {
+				const sounds = [
+					"1162202323502780416.ogg",
+					"1162206878210723910.ogg",
+					"1162207169584832512.ogg",
+					"1162372932845179060.ogg",
+					"1180238591381737482.ogg",
+					"1185658748757356675.ogg",
+					"1189627562859704340.ogg",
+					"1189629201519755265.ogg",
+					"1193306194295668886.ogg",
+					"wow.mp3"
+				]
+				
+				const sound_filename = sounds[Math.floor(Math.random() * sounds.length)]
+				var audio = new Audio(`/sounds/${sound_filename}`)
+				audio.play()
+				
+				canvas.confetti({
+					startVelocity: 100,
+					particleCount: 100,
+					spread: 150,
+  					origin: { y: 0.9 },
+					scalar: 5,
+					shapes: ["image"],
+					shapeOptions: {
+						image: images,
+					},
+				})
+			}
+		</script>
+		
+		<script is:inline>
+			const tippy_options = {
+				delay: [ 1000, 200 ],
+				arrow: true,
+			}
+		
+			document.addEventListener('astro:page-load', () => {
+				tippy('[data-tippy-content]', tippy_options)
+				document.querySelector('.loader').classList.remove('active')
+			}, { once: true })
+		
+			document.addEventListener('astro:before-preparation', () => {
+				document.querySelector('.loader').classList.add('active')
+			})
+		
+			document.addEventListener('astro:after-swap', () => {
+				tippy('[data-tippy-content]', tippy_options)
+				document.querySelector('.loader').classList.remove('active')
+				htmx.process(document.body)
+			})
+		</script>
+
+		<script is:inline>
+			function neocom_clock() {
+				return {
+					time: new Date(),
+					init() {
+						setInterval(() => {
+							this.time = new Date()
+						}, 1000)
+					},
+					getTime() {
+						let hour = this.time.getUTCHours()
+						let minute = this.time.getUTCMinutes()
+		
+						return `${hour < 9 ? '0' : ''}${hour}:${minute < 9 ? '0' : ''}${minute}`
+					},
+				}
+			}
+		</script>
+
+		{sounds.map((filename) => 
+			<audio src={`/sounds/${filename}`} />
+		)}
+	</body>
+</html>
+
+<style is:global lang="scss">
+	/* The integration's default injected base.css file */
+	@tailwind components;
+	@tailwind utilities;
+
+	#confetti-canvas {
+		position:fixed;
+		inset: 0;
+		z-index: 1000;
+		width: 100%;
+		pointer-events: none;
+		height: 100%;
+	}
+</style>
