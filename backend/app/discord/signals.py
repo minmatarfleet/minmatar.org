@@ -1,16 +1,20 @@
+import logging
+
+from discord.client import DiscordClient
+from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.dispatch import receiver
-from django.contrib.auth.models import Group, User
+
 from .models import DiscordRole
-from discord.client import DiscordClient
-import logging
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
 
 @receiver(signals.post_save, sender=Group)
-def group_post_save(sender, instance, created, **kwargs):
+def group_post_save(
+    sender, instance, created, **kwargs
+):  # pylint: disable=unused-argument
     logger.info("Group saved, creating / updating role")
     if DiscordRole.objects.filter(group=instance).exists():
         role = DiscordRole.objects.get(group=instance)
@@ -24,7 +28,9 @@ def group_post_save(sender, instance, created, **kwargs):
 
 
 @receiver(signals.m2m_changed, sender=User.groups.through)
-def user_group_changed(sender, instance, action, reverse, **kwargs):
+def user_group_changed(
+    sender, instance, action, reverse, **kwargs
+):  # pylint: disable=unused-argument
     """Adds user to discord role when added to group"""
     if action == "post_add":
         logger.info("User added to group, adding to discord role")

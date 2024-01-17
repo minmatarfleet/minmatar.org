@@ -9,10 +9,11 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-from app.settings_common import *  # noqa
-from app.settings_celery import *  # noqa
-from pathlib import Path
 import os
+from pathlib import Path
+
+from app.settings_celery import *  # noqa
+from app.settings_common import *  # noqa
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +30,9 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
 SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
-CSRF_TRUSTED_ORIGINS = [os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")]
+CSRF_TRUSTED_ORIGINS = [
+    os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
+]
 
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
@@ -65,9 +68,7 @@ LOGIN_URL = "/oauth2/login"
 LOGOUT_REDIRECT_URL = "/oauth2/login"
 
 # Add these new lines
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "staticfiles"),
-)
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "staticfiles"),)
 
 STATIC_ROOT = os.path.join(
     BASE_DIR,

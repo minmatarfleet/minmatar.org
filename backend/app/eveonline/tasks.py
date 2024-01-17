@@ -1,11 +1,15 @@
-from app.celery import app
-from .models import EveCorporation, EveCharacter
-from esi.models import Token
-from esi.clients import EsiClientProvider
 import logging
+
+from esi.clients import EsiClientProvider
+from esi.models import Token
+
+from app.celery import app
+
+from .models import EveCharacter, EveCorporation
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
+
 
 @app.task
 def update_corporations():

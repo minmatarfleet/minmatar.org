@@ -1,10 +1,11 @@
 from django.contrib import admin
+
 from .models import (
-    EveCorporation,
-    EveCorporationApplication,
+    EveAlliance,
     EveCharacter,
     EveCharacterSkillset,
-    EveAlliance
+    EveCorporation,
+    EveCorporationApplication,
 )
 
 # Register your models here.

@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('eveonline', '0006_evecorporationapplication'),
+        ("eveonline", "0006_evecorporationapplication"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='evecorporationapplication',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')], default='pending', max_length=10),
+            model_name="evecorporationapplication",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("accepted", "Accepted"),
+                    ("rejected", "Rejected"),
+                ],
+                default="pending",
+                max_length=10,
+            ),
         ),
     ]

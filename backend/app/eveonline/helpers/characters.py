@@ -1,9 +1,10 @@
 from enum import Enum
-from pydantic import BaseModel
 from typing import List
+
 from django.contrib.auth.models import User
-from eveonline.models import EvePrimaryToken, EveCorporation
 from esi.models import Token
+from eveonline.models import EveCorporation, EvePrimaryToken
+from pydantic import BaseModel
 
 
 class TokenType(Enum):
@@ -88,7 +89,7 @@ def get_character_list(user: User) -> List[CharacterResponse]:
     for character in characters.values():
         character.type = get_token_type_for_scopes_list(character.scopes)
 
-    return [character for character in characters.values()]
+    return list(characters.values())
 
 
 def get_corporation_character_list(
@@ -99,10 +100,12 @@ def get_corporation_character_list(
         characters[character.character_id] = CorporationCharacterResponse(
             character_id=character.character_id,
             character_name=character.character_name,
-            is_registered=Token.objects.filter(character_id=character.character_id).exists(),
+            is_registered=Token.objects.filter(
+                character_id=character.character_id
+            ).exists(),
             is_primary=EvePrimaryToken.objects.filter(
                 token__character_id=character.character_id
             ).exists(),
         )
 
-    return [character for character in characters.values()]
+    return list(characters.values())

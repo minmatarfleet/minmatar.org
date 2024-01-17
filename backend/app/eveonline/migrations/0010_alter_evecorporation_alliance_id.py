@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('eveonline', '0009_remove_evecharacter_alliance_id_and_more'),
+        ("eveonline", "0009_remove_evecharacter_alliance_id_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='evecorporation',
-            name='alliance_id',
+            model_name="evecorporation",
+            name="alliance_id",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

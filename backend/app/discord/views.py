@@ -1,17 +1,18 @@
-from django.shortcuts import render
-from django.http import HttpRequest, JsonResponse
-from django.shortcuts import redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
+"""Views for the Discord app, deprecated"""
 import requests
+from django.conf import settings
+from django.contrib.auth import login, logout
+from django.http import HttpRequest
+from django.shortcuts import redirect
+from django.contrib.auth.models import User
+from .models import DiscordUser
 
 # Create your views here.
 
-auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"
+auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 
 
-def discord_login(request: HttpRequest):
+def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     return redirect(auth_url_discord)
 
 
@@ -21,9 +22,6 @@ def discord_logout(request: HttpRequest):
 
 
 def discord_login_redirect(request: HttpRequest):
-    from django.contrib.auth.models import User
-    from .models import DiscordUser
-
     code = request.GET.get("code")
     user = exchange_code(code)
 
@@ -60,6 +58,7 @@ def discord_login_redirect(request: HttpRequest):
 
 
 def exchange_code(code: str):
+    """Exchange a Discord OAuth2 code for an access token"""
     data = {
         "client_id": settings.DISCORD_CLIENT_ID,
         "client_secret": settings.DISCORD_CLIENT_SECRET,
@@ -70,13 +69,17 @@ def exchange_code(code: str):
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     response = requests.post(
-        "https://discord.com/api/oauth2/token", data=data, headers=headers
+        "https://discord.com/api/oauth2/token",
+        data=data,
+        headers=headers,
+        timeout=10,
     )
     credentials = response.json()
     access_token = credentials["access_token"]
     response = requests.get(
         "https://discord.com/api/v6/users/@me",
-        headers={"Authorization": "Bearer %s" % access_token},
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10,
     )
     user = response.json()
     return user

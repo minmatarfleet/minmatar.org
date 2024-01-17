@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('eveonline', '0003_evecorporation'),
+        ("eveonline", "0003_evecorporation"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='evecorporation',
-            name='type',
-            field=models.CharField(blank=True, choices=[('alliance', 'Alliance'), ('militia', 'Militia'), ('associate', 'Associate')], max_length=10),
+            model_name="evecorporation",
+            name="type",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("alliance", "Alliance"),
+                    ("militia", "Militia"),
+                    ("associate", "Associate"),
+                ],
+                max_length=10,
+            ),
         ),
     ]

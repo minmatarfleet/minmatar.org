@@ -1,27 +1,29 @@
-from django.shortcuts import render, redirect
+from datetime import timedelta
+from typing import List
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
+from django.shortcuts import redirect, render
+from django.utils import timezone
 from esi.decorators import token_required
-from eveonline.helpers.skills import compare_skills_to_skillset
-from .models import (
-    EvePrimaryToken,
-    EveCorporation,
-    EveCorporationApplication,
-    EveCharacter,
-    EveCharacterSkillset,
-)
-from .forms import EveCorporationApplicationForm
-from pydantic import BaseModel
-from typing import List
-from django.contrib import messages
 from eveonline.helpers.characters import (
-    get_character_list,
-    get_corporation_character_list,
     ALLIANCE_SCOPES,
     TokenType,
+    get_character_list,
+    get_corporation_character_list,
 )
-from datetime import timedelta
-from django.utils import timezone
+from eveonline.helpers.skills import compare_skills_to_skillset
+from pydantic import BaseModel
+
+from .forms import EveCorporationApplicationForm
+from .models import (
+    EveCharacter,
+    EveCharacterSkillset,
+    EveCorporation,
+    EveCorporationApplication,
+    EvePrimaryToken,
+)
 
 
 class CharacterResponse(BaseModel):
@@ -95,12 +97,12 @@ def add_character(request, token):
 @login_required
 @token_required(scopes=ALLIANCE_SCOPES)
 def add_alliance_character(request, token):
-    next = request.GET.get("next", None)
+    next_url = request.GET.get("next", None)
     user = User.objects.get(pk=request.user.id)
     if not EvePrimaryToken.objects.filter(user=user).exists():
         EvePrimaryToken.objects.create(user=user, token=token)
-    if next:
-        return redirect(next)
+    if next_url:
+        return redirect(next_url)
     return redirect("eveonline-characters")
 
 
@@ -249,7 +251,9 @@ def view_corporation_application(request, application_pk):
 
 @login_required
 @permission_required("eveonline.view_evecorporationapplication")
-def approve_corporation_application(request, application_pk):
+def approve_corporation_application(
+    request, application_pk
+):  # pylint: disable=unused-argument
     application = EveCorporationApplication.objects.get(pk=application_pk)
     application.status = "accepted"
     application.save()
@@ -258,7 +262,9 @@ def approve_corporation_application(request, application_pk):
 
 @login_required
 @permission_required("eveonline.view_evecorporationapplication")
-def reject_corporation_application(request, application_pk):
+def reject_corporation_application(
+    request, application_pk
+):  # pylint: disable=unused-argument
     application = EveCorporationApplication.objects.get(pk=application_pk)
     application.status = "rejected"
     application.save()

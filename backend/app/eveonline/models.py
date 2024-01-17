@@ -1,10 +1,10 @@
-from django.db import models
-from django.contrib.auth.models import User, Group
-from esi.models import Token
-from esi.clients import EsiClientProvider
-from eveuniverse.models import EveFaction
-import logging
 import json
+import logging
+
+from django.contrib.auth.models import User
+from django.db import models
+from esi.clients import EsiClientProvider
+from esi.models import Token
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -98,7 +98,7 @@ class EveCorporation(models.Model):
             self.type = "militia"
         else:
             self.type = "public"
-        super(EveCorporation, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class EveAlliance(models.Model):
@@ -121,7 +121,7 @@ class EveAlliance(models.Model):
         self.name = esi_alliance["name"]
         self.ticker = esi_alliance["ticker"]
         self.executor_corporation_id = esi_alliance["executor_corporation_id"]
-        super(EveAlliance, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class EveCharacter(models.Model):
@@ -181,7 +181,7 @@ class EveCharacter(models.Model):
                 )
                 self.skills_json = json.dumps(response)
 
-        super(EveCharacter, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class EveCharacterSkillset(models.Model):

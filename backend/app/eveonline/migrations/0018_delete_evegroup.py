@@ -4,13 +4,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('eveonline', '0017_remove_evealliance_member_count'),
+        ("eveonline", "0017_remove_evealliance_member_count"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='EveGroup',
+            name="EveGroup",
         ),
     ]

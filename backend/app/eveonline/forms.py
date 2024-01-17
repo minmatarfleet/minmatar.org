@@ -1,10 +1,13 @@
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Layout
-from .models import EveCorporationApplication
+from crispy_forms.layout import Submit
 from django.forms import ModelForm
+
+from .models import EveCorporationApplication
 
 
 class EveCorporationApplicationForm(ModelForm):
+    """Form for creating a new EveCorporationApplication"""
+
     class Meta:
         model = EveCorporationApplication
         fields = [

@@ -1,7 +1,9 @@
-from app.celery import app
+import logging
+
 from discord.client import DiscordClient
 from django.contrib.auth.models import Group
-import logging
+
+from app.celery import app
 
 discord = DiscordClient()
 logging = logging.getLogger(__name__)
@@ -11,9 +13,9 @@ logging = logging.getLogger(__name__)
 def import_external_roles():
     roles = discord.get_roles()
     for role in roles:
-        if role['managed']:
+        if role["managed"]:
             continue
-        if role['name'] == '@everyone':
+        if role["name"] == "@everyone":
             continue
         if not Group.objects.filter(name=role["name"]).exists():
             Group.objects.create(name=role["name"])
