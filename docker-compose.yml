@@ -11,10 +11,7 @@ services:
             - .env
         ports:
             - "8000:8000"
-        depends_on:
-            db:
-                condition: service_healthy
-
+            
     beat:
         build:
             context: .
@@ -23,9 +20,8 @@ services:
         env_file: .env
         command: celery -A app beat -l info
         depends_on:
-            - db
             - app
-    
+
     celery:
         build:
             context: .
@@ -34,9 +30,4 @@ services:
         env_file: .env
         command: celery -A app worker -l info
         depends_on:
-            - db
-            - app 
-
-volumes:
-    database: {}
-    redis: {}
+            - app
