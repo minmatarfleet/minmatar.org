@@ -27,12 +27,12 @@ services:
 
     app:
         build:
-            context: .
+            context: ./backend/.
             dockerfile: Dockerfile
         working_dir: /opt/minmatar/app
         command: ./app-start.sh
         env_file:
-            - .env
+            - ./backend/.env
         ports:
             - "8000:8000"
         depends_on:
@@ -41,10 +41,10 @@ services:
 
     beat:
         build:
-            context: .
+            context: ./backend/.
             dockerfile: Dockerfile
         restart: always
-        env_file: .env
+        env_file: ./backend/.env
         command: celery -A app beat -l info
         depends_on:
             - db
@@ -52,10 +52,10 @@ services:
     
     celery:
         build:
-            context: .
+            context: ./backend/.
             dockerfile: Dockerfile
         restart: always
-        env_file: .env
+        env_file: ./backend/.env
         command: celery -A app worker -l info
         depends_on:
             - db
