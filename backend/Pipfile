@@ -17,6 +17,8 @@ pydantic = "*"
 django-eveuniverse = "*"
 ratelimit = "*"
 backoff = "*"
+django-ninja = "*"
+pyjwt = "*"
 
 [dev-packages]
 pylint = "*"

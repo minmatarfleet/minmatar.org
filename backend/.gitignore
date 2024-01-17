@@ -162,3 +162,5 @@ cython_debug/
 
 static/
 dev/
+.env 
+.env.local

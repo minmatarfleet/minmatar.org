@@ -1,6 +1,30 @@
 version: '2.0'
 
 services:
+    db:
+      image: mariadb
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: example
+      volumes:
+          - database:/var/lib/mysql
+          - ./sql:/docker-entrypoint-initdb.d
+      ports:
+          - "3306:3306"
+      healthcheck:
+        test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+        start_period: 1m
+        start_interval: 10s
+        interval: 1m
+        timeout: 5s
+        retries: 3
+
+    redis:
+        image: redis:6.0.9-alpine
+        volumes:
+            - "redis:/var/lib/redis"
+            - "redis:/data"
+
     app:
         build:
             context: .

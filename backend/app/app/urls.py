@@ -14,15 +14,22 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from ninja import NinjaAPI
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
 from .views import index
+from auth import router as auth_router
+from eveonline.router import router as eveonline_router
+api = NinjaAPI()
+api.add_router("auth/", auth_router)
+api.add_router("eveonline/", eveonline_router)
 
 urlpatterns = [
     path("", index, name="index"),
+    path("api/", api.urls),
     path("admin/", admin.site.urls),
     path("sso/", include("esi.urls")),
     path("oauth2/", include("discord.urls")),
