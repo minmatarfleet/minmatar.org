@@ -6,9 +6,10 @@ from .models import DiscordUser
 
 class DiscordAuthenticationBackend(BaseBackend):
     """Authentication backend for Discord"""
+
     def authenticate(
-        self, request, user
-    ) -> DiscordUser:  # pylint: disable=unused-argument
+        self, request, user  # pylint: disable=unused-argument
+    ) -> DiscordUser:
         find_user = DiscordUser.objects.filter(id=user["id"])
         if len(find_user) == 0:
             print("User was not found. Saving...")

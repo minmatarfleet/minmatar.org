@@ -39,7 +39,7 @@ ASSOCIATE_SCOPES = [
 ] + ALLIANCE_SCOPES
 
 
-def get_token_type_for_scopes_list(scopes: list[str]) -> TokenType:
+def get_token_type_for_scopes_list(scopes: List[str]) -> TokenType:
     if set(scopes).issuperset(set(ALLIANCE_SCOPES)):
         return TokenType.ALLIANCE
     elif set(scopes).issuperset(set(ASSOCIATE_SCOPES)):
