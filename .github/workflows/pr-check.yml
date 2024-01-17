@@ -21,11 +21,11 @@ jobs:
           pip install pylint flake8
       - name: Lint with pylint
         run: |
-          pylint --disable=R,C,W1203 app.py
+          pylint app
       - name: Lint with flake8
         run: |
-          flake8 --max-line-length=120 app.py
+          flake8 app
       - name: Lint with black
         run: |
           pip install black
-          black --check app.py
+          black --check app
