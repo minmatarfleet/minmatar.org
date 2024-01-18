@@ -1,0 +1,42 @@
+---
+import type { FlexInlineJustify } from '@dtypes/LayoutComponents';
+
+interface Props {
+    gap?: string;
+    justification?: FlexInlineJustify;
+    [propName: string]: any;
+}
+
+const {
+    gap = 'var(--space-s)',
+    justification = 'flex-start',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div class:list={['flex-inline', Astro.props.class]} {...attributes}>
+    <slot />
+</div>
+
+<style lang="scss" define:vars={{
+    flex_inline_gap: gap,
+    flex_inline_justification: justification
+}}>
+    .flex-inline {
+        gap: var(--flex_inline_gap);
+        justify-content: var(--flex_inline_justification);
+    }
+</style>
+
+<style lang="scss" is:global>
+    .flex-inline {
+        --flex-inline--gap: var(--space-s);
+
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: center;
+    }
+</style>

@@ -1,0 +1,61 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { get_item_icon, get_alliance_logo } from '@lib/eve_image_server';
+
+import type { StructureListItem } from '@dtypes/LayoutComponents';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import ThumbCard from '@components/blocks/ThumbCard.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import TextGroup from './TextGroup.astro';
+
+interface Props {
+    structure: StructureListItem;
+    [propName: string]: any;
+}
+
+const {
+    structure,
+    ...attributes
+} = Astro.props
+---
+
+<div {...attributes}>
+    <ThumbCard
+        thumb_image={get_item_icon(structure.id, 512)}
+        thumb_image_small={get_item_icon(structure.id, 512)}
+        thumb_image_alt={structure.type}
+        thumb_name={structure.alliance}
+        logo={get_alliance_logo(structure.alliance_id)}
+        items_width='200px'
+    >
+        <TextGroup title={t('name')} text={structure.name} />
+
+        <TextGroup title={t('timer')} text={structure.timer} />
+
+        <TextGroup title={t('region')} text={structure.region} />
+
+        <TextGroup title={t('system')} text={structure.system} />
+
+        <Flexblock slot="actions">
+            <ButtonStack>
+                <Button href={structure.href}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_details')}
+                </Button>
+
+                <Button href={structure.href}>
+                    <TrashIcon slot="icon" />
+                    {t('delete')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    </ThumbCard>
+</div>

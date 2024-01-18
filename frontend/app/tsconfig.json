@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@svelte/*": ["src/components/svelte/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@images/*": ["src/images/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "@dtypes/*": ["src/types/*"],
+      "@api/*": ["src/pages/api/*"],
+      "@json/*": ["src/json/*"],
+      "@lib/*": ["src/lib/*"],
+      "@helpers/*": ["src/helpers/*"],
+      "@markdown/*": ["src/markdown/*"],
+      "@/*": ["./src/*"],
+    },
+  },
+  "extends": "astro/tsconfigs/base",
+}

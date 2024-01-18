@@ -1,0 +1,31 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Button from '@components/blocks/Button.astro';
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+
+interface Props {
+    id: string;
+    alert_prefix?: string;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    alert_prefix,
+    ...attributes
+} = Astro.props
+
+const onclick_attr = `copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`
+const Textarea = 'textarea';
+---
+
+<Button onclick={onclick_attr} size='sm' {...attributes}>
+    <ClipboardIcon slot="icon" />
+    {t('copy')}
+</Button>
+
+<Textarea class="[ hidden ]" id={id} readonly><slot /></Textarea>

@@ -1,0 +1,29 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+import Button from '@components/blocks/Button.astro';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<div class="[ skip-content ]">
+    <Button href='#content'>
+        {t('skip_to_content')}
+    </Button>
+</div>
+
+<style lang="scss">
+    .skip-content {
+        position: absolute;
+        transform: translate(-50%, -102%);
+        transition: transform 0.3s;
+        top: 0;
+        left: 50%;
+        z-index: var(--neocom-z-index);
+    }
+
+    .skip-content:focus-within {
+        transform: translate(-50%, 0%);
+    }
+</style>

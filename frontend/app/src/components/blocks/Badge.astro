@@ -1,0 +1,34 @@
+---
+import type { BadgeColors } from '@dtypes/LayoutComponents';
+
+interface Props {
+    number: number;
+    color?: BadgeColors;
+    [propName: string]: any;
+}
+
+const {
+    number,
+    color = 'fleet-red',
+    ...attributes
+} = Astro.props;
+
+const badge_color = `var(--${color})`;
+---
+
+<span class="[ badge ]" {...attributes}>{number}</span>
+
+<style lang="scss" define:vars={{ badge_color }}>
+    .badge {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 1.2rem;
+        height: 1.2rem;
+        border-radius: 50%;
+        font-size: var(--step--2);
+        font-family: var(--badge-font);
+        color: var(--highlight);
+        background-color: var(--badge_color);
+    }
+</style>

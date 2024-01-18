@@ -1,0 +1,51 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+import BackIcon from "../icons/buttons/BackIcon.astro";
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    route: string;
+}
+
+const { route } = Astro.props
+---
+
+<a href={translatePath(route)} class="[ leading-none ]">
+    <BackIcon />
+</a>
+
+<style lang="scss">
+    a {
+        color: var(--highlight);
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: none;
+        }
+        
+        /* Desktop */
+        @media (hover: hover) {
+            &:focus-visible,
+            &:hover {
+                cursor: pointer;
+                transform: scale(1.2);
+            }
+        }
+        
+        &:active {
+            transform: scale(1);
+        }
+
+        /* Tactile */
+        @media (hover: none) {
+            transform: scale(1);
+
+            &:active {
+                transform: scale(0.95);
+            }
+        }
+    }
+</style>

@@ -1,0 +1,49 @@
+{
+    "name": "200",
+    "fleet_commander_name": "BearThatCares",
+    "fleet_commander_portrait": "https://images.evetech.net/characters/634915984/portrait?size=32",
+    "tracking": "Inactive",
+    "members": -1,
+    "doctrine": {
+        "doctrine_name": "Heavy Armor Doctrine",
+        "href": "/doctrines/alliance/heavy_armor",
+        "tags": [{
+            "name": "Large Fleet",
+            "color": "fleet-red",
+            "description": "Optimal for 15 or more pilots, usually 30+"
+        }],
+        "fits": [{
+            "image": "https://image.eveonline.com/Render/17732_64.png",
+            "alt": "Tempest Fleet Issue",
+            "name": "[ADV-30] Tempest Fleet Issue",
+            "href": "/fitting/list/adv-30-tempest-fleet-issue/"
+        }, {
+            "image": "https://image.eveonline.com/Render/17740_64.png",
+            "alt": "Vindicator",
+            "name": "[ADV-30] Vindicator"
+        }, {
+            "image": "https://image.eveonline.com/Render/33472_64.png",
+            "alt": "Nestor",
+            "name": "[ADV-30] Nestor"
+        }, {
+            "image": "https://image.eveonline.com/Render/11987_64.png",
+            "alt": "Guardian",
+            "name": "[ADV-30] Guardian"
+        }, {
+            "image": "https://image.eveonline.com/Render/12017_64.png",
+            "alt": "Devoter",
+            "name": "[ADV-30] Devoter"
+        }, {
+            "image": "https://image.eveonline.com/Render/17920_64.png",
+            "alt": "Bhaalgorn",
+            "name": "[ADV-30] Bhaalgorn"
+        }, {
+            "image": "https://image.eveonline.com/Render/32311_64.png",
+            "alt": "Typhoon Fleet Issue",
+            "name": "[ADV-30] Typhoon Fleet Issue"
+        }]
+    },
+    "composition": [
+        
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "name": "Minmatar Fleet Logistics",
+    "ship_to": "Auga - Minmatar Fleet Fortizar",
+    "pick_up_station": "Amo (any station)",
+    "reward": 6000000,
+    "collateral": 100000000,
+    "expiration": "3",
+    "days_to_complete": "3"
+}

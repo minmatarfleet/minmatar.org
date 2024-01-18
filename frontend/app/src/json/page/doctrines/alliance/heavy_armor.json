@@ -1,0 +1,134 @@
+{
+    "name": "Heavy Armor",
+    "description": "Used for offensive / defensive structure timers in nearby space (titan bridge range) where capital ships will be involved. Should always be accompanied by an Apostle.",
+    "ideal_composition": [
+        {
+            "name": "2 x Vindicator",
+            "alt": "Vindicator",
+            "image": "https://image.eveonline.com/Render/17740_64.png"
+        }, {
+            "name": "2 x Bhaalgorn",
+            "alt": "Bhaalgorn",
+            "image": "https://image.eveonline.com/Render/17920_64.png"
+        }, {
+            "name": "3 x Devoter",
+            "alt": "Devoter",
+            "image": "https://image.eveonline.com/Render/12017_64.png"
+        }, {
+            "name": "10 x Tempest Fleet Issue",
+            "alt": "Tempest Fleet Issue",
+            "image": "https://image.eveonline.com/Render/17732_64.png"
+        }, {
+            "name": "10 x Typhoon Fleet Issue",
+            "alt": "Typhoon Fleet Issue",
+            "image": "https://image.eveonline.com/Render/32311_64.png"
+        }, {
+            "name": "8 x Guardian",
+            "alt": "Guardian",
+            "image": "https://image.eveonline.com/Render/11987_64.png"
+        }
+    ],
+    "fittings": [
+        {
+            "image": "https://image.eveonline.com/Render/17740_256.png",
+            "fitting_name": "[ADV-30] Vindicator",
+            "fitting_type": "ADV-30",
+            "ship_type": "Battleship",
+            "ship_name": "Vindicator",
+            "href": "/fitting/fits/adv-30-vindicator/"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/33472_256.png",
+            "fitting_name": "[ADV-30] Nestor",
+            "fitting_type": "ADV-30",
+            "ship_type": "Battleship",
+            "ship_name": "Nestor",
+            "href": "/fitting/fits/adv-30-nestor/"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/11987_256.png",
+            "fitting_name": "[ADV-30] Guardian",
+            "fitting_type": "ADV-30",
+            "ship_type": "Logistics",
+            "ship_name": "Guardian",
+            "href": "/fitting/fits/adv-30-guardian/"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/12017_256.png",
+            "fitting_name": "[ADV-30] Devoter",
+            "fitting_type": "ADV-30",
+            "ship_type": "Heavy Interdiction Cruiser",
+            "ship_name": "Devoter",
+            "href": "/fitting/fits/adv-30-devoter/"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/17920_256.png",
+            "fitting_name": "[ADV-30] Bhaalgorn",
+            "fitting_type": "ADV-30",
+            "ship_type": "Battleship",
+            "ship_name": "Bhaalgorn",
+            "href": "/fitting/fits/adv-30-bhaalgorn/"
+        },
+        {
+            "image": "https://image.eveonline.com/Render/32311_256.png",
+            "fitting_name": "[ADV-30] Typhoon Fleet Issue",
+            "fitting_type": "ADV-30",
+            "ship_type": "Battleship",
+            "ship_name": "Typhoon Fleet Issue",
+            "href": "/fitting/fits/adv-30-typhoon-fleet-issue/"
+        }
+    ],
+    "support_fittings": {
+        "description": "These fittings are not part of the doctrine, but are universally (all doctrines) acceptable for new players and alts.",
+        "fitting": [
+            {
+                "image": "https://image.eveonline.com/Render/37480_256.png",
+                "fitting_name": "[ADV-30] Bifrost",
+                "fitting_type": "ADV-30",
+                "ship_type": "Command Destroyer",
+                "ship_name": "Bifrost",
+                "href": "/fitting/fits/adv-30-bifrost/"
+            },
+            {
+                "image": "https://image.eveonline.com/Render/584_256.png",
+                "fitting_name": "[NVY-30] Griffin",
+                "fitting_type": "NVY-30",
+                "ship_type": "Frigate",
+                "ship_name": "Griffin",
+                "href": "/fitting/fits/nvy-30-griffin/"
+            },
+            {
+                "image": "https://image.eveonline.com/Render/2161_256.png",
+                "fitting_name": "[NVY-30] Crucifier",
+                "fitting_type": "NVY-30",
+                "ship_type": "Frigate",
+                "ship_name": "Crucifier",
+                "href": "/fitting/fits/nvy-30-crucifier/"
+            },
+            {
+                "image": "https://image.eveonline.com/Render/609_256.png",
+                "fitting_name": "[NVY-30] Maulus",
+                "fitting_type": "NVY-30",
+                "ship_type": "Frigate",
+                "ship_name": "Maulus",
+                "href": "/fitting/fits/nvy-30-maulus/"
+            },
+            {
+                "image": "https://image.eveonline.com/Render/3766_256.png",
+                "fitting_name": "[NVY-30] Vigil",
+                "fitting_type": "NVY-30",
+                "ship_type": "Frigate",
+                "ship_name": "Vigil",
+                "href": "/fitting/fits/nvy-30-vigil/"
+            },
+            {
+                "image": "https://image.eveonline.com/Render/37483_256.png",
+                "fitting_name": "[ADV-30] Backpack Magus",
+                "fitting_type": "ADV-30",
+                "ship_type": "Command Destroyer",
+                "ship_name": "Magus",
+                "href": "/fitting/fits/adv-30-backpack-magus/"
+            }
+        ]
+    }
+}

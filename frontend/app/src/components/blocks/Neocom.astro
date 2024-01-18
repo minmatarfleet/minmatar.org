@@ -1,0 +1,126 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import NeocomButton from '@components/blocks/NeocomButton.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
+import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
+import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
+import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import UserAuth from '@components/UserAuth.astro';
+
+const page = Astro.url.pathname
+---
+
+<header class="[ neocom ] [ transparency ]">
+    <nav class="[ flex-block-l ]">
+        <Flexblock gap="0">
+            <NeocomButton href={translatePath('/')} overlay={true}>
+                <FleetLogo />
+            </NeocomButton>
+            <UserAuth />
+        </Flexblock>
+        <NeocomButton active={page.includes(translatePath('/fitting/'))} title={t('neocom.fitting')} href={translatePath('/fitting/')}>
+            <FitsEvEIcon />
+        </NeocomButton>
+        <NeocomButton active={page.includes(translatePath('/doctrines/'))} title={t('neocom.doctrines')} href={translatePath('/doctrines/')}>
+            <DoctrinesEvEIcon />
+        </NeocomButton>
+        <NeocomButton active={page.includes(translatePath('/fleets/'))} title={t('neocom.fleets')} href={translatePath('/fleets/')}>
+            <FleetEvEIcon />
+        </NeocomButton>
+        <NeocomButton active={page.includes(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
+            <IntelEvEIcon />
+        </NeocomButton>
+        <NeocomButton active={page.includes(translatePath('/contracts/'))} title={t('neocom.contracts_service')} href={translatePath('/contracts/')}>
+            <ContractsServiceEvEIcon />
+        </NeocomButton>
+        <NeocomButton active={page.includes(translatePath('/freight/'))} title={t('neocom.freight_service')} href={translatePath('/freight/')}>
+            <FreightServiceEvEIcon />
+        </NeocomButton>
+        <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
+            <ZkillboardEvEIcon />
+        </NeocomButton>
+    </nav>
+    <Flexblock gap="0" x-data="neocom_clock()" x-init="init()">
+        <div class="[ loader-wrapper ]">
+            <span class="loader"></span>
+        </div>
+        <time class="[ clock ]" x-text="getTime()"></time>
+    </Flexblock>
+</header>
+
+<style lang="scss">
+    .neocom {
+        position: fixed;
+        z-index: var(--neocom-z-index);
+        top: 0;
+        left: 0;
+        height: 100%;
+        max-width: 48px;
+        overflow-y: auto;
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+
+        nav {
+            flex-shrink: 1;
+            overflow: auto;
+        }
+    }
+
+    .clock {
+        text-align: center;
+        color: var(--highlight);
+        width: 48px;
+        font-size: var(--step--2);
+        background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .flex-block-l {
+        --flex-block--space: var(--space-2xs);
+    }
+
+    .loader-wrapper {
+        border-top: solid 1px var(--border-color);
+        width: 48px;
+        height: 48px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+    }
+
+    .loader {
+        z-index: var(--neocom-z-index);
+        width: 24px;
+        height: 24px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+
+        &.active {
+            border-bottom-color: rgba(255, 255, 255, 0.75);
+        }
+    }
+
+    @keyframes rotation {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    } 
+</style>

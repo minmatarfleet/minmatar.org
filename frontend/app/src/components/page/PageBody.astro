@@ -1,0 +1,23 @@
+---
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+interface Props {
+    max_width?: string;
+}
+
+const { max_width = '80rem' } = Astro.props
+---
+
+<div class="[ post-content ][ slide-up ]">
+    <Wrapper padding_block="var(--space-xl)" neocom={true} max_width={max_width} centered={true}>
+        <slot />
+    </Wapper>
+</div>
+
+<style is:global lang="scss">
+    .post-content {
+        //background-color: var(--background);
+
+        min-height: 100vh;
+    }
+</style>

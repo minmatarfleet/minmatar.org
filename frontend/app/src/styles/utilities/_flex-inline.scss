@@ -1,0 +1,37 @@
+.flex-inline-l {
+    --flex-inline--gap: var(--space-s);
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--flex-inline--gap);
+    justify-content: flex-start;
+    align-items: center;
+
+    &[data-mod="flex-inline-fluid"] {
+        justify-content: stretch;
+    }
+
+    &[data-mod="flex-inline-fluid"] > * {
+        flex-grow: 1;
+    }
+
+    &[data-mod="flex-inline-center"] {
+        justify-content: center;
+    }
+
+    &[data-mod="flex-inline-start"] {
+        justify-content: flex-start;
+    }
+
+    &[data-mod="flex-inline-end"] {
+        justify-content: flex-end;
+    }
+
+    &[data-mod="flex-inline-spread"] {
+        justify-content: space-around;
+    }
+
+    &[data-mod="flex-inline-spread-edges"] {
+        justify-content: space-between;
+    }
+}

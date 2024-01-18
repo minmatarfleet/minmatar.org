@@ -1,0 +1,71 @@
+---
+import FullBodyCard from "./FullBodyCard.astro";
+import FixedFluid from "@components/compositions/FixedFluid.astro";
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+import FluidFixed from "@components/compositions/FluidFixed.astro";
+
+interface Props {
+    thumb_title?: string;
+    thumb_name?: string;
+    thumb_image_alt?: string;
+    thumb_image: string;
+    thumb_image_small: string;
+    items_width?: string;
+    logo?: string;
+    [propName: string]: any;
+}
+
+const {
+    thumb_title,
+    thumb_name,
+    thumb_image_alt,
+    thumb_image,
+    thumb_image_small,
+    items_width = '270px',
+    logo,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const optional_attributes = {
+    ...(thumb_title && { "thumb_title": thumb_title }),
+    ...(thumb_name && { "thumb_name": thumb_name }),
+    ...(thumb_image_alt && { "thumb_alt": thumb_image_alt }),
+    ...(logo && { "logo": logo }),
+}
+---
+
+<FixedFluid class:list={['[ thumb-card component ][ light-transparency ]', Astro.props.class]} {...attributes} gap='0' breakpoint='60%' width='220px'>
+    <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small} />
+
+    <Wrapper padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width='100%'>
+        <FluidFixed width='250px' class="[ w-full items-center ]">
+            <Grid class="[ w-full ]" min_item_width={items_width} row_gap='var(--space-s-m)'>
+                <slot />
+            </Grid>
+            <slot name="actions" />
+        </FluidFixed>
+    </Wrapper>
+</FixedFluid>
+
+<style lang="scss">
+    .wrapper {
+        display: flex;
+        align-items: center;
+    }
+</style>
+
+<style is:global lang="scss">
+    .thumb-card {
+        .countdown {
+            font-size: var(--step-2);
+            text-indent: 0;
+        }
+
+        .flex-inline {
+            width: 100%;
+        }
+    }
+</style>

@@ -1,0 +1,45 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+interface Props {
+    title?: string;
+}
+
+const { title = "TBD" } = Astro.props;
+---
+
+<a href={import.meta.env.DISCORD_AUTH}>
+    <img class="confetti-image" src="https://images.evetech.net/characters/2121103796/portrait?size=64" width="48" height="48" alt="Beautiful Mim" />
+</a>
+
+<style lang="scss">
+    a {
+        text-decoration: none;
+        display: flex;
+        position: relative;
+        height: 48px;
+        width: 48px;
+        justify-content: center;
+        align-items: center;
+
+        &:focus-visible {
+            outline: none;
+
+            img {
+                filter: brightness(1.3);
+            }
+        }
+    }
+
+    img {
+        transition: var(--fast-transition);
+        filter: brightness(1);
+
+        &:hover {
+            filter: brightness(1.3);
+        }
+    }
+</style>

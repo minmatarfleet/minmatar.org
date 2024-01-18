@@ -1,0 +1,54 @@
+[data-tippy-root] {
+    --tippy-background-color: #171616;
+    --tippy-border-color:       var(--border-color);
+
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.75));
+
+    .tippy-box {
+        filter:  drop-shadow( 1px  0px 0px var(--tippy-border-color)) drop-shadow(-1px  0px 0px var(--tippy-border-color)) drop-shadow( 0px  1px 0px var(--tippy-border-color)) drop-shadow( 0px -1px 0px var(--tippy-border-color));
+        border-radius: 0;
+        background-color: transparent;
+        color: var(--highlight);
+
+        .tippy-arrow {
+            // color: var(--transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+
+        .tippy-content {
+            padding: var(--space-2xs);
+            background-color: #212112;
+            background-color: var(--tippy-background-color);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+    }
+
+    .tippy-content:empty {
+        display: none;
+    }
+
+    .tippy-content:empty + .tippy-arrow {
+        display: none;
+    }
+
+    .tippy-box[data-placement^=right]>.tippy-arrow:before {
+        border-right-color: var(--tippy-background-color);
+    }
+
+    .tippy-box[data-placement^=left]>.tippy-arrow:before {
+        border-left-color: var(--tippy-background-color);
+    }
+
+    .tippy-box[data-placement^=top]>.tippy-arrow:before {
+        border-top-color: var(--tippy-background-color);
+    }
+
+    .tippy-box[data-placement^=bottom]>.tippy-arrow:before {
+        border-bottom-color: var(--tippy-background-color);
+    }
+}
+
+p[data-tippy-content]:not([data-tippy-content=""]),
+span[data-tippy-content]:not([data-tippy-content=""]) {
+    border-bottom: dotted 1px color-mix(in srgb, currentColor 20%, transparent);
+}

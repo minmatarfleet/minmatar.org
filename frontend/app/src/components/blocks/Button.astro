@@ -1,0 +1,97 @@
+---
+import FlexInline from '@components/compositions/FlexInline.astro';
+import type { ButtonColors, ButtonSizes } from '@dtypes/LayoutComponents';
+
+interface Props {
+    color?: ButtonColors;
+    external?: boolean;
+    href?: string;
+    size?: ButtonSizes;
+    [propName: string]: any;
+}
+
+const {
+    color = 'fleet-red',
+    external = false,
+    href,
+    size = 'lg',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+
+const color_prop = `var(--${color})`;
+
+const Element = href ? 'a' : 'button';
+---
+
+<Element
+    href={ href }
+    class:list={['[ button ]', Astro.props.class]}
+    {...attributes}
+    data-size={size}
+    style={`--color_prop: ${color_prop}`}
+>
+    <FlexInline gap="var(--space-xs)">
+        <slot name="icon" />
+        <slot />
+    </FlexInline>
+</Element>
+
+<style lang="scss">
+
+    button,
+    a[href].button {
+        --background-color: var(--color_prop);
+
+        display: block;
+        text-decoration: none;
+        font-family: var(--button-font);
+        text-transform: uppercase;
+        text-align: left;
+        padding: var(--space-s) var(--space-l-xl);
+        border: solid 1px var(--background-color);
+        color: var(--button-color);
+        background-color: var(--background-color);
+        align-items: center;
+        transition: var(--fast-transition);
+
+        &[disabled] {
+            filter: saturate(50%);
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+        
+        /* Desktop */
+        @media (hover: hover) {
+            &:focus-visible,
+            &:hover:not([disabled]) {
+                cursor: pointer;
+                transform: scale(1.05);
+            }
+        }
+        
+        &:active:not([disabled]) {
+            transform: scale(1);
+        }
+
+        /* Tactile */
+        @media (hover: none) {
+            transform: scale(1);
+
+            &:active:not([disabled]) {
+                transform: scale(0.95);
+            }
+        }
+
+        &[data-size="sm"] {
+            padding: var(--space-2xs) var(--space-xs-s);
+        }
+
+        &.w-full > div {
+            justify-content: center;
+        }
+    }
+</style>

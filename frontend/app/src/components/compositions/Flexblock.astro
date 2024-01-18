@@ -1,0 +1,66 @@
+---
+import slugify from 'slugify';
+
+interface Props {
+    gap?: string;
+    centered?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    gap = 'var(--space-s)',
+    centered = false,
+    ...attributes
+} = Astro.props;
+
+const gap_slugified = slugify(gap, {
+    replacement: '_',
+    remove: /[*+~.\-\()'"!:@]/g
+});
+
+const data_flex_gap_slugified = `flexblock-${gap_slugified}`;
+const data_flex_gap_slugified_attr = {};
+data_flex_gap_slugified_attr[data_flex_gap_slugified] = '';
+
+const prop_name = `flex_block_gap_${gap_slugified}`;
+const flexblock_gap_css = `
+[${data_flex_gap_slugified}] {
+    --${prop_name}: ${gap};
+}
+
+[${data_flex_gap_slugified}] > * + * {
+    margin-block-start: var(--${prop_name});
+}`;
+
+delete attributes.class
+---
+
+<div class:list={['flex-block', Astro.props.class]} {...attributes} data-mod={ centered ? 'centered' : ''} { ...data_flex_gap_slugified_attr }>
+    <slot />
+</div>
+
+<style is:inline set:html={flexblock_gap_css}></style>
+
+<style lang="scss" is:global>
+    .flex-block {        
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+
+        &[data-mod="centered"] {
+            align-items: center;
+        }
+
+        /*&:only-child {
+            block-size: 100%;
+        }*/
+
+        > * {
+            margin-block: 0;
+        }
+
+        > .push-bottom {
+            margin-block-end: auto;
+        }
+    }
+</style>

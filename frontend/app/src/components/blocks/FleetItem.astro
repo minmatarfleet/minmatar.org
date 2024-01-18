@@ -1,0 +1,87 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetItem } from '@dtypes/LayoutComponents';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Button from '@components/blocks/Button.astro';
+import ThumbCard from '@components/blocks/ThumbCard.astro';
+import Countdown from './Countdown.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import VerticalCenter from './VerticalCenter.astro';
+import TextGroup from './TextGroup.astro';
+
+interface Props {
+    fleet: FleetItem;
+    history?: boolean;
+}
+
+const {
+    fleet,
+    history = false,
+} = Astro.props
+
+const eve_time = new Date(fleet.eve_time);
+const countdown_time = fleet.eve_time+' UTC';
+
+const eve_time_text = eve_time.toLocaleDateString(lang, {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+})
+---
+
+<ThumbCard
+    thumb_name={fleet.fleet_commander_name}
+    thumb_image={fleet.fleet_commander_portrait}
+    thumb_image_small={fleet.fleet_commander_portrait_small}
+    thumb_image_alt={`${fleet.fleet_commander_name} profile picture`}
+    thumb_title={t('fleet_commander')}
+    x-data={`{
+        local_time: new Date('${eve_time} UTC').toLocaleDateString(
+            '${lang}',
+            {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }
+        )
+    }`}
+>
+    <VerticalCenter>
+        <Flexblock gap="var(--space-s-m)">
+            <TextGroup title={t('type')} text={fleet.type} />
+            <TextGroup title={t('audience')} text={fleet.audience} />
+        </Flexblock>
+    </VerticalCenter>
+    
+    <VerticalCenter>
+        <Flexblock gap="var(--space-s-m)">
+            <TextGroup title={t('eve_time')} text={eve_time_text} class="[ sentence-cap ]" />
+            <TextGroup title={t('local_time')} text="Calculating..." class="[ sentence-cap ]" x-text="local_time" />
+        </Flexblock>
+    </VerticalCenter>
+    
+    {!history &&
+        <VerticalCenter>
+            <Countdown date={countdown_time} id={`countdown-fleet-${fleet.id}`} />
+        </VerticalCenter>
+    }
+
+    <VerticalCenter>
+        <Button href={translatePath(fleet.href)}>
+            <MagnifierIcon slot="icon" />
+            {t('view_details')}
+        </Button>
+    </VerticalCenter>
+</ThumbCard>

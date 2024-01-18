@@ -1,0 +1,15 @@
+{
+    "timer": "21:00",
+    "id": 35835,
+    "type": "Athanor",
+    "name": "Blaster",
+    "system": "Y9-MDG",
+    "region": "Providence",
+    "constellation": "XV7L-S",
+    "alliance_id": 1988009451,
+    "alliance": "Curatores Veritatis Alliance",
+    "corporation": "The Repository",
+    "corporation_id": 98254356,
+    "href": "/intel/structures/y9_mdg_blaster/",
+    "fitting": "High Power Slots\r\nStandup Heavy Energy Neutralizer I\r\nStandup Heavy Energy Neutralizer I\r\nStandup Heavy Energy Neutralizer I\r\nMedium Power Slots\r\nStandup Cap Battery I\r\nStandup Focused Warp Disruptor I\r\nStandup Variable Spectrum ECM I\r\nLow Power Slots\r\nStandup Co-Processor Array I\r\nRig Slots\r\nStandup M-Set Moon Ore Grading Processor II\r\nService Slots\r\nStandup Moon Drill I\r\nStandup Reprocessing Facility I"
+}

@@ -1,0 +1,73 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import data from '@json/page/index.json';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Button from '@components/blocks/Button.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import Cover from '@components/compositions/Cover.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('index.page_title');
+---
+
+<Viewport title={page_title}>
+	<video autoplay loop muted poster="/images/home-cover.jpg">
+        <source src="/videos/fortizar-loop.mp4" type="video/mp4" />
+
+		<img src="/images/home-cover.jpg" alt={t('index.cover_alt')}/>
+    </video>
+
+	<main id="content">		
+		<Cover>
+			<Flexblock centered={true} gap='var(--space-m-l)'>
+				<h1><FleetLogo width='150px' height='150px' /></h1>
+				<Flexblock gap="var(--space-3xs)" class="[ text-center ]">
+					<h4>{t('index.incoming_text')}</h4>
+					<Countdown date={data.countdown+' UTC'} />
+				</Flexblock>
+				<Button href={translatePath(data.countdown_href)}>
+					<MagnifierIcon slot="icon" />
+					{t('view_details')}
+				</Button>
+			</Flexblock>
+		</Cover>
+	</main>
+</Viewport>
+
+<style>
+    html,
+    body {
+        height: 100vh;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+	h4 {
+		font-size: var(--step--1);
+		letter-spacing: 5px;
+		text-indent: 5px;
+	}
+
+	main {
+		position: relative;
+	}
+
+    video {
+        position: fixed;
+        top: 0;
+        right: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+		object-position: 86% 50%;
+    }
+</style>

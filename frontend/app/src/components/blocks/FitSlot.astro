@@ -1,0 +1,22 @@
+---
+import type { Fittable } from '@dtypes/LayoutComponents';
+
+import modules_icon_lookup from '@json/hosted/modules-icon-lookup.json';
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+interface Props {
+    fittable: Fittable;
+}
+
+const {
+    fittable,
+} = Astro.props
+---
+
+<FixedFluid width='64px'>
+    <picture>
+        <img class="[ w-full ]" src={fittable.image ? fittable.image : `https://images.evetech.net/types/${modules_icon_lookup[fittable.name]}/icon?size=64`} alt={fittable.name} height="64" width="64" />
+    </picture>
+    <p class="[ flex items-center ]">{fittable.amount} x {fittable.name}</p>
+</FixedFluid>

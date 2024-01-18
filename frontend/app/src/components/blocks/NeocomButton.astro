@@ -1,0 +1,92 @@
+---
+interface Props {
+    active?: boolean;
+    title?: string;
+    href: string;
+    external?: boolean;
+    overlay?: boolean;
+}
+
+const { active = false, title, href, external = false, overlay = false } = Astro.props;
+
+const optional_attributes = {
+    ...(external && { "target": "_blank" }),
+}
+---
+
+<a href={ href }
+    class:list={[ 'neocom-button', { active: active, overlay: overlay } ]}
+    {...optional_attributes}
+    data-astro-prefetch="hover"
+    data-tippy-content={title}
+    data-tippy-placement='right'
+>
+    <slot />
+</a>
+
+<style lang="scss">
+    a {
+        text-decoration: none;
+        display: flex;
+        position: relative;
+        height: 48px;
+        width: 48px;
+        justify-content: center;
+        align-items: center;
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:after {
+            content: ' ';
+            position: absolute;
+            right: 0;
+            width: 2px;
+            top: 15px;
+            bottom: 15px;
+            background-color: transparent;
+            transition: var(--fast-transition);
+        }
+
+        &:active:after,
+        &:focus:after, {
+            background-color: var(--highlight);
+        }
+
+        &.overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        &.active:before {
+            content: ' ';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(4px);
+            right: 2px;
+            width: 3px;
+            top: 12px;
+            bottom: 12px;
+            background-color: var(--highlight);
+        }
+
+        &.active:after {
+            content: ' ';
+            position: absolute;
+            right: 0;
+            width: 2px;
+            top: 10px;
+            bottom: 10px;
+            background-color: var(--highlight);
+        }
+    }
+
+    :global(a.neocom-button img) {
+        transition: var(--fast-transition);
+        filter: drop-shadow(0 0 5px transparent);
+    }
+
+    :global(a.neocom-button:hover img) {
+        filter: drop-shadow(0 0 5px white);
+    }
+</style>

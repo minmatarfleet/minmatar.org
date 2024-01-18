@@ -1,0 +1,53 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { get_item_icon_by_name } from '@lib/eve_image_server';
+
+import type { FitItem } from '@dtypes/LayoutComponents';
+
+import Button from '@components/blocks/Button.astro';
+import ThumbCard from '@components/blocks/ThumbCard.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import VerticalCenter from './VerticalCenter.astro';
+import TextGroup from './TextGroup.astro';
+
+interface Props {
+    fit: FitItem;
+    [propName: string]: any;
+}
+
+const {
+    fit,
+    ...attributes
+} = Astro.props
+---
+
+<div {...attributes}>
+    <ThumbCard
+        thumb_image={get_item_icon_by_name(fit.ship_name, 256)}
+        thumb_image_small={fit.image}
+        thumb_image_alt={fit.ship_name}
+    >
+        <VerticalCenter>
+            <TextGroup title={t('fitting_name')} text={fit.fitting_name} />
+        </VerticalCenter>
+
+        <VerticalCenter>
+            <TextGroup title={t('fitting_type')} text={fit.fitting_type} />
+        </VerticalCenter>
+
+        <VerticalCenter>
+            <TextGroup title={t('ship_type')} text={fit.ship_type} />
+        </VerticalCenter>
+
+        <VerticalCenter>
+            <Button href={fit.href}>
+                <MagnifierIcon slot="icon" />
+                {t('view_details')}
+            </Button>
+        </VerticalCenter>
+    </ThumbCard>
+</div>

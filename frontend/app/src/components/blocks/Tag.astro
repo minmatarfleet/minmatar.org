@@ -1,0 +1,34 @@
+---
+import type { TagColors } from '@dtypes/LayoutComponents';
+
+interface Props {
+    text: string;
+    title: string;
+    color?: TagColors | string;
+    [propName: string]: any;
+}
+
+const {
+    text,
+    title,
+    color = 'fleet-red',
+} = Astro.props;
+
+const tag_color = `var(--${color})`;
+
+const optional_attributes = {
+    ...(title && { "title": title })
+}
+---
+
+<span class="[ tag ]" {...optional_attributes}>{text}</span>
+
+<style lang="scss" define:vars={{ tag_color }}>
+    .tag {
+        display: flex;
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--2);
+        color: var(--highlight);
+        background-color: var(--tag_color);
+    }
+</style>

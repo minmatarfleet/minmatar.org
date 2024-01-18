@@ -1,0 +1,21 @@
+body {
+    font-weight: 400;
+    font-family: var(--default-font);
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--heading-font);
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+h1 {
+    font-size: var(--step-5);
+}
+
+label {
+    color: var(--highlight);
+    font-family: var(--heading-font);
+    text-transform: uppercase;
+    font-weight: 400;
+}

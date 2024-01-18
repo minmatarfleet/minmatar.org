@@ -1,0 +1,31 @@
+.flex-block-l {
+    --flex-block--space: var(--space-3xs);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+
+    &[data-mod="centered"] {
+        align-items: center;
+    }
+
+    &[data-mod="fluid"] {
+        width: 100%;
+    }
+
+    /*&:only-child {
+        block-size: 100%;
+    }*/
+
+    > * {
+        margin-block: 0;
+    }
+
+    > * + * {
+        margin-block-start: var(--flex-block--space);
+    }
+
+    > .push-bottom {
+        margin-block-end: auto;
+    }
+}
