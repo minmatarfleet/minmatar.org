@@ -2,9 +2,10 @@
 import requests
 from django.conf import settings
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.shortcuts import redirect
-from django.contrib.auth.models import User
+
 from .models import DiscordUser
 
 # Create your views here.
