@@ -10,7 +10,6 @@
       "@dtypes/*": ["src/types/*"],
       "@api/*": ["src/pages/api/*"],
       "@json/*": ["src/json/*"],
-      "@lib/*": ["src/lib/*"],
       "@helpers/*": ["src/helpers/*"],
       "@markdown/*": ["src/markdown/*"],
       "@/*": ["./src/*"],

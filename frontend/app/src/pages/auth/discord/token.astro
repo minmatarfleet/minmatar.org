@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const translatePath = useTranslatedPath(lang);
 
-import { request_access_token, get_discord_user, get_discord_member } from '@lib/discord'
+import { request_access_token, get_discord_user, get_discord_member } from '@helpers/discord'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
