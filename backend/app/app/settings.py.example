@@ -28,8 +28,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
-CSRF_TRUSTED_ORIGINS = [os.environ.get("CSRF_TRUSTED_ORIGINS", "*")]
-
+CSRF_TRUSTED_ORIGINS = ["https://localhost:8000", "http://localhost:8000", "https://api.minmatar.org", "https://minmatar.org"]
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 

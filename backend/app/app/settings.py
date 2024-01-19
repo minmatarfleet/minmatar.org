@@ -30,9 +30,6 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
 SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
-CSRF_TRUSTED_ORIGINS = [
-    os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
-]
 
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"

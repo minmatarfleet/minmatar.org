@@ -96,6 +96,34 @@ class DiscordBaseClient:
 class DiscordClient(DiscordBaseClient):
     """Discord API Client"""
 
+    def exchange_code(self, code: str):
+        """Exchange a Discord OAuth2 code for an access token"""
+        data = {
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "client_secret": settings.DISCORD_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": settings.DISCORD_REDIRECT_URL,
+            "scope": "identify",
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(
+            "https://discord.com/api/oauth2/token",
+            data=data,
+            headers=headers,
+            timeout=10,
+        )
+        credentials = response.json()
+        print(credentials)
+        access_token = credentials["access_token"]
+        response = requests.get(
+            "https://discord.com/api/v6/users/@me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        user = response.json()
+        return user
+
     def create_forum_thread(self, channel_id, title, message):
         """Create a forum thread in a discord channel"""
         return self.post(
