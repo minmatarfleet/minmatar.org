@@ -1,0 +1,98 @@
+<script is:inline src="/js/clipboard.js"></script>
+<script is:inline src="/js/numbers.js"></script>
+
+<!-- Tippy.js -->
+<script is:inline src="https://unpkg.com/@popperjs/core@2"></script>
+<script is:inline src="https://unpkg.com/tippy.js@6"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+
+<script is:inline>
+    const canvas = document.getElementById("confetti-canvas");
+
+    (async () => {
+        canvas.confetti = canvas.confetti || (await confetti.create(canvas, { resize: true }));
+    })();
+
+    function play_sound(filepath) {
+        let sound = new Audio(filepath);
+        sound.play();
+
+        sound.onended = function() {
+            this.currentSrc = null;
+            this.src = "";
+            this.srcObject = null;
+            this.remove();
+        };
+    }
+
+    function launch_confetti(images) {
+        const sounds = [
+            "1162202323502780416.ogg",
+            "1162206878210723910.ogg",
+            "1162207169584832512.ogg",
+            "1162372932845179060.ogg",
+            "1180238591381737482.ogg",
+            "1185658748757356675.ogg",
+            "1189627562859704340.ogg",
+            "1189629201519755265.ogg",
+            "1193306194295668886.ogg",
+            "wow.mp3"
+        ]
+        
+        const sound_filename = sounds[Math.floor(Math.random() * sounds.length)]
+        play_sound(`/sounds/${sound_filename}`)
+        
+        canvas.confetti({
+            startVelocity: 100,
+            particleCount: 100,
+            spread: 150,
+            origin: { y: 0.9 },
+            scalar: 5,
+            shapes: ["image"],
+            shapeOptions: {
+                image: images,
+            },
+        })
+    }
+</script>
+
+<script is:inline>
+    const tippy_options = {
+        delay: [ 1000, 200 ],
+        arrow: true,
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        tippy('[data-tippy-content]', tippy_options)
+        document.querySelector('.loader').classList.remove('active')
+    }, { once: true })
+
+    document.addEventListener('astro:before-preparation', () => {
+        document.querySelector('.loader').classList.add('active')
+    })
+
+    document.addEventListener('astro:after-swap', () => {
+        tippy('[data-tippy-content]', tippy_options)
+        document.querySelector('.loader').classList.remove('active')
+        htmx.process(document.body)
+    })
+</script>
+
+<script is:inline>
+    function neocom_clock() {
+        return {
+            time: new Date(),
+            init() {
+                setInterval(() => {
+                    this.time = new Date()
+                }, 1000)
+            },
+            getTime() {
+                let hour = this.time.getUTCHours()
+                let minute = this.time.getUTCMinutes()
+
+                return `${hour < 9 ? '0' : ''}${hour}:${minute < 9 ? '0' : ''}${minute}`
+            },
+        }
+    }
+</script>

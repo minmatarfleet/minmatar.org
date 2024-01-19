@@ -166,8 +166,7 @@ const page_title = `${t('fleet')} ${fleet.name}`;
 
         setTimeout(function ($container) {
             $container.classList.add('dscan')
-            const audio = new Audio(`/sounds/dscan.mp3`)
-            audio.play()
+            play_sound(`/sounds/dscan.mp3`)
         }, 0, $container)
 
         remove_dscan_class_timer = setTimeout(function ($container) {
