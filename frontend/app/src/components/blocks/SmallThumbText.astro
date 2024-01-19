@@ -5,16 +5,18 @@ interface Props {
     image: string;
     alt: string;
     text: string;
+    [propName: string]: any;
 }
 
 const {
     image,
     alt,
     text,
+    ...attributes
 } = Astro.props
 ---
 
-<FixedFluid width='64px'>
+<FixedFluid width='64px' {...attributes}>
     <picture>
         <img class="[ w-full ]" src={image} alt={alt} height="64" width="64" />
     </picture>

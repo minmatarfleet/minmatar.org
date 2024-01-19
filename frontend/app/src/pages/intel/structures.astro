@@ -128,7 +128,7 @@ for (let i in regions)
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <Flexblock gap='0' class="[ filtered-list ]">
+            <Flexblock role="list" gap='0' class="[ filtered-list ]">
 
                 {structures.length == 0 &&
                     <Flexblock gap='var(--space-xl)' class="text-center">
@@ -142,7 +142,7 @@ for (let i in regions)
                 }
 
                 {structures.map((structure) =>
-                    <StructureListItem class="[ structure-item ]" structure={structure} x-show="show_item($el)" />
+                    <StructureListItem role="listitem" class="[ structure-item ]" structure={structure} x-show="show_item($el)" />
                 )}
                 
                 {structures.length > 0 &&

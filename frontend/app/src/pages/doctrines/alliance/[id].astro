@@ -69,17 +69,17 @@ const page_title = `${doctrine.name} ${t('doctrine')}`;
                 
                 <ItemList title={t('ideal_composition')} items={doctrine.ideal_composition} />
                 
-                <Flexblock gap="var(--space-3xs)">
+                <Flexblock role="list" gap="var(--space-3xs)">
                     {doctrine.fittings.map((fit) =>
-                        <FitItem fit={fit} />
+                        <FitItem role="listitem" fit={fit} />
                     )}
                 </Flexblock>
 
                 <p>{doctrine.support_fittings.description}</p>
 
-                <Flexblock gap="var(--space-3xs)">
+                <Flexblock gap="var(--space-3xs)" role="list">
                     {doctrine.support_fittings.fitting.map((fit) =>
-                        <FitItem fit={fit} />
+                        <FitItem role="listitem" fit={fit} />
                     )}
                 </Flexblock>
 

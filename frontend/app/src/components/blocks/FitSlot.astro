@@ -6,15 +6,17 @@ import modules_icon_lookup from '@json/hosted/modules-icon-lookup.json';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 interface Props {
-    fittable: Fittable;
+    fittable:           Fittable;
+    [propName: string]: any;
 }
 
 const {
     fittable,
+    ...attributes
 } = Astro.props
 ---
 
-<FixedFluid width='64px'>
+<FixedFluid width='64px' {...attributes}>
     <picture>
         <img class="[ w-full ]" src={fittable.image ? fittable.image : `https://images.evetech.net/types/${modules_icon_lookup[fittable.name]}/icon?size=64`} alt={fittable.name} height="64" width="64" />
     </picture>
