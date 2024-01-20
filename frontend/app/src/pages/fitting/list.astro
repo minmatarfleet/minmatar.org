@@ -113,9 +113,9 @@ const page_title = t('fitting.list.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <Flexblock gap='0' class="[ filtered-list ]">
+            <Flexblock role="list" gap='0' class="[ filtered-list ]">
                 {fits.map((fit) =>
-                    <FitItem class="[ fit-item ]" fit={fit} x-show="show_item($el)" />
+                    <FitItem role="listitem" class="[ fit-item ]" fit={fit} x-show="show_item($el)" />
                 )}
                 
                 <p class="[ text-center ]">{t('no_results')}</p>

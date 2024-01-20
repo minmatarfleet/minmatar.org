@@ -18,24 +18,19 @@ import TextGroup from './TextGroup.astro';
 interface Props {
     fleet: FleetItem;
     history?: boolean;
+    [propName: string]: any;
 }
 
 const {
     fleet,
     history = false,
+    ...attributes
 } = Astro.props
 
 const eve_time = new Date(fleet.eve_time);
 const countdown_time = fleet.eve_time+' UTC';
 
-const eve_time_text = eve_time.toLocaleDateString(lang, {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-})
+const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
 <ThumbCard
@@ -47,16 +42,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, {
     x-data={`{
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
             '${lang}',
-            {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }
+            ${import.meta.env.DATETIME_FORMAT}
         )
     }`}
+    {...attributes}
 >
     <VerticalCenter>
         <Flexblock gap="var(--space-s-m)">

@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import { get_item_icon_by_name } from '@lib/eve_image_server';
+import { get_item_icon_by_name } from '@helpers/eve_image_server';
 
 import type { DoctrineItem } from '@dtypes/LayoutComponents';
 
@@ -20,19 +20,33 @@ import SmallThumbText from './SmallThumbText.astro';
 
 interface Props {
     doctrine: DoctrineItem;
+    [propName: string]: any;
 }
 
 const {
     doctrine,
+    ...attributes
 } = Astro.props
 ---
 
-<Wrapper class="[ card component ][ light-transparency ]" padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width='100%'>
+<Wrapper
+    class="[ card component ][ light-transparency ]"
+    padding_block='var(--space-l)'
+    padding_inline='var(--space-l-xl)'
+    max_width='100%'
+    {...attributes}
+>
     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
         <h2>{doctrine.doctrine_name}</h2>
-        <Grid class="[ w-full ]" min_item_width='270px' row_gap='var(--space-s-m)' column_gap='var(--space-s-m)'>
+        <Grid
+            role="list"
+            class="[ w-full ]"
+            min_item_width='270px'
+            row_gap='var(--space-s-m)'
+            column_gap='var(--space-s-m)'
+        >
             {doctrine.fits.map((fit) => 
-                <a href={fit.href}>
+                <a role="listitem" href={fit.href}>
                     <SmallThumbText image={get_item_icon_by_name(fit.alt)} alt={fit.alt} text={fit.name} />
                 </a>
             )}
@@ -40,9 +54,9 @@ const {
         <FlexInline class="[ w-full ]" gap='var(--space-m)' justification='space-between'>
             <VerticalCenter>
                 <Flexblock gap="var(--space-3xs)">
-                    <FlexInline>
+                    <FlexInline role="list">
                         {doctrine.tags.map((tag) => 
-                            <Tag title={tag.description} text={tag.name} color={tag.color} />
+                            <Tag role="listitem" title={tag.description} text={tag.name} color={tag.color} />
                         )}
                     </FlexInline>
                 </Flexblock>

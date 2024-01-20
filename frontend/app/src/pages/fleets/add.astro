@@ -44,6 +44,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
 const page_title = t('fleets.add.page_title');
+const today = new Date().toISOString().split("T")[0]
 ---
 
 <Viewport title={page_title}>
@@ -62,8 +63,8 @@ const page_title = t('fleets.add.page_title');
             fleet_type: 'fun_fleet',
             audience: 'alliance',
             doctrine: 9,
-            eve_date: ' ',
-            eve_time: ' ',
+            eve_date: '${today}',
+            eve_time: '00:00:00',
             local_datetime: '',
             audiences: ${JSON.stringify(audiences)},
             fleet_types: ${JSON.stringify(fleet_types)},
@@ -86,14 +87,7 @@ const page_title = t('fleets.add.page_title');
                 const date_time = this.eve_date+' '+this.eve_time
                 const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
                     '${lang}',
-                    {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }
+                    ${import.meta.env.DATETIME_FORMAT}
                 )
 
                 return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
@@ -152,14 +146,14 @@ const page_title = t('fleets.add.page_title');
                                         <VerticalCenter>
                                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                                 <label for="fleet_date">{t('fleet_date')}</label>
-                                                <Input id="fleet_date" type="date" x-model="eve_date" required min={new Date().toISOString().split("T")[0]} />
+                                                <Input id="fleet_date" type="date" x-model="eve_date" required min={today} value={today} />
                                             </FixedFluid>
                                         </VerticalCenter>
 
                                         <VerticalCenter>
                                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                                 <label for="fleet_time">{t('fleet_time')}</label>
-                                                <Input id="fleet_time" type="time" x-model="eve_time" required />
+                                                <Input id="fleet_time" type="time" step="2" value="00:00:00" x-model="eve_time" required />
                                             </FixedFluid>
                                         </VerticalCenter>
 

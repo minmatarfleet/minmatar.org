@@ -61,10 +61,10 @@ const page_title = t('doctrines.militia.page_title');
                 padding_block="var(--space-xl)"
                 set:html={marked.parse(t('doctrines.militia.page_leading_text'))}
             />
-            <Flexblock gap='var(--space-3xs)'>
+            <Flexblock role="list" gap='var(--space-3xs)'>
                 
                 {doctrines.map((doctrine) =>
-                    <DoctrineItem doctrine={doctrine} />
+                    <DoctrineItem role="listitem" doctrine={doctrine} />
                 )}
 
             </Flexblock>

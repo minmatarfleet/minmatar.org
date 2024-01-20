@@ -58,7 +58,7 @@ const page_title = t('fleets.upcoming.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <Flexblock gap='var(--space-3xs)'>
+            <Flexblock role="list" gap='var(--space-3xs)'>
 
                 {fleets.length == 0 &&
                     <Flexblock gap='var(--space-xl)' class="text-center">
@@ -72,7 +72,7 @@ const page_title = t('fleets.upcoming.page_title');
                 }
                 
                 {fleets.map((fleet) =>
-                    <FleetItem fleet={fleet} />
+                    <FleetItem role="listitem" fleet={fleet} />
                 )}
 
             </Flexblock>
