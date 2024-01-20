@@ -1,18 +1,21 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 interface Props {
     title?: string;
 }
 
-const { title = "TBD" } = Astro.props;
+const { title = "" } = Astro.props;
+const href = Astro.cookies.has('auth_token') ? translatePath('/auth/logout/') : import.meta.env.MINMATAR_AUTH
+const portrait = Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : "https://images.evetech.net/characters/1/portrait?size=64"
 ---
 
-<a href={import.meta.env.DISCORD_AUTH}>
-    <img class="confetti-image" src="https://images.evetech.net/characters/2121103796/portrait?size=64" width="48" height="48" alt="Beautiful Mim" />
+<a href={href}>
+    <img class="confetti-image" src={portrait} width="48" height="48" alt="Beautiful Mim" />
 </a>
 
 <style lang="scss">
