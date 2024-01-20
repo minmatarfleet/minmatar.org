@@ -1,0 +1,100 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+import * as jose from 'jose'
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+import { request_access_token, get_discord_user, get_discord_member } from '@helpers/discord'
+
+if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
+
+let error = null
+let token = null
+let claims = null
+try {
+    token = Astro.url.searchParams.get('token')
+    claims = jose.decodeJwt(token)
+} catch (error) {
+    console.error('Error during token exchange:', error.message);
+    error = error.message
+}
+
+Astro.cookies.set('auth_token', token, { path: '/' })
+Astro.cookies.set('avatar', claims.avatar, { path: '/' })
+
+console.log(Astro.cookies.get('avatar').value)
+console.log(Astro.cookies.get('auth_token').value)
+
+/*if (!token) {
+    throw new Error(`Error no code received`);
+}
+
+Astro.cookies.set('code', code, { path: '/auth/discord' })
+
+tokens = await request_access_token(code)
+
+const { token_type, access_token } = tokens
+
+Astro.cookies.set('token_type', token_type, { path: '/auth/discord' })
+Astro.cookies.set('access_token', access_token, { path: '/auth/discord' })
+
+user = await get_discord_user(token_type, access_token)
+
+member = await get_discord_member(access_token, user.id)*/
+
+
+import Viewport from '@layouts/Viewport.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+---
+
+<Viewport title="Authentication">
+    <main id="content" x-data={`{ id: 6, item_id: 18 }`}>
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
+            <Flexblock gap='var(--space-2xl)'>
+                {error &&
+                    <Flexblock gap="var(--space-3xs)">
+                        <h4>Error</h4>
+                        <pre>{error}</pre>
+                    </Flexblock>
+                }
+
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>Token</h4>
+                    <FluidFixed width='100px' class="items-center">
+                        <pre class="[ truncate ]">{JSON.stringify(token ?? '', null, 4)}</pre>
+                        <ClipboardButton id="token-copy">{token}</ClipboardButton>
+                    </FluidFixed>
+                </Flexblock>
+
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>Claims</h4>
+                    <FluidFixed width='100px' class="items-center">
+                        <pre class="[ truncate ]">{JSON.stringify(claims ?? '', null, 4)}</pre>
+                        <ClipboardButton id="token-copy">{claims}</ClipboardButton>
+                    </FluidFixed>
+                </Flexblock>
+
+                <!--<Flexblock gap="var(--space-3xs)">
+                    <h4>Tokens</h4>
+                    <pre>{JSON.stringify(tokens ?? '', null, 4)}</pre>
+                </Flexblock>
+
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>User</h4>
+                    <pre>{JSON.stringify(user ?? '', null, 4)}</pre>
+                </Flexblock>
+                
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>Member</h4>
+                    <pre>{member == null ? 'User is not member of the server/guild' : JSON.stringify(member ?? '', null, 4)}</pre>
+                </Flexblock> -->
+            </Flexblock>
+        </Wrapper>
+    </main>
+</Viewport>
