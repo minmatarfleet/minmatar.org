@@ -55,8 +55,8 @@ def callback(request, code: str):
     )
 
     permissions = [
-        f"{p._meta.app_label}.{p.codename}"
-        for p in permissions  # pylint: disable=protected-access
+        f"{p._meta.app_label}.{p.codename}"  # pylint: disable=protected-access
+        for p in permissions
     ]
 
     payload = {
