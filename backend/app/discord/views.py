@@ -10,7 +10,7 @@ from .models import DiscordUser
 
 # Create your views here.
 
-auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
+auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_ADMIN_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 
 
 def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
@@ -41,7 +41,7 @@ def discord_login_redirect(request: HttpRequest):
 
         login(request, django_user)
 
-        return redirect("/")
+        return redirect("/admin/")
 
     django_user = User.objects.create(username=user["username"])
     django_user.username = user["username"]
@@ -55,7 +55,7 @@ def discord_login_redirect(request: HttpRequest):
     )
 
     login(request, django_user)
-    return redirect("/")
+    return redirect("/admin/")
 
 
 def exchange_code(code: str):
