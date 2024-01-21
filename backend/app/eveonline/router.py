@@ -1,6 +1,6 @@
 from typing import List
 
-from authentication import AuthBearer
+from authentication import AuthBearer, requires_permission
 from ninja import ModelSchema, Router, Schema
 
 from .models import EveCorporation
@@ -37,6 +37,7 @@ def get_corporation_by_id(
 
 
 @router.post("/corporations", response=CorporationResponse, auth=AuthBearer())
+@requires_permission("corporation.create")
 def create_corporation(
     request, payload: CreateCorporationRequest
 ):  # pylint: disable=unused-argument
