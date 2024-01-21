@@ -2,7 +2,7 @@ import jwt
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from django.conf import settings
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import Permission, User
 from django.shortcuts import redirect
 from ninja import Router
 from ninja.security import HttpBearer
@@ -55,8 +55,9 @@ def callback(request, code: str):
     )
 
     permissions = [
-        f"{p._meta.app_label}.{p.codename}" for p in permissions  # pylint: disable=protected-access
-    ]  
+        f"{p._meta.app_label}.{p.codename}"
+        for p in permissions  # pylint: disable=protected-access
+    ]
 
     payload = {
         "user_id": django_user.id,
