@@ -2,7 +2,7 @@ import jwt
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.shortcuts import redirect
 from ninja import Router
 from ninja.security import HttpBearer
@@ -49,10 +49,23 @@ def callback(request, code: str):
             avatar=user["avatar"],
         )
 
+    permissions = (
+        django_user.user_permissions.all()
+        | Permission.objects.filter(group__user=django_user)
+    )
+
+    permissions = [
+        f"{p._meta.app_label}.{p.codename}"  # pylint: disable=protected-access
+        for p in permissions
+    ]
+
     payload = {
         "user_id": django_user.id,
         "username": user["username"],
         "avatar": f"https://cdn.discordapp.com/avatars/{django_user.discord_user.id}/{django_user.discord_user.avatar}.png",
+        "is_staff": django_user.is_staff,
+        "is_superuser": django_user.is_superuser,
+        "permissions": permissions,
     }
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
@@ -60,6 +73,23 @@ def callback(request, code: str):
     return redirect(
         request.session["redirect_url"] + "?token=" + encoded_jwt_token
     )
+
+
+class UnauthorizedError(Exception):
+    pass
+
+
+def requires_permission(permission):
+    def decorator(view):
+        def wrapper(request, *args, **kwargs):
+            if request.user.has_perm(permission):
+                return view(request, *args, **kwargs)
+            else:
+                raise UnauthorizedError(f"Missing permission: {permission}")
+
+        return wrapper
+
+    return decorator
 
 
 class AuthBearer(HttpBearer):
