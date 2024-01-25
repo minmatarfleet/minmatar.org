@@ -1,0 +1,132 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Input from '@components/blocks/Input.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import VerticalCenter from './VerticalCenter.astro';
+
+import personas from '@json/hosted/personas.json';
+
+import { get_player_icon } from '@helpers/eve_image_server';
+
+interface Props {
+    personas_finder?: boolean,
+    [propName: string]: any;
+}
+---
+
+<div
+    class="[ personas_finder ]"    
+    x-data={`{
+        filter: '',
+        show_item(el) {
+            const name_container = el.querySelector('span')
+            const role_container = el.querySelector('small')
+            const show_item = (
+                this.filter != '' && name_container.textContent.toLowerCase().includes(this.filter.toLowerCase()) &&
+                (persona_finder_role != 'all' && role_container.textContent.toLowerCase().includes(persona_finder_role.toLowerCase()))
+            )
+
+            return show_item
+        }
+    }`}
+>
+    <Dialog
+        x-bind:class="personas_finder_open ? 'open' : ''"
+        breakout={true}
+        class="[ w-full max-w-[500px] ]"
+    >
+        <Input placeholder={t('find_persona')} x-model="filter" />
+
+        <div class="[ relative ]">
+            <Flexblock class="[ persona-list ][ light-transparency w-full ]" gap='0'>
+                {personas.map((persona) =>
+                    <button
+                        type="button"
+                        persona-finder-action="accept"
+                        persona-finder-data={JSON.stringify(persona)}
+                        x-show="show_item($el)"
+                        x-on:click="filter = ''"
+                    >
+                        <FixedFluid width='64px'>
+                            <picture>
+                                <img src={get_player_icon(persona.character_id)} height="64" width="64" alt={`${persona.name} ${t('profile_picture')}`} />
+                            </picture>
+                            <VerticalCenter>
+                                <Flexblock gap='0' class="[ items-start ]">
+                                    <span class="[ truncate ]">{persona.name}</span>
+                                    <small class="[ sentence-cap ]">{persona.roles.join(', ')}</small>
+                                </Flexblock>
+                            </VerticalCenter>
+                        </FixedFluid>
+                    </button>
+                )}
+            </Flexblock>
+        </div>
+    </Dialog>
+
+    <div
+        x-bind:class="personas_finder_open ? 'open' : ''"
+        persona-finder-action="close"
+        x-on:click="filter = ''"
+    />
+</div>
+
+<style lang="scss">
+    :global([persona-finder-action] *) {
+        pointer-events: none !important;
+    }
+
+    .dialog {
+        top: 200px;
+    }
+    
+    .persona-list {
+        position: absolute;
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+    }
+
+    [persona-finder-action="close"] {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+
+    [persona-finder-action="accept"] {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+        
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>

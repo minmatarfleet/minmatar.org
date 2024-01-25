@@ -37,9 +37,9 @@ delete attributes.class
 
 <div class:list={['flex-block', Astro.props.class]} {...attributes} data-mod={ centered ? 'centered' : ''} { ...data_flex_gap_slugified_attr }>
     <slot />
+    <style is:inline set:html={flexblock_gap_css}></style>
 </div>
 
-<style is:inline set:html={flexblock_gap_css}></style>
 
 <style lang="scss" is:global>
     .flex-block {        

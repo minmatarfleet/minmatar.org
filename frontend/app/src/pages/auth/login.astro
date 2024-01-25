@@ -24,27 +24,6 @@ try {
 Astro.cookies.set('auth_token', token, { path: '/' })
 Astro.cookies.set('avatar', claims.avatar, { path: '/' })
 
-console.log(Astro.cookies.get('avatar').value)
-console.log(Astro.cookies.get('auth_token').value)
-
-/*if (!token) {
-    throw new Error(`Error no code received`);
-}
-
-Astro.cookies.set('code', code, { path: '/auth/discord' })
-
-tokens = await request_access_token(code)
-
-const { token_type, access_token } = tokens
-
-Astro.cookies.set('token_type', token_type, { path: '/auth/discord' })
-Astro.cookies.set('access_token', access_token, { path: '/auth/discord' })
-
-user = await get_discord_user(token_type, access_token)
-
-member = await get_discord_member(access_token, user.id)*/
-
-
 import Viewport from '@layouts/Viewport.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';

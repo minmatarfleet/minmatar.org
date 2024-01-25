@@ -5,6 +5,10 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import * as jose from 'jose'
+
+const claim = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) : false
+
 import NeocomButton from '@components/blocks/NeocomButton.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
@@ -13,6 +17,7 @@ import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
+import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import UserAuth from '@components/UserAuth.astro';
@@ -46,6 +51,11 @@ const page = Astro.url.pathname
         <NeocomButton active={page.includes(translatePath('/freight/'))} title={t('neocom.freight_service')} href={translatePath('/freight/')}>
             <FreightServiceEvEIcon />
         </NeocomButton>
+        {claim &&
+            <NeocomButton active={page.includes(translatePath('/groups/'))} title={t('neocom.groups')} href={translatePath('/groups/')}>
+                <GroupsEvEIcon />
+            </NeocomButton>
+        }
         <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
             <ZkillboardEvEIcon />
         </NeocomButton>

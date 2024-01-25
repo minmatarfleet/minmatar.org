@@ -1,0 +1,62 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { JWTCookies, JWT } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
+
+if (!claim)
+    return Astro.redirect(translatePath('/403/'))
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Button from '@components/blocks/Button.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+
+const page_title = t('groups.page_title');
+const page_description = t('groups.leading_text');
+---
+
+<Viewport title={page_title} meta_description={page_description}>
+    <PageCover
+        image="/images/groups-cover.jpg"
+        image_990="/images/groups-cover-990.jpg"
+        alt={t('groups.cover_alt')}
+        overlay={true}
+    />
+
+	<main id="content">
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
+            <Flexblock gap='var(--space-2xl)'>
+                <Flexblock>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+                
+                <ButtonStack>
+                    <Button href={translatePath('/groups/list')}>
+                        <MagnifierIcon slot="icon" />
+                        {t('view_groups')}
+                    </Button>
+                    
+                    {/*claim?.permissions?.includes('auth.change_group')*/ true &&
+                        <Button color={'green'} href={translatePath('/groups/add')}>
+                            <AddIcon slot="icon" />
+                            {t('add_group')}
+                        </Button>
+                    }
+                </ButtonStack>
+            </Flexblock>
+		</Wrapper>
+	</main>
+</Viewport>
