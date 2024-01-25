@@ -15,6 +15,7 @@ export const ui = {
         'neocom.intel': 'Intel',
         'neocom.freight_service': 'Freight service',
         'neocom.contracts_service': 'Contracts service',
+        'neocom.groups': 'Groups',
         'neocom.zkillboard': 'Zkillboard',
 
         'generic.meta_description': 'These tools are managed by Minmatar Fleet Alliance.',
@@ -27,9 +28,13 @@ export const ui = {
         '404.leading_text': 'You just got podded by our good friend Ibn!',
         '404.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
+        '403.page_title': '403',
+        '403.leading_text': 'You just got podded by our good friend Ibn!',
+        '403.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
+
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
-        'fitting.cover_alt': 'Close up of a Scimitar parked inside a Fortizar Station.',
+        'fitting.cover_alt': 'Collage of holgraphic pirate propaganda.',
 
         'fitting.list.page_title': 'Fittings list',
 
@@ -79,6 +84,12 @@ export const ui = {
         'freight.summary.historical_header': 'Historical Summary',
         'freight.summary.current_title': 'Current Summary',
         
+        'groups.page_title': 'Groups',
+        'groups.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
+        'groups.cover_alt': 'Amarr hauler activating warp drive',
+
+        'groups.add.page_title': 'Add groups',
+
         'freight.standard.page_title': 'Standard Freight',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
@@ -117,8 +128,9 @@ export const ui = {
         'icon.doctrines.alt': 'EvE Online Hangar - Ship Icon',
         'icon.fits.alt': 'EvE Online Fitting Icon',
         'icon.tutorial.alt': 'EvE Online Tutorial Icon',
-        'icon.tutorial.zkillboard': 'Eve Online Combat Log Icon',
-        'icon.tutorial.intel': 'Eve Online Structures Icon',
+        'icon.zkillboard.alt': 'Eve Online Combat Log Icon',
+        'icon.intel.alt': 'Eve Online Structures Icon',
+        'icon.groups.alt': 'Eve Online Group List Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -208,6 +220,18 @@ export const ui = {
         'structure': 'Structure',
         'record': 'Record',
         'pilot': 'Pilot',
+        'group': 'group',
+        'view_groups': 'View groups',
+        'add_group': 'Add group',
         'members_visibility_hint': 'Only the fleet commander can view members.',
+        'information': 'Information',
+        'visibility': 'Visibility',
+        'managers': 'Managers',
+        'add_manager': 'Add manager',
+        'manager': 'Manager',
+        'profile_picture': 'profile picture',
+        'close': 'Close',
+        'general': 'General',
+        'find_persona': 'Type persona name to find',
     },
 } as const;

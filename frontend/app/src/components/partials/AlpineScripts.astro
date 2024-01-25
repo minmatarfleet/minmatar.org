@@ -1,0 +1,31 @@
+---
+export const PersonaFinderXData = `{
+    personas_finder_open: false,
+    persona_finder_role: 'all',
+    async show_personas_finder(role = 'all') {
+        this.persona_finder_role = role
+        this.personas_finder_open = true
+        document.querySelector('.personas_finder input').focus()
+        
+        const result = await this.personas_finder_accept()
+        this.personas_finder_open = false
+        return result.action == 'accept' ? result.persona_id : false
+    },
+    personas_finder_accept() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('persona-finder-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('persona-finder-action'),
+                        persona_id: JSON.parse(event.target.getAttribute('persona-finder-data'))
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    }
+}`
+---

@@ -198,7 +198,7 @@ const today = new Date().toISOString().split("T")[0]
 
                                 <ComponentBlock>
                                     <Flexblock gap="var(--space-m)">
-                                        <h2 x-text={`doctrines_metadata[doctrine].name+' ${t('doctrine')}'`}></h2>
+                                        <h4 x-text={`doctrines_metadata[doctrine].name+' ${t('doctrine')}'`}></h4>
                                         <FlexInline>
                                             <template x-for="fitting in doctrines_metadata[doctrine].fittings">
                                                 <img class="confetti-image" height="64" width="64" x-bind:src="fitting.image" x-bind:alt="fitting.alt">
