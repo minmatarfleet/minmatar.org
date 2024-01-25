@@ -80,7 +80,7 @@ import Button from '@components/blocks/Button.astro';
                 </FixedFluid>
             </template>
 
-            <p x-bind:class="{ hidden: managers.length > 0 }">No manager found for this group.</p>
+            <p x-bind:class="{ hidden: managers.length > 0 }">{t('empty_managers_text')}</p>
         </Flexblock>
     </Flexblock>
 </ComponentBlock>

@@ -1,0 +1,23 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Switch from '@components/blocks/Switch.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<ComponentBlock>
+    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+        <h2>{t('auto_accept_group_policy')}</h2>
+        
+        <Switch class="[ w-full ]">Enable to auto-accept pilots from the following corporation</Switch>
+        <p>No corporation added.</p>
+        <Switch class="[ w-full ]">Enable to auto-accept pilots within the following alliance</Switch>
+        <p>No alliance added.</p>
+        <Switch class="[ w-full ]">Enable to auto-accept pilots with the following skills</Switch>
+        <p>No skills added.</p>
+    </Flexblock>
+</ComponentBlock>

@@ -29,7 +29,7 @@ export const ui = {
         '404.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
         '403.page_title': '403',
-        '403.leading_text': 'You just got podded by our good friend Ibn!',
+        '403.leading_text': 'Docking permission denied!',
         '403.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
         'fitting.page_title': 'Fitting',
@@ -232,6 +232,8 @@ export const ui = {
         'profile_picture': 'profile picture',
         'close': 'Close',
         'general': 'General',
+        'auto_accept_group_policy': 'Auto-accept group policy',
         'find_persona': 'Type persona name to find',
+        'empty_managers_text': 'No manager found for this group.',
     },
 } as const;

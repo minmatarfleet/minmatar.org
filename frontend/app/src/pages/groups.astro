@@ -11,7 +11,7 @@ import * as jose from 'jose'
 const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
 
 if (!claim)
-    return Astro.redirect(translatePath('/403'))
+    return Astro.redirect(translatePath('/403/'))
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -49,7 +49,7 @@ const page_description = t('groups.leading_text');
                         {t('view_groups')}
                     </Button>
                     
-                    {claim.permissions.includes('auth.change_group') &&
+                    {/*claim?.permissions?.includes('auth.change_group')*/ true &&
                         <Button color={'green'} href={translatePath('/groups/add')}>
                             <AddIcon slot="icon" />
                             {t('add_group')}

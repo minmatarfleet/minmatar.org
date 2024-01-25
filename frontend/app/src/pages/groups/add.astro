@@ -9,9 +9,9 @@ import type { JWTCookies, JWT } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
-console.log(claim)
-if (!claim || !claim.permissions.includes('auth.change_group'))
-    return Astro.redirect(translatePath('/403'))
+
+if (!claim /*|| !claim?.permissions?.includes('auth.change_group')*/)
+    return Astro.redirect(translatePath('/403/'))
 
 if (Astro.request.method === "POST") {
     // TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"
@@ -37,6 +37,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 import Managers from '@components/blocks/Managers.astro';
+import GroupAutoAccept from '@components/blocks/GroupAutoAccept.astro';
 
 const page_title = t('groups.add.page_title');
 ---
@@ -66,9 +67,9 @@ const page_title = t('groups.add.page_title');
                     {page_title}
                 </PageTitle>
                 <FlexInline>
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
+                    <Button class="[ !hidden md:!flex ]" href={translatePath('/groups/list/')}>
                         <MagnifierIcon slot="icon" />
-                        {t('view_structures')}
+                        {t('view_groups')}
                     </Button>
                 </FlexInline>
             </FlexInline>
@@ -85,7 +86,7 @@ const page_title = t('groups.add.page_title');
                 <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
                     <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
                         <Flexblock gap='var(--space-xl)'>
-                            <Flexblock gap='var(--space-s)'>
+                            <Flexblock gap='var(--space-3xs)'>
                                 <ComponentBlock>
                                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                                         <h2>{t('general')}</h2>
@@ -108,10 +109,14 @@ const page_title = t('groups.add.page_title');
                                                     </Select>
                                                 </FixedFluid>
                                             </VerticalCenter>
-        
-                                            <Button type="button" color={'green'} class="[ w-full ]">{t('add_group')}</Button>
                                         </Flexblock>
                                     </Flexblock>
+                                </ComponentBlock>
+
+                                <GroupAutoAccept />
+
+                                <ComponentBlock>
+                                    <Button type="button" color={'green'} class="[ w-full ]">{t('add_group')}</Button>
                                 </ComponentBlock>
                             </Flexblock>
 
