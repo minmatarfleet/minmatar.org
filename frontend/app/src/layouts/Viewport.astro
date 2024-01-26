@@ -8,19 +8,28 @@ import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 
 import SkipToContent from '@components/blocks/SkipToContent.astro';
-import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
 import Fonts from '@components/partials/Fonts.astro';
 import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
-import { PersonaFinderXData } from '@components/partials/AlpineScripts.astro';
+import PersonaFinder from '@components/blocks/PersonasFinder.astro';
+import CorporationFinder from '@components/blocks/CorporationFinder.astro';
+import AllianceFinder from '@components/blocks/AllianceFinder.astro';
+import {
+	PersonaFinderXData,
+	CorporationFinderXData,
+	AllianceFinderXData,
+	UtilitiesXData
+} from '@components/partials/AlpineScripts.astro';
 
 interface Props {
-	title: 				string;
-	meta_image?: 		string;
-	meta_description?: 	string;
-	neocom?: 			boolean;
-	personas_finder?:	boolean;
+	title: 					string;
+	meta_image?: 			string;
+	meta_description?: 		string;
+	neocom?: 				boolean;
+	personas_finder?:		boolean;
+	corporation_finder?:	boolean;
+	alliance_finder?:		boolean;
 }
 
 const {
@@ -29,6 +38,8 @@ const {
 	meta_description = t('generic.meta_description'),
 	neocom = true,
 	personas_finder = false,
+	corporation_finder = false,
+	alliance_finder = false,
 } = Astro.props
 
 import 'tippy.js/dist/tippy.css';
@@ -63,9 +74,12 @@ import '../styles/base.scss';
 	</head>
 	<body
 		class="[ viewport-layout ]"
-		x-data={`
+		x-data={`{
 			${personas_finder ? PersonaFinderXData : ''}
-		`}
+			${corporation_finder ? CorporationFinderXData : ''}
+			${alliance_finder ? AllianceFinderXData : ''}
+            ${UtilitiesXData}
+		}`}
 	>
 		<SkipToContent />
 
@@ -75,6 +89,12 @@ import '../styles/base.scss';
 
 		{personas_finder &&
 			<PersonaFinder />
+		}
+		{corporation_finder &&
+			<CorporationFinder />
+		}
+		{alliance_finder &&
+			<AllianceFinder />
 		}
 
 		<FooterScripts />

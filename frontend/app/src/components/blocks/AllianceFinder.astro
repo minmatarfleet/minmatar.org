@@ -10,32 +10,23 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from './VerticalCenter.astro';
 
-import personas from '@json/hosted/personas.json';
-import { semantic_list } from '@helpers/array';
+import alliances from '@json/hosted/alliances.json';
 
-import { get_player_icon } from '@helpers/eve_image_server';
+import { get_alliance_logo } from '@helpers/eve_image_server';
 
 interface Props {
     [propName: string]: any;
 }
-
-const translations = {
-    pilot: t('pilot'),
-    director: t('director'),
-    administrator: t('administrator'),
-}
 ---
 
 <div
-    class="[ personas_finder ]"    
+    class="[ alliances_finder ]"    
     x-data={`{
         filter: '',
         show_item(el) {
             const name_container = el.querySelector('span')
-            const role_container = el.querySelector('small')
             const show_item = (
-                this.filter != '' && name_container.textContent.toLowerCase().includes(this.filter.toLowerCase()) &&
-                (persona_finder_role != 'all' && role_container.textContent.toLowerCase().includes(persona_finder_role.toLowerCase()))
+                this.filter != '' && name_container.textContent.toLowerCase().includes(this.filter.toLowerCase())
             )
 
             return show_item
@@ -43,30 +34,30 @@ const translations = {
     }`}
 >
     <Dialog
-        x-bind:class="personas_finder_open ? 'open' : ''"
+        x-bind:class="alliances_finder_open ? 'open' : ''"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
     >
-        <Input placeholder={t('find_persona_placeholder')} x-model="filter" />
+        <Input placeholder={t('find_alliance_placeholder')} x-model="filter" />
 
         <div class="[ relative ]">
-            <Flexblock class="[ persona-list ][ light-transparency w-full ]" gap='0'>
-                {personas.map((persona) =>
+            <Flexblock class="[ alliance-list ][ light-transparency w-full ]" gap='0'>
+                {alliances.map((alliance) =>
                     <button
                         type="button"
-                        persona-finder-action="accept"
-                        persona-finder-data={JSON.stringify(persona)}
+                        alliance-finder-action="accept"
+                        alliance-finder-data={JSON.stringify(alliance)}
                         x-show="show_item($el)"
                         x-on:click="filter = ''"
                     >
                         <FixedFluid width='64px'>
                             <picture>
-                                <img src={get_player_icon(persona.character_id)} height="64" width="64" alt={`${persona.name} ${t('profile_picture')}`} />
+                                <img src={get_alliance_logo(alliance.alliance_id, 64)} height="64" width="64" alt={`${alliance.name} ${t('profile_picture')}`} />
                             </picture>
                             <VerticalCenter>
                                 <Flexblock gap='0' class="[ items-start ]">
-                                    <span class="[ truncate ]">{persona.name}</span>
-                                    <small>{semantic_list(lang, persona.roles.map((role) => translations[role]))}</small>
+                                    <span class="[ truncate ]">{alliance.name}</span>
+                                    <small>{`${alliance.members_count} ${t('members_count').toLowerCase()}`}</small>
                                 </Flexblock>
                             </VerticalCenter>
                         </FixedFluid>
@@ -77,14 +68,14 @@ const translations = {
     </Dialog>
 
     <div
-        x-bind:class="personas_finder_open ? 'open' : ''"
-        persona-finder-action="close"
+        x-bind:class="alliances_finder_open ? 'open' : ''"
+        alliance-finder-action="close"
         x-on:click="filter = ''"
     />
 </div>
 
 <style lang="scss">
-    :global([persona-finder-action] *) {
+    :global([alliance-finder-action] *) {
         pointer-events: none !important;
     }
 
@@ -92,7 +83,7 @@ const translations = {
         top: 200px;
     }
     
-    .persona-list {
+    .alliance-list {
         position: absolute;
         overflow-y: auto;
         max-height: 320px;
@@ -101,7 +92,7 @@ const translations = {
         border-top: none;
     }
 
-    [persona-finder-action="close"] {
+    [alliance-finder-action="close"] {
         position: fixed;
         inset: 0;
         z-index: var(--backdrop-z-index);
@@ -112,7 +103,7 @@ const translations = {
         }
     }
 
-    [persona-finder-action="accept"] {
+    [alliance-finder-action="accept"] {
         background-color: transparent;
         cursor: pointer;
         border: none;

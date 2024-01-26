@@ -12,11 +12,7 @@ const {
 ---
 
 <div class="max-h-[66px] relative">
-    <select {...attributes}
-        onfocus='this.size=(this.childElementCount < 10 ? this.childElementCount : 10)'
-        onblur='this.size=0'
-        onchange='this.size=1; this.blur()'
-    >
+    <select {...attributes}>
         <slot />
     </select>
     

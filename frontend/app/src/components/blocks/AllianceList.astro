@@ -1,0 +1,106 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Button from '@components/blocks/Button.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<Flexblock
+    class:list={['alliance-list', Astro.props.class]}
+    {...attributes}
+    gap='var(--space-s)'
+    x-data={`{
+        alliances: [],
+        add_alliance(alliance) {
+            if (!alliance) return
+
+            const exist = this.alliances.find((existing_alliance) => existing_alliance.name === alliance.name)
+
+            if (exist) return
+            
+            this.alliances.push({
+                alt: alliance.name+' ${t('logo').toLowerCase()}',
+                name: alliance.name,
+                members_count: alliance.members_count,
+                alliance_id: alliance.alliance_id,
+            })
+        },
+        remove_alliance(name) {
+            this.alliances = this.alliances.filter(item => item.name !== name)
+        },
+    }`}
+>
+    <FlexInline
+        justification='space-between'
+        gap="var(--space-s)"
+    >
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('alliances')}</h2>
+            <small class="!mt-[var(--space-3xs)]" x-text={'`${alliances.length} '+t('alliance').toLowerCase()+'${alliances.length != 1 ? `s` : ``}`'}>0 {t('alliances').toLowerCase()}</small>
+        </Flexblock>
+
+        <VerticalCenter>
+            <Button
+                size='sm'
+                type="button"
+                color={'green'}
+                class="[ w-full ]"
+                x-on:click="add_alliance(await show_alliances_finder())"
+            >
+                {t('add_alliance')}
+            </Button>
+        </VerticalCenter>
+    </FlexInline>
+
+    <Flexblock gap='var(--space-3xs)'>
+        <template x-for="alliance in alliances">
+            <FixedFluid width='64px'>
+                <img x-bind:src="get_alliance_logo(alliance.alliance_id, 64)" width="64" height="64" alt="alliance.alt">
+                <FluidFixed width="64px">
+                    <VerticalCenter>
+                        <Flexblock gap='0'>
+                            <span class="text-[var(--highlight)]" x-text="alliance.name" />
+                            <small x-text={`alliance.members_count+' ${t('members_count').toLowerCase()}'`} />
+                        </Flexblock>
+                    </VerticalCenter>
+                    <VerticalCenter>
+                        <Button x-on:click="remove_alliance(alliance.name)" size='sm' type="button">
+                            <TrashIcon slot="icon" />
+                        </Button>
+                    </VerticalCenter>
+                </FluidFixed>
+            </FixedFluid>
+        </template>
+
+        <p x-bind:class="{ hidden: alliances.length > 0 }">{t('empty_alliances_text')}</p>
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    .alliance-list {
+        animation: var(--slow-transition);
+
+        &.disabled {
+            pointer-events: none;
+            opacity: 0.25;
+        }
+    }
+</style>

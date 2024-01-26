@@ -36,13 +36,18 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
-import Managers from '@components/blocks/Managers.astro';
+import ManagersList from '@components/blocks/ManagersList.astro';
 import GroupAutoAccept from '@components/blocks/GroupAutoAccept.astro';
 
 const page_title = t('groups.add.page_title');
 ---
 
-<Viewport title={page_title} personas_finder={true}>
+<Viewport
+    title={page_title}
+    personas_finder={true}
+    corporation_finder={true}
+    alliance_finder={true}
+>
     <PageCover
         image="/images/groups-cover.jpg"
         image_990="/images/groups-cover-990.jpg"
@@ -56,9 +61,6 @@ const page_title = t('groups.add.page_title');
         id="content"
         x-data={`{
             group_name: '',
-            get_player_icon(id, size = 64) {
-                return 'https://images.evetech.net/characters/'+id+'/portrait?size='+size;
-            }
         }`}
     >
         <PageHeader max_width="var(--max-content-width)">
@@ -124,7 +126,9 @@ const page_title = t('groups.add.page_title');
                     </Wrapper>
 
                     <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                        <Managers />
+                        <ComponentBlock class="sticky top-[var(--sticky-top)]">
+                            <ManagersList />
+                        </ComponentBlock>
                     </Wrapper>
                 </FixedFluid>
             </form>

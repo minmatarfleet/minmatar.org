@@ -31,3 +31,10 @@ export const group_by = (list:any[], key:any) => {
 
     return result
 }
+
+export const semantic_list = (locale = 'en-US', list:string[]):string => {
+    return new Intl.ListFormat(locale, {
+        style: 'long',
+        type: 'conjunction',
+    }).format(list)
+}
