@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from eveonline.routers.corporations import router as corporations_router
+from eveonline.router import router as corporations_router
 from ninja import NinjaAPI
 
 from .views import index
