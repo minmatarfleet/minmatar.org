@@ -36,6 +36,13 @@ services:
         depends_on:
             db:
                 condition: service_healthy
+    
+    frontend:
+        build:
+            context: ./frontend/
+            dockerfile: Dockerfile
+        depends_on:
+            - app
 
     proxy:
         image: nginx:stable
