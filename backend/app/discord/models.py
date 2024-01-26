@@ -1,4 +1,5 @@
 """Database models for Discord integration"""
+
 import logging
 
 from discord.client import DiscordClient

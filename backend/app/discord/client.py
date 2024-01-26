@@ -1,4 +1,5 @@
 """Client wrapper for interacting with Discord API"""
+
 import logging
 
 import requests
