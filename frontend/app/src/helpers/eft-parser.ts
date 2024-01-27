@@ -6,7 +6,7 @@ import inv_types from '@json/eve_sde/invTypes.json';
 import custom_group from '@json/eve_sde/customGroup.json';
 import { get_item_icon } from '@helpers/eve_image_server';
 
-import type { Fittable, FittingParsed } from '@dtypes/LayoutComponents';
+import type { Fittable, FittingParsed } from '@dtypes/layout_components';
 
 export const parse_eft = (fitting_eft: string) => {
     const fittables:Fittable[] = parse_fittables(fitting_eft)

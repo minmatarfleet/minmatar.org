@@ -86,48 +86,45 @@ const page_title = t('groups.add.page_title');
                 x-on:submit.prevent="submitted = true;"
             >
                 <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                        <Flexblock gap='var(--space-xl)'>
-                            <Flexblock gap='var(--space-3xs)'>
-                                <ComponentBlock>
-                                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                        <h2>{t('general')}</h2>
-        
-                                        <Flexblock>
-                                            <VerticalCenter>
-                                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                    <label for="name">{t('name')}</label>
-                                                    <Input id="name" name="name" type="text" x-model="group_name" required />
-                                                </FixedFluid>
-                                            </VerticalCenter>
+                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <ComponentBlock>
+                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                    <h2>{t('general')}</h2>
+    
+                                    <Flexblock>
+                                        <VerticalCenter>
+                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                                <label for="name">{t('name')}</label>
+                                                <Input id="name" name="name" type="text" x-model="group_name" required />
+                                            </FixedFluid>
+                                        </VerticalCenter>
 
-                                            <VerticalCenter>
-                                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                    <label for="visibility">{t('visibility')}</label>
-                                                    <Select id="visibility" x-model="visibility">
-                                                        <option value="astrahus">Public</option>
-                                                        <option value="fortizar">Private</option>
-                                                        <option value="keepstar">Unlisted</option>
-                                                    </Select>
-                                                </FixedFluid>
-                                            </VerticalCenter>
-                                        </Flexblock>
+                                        <VerticalCenter>
+                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                                <label for="visibility">{t('visibility')}</label>
+                                                <Select id="visibility" x-model="visibility">
+                                                    <option value="astrahus">Public</option>
+                                                    <option value="fortizar">Private</option>
+                                                    <option value="keepstar">Unlisted</option>
+                                                </Select>
+                                            </FixedFluid>
+                                        </VerticalCenter>
                                     </Flexblock>
-                                </ComponentBlock>
+                                </Flexblock>
+                            </ComponentBlock>
 
-                                <GroupAutoAccept />
+                            <GroupAutoAccept />
 
-                                <ComponentBlock>
-                                    <Button type="button" color={'green'} class="[ w-full ]">{t('add_group')}</Button>
-                                </ComponentBlock>
-                            </Flexblock>
-
+                            <ComponentBlock>
+                                <Button type="button" color={'green'} class="[ w-full ]">{t('add_group')}</Button>
+                            </ComponentBlock>
                         </Flexblock>
                     </Wrapper>
 
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                        <ComponentBlock class="sticky top-[var(--sticky-top)]">
-                            <ManagersList />
+                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                        <ComponentBlock class="w-full sticky top-[var(--sticky-top)]">
+                            <ManagersList readonly={false} />
                         </ComponentBlock>
                     </Wrapper>
                 </FixedFluid>

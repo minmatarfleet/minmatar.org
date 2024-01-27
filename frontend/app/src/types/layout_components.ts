@@ -153,3 +153,26 @@ export interface FreightCalculation {
     expiration:       string;
     days_to_complete: string;
 }
+
+export type roles = 'pilot' | 'director' | 'administrator'
+
+export interface ManagerListData {
+    id:             number;
+    name:           string;
+    roles:          roles[];
+    character_id:   number;
+}
+
+export interface CorporationListData {
+    id:             number;
+    name:           string;
+    members_count:  number;
+    corporation_id: number;
+}
+
+export interface AllianceListData {
+    id:             number;
+    name:           string;
+    members_count:  number;
+    alliance_id:    number;
+}

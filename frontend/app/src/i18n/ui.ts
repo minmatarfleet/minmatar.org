@@ -247,5 +247,8 @@ export const ui = {
         'add_alliance': 'Add alliance',
         'empty_alliances_text': 'No alliance found.',
         'find_alliance_placeholder': 'Type alliance name to find',
+        'auto_accept_corporation_switch': 'Auto-accept pilots from the following corporations into this group',
+        'auto_accept_alliance_switch': 'Auto-accept pilots within the following alliance into this group',
+        'auto_accept_skills_switch': 'Auto-accept pilots with the following skills into this group',
     },
 } as const;

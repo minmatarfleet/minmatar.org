@@ -4,11 +4,22 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import Switch from '@components/blocks/Switch.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
-import CorporationList from './CorporationList.astro';
-import AllianceList from './AllianceList.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import CorporationList from '@components/blocks/CorporationList.astro';
+import AllianceList from '@components/blocks/AllianceList.astro';
+import ManagersList from '@components/blocks/ManagersList.astro';
+import SwitchSquare from './SwitchSquare.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
 ---
 
 <ComponentBlock
@@ -16,23 +27,24 @@ import AllianceList from './AllianceList.astro';
         auto_accept_corporation: false,
         auto_accept_alliance: false,
     }`}
+    {...attributes}
 >
-    <Flexblock class="[ w-full ]" gap='var(--space-2xl)'>
+    <Flexblock gap='var(--space-2xl)'>
         <h2>{t('auto_accept_group_policy')}</h2>
         
-        <Flexblock gap='var(--space-xl)'>
-            <Switch class="[ w-full ]" x-model="auto_accept_corporation">Enable to auto-accept pilots from the following corporations</Switch>
-            <CorporationList class="disabled" x-bind:class="{ disabled: !auto_accept_corporation }" />
+        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]" x-model="auto_accept_corporation">{t('auto_accept_corporation_switch')}</SwitchSquare>
+            <CorporationList readonly={false} class="disabled" x-bind:class="{ disabled: !auto_accept_corporation }" />
         </Flexblock>
 
-        <Flexblock gap='var(--space-xl)'>
-            <Switch class="[ w-full ]" x-model="auto_accept_alliance">Enable to auto-accept pilots within the following alliance</Switch>
-            <AllianceList class="disabled" x-bind:class="{ disabled: !auto_accept_alliance }" />
+        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]" x-model="auto_accept_alliance">{t('auto_accept_alliance_switch')}</SwitchSquare>
+            <AllianceList readonly={false} class="disabled" x-bind:class="{ disabled: !auto_accept_alliance }" />
         </Flexblock>
 
-        <Flexblock gap='var(--space-xl)'>
-            <Switch class="[ w-full ]">Enable to auto-accept pilots with the following skills</Switch>
-            <p>No skills added.</p>
+        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]">{t('auto_accept_skills_switch')}</SwitchSquare>
+            <p>No skills found.</p>
         </Flexblock>
     </Flexblock>
 </ComponentBlock>

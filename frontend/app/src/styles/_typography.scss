@@ -35,3 +35,8 @@ label {
     text-transform: uppercase;
     font-weight: 400;
 }
+
+img {
+    font-size: var(--step--2);
+    color: var(--foreground);
+}

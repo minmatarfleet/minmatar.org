@@ -4,19 +4,28 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+import type { CorporationListData } from '@dtypes/layout_components';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
+import ScrollX from '@components/compositions/ScrollX.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 
 interface Props {
+    input_name?:        string;
+    readonly?:          boolean;
+    corporations?:      CorporationListData[];
     [propName: string]: any;
 }
 
 const {
+    input_name = 'corporations',
+    readonly = true,
+    corporations = [],
     ...attributes
 } = Astro.props;
 
@@ -28,8 +37,13 @@ delete attributes.class
     {...attributes}
     gap='var(--space-s)'
     x-data={`{
-        corporations: [],
-        add_corporation(corporation) {
+        corporations: ${JSON.stringify(corporations)},
+        corporations_ids: [],
+        generate_ids() {
+            this.corporations_ids = this.corporations.map(e => e.corporation_id).join(',')
+        },
+        ${readonly ? '' :
+        `add_corporation(corporation) {
             if (!corporation) return
 
             const exist = this.corporations.find((existing_corporation) => existing_corporation.name === corporation.name)
@@ -42,11 +56,15 @@ delete attributes.class
                 members_count: corporation.members_count,
                 corporation_id: corporation.corporation_id,
             })
+
+            this.generate_ids()
         },
         remove_corporation(name) {
             this.corporations = this.corporations.filter(item => item.name !== name)
-        },
+            this.generate_ids()
+        },`}
     }`}
+    x-init="generate_ids"
 >
     <FlexInline
         justification='space-between'
@@ -57,34 +75,46 @@ delete attributes.class
             <small class="!mt-[var(--space-3xs)]" x-text={'`${corporations.length} '+t('corporation').toLowerCase()+'${corporations.length != 1 ? `s` : ``}`'}>0 {t('corporations').toLowerCase()}</small>
         </Flexblock>
 
-        <VerticalCenter>
-            <Button
-                size='sm'
-                type="button"
-                color={'green'}
-                class="[ w-full ]"
-                x-on:click="add_corporation(await show_corporations_finder())"
-            >
-                {t('add_corporation')}
-            </Button>
-        </VerticalCenter>
+        {!readonly && 
+            <VerticalCenter>
+                <Button
+                    size='sm'
+                    type="button"
+                    color={'green'}
+                    class="[ w-full ]"
+                    x-on:click="add_corporation(await show_corporations_finder())"
+                >
+                    {t('add_corporation')}
+                </Button>
+            </VerticalCenter>
+        }
     </FlexInline>
 
     <Flexblock gap='var(--space-3xs)'>
         <template x-for="corporation in corporations">
-            <FixedFluid width='64px'>
-                <img x-bind:src="get_corporation_logo(corporation.corporation_id, 64)" width="64" height="64" alt="corporation.alt">
-                <FluidFixed width="64px">
+            <FixedFluid width='64px' class="[ corporation-item ]">
+                <picture>
+                    <img x-bind:src="get_corporation_logo(corporation.corporation_id, 256)" width="64" height="64" alt="corporation.alt">
+                </picture>
+                <FluidFixed width='46px' breakpoint='60%'>
                     <VerticalCenter>
-                        <Flexblock gap='0'>
-                            <span class="text-[var(--highlight)]" x-text="corporation.name" />
-                            <small x-text={`corporation.members_count+' ${t('members_count').toLowerCase()}'`} />
+                        <Flexblock gap='0' class="[ w-full ]">
+                            <span class="truncate text-[var(--highlight)]" x-text="corporation.name" />
+                            <small class="truncate" x-text={`corporation.members_count+' ${t('members_count').toLowerCase()}'`} />
                         </Flexblock>
                     </VerticalCenter>
                     <VerticalCenter>
-                        <Button x-on:click="remove_corporation(corporation.name)" size='sm' type="button">
-                            <TrashIcon slot="icon" />
-                        </Button>
+                        {!readonly &&
+                            <Button
+                                class="[ action-button ]"
+                                x-on:click="remove_corporation(corporation.name)"
+                                size='sm'
+                                type="button"
+                                narrow={true}
+                            >
+                                <TrashIcon slot="icon" />
+                            </Button>
+                        }
                     </VerticalCenter>
                 </FluidFixed>
             </FixedFluid>
@@ -92,11 +122,35 @@ delete attributes.class
 
         <p x-bind:class="{ hidden: corporations.length > 0 }">{t('empty_corporations_text')}</p>
     </Flexblock>
+
+    <input type="hidden" name={input_name}" x-model="corporations_ids">
 </Flexblock>
 
 <style lang="scss">
     .corporation-list {
         animation: var(--slow-transition);
+
+        img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        .corporation-item {
+            @media (hover: hover) {
+                .action-button {
+                    transition: var(--fast-transition);
+                    opacity: 0;
+                }
+
+                &:hover,
+                &:focus-within {
+                    .action-button {
+                        opacity: 1;
+                    }
+                }
+            }
+        }
 
         &.disabled {
             pointer-events: none;

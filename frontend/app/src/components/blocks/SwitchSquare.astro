@@ -12,7 +12,7 @@ const {
 ---
 
 <label class="[ switch ]">
-    <FluidFixed width='46px' class="[ items-center ]">
+    <FluidFixed width='46px' breakpoint='80%' class="[ items-center ]">
         <div class="[ w-full ]">
             <slot />
         </div>
@@ -62,7 +62,7 @@ const {
         --effect-width: calc(var(--circle-diameter) / 2);
         --effect-height: calc(var(--effect-width) / 2 - 1px);
         --effect-bg: var(--circle-bg);
-        --effect-border-radius: 1px;
+        --effect-border-radius: 0;
         --effect-transition: all .2s ease-in-out;
     }
 
@@ -75,6 +75,7 @@ const {
         cursor: pointer;
         font-family: var(--montserrat);
         text-transform: none;
+        line-height: 1.4;
 
         [disabled] + .slider {
             filter: saturate(50%);
@@ -108,7 +109,6 @@ const {
         width: var(--switch-width);
         height: var(--switch-height);
         background: var(--switch-bg);
-        border-radius: 999px;
         display: -webkit-box;
         display: -ms-flexbox;
         display: flex;
@@ -126,7 +126,6 @@ const {
         width: var(--circle-diameter);
         height: var(--circle-diameter);
         background: var(--circle-bg);
-        border-radius: inherit;
         -webkit-box-shadow: var(--circle-shadow);
         box-shadow: var(--circle-shadow);
         display: -webkit-box;
@@ -153,7 +152,6 @@ const {
         height: var(--effect-height);
         left: calc(var(--switch-offset) + (var(--effect-width) / 2));
         background: var(--effect-bg);
-        border-radius: var(--effect-border-radius);
         -webkit-transition: var(--effect-transition);
         -o-transition: var(--effect-transition);
         transition: var(--effect-transition);

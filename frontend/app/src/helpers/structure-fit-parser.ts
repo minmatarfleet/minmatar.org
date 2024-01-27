@@ -1,8 +1,8 @@
 import inv_types from '@json/eve_sde/invTypes.json';
 import { get_item_icon } from '@helpers/eve_image_server';
 
-import type { FittingGroups, StructureFittable } from '@dtypes/LayoutComponents';
-import { is_of_structure_slots_type } from '@dtypes/LayoutComponents';
+import type { FittingGroups, StructureFittable } from '@dtypes/layout_components';
+import { is_of_structure_slots_type } from '@dtypes/layout_components';
 
 import { group_by } from '@helpers/array';
 
