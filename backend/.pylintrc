@@ -150,6 +150,7 @@ disable=abstract-method,
         no-member,
         line-too-long,
         consider-using-set-comprehension,
+        unused-argument
 
 
 [REPORTS]

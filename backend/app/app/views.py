@@ -1,4 +1,5 @@
 """Base views for the application"""
+
 from django.shortcuts import render
 
 

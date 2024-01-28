@@ -1,4 +1,5 @@
 """Views for the Discord app, deprecated"""
+
 import requests
 from django.conf import settings
 from django.contrib.auth import login, logout

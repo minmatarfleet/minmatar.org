@@ -1,4 +1,5 @@
 """Manages the authentication of users through Discord."""
+
 from django.contrib.auth.backends import BaseBackend
 
 from .models import DiscordUser

@@ -1,4 +1,5 @@
 """Celery app"""
+
 import os
 
 from celery import Celery

@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from authentication import UnauthorizedError
 from authentication import router as auth_router
 from discord.views import discord_login
@@ -21,7 +22,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from eveonline.routers import router 
+from eveonline.routers import router
 from ninja import NinjaAPI
 
 from .views import index
