@@ -21,14 +21,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from eveonline.routers.corporations import router as corporations_router
+from eveonline.routers import router 
 from ninja import NinjaAPI
 
 from .views import index
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("auth/", auth_router)
-api.add_router("eveonline/", corporations_router)
+api.add_router("eveonline/", router)
 
 
 @api.exception_handler(UnauthorizedError)
