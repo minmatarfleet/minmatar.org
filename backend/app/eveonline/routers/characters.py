@@ -72,7 +72,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             scopes = []
 
     @token_required(scopes=scopes, new=True)
-    def wrapped(request, token):
+    def wrapped(request):
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)
