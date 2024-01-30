@@ -2,9 +2,10 @@
 
 import logging
 
-from discord.client import DiscordClient
 from django.contrib.auth.models import Group, User
 from django.db import models
+
+from discord.client import DiscordClient
 
 # Create your models here.
 discord = DiscordClient()

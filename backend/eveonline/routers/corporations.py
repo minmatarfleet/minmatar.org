@@ -1,8 +1,9 @@
 from typing import List
 
+from ninja import ModelSchema, Router, Schema
+
 from authentication import AuthBearer, requires_permission
 from eveonline.models import EveCorporation, EveCorporationApplication
-from ninja import ModelSchema, Router, Schema
 
 router = Router(tags=["Corporations"])
 

@@ -3,8 +3,9 @@ from typing import List
 
 from django.contrib.auth.models import User
 from esi.models import Token
-from eveonline.models import EveCorporation, EvePrimaryToken
 from pydantic import BaseModel
+
+from eveonline.models import EveCorporation, EvePrimaryToken
 
 
 class TokenType(Enum):

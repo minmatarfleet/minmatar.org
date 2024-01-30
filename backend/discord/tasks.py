@@ -1,9 +1,9 @@
 import logging
 
-from discord.client import DiscordClient
 from django.contrib.auth.models import Group
 
 from app.celery import app
+from discord.client import DiscordClient
 
 discord = DiscordClient()
 logging = logging.getLogger(__name__)

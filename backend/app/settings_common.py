@@ -27,8 +27,6 @@ INSTALLED_APPS = [
     # Django packages
     "django_extensions",
     "django_celery_beat",
-    "crispy_forms",
-    "crispy_bootstrap5",
     "esi",
     # Discord auth
     "discord.apps.DiscordConfig",

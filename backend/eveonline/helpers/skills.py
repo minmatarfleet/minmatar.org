@@ -2,8 +2,9 @@ import json
 from typing import List
 
 import pydantic
-from eveonline.models import EveCharacter, EveCharacterSkillset
 from eveuniverse.models import EveType
+
+from eveonline.models import EveCharacter, EveCharacterSkillset
 
 
 class EveCharacterSkillResponse(pydantic.BaseModel):
