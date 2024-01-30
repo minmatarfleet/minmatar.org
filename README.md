@@ -10,6 +10,16 @@ Platform for Minmatar Fleet
 - Install `pre-commit` on your machine (e.g `brew install`)
 - Install libmariadb-dev or libmysqlclient-dev
 
+# Hosts
+To run this project behind the Nginx proxy, you must update your `/etc/hosts` file. Google the instructions for whatever your operating system is.
+
+You need to add the following,
+```
+# Minmatar.org Local Development
+127.0.0.1       api.local.minmatar.org
+127.0.0.1       local.minmatar.org
+```
+
 # Quickstart
 1. Copy the contents of `docker-compose-local.yml` into `docker-compose.yml`
 2. Setup your `.env` file based on the `.env.example` file
