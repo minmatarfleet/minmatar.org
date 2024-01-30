@@ -1,9 +1,10 @@
 import logging
 
-from discord.client import DiscordClient
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.dispatch import receiver
+
+from discord.client import DiscordClient
 
 from .models import DiscordRole
 

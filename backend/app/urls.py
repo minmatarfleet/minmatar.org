@@ -15,17 +15,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from authentication import UnauthorizedError
-from authentication import router as auth_router
-from discord.views import discord_login
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from eveonline.routers import router
+from django.views.generic.base import RedirectView
 from ninja import NinjaAPI
 
-from .views import index
+from authentication import UnauthorizedError
+from authentication import router as auth_router
+from discord.views import discord_login
+from eveonline.routers import router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("auth/", auth_router)
@@ -38,6 +38,7 @@ def unauthorized(request, exc):
 
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="api/docs")),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),
     path(

@@ -1,7 +1,8 @@
 from enum import Enum
-from ninja import Router
-from esi.decorators import token_required
+
 from django.shortcuts import redirect
+from esi.decorators import token_required
+from ninja import Router
 
 router = Router(tags=["Characters"])
 
