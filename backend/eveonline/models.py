@@ -6,38 +6,15 @@ from django.db import models
 from esi.clients import EsiClientProvider
 from esi.models import Token
 
+from eveonline.scopes import CEO_SCOPES
+
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
 
 # Create your models here.
-class EvePrimaryToken(models.Model):
-    """Allow users to set a primary token, essentially their main character"""
-
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="eve_primary_token"
-    )
-    token = models.OneToOneField(Token, on_delete=models.CASCADE)
-
-
 class EveCorporation(models.Model):
     """Corporation model"""
-
-    required_ceo_scopes = [
-        "esi-corporations.read_corporation_membership.v1",
-        "esi-corporations.read_structures.v1",
-        "esi-corporations.read_blueprints.v1",
-        "esi-corporations.read_contacts.v1",
-        "esi-corporations.read_container_logs.v1",
-        "esi-corporations.read_divisions.v1",
-        "esi-corporations.read_facilities.v1",
-        "esi-corporations.read_fw_stats.v1",
-        "esi-corporations.read_medals.v1",
-        "esi-corporations.read_starbases.v1",
-        "esi-corporations.read_titles.v1",
-        "esi-wallet.read_corporation_wallets.v1",
-        "esi-contracts.read_corporation_contracts.v1",
-    ]
 
     types = (
         ("alliance", "Alliance"),
@@ -73,7 +50,7 @@ class EveCorporation(models.Model):
             token_scopes = set(
                 [scope.name for scope in ceo_token.scopes.all()]
             )
-            required_scopes = set(self.required_ceo_scopes)
+            required_scopes = set(CEO_SCOPES)
             if token_scopes.issuperset(required_scopes):
                 return True
         return False
