@@ -38,7 +38,6 @@ def unauthorized(request, exc):
 
 
 urlpatterns = [
-    path("", index, name="index"),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),
     path(
@@ -49,5 +48,4 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("sso/", include("esi.urls")),
     path("oauth2/", include("discord.urls")),
-    path("eveonline/", include("eveonline.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
