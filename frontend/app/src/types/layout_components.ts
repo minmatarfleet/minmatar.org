@@ -156,7 +156,7 @@ export interface FreightCalculation {
 
 export type roles = 'pilot' | 'director' | 'administrator'
 
-export interface ManagerListData {
+export interface PersonaListData {
     id:             number;
     name:           string;
     roles:          roles[];

@@ -8,7 +8,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import CorporationList from '@components/blocks/CorporationList.astro';
 import AllianceList from '@components/blocks/AllianceList.astro';
-import ManagersList from '@components/blocks/ManagersList.astro';
 import SwitchSquare from './SwitchSquare.astro';
 
 interface Props {
@@ -29,21 +28,21 @@ delete attributes.class
     }`}
     {...attributes}
 >
-    <Flexblock gap='var(--space-2xl)'>
+    <Flexblock gap='var(--space-l)'>
         <h2>{t('auto_accept_group_policy')}</h2>
         
-        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]" x-model="auto_accept_corporation">{t('auto_accept_corporation_switch')}</SwitchSquare>
-            <CorporationList readonly={false} class="disabled" x-bind:class="{ disabled: !auto_accept_corporation }" />
+        <Flexblock gap='var(--space-s)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]" description={t('auto_accept_corporation_switch')} x-model="auto_accept_corporation" />
+            <CorporationList readonly={false} empty_text={false} class="disabled" x-bind:class="{ disabled: !auto_accept_corporation }" />
         </Flexblock>
 
-        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]" x-model="auto_accept_alliance">{t('auto_accept_alliance_switch')}</SwitchSquare>
-            <AllianceList readonly={false} class="disabled" x-bind:class="{ disabled: !auto_accept_alliance }" />
+        <Flexblock gap='var(--space-s)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]" x-model="auto_accept_alliance" description={t('auto_accept_alliance_switch')} />
+            <AllianceList readonly={false} empty_text={false} class="disabled" x-bind:class="{ disabled: !auto_accept_alliance }" />
         </Flexblock>
 
-        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]">{t('auto_accept_skills_switch')}</SwitchSquare>
+        <Flexblock gap='var(--space-s)' class="[ w-full ]">
+            <SwitchSquare class="[ w-full ]" description={t('auto_accept_skills_switch')} />
             <p>No skills found.</p>
         </Flexblock>
     </Flexblock>

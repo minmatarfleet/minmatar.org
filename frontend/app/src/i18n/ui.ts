@@ -32,6 +32,10 @@ export const ui = {
         '403.leading_text': 'Docking permission denied!',
         '403.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
+        '500.page_title': '500',
+        '500.leading_text': 'Oops! No text yet.',
+        '500.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
+
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
         'fitting.cover_alt': 'Collage of holgraphic pirate propaganda.',
@@ -87,6 +91,9 @@ export const ui = {
         'groups.page_title': 'Groups',
         'groups.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
         'groups.cover_alt': 'Amarr hauler activating warp drive',
+        
+        'account.page_title': 'Account details',
+        'account.cover_alt': 'Capsule in the background of a dark ambience',
 
         'groups.add.page_title': 'Add group',
 
@@ -131,6 +138,7 @@ export const ui = {
         'icon.zkillboard.alt': 'Eve Online Combat Log Icon',
         'icon.intel.alt': 'Eve Online Structures Icon',
         'icon.groups.alt': 'Eve Online Group List Icon',
+        'icon.pilots.alt': 'Eve Online Pilot License Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -236,6 +244,11 @@ export const ui = {
         'general': 'General',
         'auto_accept_group_policy': 'Auto-accept group policy',
         'find_persona_placeholder': 'Type persona name to find',
+        'add_persona': 'Add persona',
+        'add_pilot': 'Add pilot',
+        'empty_pilots_text': 'No pilot found',
+        'persona': 'Persona',
+        'empty_personas_text': 'No persona found.',
         'empty_managers_text': 'No manager found.',
         'corporations': 'Corporations',
         'add_corporation': 'Add corporation',
@@ -243,6 +256,7 @@ export const ui = {
         'logo': 'Logo',
         'members_count': 'Members count',
         'find_corporation_placeholder': 'Type corporation name to find',
+        'logout': 'Logout',
         'alliances': 'Alliances',
         'add_alliance': 'Add alliance',
         'empty_alliances_text': 'No alliance found.',
@@ -250,5 +264,12 @@ export const ui = {
         'auto_accept_corporation_switch': 'Auto-accept pilots from the following corporations into this group',
         'auto_accept_alliance_switch': 'Auto-accept pilots within the following alliance into this group',
         'auto_accept_skills_switch': 'Auto-accept pilots with the following skills into this group',
+        'enable_danger_zone_switch_title': 'Unlocking Doomsday',
+        'enable_danger_zone_switch_description': 'Unleash havoc and destruction with just a touch of your finger.',
+        'unregister_account': 'Unregister this account',
+        'unregister_account_description': 'Once you unregister, there is no going back. Please be certain.',
+        'ok': 'OK',
+        'add_pilot_dialog_title': 'Add pilot disclaimer',
+        'add_pilot_dialog_text': 'You will undergo the pilot linking process outside of our site. Once it is successfully completed, we will return you to our platform.',
     },
 } as const;

@@ -9,7 +9,6 @@ import type { AllianceListData } from '@dtypes/layout_components';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-import ScrollX from '@components/compositions/ScrollX.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
@@ -17,6 +16,7 @@ import Button from '@components/blocks/Button.astro';
 
 interface Props {
     input_name?:        string;
+    empty_text?:        string | boolean;
     readonly?:          boolean;
     alliances?:         AllianceListData[];
     [propName: string]: any;
@@ -24,6 +24,7 @@ interface Props {
 
 const {
     input_name = 'alliances',
+    empty_text = t('empty_alliances_text'),
     readonly = true,
     alliances = [],
     ...attributes
@@ -120,7 +121,9 @@ delete attributes.class
             </FixedFluid>    
         </template>
         
-        <p x-bind:class="{ hidden: alliances.length > 0 }">{t('empty_alliances_text')}</p>
+        {empty_text &&
+            <p x-bind:class="{ hidden: alliances.length > 0 }">{empty_text}</p>
+        }
     </Flexblock>
 
     <input type="hidden" name={input_name}" x-model="alliances_ids">
@@ -128,7 +131,7 @@ delete attributes.class
 
 <style lang="scss">
     .alliance-list {
-        animation: var(--slow-transition);
+        transition: var(--fast-transition);
         width: 100%;
 
         img {

@@ -36,7 +36,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
-import ManagersList from '@components/blocks/ManagersList.astro';
+import PersonaList from '@components/blocks/PersonaList.astro';
 import GroupAutoAccept from '@components/blocks/GroupAutoAccept.astro';
 
 const page_title = t('groups.add.page_title');
@@ -124,7 +124,13 @@ const page_title = t('groups.add.page_title');
 
                     <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                         <ComponentBlock class="w-full sticky top-[var(--sticky-top)]">
-                            <ManagersList readonly={false} />
+                            <PersonaList
+                                label={t('manager')}
+                                add_button_text={t('add_manager')}
+                                input_name="managers"
+                                empty_text={t('empty_managers_text')}
+                                readonly={false}
+                            />
                         </ComponentBlock>
                     </Wrapper>
                 </FixedFluid>

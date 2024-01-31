@@ -4,28 +4,33 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { ManagerListData } from '@dtypes/layout_components';
+import type { PersonaListData } from '@dtypes/layout_components';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-import ScrollX from '@components/compositions/ScrollX.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 
 interface Props {
-    input_name?:        string,
+    label?:             string;
+    add_button_text?:   string;
+    input_name?:        string;
+    empty_text?:        string | boolean;
     readonly?:          boolean;
-    corporations?:      ManagerListData[];
+    personas?:          PersonaListData[];
     [propName: string]: any;
 }
 
 const {
-    input_name = 'managers',
+    label = t('persona'),
+    add_button_text = t('add_persona'),
+    input_name = 'personas',
+    empty_text = t('empty_personas_text'),
     readonly = true,
-    managers = [],
+    personas = [],
     ...attributes
 } = Astro.props;
 
@@ -33,34 +38,34 @@ delete attributes.class
 ---
 
 <Flexblock
-    class:list={['manager-list', Astro.props.class]}
+    class:list={['persona-list', Astro.props.class]}
     {...attributes}
     gap='var(--space-s)'
     x-data={`{
-        managers: ${JSON.stringify(managers)},
-        managers_ids: [],
+        personas: ${JSON.stringify(personas)},
+        personas_ids: [],
         generate_ids() {
-            this.managers_ids = this.managers.map(e => e.character_id).join(',')
+            this.personas_ids = this.personas.map(e => e.character_id).join(',')
         },
         ${readonly ? '' :
-        `add_manager(manager) {
-            if (!manager) return
+        `add_persona(persona) {
+            if (!persona) return
 
-            const exist = this.managers.find((existing_manager) => existing_manager.name === manager.name)
+            const exist = this.personas.find((existing_persona) => existing_persona.name === persona.name)
 
             if (exist) return
             
-            this.managers.push({
-                alt: manager.name+' ${t('profile_picture')}',
-                name: manager.name,
-                roles: manager.roles,
-                character_id: manager.character_id,
+            this.personas.push({
+                alt: persona.name+' ${t('profile_picture')}',
+                name: persona.name,
+                roles: persona.roles,
+                character_id: persona.character_id,
             })
 
             this.generate_ids()
         },
-        remove_manager(name) {
-            this.managers = this.managers.filter(item => item.name !== name)
+        remove_persona(name) {
+            this.personas = this.personas.filter(item => item.name !== name)
             this.generate_ids()
         },
         semantic_list(locale = 'en-US', list) {
@@ -82,8 +87,8 @@ delete attributes.class
         gap="var(--space-s)"
     >
         <Flexblock gap="var(--space-3xs)">
-            <h2>{t('managers')}</h2>
-            <small class="!mt-[var(--space-3xs)]" x-text={'`${managers.length} '+t('manager').toLowerCase()+'${managers.length != 1 ? `s` : ``}`'}>0 {t('managers').toLowerCase()}</small>
+            <h2>{label}s</h2>
+            <small class="!mt-[var(--space-3xs)]" x-text={'`${personas.length} '+label.toLowerCase()+'${personas.length != 1 ? `s` : ``}`'}>0 {label.toLowerCase()}</small>
         </Flexblock>
         
         {!readonly && 
@@ -93,32 +98,32 @@ delete attributes.class
                     type="button"
                     color={'green'}
                     class="[ w-full ]"
-                    x-on:click="add_manager(await show_personas_finder('pilot'))"
+                    x-on:click="add_persona(await show_personas_finder('pilot'))"
                 >
-                    {t('add_manager')}
+                    {add_button_text}
                 </Button>
             </VerticalCenter>
         }
     </FlexInline>
 
     <Flexblock gap='var(--space-3xs)'>
-        <template x-for="manager in managers">
-            <FixedFluid width='64px' class="[ manager-item ]">
+        <template x-for="persona in personas">
+            <FixedFluid width='64px' class="[ persona-item ]">
                 <picture>
-                    <img x-bind:src="get_player_icon(manager.character_id, 256)" width="64" height="64" alt="manager.alt">
+                    <img x-bind:src="get_player_icon(persona.character_id, 256)" width="64" height="64" alt="persona.alt">
                 </picture>
                 <FluidFixed width='46px' breakpoint='60%'>
                     <VerticalCenter>
                         <Flexblock gap='0' class="[ w-full ]">
-                            <span class="truncate text-[var(--highlight)]" x-text="manager.name" />
-                            <small class="truncate" x-text={`semantic_list('${lang}', manager.roles.map((role) => translations[role]))`} />
+                            <span class="truncate text-[var(--highlight)]" x-text="persona.name" />
+                            <small class="truncate" x-text={`semantic_list('${lang}', persona.roles.map((role) => translations[role]))`} />
                         </Flexblock>
                     </VerticalCenter>
                     <VerticalCenter>
                         {!readonly && 
                             <Button
                                 class="[ action-button ]"
-                                x-on:click="remove_manager(manager.name)"
+                                x-on:click="remove_persona(persona.name)"
                                 size='sm'
                                 type="button"
                                 narrow={true}
@@ -131,15 +136,17 @@ delete attributes.class
             </FixedFluid>
         </template>
 
-        <p x-bind:class="{ hidden: managers.length > 0 }">{t('empty_managers_text')}</p>
+        {empty_text &&
+            <p x-bind:class="{ hidden: personas.length > 0 }">{empty_text}</p>
+        }
     </Flexblock>
 
-    <input type="hidden" name={input_name} x-model="managers_ids">
+    <input type="hidden" name={input_name} x-model="personas_ids">
 </Flexblock>
 
 <style lang="scss">
-    .manager-list {
-        animation: var(--slow-transition);
+    .persona-list {
+        transition: var(--slow-transition);
 
         img {
             object-fit: cover;
@@ -147,7 +154,7 @@ delete attributes.class
             height: 100%;
         }
 
-        .manager-item {
+        .persona-item {
             @media (hover: hover) {
                 .action-button {
                     transition: var(--fast-transition);

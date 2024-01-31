@@ -1,12 +1,18 @@
 ---
 import FluidFixed from '@components/compositions/FluidFixed.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
 
 interface Props {
-    checked?: boolean;
+    checked?:           boolean;
+    label?:             false | string;
+    description?:       false | string;
     [propName: string]: any;
 }
 
 const {
+    checked = false,
+    label = false,
+    description = false,
     ...attributes
 } = Astro.props
 ---
@@ -14,7 +20,7 @@ const {
 <label class="[ switch ]">
     <FluidFixed width='46px' breakpoint='80%' class="[ items-center ]">
         <div class="[ w-full ]">
-            <slot />
+            <TextGroup title={label} text={description} />
         </div>
 
         <div>
@@ -76,6 +82,7 @@ const {
         font-family: var(--montserrat);
         text-transform: none;
         line-height: 1.4;
+        color: var(--fleet-yellow);
 
         [disabled] + .slider {
             filter: saturate(50%);

@@ -1,4 +1,32 @@
 ---
+export const AlertDialogXData = `
+    alert_dialog_open: false,
+    alert_dialog_title: '',
+    alert_dialog_content: '',
+    async show_alert_dialog(title, content) {
+        this.alert_dialog_title = title
+        this.alert_dialog_content = content
+        this.alert_dialog_open = true
+        
+        await this.alert_dialog_close()
+        this.alert_dialog_open = false
+    },
+    alert_dialog_close() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('alert-dialog-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('alert-dialog-action')
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
+    
 export const PersonaFinderXData = `
     personas_finder_open: false,
     persona_finder_role: 'all',

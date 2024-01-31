@@ -31,7 +31,7 @@ const page = Astro.url.pathname
             <NeocomButton href={translatePath('/')} overlay={true}>
                 <FleetLogo />
             </NeocomButton>
-            <UserAuth />
+            <UserAuth active={page.includes(translatePath('/account/'))} />
         </Flexblock>
         <NeocomButton active={page.includes(translatePath('/fitting/'))} title={t('neocom.fitting')} href={translatePath('/fitting/')}>
             <FitsEvEIcon />

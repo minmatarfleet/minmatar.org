@@ -76,8 +76,11 @@ const Element = href ? 'a' : 'button';
             &:hover:not([disabled]) {
                 cursor: pointer;
                 transform: scale(1.05);
+            }
 
-                &[data-size="sm"] {
+            &[data-size="sm"] {
+                &:focus-visible,
+                &:hover:not([disabled]) {
                     transform: scale(1.1);
                 }
             }
@@ -87,16 +90,22 @@ const Element = href ? 'a' : 'button';
             transform: scale(1);
         }
 
+        &[data-size="sm"] {
+            &:active:not([disabled]) {
+                transform: scale(1);
+            }
+        }
+
         /* Tactile */
         @media (hover: none) {
             transform: scale(1);
 
             &:active:not([disabled]) {
                 transform: scale(0.95);
+            }
 
-                &[data-size="sm"] {
-                    transform: scale(0.90);
-                }
+            &[data-size="sm"]:active:not([disabled]) {
+                transform: scale(0.90);
             }
         }
 

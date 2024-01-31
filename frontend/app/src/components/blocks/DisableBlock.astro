@@ -1,0 +1,30 @@
+---
+interface Props {
+    disabled?:          boolean;
+    x_model:            string;
+    [propName: string]: any;
+}
+
+const {
+    disabled = true,
+    x_model,
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div
+    class:list={['disable-block', Astro.props.class, { disabled: disabled }]}
+     {...attributes}
+     x-bind:class={`{ disabled:  !${x_model} }`}
+>
+    <slot />
+</div>
+
+<style lang="scss">
+    .disable-block.disabled {
+        pointer-events: none;
+        opacity: 0.25;
+    }
+</style>
