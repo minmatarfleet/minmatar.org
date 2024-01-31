@@ -2,12 +2,14 @@ import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 // import alpine from '@astrojs/alpinejs';
 // import svelte from '@astrojs/svelte';
-import netlify from '@astrojs/netlify';
+import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
     output: 'server',
-    adapter: netlify(),
+    adapter: node({
+        mode: 'standalone'
+    }),
     prefetch: {
         defaultStrategy: 'viewport'
     },

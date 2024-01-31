@@ -150,6 +150,8 @@ disable=abstract-method,
         no-member,
         line-too-long,
         consider-using-set-comprehension,
+        unused-argument,
+        broad-exception-caught,
 
 
 [REPORTS]
@@ -422,12 +424,3 @@ valid-classmethod-first-arg=cls,
 
 # List of valid names for the first argument in a metaclass class method.
 valid-metaclass-classmethod-first-arg=mcs
-
-
-[EXCEPTIONS]
-
-# Exceptions that will emit a warning when being caught. Defaults to
-# "Exception"
-overgeneral-exceptions=StandardError,
-                       Exception,
-                       BaseException

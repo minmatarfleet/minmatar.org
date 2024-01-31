@@ -1,0 +1,33 @@
+version: '2.0'
+
+services:
+    app:
+        build:
+            context: ./backend/.
+            dockerfile: Dockerfile
+        working_dir: /opt/minmatar/app
+        command: ./app-start.sh
+        env_file:
+            - .env
+        ports:
+            - "8000:8000"
+
+    beat:
+        build:
+            context: ./backend/.
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app beat -l info
+        depends_on:
+            - app
+
+    celery:
+        build:
+            context: ./backend/.
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app worker -l info
+        depends_on:
+            - app
