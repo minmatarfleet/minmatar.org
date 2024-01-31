@@ -5,6 +5,11 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
 import fleets from '@json/page/fleets/upcoming.json';
 
 import Flexblock from '@components/compositions/Flexblock.astro';

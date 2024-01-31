@@ -3,10 +3,14 @@ body {
     font-family: var(--default-font);
 }
 
-h1, h2, h3, h4 {
+h1, h2, h3 {
     font-family: var(--heading-font);
     text-transform: uppercase;
     font-weight: 400;
+}
+
+h4 {
+    font-weight: 600;
 }
 
 h1 {
@@ -31,9 +35,7 @@ h5 {
 
 label {
     color: var(--highlight);
-    font-family: var(--heading-font);
-    text-transform: uppercase;
-    font-weight: 400;
+    font-weight: 600;
 }
 
 img {

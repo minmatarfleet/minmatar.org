@@ -5,6 +5,11 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
 import { number_name } from '@helpers/numbers.ts';
 
 import summaries from '@json/page/freight/summary.json';

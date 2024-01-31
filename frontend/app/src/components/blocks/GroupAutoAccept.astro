@@ -32,17 +32,17 @@ delete attributes.class
         <h2>{t('auto_accept_group_policy')}</h2>
         
         <Flexblock gap='var(--space-s)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]" description={t('auto_accept_corporation_switch')} x-model="auto_accept_corporation" />
+            <SwitchSquare class="[ w-full ]" label={t('by_corporation')} description={t('auto_accept_corporation_switch')} x-model="auto_accept_corporation" />
             <CorporationList readonly={false} empty_text={false} class="disabled" x-bind:class="{ disabled: !auto_accept_corporation }" />
         </Flexblock>
 
         <Flexblock gap='var(--space-s)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]" x-model="auto_accept_alliance" description={t('auto_accept_alliance_switch')} />
+            <SwitchSquare class="[ w-full ]" x-model="auto_accept_alliance" label={t('by_alliance')} description={t('auto_accept_alliance_switch')} />
             <AllianceList readonly={false} empty_text={false} class="disabled" x-bind:class="{ disabled: !auto_accept_alliance }" />
         </Flexblock>
 
         <Flexblock gap='var(--space-s)' class="[ w-full ]">
-            <SwitchSquare class="[ w-full ]" description={t('auto_accept_skills_switch')} />
+            <SwitchSquare class="[ w-full ]" label={t('by_skill')} description={t('auto_accept_skills_switch')} />
             <p>No skills found.</p>
         </Flexblock>
     </Flexblock>

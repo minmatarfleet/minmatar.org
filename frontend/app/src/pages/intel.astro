@@ -1,9 +1,12 @@
 ---
+
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -42,15 +45,17 @@ const page_description = t('intel.leading_text');
                         {t('how_to_scan')}
                     </Button>
 
-                    <Button href={translatePath('/intel/structures/')}>
-                        <MagnifierIcon slot="icon" />
-                        {t('view_structures')}
-                    </Button>
-                    
-                    <Button color={'green'} href={translatePath('/intel/add_structure/')}>
-                        <AddIcon slot="icon" />
-                        {t('add_structure')}
-                    </Button>
+                    {!is_prod_mode() &&
+                        <Button href={translatePath('/intel/structures/')}>
+                            <MagnifierIcon slot="icon" />
+                            {t('view_structures')}
+                        </Button>
+                        
+                        <Button color={'green'} href={translatePath('/intel/add_structure/')}>
+                            <AddIcon slot="icon" />
+                            {t('add_structure')}
+                        </Button>
+                    }
                 </ButtonStack>
             </Flexblock>
 		</Wrapper>

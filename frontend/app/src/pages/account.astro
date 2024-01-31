@@ -5,6 +5,8 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import { is_prod_mode } from '@helpers/env'
+
 import type { JWTCookies, JWT } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -17,6 +19,13 @@ const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(auth_t
 if (!claim)
     return Astro.redirect(translatePath('/403/'))
 
+import { semantic_list } from '@helpers/array';
+
+let roles:string[] = []
+if (claim.is_superuser) roles.push(t('administrator'))
+if (claim.is_staff) roles.push(t('director'))
+const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('no_roles_assigned'))
+
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org'
 
@@ -25,7 +34,7 @@ let get_characters_error = false;
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
-    get_characters_error = error.message
+    get_characters_error = (is_prod_mode() ? t('get_character_error') : error.message)
 }
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -95,8 +104,8 @@ const page_title = t('account.page_title');
                         <Flexblock gap='var(--space-xl)' class="[ w-full ]">
                             <ComponentBlock class="w-full">
                                 <FlexInline gap="var(--space-3xl)">
-                                    <TextGroup title="Account name" text={claim.username} />
-                                    <TextGroup title="Joined" text="February 21, 2024" />
+                                    <TextGroup title={t('account_name')} text={claim.username} />
+                                    <TextGroup title={t('roles')} text={roles_semantic_list} />
                                 </FlexInline>
                             </ComponentBlock>
 
@@ -127,7 +136,7 @@ const page_title = t('account.page_title');
                                         <DisableBlock x_model="danger_zone_enable">
                                             <FlexInline justification='space-between'>
                                                 <TextGroup title={t('unregister_account')} text={t('unregister_account_description')} />
-                                                <Button size='sm'>
+                                                <Button type="button" size='sm'>
                                                     {t('unregister_account')}
                                                 </Button>
                                             </FlexInline>
