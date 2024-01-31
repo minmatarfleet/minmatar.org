@@ -15,6 +15,8 @@ auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={setting
 
 
 def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
+    # get next and store in session
+    request.session["next"] = request.GET.get("next")
     return redirect(auth_url_discord)
 
 
@@ -42,7 +44,9 @@ def discord_login_redirect(request: HttpRequest):
 
         login(request, django_user)
 
-        return redirect("/admin/")
+        if request.session.get("next"):
+            return redirect(request.session["next"])
+        return redirect("/admin")
 
     django_user = User.objects.create(username=user["username"])
     django_user.username = user["username"]
@@ -56,7 +60,9 @@ def discord_login_redirect(request: HttpRequest):
     )
 
     login(request, django_user)
-    return redirect("/admin/")
+    if request.session.get("next"):
+        return redirect(request.session["next"])
+    return redirect("/admin")
 
 
 def exchange_code(code: str):
@@ -66,7 +72,7 @@ def exchange_code(code: str):
         "client_secret": settings.DISCORD_CLIENT_SECRET,
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": settings.DISCORD_REDIRECT_URL,
+        "redirect_uri": settings.DISCORD_ADMIN_REDIRECT_URL,
         "scope": "identify",
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -76,6 +82,7 @@ def exchange_code(code: str):
         headers=headers,
         timeout=10,
     )
+    print(response.json())
     credentials = response.json()
     access_token = credentials["access_token"]
     response = requests.get(

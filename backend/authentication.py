@@ -18,8 +18,8 @@ discord = DiscordClient()
     summary="Login with discord",
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
-def login(request, redirect_url: str = None):
-    request.session["redirect_url"] = redirect_url
+def login(request, redirect_url: str):
+    request.session["authentication_redirect_url"] = redirect_url
     return redirect(auth_url_discord)
 
 
@@ -72,7 +72,9 @@ def callback(request, code: str):
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
     return redirect(
-        request.session["redirect_url"] + "?token=" + encoded_jwt_token
+        request.session["authentication_redirect_url"]
+        + "?token="
+        + encoded_jwt_token
     )
 
 
