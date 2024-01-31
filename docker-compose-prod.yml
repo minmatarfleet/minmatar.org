@@ -5,12 +5,12 @@ services:
         build:
             context: ./backend/.
             dockerfile: Dockerfile
-        working_dir: /opt/minmatar/app
+        working_dir: /opt/minmatar
         command: ./app-start.sh
         env_file:
             - .env
         ports:
-            - "8000:8000"
+            - "8020:8000"
 
     beat:
         build:

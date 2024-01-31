@@ -20,8 +20,8 @@ from django.urls import path
 from discord import views
 
 urlpatterns = [
-    path("login", views.discord_login, name="oauth-login"),
-    path("logout", views.discord_logout, name="oauth-logout"),
+    path("login/", views.discord_login, name="oauth-login"),
+    path("logout/", views.discord_logout, name="oauth-logout"),
     path(
         "login/redirect",
         views.discord_login_redirect,
