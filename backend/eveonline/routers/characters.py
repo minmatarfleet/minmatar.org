@@ -1,79 +1,95 @@
+import json
 from enum import Enum
+from typing import List
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from esi.decorators import token_required
+from esi.models import Token
 from ninja import Router
+from pydantic import BaseModel
+
+from authentication import AuthBearer
+from eveonline.models import EveCharacter
+from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
 
 router = Router(tags=["Characters"])
 
 
 class TokenType(Enum):
     CEO = "CEO"
-    ALLIANCE = "Alliance"
-    ASSOCIATE = "Associate"
-    MILITIA = "Militia"
-    PUBLIC = "Public"
+    BASIC = "Basic"
+    ADVANCED = "Advanced"
 
 
-CEO_SCOPES = [
-    "esi-corporations.read_corporation_membership.v1",
-    "esi-corporations.read_structures.v1",
-    "esi-corporations.read_blueprints.v1",
-    "esi-corporations.read_contacts.v1",
-    "esi-corporations.read_container_logs.v1",
-    "esi-corporations.read_divisions.v1",
-    "esi-corporations.read_facilities.v1",
-    "esi-corporations.read_fw_stats.v1",
-    "esi-corporations.read_medals.v1",
-    "esi-corporations.read_starbases.v1",
-    "esi-corporations.read_titles.v1",
-    "esi-wallet.read_corporation_wallets.v1",
-    "esi-contracts.read_corporation_contracts.v1",
-]
+class BasicCharacterResponse(BaseModel):
+    character_id: int
+    character_name: str
 
-MILITIA_SCOPES = [
-    "esi-characters.read_loyalty.v1",
-    "esi-killmails.read_killmails.v1",
-    "esi-characters.read_fw_stats.v1",
-]
 
-ALLIANCE_SCOPES = [
-    "esi-wallet.read_character_wallet.v1",
-    "esi-skills.read_skills.v1",
-    "esi-skills.read_skillqueue.v1",
-    "esi-characters.read_loyalty.v1",
-    "esi-killmails.read_killmails.v1",
-    "esi-characters.read_fw_stats.v1",
-    "esi-clones.read_clones.v1",
-    "esi-clones.read_implants.v1",
-    "esi-assets.read_assets.v1",
-] + MILITIA_SCOPES
+class CharacterResponse(BasicCharacterResponse):
+    skills: dict
 
-ASSOCIATE_SCOPES = [
-    "esi-planets.manage_planets.v1",
-    "esi-industry.read_character_jobs.v1",
-    "esi-industry.read_character_mining.v1",
-] + ALLIANCE_SCOPES
+
+@router.get(
+    "/{int:character_id}",
+    summary="Get character by ID",
+    auth=AuthBearer(),
+    response=CharacterResponse,
+)
+def get_character_by_id(request, character_id: int):
+    character = EveCharacter.objects.get(character_id=character_id)
+
+    if (
+        request.user.has_perm("eveonline.view_evecharacter")
+        or Token.objects.filter(
+            user=request.user, character_id=character_id
+        ).exists()
+    ):
+        return {
+            "character_id": character.character_id,
+            "character_name": character.character_name,
+            "skills": json.loads(character.skills_json),
+        }
+
+    return 403, "You do not have permission to view this character."
 
 
 @router.get("/add", summary="Login with EVE Online")
 def add_character(request, redirect_url: str, token_type: TokenType):
+    print("hi")
     request.session["redirect_url"] = redirect_url
     scopes = None
     match token_type:
-        case TokenType.ALLIANCE:
-            scopes = ALLIANCE_SCOPES
-        case TokenType.ASSOCIATE:
-            scopes = ASSOCIATE_SCOPES
-        case TokenType.MILITIA:
-            scopes = MILITIA_SCOPES
+        case TokenType.BASIC:
+            scopes = BASIC_SCOPES
+        case TokenType.ADVANCED:
+            scopes = ADVANCED_SCOPES
         case TokenType.CEO:
             scopes = CEO_SCOPES
-        case TokenType.PUBLIC:
-            scopes = []
 
+    @login_required()
     @token_required(scopes=scopes, new=True)
-    def wrapped(request):
+    def wrapped(request, _):
         return redirect(request.session["redirect_url"])
 
-    return wrapped(request)
+    return wrapped(request)  # pylint: disable=no-value-for-parameter
+
+
+@router.get(
+    "",
+    summary="Get characters",
+    auth=AuthBearer(),
+    response=List[BasicCharacterResponse],
+)
+def get_characters(request):
+    tokens = Token.objects.filter(user=request.user)
+    response = []
+    for token in tokens:
+        response.append(
+            {
+                "character_id": token.character_id,
+                "character_name": token.character_name,
+            }
+        )
+    return response
