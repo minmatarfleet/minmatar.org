@@ -31,3 +31,12 @@ services:
         command: celery -A app worker -l info
         depends_on:
             - app
+
+    frontend:
+        build:
+            context: ./frontend/
+            dockerfile: Dockerfile
+        depends_on:
+            - app
+        ports:
+            - "4321:4321"
