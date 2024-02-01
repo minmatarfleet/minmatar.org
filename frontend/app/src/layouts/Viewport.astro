@@ -86,11 +86,23 @@ import '../styles/base.scss';
             ${UtilitiesXData}
 		}`}
 	>
-		<SkipToContent />
+		<div
+			class="[ viewport-layout-inner ]"
+			x-bind:inert={`
+				${[
+					alert_dialog ? 'alert_dialog_open' : false,
+					personas_finder ? 'personas_finder_open' : false,
+					corporation_finder ? 'corporations_finder_open' : false,
+					alliance_finder ? 'alliances_finder_open' : false,
+				].join(' || ')}
+			`}
+		>
+			<SkipToContent />
 
-		{neocom && <Neocom />}
-		<slot />
-		<canvas id="confetti-canvas" transition:persist></canvas>
+			{neocom && <Neocom />}
+			<slot />
+			<canvas id="confetti-canvas" transition:persist></canvas>
+		</div>
 
 		{alert_dialog &&
 			<AlertDialog />
