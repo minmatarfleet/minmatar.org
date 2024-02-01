@@ -54,6 +54,7 @@ const portrait = Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value
 
         &.active:before {
             content: ' ';
+            z-index: 1;
             position: absolute;
             border-radius: 50%;
             filter: blur(4px);
