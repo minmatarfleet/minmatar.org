@@ -4,6 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+import { get_player_icon } from '@helpers/eve_image_server';
 import type { Character } from '@dtypes/api.minmatar.org'
 
 interface Props {
@@ -38,6 +39,10 @@ delete attributes.class
     x-data={`{
         pilots: ${JSON.stringify(pilots)},
         pilots_ids: [],
+        init() {
+            $refs.server_side_render.remove()
+            this.generate_ids()
+        },
         generate_ids() {
             this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
         },
@@ -45,7 +50,7 @@ delete attributes.class
             window.location.href = "https://api.minmatar.org/api/eveonline/characters/add?redirect_url=http://localhost:4321/account&token_type=Advanced"
         }
     }`}
-    x-init="generate_ids"
+    x-init="init"
 >
     <FlexInline
         justification='space-between'
@@ -53,7 +58,9 @@ delete attributes.class
     >
         <Flexblock gap="var(--space-3xs)">
             <h2>{t('pilot')}s</h2>
-            <small class="!mt-[var(--space-3xs)]" x-text={'`${pilots.length} '+t('pilot').toLowerCase()+'${pilots.length != 1 ? `s` : ``}`'}>0 {t('pilot').toLowerCase()}</small>
+            <small class="!mt-[var(--space-3xs)]" x-text={'`${pilots.length} '+t('pilot').toLowerCase()+'${pilots.length != 1 ? `s` : ``}`'}>
+                {pilots.length} {pilots.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}
+            </small>
         </Flexblock>
         
         {!readonly && 
@@ -70,6 +77,28 @@ delete attributes.class
             </VerticalCenter>
         }
     </FlexInline>
+
+    <Flexblock x-ref="server_side_render" gap='var(--space-3xs)'>
+        {pilots.map((pilot) =>
+            <FixedFluid width='64px'>
+                <picture>
+                    <img src={get_player_icon(pilot.character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${pilot.character_name}`}>
+                </picture>
+                <FluidFixed width='46px' breakpoint='60%'>
+                    <VerticalCenter>
+                        <Flexblock gap='0' class="[ w-full ]">
+                            <span class="truncate text-[var(--highlight)]" set:text={pilot.character_name} />
+                            <small class="truncate">Not group membership</small>
+                        </Flexblock>
+                    </VerticalCenter>
+                    <VerticalCenter></VerticalCenter>
+                </FluidFixed>
+            </FixedFluid>
+        )}
+        {empty_text && pilots.length == 0 &&
+            <p>{empty_text}</p>
+        }
+    </Flexblock>
 
     <Flexblock gap='var(--space-3xs)'>
         <template x-for="pilot in pilots">
@@ -101,7 +130,7 @@ delete attributes.class
         </template>
 
         {empty_text &&
-            <p x-bind:class="{ hidden: pilots.length > 0 }">{empty_text}</p>
+            <p class="hidden" x-bind:class="{ hidden: pilots.length > 0 }">{empty_text}</p>
         }
     </Flexblock>
 
@@ -109,6 +138,14 @@ delete attributes.class
 </Flexblock>
 
 <style lang="scss">
+    [x-ref="server_side_render"] + .flex-block {
+        margin-block-start: 0;
+    }
+
+    template + .pilot-item {
+        margin-block-start: 0;
+    }
+
     .pilot-list {
         transition: var(--slow-transition);
 
