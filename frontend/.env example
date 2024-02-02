@@ -1,0 +1,3 @@
+MINMATAR_AUTH="https://api.minmatar.org/api/auth/login?redirect_url=https://my.minmatar.org/auth/login"
+MINMATAR_API_ENDPOINT="https://api.minmatar.org/api/eveonline"
+DATETIME_FORMAT='{"weekday":"short","year":"numeric","month":"short","day":"numeric","hour":"numeric","hourCycle":"h23","minute":"2-digit"}'
