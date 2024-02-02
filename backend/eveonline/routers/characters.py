@@ -10,7 +10,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCharacterTag
 from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
 
 router = Router(tags=["Characters"])
@@ -90,6 +90,17 @@ def get_characters(request):
             {
                 "character_id": token.character_id,
                 "character_name": token.character_name,
+                # TODO Sav: Add tags
             }
         )
+    return response
+
+@router.post(
+    "/tags",
+    summary="",
+    auth=AuthBearer(),
+    response=List[str]
+)
+def post_character_tags(request):
+    response = []
     return response
