@@ -174,11 +174,11 @@ const {
 
         /* actions */
 
-    .switch input:focus-within+.slider .circle {
+    .switch input:focus-visible+.slider .circle {
         left: calc(var(--switch-offset) + 4px);
     }
 
-    .switch input:checked:focus-within+.slider .circle {
+    .switch input:checked:focus-visible+.slider .circle {
         left: calc(100% - var(--circle-diameter) - var(--switch-offset)  - 4px);
     }
 
