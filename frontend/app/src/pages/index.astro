@@ -6,11 +6,17 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import { is_prod_mode } from '@helpers/env'
+
+import * as jose from 'jose'
+
+const claim = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) : false
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
 import Button from '@components/blocks/Button.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
-import Cover from '@components/compositions/Cover.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -25,29 +31,59 @@ const page_title = t('index.page_title');
     </video>
 
 	<main id="content">		
-		<Cover>
+		<Wrapper max_width="var(--max-text-width)" neocom={true}>
 			<Flexblock centered={true} gap='var(--space-m-l)'>
 				<h1><FleetLogo width='150px' height='150px' /></h1>
-				<Flexblock gap="var(--space-3xs)" class="[ text-center ]">
-					<h4>{t('index.incoming_text')}</h4>
-					<Countdown date={data.countdown+' UTC'} />
-				</Flexblock>
-				<Button href={translatePath(data.countdown_href)}>
-					<MagnifierIcon slot="icon" />
-					{t('view_details')}
-				</Button>
+				{!is_prod_mode() ?
+					<Flexblock gap="var(--space-3xs)" class="[ text-center ]">
+						<h4>{t('index.incoming_text')}</h4>
+						<Countdown date={data.countdown+' UTC'} />
+					</Flexblock>
+					<Button href={translatePath(data.countdown_href)}>
+						<MagnifierIcon slot="icon" />
+						{t('view_details')}
+					</Button>
+				:
+					<h2>Welcome to minmatar tools</h2>
+					<Flexblock class="[ text-center ]">
+						<p>Our platform is currently undergoing development, and new features will be rolled out gradually. New sections will be posted in the Neocom bar.</p>
+						<small>For starters, you may link your pilots to our platform through the user section in the Neocom bar.</small>
+					</Flexblock>
+				}
 			</Flexblock>
-		</Cover>
+		</Wrapper>
 	</main>
 </Viewport>
 
-<style>
+<style lang="scss">
     html,
     body {
         height: 100vh;
         width: 100%;
         padding: 0;
         margin: 0;
+    }
+
+	h2 {
+		font-size: var(--step-3);
+	}
+
+	h4 {
+		font-family: var(--heading-font);
+		text-transform: uppercase;
+		font-weight: 400;
+	}
+
+	small {
+		color: var(--highlight);
+	}
+
+	#content {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+		position: relative;
+		justify-content: center;
     }
 
 	h4 {

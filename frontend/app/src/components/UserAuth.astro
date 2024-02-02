@@ -1,18 +1,29 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 interface Props {
-    title?: string;
+    title?:  string;
+    active?: boolean;
 }
 
-const { title = "TBD" } = Astro.props;
+const {
+    title = "",
+    active = false,
+} = Astro.props;
+
+const href = Astro.cookies.has('auth_token') ? translatePath('/account/') : import.meta.env.MINMATAR_AUTH
+const portrait = Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : "https://images.evetech.net/characters/1/portrait?size=64"
 ---
 
-<a href={import.meta.env.DISCORD_AUTH}>
-    <img class="confetti-image" src="https://images.evetech.net/characters/2121103796/portrait?size=64" width="48" height="48" alt="Beautiful Mim" />
+<a
+    href={href}
+    class:list={[ { active: active } ]}
+>
+    <img class="confetti-image" src={portrait} width="48" height="48" alt="Beautiful Mim" />
 </a>
 
 <style lang="scss">
@@ -24,6 +35,44 @@ const { title = "TBD" } = Astro.props;
         width: 48px;
         justify-content: center;
         align-items: center;
+
+        &:after {
+            content: ' ';
+            position: absolute;
+            right: 0;
+            width: 2px;
+            top: 15px;
+            bottom: 15px;
+            background-color: transparent;
+            transition: var(--fast-transition);
+        }
+
+        &:active:after,
+        &:focus:after {
+            background-color: var(--highlight);
+        }
+
+        &.active:before {
+            content: ' ';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(4px);
+            right: 2px;
+            width: 3px;
+            top: 12px;
+            bottom: 12px;
+            background-color: var(--highlight);
+        }
+
+        &.active:after {
+            content: ' ';
+            position: absolute;
+            right: 0;
+            width: 2px;
+            top: 10px;
+            bottom: 10px;
+            background-color: var(--highlight);
+        }
 
         &:focus-visible {
             outline: none;

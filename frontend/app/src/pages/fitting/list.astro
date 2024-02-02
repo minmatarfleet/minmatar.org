@@ -1,9 +1,16 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-import fits from '@json/page/fitting/list.json';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
+import fits from '@json/page/fitting/list.json';
 
 let fitting_type = {};
 let ship_type = {};

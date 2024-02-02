@@ -16,8 +16,10 @@ const { max_width = '80rem' } = Astro.props
 
 <style is:global lang="scss">
     .post-content {
-        //background-color: var(--background);
-
         min-height: 100vh;
+
+        * {
+            scroll-margin-top: var(--space-3xl);
+        }
     }
 </style>

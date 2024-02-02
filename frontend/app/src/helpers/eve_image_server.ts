@@ -1,5 +1,5 @@
 import modules_icon_lookup from '@json/hosted/modules-icon-lookup.json';
-import type { EvEImageServiceSize } from '@dtypes/LayoutComponents'
+import type { EvEImageServiceSize } from '@dtypes/layout_components'
 
 export const get_item_icon = (id:number, size:EvEImageServiceSize = 64):string => {
     return `https://images.evetech.net/types/${id}/${size <= 64 ? 'icon' : 'render'}?size=${size}`;

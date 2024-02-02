@@ -1,0 +1,12 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+Astro.cookies.delete('auth_token', { path: '/' })
+Astro.cookies.delete('avatar', { path: '/' })
+
+return Astro.redirect(translatePath('/'))
+---

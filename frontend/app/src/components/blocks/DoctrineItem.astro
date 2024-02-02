@@ -6,9 +6,9 @@ const t = useTranslations(lang);
 
 import { get_item_icon_by_name } from '@helpers/eve_image_server';
 
-import type { DoctrineItem } from '@dtypes/LayoutComponents';
+import type { DoctrineItem } from '@dtypes/layout_components';
 
-import Wrapper from '@components/compositions/Wrapper.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Grid from '@components/compositions/Grid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import VerticalCenter from './VerticalCenter.astro';
@@ -29,13 +29,7 @@ const {
 } = Astro.props
 ---
 
-<Wrapper
-    class="[ card component ][ light-transparency ]"
-    padding_block='var(--space-l)'
-    padding_inline='var(--space-l-xl)'
-    max_width='100%'
-    {...attributes}
->
+<ComponentBlock {...attributes}>
     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
         <h2>{doctrine.doctrine_name}</h2>
         <Grid
@@ -70,7 +64,7 @@ const {
             </VerticalCenter>
         </FlexInline>
     </Flexblock>
-</Wrapper>
+</ComponentBlock>
 
 <style lang="scss">
     .wrapper {

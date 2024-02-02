@@ -6,6 +6,11 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
 if (Astro.request.method === "POST") {
     // TODO: Call to add fleet endpoint here with data from "await Astro.request.formData()"
     console.log(`TODO: Call to add fleet endpoint here with data from "await Astro.request.formData()"`)
@@ -198,7 +203,7 @@ const today = new Date().toISOString().split("T")[0]
 
                                 <ComponentBlock>
                                     <Flexblock gap="var(--space-m)">
-                                        <h2 x-text={`doctrines_metadata[doctrine].name+' ${t('doctrine')}'`}></h2>
+                                        <h4 x-text={`doctrines_metadata[doctrine].name+' ${t('doctrine')}'`}></h4>
                                         <FlexInline>
                                             <template x-for="fitting in doctrines_metadata[doctrine].fittings">
                                                 <img class="confetti-image" height="64" width="64" x-bind:src="fitting.image" x-bind:alt="fitting.alt">

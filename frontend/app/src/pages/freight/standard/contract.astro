@@ -5,7 +5,12 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { FreightCalculation } from '@dtypes/LayoutComponents'
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
+import type { FreightCalculation } from '@dtypes/layout_components'
 
 const from = Astro.cookies.has('from') ? Astro.cookies.get('from').value : ''
 if (!Astro.cookies.has('contract')) {

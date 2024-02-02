@@ -1,0 +1,35 @@
+---
+interface Props {
+    min_content_width?: string;
+    [propName: string]: any;
+}
+
+const {
+    min_content_width = '400px',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div class:list={['scrollx', Astro.props.class]} {...attributes}>
+    <slot />
+</div>
+
+<style lang="scss" is:global define:vars={{
+    scrollx_min_content_width: min_content_width
+}}>
+    .scrollx > * {
+        min-width: var(--scrollx_min_content_width);
+        width: 100%;
+        max-width: 100%;
+    }
+</style>
+
+<style lang="scss" is:global>
+    .scrollx {
+        overflow-x: auto;
+        width: 100%;
+        display: block;
+    }
+</style>

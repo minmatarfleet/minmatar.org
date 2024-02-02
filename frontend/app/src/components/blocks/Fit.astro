@@ -1,10 +1,10 @@
 ---
-import type { FittingGroups } from '@dtypes/LayoutComponents';
+import type { FittingGroups } from '@dtypes/layout_components';
 import { parse_eft } from '@helpers/eft-parser.ts';
 
-import Wrapper from '@components/compositions/Wrapper.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FitSlot from '@components/blocks/FitSlot.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 interface Props {
     fitting: string;
@@ -39,9 +39,9 @@ for (let group_title in fitting_parsed) {
 ---
 
 <Flexblock gap='var(--space-3xs)'>
-
+    
     {fitting_groups.map((fitting_group) =>
-        <Wrapper class="[ card component ][ light-transparency ]" padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width="var(--max-text-width)">
+        <ComponentBlock max_width='var(--max-text-width)'>
             <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                 <h2>{fitting_group.name}</h2>
                 <Flexblock role="list" gap="var(--space-3xs)">
@@ -50,7 +50,7 @@ for (let group_title in fitting_parsed) {
                     )}
                 </Flexblock>
             </Flexblock>
-        </Wrapper>
+        </ComponentBlock>
     )}
 
 </Flexblock>

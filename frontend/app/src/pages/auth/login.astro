@@ -1,0 +1,26 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+import * as jose from 'jose'
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
+
+let error = null
+let token = null
+let claims = null
+try {
+    token = Astro.url.searchParams.get('token')
+    claims = jose.decodeJwt(token)
+} catch (error) {
+    console.error('Error during token exchange:', error.message);
+    error = error.message
+}
+
+Astro.cookies.set('auth_token', token, { path: '/' })
+Astro.cookies.set('avatar', claims.avatar, { path: '/' })
+
+return Astro.redirect(translatePath('/account/'))
+---

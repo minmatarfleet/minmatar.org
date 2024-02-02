@@ -1,0 +1,98 @@
+[
+    {
+        "id": 1,
+        "name": "Beautiful Mim",
+        "roles": [ "pilot", "administrator" ],
+        "character_id": 2121103796
+    },
+    {
+        "id": 2,
+        "name": "BearThatCares",
+        "roles": [ "pilot", "director", "administrator" ],
+        "character_id": 634915984
+    },
+    {
+        "id": 3,
+        "name": "Faye Vaelent",
+        "roles": [ "pilot", "director" ],
+        "character_id": 2120834555
+    },
+    {
+        "id": 4,
+        "name": "Vengo Rin",
+        "roles": [ "pilot", "director" ],
+        "character_id": 94716101
+    },
+    {
+        "id": 5,
+        "name": "Lenoir Etoille",
+        "roles": [ "pilot" ],
+        "character_id": 91942574
+    },
+    {
+        "id": 6,
+        "name": "Bush DaNasty",
+        "roles": [ "pilot" ],
+        "character_id": 1762602524
+    },
+    {
+        "id": 7,
+        "name": "Allzin Alterra",
+        "roles": [ "pilot" ],
+        "character_id": 2120251058
+    },
+    {
+        "id": 8,
+        "name": "Grimmur Tomatar",
+        "roles": [ "pilot" ],
+        "character_id": 2119244256
+    },
+    {
+        "id": 9,
+        "name": "Jediknarf",
+        "roles": [ "pilot" ],
+        "character_id": 1710141876
+    },
+    {
+        "id": 10,
+        "name": "Josh Josh",
+        "roles": [ "pilot" ],
+        "character_id": 2022564972
+    },
+    {
+        "id": 11,
+        "name": "Nateryl",
+        "roles": [ "pilot" ],
+        "character_id": 1603863923
+    },
+    {
+        "id": 12,
+        "name": "Richard Stallmanu Stallmania",
+        "roles": [ "pilot" ],
+        "character_id": 91259735
+    },
+    {
+        "id": 13,
+        "name": "Savron Nabaoth",
+        "roles": [ "pilot" ],
+        "character_id": 431146913
+    },
+    {
+        "id": 14,
+        "name": "Shotz11",
+        "roles": [ "pilot" ],
+        "character_id": 1651521364
+    },
+    {
+        "id": 15,
+        "name": "Tyshalle Fallen",
+        "roles": [ "pilot" ],
+        "character_id": 955656982
+    },
+    {
+        "id": 16,
+        "name": "Zibazabazoo",
+        "roles": [ "pilot" ],
+        "character_id": 93907696
+    }
+]
