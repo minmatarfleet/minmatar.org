@@ -1,0 +1,151 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
+import type { JWTCookies, JWT } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
+
+if (!claim /*|| !claim?.permissions?.includes('auth.change_group')*/)
+    return Astro.redirect(translatePath('/403/'))
+
+if (Astro.request.method === "POST") {
+    // TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"
+    console.log(`TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"`)
+
+    return Astro.redirect(translatePath('/intel/structures'))
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import PageCover from '@components/page/PageCover.astro';
+import PageHeader from '@components/page/PageHeader.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageBody from '@components/page/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+import PersonaList from '@components/blocks/PersonaList.astro';
+import GroupAutoAccept from '@components/blocks/GroupAutoAccept.astro';
+
+const page_title = t('groups.add.page_title');
+---
+
+<Viewport
+    title={page_title}
+    personas_finder={true}
+    corporation_finder={true}
+    alliance_finder={true}
+>
+    <PageCover
+        image="/images/groups-cover.jpg"
+        image_990="/images/groups-cover-990.jpg"
+        alt={t('groups.cover_alt')}
+        animated={false}
+        scrollable={true}
+        overlay={true}
+    />
+
+	<main 
+        id="content"
+        x-data={`{
+            group_name: '',
+        }`}
+    >
+        <PageHeader max_width="var(--max-content-width)">
+            <FlexInline justification='space-between'>
+                <PageTitle x-text={`group_name != '' ? group_name+' ${t('group')}' : '${page_title}'`}>
+                    {page_title}
+                </PageTitle>
+                <FlexInline>
+                    <Button class="[ !hidden md:!flex ]" href={translatePath('/groups/list/')}>
+                        <MagnifierIcon slot="icon" />
+                        {t('view_groups')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+        </PageHeader>
+
+        <PageBody max_width="var(--max-content-width)">
+            <form
+                method="POST"
+                x-data={`{
+                    'submitted': false
+                }`}
+                x-on:submit.prevent="submitted = true;"
+            >
+                <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
+                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <ComponentBlock>
+                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                    <h2>{t('general')}</h2>
+    
+                                    <Flexblock>
+                                        <VerticalCenter>
+                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                                <label for="name">{t('name')}</label>
+                                                <Input id="name" name="name" type="text" x-model="group_name" required />
+                                            </FixedFluid>
+                                        </VerticalCenter>
+
+                                        <VerticalCenter>
+                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                                <label for="visibility">{t('visibility')}</label>
+                                                <Select id="visibility" x-model="visibility">
+                                                    <option value="astrahus">Public</option>
+                                                    <option value="fortizar">Private</option>
+                                                    <option value="keepstar">Unlisted</option>
+                                                </Select>
+                                            </FixedFluid>
+                                        </VerticalCenter>
+                                    </Flexblock>
+                                </Flexblock>
+                            </ComponentBlock>
+
+                            <GroupAutoAccept />
+
+                            <ComponentBlock>
+                                <Button type="button" color={'green'} class="[ w-full ]">{t('add_group')}</Button>
+                            </ComponentBlock>
+                        </Flexblock>
+                    </Wrapper>
+
+                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                        <ComponentBlock class="w-full sticky top-[var(--sticky-top)]">
+                            <PersonaList
+                                label={t('manager')}
+                                add_button_text={t('add_manager')}
+                                input_name="managers"
+                                empty_text={t('empty_managers_text')}
+                                readonly={false}
+                            />
+                        </ComponentBlock>
+                    </Wrapper>
+                </FixedFluid>
+            </form>
+        </PageBody>
+	</main>
+</Viewport>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

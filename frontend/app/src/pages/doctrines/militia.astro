@@ -1,11 +1,17 @@
 ---
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-import doctrines from '@json/page/doctrines/militia.json';
-import { marked } from 'marked';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+if (is_prod_mode())
+    return Astro.redirect(translatePath('/404/'))
+
+import doctrines from '@json/page/doctrines/militia.json';
+import { marked } from 'marked';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';

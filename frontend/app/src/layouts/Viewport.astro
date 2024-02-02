@@ -12,19 +12,38 @@ import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
 import Fonts from '@components/partials/Fonts.astro';
 import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
+import AlertDialog from '@components/blocks/AlertDialog.astro';
+import PersonaFinder from '@components/blocks/PersonasFinder.astro';
+import CorporationFinder from '@components/blocks/CorporationFinder.astro';
+import AllianceFinder from '@components/blocks/AllianceFinder.astro';
+import {
+	AlertDialogXData,
+	PersonaFinderXData,
+	CorporationFinderXData,
+	AllianceFinderXData,
+	UtilitiesXData
+} from '@components/partials/AlpineScripts.astro';
 
 interface Props {
-	title: 				string;
-	meta_image?: 		string;
-	meta_description?: 	string;
-	neocom?: 			boolean;
+	title: 					string;
+	meta_image?: 			string;
+	meta_description?: 		string;
+	neocom?: 				boolean;
+	alert_dialog?:			boolean;
+	personas_finder?:		boolean;
+	corporation_finder?:	boolean;
+	alliance_finder?:		boolean;
 }
 
 const {
 	title,
 	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
 	meta_description = t('generic.meta_description'),
-	neocom = true
+	neocom = true,
+	alert_dialog = false,
+	personas_finder = false,
+	corporation_finder = false,
+	alliance_finder = false,
 } = Astro.props
 
 import 'tippy.js/dist/tippy.css';
@@ -57,12 +76,34 @@ import '../styles/base.scss';
 
 		<link rel="manifest" href="/site.webmanifest">
 	</head>
-	<body class="[ viewport-layout ]">
+	<body
+		class="[ viewport-layout ]"
+		x-data={`{
+			${alert_dialog ? AlertDialogXData : ''}
+			${personas_finder ? PersonaFinderXData : ''}
+			${corporation_finder ? CorporationFinderXData : ''}
+			${alliance_finder ? AllianceFinderXData : ''}
+            ${UtilitiesXData}
+		}`}
+	>
 		<SkipToContent />
 
 		{neocom && <Neocom />}
 		<slot />
 		<canvas id="confetti-canvas" transition:persist></canvas>
+
+		{alert_dialog &&
+			<AlertDialog />
+		}
+		{personas_finder &&
+			<PersonaFinder />
+		}
+		{corporation_finder &&
+			<CorporationFinder />
+		}
+		{alliance_finder &&
+			<AllianceFinder />
+		}
 
 		<FooterScripts />
 	</body>

@@ -1,0 +1,64 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from '@components/blocks/Button.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+---
+
+<div
+    class="[ alert-dialog ]"
+>
+    <Dialog
+        x-bind:class="alert_dialog_open ? 'open' : ''"
+        breakout={true}
+        class="[ w-full max-w-[500px] ]"
+    >
+        <Flexblock gap="var(--space-l)">
+            <h3 x-text="alert_dialog_title"/>
+            <div class="[ alert-dialog-content ]" x-html="alert_dialog_content" />
+            <FlexInline justification='center'>
+                <Button size='sm' alert-dialog-action="close">{t('ok')}</Button>
+            </FlexInline>
+        </Flexblock>
+    </Dialog>
+
+    <div
+        class="alert-dialog-backdrop"
+        x-bind:class="{ open: alert_dialog_open }"
+        alert-dialog-action="close"
+    />
+</div>
+
+<style lang="scss">
+    :global([alert-dialog-action] *) {
+        pointer-events: none !important;
+    }
+
+    .dialog {
+        top: 200px;
+    }
+
+    :global(.alert-dialog .alert-dialog-content p) {
+        font-size: var(--step--1);
+    }
+
+    .alert-dialog-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+</style>

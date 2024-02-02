@@ -1,12 +1,13 @@
 ---
 import FlexInline from '@components/compositions/FlexInline.astro';
-import type { ButtonColors, ButtonSizes } from '@dtypes/LayoutComponents';
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
-    color?: ButtonColors;
-    external?: boolean;
-    href?: string;
-    size?: ButtonSizes;
+    color?:             ButtonColors;
+    external?:          boolean;
+    href?:              string;
+    size?:              ButtonSizes;
+    narrow?:            boolean;
     [propName: string]: any;
 }
 
@@ -15,6 +16,7 @@ const {
     external = false,
     href,
     size = 'lg',
+    narrow = false,
     ...attributes
 } = Astro.props;
 
@@ -27,7 +29,7 @@ const Element = href ? 'a' : 'button';
 
 <Element
     href={ href }
-    class:list={['[ button ]', Astro.props.class]}
+    class:list={['[ button ]', { narrow: narrow } ,Astro.props.class]}
     {...attributes}
     data-size={size}
     style={`--color_prop: ${color_prop}`}
@@ -56,6 +58,10 @@ const Element = href ? 'a' : 'button';
         align-items: center;
         transition: var(--fast-transition);
 
+        &.narrow {
+            padding-inline: var(--space-s);
+        }
+
         &[disabled] {
             filter: saturate(50%);
         }
@@ -71,10 +77,23 @@ const Element = href ? 'a' : 'button';
                 cursor: pointer;
                 transform: scale(1.05);
             }
+
+            &[data-size="sm"] {
+                &:focus-visible,
+                &:hover:not([disabled]) {
+                    transform: scale(1.1);
+                }
+            }
         }
         
         &:active:not([disabled]) {
             transform: scale(1);
+        }
+
+        &[data-size="sm"] {
+            &:active:not([disabled]) {
+                transform: scale(1);
+            }
         }
 
         /* Tactile */
@@ -84,10 +103,22 @@ const Element = href ? 'a' : 'button';
             &:active:not([disabled]) {
                 transform: scale(0.95);
             }
+
+            &[data-size="sm"]:active:not([disabled]) {
+                transform: scale(0.90);
+            }
         }
 
         &[data-size="sm"] {
             padding: var(--space-2xs) var(--space-xs-s);
+
+            &.narrow {
+                padding-inline: var(--space-2xs);
+            }
+
+            :global(svg) {
+                scale: 0.85;
+            }
         }
 
         &.w-full > div {
