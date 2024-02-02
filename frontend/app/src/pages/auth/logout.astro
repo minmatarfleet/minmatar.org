@@ -8,5 +8,8 @@ const translatePath = useTranslatedPath(lang);
 Astro.cookies.delete('auth_token', { path: '/' })
 Astro.cookies.delete('avatar', { path: '/' })
 
-return Astro.redirect(translatePath('/'))
+const redirect = translatePath('/')
 ---
+<script define:vars={{ redirect }}>
+    window.location.href = redirect
+</script>

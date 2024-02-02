@@ -1,10 +1,11 @@
 ---
-import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
-
-import * as jose from 'jose'
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
+
+import * as jose from 'jose'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
@@ -22,5 +23,8 @@ try {
 Astro.cookies.set('auth_token', token, { path: '/' })
 Astro.cookies.set('avatar', claims.avatar, { path: '/' })
 
-return Astro.redirect(translatePath('/account/'))
+const redirect = translatePath('/account/')
 ---
+<script define:vars={{ redirect }}>
+    window.location.href = redirect
+</script>
