@@ -29,7 +29,7 @@ export const ui = {
         '404.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
         '403.page_title': '403',
-        '403.leading_text': 'Docking permission denied!',
+        '403.leading_text': 'Docking request denied!',
         '403.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
 
         '500.page_title': '500',
