@@ -33,7 +33,7 @@ export const ui = {
         '403.cover_alt': 'A pod swiftly escaping from an explosion in the backdrop along a station corridor.',
 
         '500.page_title': '500',
-        '500.leading_text': 'A Watermmelon dropped inside our system is jamming our routines.',
+        '500.leading_text': 'A watermelon deployed in our system is jamming our routines.',
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'fitting.page_title': 'Fitting',
