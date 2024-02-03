@@ -9,7 +9,7 @@ const translatePath = useTranslatedPath(lang);
 import { is_prod_mode } from '@helpers/env'
 
 if (is_prod_mode())
-    return Astro.redirect(translatePath('/404/'))
+    return Astro.redirect(translatePath('/404'))
 
 if (Astro.request.method === "POST") {
     // TODO: Call to add fleet endpoint here with data from "await Astro.request.formData()"

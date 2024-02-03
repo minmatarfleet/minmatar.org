@@ -8,7 +8,7 @@ const translatePath = useTranslatedPath(lang);
 import { is_prod_mode } from '@helpers/env'
 
 if (is_prod_mode())
-    return Astro.redirect(translatePath('/404/'))
+    return Astro.redirect(translatePath('/404'))
 
 import type { JWTCookies, JWT } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -16,7 +16,7 @@ import * as jose from 'jose'
 const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
 
 if (!claim /*|| !claim?.permissions?.includes('auth.change_group')*/)
-    return Astro.redirect(translatePath('/403/'))
+    return Astro.redirect(translatePath('/403'))
 
 if (Astro.request.method === "POST") {
     // TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"

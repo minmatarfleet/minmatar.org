@@ -9,7 +9,7 @@ const translatePath = useTranslatedPath(lang);
 import { is_prod_mode } from '@helpers/env'
 
 if (is_prod_mode())
-    return Astro.redirect(translatePath('/404/'))
+    return Astro.redirect(translatePath('/404'))
 
 Astro.cookies.delete('contract', { path: '/freight/' })
 
