@@ -73,7 +73,15 @@ const {
     }
 
     .switch input {
-        display: none;
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
     }
 
     .switch {
@@ -165,6 +173,14 @@ const {
     }
 
         /* actions */
+
+    .switch input:focus-visible+.slider .circle {
+        left: calc(var(--switch-offset) + 4px);
+    }
+
+    .switch input:checked:focus-visible+.slider .circle {
+        left: calc(100% - var(--circle-diameter) - var(--switch-offset)  - 4px);
+    }
 
     .switch input:checked+.slider {
         background: var(--switch-checked-bg);
