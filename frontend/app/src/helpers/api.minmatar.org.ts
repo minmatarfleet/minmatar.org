@@ -2,7 +2,7 @@ import type { Character } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = import.meta.env.MINMATAR_API_ENDPOINT
 
-export async function get_characters(access_token:string):Character[] {
+export async function get_characters(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
@@ -21,7 +21,7 @@ export async function get_characters(access_token:string):Character[] {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        const json = await response.json();
+        const json = await response.json() as Character[];
         return json;
     } catch (error) {
         throw new Error(`Error getting characters: ${error.message}`);
