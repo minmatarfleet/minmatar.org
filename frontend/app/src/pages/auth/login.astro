@@ -16,8 +16,7 @@ try {
     token = Astro.url.searchParams.get('token')
     claims = jose.decodeJwt(token)
 } catch (error) {
-    console.error('Error during token exchange:', error.message);
-    error = error.message
+    throw new Error(`Error during token exchange: ${error.message}`)
 }
 
 const in_6_days = new Date(new Date().getTime()+(6*24*60*60*1000))
