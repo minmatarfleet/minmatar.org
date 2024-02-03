@@ -19,10 +19,13 @@ try {
     throw new Error(`Error during token exchange: ${error.message}`)
 }
 
-const expiresIn = new Date()
-expiresIn.setDate(expiresIn.getDate() + 30)
-Astro.cookies.set('auth_token', token, { path: '/', expires: expiresIn })
-Astro.cookies.set('avatar', claims.avatar, { path: '/', expires: expiresIn })
+const ONE_DAY_IN_MS = 24*60*60*1000
+const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
+Astro.cookies.set('auth_token', token, { path: '/', expires: in_20_days })
+Astro.cookies.set('avatar', claims.avatar, { path: '/', expires: in_20_days })
 
-return Astro.redirect(translatePath('/account/'))
+const redirect = Astro.cookies.has('redirect_after_auth') ? Astro.cookies.get('redirect_after_auth').value : translatePath('/account/')
+Astro.cookies.delete('redirect_after_auth', { path: '/' })
+
+return Astro.redirect(redirect)
 ---
