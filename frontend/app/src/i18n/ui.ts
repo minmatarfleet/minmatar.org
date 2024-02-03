@@ -22,29 +22,29 @@ export const ui = {
 
         'index.page_title': 'Minmatar Fleet Tools',
         'index.incoming_text': 'Next Minmatar fleet in',
-        'index.cover_alt': 'Red Fortizar station from above',
+        'index.cover_alt': 'An aerial view of a red Fortizar station.',
 
         '404.page_title': '404',
         '404.leading_text': 'You just got podded by our good friend Ibn!',
-        '404.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
+        '404.cover_alt': 'The lifeless body of a capsuleer drifting in space beside her wrecked capsule.',
 
         '403.page_title': '403',
-        '403.leading_text': 'Docking permission denied!',
-        '403.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
+        '403.leading_text': 'Docking request denied!',
+        '403.cover_alt': 'A pod swiftly escaping from an explosion in the backdrop along a station corridor.',
 
         '500.page_title': '500',
-        '500.leading_text': 'Oops! No text yet.',
-        '500.cover_alt': 'Deadbody of a capsuleer floating in the space along her wrecked capsule',
+        '500.leading_text': 'A watermelon deployed in our system is jamming our routines.',
+        '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
-        'fitting.cover_alt': 'Collage of holgraphic pirate propaganda.',
+        'fitting.cover_alt': 'A montage of holographic pirate propaganda.',
 
         'fitting.list.page_title': 'Fittings list',
 
         'doctrines.page_title': 'Doctrines',
         'doctrines.leading_text': 'You joined a high volume, fast moving PvP alliance. We undock ships. Actually, we undock lots of ships. We have many different kinds of ships because we have many different kinds of enemies. Often those enemies stop logging in because we shoot them too good, and that means we have to frequently change strategies.',
-        'doctrines.cover_alt': 'Cyclones Fleet Issue fleet in a battle with the local star in the background',
+        'doctrines.cover_alt': 'A fleet of Cyclone Fleet Issue ships engaged in battle, with the local star looming in the background.',
 
         'doctrines.alliance.page_title': 'Alliance Doctrines',
         'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available on [alliance contracts](/contracts/).',
@@ -53,7 +53,7 @@ export const ui = {
         
         'fleets.page_title': 'Fleets',
         'fleets.leading_text': 'Minmatar Fleet Academy [L3ARN] is an in-game corporation focused on accelerated teaching through the lens of faction warfare. We have essentially digested decades of veteran player experience into a six month program where we give you a fishing pole and point you at the best fishing spots.',
-        'fleets.cover_alt': 'A Minmatar Fleet Cyclones Fleet Issues in the background bashing a CVA Astra.',
+        'fleets.cover_alt': 'A Minmatar fleet, consisting of Cyclone Fleet Issues, attacking a CVA Astra in the background.',
 
         'fleets.add.page_title': 'Schedule fleet',
         'fleets.add.form_info': 'All time is in EVE time unless otherwise specified.',
@@ -66,7 +66,7 @@ export const ui = {
         
         'intel.page_title': 'Intel',
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
-        'intel.cover_alt': 'A Probe scanning an Athanor station with a moon mining site in background',
+        'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
 
         'intel.tutrial.page_title': 'How to scan structures?',
         'intel.tutrial.leading_text': 'In this course, you will learn how to obtain structures information and provide it to a fleet commander. Through this activity, you might just be the small spark that creates a war!',
@@ -78,11 +78,11 @@ export const ui = {
         
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'contracts.cover_alt': 'Minmatar Fleet Guardian with an Exequror NI in the background parked inside a Fortizar',
+        'contracts.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
         
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
-        'freight.cover_alt': 'Amarr hauler activating warp drive',
+        'freight.cover_alt': 'An Amarr hauler initiating warp drive.',
         
         'freight.summary.page_title': '30 Days Summary',
         'freight.summary.historical_header': 'Historical Summary',
@@ -90,7 +90,7 @@ export const ui = {
         
         'groups.page_title': 'Groups',
         'groups.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
-        'groups.cover_alt': 'Amarr hauler activating warp drive',
+        'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
         
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
