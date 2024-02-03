@@ -7,5 +7,7 @@ export const is_prod_mode = () => {
 }
 
 export const get_auth_url = () => {
-    return import.meta.env.MINMATAR_AUTH
+    API_URL = import.meta.env.API_URL
+    APP_URL = import.meta.env.APP_URL
+    return `${API_URL}/api/auth/login?redirect_uri=${APP_URL}/auth/login`
 }

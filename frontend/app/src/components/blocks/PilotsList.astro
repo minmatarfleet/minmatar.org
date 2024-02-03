@@ -17,6 +17,7 @@ interface Props {
 const {
     pilots = [],
     empty_text = t('empty_pilots_text'),
+    ADD_CHARACTER_TOKEN_ENDPOINT = `${import.meta.env.API_URL}/api/eveonline/characters/add?redirect_url=${import.meta.env.APP_URL}/account&token_type=Basic`,
     readonly = true,
     ...attributes
 } = Astro.props;
@@ -47,7 +48,7 @@ delete attributes.class
             this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
         },
         add_pilot() {
-            window.location.href = "https://api.minmatar.org/api/eveonline/characters/add?redirect_url=http://localhost:4321/account&token_type=Advanced"
+            window.location.href = "${ADD_CHARACTER_TOKEN_ENDPOINT}"
         }
     }`}
     x-init="init"
