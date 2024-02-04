@@ -13,6 +13,22 @@ router = Router(tags=["Authentication"])
 discord = DiscordClient()
 
 
+class AuthBearer(HttpBearer):
+    """Authentication class for Ninja API methods"""
+
+    def authenticate(self, request, token):
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"]
+            )
+            user = User.objects.get(id=payload["user_id"])
+            request.user = user
+            return user
+        except Exception as e:
+            print(e)
+            return None
+
+
 @router.get(
     "/login",
     summary="Login with discord",
@@ -21,6 +37,17 @@ discord = DiscordClient()
 def login(request, redirect_url: str):
     request.session["authentication_redirect_url"] = redirect_url
     return redirect(auth_url_discord)
+
+
+@router.delete(
+    "/delete",
+    summary="Delete account and all associated data",
+    description="This will delete the user account and all associated data. This action is irreversible.",
+    auth=AuthBearer(),
+)
+def delete_account(request):
+    request.user.delete()
+    return "Account deleted successfully"
 
 
 @router.get("/callback", include_in_schema=False)
@@ -93,19 +120,3 @@ def requires_permission(permission):
         return wrapper
 
     return decorator
-
-
-class AuthBearer(HttpBearer):
-    """Authentication class for Ninja API methods"""
-
-    def authenticate(self, request, token):
-        try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=["HS256"]
-            )
-            user = User.objects.get(id=payload["user_id"])
-            request.user = user
-            return user
-        except Exception as e:
-            print(e)
-            return None

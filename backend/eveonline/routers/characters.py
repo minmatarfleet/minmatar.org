@@ -35,6 +35,11 @@ class BasicCharacterResponse(BaseModel):
 class CharacterResponse(BasicCharacterResponse):
     skills: dict
 
+
+class ErrorResponse(BaseModel):
+    detail: str
+
+
 @router.get(
     "",
     summary="Get characters",
@@ -58,7 +63,7 @@ def get_characters(request):
     "/{int:character_id}",
     summary="Get character by ID",
     auth=AuthBearer(),
-    response=CharacterResponse,
+    response={200: CharacterResponse, 403: ErrorResponse, 404: ErrorResponse},
 )
 def get_character_by_id(request, character_id: int):
     character = EveCharacter.objects.get(character_id=character_id)
@@ -75,20 +80,50 @@ def get_character_by_id(request, character_id: int):
             "skills": json.loads(character.skills_json),
         }
 
-    return 403, "You do not have permission to view this character."
+    return 403, {
+        "detail": "You do not have permission to view this character."
+    }
+
+
+@router.delete(
+    "/{int:character_id}",
+    summary="Delete character by ID",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse, 404: ErrorResponse, 500: ErrorResponse},
+)
+def delete_character_by_id(request, character_id: int):
+    if not EveCharacter.objects.filter(character_id=character_id).exists():
+        return 404, {"detail": "Character not found."}
+    if not (
+        request.user.has_perm("eveonline.delete_evecharacter")
+        or Token.objects.filter(
+            user=request.user, character_id=character_id
+        ).exists()
+    ):
+        return 403, {
+            "detail": "You do not have permission to delete this character."
+        }
+
+    try:
+        EveCharacter.objects.filter(character_id=character_id).delete()
+        Token.objects.filter(character_id=character_id).delete()
+    except Exception as e:
+        return 500, str(e)
+
+    return 200, None
 
 
 @router.get(
     "/primary",
     summary="Get primary character",
     auth=AuthBearer(),
-    response=BasicCharacterResponse,
+    response={200: BasicCharacterResponse, 404: ErrorResponse},
 )
 def get_primary_character(request):
     if not EvePrimaryCharacter.objects.filter(
         character__token__user=request.user
     ).exists():
-        return 404, "Primary character not found."
+        return 404, {"detail": "Primary character not found."}
 
     character = EvePrimaryCharacter.objects.get(
         character__token__user=request.user
@@ -99,7 +134,9 @@ def get_primary_character(request):
     }
 
 
-@router.get("/primary/add", summary="Add primary character using EVE Online SSO")
+@router.get(
+    "/primary/add", summary="Add primary character using EVE Online SSO"
+)
 def add_primary_character(request, redirect_url: str):
     request.session["redirect_url"] = redirect_url
     scopes = PUBLIC_SCOPES
@@ -160,5 +197,3 @@ def add_character(request, redirect_url: str, token_type: TokenType):
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
-
-
