@@ -2,22 +2,33 @@
 import Wrapper from "@components/compositions/Wrapper.astro";
 
 interface Props {
-    src:        string;
-    credits?:   string;
+    videoid:        string;
+    videotitle?:    string;
+    credits?:       string;
 }
 
 const {
-    src,
+    videoid,
+    videotitle = 'YouTube video player',
     credits,
 } = Astro.props
 ---
 
 <Wrapper class="[ shadow relative ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-    <div class="[ video-frame ]">
-        <iframe class="[ max-w-full h-full ]" width="960" height="401" src={src} title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <div class="[ video-frame w-full ]">
+        <lite-youtube
+            class="[ max-w-full h-full w-full ]"
+            videoid={videoid}
+            videotitle={videotitle}
+            posterquality="maxresdefault"
+        />
     </div>
     {credits && <p>Credits: <span>{credits}</span></p>}
 </Wrapper>
+
+<script>
+    import '@justinribeiro/lite-youtube';
+</script>
 
 <style lang="scss">
     .video-frame {
@@ -25,6 +36,7 @@ const {
         display: flex;
         align-items: center;
         aspect-ratio: 960/401;
+        max-width: 960;
     }
 
     .shadow {
