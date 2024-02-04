@@ -1,13 +1,13 @@
 :root {
-    --minmatar: 'Norwester Regular', 'Oswald', sans-serif;
-    --montserrat: 'Montserrat', sans-serif;
-    --iceland: 'Iceland', sans-serif;
+    --minmatar: 'Norwester', sans-serif;
+    --montserrat: 'Montserrat Variable', sans-serif;
+    --qahiri: 'Qahiri', sans-serif;
 
     --heading-font: var(--minmatar);
     --button-font: var(--minmatar);
     --badge-font: var(--minmatar);
     --tag-font: var(--minmatar);
-    --countdown-font: var(--iceland);
+    --countdown-font: var(--qahiri);
     --default-font: var(--montserrat);
     --content-font: var(--montserrat);
 }
