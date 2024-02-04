@@ -10,9 +10,7 @@ export default defineConfig({
     adapter: node({
         mode: 'standalone'
     }),
-    prefetch: {
-        defaultStrategy: 'viewport'
-    },
+    prefetch: false,
     integrations: [
         tailwind({
             applyBaseStyles: false,
