@@ -6,6 +6,7 @@ const t = useTranslations(lang);
 
 import { get_player_icon } from '@helpers/eve_image_server';
 import type { Character } from '@dtypes/api.minmatar.org'
+import { get_api_url, get_app_url } from '@helpers/env'
 
 interface Props {
     pilots?:            Array<Character>;
@@ -20,6 +21,8 @@ const {
     readonly = true,
     ...attributes
 } = Astro.props;
+
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}/account&token_type=Basic`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -47,7 +50,7 @@ delete attributes.class
             this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
         },
         add_pilot() {
-            window.location.href = "https://api.minmatar.org/api/eveonline/characters/add?redirect_url=http://localhost:4321/account&token_type=Advanced"
+            window.location.href = "${ADD_CHARACTER_URL}"
         }
     }`}
     x-init="init"
