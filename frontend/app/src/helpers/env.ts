@@ -10,7 +10,7 @@ export const is_prod_mode = () => {
 }
 
 export const get_auth_url = () => {
-    return `${API_URL}/api/auth/login?redirect_uri=${APP_URL}/auth/login`
+    return `${API_URL}/api/auth/login?redirect_url=${APP_URL}/auth/login`
 }
 
 export const get_api_url = () => {
