@@ -38,5 +38,7 @@ services:
             dockerfile: Dockerfile
         depends_on:
             - app
+        env_file:
+            - frontend/.env
         ports:
             - "4321:4321"

@@ -1,6 +1,6 @@
 import type { Character } from '@dtypes/api.minmatar.org'
 
-const API_ENDPOINT = import.meta.env.MINMATAR_API_ENDPOINT
+const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline`
 
 export async function get_characters(access_token:string) {
     const headers = {
