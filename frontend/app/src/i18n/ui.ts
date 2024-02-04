@@ -24,15 +24,18 @@ export const ui = {
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'An aerial view of a red Fortizar station.',
 
-        '404.page_title': '404',
+        '404.page_title': '404 Not Found',
+        '404.content_title': '404',
         '404.leading_text': 'You just got podded by our good friend Ibn!',
         '404.cover_alt': 'The lifeless body of a capsuleer drifting in space beside her wrecked capsule.',
 
-        '403.page_title': '403',
+        '403.page_title': '403 Unauthorized',
+        '403.content_title': '403',
         '403.leading_text': 'Docking request denied!',
         '403.cover_alt': 'A pod swiftly escaping from an explosion in the backdrop along a station corridor.',
 
-        '500.page_title': '500',
+        '500.page_title': '500 Server Error',
+        '500.content_title': '500',
         '500.leading_text': 'A watermelon deployed in our system is jamming our routines.',
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 

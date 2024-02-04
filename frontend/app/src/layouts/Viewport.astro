@@ -46,6 +46,9 @@ const {
 	alliance_finder = false,
 } = Astro.props
 
+import '@fontsource-variable/montserrat';
+import '@fontsource/norwester';
+import '@fontsource/qahiri';
 import 'tippy.js/dist/tippy.css';
 import '../styles/base.scss';
 ---
@@ -70,7 +73,6 @@ import '../styles/base.scss';
 		{meta_description && <meta name="twitter:description" content={meta_description} />}
 		<meta name="twitter:image" content={meta_image}>
 
-		<Fonts />
 		<HeadScripts />
 		<CoverImagesPreload />
 

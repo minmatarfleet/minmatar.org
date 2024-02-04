@@ -26,7 +26,7 @@ const page_title = t('intel.tutrial.page_title');
     />
 
 	<main id="content">
-		<Wrapper max_width="var(--max-content-width)" neocom={true}>
+		<Wrapper class="w-full" max_width="var(--max-content-width)" neocom={true}>
             <FluidFixed class="[ items-center ]" width="var(--max-text-width)" breakpoint="30%" gap="var(--space-2xl-3xl)">
                 <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
                     <Flexblock gap="var(--space-l)" class="[ slide-in ]">
@@ -35,7 +35,11 @@ const page_title = t('intel.tutrial.page_title');
                     </Flexblock>
                 </Wrapper>
 
-                <VideoWidget src='https://www.youtube.com/embed/ANKrefcxGNo?si=Wq9xxKe1UHmFTzy8' credits='BearThatCares'>
+                <VideoWidget
+                    videoid='ANKrefcxGNo'
+                    videotitle='Structure Intel Course - EVE Online'
+                    credits='BearThatCares'
+                />
             </FluidFixed>
 		</Wrapper>
 	</main>
