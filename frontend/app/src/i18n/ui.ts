@@ -289,5 +289,6 @@ export const ui = {
         'delete_character_error': 'An error occurred while deleting the pilot.',
         'yes': 'Yes',
         'no': 'No',
+        'requesting_concord': 'Requesting for CONCORD approval',
     },
 } as const;

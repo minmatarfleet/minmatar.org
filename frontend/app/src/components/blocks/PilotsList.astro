@@ -152,9 +152,11 @@ delete attributes.class
                                             htmx.process(document.querySelector('.confirm-dialog')) 
                                         })
 
+                                        const placeholder = '<p class="loading">${t('requesting_concord')}</p>'
+
                                         return await show_confirm_dialog(
                                             '${t('remove_pilot_dialog_title')}',
-                                            '<div id="unlink-pilot-dialog-content" hx-trigger="intersect" hx-target="#unlink-pilot-dialog-content"></div>',
+                                            '<div id="unlink-pilot-dialog-content" hx-trigger="intersect" hx-target="#unlink-pilot-dialog-content">'+placeholder+'</div>',
                                             pilot.character_id
                                         )
                                     }
