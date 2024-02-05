@@ -5,19 +5,19 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { is_prod_mode, get_auth_url } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { JWTCookies, JWT } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-if (!auth_token)
-    return Astro.redirect(translatePath('/403/'))
+const claim:JWTCookies | false = auth_token ? jose.decodeJwt(auth_token) as JWT : false
 
-const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(auth_token) as JWT : false
-
-if (!claim)
-    return Astro.redirect(translatePath('/403/'))
+if (!auth_token || !claim) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
 
 import { semantic_list } from '@helpers/array';
 
@@ -34,8 +34,10 @@ let get_characters_error = false;
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
-    get_characters_error = (is_prod_mode() ? t('get_character_error') : error.message)
+    get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
 }
+
+console.log(Astro.request.headers.get('cookie'))
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -61,6 +63,7 @@ const page_title = t('account.page_title');
 <Viewport
     title={page_title}
     alert_dialog={true}
+    confirm_dialog={true}
 >
     <PageCover
         image="/images/account-cover.jpg"

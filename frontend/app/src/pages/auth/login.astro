@@ -1,10 +1,11 @@
 ---
-import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
-
-import * as jose from 'jose'
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
+
+import * as jose from 'jose'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
@@ -15,12 +16,16 @@ try {
     token = Astro.url.searchParams.get('token')
     claims = jose.decodeJwt(token)
 } catch (error) {
-    console.error('Error during token exchange:', error.message);
-    error = error.message
+    throw new Error(`Error during token exchange: ${error.message}`)
 }
 
-Astro.cookies.set('auth_token', token, { path: '/' })
-Astro.cookies.set('avatar', claims.avatar, { path: '/' })
+const ONE_DAY_IN_MS = 24*60*60*1000
+const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
+Astro.cookies.set('auth_token', token, { path: '/', expires: in_20_days })
+Astro.cookies.set('avatar', claims.avatar, { path: '/', expires: in_20_days })
 
-return Astro.redirect(translatePath('/account/'))
+const redirect = Astro.cookies.has('redirect_after_auth') ? Astro.cookies.get('redirect_after_auth').value : translatePath('/account/')
+Astro.cookies.delete('redirect_after_auth', { path: '/' })
+
+return Astro.redirect(redirect)
 ---

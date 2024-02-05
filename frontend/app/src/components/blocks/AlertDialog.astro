@@ -23,9 +23,12 @@ interface Props {
         class="[ w-full max-w-[500px] ]"
     >
         <Flexblock gap="var(--space-l)">
-            <h3 x-text="alert_dialog_title"/>
-            <div class="[ alert-dialog-content ]" x-html="alert_dialog_content" />
-            <FlexInline justification='center'>
+            <Flexblock gap="var(--space-s)">
+                <h3 x-text="alert_dialog_title"/>
+                <div class="[ alert-dialog-content ]" x-html="alert_dialog_content" />
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
                 <Button size='sm' alert-dialog-action="close">{t('ok')}</Button>
             </FlexInline>
         </Flexblock>

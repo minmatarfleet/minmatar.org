@@ -18,6 +18,7 @@ delete attributes.class
     class:list={['disable-block', Astro.props.class, { disabled: disabled }]}
      {...attributes}
      x-bind:class={`{ disabled:  !${x_model} }`}
+     x-bind:inert={`!${x_model}`}
 >
     <slot />
 </div>

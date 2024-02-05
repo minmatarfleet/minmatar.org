@@ -73,7 +73,9 @@ const {
     }
 
     .switch input {
-        display: none;
+        position: absolute;
+        width: 1px;
+        opacity: 0;
     }
 
     .switch {
@@ -164,7 +166,13 @@ const {
         transition: var(--effect-transition);
     }
 
-        /* actions */
+    .switch input:focus-visible+.slider .circle {
+        left: calc(var(--switch-offset) + 4px);
+    }
+
+    .switch input:checked:focus-visible+.slider .circle {
+        left: calc(100% - var(--circle-diameter) - var(--switch-offset)  - 4px);
+    }
 
     .switch input:checked+.slider {
         background: var(--switch-checked-bg);

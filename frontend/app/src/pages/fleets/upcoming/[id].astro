@@ -6,9 +6,10 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 if (is_prod_mode())
-    return Astro.redirect(translatePath('/404/'))
+    return HTTP_404_Not_Found()
 
 // TODO: Replace the static JSON below with the endpoint request using the id
 const { id } = Astro.params;
@@ -125,7 +126,6 @@ const page_title = `${t('fleet')} ${fleet.name}`;
                                         size='sm'
                                         hx-post={translatePath(`/partials/fleet_composition/${id}`)}
                                         hx-target="#fleet-composition-component"
-                                        hx-indicator="#fleet-composition-component"
                                         hx-on::before-request="this.setAttribute('disabled','');start_dscan_animation()"
                                         hx-on::after-request="this.removeAttribute('disabled');update_members_count()"
                                     >

@@ -49,6 +49,8 @@ services:
             dockerfile: Dockerfile
         depends_on:
             - app
+        env_file:
+            - frontend/.env
 
     proxy:
         image: nginx:stable

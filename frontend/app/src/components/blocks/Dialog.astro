@@ -17,7 +17,7 @@ const {
 delete attributes.class
 ---
 
-<div class:list={['dialog dark-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]} {...attributes}>
+<div class:list={['dialog solid-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]} {...attributes}>
     <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)'>
         <Flexblock gap='var(--space-m)'>
             <slot name="header" />
@@ -42,9 +42,9 @@ delete attributes.class
         transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
         pointer-events: none;
         box-shadow: 0 0 50px 0px black;
+        z-index: var(--dialog-z-index);
 
         &.open {
-            z-index: var(--dialog-z-index);
             transform: translate(-50%, -50%) scale(1);
             opacity: 1;
             pointer-events: all;

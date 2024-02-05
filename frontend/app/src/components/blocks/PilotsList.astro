@@ -1,10 +1,14 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
+import { get_player_icon } from '@helpers/eve_image_server';
 import type { Character } from '@dtypes/api.minmatar.org'
+import { get_api_url, get_app_url } from '@helpers/env'
+import slugify from 'slugify';
 
 interface Props {
     pilots?:            Array<Character>;
@@ -19,6 +23,9 @@ const {
     readonly = true,
     ...attributes
 } = Astro.props;
+
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}/account&token_type=Basic`
+const DELETE_CHARACTER_URL = `${get_app_url()}/api/character/`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -38,14 +45,36 @@ delete attributes.class
     x-data={`{
         pilots: ${JSON.stringify(pilots)},
         pilots_ids: [],
+        character_name_slugs: {},
+        init() {
+            $refs.server_side_render.remove()
+            this.generate_ids()
+            this.generate_slugs()
+        },
         generate_ids() {
             this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
         },
+        generate_slugs() {
+            this.pilots.forEach(e => this.character_name_slugs[e.character_name] = e.character_name.replaceAll(" ","_"))
+        },
         add_pilot() {
-            window.location.href = "https://api.minmatar.org/api/eveonline/characters/add?redirect_url=http://localhost:4321/account&token_type=Advanced"
+            window.location.href = "${ADD_CHARACTER_URL}"
+        },
+        remove_pilot(character_id) {
+            this.pilots = this.pilots.filter(pilot => pilot.character_id !== character_id)
+            this.generate_ids()
+        },
+        async delete_pilot(character_id) {
+            if (await fetch('${DELETE_CHARACTER_URL}'+character_id, {
+                    method: 'DELETE'
+                })
+            )
+                this.remove_pilot(character_id)
+            else
+                show_alert_dialog('${t('remove_pilot_dialog_title')}', '${t('delete_character_error')}')
         }
     }`}
-    x-init="generate_ids"
+    x-init="init"
 >
     <FlexInline
         justification='space-between'
@@ -53,7 +82,9 @@ delete attributes.class
     >
         <Flexblock gap="var(--space-3xs)">
             <h2>{t('pilot')}s</h2>
-            <small class="!mt-[var(--space-3xs)]" x-text={'`${pilots.length} '+t('pilot').toLowerCase()+'${pilots.length != 1 ? `s` : ``}`'}>0 {t('pilot').toLowerCase()}</small>
+            <small class="!mt-[var(--space-3xs)]" x-text={'`${pilots.length} '+t('pilot').toLowerCase()+'${pilots.length != 1 ? `s` : ``}`'}>
+                {pilots.length} {pilots.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}
+            </small>
         </Flexblock>
         
         {!readonly && 
@@ -61,7 +92,6 @@ delete attributes.class
                 <Button
                     size='sm'
                     type="button"
-                    color={'green'}
                     class="[ w-full ]"
                     x-on:click={`add_pilot(await show_alert_dialog('${t('add_pilot_dialog_title')}', '<p>${t('add_pilot_dialog_text')}</p>'))`}
                 >
@@ -70,6 +100,28 @@ delete attributes.class
             </VerticalCenter>
         }
     </FlexInline>
+
+    <Flexblock x-ref="server_side_render" gap='var(--space-3xs)'>
+        {pilots.map((pilot) =>
+            <FixedFluid width='64px'>
+                <picture>
+                    <img src={get_player_icon(pilot.character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${pilot.character_name}`}>
+                </picture>
+                <FluidFixed width='46px' breakpoint='60%'>
+                    <VerticalCenter>
+                        <Flexblock gap='0' class="[ w-full ]">
+                            <span class="truncate text-[var(--highlight)]" set:text={pilot.character_name} />
+                            <small class="truncate">Not group membership</small>
+                        </Flexblock>
+                    </VerticalCenter>
+                    <VerticalCenter></VerticalCenter>
+                </FluidFixed>
+            </FixedFluid>
+        )}
+        {empty_text && pilots.length == 0 &&
+            <p>{empty_text}</p>
+        }
+    </Flexblock>
 
     <Flexblock gap='var(--space-3xs)'>
         <template x-for="pilot in pilots">
@@ -90,7 +142,27 @@ delete attributes.class
                                 class="[ action-button ]"
                                 size='sm'
                                 type="button"
+                                x-ref="remove_character_button"
                                 narrow={true}
+                                x-data={`{
+                                    async show_confirm_pilot_removal(character_id, character_name) {
+                                        setTimeout(function () {
+                                            const unlink_pilot_dialog_url = '${translatePath('/partials/unlink_pilot_dialog/')}'+character_id+'/'+character_name_slugs[character_name]
+                                            document.querySelector('.confirm-dialog #unlink-pilot-dialog-content').setAttribute('hx-post', unlink_pilot_dialog_url)
+                                            htmx.process(document.querySelector('.confirm-dialog')) 
+                                        })
+
+                                        const placeholder = '<p class="loading">${t('requesting_concord')}</p>'
+
+                                        return await show_confirm_dialog(
+                                            '${t('remove_pilot_dialog_title')}',
+                                            '<div id="unlink-pilot-dialog-content" hx-trigger="intersect" hx-target="#unlink-pilot-dialog-content">'+placeholder+'</div>',
+                                            pilot.character_id
+                                        )
+                                    }
+                                }`}
+                                x-on:click={`delete_pilot(await show_confirm_pilot_removal(pilot.character_id, pilot.character_name))`}
+                                x-init="init"
                             >
                                 <TrashIcon slot="icon" />
                             </Button>
@@ -101,7 +173,7 @@ delete attributes.class
         </template>
 
         {empty_text &&
-            <p x-bind:class="{ hidden: pilots.length > 0 }">{empty_text}</p>
+            <p class="hidden" x-bind:class="{ hidden: pilots.length > 0 }">{empty_text}</p>
         }
     </Flexblock>
 
@@ -109,6 +181,14 @@ delete attributes.class
 </Flexblock>
 
 <style lang="scss">
+    [x-ref="server_side_render"] + .flex-block {
+        margin-block-start: 0;
+    }
+
+    template + .pilot-item {
+        margin-block-start: 0;
+    }
+
     .pilot-list {
         transition: var(--slow-transition);
 

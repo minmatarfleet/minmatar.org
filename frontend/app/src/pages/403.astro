@@ -14,13 +14,14 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
 import PageCover from '@components/page/PageCover.astro';
 
 const page_title = t('403.page_title');
+const content_title = t('403.content_title');
 const page_description = t('403.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description} neocom={false}>
     <PageCover
-        image="/images/404-cover.jpg"
-        image_990="/images/404-cover-990.jpg"
+        image="/images/403-cover.jpg"
+        image_990="/images/403-cover-990.jpg"
         alt={t('403.cover_alt')}
         animated={false}
         overlay={true}
@@ -30,7 +31,7 @@ const page_description = t('403.leading_text');
 		<Wrapper max_width="var(--max-text-width)" neocom={true}>
             <Flexblock gap='var(--space-2xl)'>
                 <Flexblock>
-                    <h1>{page_title}</h1>
+                    <h1>{content_title}</h1>
                     <p>{page_description}</p>
                 </Flexblock>
 

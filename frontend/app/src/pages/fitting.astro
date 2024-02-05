@@ -6,9 +6,12 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden  } from '@helpers/http_responses'
+
+return HTTP_403_Forbidden();
 
 if (is_prod_mode())
-    return Astro.redirect(translatePath('/404/'))
+    return HTTP_404_Not_Found();
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
