@@ -34,7 +34,7 @@ let get_characters_error = false;
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
-    get_characters_error = (is_prod_mode() ? t('get_character_error') : error.message)
+    get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
 }
 
 console.log(Astro.request.headers.get('cookie'))
@@ -63,6 +63,7 @@ const page_title = t('account.page_title');
 <Viewport
     title={page_title}
     alert_dialog={true}
+    confirm_dialog={true}
 >
     <PageCover
         image="/images/account-cover.jpg"

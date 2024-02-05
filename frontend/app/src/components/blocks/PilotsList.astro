@@ -1,12 +1,14 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { get_player_icon } from '@helpers/eve_image_server';
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_api_url, get_app_url } from '@helpers/env'
+import slugify from 'slugify';
 
 interface Props {
     pilots?:            Array<Character>;
@@ -23,6 +25,7 @@ const {
 } = Astro.props;
 
 const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}/account&token_type=Basic`
+const DELETE_CHARACTER_URL = `${get_app_url()}/api/character/`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -42,15 +45,33 @@ delete attributes.class
     x-data={`{
         pilots: ${JSON.stringify(pilots)},
         pilots_ids: [],
+        character_name_slugs: {},
         init() {
             $refs.server_side_render.remove()
             this.generate_ids()
+            this.generate_slugs()
         },
         generate_ids() {
             this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
         },
+        generate_slugs() {
+            this.pilots.forEach(e => this.character_name_slugs[e.character_name] = e.character_name.replaceAll(" ","_"))
+        },
         add_pilot() {
             window.location.href = "${ADD_CHARACTER_URL}"
+        },
+        remove_pilot(character_id) {
+            this.pilots = this.pilots.filter(pilot => pilot.character_id !== character_id)
+            this.generate_ids()
+        },
+        async delete_pilot(character_id) {
+            if (await fetch('${DELETE_CHARACTER_URL}'+character_id, {
+                    method: 'DELETE'
+                })
+            )
+                this.remove_pilot(character_id)
+            else
+                show_alert_dialog('${t('remove_pilot_dialog_title')}', '${t('delete_character_error')}')
         }
     }`}
     x-init="init"
@@ -121,7 +142,25 @@ delete attributes.class
                                 class="[ action-button ]"
                                 size='sm'
                                 type="button"
+                                x-ref="remove_character_button"
                                 narrow={true}
+                                x-data={`{
+                                    async show_confirm_pilot_removal(character_id, character_name) {
+                                        setTimeout(function () {
+                                            const unlink_pilot_dialog_url = '${translatePath('/partials/unlink_pilot_dialog/')}'+character_id+'/'+character_name_slugs[character_name]
+                                            document.querySelector('.confirm-dialog #unlink-pilot-dialog-content').setAttribute('hx-post', unlink_pilot_dialog_url)
+                                            htmx.process(document.querySelector('.confirm-dialog')) 
+                                        })
+
+                                        return await show_confirm_dialog(
+                                            '${t('remove_pilot_dialog_title')}',
+                                            '<div id="unlink-pilot-dialog-content" hx-trigger="intersect" hx-target="#unlink-pilot-dialog-content"></div>',
+                                            pilot.character_id
+                                        )
+                                    }
+                                }`}
+                                x-on:click={`delete_pilot(await show_confirm_pilot_removal(pilot.character_id, pilot.character_name))`}
+                                x-init="init"
                             >
                                 <TrashIcon slot="icon" />
                             </Button>
