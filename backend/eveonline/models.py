@@ -91,6 +91,27 @@ class EveCharacterSkillset(models.Model):
         return str(self.name)
 
 
+class EveCharacterTag(models.Model):
+    """EveCharacter Tag model"""
+
+    character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
+    choices: tuple = (
+        ("DREAD", "1"),
+        ("BLACKOPS", "2"),
+        ("TACKLE", "3"),
+        ("LOGI", "4"),
+        ("FAX", "5"),
+        ("CYNO", "6"),
+        ("INDY", "7"),
+        ("TRADE", "8"),
+        ("HAULER", "9"),
+    )
+    tag = models.CharField(max_length=255, blank=False, choices=choices)
+
+    def __str__(self):
+        return str(self.tag)
+
+
 class EveCorporation(models.Model):
     """Corporation model"""
 
@@ -199,22 +220,3 @@ class EveAlliance(models.Model):
         self.ticker = esi_alliance["ticker"]
         self.executor_corporation_id = esi_alliance["executor_corporation_id"]
         super().save(*args, **kwargs)
-
-class EveCharacterTag(models.Model):
-    """EveCharacter Tag model"""
-    character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
-    choices: tuple = (
-        ("DREAD", "1"),
-        ("BLACKOPS", "2"),
-        ("TACKLE", "3"),
-        ("LOGI", "4"),
-        ("FAX", "5"),
-        ("CYNO", "6"),
-        ("INDY", "7"),
-        ("TRADE", "8"),
-        ("HAULER", "9"),
-    )
-    tag = models.CharField(max_length=255, blank=False, choices=choices)
-
-    def __str__(self):
-        return str(self.tag)

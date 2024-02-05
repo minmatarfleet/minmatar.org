@@ -40,6 +40,7 @@ class CharacterResponse(BasicCharacterResponse):
 class ErrorResponse(BaseModel):
     detail: str
 
+
 class TagRequest(BaseModel):
     character_id: int
     tags: List[str]
@@ -52,16 +53,19 @@ class TagRequest(BaseModel):
     response=List[BasicCharacterResponse],
 )
 def get_characters(request):
-    characters = EveCharacter.objects.filter(token__user=request.user)
+    tokens = Token.objects.filter(user=request.user)
     response = []
-    for character in characters:
+    for token in tokens:
+        tags = EveCharacterTag.objects.filter(character__pk=token.character_id)
         response.append(
             {
-                "character_id": character.character_id,
-                "character_name": character.character_name,
+                "character_id": token.character_id,
+                "character_name": token.character_name,
+                "tags": list(tags),
             }
         )
     return response
+
 
 @router.get(
     "/{int:character_id}",
@@ -93,7 +97,12 @@ def get_character_by_id(request, character_id: int):
     "/{int:character_id}",
     summary="Delete character by ID",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse, 404: ErrorResponse, 500: ErrorResponse},
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+        500: ErrorResponse,
+    },
 )
 def delete_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
@@ -201,27 +210,6 @@ def add_character(request, redirect_url: str, token_type: TokenType):
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
-
-
-@router.get(
-    "",
-    summary="Get characters",
-    auth=AuthBearer(),
-    response=List[BasicCharacterResponse],
-)
-def get_characters(request):
-    tokens = Token.objects.filter(user=request.user)
-    response = []
-    for token in tokens:
-        tags = EveCharacterTag.objects.filter(character__pk=token.character_id)
-        response.append(
-            {
-                "character_id": token.character_id,
-                "character_name": token.character_name,
-                "tags": list(tags)
-            }
-        )
-    return response
 
 
 @router.post(
