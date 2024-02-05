@@ -31,7 +31,7 @@ interface Props {
 	meta_description?: 		string;
 	neocom?: 				boolean;
 	alert_dialog?:			boolean;
-	confirm_dialog?:			boolean;
+	confirm_dialog?:		boolean;
 	personas_finder?:		boolean;
 	corporation_finder?:	boolean;
 	alliance_finder?:		boolean;
@@ -50,7 +50,6 @@ const {
 } = Astro.props
 
 import '@fontsource-variable/montserrat';
-import '@fontsource/norwester';
 import '@fontsource/qahiri';
 import 'tippy.js/dist/tippy.css';
 import '../styles/base.scss';
@@ -75,6 +74,7 @@ import '../styles/base.scss';
 		<meta name="twitter:title" content={title}>
 		{meta_description && <meta name="twitter:description" content={meta_description} />}
 		<meta name="twitter:image" content={meta_image}>
+		<link rel="preload" href="/fonts/norwester-webfont.woff2" as="font" type="font/woff" crossorigin>
 
 		<HeadScripts />
 		<CoverImagesPreload />
