@@ -82,10 +82,14 @@ def get_character_by_id(request, character_id: int):
             user=request.user, character_id=character_id
         ).exists()
     ):
+        tags = EveCharacterTag.objects.filter(
+            character__pk=character.character_id
+        )
         return {
             "character_id": character.character_id,
             "character_name": character.character_name,
             "skills": json.loads(character.skills_json),
+            "tags": list(tags),
         }
 
     return 403, {
