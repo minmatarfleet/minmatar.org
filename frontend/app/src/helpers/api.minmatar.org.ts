@@ -24,7 +24,7 @@ export async function get_characters(access_token:string) {
         const json = await response.json() as Character[];
         return json;
     } catch (error) {
-        throw new Error(`Error getting characters: ${error.message}`);
+        throw new Error(`Error fetching characters: ${error.message}`);
     }
 }
 
@@ -50,7 +50,7 @@ export async function get_character_by_id(access_token:string, character_id:numb
         const json = await response.json() as Character;
         return json;
     } catch (error) {
-        throw new Error(`Error getting character: ${error.message}`);
+        throw new Error(`Error fetching character: ${error.message}`);
     }
 }
 
