@@ -15,34 +15,35 @@ interface Props {
 ---
 
 <div
-    class="[ alert-dialog ]"
+    class="[ confirm-dialog ]"
 >
     <Dialog
-        x-bind:class="alert_dialog_open ? 'open' : ''"
+        x-bind:class="confirm_dialog_open ? 'open' : ''"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
-                <h3 x-text="alert_dialog_title"/>
-                <div class="[ alert-dialog-content ]" x-html="alert_dialog_content" />
+                <h3 x-text="confirm_dialog_title"/>
+                <div class="[ confirm-dialog-content ]" x-html="confirm_dialog_content" />
             </Flexblock>
-
+                
             <FlexInline justification='flex-end'>
-                <Button size='sm' alert-dialog-action="close">{t('ok')}</Button>
+                <Button size='sm' confirm-dialog-action="accept">{t('yes')}</Button>
+                <Button size='sm' confirm-dialog-action="cancel">{t('no')}</Button>
             </FlexInline>
         </Flexblock>
     </Dialog>
 
     <div
-        class="alert-dialog-backdrop"
-        x-bind:class="{ open: alert_dialog_open }"
-        alert-dialog-action="close"
+        class="confirm-dialog-backdrop"
+        x-bind:class="{ open: confirm_dialog_open }"
+        confirm-dialog-action="cancel"
     />
 </div>
 
 <style lang="scss">
-    :global([alert-dialog-action] *) {
+    :global([confirm-dialog-action] *) {
         pointer-events: none !important;
     }
 
@@ -50,11 +51,11 @@ interface Props {
         top: 200px;
     }
 
-    :global(.alert-dialog .alert-dialog-content p) {
+    :global(.confirm-dialog .confirm-dialog-content p) {
         font-size: var(--step--1);
     }
 
-    .alert-dialog-backdrop {
+    .confirm-dialog-backdrop {
         position: fixed;
         inset: 0;
         z-index: var(--backdrop-z-index);
