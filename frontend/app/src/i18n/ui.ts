@@ -18,7 +18,7 @@ export const ui = {
         'neocom.groups': 'Groups',
         'neocom.zkillboard': 'Zkillboard',
 
-        'generic.meta_description': 'These tools are managed by Minmatar Fleet Alliance.',
+        'generic.meta_description': 'The ultimate platform for Minmatar pilots, provided by the Minmatar Fleet Alliance.',
 
         'index.page_title': 'Minmatar Fleet Tools',
         'index.incoming_text': 'Next Minmatar fleet in',

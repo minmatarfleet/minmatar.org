@@ -1,5 +1,5 @@
 {
-    "name": "Minmatar Fleet Tools",
+    "name": "Minmatar Fleet",
     "short_name": "Minmatar Fleet",
     "start_url": ".",
     "display_override": ["fullscreen", "minimal-ui"],
@@ -7,7 +7,7 @@
     "background_color": "#B53620",
     "theme_color": "#FFFFFF",
     "scope": "/",
-    "description": "Minmatar Fleet Tools Progressive Web App.",
+    "description": "Minmatar Fleet",
     "icons": [
         {
             "src": "/images/android-chrome-192x192.png",
