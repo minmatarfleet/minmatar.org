@@ -1,0 +1,34 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    character_id:   number;
+    character_name: string;
+}
+
+const {
+    character_id,
+    character_name
+} = Astro.props
+
+import { get_player_icon } from '@helpers/eve_image_server';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+---
+<FixedFluid width='64px' class="[ pilot-item ]">
+    <picture>
+        <img src={get_player_icon(character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${character_name}`}>
+    </picture>
+    <VerticalCenter>
+        <Flexblock gap='0' class="[ w-full ]">
+            <span class="truncate text-[var(--highlight)]" set:text={character_name} />
+            <small class="truncate">Not group membership</small>
+        </Flexblock>
+    </VerticalCenter>
+</FixedFluid>

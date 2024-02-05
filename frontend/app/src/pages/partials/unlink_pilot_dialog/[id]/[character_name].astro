@@ -1,0 +1,24 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Partial from '@layouts/Partial.astro';
+
+const {
+    id,
+    character_name
+} = Astro.params
+
+const character_id = parseInt(id)
+---
+<Partial>
+    <Flexblock>
+        <p>{t('remove_pilot_dialog_text')}</p>
+        <PilotBadge character_id={character_id} character_name={character_name.replaceAll('_', ' ')} />
+    </Flexblock>
+</Partial>

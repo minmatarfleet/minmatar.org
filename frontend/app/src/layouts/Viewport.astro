@@ -9,15 +9,16 @@ import Neocom from '@components/blocks/Neocom.astro';
 
 import SkipToContent from '@components/blocks/SkipToContent.astro';
 import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
-import Fonts from '@components/partials/Fonts.astro';
 import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
+import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
 import {
 	AlertDialogXData,
+	ConfirmDialogXData,
 	PersonaFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
@@ -30,6 +31,7 @@ interface Props {
 	meta_description?: 		string;
 	neocom?: 				boolean;
 	alert_dialog?:			boolean;
+	confirm_dialog?:			boolean;
 	personas_finder?:		boolean;
 	corporation_finder?:	boolean;
 	alliance_finder?:		boolean;
@@ -41,6 +43,7 @@ const {
 	meta_description = t('generic.meta_description'),
 	neocom = true,
 	alert_dialog = false,
+	confirm_dialog = false,
 	personas_finder = false,
 	corporation_finder = false,
 	alliance_finder = false,
@@ -82,6 +85,7 @@ import '../styles/base.scss';
 		class="[ viewport-layout ]"
 		x-data={`{
 			${alert_dialog ? AlertDialogXData : ''}
+			${confirm_dialog ? ConfirmDialogXData : ''}
 			${personas_finder ? PersonaFinderXData : ''}
 			${corporation_finder ? CorporationFinderXData : ''}
 			${alliance_finder ? AllianceFinderXData : ''}
@@ -93,6 +97,7 @@ import '../styles/base.scss';
 			x-bind:inert={`
 				${[
 					alert_dialog ? 'alert_dialog_open' : false,
+					confirm_dialog ? 'confirm_dialog_open' : false,
 					personas_finder ? 'personas_finder_open' : false,
 					corporation_finder ? 'corporations_finder_open' : false,
 					alliance_finder ? 'alliances_finder_open' : false,
@@ -108,6 +113,9 @@ import '../styles/base.scss';
 
 		{alert_dialog &&
 			<AlertDialog />
+		}
+		{confirm_dialog &&
+			<ConfirmDialog />
 		}
 		{personas_finder &&
 			<PersonaFinder />

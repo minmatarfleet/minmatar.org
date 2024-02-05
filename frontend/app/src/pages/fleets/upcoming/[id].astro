@@ -126,7 +126,6 @@ const page_title = `${t('fleet')} ${fleet.name}`;
                                         size='sm'
                                         hx-post={translatePath(`/partials/fleet_composition/${id}`)}
                                         hx-target="#fleet-composition-component"
-                                        hx-indicator="#fleet-composition-component"
                                         hx-on::before-request="this.setAttribute('disabled','');start_dscan_animation()"
                                         hx-on::after-request="this.removeAttribute('disabled');update_members_count()"
                                     >
