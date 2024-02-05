@@ -170,24 +170,26 @@ class EveCharacterSkillset(models.Model):
 
     def __str__(self):
         return str(self.name)
-    
+
+
 class EveCharacterTag(models.Model):
-    """TODO comment?"""
-    # define the model for a character and its tags
-    # TODO - shoiuld this be a mapping table between characters and well defined tags
-    #   for querying all characters by a particular tag?
-    # table schema
-    # Character Id       | Tag
-    # Int(?) Primary Key | Int or nvarchar
-    character_id = models.IntegerField()
-    tag = models.CharField(max_length=255, blank=True)
-    
+    """EveCharacter Tag model"""
+    character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
+    choices: tuple = (
+        ("DREAD", "1"),
+        ("BLACKOPS", "2"),
+        ("TACKLE", "3"),
+        ("LOGI", "4"),
+        ("FAX", "5"),
+        ("CYNO", "6"),
+        ("INDY", "7"),
+        ("TRADE", "8"),
+        ("HAULER", "9"),
+    )
+    tag = models.CharField(max_length=255, blank=False, choices=choices)
+
     def __str__(self):
-        # to string overload?
-        return "join the tags into a list of some kind?" 
-    def save(self, *args, **kwargs):
-        # TODO
-        super().save(*args, **kwargs)
+        return str(self.tag)
 
 
 class EveCorporationApplication(models.Model):

@@ -25,11 +25,16 @@ class TokenType(Enum):
 class BasicCharacterResponse(BaseModel):
     character_id: int
     character_name: str
+    tags: List[str]
 
 
 class CharacterResponse(BasicCharacterResponse):
     skills: dict
 
+
+class TagRequest(BaseModel):
+    character_id: int
+    tags: List[str]
 
 @router.get(
     "/{int:character_id}",
@@ -86,21 +91,32 @@ def get_characters(request):
     tokens = Token.objects.filter(user=request.user)
     response = []
     for token in tokens:
+        tags = EveCharacterTag.objects.filter(character__pk=token.character_id)
         response.append(
             {
                 "character_id": token.character_id,
                 "character_name": token.character_name,
-                # TODO Sav: Add tags
+                "tags": list(tags)
             }
         )
     return response
 
+
 @router.post(
-    "/tags",
-    summary="",
+    "/{int:character_id}/tags",
+    summary="Get character tags by ID",
     auth=AuthBearer(),
-    response=List[str]
+    response=None,
 )
-def post_character_tags(request):
-    response = []
-    return response
+def post_character_tags(request, character_id: int, tag_req: TagRequest):
+    character = EveCharacter.objects.get(character_id=character_id)
+    if (
+        request.user.has_perm("eveonline.change_evecharacter")
+        or Token.objects.filter(
+            user=request.user, character_id=character_id
+        ).exists()
+    ):
+        for tag in tag_req.tags:
+            EveCharacterTag.objects.create(character=character, tag=tag)
+        return 204
+    return 403, "You do not have permission to view this character."

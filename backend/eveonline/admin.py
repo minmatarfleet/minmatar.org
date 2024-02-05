@@ -6,6 +6,7 @@ from .models import (
     EveCharacterSkillset,
     EveCorporation,
     EveCorporationApplication,
+    EveCharacterTag,
 )
 
 # Register your models here.
@@ -14,3 +15,4 @@ admin.site.register(EveCharacter)
 admin.site.register(EveCharacterSkillset)
 admin.site.register(EveCorporationApplication)
 admin.site.register(EveAlliance)
+admin.site.register(EveCharacterTag)
