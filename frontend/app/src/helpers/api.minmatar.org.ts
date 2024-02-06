@@ -93,7 +93,7 @@ export async function get_primary_characters(access_token:string) {
 
         console.log(response)
 
-        if (!response.ok) {
+        if (response.status != 200 && response.status != 404) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
