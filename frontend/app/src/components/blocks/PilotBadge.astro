@@ -3,7 +3,6 @@ import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils'
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 interface Props {
     character_id:   number;
@@ -20,6 +19,9 @@ import { get_player_icon } from '@helpers/eve_image_server';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+
+const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 ---
 <FixedFluid width='64px' class="[ pilot-item ]">
     <picture>
@@ -28,7 +30,12 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
     <VerticalCenter>
         <Flexblock gap='0' class="[ w-full ]">
             <span class="truncate text-[var(--highlight)]" set:text={character_name} />
-            <small class="truncate">Not group membership</small>
+            <small class="truncate">
+                {character_id == primary_pilot_id ?
+                    t('main_character') :
+                    t('alt_character')
+                }
+            </small>
         </Flexblock>
     </VerticalCenter>
 </FixedFluid>

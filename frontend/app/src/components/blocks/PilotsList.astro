@@ -37,7 +37,6 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
-import Tag from '@components/blocks/Tag.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 
 delete attributes.class
@@ -78,6 +77,8 @@ delete attributes.class
             this.generate_ids()
         },
         async delete_pilot(character_id) {
+            if (!character_id) return
+
             this.remove_request_ongoing.push(character_id)
 
             const response = await fetch(
@@ -148,13 +149,12 @@ delete attributes.class
                         <VerticalCenter>
                             <Flexblock gap='0' class="[ w-full ]">
                                 <span class="truncate text-[var(--highlight)]" set:text={pilot.character_name} />
-                                <FlexInline>
-                                    <small class="truncate">Not group membership</small>
+                                <small class="truncate">
                                     {pilot.character_id == primary_pilot_id ?
-                                        <Tag text={t('main')} /> :
-                                        <Tag color='alliance-blue' text={t('alt')} />
+                                        t('main_character') :
+                                        t('alt_character')
                                     }
-                                </FlexInline>
+                                </small>
                             </Flexblock>
                         </VerticalCenter>
                         <VerticalCenter></VerticalCenter>
@@ -176,15 +176,17 @@ delete attributes.class
                         <VerticalCenter>
                             <Flexblock gap='0' class="[ w-full ]">
                                 <span class="truncate text-[var(--highlight)]" x-text="pilot.character_name" />
-                                <FlexInline>
-                                    <small class="truncate">Not group membership</small>
-                                    <template x-if="pilot.character_id == primary_pilot">
-                                        <Tag text={t('main')} />
-                                    </template>
-                                    <template x-if="pilot.character_id != primary_pilot">
-                                        <Tag color='alliance-blue' text={t('alt')} />
-                                    </template>
-                                </FlexInline>
+                                <small
+                                    class="truncate"
+                                    x-text={`pilot.character_id == primary_pilot ? '${t('main_character')}' : '${t('alt_character')}'`}
+                                >
+                                    {pilots.length === 0 &&
+                                        t('main_character')
+                                    }
+                                    {pilots.length > 0 &&
+                                        t('alt_character')
+                                    }
+                                </small>
                             </Flexblock>
                         </VerticalCenter>
                         <VerticalCenter>
