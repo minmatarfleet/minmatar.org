@@ -11,12 +11,12 @@ import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 if (is_prod_mode())
     return HTTP_404_Not_Found()
 
-import type { JWTCookies, JWT } from '@dtypes/jwt'
+import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const claim:JWTCookies = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as JWT : false
+const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
 
-if (!claim /*|| !claim?.permissions?.includes('auth.change_group')*/)
+if (!user /*|| !user?.permissions?.includes('auth.change_group')*/)
     return HTTP_403_Forbidden()
 
 if (Astro.request.method === "POST") {
