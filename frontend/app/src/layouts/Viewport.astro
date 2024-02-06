@@ -6,7 +6,7 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
-console.log(middleware_error)
+if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 
 import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
