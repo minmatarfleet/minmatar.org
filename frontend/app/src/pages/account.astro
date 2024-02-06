@@ -6,7 +6,6 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -36,12 +35,6 @@ try {
 } catch (error) {
     get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
 }
-
-const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
-const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
-
-import { get_api_url, get_app_url } from '@helpers/env'
-const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}/redirects/add_primary_character&token_type=Basic`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -79,15 +72,10 @@ const page_title = t('account.page_title');
         overlay={true}
     />
 
-	<main 
-        id="content"
-        x-data={`{
-            group_name: '',
-        }`}
-    >
+	<main id="content">
         <PageHeader max_width="var(--max-content-width)">
             <FlexInline justification='space-between'>
-                <PageTitle x-text={`group_name != '' ? group_name+' ${t('group')}' : '${page_title}'`}>
+                <PageTitle>
                     {page_title}
                 </PageTitle>
                 <FlexInline>
@@ -105,34 +93,18 @@ const page_title = t('account.page_title');
                 x-data={`{
                     'submitted': false
                 }`}
-                x-on:submit.prevent="submitted = true;"
+                x-on:submit.prevent="submitted = true"
             >
                 <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
                     <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                         <Flexblock gap='var(--space-xl)' class="[ w-full ]">
                             <ComponentBlock class="w-full">
-                                <FlexInline gap="var(--space-3xl)" justification='space-between'>
-                                    <FlexInline gap="var(--space-3xl)">
-                                        <VerticalCenter>
-                                            <TextGroup title={t('account_name')} text={user.username} />
-                                        </VerticalCenter>
-                                        <VerticalCenter>
-                                            <TextGroup title={t('roles')} text={roles_semantic_list} />
-                                        </VerticalCenter>
-                                    </FlexInline>
+                                <FlexInline gap="var(--space-3xl)">
                                     <VerticalCenter>
-                                        <Button
-                                            size='sm'
-                                            type="button"
-                                            x-data={`{
-                                                add_primary_pilot() {
-                                                    window.location.href = "${ADD_PRIMARY_CHARACTER_URL}"
-                                                },
-                                            }`}
-                                            x-on:click={`add_primary_pilot(await show_alert_dialog('${t('add_primary_pilot_dialog_title')}', '<p>${t('add_primary_pilot_dialog_text')}</p>'))`}
-                                        >
-                                            {primary_pilot_id ? t('change_primary_pilot') : t('add_primary_pilot')}
-                                        </Button>
+                                        <TextGroup title={t('account_name')} text={user.username} />
+                                    </VerticalCenter>
+                                    <VerticalCenter>
+                                        <TextGroup title={t('roles')} text={roles_semantic_list} />
                                     </VerticalCenter>
                                 </FlexInline>
                             </ComponentBlock>
