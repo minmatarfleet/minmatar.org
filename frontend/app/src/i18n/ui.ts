@@ -20,7 +20,7 @@ export const ui = {
 
         'generic.meta_description': 'The ultimate platform for Minmatar pilots, provided by the Minmatar Fleet Alliance.',
 
-        'index.page_title': 'Minmatar Fleet Tools',
+        'index.page_title': 'Minmatar Fleet',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'An aerial view of a red Fortizar station.',
 
