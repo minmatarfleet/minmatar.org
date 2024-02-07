@@ -164,7 +164,9 @@ const page_title = t('account.page_title');
 
                                     <DisableBlock x_model="danger_zone_enable">
                                         <FlexInline justification='space-between'>
-                                            <TextGroup title={t('unregister_account')} text={t('unregister_account_description')} />
+                                            <TextGroup title={t('unregister_account')}>
+                                                {t('unregister_account_description')}
+                                            </TextGroup>
                                             <Button
                                                 type="button"
                                                 size='sm'
