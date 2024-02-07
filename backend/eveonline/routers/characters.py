@@ -11,11 +11,7 @@ from pydantic import BaseModel
 
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EvePrimaryCharacter
-from eveonline.scopes import (
-    ADVANCED_SCOPES,
-    BASIC_SCOPES,
-    CEO_SCOPES,
-)
+from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
 
 router = Router(tags=["Characters"])
 
@@ -88,7 +84,12 @@ def get_character_by_id(request, character_id: int):
     "/{int:character_id}",
     summary="Delete character by ID",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse, 404: ErrorResponse, 500: ErrorResponse},
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+        500: ErrorResponse,
+    },
 )
 def delete_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
@@ -159,7 +160,9 @@ def add_primary_character(request, redirect_url: str):
                 token=token,
             )
 
-        if EvePrimaryCharacter.objects.filter(character__token__user=request.user).exists():
+        if EvePrimaryCharacter.objects.filter(
+            character__token__user=request.user
+        ).exists():
             primary_character = EvePrimaryCharacter.objects.get(
                 character__token__user=request.user
             )
