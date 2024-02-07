@@ -19,6 +19,7 @@ ratelimit = "*"
 backoff = "*"
 django-ninja = "*"
 pyjwt = "*"
+whitenoise = "*"
 
 [dev-packages]
 pylint = "*"

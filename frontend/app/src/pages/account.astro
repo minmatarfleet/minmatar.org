@@ -5,16 +5,15 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode, get_auth_url } from '@helpers/env'
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { is_prod_mode } from '@helpers/env'
 
-import type { JWTCookies, JWT } from '@dtypes/jwt'
+import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const claim:JWTCookies | false = auth_token ? jose.decodeJwt(auth_token) as JWT : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-if (!auth_token || !claim) {
+if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
     return Astro.redirect(get_auth_url())
 }
@@ -22,22 +21,26 @@ if (!auth_token || !claim) {
 import { semantic_list } from '@helpers/array';
 
 let roles:string[] = []
-if (claim.is_superuser) roles.push(t('administrator'))
-if (claim.is_staff) roles.push(t('director'))
+if (user.is_superuser) roles.push(t('administrator'))
+if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('no_roles_assigned'))
 
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org'
 
 let pilots:Character[] = []
-let get_characters_error = false;
+let get_characters_error:string | false = false
+let readonly = false
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
     get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
+    readonly = true
 }
 
-console.log(Astro.request.headers.get('cookie'))
+import { get_app_url } from '@helpers/env'
+const DELETE_ACCOUNT_URL = `${get_app_url()}/api/auth`
+const CLEAR_ACCOUNT_CACHE_URL = `${get_app_url()}/api/cache`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -56,6 +59,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import PilotsList from '@components/blocks/PilotsList.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 
 const page_title = t('account.page_title');
 ---
@@ -74,15 +78,10 @@ const page_title = t('account.page_title');
         overlay={true}
     />
 
-	<main 
-        id="content"
-        x-data={`{
-            group_name: '',
-        }`}
-    >
+	<main id="content">
         <PageHeader max_width="var(--max-content-width)">
             <FlexInline justification='space-between'>
-                <PageTitle x-text={`group_name != '' ? group_name+' ${t('group')}' : '${page_title}'`}>
+                <PageTitle>
                     {page_title}
                 </PageTitle>
                 <FlexInline>
@@ -95,66 +94,112 @@ const page_title = t('account.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <form
-                method="POST"
-                x-data={`{
-                    'submitted': false
-                }`}
-                x-on:submit.prevent="submitted = true;"
-            >
-                <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
-                        <Flexblock gap='var(--space-xl)' class="[ w-full ]">
-                            <ComponentBlock class="w-full">
+            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
+                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                    <Flexblock gap='var(--space-xl)' class="[ w-full ]">
+                        <ComponentBlock class="w-full">
+                            <FlexInline gap="var(--space-3xl)" justification='space-between'>
                                 <FlexInline gap="var(--space-3xl)">
-                                    <TextGroup title={t('account_name')} text={claim.username} />
-                                    <TextGroup title={t('roles')} text={roles_semantic_list} />
+                                    <VerticalCenter>
+                                        <TextGroup title={t('account_name')} text={user.username} />
+                                    </VerticalCenter>
+                                    <VerticalCenter>
+                                        <TextGroup title={t('roles')} text={roles_semantic_list} />
+                                    </VerticalCenter>
                                 </FlexInline>
+                                <VerticalCenter>
+                                    <Button
+                                        size='sm'
+                                        type="button"
+                                        x-bind:disabled="disabled"
+                                        x-data={`{
+                                            disabled: false,
+                                            async clear_cache() {
+                                                this.disabled = true
+                                                
+                                                await fetch(
+                                                    '${CLEAR_ACCOUNT_CACHE_URL}', {
+                                                        method: 'DELETE'
+                                                    }
+                                                )
+
+                                                navigate('${translatePath('/account')}')
+                                            }
+                                        }`}
+                                        x-on:click="clear_cache()"
+                                    >
+                                        {t('clear_account_cache')}
+                                    </Button>
+                                </VerticalCenter>
+                            </FlexInline>
+                        </ComponentBlock>
+
+                        <ComponentBlock class="w-full">
+                            <PilotsList
+                                pilots={pilots}
+                                readonly={readonly}
+                                empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+                            />
+                        </ComponentBlock>
+
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <ComponentBlock
+                                x-data={`{
+                                    danger_zone_enable: false
+                                }`}
+                            >
+                                <Flexblock gap='var(--space-l)' class="[ w-full ]">
+                                    <h2>Danger zone</h2>
+
+                                    <SwitchSquare
+                                        class="[ w-full ]"
+                                        x-model="danger_zone_enable"
+                                        label={t('enable_danger_zone_switch_title')}
+                                        description={t('enable_danger_zone_switch_description')}
+                                    />
+
+                                    <DisableBlock x_model="danger_zone_enable">
+                                        <FlexInline justification='space-between'>
+                                            <TextGroup title={t('unregister_account')} text={t('unregister_account_description')} />
+                                            <Button
+                                                type="button"
+                                                size='sm'
+                                                x-on:click={`delete_account(await show_confirm_dialog('${t('delete_account_dialog_title')}', '${t('delete_account_dialog_text')}'))`}
+                                                x-data={`{
+                                                    async delete_account(proceed) {
+                                                        if (!proceed) return
+                                                        
+                                                        const response = await fetch(
+                                                            '${DELETE_ACCOUNT_URL}', {
+                                                                method: 'DELETE'
+                                                            }
+                                                        )
+
+                                                        if (!response.ok) {
+                                                            show_alert_dialog('${t('delete_account_dialog_title')}', '${t('delete_account_error')}')
+                                                            return
+                                                        }
+
+                                                        const json = await response.json()
+                                                        if (json.redirect)
+                                                            navigate(json.redirect)
+                                                    }
+                                                }`}
+                                            >
+                                                {t('unregister')}
+                                            </Button>
+                                        </FlexInline>
+                                    </DisableBlock>
+                                </Flexblock>
                             </ComponentBlock>
-
-                            <ComponentBlock class="w-full">
-                                <PilotsList
-                                    pilots={pilots}
-                                    empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-                                    readonly={false}
-                                />
-                            </ComponentBlock>
-
-                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                <ComponentBlock
-                                    x-data={`{
-                                        danger_zone_enable: false
-                                    }`}
-                                >
-                                    <Flexblock gap='var(--space-l)' class="[ w-full ]">
-                                        <h2>Danger zone</h2>
-
-                                        <SwitchSquare
-                                            class="[ w-full ]"
-                                            x-model="danger_zone_enable"
-                                            label={t('enable_danger_zone_switch_title')}
-                                            description={t('enable_danger_zone_switch_description')}
-                                        />
-
-                                        <DisableBlock x_model="danger_zone_enable">
-                                            <FlexInline justification='space-between'>
-                                                <TextGroup title={t('unregister_account')} text={t('unregister_account_description')} />
-                                                <Button type="button" size='sm'>
-                                                    {t('unregister_account')}
-                                                </Button>
-                                            </FlexInline>
-                                        </DisableBlock>
-                                    </Flexblock>
-                                </ComponentBlock>
-                            </Flexblock>
                         </Flexblock>
-                    </Wrapper>
+                    </Flexblock>
+                </Wrapper>
 
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
-                        
-                    </Wrapper>
-                </FixedFluid>
-            </form>
+                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                    
+                </Wrapper>
+            </FixedFluid>
         </PageBody>
 	</main>
 </Viewport>

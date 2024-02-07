@@ -5,11 +5,13 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import type { User } from '@dtypes/jwt'
+
 import { is_prod_mode } from '@helpers/env'
 
 import * as jose from 'jose'
 
-const claim = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) : false
+const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
 
 import NeocomButton from '@components/blocks/NeocomButton.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -63,7 +65,7 @@ const page = Astro.url.pathname
                 <FreightServiceEvEIcon />
             </NeocomButton>
         }
-        {!is_prod_mode() && claim &&
+        {!is_prod_mode() && user &&
             <NeocomButton active={page.includes(translatePath('/groups/'))} title={t('neocom.groups')} href={translatePath('/groups/')}>
                 <GroupsEvEIcon />
             </NeocomButton>

@@ -1,13 +1,8 @@
-
-import { useTranslations } from '@i18n/utils';
-
-import type { JWTCookies, JWT } from '@dtypes/jwt'
+import { useTranslations, useTranslatedPath } from '@i18n/utils';
+import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
-
 import { is_prod_mode } from '@helpers/env'
-
 import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
-
 import { delete_characters } from '@helpers/api.minmatar.org'
 
 export async function DELETE({ params, cookies }) {
@@ -16,9 +11,9 @@ export async function DELETE({ params, cookies }) {
     const t = useTranslations(lang)
 
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
-    const claim:JWTCookies | false = auth_token ? jose.decodeJwt(auth_token) as JWT : false
+    const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-    if (!auth_token || !claim) {
+    if (!auth_token || !user) {
         return HTTP_403_Forbidden()
     }
 
@@ -35,5 +30,25 @@ export async function DELETE({ params, cookies }) {
     if (!status)
         return HTTP_404_Not_Found()
 
-    return HTTP_200_Success(true)
+    const primary_character = cookies.has('primary_pilot') ? JSON.parse(cookies.get('primary_pilot').value) : null
+    const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+
+    if (character_id == primary_character_id) {
+        cookies.delete('primary_pilot', { path: '/' })
+
+        const translatePath = useTranslatedPath(lang)
+
+        return HTTP_200_Success(
+            JSON.stringify({
+                success: true,
+                redirect: translatePath('/account')
+            })
+        )
+    }
+
+    return HTTP_200_Success(
+        JSON.stringify({
+            success: true
+        })
+    )
 }

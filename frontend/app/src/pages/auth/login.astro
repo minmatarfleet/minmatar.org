@@ -11,10 +11,10 @@ if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
 let error = null
 let token = null
-let claims = null
+let user = null
 try {
     token = Astro.url.searchParams.get('token')
-    claims = jose.decodeJwt(token)
+    user = jose.decodeJwt(token)
 } catch (error) {
     throw new Error(`Error during token exchange: ${error.message}`)
 }
@@ -22,7 +22,7 @@ try {
 const ONE_DAY_IN_MS = 24*60*60*1000
 const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
 Astro.cookies.set('auth_token', token, { path: '/', expires: in_20_days })
-Astro.cookies.set('avatar', claims.avatar, { path: '/', expires: in_20_days })
+Astro.cookies.set('avatar', user.avatar, { path: '/', expires: in_20_days })
 
 const redirect = Astro.cookies.has('redirect_after_auth') ? Astro.cookies.get('redirect_after_auth').value : translatePath('/account/')
 Astro.cookies.delete('redirect_after_auth', { path: '/' })

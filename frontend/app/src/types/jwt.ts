@@ -1,6 +1,4 @@
-export type JWTCookies = JWT | boolean
-
-export interface JWT {
+export interface User {
     user_id:      number;
     username:     string;
     avatar:       string;

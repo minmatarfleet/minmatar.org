@@ -176,7 +176,15 @@ def add_primary_character(request, redirect_url: str):
                 character_name=token.character_name,
                 token=token,
             )
-        EvePrimaryCharacter.objects.create(character=character)
+
+        if EvePrimaryCharacter.objects.filter(character__token__user=request.user).exists():
+            primary_character = EvePrimaryCharacter.objects.get(
+                character__token__user=request.user
+            )
+            primary_character.character = character
+            primary_character.save()
+        else:
+            EvePrimaryCharacter.objects.create(character=character)
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter

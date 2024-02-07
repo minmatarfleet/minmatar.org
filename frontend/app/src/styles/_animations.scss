@@ -41,3 +41,15 @@
     75%  { content: '..'; }
     100%  { content: '...'; }
 }
+
+.blink-animation {
+    animation-duration: 2s;
+    animation-name: blink;
+    animation-iteration-count: infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 0.75; }
+    50%   { opacity: 0.25; }
+    100%  { opacity: 0.75; }
+}
