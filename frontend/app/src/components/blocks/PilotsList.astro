@@ -21,7 +21,7 @@ const {
     empty_text = t('empty_pilots_text'),
     readonly = true,
     ...attributes
-} = Astro.props;
+} = Astro.props
 
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
@@ -115,7 +115,7 @@ delete attributes.class
                 </small>
             </Flexblock>
             
-            {!readonly && 
+            {!readonly &&
                 <VerticalCenter>
                     <Button
                         size='sm'
@@ -190,7 +190,7 @@ delete attributes.class
                             </Flexblock>
                         </VerticalCenter>
                         <VerticalCenter>
-                            {!readonly && 
+                            {!readonly &&
                                 <template x-if="pilot.character_id !== primary_pilot || pilots.length === 1">
                                     <Button
                                         class="[ action-button ]"

@@ -1,6 +1,6 @@
 import type { Character } from '@dtypes/api.minmatar.org'
 
-const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline`
+const API_ENDPOINT =  `${import.meta.env.API_URL}/api`
 
 export async function get_characters(access_token:string) {
     const headers = {
@@ -8,10 +8,10 @@ export async function get_characters(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/characters`)
+    console.log(`Requesting: ${API_ENDPOINT}/eveonline/characters`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/characters`, {
+        const response = await fetch(`${API_ENDPOINT}/eveonline/characters`, {
             headers: headers
         })
 
@@ -33,10 +33,10 @@ export async function get_character_by_id(access_token:string, character_id:numb
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/characters/${character_id}`)
+    console.log(`Requesting: ${API_ENDPOINT}/eveonline/characters/${character_id}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/characters/${character_id}`, {
+        const response = await fetch(`${API_ENDPOINT}/eveonline/characters/${character_id}`, {
             headers: headers
         })
 
@@ -58,10 +58,10 @@ export async function delete_characters(access_token:string, character_id:number
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting DELETE: ${API_ENDPOINT}/characters/${character_id}`)
+    console.log(`Requesting DELETE: ${API_ENDPOINT}/eveonline/characters/${character_id}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/characters/${character_id}`, {
+        const response = await fetch(`${API_ENDPOINT}/eveonline/characters/${character_id}`, {
             method: 'DELETE',
             headers: headers
         })
@@ -84,10 +84,10 @@ export async function get_primary_characters(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/characters/primary`)
+    console.log(`Requesting: ${API_ENDPOINT}/eveonline/characters/primary`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/characters/primary`, {
+        const response = await fetch(`${API_ENDPOINT}/eveonline/characters/primary`, {
             headers: headers
         })
 
@@ -100,5 +100,31 @@ export async function get_primary_characters(access_token:string) {
         return await response.json() as Character;
     } catch (error) {
         throw new Error(`Error fetching main pilot: ${error.message}`);
+    }
+}
+
+export async function delete_account(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting DELETE: ${API_ENDPOINT}/auth/delete`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/auth/delete`, {
+            method: 'DELETE',
+            headers: headers
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error deleting account: ${error.message}`);
     }
 }

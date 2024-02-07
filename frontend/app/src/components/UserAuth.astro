@@ -25,10 +25,7 @@ const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.chara
 const portrait = primary_pilot_avatar ?? (Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : "https://images.evetech.net/characters/1/portrait?size=64")
 ---
 
-<a
-    href={href}
-    class:list={[ { active: active } ]}
->
+<a href={href} class:list={[ { active: active } ]}>
     <img class="confetti-image" src={portrait} width="48" height="48" alt="Beautiful Mim" />
 </a>
 

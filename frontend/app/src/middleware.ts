@@ -25,8 +25,10 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
         try {
             primary_pilot = await get_primary_characters(auth_token as string);
 
-            const in_1_day = new Date(new Date().getTime()+(ONE_DAY_IN_MS))
-            cookies.set('primary_pilot', JSON.stringify(primary_pilot), { path: '/', expires: in_1_day })
+            if (primary_pilot?.character_id) {
+                const in_1_day = new Date(new Date().getTime()+(ONE_DAY_IN_MS))
+                cookies.set('primary_pilot', JSON.stringify(primary_pilot), { path: '/', expires: in_1_day })
+            }
         } catch (error) {
             get_primary_characters_error = (is_prod_mode() ? t('get_primary_characters_error') : error.message)
             cookies.set('middleware_error', get_primary_characters_error, { path: '/' })

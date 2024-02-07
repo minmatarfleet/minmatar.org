@@ -1,12 +1,8 @@
 import { useTranslations, useTranslatedPath } from '@i18n/utils';
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
-
 import { is_prod_mode } from '@helpers/env'
-
 import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
-
 import { delete_characters } from '@helpers/api.minmatar.org'
 
 export async function DELETE({ params, cookies }) {
