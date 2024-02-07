@@ -32,15 +32,21 @@ const {
         thumb_image_alt={fit.ship_name}
     >
         <VerticalCenter>
-            <TextGroup title={t('fitting_name')} text={fit.fitting_name} />
+            <TextGroup title={t('fitting_name')}>
+                {fit.fitting_name}
+            </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>
-            <TextGroup title={t('fitting_type')} text={fit.fitting_type} />
+            <TextGroup title={t('fitting_type')}>
+                {fit.fitting_type}
+            </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>
-            <TextGroup title={t('ship_type')} text={fit.ship_type} />
+            <TextGroup title={t('ship_type')}>
+                {fit.ship_type}
+            </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>

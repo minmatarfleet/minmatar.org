@@ -36,13 +36,21 @@ const {
         logo={get_alliance_logo(structure.alliance_id)}
         items_width='200px'
     >
-        <TextGroup title={t('name')} text={structure.name} />
+        <TextGroup title={t('name')}>
+            {structure.name}
+        </TextGroup>
 
-        <TextGroup title={t('timer')} text={structure.timer} />
+        <TextGroup title={t('timer')}>
+            {structure.timer}
+        </TextGroup>
 
-        <TextGroup title={t('region')} text={structure.region} />
+        <TextGroup title={t('region')}>
+            {structure.region}
+        </TextGroup>
 
-        <TextGroup title={t('system')} text={structure.system} />
+        <TextGroup title={t('system')}>
+            {structure.system}
+        </TextGroup>
 
         <Flexblock slot="actions">
             <ButtonStack>

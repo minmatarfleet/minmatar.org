@@ -91,7 +91,9 @@ const page_title = `${t('fleet')} ${fleet.name}`;
                                 </VerticalCenter>
         
                                 <VerticalCenter>
-                                    <TextGroup title={t('tracking')} text={fleet.tracking} class:list={[ { loading: (fleet.tracking == t('forming')) } ]} />
+                                    <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
+                                        {fleet.tracking}
+                                    </TextGroup>
                                 </VerticalCenter>
                             </Flexblock>
                         </ComponentBlock>

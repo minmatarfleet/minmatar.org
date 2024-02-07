@@ -49,15 +49,23 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 >
     <VerticalCenter>
         <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('type')} text={fleet.type} />
-            <TextGroup title={t('audience')} text={fleet.audience} />
+            <TextGroup title={t('type')}>
+                {fleet.type}
+            </TextGroup>
+            <TextGroup title={t('audience')}>
+                {fleet.audience}
+            </TextGroup>
         </Flexblock>
     </VerticalCenter>
     
     <VerticalCenter>
         <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('eve_time')} text={eve_time_text} class="[ sentence-cap ]" />
-            <TextGroup title={t('local_time')} text="Calculating..." class="[ sentence-cap ]" x-text="local_time" />
+            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                {eve_time_text}
+            </TextGroup>
+            <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                <span class="[ loading ]">{t('calculating')}</span>
+            </TextGroup>
         </Flexblock>
     </VerticalCenter>
     

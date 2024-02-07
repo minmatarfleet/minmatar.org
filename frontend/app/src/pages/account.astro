@@ -101,10 +101,14 @@ const page_title = t('account.page_title');
                             <FlexInline gap="var(--space-3xl)" justification='space-between'>
                                 <FlexInline gap="var(--space-3xl)">
                                     <VerticalCenter>
-                                        <TextGroup title={t('account_name')} text={user.username} />
+                                        <TextGroup title={t('account_name')}>
+                                            {user.username}
+                                        </TextGroup>
                                     </VerticalCenter>
                                     <VerticalCenter>
-                                        <TextGroup title={t('roles')} text={roles_semantic_list} />
+                                        <TextGroup title={t('roles')}>
+                                            {roles_semantic_list}
+                                        </TextGroup>
                                     </VerticalCenter>
                                 </FlexInline>
                                 <VerticalCenter>
