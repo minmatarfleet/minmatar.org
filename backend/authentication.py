@@ -47,6 +47,7 @@ def login(request, redirect_url: str):
 )
 def delete_account(request):
     request.user.delete()
+    request.session.flush()
     return "Account deleted successfully"
 
 
