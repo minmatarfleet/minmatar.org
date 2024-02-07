@@ -303,5 +303,9 @@ export const ui = {
         'main': 'Main',
         'alt': 'Alt',
         'clear_account_cache': 'Clear account info cache',
+        'calculating': 'Calculating',
+        'fun_fleet': 'Fun fleet',
+        'courier': 'Courier',
+        'private': 'Private',
     },
 } as const;

@@ -83,11 +83,15 @@ const page_title = t('freight.contract.page_title');
                                     <h2>{t('freight.contract.step_1_title')}</h2>
 
                                     <VerticalCenter>
-                                        <TextGroup title={t('contract_type')} text=Courier />
+                                        <TextGroup title={t('contract_type')}>
+                                            {t('courier')}
+                                        </TextGroup>
                                     </VerticalCenter>
 
                                     <VerticalCenter>
-                                        <TextGroup title={t('availability')} text=Private />
+                                        <TextGroup title={t('availability')}>
+                                            {t('private')}
+                                        </TextGroup>
                                     </VerticalCenter>
 
                                     <VerticalCenter>
@@ -146,11 +150,15 @@ const page_title = t('freight.contract.page_title');
                                     </VerticalCenter>
 
                                     <VerticalCenter>
-                                        <TextGroup title={t('expiration')} text={`${calculation.expiration} ${t('days')}`} />
+                                        <TextGroup title={t('expiration')}>
+                                            {`${calculation.expiration} ${t('days')}`}
+                                        </TextGroup>
                                     </VerticalCenter>
 
                                     <VerticalCenter>
-                                        <TextGroup title={t('days_to_complete')} text={calculation.days_to_complete} />
+                                        <TextGroup title={t('days_to_complete')}>
+                                            {calculation.days_to_complete}
+                                        </TextGroup>
                                     </VerticalCenter>
                                 </Flexblock>
                             </ComponentBlock>

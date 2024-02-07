@@ -222,8 +222,12 @@ const today = new Date().toISOString().split("T")[0]
                                 >
                                     <VerticalCenter>
                                         <Flexblock gap="var(--space-s-m)">
-                                            <TextGroup title={t('type')} text="Fun fleet" x-text="fleet_types[fleet_type]" />
-                                            <TextGroup title={t('audience')} text="Alliance" x-text="audiences[audience]" />
+                                            <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
+                                                {t('fun_fleet')}
+                                            </TextGroup>
+                                            <TextGroup title={t('audience')} x-text="audiences[audience]">
+                                                {t('alliance')}
+                                            </TextGroup>
                                         </Flexblock>
                                     </VerticalCenter>
                                     
@@ -231,16 +235,18 @@ const today = new Date().toISOString().split("T")[0]
                                         <Flexblock gap="var(--space-s-m)">
                                             <TextGroup
                                                 title={t('eve_time')}
-                                                text="Waiting for fleet time"
                                                 class="[ sentence-cap ]"
                                                 x-text="fleet_datetime()"
-                                            />
+                                            >    
+                                                {t('waiting_fleet_time')}
+                                            </TextGroup>
                                             <TextGroup
                                                 title={t('local_time')}
-                                                text={t('waiting_fleet_time')}
                                                 class="[ sentence-cap ]"
                                                 x-text="fleet_datetime(true)"
-                                            />
+                                            >
+                                                {t('waiting_fleet_time')}
+                                            </TextGroup>
                                         </Flexblock>
                                     </VerticalCenter>
                                 </ThumbCard>

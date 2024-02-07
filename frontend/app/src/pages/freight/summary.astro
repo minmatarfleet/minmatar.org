@@ -71,31 +71,27 @@ const page_title = t('freight.summary.page_title');
                         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                             <h2>{t('freight.summary.current_title')}</h2>
                             <VerticalCenter>
-                                <TextGroup title={t('total_contracts')} text={summaries.current.total_contracts.toLocaleString()} />
+                                <TextGroup title={t('total_contracts')}>
+                                    {summaries.current.total_contracts.toLocaleString()}
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_volume')}
-                                    data-tippy-content={number_name(summaries.current.total_volume, lang)}
-                                    text={`${summaries.current.total_volume.toLocaleString()} m<sup>3</sup>`}
-                                />
+                                <TextGroup title={t('total_volume')}>
+                                    <span data-tippy-content={number_name(summaries.current.total_volume, lang)}>{summaries.current.total_volume.toLocaleString()}</span> m<sup>3</sup>
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_collateral')}
-                                    data-tippy-content={number_name(summaries.current.total_collateral, lang)}
-                                    text={`${summaries.current.total_collateral.toLocaleString()} ISK`}
-                                />
+                                <TextGroup title={t('total_collateral')}>
+                                    <span data-tippy-content={number_name(summaries.current.total_collateral, lang)}>{summaries.current.total_collateral.toLocaleString()}</span> ISK
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_reward')}
-                                    data-tippy-content={number_name(summaries.current.total_reward, lang)}
-                                    text={`${summaries.current.total_reward.toLocaleString()} ISK`}
-                                />
+                                <TextGroup title={t('total_reward')}>
+                                    <span data-tippy-content={number_name(summaries.current.total_reward, lang)}>{summaries.current.total_reward.toLocaleString()}</span> ISK
+                                </TextGroup>
                             </VerticalCenter>
                         </Flexblock>
                     </ComponentBlock>
@@ -104,31 +100,27 @@ const page_title = t('freight.summary.page_title');
                         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                             <h2>{t('freight.summary.historical_header')}</h2>
                             <VerticalCenter>
-                                <TextGroup title={t('total_contracts')} text={summaries.history.total_contracts.toLocaleString()} />
+                                <TextGroup title={t('total_contracts')}>
+                                    {summaries.history.total_contracts.toLocaleString()}
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_volume')}
-                                    data-tippy-content={number_name(summaries.history.total_volume, lang)}
-                                    text={`${summaries.history.total_volume.toLocaleString()} m<sup>3</sup>`}
-                                />
+                                <TextGroup title={t('total_volume')}>
+                                    <span data-tippy-content={number_name(summaries.history.total_volume, lang)}>{summaries.history.total_volume.toLocaleString()}</span> m<sup>3</sup>
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_collateral')}
-                                    data-tippy-content={number_name(summaries.history.total_collateral, lang)}
-                                    text={`${summaries.history.total_collateral.toLocaleString()} ISK`}
-                                />
+                                <TextGroup title={t('total_collateral')}>
+                                    <span data-tippy-content={number_name(summaries.history.total_collateral, lang)}>{summaries.history.total_collateral.toLocaleString()}</span> ISK
+                                </TextGroup>
                             </VerticalCenter>
 
                             <VerticalCenter>
-                                <TextGroup
-                                    title={t('total_reward')}
-                                    data-tippy-content={number_name(summaries.history.total_reward, lang)}
-                                    text={`${summaries.history.total_reward.toLocaleString()} ISK`}
-                                />
+                                <TextGroup title={t('total_reward')}>
+                                <span data-tippy-content={number_name(summaries.history.total_reward, lang)}>{summaries.history.total_reward.toLocaleString()}</span> ISK
+                                </TextGroup>
                             </VerticalCenter>
                         </Flexblock>
                     </ComponentBlock>
