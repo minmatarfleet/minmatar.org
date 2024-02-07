@@ -1,4 +1,3 @@
-PUBLIC_SCOPES = ["publicData"]
 BASIC_SCOPES = [
     "esi-skills.read_skills.v1",
     "esi-characters.read_loyalty.v1",

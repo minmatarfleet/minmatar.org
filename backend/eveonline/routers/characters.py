@@ -15,7 +15,6 @@ from eveonline.scopes import (
     ADVANCED_SCOPES,
     BASIC_SCOPES,
     CEO_SCOPES,
-    PUBLIC_SCOPES,
 )
 
 router = Router(tags=["Characters"])
@@ -139,7 +138,7 @@ def get_primary_character(request):
 )
 def add_primary_character(request, redirect_url: str):
     request.session["redirect_url"] = redirect_url
-    scopes = PUBLIC_SCOPES
+    scopes = BASIC_SCOPES
 
     @login_required()
     @token_required(scopes=scopes, new=True)
