@@ -19,6 +19,7 @@ interface Props {
 >
     <Dialog
         x-bind:class="confirm_dialog_open ? 'open' : ''"
+        x-bind:aria-hidden="confirm_dialog_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
         aria-labelledby="confirm-dialog-title"
@@ -47,10 +48,6 @@ interface Props {
 <style lang="scss">
     :global([confirm-dialog-action] *) {
         pointer-events: none !important;
-    }
-
-    .dialog {
-        top: 200px;
     }
 
     :global(.confirm-dialog .confirm-dialog-content p) {

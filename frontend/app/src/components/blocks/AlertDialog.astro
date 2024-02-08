@@ -19,6 +19,7 @@ interface Props {
 >
     <Dialog
         x-bind:class="alert_dialog_open ? 'open' : ''"
+        x-bind:aria-hidden="alert_dialog_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
         aria-labelledby="alert-dialog-title"
@@ -46,10 +47,6 @@ interface Props {
 <style lang="scss">
     :global([alert-dialog-action] *) {
         pointer-events: none !important;
-    }
-
-    .dialog {
-        top: 200px;
     }
 
     :global(.alert-dialog .alert-dialog-content p) {
