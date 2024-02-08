@@ -35,6 +35,7 @@ interface Props {
 >
     <Dialog
         x-bind:class="corporations_finder_open ? 'open' : ''"
+        x-bind:aria-hidden="corporations_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
     >
@@ -80,7 +81,7 @@ interface Props {
     }
 
     .dialog {
-        top: 200px;
+        top: 22%;
     }
     
     .corporation-list {

@@ -17,7 +17,11 @@ const {
 delete attributes.class
 ---
 
-<div class:list={['dialog solid-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]} {...attributes}>
+<div
+    role="dialog"
+    class:list={['dialog solid-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]}
+    {...attributes}
+>
     <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)'>
         <Flexblock gap='var(--space-m)'>
             <slot name="header" />

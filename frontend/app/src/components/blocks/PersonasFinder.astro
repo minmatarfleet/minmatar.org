@@ -44,6 +44,7 @@ const translations = {
 >
     <Dialog
         x-bind:class="personas_finder_open ? 'open' : ''"
+        x-bind:aria-hidden="personas_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
     >
@@ -89,7 +90,7 @@ const translations = {
     }
 
     .dialog {
-        top: 200px;
+        top: 22%;
     }
     
     .persona-list {
