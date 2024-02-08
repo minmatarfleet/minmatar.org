@@ -21,11 +21,13 @@ interface Props {
         x-bind:class="alert_dialog_open ? 'open' : ''"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
-                <h3 x-text="alert_dialog_title"/>
-                <div class="[ alert-dialog-content ]" x-html="alert_dialog_content" />
+                <h3 id="alert-dialog-title" x-text="alert_dialog_title"></h3>
+                <div id="alert-dialog-description" class="[ alert-dialog-content ]" x-html="alert_dialog_content"></div>
             </Flexblock>
 
             <FlexInline justification='flex-end'>

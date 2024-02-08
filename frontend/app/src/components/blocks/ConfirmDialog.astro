@@ -21,11 +21,13 @@ interface Props {
         x-bind:class="confirm_dialog_open ? 'open' : ''"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-description"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
-                <h3 x-text="confirm_dialog_title"/>
-                <div class="[ confirm-dialog-content ]" x-html="confirm_dialog_content" />
+                <h3 id="confirm-dialog-title" x-text="confirm_dialog_title"></h3>
+                <div id="confirm-dialog-description" class="[ confirm-dialog-content ]" x-html="confirm_dialog_content"></div>
             </Flexblock>
                 
             <FlexInline justification='flex-end'>
