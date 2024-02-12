@@ -3,13 +3,45 @@ export const AlertDialogXData = `
     alert_dialog_open: false,
     alert_dialog_title: '',
     alert_dialog_content: '',
-    async show_alert_dialog(title, content) {
-        this.alert_dialog_title = title
-        this.alert_dialog_content = content
-        this.alert_dialog_open = true
+    alert_dialog_return_on_accept: true,
+    alert_dialog_hx: {},
+    alert_dialog_partial: false,
+    show_alert_dialog(args) {
+        const defaults =  {
+            title: '',
+            content: '',
+            partial: '',
+            return_on_accept: true,
+            hx: {
+                method: 'get',
+                url: false,
+                target: false,
+                swap: false,
+            }
+        }
+
+        const properties = {...defaults, ...args}
         
-        await this.alert_dialog_close()
-        this.alert_dialog_open = false
+        console.log(properties)
+
+        this.alert_dialog_title = properties.title
+        this.alert_dialog_content = properties.content
+        this.alert_dialog_return_on_accept = properties.return_on_accept
+        this.alert_dialog_partial = properties.partial
+        this.alert_dialog_hx = properties.hx
+
+        this.alert_dialog_open = true
+
+        setTimeout(function () {
+            htmx.process(document.querySelector('.alert-dialog'))
+        })
+        
+        return new Promise((resolve) => {
+            this.alert_dialog_close().then((result) => {
+                this.alert_dialog_open = false
+                resolve(result.action == 'accept' ? this.alert_dialog_return_on_accept : false) 
+            })
+        })
     },
     alert_dialog_close() {
         const body = document.querySelector("body");
@@ -31,18 +63,47 @@ export const ConfirmDialogXData = `
     confirm_dialog_open: false,
     confirm_dialog_title: '',
     confirm_dialog_content: '',
-    async show_confirm_dialog(title, content, return_on_accept = true) {
-        this.confirm_dialog_title = title
-        this.confirm_dialog_content = content
-        this.confirm_dialog_open = true        
+    confirm_dialog_return_on_accept: true,
+    confirm_dialog_hx: {},
+    confirm_dialog_partial: false,
+    async show_confirm_dialog(args) {
+        const defaults =  {
+            title: '',
+            content: '',
+            partial: '',
+            return_on_accept: true,
+            hx: {
+                method: 'get',
+                url: false,
+                target: false,
+                swap: false,
+            }
+        }
 
-        const result = await this.confirm_dialog_close()
-        this.confirm_dialog_open = false
-        return result.action == 'accept' ? return_on_accept : false
+        const properties = {...defaults, ...args}
+        console.log(properties)
+
+        this.confirm_dialog_title = properties.title
+        this.confirm_dialog_content = properties.content
+        this.confirm_dialog_return_on_accept = properties.return_on_accept
+        this.confirm_dialog_partial = properties.partial
+        this.confirm_dialog_hx = properties.hx
+
+        this.confirm_dialog_open = true
+
+        setTimeout(function () {
+            htmx.process(document.querySelector('.confirm-dialog'))
+        })
+
+        return new Promise((resolve) => {
+            this.confirm_dialog_close().then((result) => {
+                this.confirm_dialog_open = false
+                resolve(result.action == 'accept' ? this.confirm_dialog_return_on_accept : false) 
+            })
+        })
     },
     confirm_dialog_close() {
         const body = document.querySelector("body");
-        console.log(document.querySelector(".confirm-dialog"))
 
         return new Promise(function (resolve, reject) {
             var listener = event => {

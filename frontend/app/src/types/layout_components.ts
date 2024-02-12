@@ -176,3 +176,19 @@ export interface AllianceListData {
     members_count:  number;
     alliance_id:    number;
 }
+
+export interface Alert {
+    title:          string;
+    content:        string;
+    partial?:       string;
+    hx?:            HXDialogOptions;
+}
+
+export type RequestType = 'get' | 'post' | 'put' | 'pathc' | 'delete'
+
+export interface HXDialogOptions {
+    method?:    RequestType;
+    url?:       string;
+    target?:    string;
+    swap?:      string;
+}

@@ -28,11 +28,31 @@ interface Props {
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
                 <h3 id="confirm-dialog-title" x-text="confirm_dialog_title"></h3>
-                <div id="confirm-dialog-description" class="[ confirm-dialog-content ]" x-html="confirm_dialog_content"></div>
+                <div
+                    id="confirm-dialog-description"
+                    class="[ confirm-dialog-content ]"
+                    x-html="confirm_dialog_content"
+                    x-bind:hx-get="confirm_dialog_partial ? (confirm_dialog_partial ?? false) : false"
+                    x-bind:hx-trigger="confirm_dialog_partial ? 'intersect' : false"
+                    x-bind:hx-swap="confirm_dialog_partial ? 'innerHTML transition:true' : false"
+                    hx-target="#confirm-dialog-description"
+                ></div>
             </Flexblock>
                 
             <FlexInline justification='flex-end'>
-                <Button size='sm' confirm-dialog-action="accept">{t('yes')}</Button>
+                <Button
+                    size='sm'
+                    confirm-dialog-action="accept"
+                    x-bind:hx-get="confirm_dialog_hx?.method == 'get' ? (confirm_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-post="confirm_dialog_hx?.method == 'post' ? (confirm_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-put="confirm_dialog_hx?.method == 'put' ? (confirm_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-pathc="confirm_dialog_hx?.method == 'pathc' ? (confirm_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-delete="confirm_dialog_hx?.method == 'delete' ? (confirm_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-target="confirm_dialog_hx?.target ?? false"
+                    x-bind:hx-swap="confirm_dialog_hx?.swap ?? false"
+                >
+                    {t('yes')}
+                </Button>
                 <Button size='sm' confirm-dialog-action="cancel">{t('no')}</Button>
             </FlexInline>
         </Flexblock>

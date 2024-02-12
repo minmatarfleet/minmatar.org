@@ -5,10 +5,11 @@ import { is_prod_mode } from '@helpers/env'
 import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { delete_characters } from '@helpers/api.minmatar.org'
 
-export async function DELETE({ params, cookies }) {
+export async function DELETE({ params, cookies, redirect }) {
     const character_id = params.id
     const lang = params.lang ?? 'en'
     const t = useTranslations(lang)
+    const translatePath = useTranslatedPath(lang)
 
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
     const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
@@ -36,19 +37,14 @@ export async function DELETE({ params, cookies }) {
     if (character_id == primary_character_id) {
         cookies.delete('primary_pilot', { path: '/' })
 
-        const translatePath = useTranslatedPath(lang)
-
-        return HTTP_200_Success(
+        return redirect(translatePath(`/partials/character?redirect=${translatePath('/account')}`))
+        /*return HTTP_200_Success(
             JSON.stringify({
                 success: true,
                 redirect: translatePath('/account')
             })
-        )
+        )*/
     }
-
-    return HTTP_200_Success(
-        JSON.stringify({
-            success: true
-        })
-    )
+    
+    return redirect(translatePath(`/partials/character`))
 }
