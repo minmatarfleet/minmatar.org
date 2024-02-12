@@ -28,11 +28,31 @@ interface Props {
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
                 <h3 id="alert-dialog-title" x-text="alert_dialog_title"></h3>
-                <div id="alert-dialog-description" class="[ alert-dialog-content ]" x-html="alert_dialog_content"></div>
+                <div
+                    id="alert-dialog-description"
+                    class="[ alert-dialog-content ]"
+                    x-html="alert_dialog_content"
+                    x-bind:hx-get="alert_dialog_partial ? (alert_dialog_partial ?? false) : false"
+                    x-bind:hx-trigger="alert_dialog_partial ? 'intersect' : false"
+                    x-bind:hx-swap="alert_dialog_partial ? 'innerHTML transition:true' : false"
+                    hx-target="#alert-dialog-description"
+                ></div>
             </Flexblock>
 
             <FlexInline justification='flex-end'>
-                <Button size='sm' alert-dialog-action="close">{t('ok')}</Button>
+                <Button
+                    size='sm'
+                    alert-dialog-action="accept"
+                    x-bind:hx-get="alert_dialog_hx?.method == 'get' ? (alert_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-post="alert_dialog_hx?.method == 'post' ? (alert_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-put="alert_dialog_hx?.method == 'put' ? (alert_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-pathc="alert_dialog_hx?.method == 'pathc' ? (alert_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false"
+                    x-bind:hx-target="alert_dialog_hx?.target ?? false"
+                    x-bind:hx-swap="alert_dialog_hx?.swap ?? false"
+                >
+                    {t('ok')}
+                </Button>
             </FlexInline>
         </Flexblock>
     </Dialog>

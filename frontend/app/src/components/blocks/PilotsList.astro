@@ -6,20 +6,24 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { get_player_icon } from '@helpers/eve_image_server';
+import { query_string } from '@helpers/string';
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_api_url, get_app_url } from '@helpers/env'
+import type { Alert } from '@dtypes/layout_components'
 
 interface Props {
     pilots?:            Array<Character>;
-    empty_text?:        string | boolean;
     readonly?:          boolean;
+    removed_character?: number | false;
+    alert?:             Alert | false;
     [propName: string]: any;
 }
 
 const {
     pilots = [],
-    empty_text = t('empty_pilots_text'),
     readonly = true,
+    removed_character = false,
+    alert = false,
     ...attributes
 } = Astro.props
 
@@ -28,7 +32,7 @@ const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : 
 
 const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}/redirects/add_primary_character&token_type=Basic`
 const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}/account&token_type=Basic`
-const DELETE_CHARACTER_URL = `${get_app_url()}/api/character/`
+const CHARACTER_PARTIAL_URL = `${get_app_url()}/partials/character`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -43,6 +47,7 @@ delete attributes.class
 ---
 
 <DisableBlock
+    id="pilots-list"
     disabled={false}
     x_model="enabled"
     class:list={['pilot-list', Astro.props.class]}
@@ -50,58 +55,21 @@ delete attributes.class
     gap='var(--space-s)'
     x-data={`{
         pilots: ${JSON.stringify(pilots)},
-        pilots_ids: [],
         primary_pilot: ${primary_pilot_id},
         character_name_slugs: {},
-        remove_request_ongoing: [],
         enabled: true,
-        init() {
-            $refs.server_side_render.remove()
-            this.generate_ids()
-            this.generate_slugs()
+        add_pilot(accepted) {
+            if (accepted) window.location.href = "${ADD_CHARACTER_URL}"
         },
-        generate_ids() {
-            this.pilots_ids = this.pilots.map(e => e.character_id).join(',')
+        add_primary_pilot(accepted) {
+            if (accepted) window.location.href = "${ADD_PRIMARY_CHARACTER_URL}"
         },
-        generate_slugs() {
-            this.pilots.forEach(e => this.character_name_slugs[e.character_name] = e.character_name.replaceAll(" ","_"))
-        },
-        add_pilot() {
-            window.location.href = "${ADD_CHARACTER_URL}"
-        },
-        add_primary_pilot() {
-            window.location.href = "${ADD_PRIMARY_CHARACTER_URL}"
-        },
-        remove_pilot(character_id) {
-            this.pilots = this.pilots.filter(pilot => pilot.character_id !== character_id)
-            this.generate_ids()
-        },
-        async delete_pilot(character_id) {
-            if (!character_id) return
-
-            this.remove_request_ongoing.push(character_id)
-
-            const response = await fetch(
-                '${DELETE_CHARACTER_URL}'+character_id, {
-                method: 'DELETE'
-            })
-
-            if (!response.ok) {
-                show_alert_dialog('${t('remove_pilot_dialog_title')}', '${t('delete_character_error')}')
-                this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
-                return
-            }
-
-            const json = await response.json()
-            if (json.redirect) {
-                this.enabled = false
-                navigate(json.redirect)
-            }
-
-            this.remove_pilot(character_id)
+        pilot_list_init() {
+            ${removed_character !== false ? `stop_remove_animation(${removed_character})` : ''}
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
         }
     }`}
-    x-init="init"
+    x-init="pilot_list_init()"
 >
     <Flexblock>
         <FlexInline
@@ -110,7 +78,7 @@ delete attributes.class
         >
             <Flexblock gap="var(--space-3xs)">
                 <h2>{t('pilot')}s</h2>
-                <small class="!mt-[var(--space-3xs)]" x-text={'`${pilots.length} '+t('pilot').toLowerCase()+'${pilots.length != 1 ? `s` : ``}`'}>
+                <small class="!mt-[var(--space-3xs)]">
                     {pilots.length} {pilots.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}
                 </small>
             </Flexblock>
@@ -121,12 +89,22 @@ delete attributes.class
                         size='sm'
                         type="button"
                         class="[ w-full ]"
-                        x-on:click={`
-                                pilots.length == 0 ?
-                                add_primary_pilot(await show_alert_dialog('${t('add_primary_pilot_dialog_title')}', '<p>${t('add_primary_pilot_dialog_text')}</p>')) :
-                                add_pilot(await show_alert_dialog('${t('add_pilot_dialog_title')}', '<p>${t('add_pilot_dialog_text')}</p>'))
-                            `}
-                        x-text={`pilots.length === 0 ? '${t('add_primary_pilot')}' : '${t('add_pilot')}'`}
+                        x-data={`{
+                            show_add_pilot_disclaimer() {
+                                if (pilots.length == 0) {
+                                    show_alert_dialog({
+                                        title: '${t('add_primary_pilot_dialog_title')}',
+                                        content: '${t('add_primary_pilot_dialog_text')}'
+                                    }).then( (accepted) => add_primary_pilot(accepted) )
+                                } else {
+                                    show_alert_dialog({
+                                        title: '${t('add_pilot_dialog_title')}',
+                                        content: '<p>${t('add_pilot_dialog_text')}</p>'
+                                    }).then( (accepted) => add_pilot(accepted) )
+                                }
+                            }
+                        }`}
+                        x-on:click="show_add_pilot_disclaimer"
                     >
                         {pilots.length === 0 &&
                             t('add_primary_pilot')
@@ -139,9 +117,9 @@ delete attributes.class
             }
         </FlexInline>
 
-        <Flexblock x-ref="server_side_render" gap='var(--space-3xs)'>
+        <Flexblock gap='var(--space-3xs)'>
             {pilots.map((pilot) =>
-                <FixedFluid width='64px'>
+                <FixedFluid width='64px' class="[ pilot-item ]" x-bind:class={`{ 'blink-animation': remove_request_ongoing.includes(${pilot.character_id}) }`}>
                     <picture>
                         <img src={get_player_icon(pilot.character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${pilot.character_name}`}>
                     </picture>
@@ -157,94 +135,56 @@ delete attributes.class
                                 </small>
                             </Flexblock>
                         </VerticalCenter>
-                        <VerticalCenter></VerticalCenter>
-                    </FluidFixed>
-                </FixedFluid>
-            )}
-            {empty_text && pilots.length == 0 &&
-                <p>{empty_text}</p>
-            }
-        </Flexblock>
-
-        <Flexblock gap='var(--space-3xs)'>
-            <template x-for="pilot in pilots">
-                <FixedFluid width='64px' class="[ pilot-item ]" x-bind:class="{ 'blink-animation': remove_request_ongoing.includes(pilot.character_id) }">
-                    <picture>
-                        <img x-bind:src="get_player_icon(pilot.character_id, 256)" width="64" height="64" alt="pilot.alt">
-                    </picture>
-                    <FluidFixed width='46px' breakpoint='60%'>
                         <VerticalCenter>
-                            <Flexblock gap='0' class="[ w-full ]">
-                                <span class="truncate text-[var(--highlight)]" x-text="pilot.character_name" />
-                                <small
-                                    class="truncate"
-                                    x-text={`pilot.character_id == primary_pilot ? '${t('main_character')}' : '${t('alt_character')}'`}
+                            {!readonly && (pilot.character_id != primary_pilot_id || pilots.length == 1) &&
+                                <Button
+                                    class="[ action-button ]"
+                                    size='sm'
+                                    type="button"
+                                    x-ref="remove_character_button"
+                                    narrow={true}
+                                    x-data={`{
+                                        show_remove_character_dialog() {
+                                            show_confirm_dialog({
+                                                title: '${t('remove_pilot_dialog_title')}',
+                                                content: '<p class="loading">${t('requesting_concord')}</p>',
+                                                partial: '${translatePath('/partials/dialog_with_character/')}?${query_string({
+                                                    id: pilot.character_id.toString(),
+                                                    character_name: pilot.character_name,
+                                                    message: t('remove_pilot_dialog_text'),
+                                                })}',
+                                                return_on_accept: ${pilot.character_id},
+                                                hx: {
+                                                    method: 'delete',
+                                                    url: '${CHARACTER_PARTIAL_URL}?${query_string({
+                                                        id: pilot.character_id.toString(),
+                                                        character_name: pilot.character_name
+                                                    })}',
+                                                    target: '#pilots-list',
+                                                    swap: 'outerHTML transition:true'
+                                                }
+                                            }).then( (character_id) => start_remove_animation(character_id) )
+                                        }
+                                    }`}
+                                    x-on:click="show_remove_character_dialog()"
                                 >
-                                    {pilots.length === 0 &&
-                                        t('main_character')
-                                    }
-                                    {pilots.length > 0 &&
-                                        t('alt_character')
-                                    }
-                                </small>
-                            </Flexblock>
-                        </VerticalCenter>
-                        <VerticalCenter>
-                            {!readonly &&
-                                <template x-if="pilot.character_id !== primary_pilot || pilots.length === 1">
-                                    <Button
-                                        class="[ action-button ]"
-                                        size='sm'
-                                        type="button"
-                                        x-ref="remove_character_button"
-                                        narrow={true}
-                                        x-data={`{
-                                            async show_confirm_pilot_removal(character_id, character_name) {
-                                                setTimeout(function () {
-                                                    const unlink_pilot_dialog_url = '${translatePath('/partials/unlink_pilot_dialog/')}'+character_id+'/'+character_name_slugs[character_name]
-                                                    document.querySelector('.confirm-dialog #unlink-pilot-dialog-content').setAttribute('hx-post', unlink_pilot_dialog_url)
-                                                    htmx.process(document.querySelector('.confirm-dialog')) 
-                                                })
-
-                                                const placeholder = '<p class="loading">${t('requesting_concord')}</p>'
-
-                                                return await show_confirm_dialog(
-                                                    '${t('remove_pilot_dialog_title')}',
-                                                    '<div id="unlink-pilot-dialog-content" hx-trigger="intersect" hx-target="#unlink-pilot-dialog-content">'+placeholder+'</div>',
-                                                    pilot.character_id
-                                                )
-                                            }
-                                        }`}
-                                        x-on:click={`delete_pilot(await show_confirm_pilot_removal(pilot.character_id, pilot.character_name))`}
-                                        x-init="init"
-                                    >
-                                        <TrashIcon slot="icon" />
-                                    </Button>
-                                </template>
+                                    <TrashIcon slot="icon" />
+                                </Button>
                             }
                         </VerticalCenter>
                     </FluidFixed>
                 </FixedFluid>
-            </template>
-
-            {empty_text &&
-                <p class="hidden" x-bind:class="{ hidden: pilots.length > 0 }">{empty_text}</p>
+            )}
+            {pilots.length == 0 &&
+                <slot>
+                    <p>{t('empty_pilots_text')}</p>
+                </slot>
             }
         </Flexblock>
-
-        <input type="hidden" name="pilots" x-model="pilots_ids">
     </Flexblock>
 </DisableBlock>
 
 <style lang="scss">
-    [x-ref="server_side_render"] + .flex-block {
-        margin-block-start: 0;
-    }
-
-    template + .pilot-item {
-        margin-block-start: 0;
-    }
-
     .pilot-list {
         transition: var(--slow-transition);
 

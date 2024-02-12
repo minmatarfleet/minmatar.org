@@ -41,6 +41,7 @@ try {
 import { get_app_url } from '@helpers/env'
 const DELETE_ACCOUNT_URL = `${get_app_url()}/api/auth`
 const CLEAR_ACCOUNT_CACHE_URL = `${get_app_url()}/api/cache`
+const CHARACTER_PARTIAL_URL = `${get_app_url()}/partials/character/`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -50,6 +51,7 @@ import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
 import PageCover from '@components/page/PageCover.astro';
 import PageHeader from '@components/page/PageHeader.astro';
@@ -138,18 +140,51 @@ const page_title = t('account.page_title');
                             </FlexInline>
                         </ComponentBlock>
 
-                        <ComponentBlock class="w-full">
+                        <ComponentBlock
+                            class="w-full"
+                            x-data={`{
+                                remove_request_ongoing: [],
+                                start_remove_animation(character_id) {
+                                    if (!character_id) return
+                                    this.remove_request_ongoing.push(character_id)
+                                },
+                                stop_remove_animation(character_id) {
+                                    if (!character_id) return
+                                    this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
+                                },
+                            }`}
+                        >
                             <PilotsList
                                 pilots={pilots}
                                 readonly={readonly}
                                 empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-                            />
+                            >
+                                {get_characters_error !== false ?
+                                    <FlexInline justification='space-between'>
+                                        <p>{get_characters_error}</p>
+                                        <Button
+                                            size='sm'
+                                            hx-get={CHARACTER_PARTIAL_URL}
+                                            hx-target="#pilots-list"
+                                            hx-on::before-request="this.setAttribute('disabled','')"
+                                            hx-on::after-request="this.removeAttribute('disabled')"
+                                            hx-swap="outerHTML transition:true"
+                                            type="button"
+                                        >
+                                            <RefreshIcon slot="icon" />
+                                            {t('reload')}
+                                        </Button>
+                                    </FlexInline>
+                                    :
+                                    t('empty_pilots_text')
+                                }
+                            </PilotsList>
                         </ComponentBlock>
 
                         <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
                             <ComponentBlock
                                 x-data={`{
-                                    danger_zone_enable: false
+                                    danger_zone_enable: false,
                                 }`}
                             >
                                 <Flexblock gap='var(--space-l)' class="[ w-full ]">
@@ -163,34 +198,47 @@ const page_title = t('account.page_title');
                                     />
 
                                     <DisableBlock x_model="danger_zone_enable">
-                                        <FlexInline justification='space-between'>
+                                        <FlexInline
+                                            justification='space-between'
+                                            x-data={`{                                                
+                                                async delete_account(proceed) {
+                                                    if (!proceed) return
+                                                    
+                                                    const response = await fetch(
+                                                        '${DELETE_ACCOUNT_URL}', {
+                                                            method: 'DELETE'
+                                                        }
+                                                    )
+            
+                                                    if (!response.ok) {
+                                                        show_alert_dialog({
+                                                            title: '${t('delete_account_dialog_title')}',
+                                                            content: '${t('delete_account_error')}'
+                                                        })
+                                                        return
+                                                    }
+            
+                                                    const json = await response.json()
+                                                    if (json.redirect)
+                                                        navigate(json.redirect)
+                                                }
+                                            }`}
+                                        >
                                             <TextGroup title={t('unregister_account')}>
                                                 {t('unregister_account_description')}
                                             </TextGroup>
                                             <Button
                                                 type="button"
                                                 size='sm'
-                                                x-on:click={`delete_account(await show_confirm_dialog('${t('delete_account_dialog_title')}', '${t('delete_account_dialog_text')}'))`}
                                                 x-data={`{
-                                                    async delete_account(proceed) {
-                                                        if (!proceed) return
-                                                        
-                                                        const response = await fetch(
-                                                            '${DELETE_ACCOUNT_URL}', {
-                                                                method: 'DELETE'
-                                                            }
-                                                        )
-
-                                                        if (!response.ok) {
-                                                            show_alert_dialog('${t('delete_account_dialog_title')}', '${t('delete_account_error')}')
-                                                            return
-                                                        }
-
-                                                        const json = await response.json()
-                                                        if (json.redirect)
-                                                            navigate(json.redirect)
+                                                    show_unregister_account_dialog() {
+                                                        show_confirm_dialog({
+                                                            title: '${t('delete_account_dialog_title')}',
+                                                            content: '${t('delete_account_dialog_text')}'
+                                                        }).then( (accepted) => delete_account(accepted) )
                                                     }
                                                 }`}
+                                                x-on:click="show_unregister_account_dialog()"
                                             >
                                                 {t('unregister')}
                                             </Button>
