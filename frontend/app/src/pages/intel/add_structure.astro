@@ -81,7 +81,7 @@ const page_title = t('intel.add_structure.page_title');
         <PageHeader max_width="var(--max-content-width)">
             <FlexInline justification='space-between'>
                 <FlexInline>
-                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type}>
+                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
                     <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />
                 </FlexInline>
                 <FlexInline>
@@ -125,7 +125,7 @@ const page_title = t('intel.add_structure.page_title');
                                                     width="64px"
                                                     breakpoint="60%"
                                                 >
-                                                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type}>
+                                                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
                                                     <Select id="structure_type" x-model="structure_type">
                                                         <option value="astrahus">Astrahus</option>
                                                         <option value="fortizar">Fortizar</option>

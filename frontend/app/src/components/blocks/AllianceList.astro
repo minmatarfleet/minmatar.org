@@ -94,7 +94,7 @@ delete attributes.class
         <template x-for="alliance in alliances">
             <FixedFluid width='64px' class="[ alliance-item ]">
                 <picture>
-                    <img x-bind:src="get_alliance_logo(alliance.alliance_id, 256)" width="64" height="64" alt="alliance.alt">
+                    <img x-bind:src="get_alliance_logo(alliance.alliance_id, 256)" width="64" height="64" alt="alliance.alt" />
                 </picture>
                 <FluidFixed width="46px" breakpoint='60%'>
                     <VerticalCenter>

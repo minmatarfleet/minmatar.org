@@ -94,7 +94,7 @@ delete attributes.class
         <template x-for="corporation in corporations">
             <FixedFluid width='64px' class="[ corporation-item ]">
                 <picture>
-                    <img x-bind:src="get_corporation_logo(corporation.corporation_id, 256)" width="64" height="64" alt="corporation.alt">
+                    <img x-bind:src="get_corporation_logo(corporation.corporation_id, 256)" width="64" height="64" alt="corporation.alt" />
                 </picture>
                 <FluidFixed width='46px' breakpoint='60%'>
                     <VerticalCenter>
