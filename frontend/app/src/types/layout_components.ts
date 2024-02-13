@@ -132,7 +132,7 @@ export interface Structure {
     fitting?:       string;
 }
 
-export interface FleetComposition {
+export interface FleetCompositionObj {
     ship_name: string;
     ship_id:   number;
     fitting:   string;

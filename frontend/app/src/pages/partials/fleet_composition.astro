@@ -1,17 +1,17 @@
 ---
+const fleet_id = parseInt(Astro.url.searchParams.get('id'))
 // TODO: Replace the static JSON below with the endpoint request using the id
-const { fleet_id } = Astro.params;
 console.log(`TODO: Fetch endpoint with id: ${fleet_id}`)
 // Replace me for endpoint to retrieve members for fleet_id 👇
 import members from '@json/page/fleets/upcoming/fleet_201_composition.json';
 
 // Time delay for testing on local
 /*const wait = new Promise((resolveOuter) => {
-  resolveOuter(
-    new Promise((resolveInner) => {
-      setTimeout(resolveInner, 2000);
-    }),
-  );
+    resolveOuter(
+        new Promise((resolveInner) => {
+            setTimeout(resolveInner, 2000);
+        }),
+    );
 });
 
 await wait*/
@@ -37,11 +37,9 @@ members.forEach(group => {
 // End randomization for dispalying purpose
 
 import Partial from '@layouts/Partial.astro';
-import FleetComposition from '@components/blocks/FleetComposition.astro';
+import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 ---
 
 <Partial>
-    {composition.length > 0 &&
-        <FleetComposition composition={composition} />
-    }
+    <FleetCompositionBlock composition={composition} fleet_id={fleet_id} />
 </Partial>
