@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { FleetComposition } from '@dtypes/layout_components'
+import type { FleetCompositionObj } from '@dtypes/layout_components'
 
 import { get_item_icon, get_player_icon } from '@helpers/eve_image_server';
 
@@ -15,7 +15,7 @@ import Grid from '@components/compositions/Grid.astro';
 import CollapsableButton from './CollapsableButton.astro';
 
 interface Props {
-    composition: FleetComposition[]
+    composition: FleetCompositionObj[]
 }
 
 const {
@@ -42,12 +42,12 @@ const {
             }`}
             x-effect="check_global_collapse()"
         >
-            <CollapsableButton @click="toggle_collapse()">
+            <CollapsableButton x-on:click="toggle_collapse()">
                 <FlexInline class="[ items-center ]" gap="var(--space-s)">
                     <img width="64" height="64" src={get_item_icon(group.ship_id, 64)} alt={group.ship_name} class="[ hidden sm:flex ]" />
                     <Flexblock gap="var(--space-3xs)">
                         <h4>{group.fitting}</h4>
-                        <small>{group.pilots.length} {t('pilot').toLowerCase()}{group.pilots.length > 1 && `s`}</small>
+                        <small>{group.pilots.length} {group.pilots.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}</small>
                     </Flexblock>
                 </FlexInline>
             </CollapsableButton>

@@ -53,3 +53,46 @@
     50%   { opacity: 0.25; }
     100%  { opacity: 0.75; }
 }
+
+.dscan {
+    &:before {
+        content: '';
+        z-index: 1;
+        opacity: 0;
+        animation: dscan 0.5s;
+        animation-iteration-count: 1;
+        inset: calc(var(--space-2xs) * -1) calc(var(--space-s-l) * -1);
+        position: absolute;
+        background-image: linear-gradient(
+            to right,
+            hsla(132.12, 43.23%, 44.9%, 0) 0%,
+            hsla(132.12, 43.23%, 44.9%, 0.013) 4.8%,
+            hsla(132.12, 43.23%, 44.9%, 0.049) 10.9%,
+            hsla(132.12, 43.23%, 44.9%, 0.104) 18.1%,
+            hsla(132.12, 43.23%, 44.9%, 0.175) 26.1%,
+            hsla(132.12, 43.23%, 44.9%, 0.259) 34.8%,
+            hsla(132.12, 43.23%, 44.9%, 0.352) 43.8%,
+            hsla(132.12, 43.23%, 44.9%, 0.45) 53%,
+            hsla(132.12, 43.23%, 44.9%, 0.55) 62%,
+            hsla(132.12, 43.23%, 44.9%, 0.648) 70.6%,
+            hsla(132.12, 43.23%, 44.9%, 0.741) 78.5%,
+            hsla(132.12, 43.23%, 44.9%, 0.825) 85.6%,
+            hsla(132.12, 43.23%, 44.9%, 0.896) 91.5%,
+            hsla(132, 46.94%, 51.96%, 0.951) 96.1%,
+            hsla(132, 46.94%, 51.96%, 0.987) 99%,
+            hsl(131, 100%, 88%) 100%
+        );
+    }
+}
+
+@keyframes dscan {
+    from {
+        left: calc(var(--space-s-l) * -1);
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+        left: 75%;
+    }
+}

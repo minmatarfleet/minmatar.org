@@ -121,7 +121,7 @@ delete attributes.class
             {pilots.map((pilot) =>
                 <FixedFluid width='64px' class="[ pilot-item ]" x-bind:class={`{ 'blink-animation': remove_request_ongoing.includes(${pilot.character_id}) }`}>
                     <picture>
-                        <img src={get_player_icon(pilot.character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${pilot.character_name}`}>
+                        <img src={get_player_icon(pilot.character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${pilot.character_name}`} />
                     </picture>
                     <FluidFixed width='46px' breakpoint='60%'>
                         <VerticalCenter>
@@ -177,7 +177,7 @@ delete attributes.class
             )}
             {pilots.length == 0 &&
                 <slot>
-                    <p>{t('empty_pilots_text')}</p>
+                    {t('empty_pilots_text')}
                 </slot>
             }
         </Flexblock>

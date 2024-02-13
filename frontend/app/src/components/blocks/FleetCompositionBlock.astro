@@ -1,0 +1,111 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetCompositionObj } from '@dtypes/layout_components'
+
+interface Props {
+    fleet_id:           number;
+    composition:        FleetCompositionObj[];
+    [propName: string]: any;
+}
+
+const {
+    fleet_id,
+    composition,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import FleetComposition from '@components/blocks/FleetComposition.astro';
+import Button from '@components/blocks/Button.astro';
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+
+const members = composition.reduce(
+    (accumulator, currentValue) => accumulator + currentValue.pilots.length,
+    0,
+);
+---
+<Flexblock
+    data-composition-context
+    id="fleet-composition-component"
+    gap="var(--space-l)"
+    x-data={`{
+        DSCAN_DURATION_MS: 3000,
+        remove_dscan_class_timer: null,
+        dscan_active: false,
+        start_dscan_animation() {
+            this.dscan_active = true
+
+            if (this.remove_dscan_class_timer) clearTimeout(this.remove_dscan_class_timer)
+
+            setTimeout(() => { play_sound('/sounds/dscan.mp3') } )
+
+            this.remove_dscan_class_timer = setTimeout( () => { this.dscan_active = false }, this.DSCAN_DURATION_MS)
+        }
+    }`}
+    x-init="dscan_active = false"
+>
+    <FlexInline
+        justification='space-between'
+        gap="var(--space-s)"
+    >
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('members')}</h2>
+            {members != 0 &&
+                <small class="!mt-[var(--space-3xs)]">{members} {members != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}</small>
+            }
+        </Flexblock>
+
+        {composition.length > 0 && <FlexInline class="[ items-center ]" gap="var(--space-s)">
+            <Button
+                size='sm'
+                hx-post={translatePath(`/partials/fleet_composition?id=${fleet_id}`)}
+                hx-target="#fleet-composition-component"
+                hx-swap="innerHTML transition:true"
+                hx-indicator="#fleet-composition-dscan"
+                x-on:click="start_dscan_animation()"
+                hx-on::before-request="this.setAttribute('disabled','');"
+                hx-on::after-request="this.removeAttribute('disabled')"
+            >
+                <RefreshIcon slot="icon" />
+                {t('reload')}
+            </Button>
+
+            <Button size='sm' @click="global_collapse = true" class="[ hidden sm:block ]">
+                {t('collapse_all')}
+            </Button>
+        </FlexInline>}
+    </FlexInline>
+
+    <div
+        id="fleet-composition-dscan"
+        x-bind:class="{ dscan: dscan_active }"
+    >
+        {composition.length == 0 && <p>{t('members_visibility_hint')}</p>}
+
+        {composition.length > 0 &&
+            <FleetComposition composition={composition} />
+        }
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    :global(#fleet-composition-dscan > div) {
+        opacity: 1;
+        transition: var(--slow-transition);
+    }
+
+    :global(#fleet-composition-dscan.htmx-request > div) {
+        opacity: 0.25
+    }
+
+    #fleet-composition-dscan {
+        position: relative;
+    }
+</style>
