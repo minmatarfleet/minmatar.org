@@ -22,11 +22,17 @@ if (Astro.request.method === "POST") {
 import doctrines_metadata from '@json/hosted/doctrines.json';
 import audiences from '@json/hosted/audience.select.options.json';
 import fleet_types from '@json/hosted/fleet_type.select.options.json';
-import doctrines from '@json/hosted/doctrines.select.options.json';
+import doctrines from '@json/page/doctrines/alliance.json';
 
-const doctrines_select_options = Array.from(Object.entries(doctrines), ([key, value]) => { return {"id": key, "name": value} })
+import type { DoctrineItemObj } from '@dtypes/layout_components';
+
+const doctrines_select_options = doctrines.map( (item) => { return { name: item.doctrine_name, id: item.id } } )
+console.log(doctrines_select_options)
 const fleet_types_select_options = Array.from(Object.entries(fleet_types), ([key, value]) => { return {"id": key, "name": value} })
 const audiences_select_options = Array.from(Object.entries(audiences), ([key, value]) => { return {"id": key, "name": value} })
+const default_doctrine = doctrines_select_options[0].id
+
+const doctrine:DoctrineItemObj = doctrines.filter( (item) => item.id == default_doctrine )[0]
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
@@ -48,6 +54,7 @@ import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 
 const page_title = t('fleets.add.page_title');
 const today = new Date().toISOString().split("T")[0]
@@ -68,14 +75,11 @@ const today = new Date().toISOString().split("T")[0]
         x-data={`{
             fleet_type: 'fun_fleet',
             audience: 'alliance',
-            doctrine: 9,
             eve_date: '${today}',
             eve_time: '00:00:00',
             local_datetime: '',
             audiences: ${JSON.stringify(audiences)},
             fleet_types: ${JSON.stringify(fleet_types)},
-            doctrines: ${JSON.stringify(doctrines)},
-            doctrines_metadata: ${JSON.stringify(doctrines_metadata)},
             get_images() {
                 let images = [];
 
@@ -129,8 +133,8 @@ const today = new Date().toISOString().split("T")[0]
                 x-on:submit.prevent="launch_confetti(get_images()); submitted = true;"
             >
                 <Flexblock gap="var(--space-3xs)">
-                    <FixedFluid width="var(--max-text-width)" breakpoint="38%" gap="var(--space-3xs)">
-                        <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                    <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
+                        <Flexblock gap="var(--space-3xs)">
                             <ComponentBlock>
                                 <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                                     <h2>{t('fleet_information')} (1/3)</h2>
@@ -141,7 +145,14 @@ const today = new Date().toISOString().split("T")[0]
                                         <VerticalCenter>
                                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                                 <label for="doctrine">{t('doctrine')}</label>
-                                                <Select id="doctrine" x-model="doctrine">
+                                                <Select
+                                                    id="doctrine"
+                                                    name="doctrine_id"
+                                                    hx-get={translatePath('/partials/doctrine')}
+                                                    hx-target="#doctrine-hx-target"
+                                                    hx-trigger="change"
+                                                    hx-swap="innerHTML transition:true"
+                                                >
                                                     {doctrines_select_options.map((option) => 
                                                         <option value={option.id}>{option.name}</option>
                                                     )}
@@ -194,23 +205,10 @@ const today = new Date().toISOString().split("T")[0]
                                     </Flexblock>
                                 </Flexblock>
                             </ComponentBlock>
-                        </Wrapper>
 
-                        <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                            <Flexblock gap='2px' class="[ w-full sticky top-[var(--sticky-top)] ]">
+                            <Flexblock gap='2px'>
                                 <ComponentBlock>
                                     <h2>{t('confirm')} (2/3)</h2>
-                                </ComponentBlock>
-
-                                <ComponentBlock>
-                                    <Flexblock gap="var(--space-m)">
-                                        <h4 x-text={`doctrines_metadata[doctrine].name+' ${t('doctrine')}'`}></h4>
-                                        <FlexInline>
-                                            <template x-for="fitting in doctrines_metadata[doctrine].fittings">
-                                                <img class="confetti-image" height="64" width="64" x-bind:src="fitting.image" x-bind:alt="fitting.alt" />
-                                            </template>
-                                        </FlexInline>
-                                    </Flexblock>
                                 </ComponentBlock>
 
                                 <ThumbCard
@@ -250,18 +248,20 @@ const today = new Date().toISOString().split("T")[0]
                                         </Flexblock>
                                     </VerticalCenter>
                                 </ThumbCard>
-                            </Flexblock>
-                        </Wrapper>
-                    </FixedFluid>
 
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                        <ComponentBlock>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('fleet_submit')} (3/3)</h2>
-
-                                <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
+                                <ComponentBlock id="doctrine-hx-target">
+                                    <DoctrineItem role="listitem" doctrine={doctrine} />
+                                </ComponentBlock>
                             </Flexblock>
-                        </ComponentBlock>
+
+                            <ComponentBlock>
+                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                    <h2>{t('fleet_submit')} (3/3)</h2>
+
+                                    <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
+                                </Flexblock>
+                            </ComponentBlock>
+                        </Flexblock>
                     </Wrapper>
                 </Flexblock>
             </form>

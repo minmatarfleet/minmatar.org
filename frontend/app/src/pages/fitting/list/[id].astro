@@ -29,6 +29,7 @@ import PageHeader from '@components/page/PageHeader.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageBody from '@components/page/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 const page_title = fit_details.name;
 ---
@@ -60,10 +61,13 @@ const page_title = fit_details.name;
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <Wrapper class="[ !pt-0 ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="var(--space-xl)">
-                <p>{fit_details.description}</p>
+            <Wrapper class="[ !pt-0 ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                <Flexblock gap="var(--space-xl)">
+                    <p>{fit_details.description}</p>
+                    
+                    <Fit fitting={fit_details.fitting_eft} />
+                </Flexblock>
             </Wrapper>
-            <Fit fitting={fit_details.fitting_eft} />
         </PageBody>
 	</main>
 </Viewport>

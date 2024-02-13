@@ -30,11 +30,12 @@ export interface FitItem {
     href:         string;
 }
 
-export interface DoctrineItem {
-    doctrine_name: string;
-    href:          string;
-    tags:          Tag[];
-    fits:         Fit[];
+export interface DoctrineItemObj {
+    doctrine_name:  string;
+    href:           string;
+    id:             number;
+    tags:           Tag[];
+    fits:           Fit[];
 }
 
 export interface Fit {

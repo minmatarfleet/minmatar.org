@@ -96,164 +96,158 @@ const page_title = t('account.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
-                    <Flexblock gap='var(--space-xl)' class="[ w-full ]">
-                        <ComponentBlock class="w-full">
-                            <FlexInline gap="var(--space-3xl)" justification='space-between'>
-                                <FlexInline gap="var(--space-3xl)">
-                                    <VerticalCenter>
-                                        <TextGroup title={t('account_name')}>
-                                            {user.username}
-                                        </TextGroup>
-                                    </VerticalCenter>
-                                    <VerticalCenter>
-                                        <TextGroup title={t('roles')}>
-                                            {roles_semantic_list}
-                                        </TextGroup>
-                                    </VerticalCenter>
-                                </FlexInline>
+            <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                    <ComponentBlock class="w-full">
+                        <FlexInline gap="var(--space-3xl)" justification='space-between'>
+                            <FlexInline gap="var(--space-3xl)">
                                 <VerticalCenter>
+                                    <TextGroup title={t('account_name')}>
+                                        {user.username}
+                                    </TextGroup>
+                                </VerticalCenter>
+                                <VerticalCenter>
+                                    <TextGroup title={t('roles')}>
+                                        {roles_semantic_list}
+                                    </TextGroup>
+                                </VerticalCenter>
+                            </FlexInline>
+                            <VerticalCenter>
+                                <Button
+                                    size='sm'
+                                    type="button"
+                                    x-bind:disabled="disabled"
+                                    x-data={`{
+                                        disabled: false,
+                                        async clear_cache() {
+                                            this.disabled = true
+                                            
+                                            await fetch(
+                                                '${CLEAR_ACCOUNT_CACHE_URL}', {
+                                                    method: 'DELETE'
+                                                }
+                                            )
+
+                                            navigate('${translatePath('/account')}')
+                                        }
+                                    }`}
+                                    x-on:click="clear_cache()"
+                                >
+                                    {t('clear_account_cache')}
+                                </Button>
+                            </VerticalCenter>
+                        </FlexInline>
+                    </ComponentBlock>
+
+                    <ComponentBlock
+                        class="w-full"
+                        x-data={`{
+                            remove_request_ongoing: [],
+                            start_remove_animation(character_id) {
+                                if (!character_id) return
+                                this.remove_request_ongoing.push(character_id)
+                            },
+                            stop_remove_animation(character_id) {
+                                if (!character_id) return
+                                this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
+                            },
+                        }`}
+                    >
+                        <PilotsList
+                            pilots={pilots}
+                            readonly={readonly}
+                            empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+                        >
+                            {get_characters_error !== false ?
+                                <FlexInline justification='space-between'>
+                                    <p>{get_characters_error}</p>
                                     <Button
                                         size='sm'
+                                        hx-get={CHARACTER_PARTIAL_URL}
+                                        hx-target="#pilots-list"
+                                        hx-on::before-request="this.setAttribute('disabled','')"
+                                        hx-on::after-request="this.removeAttribute('disabled')"
+                                        hx-swap="outerHTML transition:true"
                                         type="button"
-                                        x-bind:disabled="disabled"
-                                        x-data={`{
-                                            disabled: false,
-                                            async clear_cache() {
-                                                this.disabled = true
+                                    >
+                                        <RefreshIcon slot="icon" />
+                                        {t('reload')}
+                                    </Button>
+                                </FlexInline>
+                                :
+                                t('empty_pilots_text')
+                            }
+                        </PilotsList>
+                    </ComponentBlock>
+
+                    <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                        <ComponentBlock
+                            x-data={`{
+                                danger_zone_enable: false,
+                            }`}
+                        >
+                            <Flexblock gap='var(--space-l)' class="[ w-full ]">
+                                <h2>Danger zone</h2>
+
+                                <SwitchSquare
+                                    class="[ w-full ]"
+                                    x-model="danger_zone_enable"
+                                    label={t('enable_danger_zone_switch_title')}
+                                    description={t('enable_danger_zone_switch_description')}
+                                />
+
+                                <DisableBlock x_model="danger_zone_enable">
+                                    <FlexInline
+                                        justification='space-between'
+                                        x-data={`{                                                
+                                            async delete_account(proceed) {
+                                                if (!proceed) return
                                                 
-                                                await fetch(
-                                                    '${CLEAR_ACCOUNT_CACHE_URL}', {
+                                                const response = await fetch(
+                                                    '${DELETE_ACCOUNT_URL}', {
                                                         method: 'DELETE'
                                                     }
                                                 )
-
-                                                navigate('${translatePath('/account')}')
+        
+                                                if (!response.ok) {
+                                                    show_alert_dialog({
+                                                        title: '${t('delete_account_dialog_title')}',
+                                                        content: '${t('delete_account_error')}'
+                                                    })
+                                                    return
+                                                }
+        
+                                                const json = await response.json()
+                                                if (json.redirect)
+                                                    navigate(json.redirect)
                                             }
                                         }`}
-                                        x-on:click="clear_cache()"
                                     >
-                                        {t('clear_account_cache')}
-                                    </Button>
-                                </VerticalCenter>
-                            </FlexInline>
-                        </ComponentBlock>
-
-                        <ComponentBlock
-                            class="w-full"
-                            x-data={`{
-                                remove_request_ongoing: [],
-                                start_remove_animation(character_id) {
-                                    if (!character_id) return
-                                    this.remove_request_ongoing.push(character_id)
-                                },
-                                stop_remove_animation(character_id) {
-                                    if (!character_id) return
-                                    this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
-                                },
-                            }`}
-                        >
-                            <PilotsList
-                                pilots={pilots}
-                                readonly={readonly}
-                                empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-                            >
-                                {get_characters_error !== false ?
-                                    <FlexInline justification='space-between'>
-                                        <p>{get_characters_error}</p>
+                                        <TextGroup title={t('unregister_account')}>
+                                            {t('unregister_account_description')}
+                                        </TextGroup>
                                         <Button
-                                            size='sm'
-                                            hx-get={CHARACTER_PARTIAL_URL}
-                                            hx-target="#pilots-list"
-                                            hx-on::before-request="this.setAttribute('disabled','')"
-                                            hx-on::after-request="this.removeAttribute('disabled')"
-                                            hx-swap="outerHTML transition:true"
                                             type="button"
-                                        >
-                                            <RefreshIcon slot="icon" />
-                                            {t('reload')}
-                                        </Button>
-                                    </FlexInline>
-                                    :
-                                    t('empty_pilots_text')
-                                }
-                            </PilotsList>
-                        </ComponentBlock>
-
-                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                            <ComponentBlock
-                                x-data={`{
-                                    danger_zone_enable: false,
-                                }`}
-                            >
-                                <Flexblock gap='var(--space-l)' class="[ w-full ]">
-                                    <h2>Danger zone</h2>
-
-                                    <SwitchSquare
-                                        class="[ w-full ]"
-                                        x-model="danger_zone_enable"
-                                        label={t('enable_danger_zone_switch_title')}
-                                        description={t('enable_danger_zone_switch_description')}
-                                    />
-
-                                    <DisableBlock x_model="danger_zone_enable">
-                                        <FlexInline
-                                            justification='space-between'
-                                            x-data={`{                                                
-                                                async delete_account(proceed) {
-                                                    if (!proceed) return
-                                                    
-                                                    const response = await fetch(
-                                                        '${DELETE_ACCOUNT_URL}', {
-                                                            method: 'DELETE'
-                                                        }
-                                                    )
-            
-                                                    if (!response.ok) {
-                                                        show_alert_dialog({
-                                                            title: '${t('delete_account_dialog_title')}',
-                                                            content: '${t('delete_account_error')}'
-                                                        })
-                                                        return
-                                                    }
-            
-                                                    const json = await response.json()
-                                                    if (json.redirect)
-                                                        navigate(json.redirect)
+                                            size='sm'
+                                            x-data={`{
+                                                show_unregister_account_dialog() {
+                                                    show_confirm_dialog({
+                                                        title: '${t('delete_account_dialog_title')}',
+                                                        content: '${t('delete_account_dialog_text')}'
+                                                    }).then( (accepted) => delete_account(accepted) )
                                                 }
                                             }`}
+                                            x-on:click="show_unregister_account_dialog()"
                                         >
-                                            <TextGroup title={t('unregister_account')}>
-                                                {t('unregister_account_description')}
-                                            </TextGroup>
-                                            <Button
-                                                type="button"
-                                                size='sm'
-                                                x-data={`{
-                                                    show_unregister_account_dialog() {
-                                                        show_confirm_dialog({
-                                                            title: '${t('delete_account_dialog_title')}',
-                                                            content: '${t('delete_account_dialog_text')}'
-                                                        }).then( (accepted) => delete_account(accepted) )
-                                                    }
-                                                }`}
-                                                x-on:click="show_unregister_account_dialog()"
-                                            >
-                                                {t('unregister')}
-                                            </Button>
-                                        </FlexInline>
-                                    </DisableBlock>
-                                </Flexblock>
-                            </ComponentBlock>
-                        </Flexblock>
+                                            {t('unregister')}
+                                        </Button>
+                                    </FlexInline>
+                                </DisableBlock>
+                            </Flexblock>
+                        </ComponentBlock>
                     </Flexblock>
-                </Wrapper>
-
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
-                    
-                </Wrapper>
-            </FixedFluid>
+                </Flexblock>
+            </Wrapper>
         </PageBody>
 	</main>
 </Viewport>

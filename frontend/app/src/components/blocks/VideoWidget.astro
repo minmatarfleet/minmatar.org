@@ -14,7 +14,12 @@ const {
 } = Astro.props
 ---
 
-<Wrapper class="[ shadow relative ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+<Wrapper
+    class="[ shadow relative ]"
+    max_width="var(--max-col-width)"
+    padding_inline="0"
+    padding_block="0"
+>
     <div class="[ video-frame w-full ]">
         <lite-youtube
             class="[ max-w-full h-full w-full ]"

@@ -73,45 +73,43 @@ const page_title = `${t('fleet')} ${fleet.name}`;
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <Flexblock gap="var(--space-3xs)">
-                        <ComponentBlock>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('fleet_information')}</h2>
-        
-                                <VerticalCenter>
-                                    <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                        <h4>{t('fleet_commander')}</h4>
-                                        <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
-                                            <img src={fleet.fleet_commander_portrait} width="32" height="32" />
-                                            <p>{fleet.fleet_commander_name}</p>
-                                        </FixedFluid>
-                                    </Flexblock>
-                                </VerticalCenter>
-        
-                                <VerticalCenter>
-                                    <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
-                                        {fleet.tracking}
-                                    </TextGroup>
-                                </VerticalCenter>
-                            </Flexblock>
-                        </ComponentBlock>
+            <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
+                <Flexblock gap="var(--space-3xs)">
+                    <ComponentBlock>
+                        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                            <h2>{t('fleet_information')}</h2>
+    
+                            <VerticalCenter>
+                                <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                                    <h4>{t('fleet_commander')}</h4>
+                                    <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
+                                        <img src={fleet.fleet_commander_portrait} width="32" height="32" />
+                                        <p>{fleet.fleet_commander_name}</p>
+                                    </FixedFluid>
+                                </Flexblock>
+                            </VerticalCenter>
+    
+                            <VerticalCenter>
+                                <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
+                                    {fleet.tracking}
+                                </TextGroup>
+                            </VerticalCenter>
+                        </Flexblock>
+                    </ComponentBlock>
 
-                        <DoctrineItem doctrine={fleet.doctrine} />    
-                    </Flexblock>
-                </Wrapper>
+                    <ComponentBlock>
+                        <DoctrineItem doctrine={fleet.doctrine} />
+                    </ComponentBlock>
 
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
                     <ComponentBlock
                         x-data={`{
                             global_collapse: false,
                         }`}
                     >
                         <FleetCompositionBlock composition={fleet.composition} fleet_id={fleet_id} />
-                    </ComponentBlock>
-                </Wrapper>
-            </FixedFluid>
+                    </ComponentBlock>  
+                </Flexblock>
+            </Wrapper>
         </PageBody>
 	</main>
 </Viewport>

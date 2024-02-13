@@ -6,9 +6,8 @@ const t = useTranslations(lang);
 
 import { get_item_icon_by_name } from '@helpers/eve_image_server';
 
-import type { DoctrineItem } from '@dtypes/layout_components';
+import type { DoctrineItemObj } from '@dtypes/layout_components';
 
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Grid from '@components/compositions/Grid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import VerticalCenter from './VerticalCenter.astro';
@@ -16,10 +15,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import SmallThumbText from './SmallThumbText.astro';
+import Picture64 from '@components/blocks/Picture64.astro';
 
 interface Props {
-    doctrine: DoctrineItem;
+    doctrine: DoctrineItemObj;
     [propName: string]: any;
 }
 
@@ -29,42 +28,42 @@ const {
 } = Astro.props
 ---
 
-<ComponentBlock {...attributes}>
-    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-        <h2>{doctrine.doctrine_name}</h2>
-        <Grid
-            role="list"
-            class="[ w-full ]"
-            min_item_width='270px'
-            row_gap='var(--space-s-m)'
-            column_gap='var(--space-s-m)'
-        >
-            {doctrine.fits.map((fit) => 
-                <a role="listitem" href={fit.href}>
-                    <SmallThumbText image={get_item_icon_by_name(fit.alt)} alt={fit.alt} text={fit.name} />
-                </a>
-            )}
-        </Grid>
-        <FlexInline class="[ w-full ]" gap='var(--space-m)' justification='space-between'>
-            <VerticalCenter>
-                <Flexblock gap="var(--space-3xs)">
-                    <FlexInline role="list">
-                        {doctrine.tags.map((tag) => 
-                            <Tag role="listitem" title={tag.description} text={tag.name} color={tag.color} />
-                        )}
-                    </FlexInline>
-                </Flexblock>
-            </VerticalCenter>
+<Flexblock  {...attributes} class="[ w-full ]" gap='var(--space-m)'>
+    <h2>{doctrine.doctrine_name}</h2>
+    <Grid
+        role="list"
+        class="[ w-full ]"
+        min_item_width='270px'
+        row_gap='var(--space-s-m)'
+        column_gap='var(--space-s-m)'
+    >
+        {doctrine.fits.map((fit) => 
+            <a role="listitem" href={fit.href}>
+                <Picture64 role="listitem" text={fit.name}>
+                    <img class="[ w-full confetti-image ]" src={get_item_icon_by_name(fit.alt)} alt={fit.alt} height="64" width="64" />
+                </Picture64>
+            </a>
+        )}
+    </Grid>
+    <FlexInline class="[ w-full ]" gap='var(--space-m)' justification='space-between'>
+        <VerticalCenter>
+            <Flexblock gap="var(--space-3xs)">
+                <FlexInline role="list">
+                    {doctrine.tags.map((tag) => 
+                        <Tag role="listitem" title={tag.description} text={tag.name} color={tag.color} />
+                    )}
+                </FlexInline>
+            </Flexblock>
+        </VerticalCenter>
 
-            <VerticalCenter>
-                <Button href={doctrine.href}>
-                    <MagnifierIcon slot="icon" />
-                    {t('view_details')}
-                </Button>
-            </VerticalCenter>
-        </FlexInline>
-    </Flexblock>
-</ComponentBlock>
+        <VerticalCenter>
+            <Button href={doctrine.href}>
+                <MagnifierIcon slot="icon" />
+                {t('view_details')}
+            </Button>
+        </VerticalCenter>
+    </FlexInline>
+</Flexblock>
 
 <style lang="scss">
     .wrapper {

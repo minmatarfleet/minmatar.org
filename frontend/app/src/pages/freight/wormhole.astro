@@ -28,7 +28,7 @@ if (Astro.request.method === "POST") {
     Astro.cookies.set('contract', calculation, { path: '/freight/' })
     Astro.cookies.set('from', 'wormhole', { path: '/freight/' })
 
-    return Astro.redirect(translatePath('/freight/standard/contract'))
+    return Astro.redirect(translatePath('/freight/contract'))
 }
 
 import routes_options from '@json/hosted/freight.wormhole.route.options.json';
@@ -88,8 +88,8 @@ const page_title = t('freight.wormhole.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+            <FixedFluid width="var(--max-col-width)" breakpoint="30%" gap="var(--space-xl)">
+                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
                     <Flexblock gap='var(--space-3xs)'>
                         <ComponentBlock>
                             <form method="POST">
@@ -147,7 +147,7 @@ const page_title = t('freight.wormhole.page_title');
                     </Flexblock>
                 </Wrapper>
 
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
                     <ComponentBlock>
                         <Flexblock>
                             <FixedFluid width="48" class="[ items-center ]">

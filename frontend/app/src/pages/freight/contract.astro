@@ -72,11 +72,13 @@ const page_title = t('freight.contract.page_title');
         </PageHeader>
 
         <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <Flexblock gap='var(--space-xl)'>
+            <FixedFluid width="var(--max-col-width)" breakpoint="30%" gap="var(--space-xl)">
+                <Flexblock gap='var(--space-xl)'>
+                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
                         <p>{t('freight.contract.instruction_paragraph')}</p>
+                    </Wrapper>
 
+                    <Wrapper max_width="var(--max-content-width)" padding_inline="0" padding_block="0">
                         <Flexblock gap="var(--space-3xs)">
                             <ComponentBlock>
                                 <Flexblock class="[ w-full ]" gap='var(--space-m)'>
@@ -173,7 +175,7 @@ const page_title = t('freight.contract.page_title');
                     </Flexblock>
                 </Wrapper>
 
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
                     <ComponentBlock class="sticky top-[170px]">
                         <Flexblock>
                             <FixedFluid width="48" class="[ items-center ]">

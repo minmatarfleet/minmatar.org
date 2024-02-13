@@ -1,6 +1,7 @@
 [
     {
         "doctrine_name": "Heavy Armor",
+        "id": 16,
         "href": "/doctrines/alliance/heavy_armor",
         "tags": [{
             "name": "Large Fleet",
@@ -39,6 +40,7 @@
         }]
     }, {
         "doctrine_name": "Kikis",
+        "id": 23,
         "href": "/",
         "tags": [{
             "name": "Low Projection",
@@ -80,6 +82,7 @@
         }]
     }, {
         "doctrine_name": "Sleipnir",
+        "id": 24,
         "href": "/",
         "tags": [{
             "name": "High Projection",

@@ -6,6 +6,7 @@
     "members": -1,
     "doctrine": {
         "doctrine_name": "Heavy Armor Doctrine",
+        "id": 16,
         "href": "/doctrines/alliance/heavy_armor",
         "tags": [{
             "name": "Large Fleet",
