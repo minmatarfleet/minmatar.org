@@ -95,7 +95,7 @@ const page_title = t('account.page_title');
         </FlexInline>
         
         <Context>
-            <ComponentBlock class="w-full">
+            <ComponentBlock width='narrow'>
                 <FlexInline gap="var(--space-3xl)" justification='space-between'>
                     <FlexInline gap="var(--space-3xl)">
                         <VerticalCenter>
@@ -136,8 +136,8 @@ const page_title = t('account.page_title');
                 </FlexInline>
             </ComponentBlock>
 
-            <ComponentBlock
-                class="w-full"
+            <ComponentBlock 
+                width='narrow'
                 x-data={`{
                     remove_request_ongoing: [],
                     start_remove_animation(character_id) {
@@ -179,6 +179,7 @@ const page_title = t('account.page_title');
 
             <Context>
                 <ComponentBlock
+                    width='narrow'
                     x-data={`{
                         danger_zone_enable: false,
                     }`}
