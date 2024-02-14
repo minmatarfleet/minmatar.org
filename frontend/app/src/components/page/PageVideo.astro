@@ -1,0 +1,43 @@
+---
+import PageCover from '@components/page/partials/PageCover.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import VideoWidget from '@components/blocks/VideoWidget.astro';
+
+import type { PageCoverOptions, PageVideoOptions } from '@dtypes/layout_components'
+
+interface Props {
+    cover?:                 false | PageCoverOptions;
+    video:                  PageVideoOptions;
+    [propName: string]:     any;
+}
+
+const {
+    cover,
+    video,
+    ...attributes
+} = Astro.props;
+---
+<main id="content" {...attributes}>
+    {cover && <PageCover {...cover} /> }
+
+    <Wrapper class="w-full" max_width="var(--max-content-width)" neocom={true}>
+        <FluidFixed
+            class="[ items-center ]"
+            width="var(--max-video-description-width)"
+            breakpoint="30%"
+            gap="var(--space-2xl-3xl)"
+        >
+            <Wrapper max_width="var(--max-video-description-width)" padding_inline="0" padding_block="0">
+                <slot />
+            </Wrapper>
+                
+            <VideoWidget
+                videoid={video.id}
+                videotitle={video.title}
+                credits={video?.credits ?? false}
+            />
+        </FluidFixed>
+    </Wrapper>
+</main>

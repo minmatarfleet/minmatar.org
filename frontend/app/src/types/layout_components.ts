@@ -202,3 +202,9 @@ export interface PageCoverOptions {
     scrollable?:    boolean;
     overlay?:       boolean;
 }
+
+export interface PageVideoOptions {
+    id:        string;
+    title:     string;
+    credits?:  string;
+}
