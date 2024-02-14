@@ -308,5 +308,6 @@ export const ui = {
         'courier': 'Courier',
         'private': 'Private',
         'danger_zone': 'Danger zone',
+        'unknown_pilot': 'Unknown pilot',
     },
 } as const;

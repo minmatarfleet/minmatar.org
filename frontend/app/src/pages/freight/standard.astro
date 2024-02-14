@@ -36,26 +36,25 @@ import sizes_options from '@json/hosted/freight.standard.size.options.json';
 
 import { marked } from 'marked';
 
+import Viewport from '@layouts/Viewport.astro';
+
 import PageAside from '@components/page/PageAside.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Viewport from '@layouts/Viewport.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
-import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
 import Input from '@components/blocks/Input.astro';
 
-import PageCover from '@components/page/partials/PageCover.astro';
-import PageHeader from '@components/page/partials/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/partials/PageBody.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
 const page_title = t('freight.standard.page_title');
 ---

@@ -1,9 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })

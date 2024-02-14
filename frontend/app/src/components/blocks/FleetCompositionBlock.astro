@@ -10,13 +10,11 @@ import type { FleetCompositionObj } from '@dtypes/layout_components'
 interface Props {
     fleet_id:           number;
     composition:        FleetCompositionObj[];
-    [propName: string]: any;
 }
 
 const {
     fleet_id,
     composition,
-    ...attributes
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
