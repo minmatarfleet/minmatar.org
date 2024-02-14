@@ -93,3 +93,9 @@ a[href]:not([class]) {
     width: 1px;
     white-space: nowrap;
 }
+
+code {
+    background-color: var(--component-background);
+    color: var(--highlight);
+    padding-inline: var(--space-3xs);
+}

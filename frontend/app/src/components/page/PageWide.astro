@@ -1,7 +1,16 @@
 ---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { marked } from 'marked';
+
 import PageHeader from '@components/page/partials/PageHeader.astro';
 import PageBody from '@components/page/partials/PageBody.astro';
 import PageCover from '@components/page/partials/PageCover.astro';
+
+import DebugTag from '@components/blocks/DebugTag.astro';
 
 import type { PageCoverOptions } from '@dtypes/layout_components'
 
@@ -19,7 +28,9 @@ const {
     {cover && <PageCover {...cover} /> }
 
     <PageHeader max_width="var(--max-content-width)">
-        <slot name="header" />
+        <slot name="header">
+            <DebugTag set:html={marked.parse(t('missing_header_slot'))} />
+        </slot>
     </PageHeader>
 
     <PageBody max_width="var(--max-content-width)">

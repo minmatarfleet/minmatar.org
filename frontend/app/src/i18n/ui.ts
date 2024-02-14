@@ -309,5 +309,7 @@ export const ui = {
         'private': 'Private',
         'danger_zone': 'Danger zone',
         'unknown_pilot': 'Unknown pilot',
+        'missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the header. Otherwise use PageLanding layout.',
+        'missing_aside_slot': '⚠️&nbsp;<b>Aside slot missing:</b>&nbsp;Add&nbsp;`slot="aside"`&nbsp;attribute on the element meant to be on the aside. Otherwise use PageDefault layout.',
     },
 } as const;
