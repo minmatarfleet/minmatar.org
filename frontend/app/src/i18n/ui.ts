@@ -307,5 +307,6 @@ export const ui = {
         'fun_fleet': 'Fun fleet',
         'courier': 'Courier',
         'private': 'Private',
+        'danger_zone': 'Danger zone',
     },
 } as const;

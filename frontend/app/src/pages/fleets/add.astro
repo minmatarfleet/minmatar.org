@@ -34,44 +34,44 @@ const default_doctrine = doctrines_select_options[0].id
 
 const doctrine:DoctrineItemObj = doctrines.filter( (item) => item.id == default_doctrine )[0]
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-import Viewport from '@layouts/Viewport.astro';
-import Button from '@components/blocks/Button.astro';
-import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Button from '@components/blocks/Button.astro';
 import ThumbCard from '@components/blocks/ThumbCard.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
 const page_title = t('fleets.add.page_title');
 const today = new Date().toISOString().split("T")[0]
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/fleets-cover.jpg"
-        image_990="/images/fleets-cover-990.jpg"
-        alt={t('fleets.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main
-        id="content"
+    <PageDefault
+        cover={{
+            image: "/images/fleets-cover.jpg",
+            image_990: "/images/fleets-cover-990.jpg",
+            alt: t('fleets.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
         x-data={`{
             fleet_type: 'fun_fleet',
             audience: 'alliance',
@@ -104,167 +104,164 @@ const today = new Date().toISOString().split("T")[0]
             },
         }`}
     >
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                </FlexInline>
-                <FlexInline>
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming')}>
-                        <FleetIcon slot="icon" />
-                        {t('upcoming_fleets')}
-                    </Button>
-                    <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history')}>
-                        <HistoryIcon slot="icon" />
-                        {t('fleet_history')}
-                    </Button>
-                </FlexInline>
+
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming')}>
+                    <FleetIcon slot="icon" />
+                    {t('upcoming_fleets')}
+                </Button>
+                <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history')}>
+                    <HistoryIcon slot="icon" />
+                    {t('fleet_history')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <form
-                method="POST"
-                x-data={`{
-                    'submitted': false
-                }`}
-                x-on:submit.prevent="launch_confetti(get_images()); submitted = true;"
-            >
-                <Flexblock gap="var(--space-3xs)">
-                    <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-                        <Flexblock gap="var(--space-3xs)">
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('fleet_information')} (1/3)</h2>
+        <form
+            method="POST"
+            x-data={`{
+                'submitted': false
+            }`}
+            x-on:submit.prevent="launch_confetti(get_images()); submitted = true;"
+        >
+            <Flexblock gap="var(--space-3xs)">
+                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
+                    <Flexblock gap="var(--space-3xs)">
+                        <ComponentBlock>
+                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                <h2>{t('fleet_information')} (1/3)</h2>
 
-                                    <p>{t('fleets.add.form_info')}</p>
+                                <p>{t('fleets.add.form_info')}</p>
 
-                                    <Flexblock>
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="doctrine">{t('doctrine')}</label>
-                                                <Select
-                                                    id="doctrine"
-                                                    name="doctrine_id"
-                                                    hx-get={translatePath('/partials/doctrine')}
-                                                    hx-target="#doctrine-hx-target"
-                                                    hx-trigger="change"
-                                                    hx-swap="innerHTML transition:true"
-                                                >
-                                                    {doctrines_select_options.map((option) => 
-                                                        <option value={option.id}>{option.name}</option>
-                                                    )}
-                                                </Select>
-                                            </FixedFluid>
-                                        </VerticalCenter>
+                                <Flexblock>
+                                    <VerticalCenter>
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="doctrine">{t('doctrine')}</label>
+                                            <Select
+                                                id="doctrine"
+                                                name="doctrine_id"
+                                                hx-get={translatePath('/partials/doctrine')}
+                                                hx-target="#doctrine-hx-target"
+                                                hx-trigger="change"
+                                                hx-swap="innerHTML transition:true"
+                                            >
+                                                {doctrines_select_options.map((option) => 
+                                                    <option value={option.id}>{option.name}</option>
+                                                )}
+                                            </Select>
+                                        </FixedFluid>
+                                    </VerticalCenter>
 
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="fleet_date">{t('fleet_date')}</label>
-                                                <Input id="fleet_date" type="date" x-model="eve_date" required min={today} value={today} />
-                                            </FixedFluid>
-                                        </VerticalCenter>
+                                    <VerticalCenter>
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="fleet_date">{t('fleet_date')}</label>
+                                            <Input id="fleet_date" type="date" x-model="eve_date" required min={today} value={today} />
+                                        </FixedFluid>
+                                    </VerticalCenter>
 
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="fleet_time">{t('fleet_time')}</label>
-                                                <Input id="fleet_time" type="time" step="2" value="00:00:00" x-model="eve_time" required />
-                                            </FixedFluid>
-                                        </VerticalCenter>
+                                    <VerticalCenter>
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="fleet_time">{t('fleet_time')}</label>
+                                            <Input id="fleet_time" type="time" step="2" value="00:00:00" x-model="eve_time" required />
+                                        </FixedFluid>
+                                    </VerticalCenter>
 
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="type">{t('type')}</label>
-                                                <Select id="type" x-model="fleet_type">
-                                                    {fleet_types_select_options.map((option) => 
-                                                        <option value={option.id}>{option.name}</option>
-                                                    )}
-                                                </Select>
-                                            </FixedFluid>
-                                        </VerticalCenter>
+                                    <VerticalCenter>
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="type">{t('type')}</label>
+                                            <Select id="type" x-model="fleet_type">
+                                                {fleet_types_select_options.map((option) => 
+                                                    <option value={option.id}>{option.name}</option>
+                                                )}
+                                            </Select>
+                                        </FixedFluid>
+                                    </VerticalCenter>
 
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="audience">{t('audience')}</label>
-                                                <Select id="audience" x-model="audience">
-                                                    {audiences_select_options.map((option) => 
-                                                        <option value={option.id}>{option.name}</option>
-                                                    )}
-                                                </Select>
-                                            </FixedFluid>
-                                        </VerticalCenter>
+                                    <VerticalCenter>
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="audience">{t('audience')}</label>
+                                            <Select id="audience" x-model="audience">
+                                                {audiences_select_options.map((option) => 
+                                                    <option value={option.id}>{option.name}</option>
+                                                )}
+                                            </Select>
+                                        </FixedFluid>
+                                    </VerticalCenter>
 
-                                        <VerticalCenter>
-                                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                                <label for="description">{t('description')}</label>
-                                                <Textarea id="description" name="fitting" rows="5" />
-                                            </Flexblock>
-                                        </VerticalCenter>
-                                    </Flexblock>
+                                    <VerticalCenter>
+                                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                            <label for="description">{t('description')}</label>
+                                            <Textarea id="description" name="fitting" rows="5" />
+                                        </Flexblock>
+                                    </VerticalCenter>
                                 </Flexblock>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <Flexblock gap='2px'>
+                            <ComponentBlock>
+                                <h2>{t('confirm')} (2/3)</h2>
                             </ComponentBlock>
 
-                            <Flexblock gap='2px'>
-                                <ComponentBlock>
-                                    <h2>{t('confirm')} (2/3)</h2>
-                                </ComponentBlock>
+                            <ThumbCard
+                                thumb_name="Beautiful Mim"
+                                thumb_image="https://images.evetech.net/characters/2121103796/portrait?size=512"
+                                thumb_image_small="https://images.evetech.net/characters/2121103796/portrait?size=512"
+                                thumb_image_alt="Beautiful Mim profile picture"
+                                thumb_title={t('fleet_commander')}
+                            >
+                                <VerticalCenter>
+                                    <Flexblock gap="var(--space-s-m)">
+                                        <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
+                                            {t('fun_fleet')}
+                                        </TextGroup>
+                                        <TextGroup title={t('audience')} x-text="audiences[audience]">
+                                            {t('alliance')}
+                                        </TextGroup>
+                                    </Flexblock>
+                                </VerticalCenter>
+                                
+                                <VerticalCenter>
+                                    <Flexblock gap="var(--space-s-m)">
+                                        <TextGroup
+                                            title={t('eve_time')}
+                                            class="[ sentence-cap ]"
+                                            x-text="fleet_datetime()"
+                                        >    
+                                            {t('waiting_fleet_time')}
+                                        </TextGroup>
+                                        <TextGroup
+                                            title={t('local_time')}
+                                            class="[ sentence-cap ]"
+                                            x-text="fleet_datetime(true)"
+                                        >
+                                            {t('waiting_fleet_time')}
+                                        </TextGroup>
+                                    </Flexblock>
+                                </VerticalCenter>
+                            </ThumbCard>
 
-                                <ThumbCard
-                                    thumb_name="Beautiful Mim"
-                                    thumb_image="https://images.evetech.net/characters/2121103796/portrait?size=512"
-                                    thumb_image_small="https://images.evetech.net/characters/2121103796/portrait?size=512"
-                                    thumb_image_alt="Beautiful Mim profile picture"
-                                    thumb_title={t('fleet_commander')}
-                                >
-                                    <VerticalCenter>
-                                        <Flexblock gap="var(--space-s-m)">
-                                            <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
-                                                {t('fun_fleet')}
-                                            </TextGroup>
-                                            <TextGroup title={t('audience')} x-text="audiences[audience]">
-                                                {t('alliance')}
-                                            </TextGroup>
-                                        </Flexblock>
-                                    </VerticalCenter>
-                                    
-                                    <VerticalCenter>
-                                        <Flexblock gap="var(--space-s-m)">
-                                            <TextGroup
-                                                title={t('eve_time')}
-                                                class="[ sentence-cap ]"
-                                                x-text="fleet_datetime()"
-                                            >    
-                                                {t('waiting_fleet_time')}
-                                            </TextGroup>
-                                            <TextGroup
-                                                title={t('local_time')}
-                                                class="[ sentence-cap ]"
-                                                x-text="fleet_datetime(true)"
-                                            >
-                                                {t('waiting_fleet_time')}
-                                            </TextGroup>
-                                        </Flexblock>
-                                    </VerticalCenter>
-                                </ThumbCard>
-
-                                <ComponentBlock id="doctrine-hx-target">
-                                    <DoctrineItem role="listitem" doctrine={doctrine} />
-                                </ComponentBlock>
-                            </Flexblock>
-
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('fleet_submit')} (3/3)</h2>
-
-                                    <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
-                                </Flexblock>
+                            <ComponentBlock id="doctrine-hx-target">
+                                <DoctrineItem role="listitem" doctrine={doctrine} />
                             </ComponentBlock>
                         </Flexblock>
-                    </Wrapper>
-                </Flexblock>
-            </form>
-        </PageBody>
-	</main>
+
+                        <ComponentBlock>
+                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                                <h2>{t('fleet_submit')} (3/3)</h2>
+
+                                <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
+                            </Flexblock>
+                        </ComponentBlock>
+                    </Flexblock>
+                </Wrapper>
+            </Flexblock>
+        </form>
+	</PageDefault>
 </Viewport>

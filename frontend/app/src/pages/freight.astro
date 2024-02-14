@@ -11,53 +11,54 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 if (is_prod_mode())
     return HTTP_404_Not_Found()
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
+
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
-
-import PageCover from '@components/page/PageCover.astro';
 
 const page_title = t('freight.page_title');
 const page_description = t('freight.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
-    <PageCover
-        image="/images/freight-service-cover.jpg"
-        image_990="/images/freight-service-cover-990.jpg"
-        alt={t('freight.cover_alt')}
-        overlay={true}
-    />
-
-	<main id="content">
-		<Wrapper max_width="var(--max-text-width)" neocom={true}>
-            <Flexblock gap='var(--space-2xl)'>
-                <Flexblock>
-                    <h1>{page_title}</h1>
-                    <p>{page_description}</p>
-                </Flexblock>
-
-                <ButtonStack>
-                    <Button color={'green'} href={translatePath('/freight/standard/')}>
-                        <AddIcon slot="icon" />
-                        {t('standard_freight')}
-                    </Button>
-
-                    <Button color={'green'} href={translatePath('/freight/wormhole/')}>
-                        <AddIcon slot="icon" />
-                        {t('wormhole_freight')}
-                    </Button>
-                    
-                    <Button href={translatePath('/freight/summary/')}>
-                        <HistoryIcon slot="icon" />
-                        {t('30_day_summary')}
-                    </Button>
-                </ButtonStack>
+    <PageLanding
+        cover={{
+            image: "/images/freight-service-cover.jpg",
+            image_990: "/images/freight-service-cover-990.jpg",
+            alt: t('freight.cover_alt'),
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Flexblock>
+                <h1>{page_title}</h1>
+                <p>{page_description}</p>
             </Flexblock>
-		</Wrapper>
-	</main>
+
+            <ButtonStack>
+                <Button color={'green'} href={translatePath('/freight/standard/')}>
+                    <AddIcon slot="icon" />
+                    {t('standard_freight')}
+                </Button>
+
+                <Button color={'green'} href={translatePath('/freight/wormhole/')}>
+                    <AddIcon slot="icon" />
+                    {t('wormhole_freight')}
+                </Button>
+                
+                <Button href={translatePath('/freight/summary/')}>
+                    <HistoryIcon slot="icon" />
+                    {t('30_day_summary')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    </PageLanding>
 </Viewport>

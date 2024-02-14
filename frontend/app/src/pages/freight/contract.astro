@@ -23,8 +23,14 @@ const calculation:FreightCalculation = Astro.cookies.get('contract').json();
 
 import { number_name } from '@helpers/numbers.ts';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
+import PageAside from '@components/page/PageAside.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Context from '@components/layout/Context.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -34,10 +40,7 @@ import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
+import PageBody from '@components/page/partials/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 
@@ -45,153 +48,143 @@ const page_title = t('freight.contract.page_title');
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/freight-service-cover.jpg"
-        image_990="/images/freight-service-cover-990.jpg"
-        alt={t('freight.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main id="content">
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                </FlexInline>
-                <FlexInline>
-                    <Button class="[ !hidden sm:!block ]" href={translatePath(`/freight/${from}`)}>
-                        <HistoryIcon slot="icon" />
-                        {t('recalculate')}
-                    </Button>
-                </FlexInline>
+    <PageAside
+        cover={{
+            image: "/images/freight-service-cover.jpg",
+            image_990: "/images/freight-service-cover-990.jpg",
+            alt: t('freight.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button class="[ !hidden sm:!block ]" href={translatePath(`/freight/${from}`)}>
+                    <HistoryIcon slot="icon" />
+                    {t('recalculate')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-col-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Flexblock gap='var(--space-xl)'>
-                    <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                        <p>{t('freight.contract.instruction_paragraph')}</p>
-                    </Wrapper>
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p>{t('freight.contract.instruction_paragraph')}</p>
+            </TextBox>
 
-                    <Wrapper max_width="var(--max-content-width)" padding_inline="0" padding_block="0">
-                        <Flexblock gap="var(--space-3xs)">
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('freight.contract.step_1_title')}</h2>
+            <Context>
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_1_title')}</h2>
 
-                                    <VerticalCenter>
-                                        <TextGroup title={t('contract_type')}>
-                                            {t('courier')}
-                                        </TextGroup>
-                                    </VerticalCenter>
+                        <VerticalCenter>
+                            <TextGroup title={t('contract_type')}>
+                                {t('courier')}
+                            </TextGroup>
+                        </VerticalCenter>
 
-                                    <VerticalCenter>
-                                        <TextGroup title={t('availability')}>
-                                            {t('private')}
-                                        </TextGroup>
-                                    </VerticalCenter>
+                        <VerticalCenter>
+                            <TextGroup title={t('availability')}>
+                                {t('private')}
+                            </TextGroup>
+                        </VerticalCenter>
 
-                                    <VerticalCenter>
-                                        <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                                            <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
-                                                <h4>{t('name')}</h4>
-                                                <p>{calculation.name}</p>
-                                            </Flexblock>
-                                            <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">{calculation.name}</ClipboardButton>
-                                        </FlexInline>
-                                    </VerticalCenter>
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('name')}</h4>
+                                    <p>{calculation.name}</p>
                                 </Flexblock>
-                            </ComponentBlock>
-
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('freight.contract.step_2_title')}</h2>
-                                    <p>{calculation.pick_up_station}</p>
-                                </Flexblock>
-                            </ComponentBlock>
-
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('freight.contract.step_3_title')}</h2>
-
-                                    <VerticalCenter>
-                                        <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                                            <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
-                                                <h4>{t('ship_to')}</h4>
-                                                <p>{calculation.ship_to}</p>
-                                            </Flexblock>
-                                            {calculation.ship_to != t('fl33t_structure') && 
-                                                <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{calculation.ship_to}</ClipboardButton>
-                                            }
-                                        </FlexInline>
-                                    </VerticalCenter>
-
-                                    <VerticalCenter>
-                                        <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                                            <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
-                                                <h4>{t('reward')}</h4>
-                                                <p><span data-tippy-content={number_name(calculation.reward, lang)}>{calculation.reward.toLocaleString()}</span></p>
-                                            </Flexblock>
-                                            <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{calculation.reward}</ClipboardButton>
-                                        </FlexInline>
-                                    </VerticalCenter>
-
-                                    <VerticalCenter>
-                                        <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                                            <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
-                                                <h4>{t('collateral')}</h4>
-                                                <p><span data-tippy-content={number_name(calculation.collateral, lang)}>{calculation.collateral.toLocaleString()}</span></p>
-                                            </Flexblock>
-                                            <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{calculation.collateral}</ClipboardButton>
-                                        </FlexInline>
-                                    </VerticalCenter>
-
-                                    <VerticalCenter>
-                                        <TextGroup title={t('expiration')}>
-                                            {`${calculation.expiration} ${t('days')}`}
-                                        </TextGroup>
-                                    </VerticalCenter>
-
-                                    <VerticalCenter>
-                                        <TextGroup title={t('days_to_complete')}>
-                                            {calculation.days_to_complete}
-                                        </TextGroup>
-                                    </VerticalCenter>
-                                </Flexblock>
-                            </ComponentBlock>
-
-                            <ComponentBlock>
-                                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                    <h2>{t('freight.contract.step_4_title')}</h2>
-                                    <p>{t('freight.contract.step_4_text')}</p>
-                                </Flexblock>
-                            </ComponentBlock>
-                        </Flexblock>
+                                <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">{calculation.name}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
                     </Flexblock>
-                </Wrapper>
+                </ComponentBlock>
 
-                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-                    <ComponentBlock class="sticky top-[170px]">
-                        <Flexblock>
-                            <FixedFluid width="48" class="[ items-center ]">
-                                <TutorialIcon />
-                                <h2>{t('freight.standard.faq_title')}</h2>
-                            </FixedFluid>
-                            <h3>{t('freight.contract.faq_1_title')}</h3>
-                            <p>{t('freight.contract.faq_1_text')}</p>
-                            <h3>{t('freight.standard.faq_3_title')}</h3>
-                            <p>{t('freight.standard.faq_3_text')}</p>
-                        </Flexblock>
-                    </ComponentBlock>
-                </Wrapper>
-            </FixedFluid>
-        </PageBody>
-	</main>
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_2_title')}</h2>
+                        <p>{calculation.pick_up_station}</p>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_3_title')}</h2>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('ship_to')}</h4>
+                                    <p>{calculation.ship_to}</p>
+                                </Flexblock>
+                                {calculation.ship_to != t('fl33t_structure') && 
+                                    <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{calculation.ship_to}</ClipboardButton>
+                                }
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('reward')}</h4>
+                                    <p><span data-tippy-content={number_name(calculation.reward, lang)}>{calculation.reward.toLocaleString()}</span></p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{calculation.reward}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('collateral')}</h4>
+                                    <p><span data-tippy-content={number_name(calculation.collateral, lang)}>{calculation.collateral.toLocaleString()}</span></p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{calculation.collateral}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('expiration')}>
+                                {`${calculation.expiration} ${t('days')}`}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('days_to_complete')}>
+                                {calculation.days_to_complete}
+                            </TextGroup>
+                        </VerticalCenter>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_4_title')}</h2>
+                        <p>{t('freight.contract.step_4_text')}</p>
+                    </Flexblock>
+                </ComponentBlock>
+            </Context>
+        </Flexblock>
+
+        <ComponentBlock slot="aside" class="sticky top-[170px]">
+            <Flexblock>
+                <FixedFluid width="48" class="[ items-center ]">
+                    <TutorialIcon />
+                    <h2>{t('freight.standard.faq_title')}</h2>
+                </FixedFluid>
+                <h3>{t('freight.contract.faq_1_title')}</h3>
+                <p>{t('freight.contract.faq_1_text')}</p>
+                <h3>{t('freight.standard.faq_3_title')}</h3>
+                <p>{t('freight.standard.faq_3_text')}</p>
+            </Flexblock>
+        </ComponentBlock>
+    </PageAside>
 </Viewport>
 
 <style lang="scss">

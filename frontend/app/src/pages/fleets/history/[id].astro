@@ -17,115 +17,110 @@ console.log(`TODO: Fetch endpoint with id: ${id}`)
 // Replace me 👇
 import fleet from '@json/page/fleets/history/fleet_200.json';
 
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-
 import Wrapper from '@components/compositions/Wrapper.astro';
-import Viewport from '@layouts/Viewport.astro';
-import Button from '@components/blocks/Button.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
 import FleetComposition from '@components/blocks/FleetComposition.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
+
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 const page_title = `${t('fleet')} ${fleet.name}`;
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/fleets-cover.jpg"
-        image_990="/images/fleets-cover-990.jpg"
-        alt={t('fleets.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main id="content">
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                </FlexInline>
-                <FlexInline>
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/history')}>
-                        <FleetIcon slot="icon" />
-                        {t('fleet_history')}
-                    </Button>
-                    <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add')}>
-                        <AddIcon slot="icon" />
-                        {t('schedule_fleet')}
-                    </Button>
-                </FlexInline>
+    <PageDefault
+        cover={{
+            image: "/images/fleets-cover.jpg",
+            image_990: "/images/fleets-cover-990.jpg",
+            alt: t('fleets.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/history')}>
+                    <FleetIcon slot="icon" />
+                    {t('fleet_history')}
+                </Button>
+                <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add')}>
+                    <AddIcon slot="icon" />
+                    {t('schedule_fleet')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-                <Flexblock gap="var(--space-3xs)">
-                    <ComponentBlock>
-                        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                            <h2>{t('fleet_information')}</h2>
-    
-                            <VerticalCenter>
-                                <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                    <h4>{t('fleet_commander')}</h4>
-                                    <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
-                                        <img src={fleet.fleet_commander_portrait} width="32" height="32" />
-                                        <p>{fleet.fleet_commander_name}</p>
-                                    </FixedFluid>
-                                </Flexblock>
-                            </VerticalCenter>
-    
-                            <VerticalCenter>
-                                <TextGroup title={t('tracking')} class:list={ { loading: (fleet.tracking == t('forming')) } }>
-                                    {fleet.tracking}
-                                </TextGroup>
-                            </VerticalCenter>
+        <Flexblock gap="var(--space-3xs)">
+            <ComponentBlock>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{t('fleet_information')}</h2>
+
+                    <VerticalCenter>
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <h4>{t('fleet_commander')}</h4>
+                            <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
+                                <img src={fleet.fleet_commander_portrait} width="32" height="32" />
+                                <p>{fleet.fleet_commander_name}</p>
+                            </FixedFluid>
                         </Flexblock>
-                    </ComponentBlock>
-                    
-                    <ComponentBlock>
-                        <DoctrineItem doctrine={fleet.doctrine} />
-                    </ComponentBlock>
+                    </VerticalCenter>
 
-                    <ComponentBlock>
-                        <Flexblock gap="var(--space-l)" x-data={`{ global_collapse: false }`}>
-                            <FlexInline justification='space-between' gap="var(--space-s)">
-                                <Flexblock gap="var(--space-3xs)">
-                                    <h2>{t('members')}</h2>
-                                    {fleet.members != -1 &&
-                                        <small class="!mt-[var(--space-3xs)]">{fleet.members} pilot{fleet.members > 1 && `s`}</small>
-                                    }
-                                </Flexblock>
+                    <VerticalCenter>
+                        <TextGroup title={t('tracking')} class:list={ { loading: (fleet.tracking == t('forming')) } }>
+                            {fleet.tracking}
+                        </TextGroup>
+                    </VerticalCenter>
+                </Flexblock>
+            </ComponentBlock>
+            
+            <ComponentBlock>
+                <DoctrineItem doctrine={fleet.doctrine} />
+            </ComponentBlock>
 
-                                {fleet.composition.length > 0 &&
-                                    <Button size='sm' @click="global_collapse = true" class="[ hidden sm:block ]">
-                                        {t('collapse_all')}
-                                    </Button>
-                                }
-                            </FlexInline>
-
-                            {fleet.composition.length == 0 && <p>{t('members_visibility_hint')}</p>}
-
-                            {fleet.composition.length > 0 &&
-                                <FleetComposition composition={fleet.composition} />
+            <ComponentBlock>
+                <Flexblock gap="var(--space-l)" x-data={`{ global_collapse: false }`}>
+                    <FlexInline justification='space-between' gap="var(--space-s)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('members')}</h2>
+                            {fleet.members != -1 &&
+                                <small class="!mt-[var(--space-3xs)]">{fleet.members} pilot{fleet.members > 1 && `s`}</small>
                             }
                         </Flexblock>
-                    </ComponentBlock>
+
+                        {fleet.composition.length > 0 &&
+                            <Button size='sm' @click="global_collapse = true" class="[ hidden sm:block ]">
+                                {t('collapse_all')}
+                            </Button>
+                        }
+                    </FlexInline>
+
+                    {fleet.composition.length == 0 && <p>{t('members_visibility_hint')}</p>}
+
+                    {fleet.composition.length > 0 &&
+                        <FleetComposition composition={fleet.composition} />
+                    }
                 </Flexblock>
-            </Wrapper>
-        </PageBody>
-	</main>
+            </ComponentBlock>
+        </Flexblock>
+    </PageDefault>
 </Viewport>

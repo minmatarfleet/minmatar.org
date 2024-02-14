@@ -193,3 +193,12 @@ export interface HXDialogOptions {
     target?:    string;
     swap?:      string;
 }
+
+export interface PageCoverOptions {
+    image:          string;
+    image_990:      string;
+    alt?:           string;
+    animated?:      boolean;
+    scrollable?:    boolean;
+    overlay?:       boolean;
+}

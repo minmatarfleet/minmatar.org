@@ -8,11 +8,13 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FitSlot from '@components/blocks/FitSlot.astro';
 
 interface Props {
-    fitting: string;
+    fitting:    string;
+    max_width?: string;
 }
 
 const {
     fitting,
+    max_width = 'var(--max-text-width)',
 } = Astro.props
 
 const fitting_groups:FittingGroups[] = parse_structure_fit(fitting)
@@ -25,7 +27,7 @@ const fitting_groups:FittingGroups[] = parse_structure_fit(fitting)
             class="[ card component ][ light-transparency ]"
             padding_block='var(--space-l)'
             padding_inline='var(--space-l-xl)'
-            max_width="var(--max-col-width)"
+            max_width={max_width}
         >
             <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                 <h2>{fitting_group.name}</h2>

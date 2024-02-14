@@ -1,0 +1,31 @@
+---
+import Wrapper from '@components/compositions/Wrapper.astro';
+import PageHeader from '@components/page/partials/PageHeader.astro';
+import PageBody from '@components/page/partials/PageBody.astro';
+import PageCover from '@components/page/partials/PageCover.astro';
+
+import type { PageCoverOptions } from '@dtypes/layout_components'
+
+interface Props {
+    cover?:                 false | PageCoverOptions;
+    [propName: string]:     any;
+}
+
+const {
+    cover,
+    ...attributes
+} = Astro.props;
+---
+<main id="content" {...attributes}>
+    {cover && <PageCover {...cover} /> }
+
+    <PageHeader max_width="var(--max-content-width)">
+        <slot name="header" />
+    </PageHeader>
+
+    <PageBody max_width="var(--max-content-width)">
+        <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+            <slot />
+        </Wrapper>
+    </PageBody>
+</main>
