@@ -22,9 +22,10 @@ import structure from '@json/page/intel/structures/y9_mdg_blaster.json';
 
 import { get_item_icon } from '@helpers/eve_image_server';
 
+import PageAside from '@components/page/PageAside.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
@@ -32,10 +33,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Input from '@components/blocks/Input.astro';
@@ -47,17 +45,15 @@ const page_title = t('intel.add_structure.page_title');
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/intel-cover.jpg"
-        image_990="/images/intel-cover-990.jpg"
-        alt={t('intel.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main 
-        id="content"
+    <PageAside
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
         x-data={`{
             structure_type: 'astrahus',
             structure_name: '',
@@ -77,164 +73,155 @@ const page_title = t('intel.add_structure.page_title');
 
                 return structure_ids[name]
             }
-        }`}>
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
-                    <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />
-                </FlexInline>
-                <FlexInline>
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
-                        <MagnifierIcon slot="icon" />
-                        {t('view_structures')}
-                    </Button>
-                </FlexInline>
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
+                <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_structures')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <Flexblock gap='var(--space-xl)'>
-                        <ComponentBlock>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('structure_information')}</h2>
+        <Flexblock gap='var(--space-xl)'>
+            <ComponentBlock>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{t('structure_information')}</h2>
 
-                                <form
-                                    method="POST"
-                                    x-data={`{
-                                        'submitted': false
-                                    }`}
-                                    x-on:submit.prevent="submitted = true;"
-                                >
-                                    <Flexblock>
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="structure_name">{t('structure_name')}</label>
-                                                <Input id="structure_name" name="structure_name" type="text" x-model="structure_name" required />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="structure_type">{t('structure_type')}</label>
-                                                <FixedFluid
-                                                    class="[ w-full items-center ]"
-                                                    gap="0"
-                                                    width="64px"
-                                                    breakpoint="60%"
-                                                >
-                                                    <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
-                                                    <Select id="structure_type" x-model="structure_type">
-                                                        <option value="astrahus">Astrahus</option>
-                                                        <option value="fortizar">Fortizar</option>
-                                                        <option value="keepstar">Keepstar</option>
-                                                        <option value="raitaru">Raitaru</option>
-                                                        <option value="azbel">Azbel</option>
-                                                        <option value="sotiyo">Sotiyo</option>
-                                                        <option value="athanor">Athanor</option>
-                                                        <option value="tatara">Tatara</option>
-                                                        <option value="ansiblex">Ansiblex Jump Gate</option>
-                                                        <option value="pharolux">Pharolux Cyno Beacon</option>
-                                                    </Select>
-                                                </FixedFluid>
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="system">{t('system')}</label>
-                                                <Input id="system" name="system" type="text" required />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="corporation_name">{t('corporation_name')}</label>
-                                                <Input id="corporation_name" name="corporation_name" type="text" />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="alliance_name">{t('alliance_name')}</label>
-                                                <Input id="alliance_name" name="alliance_name" type="text" />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="related_alliance_name">{t('related_alliance_name')}</label>
-                                                <Input id="related_alliance_name" name="related_alliance_name" type="text" required />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                                <label for="timer">{t('timer')}</label>
-                                                <Input
-                                                    id="timer"
-                                                    name="timer"
-                                                    type="text"
-                                                    x-model="timer"
-                                                    x-mask:dynamic="timer_mask($input)"
-                                                    x-on:keyup="timer = (parseInt((timer.split(':')[1] ?? '').substring(0, 1)) > 5) ? timer.slice(0, -1) : timer"
-                                                    x-data={`{
-                                                        timer: '',
-                                                        timer_mask(input) {
-                                                            const slices = input.split(':')
-                                                                                                                
-                                                            if (typeof slices[1] != typeof undefined)
-                                                                return slices[0]+':99'
-
-                                                            return '999:99'
-                                                        }
-                                                     }`}
-                                                    x-model="timer"
-                                                    placeholder="HHH:MM"
-                                                    required
-                                                />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <VerticalCenter>
-                                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                                <label for="fitting">{t('fitting')}</label>
-                                                <Textarea id="fitting" name="fitting" rows="10" required />
-                                            </FixedFluid>
-                                        </VerticalCenter>
-
-                                        <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('add_structure')}</Button>
-                                    </Flexblock>
-                                </form>
-                            </Flexblock>
-                        </ComponentBlock>
-                    </Flexblock>
-                </Wrapper>
-
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <ComponentBlock class="sticky top-[var(--sticky-top)]">
+                    <form
+                        method="POST"
+                        x-data={`{
+                            'submitted': false
+                        }`}
+                        x-on:submit.prevent="submitted = true;"
+                    >
                         <Flexblock>
-                            <FixedFluid width="48" class="[ items-center ]">
-                                <TutorialIcon />
-                                <h2>{t('intel.tutrial.page_title')}</h2>
-                            </FixedFluid>
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="structure_name">{t('structure_name')}</label>
+                                    <Input id="structure_name" name="structure_name" type="text" x-model="structure_name" required />
+                                </FixedFluid>
+                            </VerticalCenter>
 
-                            <p>{t('intel.tutrial.leading_text')}</p>
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="structure_type">{t('structure_type')}</label>
+                                    <FixedFluid
+                                        class="[ w-full items-center ]"
+                                        gap="0"
+                                        width="64px"
+                                        breakpoint="60%"
+                                    >
+                                        <img height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
+                                        <Select id="structure_type" x-model="structure_type">
+                                            <option value="astrahus">Astrahus</option>
+                                            <option value="fortizar">Fortizar</option>
+                                            <option value="keepstar">Keepstar</option>
+                                            <option value="raitaru">Raitaru</option>
+                                            <option value="azbel">Azbel</option>
+                                            <option value="sotiyo">Sotiyo</option>
+                                            <option value="athanor">Athanor</option>
+                                            <option value="tatara">Tatara</option>
+                                            <option value="ansiblex">Ansiblex Jump Gate</option>
+                                            <option value="pharolux">Pharolux Cyno Beacon</option>
+                                        </Select>
+                                    </FixedFluid>
+                                </FixedFluid>
+                            </VerticalCenter>
 
-                            <ButtonStack>
-                                <Button href={translatePath('/intel/tutorial/')}>
-                                    <PlayIcon slot="icon" />
-                                    {t('how_to_scan')}
-                                </Button>
-                            </ButtonStack>
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="system">{t('system')}</label>
+                                    <Input id="system" name="system" type="text" required />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="corporation_name">{t('corporation_name')}</label>
+                                    <Input id="corporation_name" name="corporation_name" type="text" />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="alliance_name">{t('alliance_name')}</label>
+                                    <Input id="alliance_name" name="alliance_name" type="text" />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="related_alliance_name">{t('related_alliance_name')}</label>
+                                    <Input id="related_alliance_name" name="related_alliance_name" type="text" required />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="timer">{t('timer')}</label>
+                                    <Input
+                                        id="timer"
+                                        name="timer"
+                                        type="text"
+                                        x-model="timer"
+                                        x-mask:dynamic="timer_mask($input)"
+                                        x-on:keyup="timer = (parseInt((timer.split(':')[1] ?? '').substring(0, 1)) > 5) ? timer.slice(0, -1) : timer"
+                                        x-data={`{
+                                            timer: '',
+                                            timer_mask(input) {
+                                                const slices = input.split(':')
+                                                                                                    
+                                                if (typeof slices[1] != typeof undefined)
+                                                    return slices[0]+':99'
+
+                                                return '999:99'
+                                            }
+                                            }`}
+                                        x-model="timer"
+                                        placeholder="HHH:MM"
+                                        required
+                                    />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <VerticalCenter>
+                                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                    <label for="fitting">{t('fitting')}</label>
+                                    <Textarea id="fitting" name="fitting" rows="10" required />
+                                </FixedFluid>
+                            </VerticalCenter>
+
+                            <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('add_structure')}</Button>
                         </Flexblock>
-                    </ComponentBlock>
-                </Wrapper>
-            </FixedFluid>
-        </PageBody>
-	</main>
+                    </form>
+                </Flexblock>
+            </ComponentBlock>
+        </Flexblock>
+
+        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)]">
+            <Flexblock>
+                <FixedFluid width="48" class="[ items-center ]">
+                    <TutorialIcon />
+                    <h2>{t('intel.tutrial.page_title')}</h2>
+                </FixedFluid>
+
+                <p>{t('intel.tutrial.leading_text')}</p>
+
+                <ButtonStack>
+                    <Button href={translatePath('/intel/tutorial/')}>
+                        <PlayIcon slot="icon" />
+                        {t('how_to_scan')}
+                    </Button>
+                </ButtonStack>
+            </Flexblock>
+        </ComponentBlock>
+    </PageAside>
 </Viewport>
 
 <style lang="scss">

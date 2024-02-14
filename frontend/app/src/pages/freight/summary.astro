@@ -15,119 +15,113 @@ import { number_name } from '@helpers/numbers.ts';
 
 import summaries from '@json/page/freight/summary.json';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
+import Context from '@components/layout/Context.astro';
 
 const page_title = t('freight.summary.page_title');
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/freight-service-cover.jpg"
-        image_990="/images/freight-service-cover-990.jpg"
-        alt={t('freight.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main id="content">
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                </FlexInline>
-                <FlexInline>
-                    <Button color={'green'} class="[ !hidden md:!flex ]" href={translatePath('/freight/standard/')}>
-                        <AddIcon slot="icon" />
-                        {t('standard_freight')}
-                    </Button>
-                    <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/freight/wormhole/')}>
-                        <AddIcon slot="icon" />
-                        {t('wormhole_freight')}
-                    </Button>
-                </FlexInline>
+    <PageDefault
+        cover={{
+            image: "/images/freight-service-cover.jpg",
+            image_990: "/images/freight-service-cover-990.jpg",
+            alt: t('freight.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button color={'green'} class="[ !hidden md:!flex ]" href={translatePath('/freight/standard/')}>
+                    <AddIcon slot="icon" />
+                    {t('standard_freight')}
+                </Button>
+                <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/freight/wormhole/')}>
+                    <AddIcon slot="icon" />
+                    {t('wormhole_freight')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                <Flexblock gap="var(--space-3xs)">
-                    <ComponentBlock>
-                        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                            <h2>{t('freight.summary.current_title')}</h2>
-                            <VerticalCenter>
-                                <TextGroup title={t('total_contracts')}>
-                                    {summaries.current.total_contracts.toLocaleString()}
-                                </TextGroup>
-                            </VerticalCenter>
+        <Context>
+            <ComponentBlock width='narrow'>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{t('freight.summary.current_title')}</h2>
+                    <VerticalCenter>
+                        <TextGroup title={t('total_contracts')}>
+                            {summaries.current.total_contracts.toLocaleString()}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                            <VerticalCenter>
-                                <TextGroup title={t('total_volume')}>
-                                    <span data-tippy-content={number_name(summaries.current.total_volume, lang)}>{summaries.current.total_volume.toLocaleString()}</span> m<sup>3</sup>
-                                </TextGroup>
-                            </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('total_volume')}>
+                            <span data-tippy-content={number_name(summaries.current.total_volume, lang)}>{summaries.current.total_volume.toLocaleString()}</span> m<sup>3</sup>
+                        </TextGroup>
+                    </VerticalCenter>
 
-                            <VerticalCenter>
-                                <TextGroup title={t('total_collateral')}>
-                                    <span data-tippy-content={number_name(summaries.current.total_collateral, lang)}>{summaries.current.total_collateral.toLocaleString()}</span> ISK
-                                </TextGroup>
-                            </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('total_collateral')}>
+                            <span data-tippy-content={number_name(summaries.current.total_collateral, lang)}>{summaries.current.total_collateral.toLocaleString()}</span> ISK
+                        </TextGroup>
+                    </VerticalCenter>
 
-                            <VerticalCenter>
-                                <TextGroup title={t('total_reward')}>
-                                    <span data-tippy-content={number_name(summaries.current.total_reward, lang)}>{summaries.current.total_reward.toLocaleString()}</span> ISK
-                                </TextGroup>
-                            </VerticalCenter>
-                        </Flexblock>
-                    </ComponentBlock>
-                    
-                    <ComponentBlock>
-                        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                            <h2>{t('freight.summary.historical_header')}</h2>
-                            <VerticalCenter>
-                                <TextGroup title={t('total_contracts')}>
-                                    {summaries.history.total_contracts.toLocaleString()}
-                                </TextGroup>
-                            </VerticalCenter>
-
-                            <VerticalCenter>
-                                <TextGroup title={t('total_volume')}>
-                                    <span data-tippy-content={number_name(summaries.history.total_volume, lang)}>{summaries.history.total_volume.toLocaleString()}</span> m<sup>3</sup>
-                                </TextGroup>
-                            </VerticalCenter>
-
-                            <VerticalCenter>
-                                <TextGroup title={t('total_collateral')}>
-                                    <span data-tippy-content={number_name(summaries.history.total_collateral, lang)}>{summaries.history.total_collateral.toLocaleString()}</span> ISK
-                                </TextGroup>
-                            </VerticalCenter>
-
-                            <VerticalCenter>
-                                <TextGroup title={t('total_reward')}>
-                                <span data-tippy-content={number_name(summaries.history.total_reward, lang)}>{summaries.history.total_reward.toLocaleString()}</span> ISK
-                                </TextGroup>
-                            </VerticalCenter>
-                        </Flexblock>
-                    </ComponentBlock>
+                    <VerticalCenter>
+                        <TextGroup title={t('total_reward')}>
+                            <span data-tippy-content={number_name(summaries.current.total_reward, lang)}>{summaries.current.total_reward.toLocaleString()}</span> ISK
+                        </TextGroup>
+                    </VerticalCenter>
                 </Flexblock>
-            </Wrapper>
-        </PageBody>
-	</main>
+            </ComponentBlock>
+            
+            <ComponentBlock width='narrow'>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{t('freight.summary.historical_header')}</h2>
+                    <VerticalCenter>
+                        <TextGroup title={t('total_contracts')}>
+                            {summaries.history.total_contracts.toLocaleString()}
+                        </TextGroup>
+                    </VerticalCenter>
+
+                    <VerticalCenter>
+                        <TextGroup title={t('total_volume')}>
+                            <span data-tippy-content={number_name(summaries.history.total_volume, lang)}>{summaries.history.total_volume.toLocaleString()}</span> m<sup>3</sup>
+                        </TextGroup>
+                    </VerticalCenter>
+
+                    <VerticalCenter>
+                        <TextGroup title={t('total_collateral')}>
+                            <span data-tippy-content={number_name(summaries.history.total_collateral, lang)}>{summaries.history.total_collateral.toLocaleString()}</span> ISK
+                        </TextGroup>
+                    </VerticalCenter>
+
+                    <VerticalCenter>
+                        <TextGroup title={t('total_reward')}>
+                        <span data-tippy-content={number_name(summaries.history.total_reward, lang)}>{summaries.history.total_reward.toLocaleString()}</span> ISK
+                        </TextGroup>
+                    </VerticalCenter>
+                </Flexblock>
+            </ComponentBlock>
+        </Contex>
+    </PageDefault>
 </Viewport>
 
 <style lang="scss">

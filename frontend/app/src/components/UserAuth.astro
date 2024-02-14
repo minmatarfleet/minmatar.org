@@ -8,12 +8,10 @@ const translatePath = useTranslatedPath(lang);
 import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
-    title?:  string;
     active?: boolean;
 }
 
 const {
-    title = "",
     active = false,
 } = Astro.props;
 
@@ -22,11 +20,18 @@ import { get_auth_url } from '@helpers/env'
 const href = Astro.cookies.has('auth_token') ? translatePath('/account/') : get_auth_url()
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.character_id) : null
+const primary_pilot_name = primary_pilot ? primary_pilot.character_name : null
 const portrait = primary_pilot_avatar ?? (Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : "https://images.evetech.net/characters/1/portrait?size=64")
 ---
 
 <a href={href} class:list={[ { active: active } ]}>
-    <img class="confetti-image" src={portrait} width="48" height="48" alt="Beautiful Mim" />
+    <img
+        class="confetti-image"
+        src={portrait}
+        width="48"
+        height="48"
+        alt={primary_pilot_name ? primary_pilot_name : t('unknown_pilot')}
+    />
 </a>
 
 <style lang="scss">

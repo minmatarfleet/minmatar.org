@@ -13,19 +13,20 @@ if (is_prod_mode())
 
 import structures from '@json/page/intel/structures.json';
 
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StructureListItem from '@components/blocks/StructureListItem.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
-import Viewport from '@layouts/Viewport.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import StructureListItem from '@components/blocks/StructureListItem.astro';
 import Button from '@components/blocks/Button.astro';
+
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 const page_title = t('intel.structures.page_title');
@@ -48,116 +49,113 @@ for (let i in regions)
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/intel-cover.jpg"
-        image_990="/images/intel-cover-990.jpg"
-        alt={t('intel.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main id="content" x-data={`{
-        structure_name_filter: '',
-        alliance_filter: '-1',
-        region_filter: '-1',
-        structure_count: '${structures.length}',
-        text_filter(el) {
-            let hit = false;
-            const content_to_filter = el.querySelectorAll('p')
-
-            content_to_filter.forEach((p) => {
-                if (p.textContent.toLowerCase().includes(this.structure_name_filter.toLowerCase())) {
-                    hit = true
-                    return false
-                }
-            })
-            return hit;
-        },
-        show_item(el) {
-            const content_to_filter = el.querySelectorAll('p')
-            const show_item =   (
-                                    (this.structure_name_filter === '' || this.text_filter(el)) &&
-                                    (this.alliance_filter == '-1' || content_to_filter[0].textContent.includes(this.alliance_filter)) &&
-                                    (this.region_filter == '-1' || content_to_filter[3].textContent.includes(this.region_filter))
-                                )
-
-            return show_item
-        }
-    }`}>
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <Flexblock gap="var(--space-3xs)">
-                        <PageTitle>
-                            {page_title}
-                        </PageTitle>
-                        <small x-text={'`'+t('showing')+' ${structure_count} '+t('structure').toLowerCase()+'${structure_count != 1 ? `s` : ``}`'}>
-                            {t('showing')} {structures.length} {t('structure').toLowerCase()}{structures.length != 1 ? 's' : ''}
-                        </small>
-                    </Flexblock>
-                </FlexInline>
-                <FlexInline class="[ !items-start ]">
-                    <Input type="text"
-                        placeholder={t('filter')}
-                        x-model="structure_name_filter"
-                        x-on:keyup="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length })"
-                    >
-                        <MagnifierIcon slot="icon" />
-                    </Input>
-                    
-                    <div class="[ hidden 2xl:block ]">
-                        <Select
-                            x-model="region_filter"
-                            x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"
-                        >
-                            <option selected value="-1">Region</option>
-                            {region_filter.map((region) =>
-                                <option value={region}>{region}</option>    
-                            )}
-                        </Select>
-                    </div>
-
-                    <div class="[ hidden xl:block ]">
-                        <Select
-                            x-model="alliance_filter"
-                            x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"
-                        >
-                            <option selected value="-1">Alliance</option>
-                            {alliance_filter.map((alliance) =>
-                                <option value={alliance}>{alliance}</option>    
-                            )}
-                        </Select>
-                    </div>
-                </FlexInline>
+    <PageWide
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            structure_name_filter: '',
+            alliance_filter: '-1',
+            region_filter: '-1',
+            structure_count: '${structures.length}',
+            text_filter(el) {
+                let hit = false;
+                const content_to_filter = el.querySelectorAll('p')
+    
+                content_to_filter.forEach((p) => {
+                    if (p.textContent.toLowerCase().includes(this.structure_name_filter.toLowerCase())) {
+                        hit = true
+                        return false
+                    }
+                })
+                return hit;
+            },
+            show_item(el) {
+                const content_to_filter = el.querySelectorAll('p')
+                const show_item =   (
+                                        (this.structure_name_filter === '' || this.text_filter(el)) &&
+                                        (this.alliance_filter == '-1' || content_to_filter[0].textContent.includes(this.alliance_filter)) &&
+                                        (this.region_filter == '-1' || content_to_filter[3].textContent.includes(this.region_filter))
+                                    )
+    
+                return show_item
+            }
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text={'`'+t('showing')+' ${structure_count} '+t('structure').toLowerCase()+'${structure_count != 1 ? `s` : ``}`'}>
+                        {t('showing')} {structures.length} {t('structure').toLowerCase()}{structures.length != 1 ? 's' : ''}
+                    </small>
+                </Flexblock>
             </FlexInline>
-        </PageHeader>
-
-        <PageBody max_width="var(--max-content-width)">
-            <Flexblock role="list" gap='0' class="[ filtered-list ]">
-
-                {structures.length == 0 &&
-                    <Flexblock gap='var(--space-xl)' class="text-center">
-                        <p>{t('intel.structures.empty_message')}</p>
-                        
-                        <Button color={'green'} href={translatePath('/intel/add_structure/')} class="!justify-center">
-                            <AddIcon slot="icon" />
-                            {t('add_structure')}
-                        </Button>
-                    </Flexblock>
-                }
-
-                {structures.map((structure) =>
-                    <StructureListItem role="listitem" class="[ structure-item ]" structure={structure} x-show="show_item($el)" />
-                )}
+            <FlexInline class="[ !items-start ]">
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="structure_name_filter"
+                    x-on:keyup="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length })"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
                 
-                {structures.length > 0 &&
-                    <p class="[ text-center ]">{t('no_results')}</p>
-                }
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="region_filter"
+                        x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"
+                    >
+                        <option selected value="-1">Region</option>
+                        {region_filter.map((region) =>
+                            <option value={region}>{region}</option>    
+                        )}
+                    </Select>
+                </div>
 
-            </Flexblock>
-        </PageBody>
-	</main>
+                <div class="[ hidden xl:block ]">
+                    <Select
+                        x-model="alliance_filter"
+                        x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"
+                    >
+                        <option selected value="-1">Alliance</option>
+                        {alliance_filter.map((alliance) =>
+                            <option value={alliance}>{alliance}</option>    
+                        )}
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock role="list" gap='0' class="[ filtered-list ]">
+
+            {structures.length == 0 &&
+                <Flexblock gap='var(--space-xl)' class="text-center">
+                    <p>{t('intel.structures.empty_message')}</p>
+                    
+                    <Button color={'green'} href={translatePath('/intel/add_structure/')} class="!justify-center">
+                        <AddIcon slot="icon" />
+                        {t('add_structure')}
+                    </Button>
+                </Flexblock>
+            }
+
+            {structures.map((structure) =>
+                <StructureListItem role="listitem" class="[ structure-item ]" structure={structure} x-show="show_item($el)" />
+            )}
+            
+            {structures.length > 0 &&
+                <p class="[ text-center ]">{t('no_results')}</p>
+            }
+
+        </Flexblock>
+    </PageWide>
 </Viewport>
 
 <style lang="scss">

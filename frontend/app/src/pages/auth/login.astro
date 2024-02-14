@@ -1,15 +1,13 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import * as jose from 'jose'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
-let error = null
 let token = null
 let user = null
 try {

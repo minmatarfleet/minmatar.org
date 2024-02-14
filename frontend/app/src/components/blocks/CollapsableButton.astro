@@ -1,16 +1,11 @@
 ---
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
-
-interface Props {
-
-}
 ---
 
 <button {...Astro.props}>
     <FluidFixed width="20px" gap="var(--space-s)" class="[ items-center ]">
         <slot />
-
         <CaretIcon :class="expanded ? '' : 'collapsed'" />
     </FluidFixed>
 </button>

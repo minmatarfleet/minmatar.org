@@ -5,13 +5,14 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-import Button from '@components/blocks/Button.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
 
-import PageCover from '@components/page/PageCover.astro';
+import PageLanding from '@components/page/PageLanding.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import Button from '@components/blocks/Button.astro';
 
 const page_title = t('404.page_title');
 const content_title = t('404.content_title');
@@ -19,30 +20,28 @@ const page_description = t('404.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description} neocom={false}>
-    <PageCover
-        image="/images/404-cover.jpg"
-        image_990="/images/404-cover-990.jpg"
-        alt={t('404.cover_alt')}
-        animated={false}
-        overlay={true}
-    />
-
-	<main id="content">
-		<Wrapper max_width="var(--max-text-width)" neocom={true}>
-            <Flexblock gap='var(--space-2xl)'>
-                <Flexblock>
-                    <h1>{content_title}</h1>
-                    <p>{page_description}</p>
-                </Flexblock>
-
-                <ButtonStack>
-                    <Button color={'fleet-red'} href={translatePath('/')}>
-                        {t('back_to_safe')}
-                    </Button>
-                </ButtonStack>
+    <PageLanding
+        cover={{
+            image: "/images/404-cover.jpg",
+            image_990: "/images/404-cover-990.jpg",
+            alt: t('404.cover_alt'),
+            animated: false,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Flexblock>
+                <h1>{content_title}</h1>
+                <p>{page_description}</p>
             </Flexblock>
-		</Wrapper>
-	</main>
+
+            <ButtonStack>
+                <Button color={'fleet-red'} href={translatePath('/')}>
+                    {t('back_to_safe')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    </PageLanding>
 </Viewport>
 
 <style lang="scss">

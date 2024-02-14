@@ -4,17 +4,22 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 interface Props {
     videoid:        string;
     videotitle?:    string;
-    credits?:       string;
+    credits?:       false | string;
 }
 
 const {
     videoid,
     videotitle = 'YouTube video player',
-    credits,
+    credits = false,
 } = Astro.props
 ---
 
-<Wrapper class="[ shadow relative ]" max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
+<Wrapper
+    class="[ shadow relative ]"
+    max_width="var(--max-col-width)"
+    padding_inline="0"
+    padding_block="0"
+>
     <div class="[ video-frame w-full ]">
         <lite-youtube
             class="[ max-w-full h-full w-full ]"
@@ -23,7 +28,7 @@ const {
             posterquality="maxresdefault"
         />
     </div>
-    {credits && <p>Credits: <span>{credits}</span></p>}
+    {credits !== false && <p>Credits: <span>{credits}</span></p>}
 </Wrapper>
 
 <script>

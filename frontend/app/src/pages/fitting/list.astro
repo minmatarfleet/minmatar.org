@@ -1,9 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -29,33 +28,35 @@ for (let i in fitting_type)
 for (let i in ship_type)
     ship_type_filter.push(ship_type[i])
 
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import FitItem from '@components/blocks/FitItem.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
-import Viewport from '@layouts/Viewport.astro';
+
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import FitItem from '@components/blocks/FitItem.astro';
 
 const page_title = t('fitting.list.page_title');
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/fits-cover.jpg"
-        image_990="/images/fits-cover-990.jpg"
-        alt={t('fitting.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
-
-	<main id="content" x-data={`{
+    <PageWide
+        cover={{
+            image: "/images/fits-cover.jpg",
+            image_990: "/images/fits-cover-990.jpg",
+            alt: t('fitting.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
             fitting_name_filter: '',
             fitting_type_filter: '-1',
             ship_type_filter: '-1',
@@ -72,65 +73,61 @@ const page_title = t('fitting.list.page_title');
             }
         }`}
     >
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <Flexblock gap="var(--space-3xs)">
-                        <PageTitle>
-                            {page_title}
-                        </PageTitle>
-                        <small x-text={'`'+t('showing')+' ${fits_count} '+t('fitting').toLowerCase()+'${fits_count != 1 ? `s` : ``}`'}>
-                            {t('showing')} {fits.length} {t('fitting').toLowerCase()}{fits.length != 1 ? 's' : ''}
-                        </small>
-                    </Flexblock>
-                </FlexInline>
-                <FlexInline class="[ !items-start ]">
-                    <Input type="text"
-                        placeholder={t('filter')}
-                        x-model="fitting_name_filter"
-                        x-on:keyup="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length })"
-                    >
-                        <MagnifierIcon slot="icon" />
-                    </Input>
-                    
-                    <div class="[ hidden 2xl:block ]">
-                        <Select
-                            x-model="fitting_type_filter"
-                            x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
-                        >
-                            <option selected value="-1">{t('fitting_type')}</option>
-                            {fitting_type_filter.map((option) => 
-                                <option value={option}>{option}</option>
-                            )}
-                        </Select>
-                    </div>
-
-                    <div class="[ hidden xl:block ]">
-                        <Select
-                            x-model="ship_type_filter"
-                            x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
-                        >
-                            <option selected value="-1">{t('ship_type')}</option>
-                            {ship_type_filter.map((option) => 
-                                <option value={option}>{option}</option>
-                            )}
-                        </Select>
-                    </div>
-                </FlexInline>
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text={'`'+t('showing')+' ${fits_count} '+t('fitting').toLowerCase()+'${fits_count != 1 ? `s` : ``}`'}>
+                        {t('showing')} {fits.length} {t('fitting').toLowerCase()}{fits.length != 1 ? 's' : ''}
+                    </small>
+                </Flexblock>
             </FlexInline>
-        </PageHeader>
-
-        <PageBody max_width="var(--max-content-width)">
-            <Flexblock role="list" gap='0' class="[ filtered-list ]">
-                {fits.map((fit) =>
-                    <FitItem role="listitem" class="[ fit-item ]" fit={fit} x-show="show_item($el)" />
-                )}
+            <FlexInline class="[ !items-start ]">
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="fitting_name_filter"
+                    x-on:keyup="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length })"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
                 
-                <p class="[ text-center ]">{t('no_results')}</p>
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="fitting_type_filter"
+                        x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
+                    >
+                        <option selected value="-1">{t('fitting_type')}</option>
+                        {fitting_type_filter.map((option) => 
+                            <option value={option}>{option}</option>
+                        )}
+                    </Select>
+                </div>
 
-            </Flexblock>
-        </PageBody>
-	</main>
+                <div class="[ hidden xl:block ]">
+                    <Select
+                        x-model="ship_type_filter"
+                        x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
+                    >
+                        <option selected value="-1">{t('ship_type')}</option>
+                        {ship_type_filter.map((option) => 
+                            <option value={option}>{option}</option>
+                        )}
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock role="list" gap='0' class="[ filtered-list ]">
+            {fits.map((fit) =>
+                <FitItem role="listitem" class="[ fit-item ]" fit={fit} x-show="show_item($el)" />
+            )}
+            
+            <p class="[ text-center ]">{t('no_results')}</p>
+
+        </Flexblock>
+    </PageWide>
 </Viewport>
 
 <style lang="scss">

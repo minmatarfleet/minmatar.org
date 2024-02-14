@@ -30,11 +30,12 @@ export interface FitItem {
     href:         string;
 }
 
-export interface DoctrineItem {
-    doctrine_name: string;
-    href:          string;
-    tags:          Tag[];
-    fits:         Fit[];
+export interface DoctrineItemObj {
+    doctrine_name:  string;
+    href:           string;
+    id:             number;
+    tags:           Tag[];
+    fits:           Fit[];
 }
 
 export interface Fit {
@@ -191,4 +192,19 @@ export interface HXDialogOptions {
     url?:       string;
     target?:    string;
     swap?:      string;
+}
+
+export interface PageCoverOptions {
+    image:          string;
+    image_990:      string;
+    alt?:           string;
+    animated?:      boolean;
+    scrollable?:    boolean;
+    overlay?:       boolean;
+}
+
+export interface PageVideoOptions {
+    id:        string;
+    title:     string;
+    credits?:  string;
 }

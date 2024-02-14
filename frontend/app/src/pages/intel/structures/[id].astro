@@ -19,150 +19,141 @@ import structure from '@json/page/intel/structures/y9_mdg_blaster.json';
 
 import { get_item_icon, get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+
+import PageAside from '@components/page/PageAside.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StructureFit from '@components/blocks/StructureFit.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Button from '@components/blocks/Button.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
-import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import StructureFit from '@components/blocks/StructureFit.astro';
-
-import PageCover from '@components/page/PageCover.astro';
-import PageHeader from '@components/page/PageHeader.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-import PageBody from '@components/page/PageBody.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
 
 const page_title = structure.name;
 ---
 
 <Viewport title={page_title}>
-    <PageCover
-        image="/images/intel-cover.jpg"
-        image_990="/images/intel-cover-990.jpg"
-        alt={t('intel.cover_alt')}
-        animated={false}
-        scrollable={true}
-        overlay={true}
-    />
+    <PageAside
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
 
-	<main id="content">
-        <PageHeader max_width="var(--max-content-width)">
-            <FlexInline justification='space-between'>
-                <FlexInline>
-                    <img height="64" width="64" src={get_item_icon(structure.id)} alt={structure.type} />
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                </FlexInline>
-                <FlexInline>
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
-                        <MagnifierIcon slot="icon" />
-                        {t('view_structures')}
-                    </Button>
-                    <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/intel/add_structure/')}s>
-                        <AddIcon slot="icon" />
-                        {t('add_structure')}
-                    </Button>
-                </FlexInline>
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <img height="64" width="64" src={get_item_icon(structure.id)} alt={structure.type} />
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
-        </PageHeader>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_structures')}
+                </Button>
+                <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/intel/add_structure/')}s>
+                    <AddIcon slot="icon" />
+                    {t('add_structure')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
 
-        <PageBody max_width="var(--max-content-width)">
-            <FixedFluid width="var(--max-text-width)" breakpoint="30%" gap="var(--space-xl)">
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <Flexblock gap='var(--space-xl)'>
-                        <ComponentBlock>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('structure_information')}</h2>
+        <Flexblock gap='var(--space-xl)'>
+            <ComponentBlock width='narrow'>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{t('structure_information')}</h2>
 
-                                <VerticalCenter>
-                                    <TextGroup title={t('system')}>
-                                        {structure.system}
-                                    </TextGroup>
-                                </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('system')}>
+                            {structure.system}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                                <VerticalCenter>
-                                    <TextGroup title={t('constellation')}>
-                                        {structure.constellation}
-                                    </TextGroup>
-                                </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('constellation')}>
+                            {structure.constellation}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                                <VerticalCenter>
-                                    <TextGroup title={t('region')}>
-                                        {structure.region}
-                                    </TextGroup>
-                                </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('region')}>
+                            {structure.region}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                                <VerticalCenter>
-                                    <TextGroup title={t('corporation')}>
-                                        {structure.corporation}
-                                    </TextGroup>
-                                </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('corporation')}>
+                            {structure.corporation}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                                <VerticalCenter>
-                                    <TextGroup title={t('timer')}>
-                                        {structure.timer}
-                                    </TextGroup>
-                                </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('timer')}>
+                            {structure.timer}
+                        </TextGroup>
+                    </VerticalCenter>
 
-                                <VerticalCenter>
-                                    <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                        <h4>{t('corporation')}</h4>
+                    <VerticalCenter>
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <h4>{t('corporation')}</h4>
 
-                                        <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
-                                            <img src={get_corporation_logo(structure.corporation_id)} width="32" height="32" />
-                                            <p>{structure.corporation}</p>
-                                        </FixedFluid>
-                                    </Flexblock>
-                                </VerticalCenter>
-
-                                <VerticalCenter>
-                                    <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                        <h4>{t('alliance')}</h4>
-
-                                        <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
-                                            <img src={get_alliance_logo(structure.alliance_id)} width="32" height="32" />
-                                            <p>{structure.alliance}</p>
-                                        </FixedFluid>
-                                    </Flexblock>
-                                </VerticalCenter>
-                            </Flexblock>
-                        </ComponentBlock>
-                            
-                        <StructureFit fitting={structure.fitting} />
-                    </Flexblock>
-                </Wrapper>
-
-                <Wrapper max_width="var(--max-text-width)" padding_inline="0" padding_block="0">
-                    <ComponentBlock class="sticky top-[var(--sticky-top)]">
-                        <Flexblock>
-                            <FixedFluid width="48" class="[ items-center ]">
-                                <TutorialIcon />
-                                <h2>{t('intel.tutrial.page_title')}</h2>
+                            <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
+                                <img src={get_corporation_logo(structure.corporation_id)} width="32" height="32" />
+                                <p>{structure.corporation}</p>
                             </FixedFluid>
-
-                            <p>{t('intel.tutrial.leading_text')}</p>
-
-                            <ButtonStack>
-                                <Button href={translatePath('/intel/tutorial/')}>
-                                    <PlayIcon slot="icon" />
-                                    {t('how_to_scan')}
-                                </Button>
-                            </ButtonStack>
                         </Flexblock>
-                    </ComponentBlock>
-                </Wrapper>
-            </FixedFluid>
-        </PageBody>
-	</main>
+                    </VerticalCenter>
+
+                    <VerticalCenter>
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <h4>{t('alliance')}</h4>
+
+                            <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
+                                <img src={get_alliance_logo(structure.alliance_id)} width="32" height="32" />
+                                <p>{structure.alliance}</p>
+                            </FixedFluid>
+                        </Flexblock>
+                    </VerticalCenter>
+                </Flexblock>
+            </ComponentBlock>
+                
+            <StructureFit fitting={structure.fitting} />
+        </Flexblock>
+
+        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)]">
+            <Flexblock>
+                <FixedFluid width="48" class="[ items-center ]">
+                    <TutorialIcon />
+                    <h2>{t('intel.tutrial.page_title')}</h2>
+                </FixedFluid>
+
+                <p>{t('intel.tutrial.leading_text')}</p>
+
+                <ButtonStack>
+                    <Button href={translatePath('/intel/tutorial/')}>
+                        <PlayIcon slot="icon" />
+                        {t('how_to_scan')}
+                    </Button>
+                </ButtonStack>
+            </Flexblock>
+        </ComponentBlock>
+    </PageAside>
 </Viewport>
 
 <style lang="scss">
