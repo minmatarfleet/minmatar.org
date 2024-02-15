@@ -31,6 +31,7 @@ class AuthBearer(HttpBearer):
 
 @router.get(
     "/login",
+    deprecated=True,
     summary="Login with discord",
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
@@ -41,6 +42,7 @@ def login(request, redirect_url: str):
 
 @router.delete(
     "/delete",
+    deprecated=True,
     summary="Delete account and all associated data",
     description="This will delete the user account and all associated data. This action is irreversible.",
     auth=AuthBearer(),
