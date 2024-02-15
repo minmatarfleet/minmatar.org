@@ -2,7 +2,7 @@ from ninja import Router
 from pydantic import BaseModel
 from .models import EveCorporationApplication
 from eveonline.models import EveCharacter
-from authentication import AuthBearer, requires_permission
+from authentication import AuthBearer
 from typing import List
 from datetime import datetime
 

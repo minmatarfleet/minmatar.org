@@ -3,30 +3,22 @@ from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.shortcuts import redirect
 from ninja import Router
-from ninja.security import HttpBearer
+from authentication import AuthBearer
 
 from discord.client import DiscordClient
 from discord.models import DiscordUser
+from .schemas import UserProfileSchema
+from .helpers import get_user_profile
+from pydantic import BaseModel
+
 
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 router = Router(tags=["Authentication"])
 discord = DiscordClient()
 
 
-class AuthBearer(HttpBearer):
-    """Authentication class for Ninja API methods"""
-
-    def authenticate(self, request, token):
-        try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=["HS256"]
-            )
-            user = User.objects.get(id=payload["user_id"])
-            request.user = user
-            return user
-        except Exception as e:
-            print(e)
-            return None
+class ErrorResponse(BaseModel):
+    detail: str
 
 
 @router.get(
@@ -37,18 +29,6 @@ class AuthBearer(HttpBearer):
 def login(request, redirect_url: str):
     request.session["authentication_redirect_url"] = redirect_url
     return redirect(auth_url_discord)
-
-
-@router.delete(
-    "/delete",
-    summary="Delete account and all associated data",
-    description="This will delete the user account and all associated data. This action is irreversible.",
-    auth=AuthBearer(),
-)
-def delete_account(request):
-    request.user.delete()
-    request.session.flush()
-    return "Account deleted successfully"
 
 
 @router.get("/callback", include_in_schema=False)
@@ -106,5 +86,28 @@ def callback(request, code: str):
     )
 
 
-class UnauthorizedError(Exception):
-    pass
+@router.get(
+    "/{user_id}/profile",
+    summary="Get user by ID",
+    description="This will return the user's information based on the ID of the user.",
+    response={
+        200: UserProfileSchema,
+        404: ErrorResponse,
+    },
+)
+def get_user_by_id(request, user_id: int):
+    if not User.objects.filter(id=user_id).exists():
+        return 404, {"detail": "User not found."}
+    return get_user_profile(user_id)
+
+
+@router.delete(
+    "/delete",
+    summary="Delete account and all associated data",
+    description="This will delete the user account and all associated data. This action is irreversible.",
+    auth=AuthBearer(),
+)
+def delete_account(request):
+    request.user.delete()
+    request.session.flush()
+    return "Account deleted successfully"

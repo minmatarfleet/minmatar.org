@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
 
@@ -69,21 +70,29 @@ class EveCorporation(models.Model):
         max_length=10, choices=types, blank=True, null=True
     )
     member_count = models.IntegerField(blank=True, null=True)
-    ceo_id = models.IntegerField(blank=True, null=True)
-    alliance_id = models.IntegerField(blank=True, null=True)
-    faction_id = models.IntegerField(null=True, blank=True)
+
+    # relationships
+    ceo = models.ForeignKey(
+        "EveCharacter", on_delete=models.SET_NULL, blank=True, null=True
+    )
+    alliance = models.ForeignKey(
+        "EveAlliance", on_delete=models.SET_NULL, blank=True, null=True
+    )
+    faction = models.ForeignKey(
+        EveFaction, on_delete=models.SET_NULL, blank=True, null=True
+    )
 
     def __str__(self):
         return self.name
 
     def active(self):
         if Token.objects.filter(
-            character_id=self.ceo_id,
+            character_id=self.ceo.character_id,
             scopes__name="esi-contracts.read_corporation_contracts.v1",
         ).exists():
             # check if has required scopes
             ceo_token = Token.objects.get(
-                character_id=self.ceo_id,
+                character_id=self.ceo.character_id,
                 scopes__name="esi-contracts.read_corporation_contracts.v1",
             )
             token_scopes = set(
@@ -103,7 +112,11 @@ class EveAlliance(models.Model):
     # autopopulated
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True)
-    executor_corporation_id = models.IntegerField(blank=True)
+
+    # relationships
+    executor_corporation = models.ForeignKey(
+        "EveCorporation", on_delete=models.SET_NULL, blank=True, null=True
+    )
 
     def __str__(self):
         return self.name
