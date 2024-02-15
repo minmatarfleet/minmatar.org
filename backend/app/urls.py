@@ -26,10 +26,12 @@ from authentication import UnauthorizedError
 from authentication import router as auth_router
 from discord.views import discord_login
 from eveonline.routers import router
+from groups.router import router as groups_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("auth/", auth_router)
 api.add_router("eveonline/", router)
+api.add_router("groups/", groups_router)
 
 
 @api.exception_handler(UnauthorizedError)

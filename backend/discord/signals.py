@@ -12,7 +12,35 @@ logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
 
-@receiver(signals.post_save, sender=Group)
+@receiver(
+    signals.pre_save,
+    sender=DiscordRole,
+    dispatch_uid="resolve_existing_discord_role_from_server",
+)
+def resolve_existing_discord_role_from_server(
+    sender, instance, *args, **kwargs
+):
+    if not instance.role_id:  # skip when importing a role
+        roles = discord.get_roles()
+        existing_role = False
+        for role in roles:
+            if role["name"] == instance.name:
+                logger.info("Found existing role with name %s", instance.name)
+                instance.role_id = role["id"]
+                existing_role = True
+                break
+
+    if not existing_role:
+        logger.info(
+            "No role_id, creating role based on group name %s",
+            instance.group.name,
+        )
+        role = discord.create_role(instance.group.name)
+        logger.info("External role created: %s", role.json())
+        instance.role_id = role.json()["id"]
+
+
+@receiver(signals.post_save, sender=Group, dispatch_uid="group_post_save")
 def group_post_save(
     sender, instance, created, **kwargs
 ):  # pylint: disable=unused-argument
@@ -28,7 +56,11 @@ def group_post_save(
         )
 
 
-@receiver(signals.m2m_changed, sender=User.groups.through)
+@receiver(
+    signals.m2m_changed,
+    sender=User.groups.through,
+    dispatch_uid="user_group_changed",
+)
 def user_group_changed(
     sender, instance, action, reverse, **kwargs
 ):  # pylint: disable=unused-argument

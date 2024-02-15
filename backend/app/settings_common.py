@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     # Discord auth
     "discord.apps.DiscordConfig",
     "eveonline.apps.EveonlineConfig",
+    "groups.apps.GroupsConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',
