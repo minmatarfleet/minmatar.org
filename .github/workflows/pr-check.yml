@@ -31,4 +31,6 @@ jobs:
           black --check app
       - name: Run tests
         run: |
-          python3 manage.py test
+          pip install pipenv
+          pipenv install --dev
+          pipenv run python3 manage.py test
