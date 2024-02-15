@@ -9,7 +9,7 @@ from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
 
-from .models import EveAlliance, EveCharacter, EveCorporation
+from .models import EveAlliance, EveCharacter, EveCorporation, EveAlliance
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -123,4 +123,27 @@ def eve_corporation_post_save(sender, instance, created, **kwargs):
         else:
             instance.type = "public"
 
+        instance.save()
+
+@receiver(
+    signals.post_save,
+    sender=EveAlliance,
+    dispatch_uid="eve_alliance_post_save",
+)
+def eve_alliance_post_save(sender, instance, created, **kwargs):
+    if created:
+        esi_alliance = (
+            esi.client.Alliance.get_alliances_alliance_id(
+                alliance_id=instance.alliance_id
+            ).results()
+        )
+        # public info
+        instance.name = esi_alliance["name"]
+        instance.ticker = esi_alliance["ticker"]
+        instance.faction = EveFaction.objects.get_or_create_esi(
+            id=esi_alliance["faction_id"],
+        )[0]
+        instance.excutor_corporation = EveCorporation.objects.get_or_create(
+            corporation_id=esi_alliance["executor_corporation_id"],
+        )[0]
         instance.save()

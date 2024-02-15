@@ -119,12 +119,3 @@ class EveAlliance(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
-            alliance_id=self.alliance_id
-        ).results()
-        self.name = esi_alliance["name"]
-        self.ticker = esi_alliance["ticker"]
-        self.executor_corporation_id = esi_alliance["executor_corporation_id"]
-        super().save(*args, **kwargs)
