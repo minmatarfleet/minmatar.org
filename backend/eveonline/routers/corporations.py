@@ -3,7 +3,7 @@ from typing import List
 from ninja import ModelSchema, Router, Schema
 
 from authentication import AuthBearer, requires_permission
-from eveonline.models import EveCorporation, EveCorporationApplication
+from eveonline.models import EveCorporation
 
 router = Router(tags=["Corporations"])
 
@@ -53,14 +53,3 @@ def get_corporation_by_id(request, corporation_id: int):
 @requires_permission("eveonline.add_evecorporation")
 def create_corporation(request, payload: CreateCorporationRequest):
     return EveCorporation.objects.create(**payload.dict())
-
-
-@router.get(
-    "/corporations/applications",
-    response=List[CorporationApplicationResponse],
-    auth=AuthBearer(),
-    summary="Get corporation applications",
-)
-@requires_permission("eveonline.view_evecorporationapplication")
-def get_corporation_applications(request):
-    return EveCorporationApplication.objects.all()
