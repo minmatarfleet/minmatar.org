@@ -10,7 +10,7 @@ from esi.models import Token
 
 from discord.client import DiscordClient
 
-from .models import EveCharacter, EveCorporation, EveCorporationApplication
+from .models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -86,48 +86,32 @@ def token_post_save(
     character, _ = EveCharacter.objects.get_or_create(
         character_id=instance.character_id
     )
+    character.token = instance
     character.save()
 
 
-@receiver(signals.post_save, sender=EveCorporationApplication)
-def eve_corporation_application_post_save(
-    sender, instance, created, **kwargs
-):  # noqa # pylint: disable=unused-argument
-    """Create a forum thread when an application is created"""
-    if instance.discord_thread_id is None:
-        user = instance.user
-        primary_character = EveCharacter.objects.get(
-            character_id=user.eve_primary_token.token.character_id
-        )
-        message = ""
-        message += f"<@{user.discord_user.id}>"
-        message += "\n\n"
-        message += f"Main Character: {primary_character.character_name}\n"
-        message += f"Applying to: {instance.corporation.name}\n"
-        message += f"Description: {instance.description}\n"
-        application_url = settings.SITE_URL + reverse(
-            "eveonline-corporations-applications-view",
-            args=[instance.application.pk],
-        )
-        message += f"{application_url}\n"
-        response = discord.create_forum_thread(
-            channel_id=1097522187952467989,
-            title=f"{primary_character.character_name} - {instance.corporation.name}",
-            message=message,
-        )
-        instance.discord_thread_id = int(response.json()["id"])
-        instance.save()
+@receiver(
+    signals.post_save,
+    sender=EveCorporation,
+    dispatch_uid="eve_corporation_post_save",
+)
+def eve_corporation_post_save(sender, instance, created, **kwargs):
+    esi_corporation = esi.client.Corporation.get_corporations_corporation_id(
+        corporation_id=instance.corporation_id
+    ).results()
+    instance.name = esi_corporation["name"]
+    instance.ceo_id = esi_corporation["ceo_id"]
+    instance.ticker = esi_corporation["ticker"]
+    instance.member_count = esi_corporation["member_count"]
+    instance.alliance_id = esi_corporation["alliance_id"]
+    instance.faction_id = esi_corporation["faction_id"]
+    if instance.alliance_id == 99011978:
+        instance.type = "alliance"
+    elif instance.alliance_id == 99012009:
+        instance.type = "associate"
+    elif instance.faction_id == 500002:
+        instance.type = "militia"
+    else:
+        instance.type = "public"
 
-    if instance.status == "accepted":
-        message = ":tada: Your application has been accepted! Please apply in-game and ask your recruiter for next steps."
-        discord.create_message(
-            channel_id=instance.discord_thread_id, message=message
-        )
-        discord.close_thread(channel_id=instance.discord_thread_id)
-
-    if instance.status == "rejected":
-        message = ":bangbang: Your application has been rejected, please contact your recruiter for more information"
-        discord.create_message(
-            channel_id=instance.discord_thread_id, message=message
-        )
-        discord.close_thread(channel_id=instance.discord_thread_id)
+    instance.save()

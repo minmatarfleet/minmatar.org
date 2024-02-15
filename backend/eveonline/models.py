@@ -64,10 +64,12 @@ class EveCorporation(models.Model):
 
     # autopopulated
     name = models.CharField(max_length=255, blank=True)
-    ticker = models.CharField(max_length=255, blank=True)
-    type = models.CharField(max_length=10, choices=types, blank=True)
-    member_count = models.IntegerField(blank=True)
-    ceo_id = models.IntegerField(blank=True)
+    ticker = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(
+        max_length=10, choices=types, blank=True, null=True
+    )
+    member_count = models.IntegerField(blank=True, null=True)
+    ceo_id = models.IntegerField(blank=True, null=True)
     alliance_id = models.IntegerField(blank=True, null=True)
     faction_id = models.IntegerField(null=True, blank=True)
 
@@ -91,50 +93,6 @@ class EveCorporation(models.Model):
             if token_scopes.issuperset(required_scopes):
                 return True
         return False
-
-    def save(self, *args, **kwargs):
-        esi_corporation = (
-            esi.client.Corporation.get_corporations_corporation_id(
-                corporation_id=self.corporation_id
-            ).results()
-        )
-        self.name = esi_corporation["name"]
-        self.ceo_id = esi_corporation["ceo_id"]
-        self.ticker = esi_corporation["ticker"]
-        self.member_count = esi_corporation["member_count"]
-        self.alliance_id = esi_corporation["alliance_id"]
-        self.faction_id = esi_corporation["faction_id"]
-        if self.alliance_id == 99011978:
-            self.type = "alliance"
-        elif self.alliance_id == 99012009:
-            self.type = "associate"
-        elif self.faction_id == 500002:
-            self.type = "militia"
-        else:
-            self.type = "public"
-        super().save(*args, **kwargs)
-
-
-class EveCorporationApplication(models.Model):
-    """Corporation application model"""
-
-    status_choices = (
-        ("pending", "Pending"),
-        ("accepted", "Accepted"),
-        ("rejected", "Rejected"),
-    )
-    status = models.CharField(
-        max_length=10, choices=status_choices, default="pending"
-    )
-    description = models.TextField(blank=True)
-    corporation = models.ForeignKey(EveCorporation, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    discord_thread_id = models.BigIntegerField(blank=True, null=True)
-
-    def __str__(self):
-        return self.user.eve_primary_token.token.character_name
 
 
 class EveAlliance(models.Model):
