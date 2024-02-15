@@ -21,14 +21,14 @@ jobs:
           pip install pylint flake8
       - name: Lint with pylint
         run: |
-          pylint app
+          pylint .
       - name: Lint with flake8
         run: |
-          flake8 app
+          flake8 .
       - name: Lint with black
         run: |
           pip install black
-          black --check app
+          black --check .
       - name: Run tests
         run: |
           pip install pipenv

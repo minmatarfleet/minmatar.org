@@ -1,16 +1,15 @@
 import json
 import logging
 
-from django.conf import settings
 from django.db.models import signals
 from django.dispatch import receiver
-from django.urls import reverse
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
 
-from .models import EveCharacter, EveCorporation
+from .models import EveAlliance, EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -96,22 +95,54 @@ def token_post_save(
     dispatch_uid="eve_corporation_post_save",
 )
 def eve_corporation_post_save(sender, instance, created, **kwargs):
-    esi_corporation = esi.client.Corporation.get_corporations_corporation_id(
-        corporation_id=instance.corporation_id
-    ).results()
-    instance.name = esi_corporation["name"]
-    instance.ceo_id = esi_corporation["ceo_id"]
-    instance.ticker = esi_corporation["ticker"]
-    instance.member_count = esi_corporation["member_count"]
-    instance.alliance_id = esi_corporation["alliance_id"]
-    instance.faction_id = esi_corporation["faction_id"]
-    if instance.alliance_id == 99011978:
-        instance.type = "alliance"
-    elif instance.alliance_id == 99012009:
-        instance.type = "associate"
-    elif instance.faction_id == 500002:
-        instance.type = "militia"
-    else:
-        instance.type = "public"
+    if created:
+        esi_corporation = (
+            esi.client.Corporation.get_corporations_corporation_id(
+                corporation_id=instance.corporation_id
+            ).results()
+        )
+        instance.name = esi_corporation["name"]
+        instance.ticker = esi_corporation["ticker"]
+        instance.member_count = esi_corporation["member_count"]
+        instance.ceo = EveCharacter.objects.get_or_create(
+            character_id=esi_corporation["ceo_id"],
+        )[0]
+        instance.alliance = EveAlliance.objects.get_or_create(
+            alliance_id=esi_corporation["alliance_id"],
+        )[0]
+        instance.faction = EveFaction.objects.get_or_create_esi(
+            id=esi_corporation["faction_id"],
+        )[0]
 
-    instance.save()
+        if esi_corporation["alliance_id"] == 99011978:
+            instance.type = "alliance"
+        elif esi_corporation["alliance_id"] == 99012009:
+            instance.type = "associate"
+        elif esi_corporation["faction_id"] == 500002:
+            instance.type = "militia"
+        else:
+            instance.type = "public"
+
+        instance.save()
+
+
+@receiver(
+    signals.post_save,
+    sender=EveAlliance,
+    dispatch_uid="eve_alliance_post_save",
+)
+def eve_alliance_post_save(sender, instance, created, **kwargs):
+    if created:
+        esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
+            alliance_id=instance.alliance_id
+        ).results()
+        # public info
+        instance.name = esi_alliance["name"]
+        instance.ticker = esi_alliance["ticker"]
+        instance.faction = EveFaction.objects.get_or_create_esi(
+            id=esi_alliance["faction_id"],
+        )[0]
+        instance.excutor_corporation = EveCorporation.objects.get_or_create(
+            corporation_id=esi_alliance["executor_corporation_id"],
+        )[0]
+        instance.save()

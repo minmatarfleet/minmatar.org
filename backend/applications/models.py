@@ -1,6 +1,7 @@
-from django.db import models
-from eveonline.models import EveCorporation, EvePrimaryCharacter
 from django.contrib.auth.models import User
+from django.db import models
+
+from eveonline.models import EveCorporation, EvePrimaryCharacter
 
 
 # Create your models here.

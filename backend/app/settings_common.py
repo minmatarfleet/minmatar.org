@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "eveonline.apps.EveonlineConfig",
     "groups.apps.GroupsConfig",
     "applications.apps.ApplicationsConfig",
+    "users.apps.UsersConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',

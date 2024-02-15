@@ -1,17 +1,19 @@
 from typing import List
 
-from ninja import ModelSchema, Router, Schema
+from ninja import Router, Schema
 
-from authentication import AuthBearer, requires_permission
+from authentication import AuthBearer
 from eveonline.models import EveCorporation
 
 router = Router(tags=["Corporations"])
 
 
-class CorporationResponse(ModelSchema):
-    class Meta:
-        model = EveCorporation
-        fields = "__all__"
+class CorporationResponse(Schema):
+    corporation_id: int
+    corporation_name: str
+    alliance_id: int
+    alliance_name: str
+    corporation_type: str
 
 
 class CorporationApplicationResponse(Schema):
@@ -31,7 +33,19 @@ class CreateCorporationRequest(Schema):
     summary="Get all corporations",
 )
 def get_corporations(request):
-    return EveCorporation.objects.all()
+    corporations = EveCorporation.objects.all()
+    response = []
+    for corporation in corporations:
+        response.append(
+            {
+                "corporation_id": corporation.corporation_id,
+                "corporation_name": corporation.corporation_name,
+                "alliance_id": corporation.alliance.alliance_id,
+                "alliance_name": corporation.alliance.alliance_name,
+                "corporation_type": corporation.corporation_type,
+            }
+        )
+    return response
 
 
 @router.get(
@@ -41,15 +55,12 @@ def get_corporations(request):
     summary="Get a corporation by ID",
 )
 def get_corporation_by_id(request, corporation_id: int):
-    return EveCorporation.objects.get(corporation_id=corporation_id)
-
-
-@router.post(
-    "/corporations",
-    response=CorporationResponse,
-    auth=AuthBearer(),
-    summary="Create a corporation",
-)
-@requires_permission("eveonline.add_evecorporation")
-def create_corporation(request, payload: CreateCorporationRequest):
-    return EveCorporation.objects.create(**payload.dict())
+    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
+    response = {
+        "corporation_id": corporation.corporation_id,
+        "corporation_name": corporation.corporation_name,
+        "alliance_id": corporation.alliance.alliance_id,
+        "alliance_name": corporation.alliance.alliance_name,
+        "corporation_type": corporation.corporation_type,
+    }
+    return response
