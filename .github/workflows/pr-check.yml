@@ -29,3 +29,8 @@ jobs:
         run: |
           pip install black
           black --check app
+      - name: Run tests
+        run: |
+          pip install pipenv
+          pipenv install --dev
+          pipenv run python3 manage.py test

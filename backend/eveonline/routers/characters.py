@@ -1,4 +1,5 @@
 import json
+import logging
 from enum import Enum
 from typing import List
 
@@ -61,13 +62,15 @@ def get_characters(request):
     response={200: CharacterResponse, 403: ErrorResponse, 404: ErrorResponse},
 )
 def get_character_by_id(request, character_id: int):
+    if not EveCharacter.objects.filter(character_id=character_id).exists():
+        return 404, {"detail": "Character not found."}
+
     character = EveCharacter.objects.get(character_id=character_id)
 
     if (
         request.user.has_perm("eveonline.view_evecharacter")
-        or Token.objects.filter(
-            user=request.user, character_id=character_id
-        ).exists()
+        or character.token
+        and character.token.user == request.user
     ):
         return {
             "character_id": character.character_id,

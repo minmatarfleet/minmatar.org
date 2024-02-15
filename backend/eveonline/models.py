@@ -21,7 +21,7 @@ class EvePrimaryCharacter(models.Model):
 class EveCharacter(models.Model):
     """Character model"""
 
-    character_id = models.IntegerField()
+    character_id = models.IntegerField(unique=True)
     character_name = models.CharField(max_length=255, blank=True)
     corporation = models.ForeignKey(
         "EveCorporation", on_delete=models.CASCADE, blank=True, null=True
@@ -30,7 +30,7 @@ class EveCharacter(models.Model):
     token = models.OneToOneField(Token, on_delete=models.CASCADE, null=True)
 
     # data
-    skills_json = models.TextField(blank=True)
+    skills_json = models.TextField(blank=True, default="{}")
 
     @property
     def tokens(self):
@@ -38,46 +38,6 @@ class EveCharacter(models.Model):
 
     def __str__(self):
         return self.character_name
-
-    def save(self, *args, **kwargs):
-        esi_character = esi.client.Character.get_characters_character_id(
-            character_id=self.character_id
-        ).results()
-        logger.debug("Setting character name to %s", esi_character["name"])
-        self.character_name = esi_character["name"]
-        logger.debug(
-            "Setting corporation to %s", esi_character["corporation_id"]
-        )
-        if EveCorporation.objects.filter(
-            corporation_id=esi_character["corporation_id"]
-        ).exists():
-            self.corporation = EveCorporation.objects.get(
-                corporation_id=esi_character["corporation_id"]
-            )
-        else:
-            corporation = EveCorporation.objects.create(
-                corporation_id=esi_character["corporation_id"]
-            )
-            self.corporation = corporation
-
-        # fetch skills
-        if self.tokens.exists():
-            logger.debug("Fetching skills for %s", self.character_name)
-            required_scopes = ["esi-skills.read_skills.v1"]
-            token = Token.objects.filter(
-                character_id=self.character_id,
-                scopes__name__in=required_scopes,
-            ).first()
-            if token:
-                response = (
-                    esi.client.Skills.get_characters_character_id_skills(
-                        character_id=self.character_id,
-                        token=token.valid_access_token(),
-                    ).results()
-                )
-                self.skills_json = json.dumps(response)
-
-        super().save(*args, **kwargs)
 
 
 class EveCharacterSkillset(models.Model):
