@@ -3,14 +3,14 @@ from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.shortcuts import redirect
 from ninja import Router
-from authentication import AuthBearer
-
-from discord.client import DiscordClient
-from discord.models import DiscordUser
-from .schemas import UserProfileSchema
-from .helpers import get_user_profile
 from pydantic import BaseModel
 
+from authentication import AuthBearer
+from discord.client import DiscordClient
+from discord.models import DiscordUser
+
+from .helpers import get_user_profile
+from .schemas import UserProfileSchema
 
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 router = Router(tags=["Authentication"])

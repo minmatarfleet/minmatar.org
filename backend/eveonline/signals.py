@@ -1,17 +1,15 @@
 import json
 import logging
 
-from django.conf import settings
 from django.db.models import signals
 from django.dispatch import receiver
-from django.urls import reverse
 from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
 
-from .models import EveCharacter, EveCorporation, EveAlliance
+from .models import EveAlliance, EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -98,9 +96,11 @@ def token_post_save(
 )
 def eve_corporation_post_save(sender, instance, created, **kwargs):
     if created:
-        esi_corporation = esi.client.Corporation.get_corporations_corporation_id(
-            corporation_id=instance.corporation_id
-        ).results()
+        esi_corporation = (
+            esi.client.Corporation.get_corporations_corporation_id(
+                corporation_id=instance.corporation_id
+            ).results()
+        )
         instance.name = esi_corporation["name"]
         instance.ticker = esi_corporation["ticker"]
         instance.member_count = esi_corporation["member_count"]

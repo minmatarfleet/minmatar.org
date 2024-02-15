@@ -1,4 +1,3 @@
-import json
 import logging
 
 from django.conf import settings
@@ -6,15 +5,11 @@ from django.db.models import signals
 from django.dispatch import receiver
 from django.urls import reverse
 from esi.clients import EsiClientProvider
-from esi.models import Token
 
 from discord.client import DiscordClient
+from eveonline.models import EvePrimaryCharacter
 
-from eveonline.models import (
-    EvePrimaryCharacter,
-    EveCorporation,
-    EveCorporationApplication,
-)
+from .models import EveCorporationApplication
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()

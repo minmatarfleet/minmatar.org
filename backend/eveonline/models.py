@@ -1,6 +1,5 @@
 import logging
 
-from django.contrib.auth.models import User
 from django.db import models
 from esi.clients import EsiClientProvider
 from esi.models import Token
@@ -83,7 +82,7 @@ class EveCorporation(models.Model):
     )
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def active(self):
         if Token.objects.filter(

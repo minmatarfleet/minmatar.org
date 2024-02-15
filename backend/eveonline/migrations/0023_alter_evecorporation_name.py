@@ -13,7 +13,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="evecorporation",
             name="name",
-            field=models.CharField(blank=True, default="Unknown Corporation", max_length=255),
+            field=models.CharField(
+                blank=True, default="Unknown Corporation", max_length=255
+            ),
             preserve_default=False,
         ),
     ]

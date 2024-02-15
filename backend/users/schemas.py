@@ -1,8 +1,11 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class EvePrimaryCharacterSchema(BaseModel):
+    """Represents a primary character in eve."""
+
     character_id: int
     character_name: str
     corporation_id: Optional[int]
@@ -13,12 +16,16 @@ class EvePrimaryCharacterSchema(BaseModel):
 
 
 class DiscordUserSchema(BaseModel):
+    """Represents a discord user."""
+
     id: int
     discord_tag: str
     avatar: Optional[str]
 
 
 class UserProfileSchema(BaseModel):
+    """Represents a user profile with attached eve and discord profiles."""
+
     # django stuff
     user_id: int
     username: str

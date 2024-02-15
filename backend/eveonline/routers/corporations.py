@@ -1,6 +1,6 @@
 from typing import List
 
-from ninja import ModelSchema, Router, Schema
+from ninja import Router, Schema
 
 from authentication import AuthBearer
 from eveonline.models import EveCorporation

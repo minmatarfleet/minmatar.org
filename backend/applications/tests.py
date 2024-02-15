@@ -1,16 +1,19 @@
-from app.test import TestCase
-from django.db.models import signals
-from eveonline.models import EveCharacter, EveCorporation
-from applications.models import EveCorporationApplication
-from esi.models import Token
-from django.test import Client
 from django.contrib.auth.models import Permission
+from django.db.models import signals
+from django.test import Client
+from esi.models import Token
+
+from app.test import TestCase
+from applications.models import EveCorporationApplication
+from eveonline.models import EveCharacter, EveCorporation
 
 BASE_URL = "/api/applications/"
 
 
 # Create your tests here.
 class EveCorporationApplicationTestCase(TestCase):
+    """Test case for the application endpoints."""
+
     def setUp(self):
         # disconnect signals
         signals.post_save.disconnect(

@@ -1,20 +1,23 @@
-from app.test import TestCase
 from django.db.models import signals
 from django.test import Client
-from eveonline.models import (
-    EveCharacter,
-    EvePrimaryCharacter,
-    EveCorporation,
-    EveAlliance,
-)
 from esi.models import Token
+
+from app.test import TestCase
 from discord.models import DiscordUser
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePrimaryCharacter,
+)
 
 # Create your tests here.
 BASE_URL = "/api/users/"
 
 
 class UserRouterTestCase(TestCase):
+    """Test case for the user router endpoints."""
+
     def setUp(self):
         signals.post_save.disconnect(
             sender=EveCharacter,
@@ -30,7 +33,6 @@ class UserRouterTestCase(TestCase):
         super().setUp()
 
     def test_get_user_profile_success(self):
-        self.maxDiff = None
         user = self.user
         Token.objects.create(
             character_id=634915984,
@@ -46,9 +48,7 @@ class UserRouterTestCase(TestCase):
             alliance=alliance,
         )
 
-        character = EveCharacter.objects.get(
-            character_id=634915984
-        )
+        character = EveCharacter.objects.get(character_id=634915984)
         character.corporation = corporation
         character.save()
         discord_user = DiscordUser.objects.create(

@@ -1,9 +1,9 @@
 from django.contrib.auth.models import User
+
 from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
-from .schemas import (
-    UserProfileSchema,
-)
+
+from .schemas import UserProfileSchema
 
 
 def get_user_profile(user_id: int) -> UserProfileSchema:
@@ -46,7 +46,10 @@ def get_user_profile(user_id: int) -> UserProfileSchema:
                 if hasattr(primary_character.character.corporation, "alliance")
                 else None
             ),
-            "scopes": [scope.name for scope in primary_character.character.token.scopes.all()],
+            "scopes": [
+                scope.name
+                for scope in primary_character.character.token.scopes.all()
+            ],
         },
         "discord_user_profile": {
             "id": discord_user.id,

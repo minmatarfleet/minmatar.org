@@ -1,10 +1,13 @@
+from datetime import datetime
+from typing import List
+
 from ninja import Router
 from pydantic import BaseModel
-from .models import EveCorporationApplication
-from eveonline.models import EveCharacter
+
 from authentication import AuthBearer
-from typing import List
-from datetime import datetime
+from eveonline.models import EveCharacter
+
+from .models import EveCorporationApplication
 
 router = Router(tags=["Applications"])
 
@@ -30,8 +33,10 @@ class CorporationApplicationDetailResponse(CorporationApplicationResponse):
 class CorporationApplicationRequest(BaseModel):
     description: str
 
+
 class ErrorResponse(BaseModel):
     detail: str
+
 
 @router.get(
     "/corporations/{corporation_id}/applications",
@@ -117,13 +122,17 @@ def get_corporation_application_by_id(
     response={
         200: CorporationApplicationResponse,
         403: ErrorResponse,
-    }
+    },
 )
 def accept_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm("applications.change_evecorporationapplication"):
-        return 403, {"detail": "You do not have permission to accept applications."}
+    if not request.user.has_perm(
+        "applications.change_evecorporationapplication"
+    ):
+        return 403, {
+            "detail": "You do not have permission to accept applications."
+        }
     application = EveCorporationApplication.objects.get(
         corporation__corporation_id=corporation_id, id=application_id
     )
@@ -144,13 +153,17 @@ def accept_corporation_application(
     response={
         200: CorporationApplicationResponse,
         403: ErrorResponse,
-    }
+    },
 )
 def reject_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm("applications.change_evecorporationapplication"):
-        return 403, {"detail": "You do not have permission to accept applications."}
+    if not request.user.has_perm(
+        "applications.change_evecorporationapplication"
+    ):
+        return 403, {
+            "detail": "You do not have permission to accept applications."
+        }
     application = EveCorporationApplication.objects.get(
         corporation__corporation_id=corporation_id, id=application_id
     )
