@@ -29,7 +29,7 @@ class DiscordUser(models.Model):
 class DiscordRole(models.Model):
     """Representation of an external Discord role on a Discord server"""
 
-    role_id = models.BigIntegerField(blank=True)
+    role_id = models.BigIntegerField(blank=True, unique=True)
     name = models.CharField(max_length=100)
     members = models.ManyToManyField(DiscordUser, related_name="groups")
     group = models.OneToOneField(
@@ -38,28 +38,3 @@ class DiscordRole(models.Model):
 
     def __str__(self) -> str:
         return str(self.name)
-
-    def save(self, *args, **kwargs):
-        logger.info("Saving DiscordRole with role_id %s", self.role_id)
-        if not self.role_id:  # skip when importing a role
-            # resolve existing role from discord server
-            roles = discord.get_roles()
-            existing_role = False
-            for role in roles:
-                if role["name"] == self.name:
-                    logger.info("Found existing role with name %s", self.name)
-                    self.role_id = role["id"]
-                    existing_role = True
-                    break
-
-            # create role if no existing role on discord server
-            if not existing_role:
-                logger.info(
-                    "No role_id, creating role based on group name %s",
-                    self.group.name,
-                )
-                role = discord.create_role(self.group.name)
-                logger.info("Role created: %s", role.json())
-                self.role_id = role.json()["id"]
-
-        super().save(*args, **kwargs)

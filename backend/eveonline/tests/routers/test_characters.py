@@ -10,6 +10,8 @@ BASE_URL = "/api/eveonline/characters/"
 
 
 class CharacterRouterTestCase(TestCase):
+    """Test cases for the character router."""
+
     def setUp(self):
         # disconnect signals
         signals.post_save.disconnect(

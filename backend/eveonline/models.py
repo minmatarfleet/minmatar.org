@@ -1,4 +1,3 @@
-import json
 import logging
 
 from django.contrib.auth.models import User
@@ -37,7 +36,7 @@ class EveCharacter(models.Model):
         return Token.objects.filter(character_id=self.character_id)
 
     def __str__(self):
-        return self.character_name
+        return str(self.character_name)
 
 
 class EveCharacterSkillset(models.Model):

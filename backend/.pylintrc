@@ -152,6 +152,7 @@ disable=abstract-method,
         consider-using-set-comprehension,
         unused-argument,
         broad-exception-caught,
+        logging-fstring-interpolation,
 
 
 [REPORTS]
