@@ -1,9 +1,51 @@
 import logging
 from typing import List
 
+from django.contrib.auth.models import Group, User
+
 from groups.models import RequestableGroup
 
+from .models import GroupRequest
+from .schemas import GroupSchema, GroupStatus
+
 logger = logging.getLogger(__name__)
+
+
+def get_group(group_id: int, user_id: int) -> GroupSchema:
+    """Fetches a group with a status based on the supplied user"""
+    if not Group.objects.filter(id=group_id).exists():
+        return None
+    if not User.objects.filter(id=user_id).exists():
+        return None
+    user = User.objects.get(id=user_id)
+    group = Group.objects.get(id=group_id)
+    description = None
+    image_url = None
+    if hasattr(group, "requestablegroup"):
+        description = group.requestablegroup.description
+        image_url = group.requestablegroup.image_url
+    elif hasattr(group, "autogroup"):
+        description = group.autogroup.description
+        image_url = group.autogroup.image_url
+    status = None
+    if RequestableGroup.objects.filter(group=group).exists():
+        status = GroupStatus.AVAILABLE.value
+    if GroupRequest.objects.filter(
+        user=user, approved=None, group=group
+    ).exists():
+        status = GroupStatus.REQUESTED.value
+    if Group.objects.filter(user=user, id=group.id).exists():
+        status = GroupStatus.CONFIRMED.value
+
+    payload = {
+        "id": group.id,
+        "name": group.name,
+        "description": description,
+        "image_url": image_url,
+        "status": status,
+    }
+
+    return GroupSchema(**payload)
 
 
 def get_requestable_groups_for_user(user) -> List[RequestableGroup]:

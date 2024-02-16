@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 from typing import List, Optional
 
 from django.contrib.auth.models import Group, User
@@ -10,33 +9,14 @@ from authentication import AuthBearer
 from groups.models import GroupRequest, RequestableGroup
 
 from .helpers import (
+    get_group,
     get_requestable_group_ids_for_user,
     get_requestable_groups_for_user,
 )
+from .schemas import GroupSchema
 
 logger = logging.getLogger(__name__)
 router = Router(tags=["Groups"])
-
-
-class GroupResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    image_url: Optional[str]
-
-
-class GroupStatus(str, Enum):
-    AVAILABLE = "available"
-    REQUESTED = "requested"
-    CONFIRMED = "confirmed"
-
-
-class GroupDetailResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    image_url: Optional[str]
-    status: Optional[str]
 
 
 class ErrorResponse(BaseModel):
@@ -45,59 +25,39 @@ class ErrorResponse(BaseModel):
 
 @router.get(
     "/current",
-    response=List[int],
+    response=List[GroupSchema],
     auth=AuthBearer(),
     description="Get the groups of the current user",
 )
 def get_current_groups(request):
     groups = Group.objects.filter(user__id=request.user.id)
-    return [group.id for group in groups]
+    response = []
+    for group in groups:
+        response.append(get_group(group.id, request.user.id))
+    return response
 
 
-@router.get("/available", response=List[int], auth=AuthBearer())
+@router.get("/available", response=List[GroupSchema], auth=AuthBearer())
 def get_available_groups(request):
     available_groups = get_requestable_groups_for_user(request.user)
     response = []
 
     for group in available_groups:
-        response.append(group.group.id)
+        response.append(get_group(group.group.id, request.user.id))
     return response
 
 
 # get group by id
 @router.get(
     "/{group_id}",
-    response={200: GroupDetailResponse, 404: ErrorResponse},
+    response={200: GroupSchema, 404: ErrorResponse},
     auth=AuthBearer(),
 )
 def get_group_by_id(request, group_id: int):
-    if not Group.objects.filter(id=group_id).exists():
+    group = get_group(group_id, request.user.id)
+    if not group:
         return 404, {"detail": "Group does not exist."}
-    group = Group.objects.get(id=group_id)
-    description = None
-    image_url = None
-    if hasattr(group, "requestablegroup"):
-        description = group.requestablegroup.description
-        image_url = group.requestablegroup.image_url
-    elif hasattr(group, "autogroup"):
-        description = group.autogroup.description
-        image_url = group.autogroup.image_url
-    status = None
-    if RequestableGroup.objects.filter(group=group).exists():
-        status = GroupStatus.AVAILABLE
-    if GroupRequest.objects.filter(
-        user=request.user, approved=None, group=group
-    ).exists():
-        status = GroupStatus.REQUESTED
-    if Group.objects.filter(user=request.user, id=group.id).exists():
-        status = GroupStatus.CONFIRMED
-    return {
-        "id": group.id,
-        "name": group.name,
-        "description": description,
-        "image_url": image_url,
-        "status": status,
-    }
+    return group
 
 
 class GroupRequestResponse(BaseModel):

@@ -138,7 +138,15 @@ class GroupTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
-            [group.id],
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "confirmed",
+                }
+            ],
         )
 
     def test_get_groups_available_success(self):
@@ -151,7 +159,15 @@ class GroupTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
-            [group.id],
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "available",
+                }
+            ],
         )
 
     def test_get_groups_available_success_hide_unauthorized_group(self):
@@ -169,7 +185,15 @@ class GroupTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
-            [group.id],
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "available",
+                }
+            ],
         )
 
     def test_get_groups_avialable_success_show_authorized_group(self):
@@ -186,9 +210,26 @@ class GroupTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
+        # sort the response to make sure the order is consistent
+        response.json().sort(key=lambda x: x["id"])
         self.assertEqual(
             response.json(),
-            [group.id, hidden_group.id],
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "confirmed",
+                },
+                {
+                    "id": hidden_group.id,
+                    "name": hidden_group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "available",
+                },
+            ],
         )
 
     def test_get_group_users_success(self):
@@ -437,7 +478,15 @@ class GroupRequestTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
-            [group.id],
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": "confirmed",
+                }
+            ],
         )
 
     def test_approve_group_request_failure_already_approved(self):
