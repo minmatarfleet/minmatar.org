@@ -28,7 +28,6 @@ class UserProfileSchema(BaseModel):
     user_id: int
     username: str
     permissions: List[str]
-    is_staff: bool
     is_superuser: bool
 
     # eve stuff

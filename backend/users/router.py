@@ -72,7 +72,6 @@ def callback(request, code: str):
         "user_id": django_user.id,
         "username": user["username"],
         "avatar": f"https://cdn.discordapp.com/avatars/{django_user.discord_user.id}/{django_user.discord_user.avatar}.png",
-        "is_staff": django_user.is_staff,
         "is_superuser": django_user.is_superuser,
         "permissions": permissions,
     }
