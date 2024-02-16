@@ -1,10 +1,12 @@
+import logging
+
 from django.db.models import signals
 from django.dispatch import receiver
 
 from groups.models import GroupRequest
-import logging 
 
 logger = logging.getLogger(__name__)
+
 
 @receiver(
     signals.post_save,
