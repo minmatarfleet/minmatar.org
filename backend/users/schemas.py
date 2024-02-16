@@ -10,8 +10,6 @@ class EveCharacterSchema(BaseModel):
     character_name: str
     corporation_id: int
     corporation_name: str
-    corporation_ticker: Optional[str]
-    corporation_type: Optional[str]
     scopes: List[str]
 
 
