@@ -217,8 +217,6 @@ def approve_group_request(request, group_id: int, request_id: int):
     group_request.approved = True
     group_request.approved_by = request.user
     group_request.save()
-    # add user to group
-    group.user_set.add(group_request.user)
     return 200, {
         "id": group_request.id,
         "user": group_request.user.id,
