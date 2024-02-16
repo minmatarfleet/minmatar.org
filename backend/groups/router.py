@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional
+from enum import Enum
 
 from django.contrib.auth.models import Group, User
 from ninja import Router
@@ -24,8 +25,27 @@ class GroupResponse(BaseModel):
     image_url: Optional[str]
 
 
+class GroupStatus(str, Enum):
+    available = "available"
+    requested = "requested"
+    confirmed = "confirmed"
+
+
+class AvailableGroupResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    image_url: Optional[str]
+    status: str
+
+
 # get my groups
-@router.get("", response=List[GroupResponse], auth=AuthBearer())
+@router.get(
+    "",
+    response=List[GroupResponse],
+    auth=AuthBearer(),
+    description="Get the groups of the current user",
+)
 def get_groups(request):
     groups = Group.objects.filter(user__id=request.user.id)
     response = []
@@ -49,17 +69,28 @@ def get_groups(request):
     return response
 
 
-@router.get("/available", response=List[GroupResponse], auth=AuthBearer())
+@router.get(
+    "/available", response=List[AvailableGroupResponse], auth=AuthBearer()
+)
 def get_available_groups(request):
     available_groups = get_requestable_groups_for_user(request.user)
     response = []
+
     for group in available_groups:
+        status = GroupStatus.available
+        if GroupRequest.objects.filter(
+            user=request.user, approved=None, group=group.group
+        ).exists():
+            status = GroupStatus.requested
+        if Group.objects.filter(user=request.user, id=group.group.id).exists():
+            status = GroupStatus.confirmed
         response.append(
             {
                 "id": group.group.id,
                 "name": group.group.name,
                 "description": group.description,
                 "image_url": group.image_url,
+                "status": status,
             }
         )
     return response
@@ -186,6 +217,8 @@ def approve_group_request(request, group_id: int, request_id: int):
     group_request.approved = True
     group_request.approved_by = request.user
     group_request.save()
+    # add user to group
+    group.user_set.add(group_request.user)
     return 200, {
         "id": group_request.id,
         "user": group_request.user.id,
