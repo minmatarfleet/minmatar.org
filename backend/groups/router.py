@@ -31,69 +31,73 @@ class GroupStatus(str, Enum):
     CONFIRMED = "confirmed"
 
 
-class AvailableGroupResponse(BaseModel):
+class GroupDetailResponse(BaseModel):
     id: int
     name: str
     description: Optional[str]
     image_url: Optional[str]
-    status: str
+    status: Optional[str]
 
 
-# get my groups
+class ErrorResponse(BaseModel):
+    detail: str
+
+
 @router.get(
-    "",
-    response=List[GroupResponse],
+    "/current",
+    response=List[int],
     auth=AuthBearer(),
     description="Get the groups of the current user",
 )
-def get_groups(request):
+def get_current_groups(request):
     groups = Group.objects.filter(user__id=request.user.id)
-    response = []
-    for group in groups:
-        description = None
-        image_url = None
-        if hasattr(group, "requestablegroup"):
-            description = group.requestablegroup.description
-            image_url = group.requestablegroup.image_url
-        elif hasattr(group, "autogroup"):
-            description = group.autogroup.description
-            image_url = group.autogroup.image_url
-        response.append(
-            {
-                "id": group.id,
-                "name": group.name,
-                "description": description,
-                "image_url": image_url,
-            }
-        )
-    return response
+    return [group.id for group in groups]
 
 
-@router.get(
-    "/available", response=List[AvailableGroupResponse], auth=AuthBearer()
-)
+@router.get("/available", response=List[int], auth=AuthBearer())
 def get_available_groups(request):
     available_groups = get_requestable_groups_for_user(request.user)
     response = []
 
     for group in available_groups:
-        status = GroupStatus.AVAILABLE
-        if GroupRequest.objects.filter(
-            user=request.user, approved=None, group=group.group
-        ).exists():
-            status = GroupStatus.REQUESTED
-        if Group.objects.filter(user=request.user, id=group.group.id).exists():
-            status = GroupStatus.CONFIRMED
-        response.append(
-            {
-                "id": group.group.id,
-                "name": group.group.name,
-                "description": group.description,
-                "image_url": group.image_url,
-                "status": status,
-            }
-        )
+        response.append(group.group.id)
     return response
+
+
+# get group by id
+@router.get(
+    "/{group_id}",
+    response={200: GroupDetailResponse, 404: ErrorResponse},
+    auth=AuthBearer(),
+)
+def get_group_by_id(request, group_id: int):
+    if not Group.objects.filter(id=group_id).exists():
+        return 404, {"detail": "Group does not exist."}
+    group = Group.objects.get(id=group_id)
+    description = None
+    image_url = None
+    if hasattr(group, "requestablegroup"):
+        description = group.requestablegroup.description
+        image_url = group.requestablegroup.image_url
+    elif hasattr(group, "autogroup"):
+        description = group.autogroup.description
+        image_url = group.autogroup.image_url
+    status = None
+    if RequestableGroup.objects.filter(group=group).exists():
+        status = GroupStatus.AVAILABLE
+    if GroupRequest.objects.filter(
+        user=request.user, approved=None, group=group
+    ).exists():
+        status = GroupStatus.REQUESTED
+    if Group.objects.filter(user=request.user, id=group.id).exists():
+        status = GroupStatus.CONFIRMED
+    return {
+        "id": group.id,
+        "name": group.name,
+        "description": description,
+        "image_url": image_url,
+        "status": status,
+    }
 
 
 class GroupRequestResponse(BaseModel):
@@ -103,10 +107,6 @@ class GroupRequestResponse(BaseModel):
     approved: Optional[bool]
     approved_by: Optional[int]
     approved_at: Optional[str]
-
-
-class ErrorResponse(BaseModel):
-    detail: str
 
 
 @router.get(
