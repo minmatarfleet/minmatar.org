@@ -4,11 +4,7 @@ from esi.models import Token
 
 from app.test import TestCase
 from discord.models import DiscordUser
-from eveonline.models import (
-    EveCharacter,
-    EveCorporation,
-    EvePrimaryCharacter,
-)
+from eveonline.models import EveCharacter, EveCorporation, EvePrimaryCharacter
 
 # Create your tests here.
 BASE_URL = "/api/users/"

@@ -1,6 +1,6 @@
 import logging
-from typing import List, Optional
 from enum import Enum
+from typing import List, Optional
 
 from django.contrib.auth.models import Group, User
 from ninja import Router
@@ -26,9 +26,9 @@ class GroupResponse(BaseModel):
 
 
 class GroupStatus(str, Enum):
-    available = "available"
-    requested = "requested"
-    confirmed = "confirmed"
+    AVAILABLE = "available"
+    REQUESTED = "requested"
+    CONFIRMED = "confirmed"
 
 
 class AvailableGroupResponse(BaseModel):
@@ -77,13 +77,13 @@ def get_available_groups(request):
     response = []
 
     for group in available_groups:
-        status = GroupStatus.available
+        status = GroupStatus.AVAILABLE
         if GroupRequest.objects.filter(
             user=request.user, approved=None, group=group.group
         ).exists():
-            status = GroupStatus.requested
+            status = GroupStatus.REQUESTED
         if Group.objects.filter(user=request.user, id=group.group.id).exists():
-            status = GroupStatus.confirmed
+            status = GroupStatus.CONFIRMED
         response.append(
             {
                 "id": group.group.id,
