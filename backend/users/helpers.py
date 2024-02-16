@@ -36,22 +36,6 @@ def get_user_profile(user_id: int) -> UserProfileSchema:
                 if hasattr(primary_character.character, "corporation")
                 else None
             ),
-            "alliance_id": (
-                primary_character.character.corporation.alliance.alliance_id
-                if hasattr(primary_character.character, "corporation")
-                and hasattr(
-                    primary_character.character.corporation, "alliance"
-                )
-                else None
-            ),
-            "alliance_name": (
-                primary_character.character.corporation.alliance.name
-                if hasattr(primary_character.character, "corporation")
-                and hasattr(
-                    primary_character.character.corporation, "alliance"
-                )
-                else None
-            ),
             "scopes": [
                 scope.name
                 for scope in primary_character.character.token.scopes.all()

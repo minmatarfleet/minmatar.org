@@ -5,7 +5,6 @@ from esi.models import Token
 from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import (
-    EveAlliance,
     EveCharacter,
     EveCorporation,
     EvePrimaryCharacter,
@@ -38,14 +37,9 @@ class UserRouterTestCase(TestCase):
             character_id=634915984,
             user=user,
         )
-        alliance = EveAlliance.objects.create(
-            alliance_id=99011978,
-            name="Test Alliance",
-        )
         corporation = EveCorporation.objects.create(
             corporation_id=98726134,
             name="Test Corporation",
-            alliance=alliance,
         )
 
         character = EveCharacter.objects.get(character_id=634915984)
@@ -79,8 +73,6 @@ class UserRouterTestCase(TestCase):
                     "character_name": primary_character.character.character_name,
                     "corporation_id": primary_character.character.corporation.corporation_id,
                     "corporation_name": primary_character.character.corporation.name,
-                    "alliance_id": primary_character.character.corporation.alliance.alliance_id,
-                    "alliance_name": primary_character.character.corporation.alliance.name,
                     "scopes": [],
                 },
                 "discord_user_profile": {

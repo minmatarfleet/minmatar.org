@@ -3,15 +3,15 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class EvePrimaryCharacterSchema(BaseModel):
+class EveCharacterSchema(BaseModel):
     """Represents a primary character in eve."""
 
     character_id: int
     character_name: str
-    corporation_id: Optional[int]
-    corporation_name: Optional[str]
-    alliance_id: Optional[int]
-    alliance_name: Optional[str]
+    corporation_id: int
+    corporation_name: str
+    corporation_ticker: Optional[str]
+    corporation_type: Optional[str]
     scopes: List[str]
 
 
@@ -34,7 +34,7 @@ class UserProfileSchema(BaseModel):
     is_superuser: bool
 
     # eve stuff
-    eve_character_profile: Optional[EvePrimaryCharacterSchema]
+    eve_character_profile: Optional[EveCharacterSchema]
 
     # discord stuff
     discord_user_profile: Optional[DiscordUserSchema]
