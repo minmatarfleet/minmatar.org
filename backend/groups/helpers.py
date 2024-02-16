@@ -1,11 +1,12 @@
 import logging
+from typing import List
 
 from groups.models import RequestableGroup
 
 logger = logging.getLogger(__name__)
 
 
-def get_requestable_groups_for_user(user):
+def get_requestable_groups_for_user(user) -> List[RequestableGroup]:
     groups = RequestableGroup.objects.all()
     available_groups = []
     # filter out availalbe groups if user is missing group
