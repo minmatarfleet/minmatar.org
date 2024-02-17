@@ -26,7 +26,7 @@ if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('no_roles_assigned'))
 
 import type { Character } from '@dtypes/api.minmatar.org'
-import { get_characters } from '@helpers/api.minmatar.org'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 let pilots:Character[] = []
 let get_characters_error:string | false = false
@@ -53,23 +53,27 @@ import Context from '@components/layout/Context.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import TextGroup from '@components/blocks/TextGroup.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+
 import PilotsList from '@components/blocks/PilotsList.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
-import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+
+import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 
 const page_title = t('account.page_title');
 ---
 
 <Viewport
     title={page_title}
-    alert_dialog={true}
-    confirm_dialog={true}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true
+    }}
 >
     <PageDefault
         cover={{
@@ -94,6 +98,24 @@ const page_title = t('account.page_title');
         </FlexInline>
         
         <Context>
+            <ComponentBlock width='narrow'>
+                <div class="ph-item">
+                    <div class="ph-col-12">
+                        <div class="ph-picture"></div>
+                        <div class="ph-row">
+                            <div class="ph-col-6 big"></div>
+                            <div class="ph-col-4 empty big"></div>
+                            <div class="ph-col-2 big"></div>
+                            <div class="ph-col-4"></div>
+                            <div class="ph-col-8 empty"></div>
+                            <div class="ph-col-6"></div>
+                            <div class="ph-col-6 empty"></div>
+                            <div class="ph-col-12"></div>
+                        </div>
+                    </div>
+                </div>
+            </ComponentBlock>
+            
             <ComponentBlock width='narrow'>
                 <FlexInline gap="var(--space-3xl)" justification='space-between'>
                     <FlexInline gap="var(--space-3xl)">
@@ -152,9 +174,8 @@ const page_title = t('account.page_title');
                 <PilotsList
                     pilots={pilots}
                     readonly={readonly}
-                    empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
                 >
-                    {get_characters_error !== false ?
+                    {get_characters_error !== false &&
                         <FlexInline justification='space-between'>
                             <p>{get_characters_error}</p>
                             <Button
@@ -170,8 +191,6 @@ const page_title = t('account.page_title');
                                 {t('reload')}
                             </Button>
                         </FlexInline>
-                        :
-                        t('empty_pilots_text')
                     }
                 </PilotsList>
             </ComponentBlock>

@@ -1,7 +1,7 @@
 import { useTranslations, useTranslatedPath } from '@i18n/utils'
 import { is_prod_mode } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
-import { get_primary_characters } from '@helpers/api.minmatar.org'
+import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 

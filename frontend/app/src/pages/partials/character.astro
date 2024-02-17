@@ -20,7 +20,7 @@ if (!auth_token || !user) {
 
 import type { Alert } from '@dtypes/layout_components'
 import type { Character } from '@dtypes/api.minmatar.org'
-import { get_characters, delete_characters } from '@helpers/api.minmatar.org'
+import { get_characters, delete_characters } from '@helpers/api.minmatar.org/characters'
 import { query_string } from '@helpers/string';
 
 let redirect:string | false = false

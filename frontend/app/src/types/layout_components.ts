@@ -208,3 +208,31 @@ export interface PageVideoOptions {
     title:     string;
     credits?:  string;
 }
+
+export interface ViewportComponents {   
+	alert_dialog?:			boolean;
+	confirm_dialog?:		boolean;
+	personas_finder?:		boolean;
+	corporation_finder?:	boolean;
+	alliance_finder?:		boolean;
+}
+
+export interface GroupListObject {
+    id:             number;
+    name:           string;
+    description:    string;
+    image_url:      string;
+    status:         string;
+    members:        number;
+}
+
+export type GroupRequestType = 'join' | 'leave'
+
+export interface RequestListObject {
+    id:             number;
+    type:           GroupRequestType;
+    character_name: string;
+    character_corp: string;
+    character_org:  string;
+    group_name:     string;
+}
