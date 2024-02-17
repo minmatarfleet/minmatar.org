@@ -2,16 +2,16 @@ import type { Group, GroupRequest } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/groups`
 
-export async function get_groups(access_token:string) {
+export async function get_current_groups(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/`)
+    console.log(`Requesting: ${API_ENDPOINT}/current`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/`, {
+        const response = await fetch(`${API_ENDPOINT}/current`, {
             headers: headers
         })
 
