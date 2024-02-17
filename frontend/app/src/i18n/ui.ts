@@ -10,12 +10,12 @@ export const ui = {
     en: {
         'neocom.fleet_logo_alt': 'Minmatar Fleet',
         'neocom.fitting': 'Fitting',
+        'neocom.alliance': 'Alliance',
+        'neocom.ships': 'Ships',
+        'neocom.market': 'Market',
         'neocom.doctrines': 'Doctrines',
         'neocom.fleets': 'Fleets',
         'neocom.intel': 'Intel',
-        'neocom.freight_service': 'Freight service',
-        'neocom.contracts_service': 'Contracts service',
-        'neocom.groups': 'Groups',
         'neocom.zkillboard': 'Zkillboard',
 
         'generic.meta_description': 'The ultimate platform for Minmatar pilots, provided by the Minmatar Fleet Alliance.',
@@ -39,9 +39,17 @@ export const ui = {
         '500.leading_text': 'A watermelon deployed in our system is jamming our routines.',
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
+        'alliance.page_title': 'Alliance',
+        'alliance.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
+        'alliance.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
+
+        'ships.page_title': 'Ships',
+        'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
+        'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
+
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
-        'fitting.cover_alt': 'A montage of holographic pirate propaganda.',
+        'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
 
         'fitting.list.page_title': 'Fittings list',
 
@@ -143,12 +151,14 @@ export const ui = {
         'icon.fleet.alt': 'EvE Online Fleet Icon',
         'icon.freight.alt': 'EvE Online Cargo Icon',
         'icon.doctrines.alt': 'EvE Online Hangar - Ship Icon',
+        'icon.alliance.alt': 'EvE Online Alliance Icon',
         'icon.fits.alt': 'EvE Online Fitting Icon',
         'icon.tutorial.alt': 'EvE Online Tutorial Icon',
         'icon.zkillboard.alt': 'Eve Online Combat Log Icon',
         'icon.intel.alt': 'Eve Online Structures Icon',
         'icon.groups.alt': 'Eve Online Group List Icon',
         'icon.pilots.alt': 'Eve Online Pilot License Icon',
+        'icon.market.alt': 'Eve Online Market Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -333,5 +343,7 @@ export const ui = {
         'join_request_dialog_title': 'Group join request',
         'pending': 'Pending',
         'joined': 'Joined',
+        'freight_service': 'Freight service',
+        'contract_service': 'Contract service',
     },
 } as const;

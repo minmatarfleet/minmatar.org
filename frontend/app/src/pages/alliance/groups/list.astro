@@ -48,7 +48,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import GroupsList from '@components/blocks/GroupsList.astro';
 import Button from '@components/blocks/Button.astro';
 
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 
@@ -83,12 +82,6 @@ const page_title = t('groups.list.page_title');
                     </PageTitle>
                     <small>{groups.length} {groups.length != 1 ? t('groups_available').toLowerCase() : t('group_available').toLowerCase()}</small>
                 </Flexblock>
-            </FlexInline>
-            <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/groups/list/')}>
-                    <MagnifierIcon slot="icon" />
-                    {t('view_groups')}
-                </Button>
             </FlexInline>
         </FlexInline>
 

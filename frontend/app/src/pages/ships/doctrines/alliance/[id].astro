@@ -11,8 +11,11 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 if (is_prod_mode())
     return HTTP_404_Not_Found()
 
-import doctrines from '@json/page/doctrines/alliance.json';
-import { marked } from 'marked';
+// TODO: Replace the static JSON below with the endpoint request using the id
+const { id } = Astro.params;
+console.log(`TODO: Fetch endpoint with id: ${id}`)
+// Replace me 👇
+import doctrine from '@json/page/doctrines/alliance/heavy_armor.json';
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -24,13 +27,13 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import DoctrineItem from '@components/blocks/DoctrineItem.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemList from '@components/blocks/ItemList.astro';
+import FitItem from '@components/blocks/FitItem.astro';
 import Button from '@components/blocks/Button.astro';
 
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-const page_title = t('doctrines.alliance.page_title');
+const page_title = `${doctrine.name} ${t('doctrine')}`;
 ---
 
 <Viewport title={page_title}>
@@ -46,33 +49,43 @@ const page_title = t('doctrines.alliance.page_title');
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                    <small>{doctrines.length} {t('doctrine').toLowerCase()}{doctrines.length != 1 ? 's' : ''}</small>
-                </Flexblock>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button color={'militia-purple'} href={translatePath('/doctrines/militia')} class="[ !hidden md:!flex ]">
+                <Button color={'alliance-blue'} href={translatePath('/ships/doctrines/alliance')} class="[ !hidden md:!flex ]">
                     <FleetIcon slot="icon" />
-                    {t('militia_doctrines')}
+                    {t('alliance_doctrines')}
                 </Button>
             </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
-            <TextBox set:html={marked.parse(t('doctrines.alliance.page_leading_text'))} />
+            <TextBox>
+                <p>{doctrine.description}</p>
+            </TextBox>
             
-            <Flexblock role="list" gap='var(--space-3xs)'>
+            <Flexblock gap="var(--space-3xs)" role="list">
+                <ItemList title={t('ideal_composition')} items={doctrine.ideal_composition} />
                 
-                {doctrines.map((doctrine) =>
-                    <ComponentBlock>
-                        <DoctrineItem role="listitem" doctrine={doctrine} />
-                    </ComponentBlock>
-                )}
-
+                <Flexblock role="list" gap="var(--space-3xs)">
+                    {doctrine.fittings.map((fit) =>
+                        <FitItem role="listitem" fit={fit} />
+                    )}
+                </Flexblock>
             </Flexblock>
+
+            <TextBox>
+                <p>{doctrine.support_fittings.description}</p>
+            </TextBox>
+
+            <Flexblock gap="var(--space-3xs)" role="list">
+                {doctrine.support_fittings.fitting.map((fit) =>
+                    <FitItem role="listitem" fit={fit} />
+                )}
+            </Flexblock>
+
         </Flexblock>
     </PageWide>
 </Viewport>
