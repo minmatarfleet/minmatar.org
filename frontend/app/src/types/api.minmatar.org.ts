@@ -10,7 +10,7 @@ export interface Group {
     name:           string;
     description:    string;
     image_url:      string;
-    status:         GroupStatus;
+    status?:        GroupStatus;
 }
 
 export interface GroupRequest {

@@ -32,7 +32,7 @@ try {
 }
 
 import { get_app_url } from '@helpers/env'
-const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list/`
+const AVAILABLE_GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/available_groups_list/`
 
 console.log(groups)
 import Viewport from '@layouts/Viewport.astro';
@@ -104,7 +104,7 @@ const page_title = t('groups.list.page_title');
                         <ButtonStack>
                             <Button
                                 size='sm'
-                                hx-get={GROUPS_LIST_PARTIAL_URL}
+                                hx-get={AVAILABLE_GROUPS_LIST_PARTIAL_URL}
                                 hx-target="#groups-list"
                                 hx-on::before-request="this.setAttribute('disabled','')"
                                 hx-on::after-request="this.removeAttribute('disabled')"

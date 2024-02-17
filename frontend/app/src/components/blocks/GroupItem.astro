@@ -20,7 +20,7 @@ const {
 } = Astro.props
 
 import { get_app_url } from '@helpers/env'
-const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item/`
+const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
 
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -64,7 +64,7 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
             </Flexblock>
         </VerticalCenter>
         <VerticalCenter>
-            {group.status == 'available' &&
+            {group?.status == 'available' &&
                 <Button
                     type="button"
                     size='sm'
@@ -87,7 +87,7 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
                                 return_on_accept: ${group.id},
                                 hx: {
                                     method: 'post',
-                                    url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                    url: '${AVAILABLE_GROUP_PARTIAL_URL}?${query_string({
                                         id: group.id.toString()
                                     })}',
                                     target: '#group-item-${group.id}',
@@ -102,10 +102,10 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
                     {t('join')}
                 </Button>
             }
-            {group.status == 'requested' &&
+            {group?.status == 'requested' &&
                 <small>{t('pending')}</small>
             }
-            {group.status == 'confirmed' &&
+            {group?.status == 'confirmed' &&
                 <small>{t('joined')}</small>
             }
         </VerticalCenter>

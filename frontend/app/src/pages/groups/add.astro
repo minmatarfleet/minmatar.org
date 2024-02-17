@@ -52,9 +52,11 @@ const page_title = t('groups.add.page_title');
 
 <Viewport
     title={page_title}
-    personas_finder={true}
-    corporation_finder={true}
-    alliance_finder={true}
+    components={{
+        personas_finder: true,
+        corporation_finder: true,
+        alliance_finder: true    
+    }}
 >
     <PageDefault
         cover={{

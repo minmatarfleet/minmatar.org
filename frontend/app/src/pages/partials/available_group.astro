@@ -38,7 +38,7 @@ if (Astro.request.method === "POST") {
     }
 }
 
-let group:Group | false = false
+let group:Group
 let get_group_request_error:string | false = false
 try {
     group = await get_group_by_id(auth_token, group_id)
@@ -65,7 +65,7 @@ if (create_group_request_error) {
 }
 
 import { get_app_url } from '@helpers/env'
-const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item/`
+const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
 
 import Partial from '@layouts/Partial.astro';
 
@@ -88,7 +88,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             <p>{get_group_request_error}</p>
             <Button
                 size='sm'
-                hx-get={`${GROUP_ITEM_PARTIAL_URL}?id=${group_id}`}
+                hx-get={`${AVAILABLE_GROUP_PARTIAL_URL}?id=${group_id}`}
                 hx-target={`#group-item-${group_id}`}
                 hx-on::before-request="this.setAttribute('disabled','')"
                 hx-on::after-request="this.removeAttribute('disabled')"

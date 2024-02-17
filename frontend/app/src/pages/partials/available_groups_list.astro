@@ -1,0 +1,62 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import type { Group } from '@dtypes/api.minmatar.org'
+import { get_available_groups } from '@helpers/api.minmatar.org/groups'
+
+let groups:Group[] = []
+let get_available_groups_error:string | false = false
+try {
+    groups = await get_available_groups(auth_token)
+} catch (error) {
+    get_available_groups_error = is_prod_mode() ? t('get_available_groups_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const AVAILABLE_GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/available_groups_list/`
+
+import GroupsList from '@components/blocks/GroupsList.astro';
+import Partial from '@layouts/Partial.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from '@components/blocks/Button.astro';
+
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+---
+
+<Partial>
+    <GroupsList groups={groups}>
+        {get_available_groups_error !== false &&
+            <FlexInline justification='space-between'>
+                <p>{get_available_groups_error}</p>
+                <Button
+                    size='sm'
+                    hx-get={AVAILABLE_GROUPS_LIST_PARTIAL_URL}
+                    hx-target="#pilots-list"
+                    hx-on::before-request="this.setAttribute('disabled','')"
+                    hx-on::after-request="this.removeAttribute('disabled')"
+                    hx-swap="outerHTML transition:true"
+                    type="button"
+                >
+                    <RefreshIcon slot="icon" />
+                    {t('reload')}
+                </Button>
+            </FlexInline>
+        }
+    </GroupsList>
+</Partial>
