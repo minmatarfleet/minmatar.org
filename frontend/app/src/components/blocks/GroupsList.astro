@@ -1,0 +1,41 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Group } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    groups?:            Array<Group>;
+    [propName: string]: any;
+}
+
+const {
+    groups = [],
+    ...attributes
+} = Astro.props
+
+import Grid from '@components/compositions/Grid.astro';
+
+import GroupItem from '@components/blocks/GroupItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+<Grid
+    id="groups-list"
+    min_item_width='400px'
+    row_gap='var(--space-2xs)'
+    column_gap='var(--space-2xs)'
+    class="grid-fill"
+>
+    {groups.map((group) =>
+        <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <GroupItem group={group} />
+        </ComponentBlock>
+    )}
+    {groups.length == 0 &&
+        <slot>
+            {t('empty_groups_text')}
+        </slot>
+    }
+</Grid>
