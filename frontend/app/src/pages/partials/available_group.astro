@@ -1,0 +1,103 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+const group_id:number = parseInt(Astro.url.searchParams.get('id'))
+
+import type { Alert } from '@dtypes/layout_components'
+
+let alert:Alert | false = false
+
+import type { Group, GroupRequest } from '@dtypes/api.minmatar.org'
+import { get_group_by_id, create_group_request } from '@helpers/api.minmatar.org/groups'
+import { query_string } from '@helpers/string';
+
+let group_join_request:GroupRequest | false = false
+let create_group_request_error:string | false = false
+if (Astro.request.method === "POST") {
+    try {
+        group_join_request = await create_group_request(auth_token, group_id)
+    } catch (error) {
+        create_group_request_error = is_prod_mode() ? t('create_group_joining_request_error') : error.message
+    }
+}
+
+let group:Group
+let get_group_request_error:string | false = false
+try {
+    group = await get_group_by_id(auth_token, group_id)
+} catch (error) {
+    get_group_request_error = is_prod_mode() ? t('get_group_request_error') : error.message
+}
+
+if (create_group_request_error) {
+    alert = {
+        title: t('join_request_dialog_title'),
+        content: create_group_request_error,
+    }
+
+    if (group) {
+        const params = query_string({
+            name: group.name,
+            description: group.description,
+            image_url: JSON.stringify(group.image_url),
+            message: create_group_request_error
+        })
+
+        alert.partial = `${translatePath('/partials/dialog_with_group/')}?${params}`
+    }
+}
+
+import { get_app_url } from '@helpers/env'
+const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
+
+import Partial from '@layouts/Partial.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import GroupItem from '@components/blocks/GroupItem.astro';
+import Button from '@components/blocks/Button.astro';
+
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+---
+
+<Partial>
+    {get_group_request_error === false ?
+        <GroupItem
+            group={group}
+            alert={alert}
+        />
+        :
+        <FlexInline justification='space-between'>
+            <p>{get_group_request_error}</p>
+            <Button
+                size='sm'
+                hx-get={`${AVAILABLE_GROUP_PARTIAL_URL}?id=${group_id}`}
+                hx-target={`#group-item-${group_id}`}
+                hx-on::before-request="this.setAttribute('disabled','')"
+                hx-on::after-request="this.removeAttribute('disabled')"
+                hx-swap="outerHTML transition:true"
+                type="button"
+            >
+                <RefreshIcon slot="icon" />
+                {t('reload')}
+            </Button>
+        </FlexInline>
+    }
+</Partial>

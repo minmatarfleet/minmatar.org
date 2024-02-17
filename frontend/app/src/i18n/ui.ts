@@ -97,9 +97,16 @@ export const ui = {
         
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
-
+        
         'groups.add.page_title': 'Add group',
-
+        
+        'groups.list.page_title': 'Goups',
+        'groups.list.leading_text': 'You are welcome to request membership in any of the following groups. Your request will be promptly reviewed by the group manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        
+        'groups.management.page_title': 'Goups management',
+        
+        'groups.requests.page_title': 'Goups requests',
+        
         'freight.standard.page_title': 'Standard Freight',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
@@ -224,6 +231,7 @@ export const ui = {
         'fleet': 'Fleet',
         'tracking': 'Tracking',
         'members': 'Members',
+        'member': 'Member',
         'reload': 'Reload',
         'collapse_all': 'Collapse all',
         'forming': 'Forming',
@@ -234,7 +242,8 @@ export const ui = {
         'pilots': 'Pilots',
         'administrator': 'Administrator',
         'director': 'Director',
-        'group': 'group',
+        'group': 'Group',
+        'groups': 'groups',
         'view_groups': 'View groups',
         'add_group': 'Add group',
         'members_visibility_hint': 'Only the fleet commander can view members.',
@@ -311,5 +320,18 @@ export const ui = {
         'unknown_pilot': 'Unknown pilot',
         'missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the header. Otherwise use PageLanding layout.',
         'missing_aside_slot': '⚠️&nbsp;<b>Aside slot missing:</b>&nbsp;Add&nbsp;`slot="aside"`&nbsp;attribute on the element meant to be on the aside. Otherwise use PageDefault layout.',
+        'get_available_groups_error': 'An error occurred while fetching groups.',
+        'groups_available': 'Groups available',
+        'group_available': 'Group available',
+        'group_logo': 'Group logo',
+        'view_group_description': 'View group description',
+        'join': 'Join',
+        'group_management': 'Group management',
+        'empty_groups_text': 'No groups found',
+        'get_group_request_error': 'An error occurred while fetching the group request.',
+        'create_group_joining_request_error': 'An error occurred while processing the joining rerquest.',
+        'join_request_dialog_title': 'Group join request',
+        'pending': 'Pending',
+        'joined': 'Joined',
     },
 } as const;

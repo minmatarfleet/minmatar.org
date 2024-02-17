@@ -1,0 +1,132 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { Group } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string';
+
+interface Props {
+    group:  Group;
+    alert?: Alert | false;
+}
+
+const {
+    group,
+    alert = false,
+} = Astro.props
+
+import { get_app_url } from '@helpers/env'
+const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+
+import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
+---
+
+<FixedFluid
+    width='64px'
+    class="[ group-item ]"
+    id={`group-item-${group.id}`}
+    x-data={`{
+        group_item_init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    x-init="group_item_init()"
+>
+    <picture>
+        {!group?.image_url ?
+            <GroupsEvEIcon />
+            :
+            <img src={group.image_url} width="64" height="64" alt={`${group.name} ${t('group_logo')}`} />
+        }
+    </picture>
+    <FlexInline justification='space-between'>
+        <VerticalCenter>
+            <Flexblock gap='0' class="[ w-full ]">
+                <span>
+                    {group.name}
+                </span>
+                <small>
+                    <a href={group.description} target="_blank">
+                        {t('view_group_description')}
+                    </a>
+                </small>
+            </Flexblock>
+        </VerticalCenter>
+        <VerticalCenter>
+            {group?.status == 'available' &&
+                <Button
+                    type="button"
+                    size='sm'
+                    color='green'
+                    x-bind:disabled="disabled"
+                    x-data={`{
+                        disabled: false,
+                        show_join_request_dialog() {
+                            this.disabled = true
+                            
+                            show_confirm_dialog({
+                                title: '${t('join_request_dialog_title')}',
+                                content: '<p class="loading">${t('requesting_concord')}</p>',
+                                partial: '${translatePath('/partials/dialog_with_group/')}?${query_string({
+                                    name: group.name,
+                                    description: group.description,
+                                    image_url: JSON.stringify(group.image_url),
+                                    message: t('remove_pilot_dialog_text')
+                                })}',
+                                return_on_accept: ${group.id},
+                                hx: {
+                                    method: 'post',
+                                    url: '${AVAILABLE_GROUP_PARTIAL_URL}?${query_string({
+                                        id: group.id.toString()
+                                    })}',
+                                    target: '#group-item-${group.id}',
+                                    swap: 'outerHTML transition:true'
+                                }
+                            }).then( (group_id) => { this.disabled = !!group_id } )
+                        }
+                    }`}
+                    x-on:click="show_join_request_dialog()"
+                    type="button"
+                >
+                    {t('join')}
+                </Button>
+            }
+            {group?.status == 'requested' &&
+                <small>{t('pending')}</small>
+            }
+            {group?.status == 'confirmed' &&
+                <small>{t('joined')}</small>
+            }
+        </VerticalCenter>
+    </FlexInline>
+</FixedFluid>
+
+<style lang="scss">
+    .group-item {
+        picture {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1/1;
+        }
+
+        a {
+            display: inline-block;
+
+            > .flex-inline {
+                max-width: fit-content;
+            }
+        }
+    }
+</style>
