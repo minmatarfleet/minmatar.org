@@ -41,7 +41,7 @@ export const ui = {
 
         'alliance.page_title': 'Alliance',
         'alliance.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
-        'alliance.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
+        'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
 
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
@@ -51,7 +51,7 @@ export const ui = {
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
         'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
 
-        'fitting.list.page_title': 'Fittings list',
+        'fitting.list.page_title': 'Fittings',
 
         'doctrines.page_title': 'Doctrines',
         'doctrines.leading_text': 'You joined a high volume, fast moving PvP alliance. We undock ships. Actually, we undock lots of ships. We have many different kinds of ships because we have many different kinds of enemies. Often those enemies stop logging in because we shoot them too good, and that means we have to frequently change strategies.',
@@ -87,6 +87,10 @@ export const ui = {
 
         'intel.add_structure.page_title': 'Add structure',
         
+        'market.page_title': 'Market',
+        'market.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
+        'market.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
         'contracts.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
@@ -99,7 +103,7 @@ export const ui = {
         'freight.summary.historical_header': 'Historical Summary',
         'freight.summary.current_title': 'Current Summary',
         
-        'groups.page_title': 'Groups',
+        'groups.page_title': 'Teams',
         'groups.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
         
@@ -108,10 +112,17 @@ export const ui = {
         
         'groups.add.page_title': 'Add group',
         
-        'groups.list.page_title': 'Goups',
-        'groups.list.leading_text': 'You are welcome to request membership in any of the following groups. Your request will be promptly reviewed by the group manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'groups.list.page_title': 'Teams',
+        'groups.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
         'groups.management.page_title': 'Goups management',
+        
+        'corporations.page_title': 'Corporations',
+        'corporations.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'corporations.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
+
+        'corporations.list.page_title': 'Corporations',
+        'corporations.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
         'groups.requests.page_title': 'Goups requests',
         
@@ -159,6 +170,7 @@ export const ui = {
         'icon.groups.alt': 'Eve Online Group List Icon',
         'icon.pilots.alt': 'Eve Online Pilot License Icon',
         'icon.market.alt': 'Eve Online Market Icon',
+        'icon.corporation.alt': 'Eve Online Corporation Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -254,7 +266,7 @@ export const ui = {
         'director': 'Director',
         'group': 'Group',
         'groups': 'groups',
-        'view_groups': 'View groups',
+        'view_groups': 'View teams',
         'add_group': 'Add group',
         'members_visibility_hint': 'Only the fleet commander can view members.',
         'information': 'Information',
@@ -340,10 +352,20 @@ export const ui = {
         'empty_groups_text': 'No groups found',
         'get_group_request_error': 'An error occurred while fetching the group request.',
         'create_group_joining_request_error': 'An error occurred while processing the joining rerquest.',
+        'get_all_corporations_error': 'An error occurred while fetching the corporations.',
         'join_request_dialog_title': 'Group join request',
         'pending': 'Pending',
         'joined': 'Joined',
         'freight_service': 'Freight service',
         'contract_service': 'Contract service',
+        'doctrines': 'Doctrines',
+        'fittings': 'Fittings',
+        'teams': 'Teams',
+        'contract': 'Contract',
+        'freight': 'Freight',
+        'create_corporation_application_error': 'An error occurred while submitting the application.',
+        'get_corporation_error': 'An error occurred fetching the corporation.',
+        'corporation_logo': 'corporation logo',
+        'alliance_logo': 'alliance logo',
     },
 } as const;

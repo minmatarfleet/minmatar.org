@@ -21,3 +21,17 @@ export interface GroupRequest {
     approved_by:    number;
     approved_at:    string;
 }
+
+export interface Corporation {
+    corporation_id:     number;
+    corporation_name:   string;
+    alliance_id:        number;
+    alliance_name:      string,
+    corporation_type:   string;
+}
+
+export interface CorporationApplication {
+    status:         string;
+    user_id:        number;
+    corporation_id: number;
+}

@@ -1,0 +1,98 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+const corporation_id:number = parseInt(Astro.url.searchParams.get('id'))
+
+import type { Alert, CorporationObject } from '@dtypes/layout_components'
+
+let alert:Alert | false = false
+
+import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
+import { get_corporation_for_corporations_list_by_id } from '@helpers/fetching/corporations'
+import { query_string } from '@helpers/string';
+
+let create_corporation_application_error:string | false = false
+if (Astro.request.method === "POST") {
+    try {
+        await create_corporation_application(auth_token, corporation_id)
+    } catch (error) {
+        create_corporation_application_error = is_prod_mode() ? t('create_corporation_application_error') : error.message
+    }
+}
+
+let corporation:CorporationObject
+let get_corporation_error:string | false = false
+try {
+    corporation = await get_corporation_for_corporations_list_by_id(auth_token, corporation_id, user.user_id)
+} catch (error) {
+    get_corporation_error = is_prod_mode() ? t('get_corporation_error') : error.message
+}
+
+if (create_corporation_application_error) {
+    alert = {
+        title: t('join_request_dialog_title'),
+        content: create_corporation_application_error,
+    }
+
+    if (corporation) {
+        const params:any = corporation
+        params.message = create_corporation_application_error
+
+        alert.partial = `${translatePath('/partials/dialog_with_corporation/')}?${query_string(params)}`
+    }
+}
+
+import { get_app_url } from '@helpers/env'
+const CORPORATION_ITEM_PARTIAL_URL = `${get_app_url()}/partials/corporation_item_component/`
+
+import Partial from '@layouts/Partial.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CorporationItem from '@components/blocks/CorporationItem.astro';
+import Button from '@components/blocks/Button.astro';
+
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+---
+
+<Partial>
+    {get_corporation_error === false ?
+        <CorporationItem
+            corporation={corporation}
+            alert={alert}
+        />
+        :
+        <FlexInline justification='space-between'>
+            <p>{get_corporation_error}</p>
+            <Button
+                size='sm'
+                hx-get={`${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`}
+                hx-target={`#corporation-item-${corporation_id}`}
+                hx-on::before-request="this.setAttribute('disabled','')"
+                hx-on::after-request="this.removeAttribute('disabled')"
+                hx-swap="outerHTML transition:true"
+                type="button"
+            >
+                <RefreshIcon slot="icon" />
+                {t('reload')}
+            </Button>
+        </FlexInline>
+    }
+</Partial>

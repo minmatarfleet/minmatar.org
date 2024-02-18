@@ -236,3 +236,12 @@ export interface RequestListObject {
     character_org:  string;
     group_name:     string;
 }
+
+export interface CorporationObject {
+    corporation_id:     number;
+    corporation_name:   string;
+    alliance_id:        number;
+    alliance_name:      string,
+    corporation_type:   string;
+    status?:            string;
+}

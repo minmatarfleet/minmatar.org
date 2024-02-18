@@ -1,0 +1,41 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporations?:            Array<CorporationObject>;
+    [propName: string]: any;
+}
+
+const {
+    corporations = [],
+    ...attributes
+} = Astro.props
+
+import Grid from '@components/compositions/Grid.astro';
+
+import CorporationItem from '@components/blocks/CorporationItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+<Grid
+    id="corporations-list"
+    min_item_width='400px'
+    row_gap='var(--space-2xs)'
+    column_gap='var(--space-2xs)'
+    class="grid-fill"
+>
+    {corporations.map((corporation) =>
+        <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <CorporationItem corporation={corporation} />
+        </ComponentBlock>
+    )}
+    {corporations.length == 0 &&
+        <slot>
+            {t('empty_corporations_text')}
+        </slot>
+    }
+</Grid>

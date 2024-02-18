@@ -1,0 +1,84 @@
+---
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+interface Props {
+    title:              string,
+    subtitle?:          false | string,
+    href:               string;
+    circle?:            boolean,
+    [propName: string]: any;
+}
+
+const {
+    title,
+    subtitle = false,
+    href,
+    circle = false,
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<a class:list={[ 'button-card', { circle: circle }, Astro.props.class]} {...attributes} href={href}>
+    <ComponentBlock padding_block='var(--space-l)' padding_inline="0">
+        <Flexblock
+            gap="var(--space-3xs)"
+            class="items-center"
+        >
+            <picture>
+                <slot name="icon" />
+            </picture>
+            <Flexblock gap="var(--space-3xs)" class="[ text-center ]">
+                <h3>{title}</h3>
+                {subtitle &&
+                    <small>{subtitle}</small>
+                }
+            </Flexblock>
+        </Flexblock>
+    </ComponentBlock>
+</a>
+
+<style lang="scss">
+    picture {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 64px;
+        width: 64px;
+    }
+
+    :global(.button-card picture > *) {
+        transition: var(--fast-transition);
+    }
+        
+    .circle picture {
+        background-color: white;
+        border-radius: 50%;
+    }
+
+    .button-card {
+        color: var(--highlight);
+        text-decoration: none;
+        transition: var(--fast-transition);
+    }
+
+    :global(.button-card img) {
+        transition: var(--fast-transition);
+        filter: drop-shadow(0 0 5px transparent);
+    }
+
+    :global(.button-card:hover img) {
+        filter: drop-shadow(0 0 5px white);
+    }
+
+    h3 {
+        text-align: center;
+        color: var(--highlight);
+    }
+        
+    small {
+        color: var(--highlight);
+    }
+</style>

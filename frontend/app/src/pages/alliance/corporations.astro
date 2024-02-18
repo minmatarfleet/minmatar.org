@@ -23,25 +23,24 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 
-import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import ButtonCard from '@components/blocks/ButtonCard.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import Button from '@components/blocks/Button.astro';
 
-import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
-import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
-const page_title = t('alliance.page_title');
-const page_description = t('alliance.leading_text');
+const page_title = t('groups.page_title');
+const page_description = t('groups.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
-            image: "/images/alliance-cover.jpg",
-            image_990: "/images/alliance-cover-990.jpg",
-            alt: t('alliance.cover_alt'),
+            image: "/images/groups-cover.jpg",
+            image_990: "/images/groups-cover-990.jpg",
+            alt: t('groups.cover_alt'),
             overlay: true
         }}
     >
@@ -51,16 +50,12 @@ const page_description = t('alliance.leading_text');
                 <p>{page_description}</p>
             </Flexblock>
             
-
-            <ButtonCardGrid>
-                <ButtonCard title={t('teams')} href={translatePath('/alliance/groups/')}>
-                    <GroupsEvEIcon slot="icon" />
-                </ButtonCard>
-
-                <ButtonCard title={t('corporations')} href={translatePath('/alliance/corporations/list/')}>
-                    <CorporationEvEIcon slot="icon" />
-                </ButtonCard>
-            </ButtonCardGrid>
+            <ButtonStack>
+                <Button href={translatePath('/alliance/corporations/apply/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_groups')}
+                </Button>
+            </ButtonStack>
         </Flexblock>
     </PageLanding>
 </Viewport>
