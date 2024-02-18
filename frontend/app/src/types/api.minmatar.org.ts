@@ -35,3 +35,26 @@ export interface CorporationApplication {
     user_id:        number;
     corporation_id: number;
 }
+
+export interface UserProfile {
+    user_id:               number;
+    username:              string;
+    permissions:           any[];
+    is_superuser:          boolean;
+    eve_character_profile: EveCharacterProfile;
+    discord_user_profile:  DiscordUserProfile;
+}
+
+export interface DiscordUserProfile {
+    id:          number;
+    discord_tag: string;
+    avatar:      string;
+}
+
+export interface EveCharacterProfile {
+    character_id:     number;
+    character_name:   string;
+    corporation_id:   number;
+    corporation_name: string;
+    scopes:           string[];
+}

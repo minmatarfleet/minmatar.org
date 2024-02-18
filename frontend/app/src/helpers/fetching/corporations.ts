@@ -1,4 +1,3 @@
-
 import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');

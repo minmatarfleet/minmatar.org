@@ -245,3 +245,19 @@ export interface CorporationObject {
     corporation_type:   string;
     status?:            string;
 }
+
+export interface GroupRequestUI {
+    character_id:       number;
+    character_name:     string;
+    corporation_id:    number;
+    corporation_name:  string;
+    group_id:           number;
+    group_name:         string;
+}
+
+export interface ErrorRefetchParams {
+    partial:    string;
+    message:    string;
+    delay:      number;
+    target:     string,
+}
