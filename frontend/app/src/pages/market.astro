@@ -17,13 +17,15 @@ import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import ButtonStack from '@components/blocks/ButtonStack.astro';
-import Button from '@components/blocks/Button.astro';
+import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
 
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ButtonCard from '@components/blocks/ButtonCard.astro';
 
-const page_title = t('contracts.page_title');
-const page_description = t('contracts.leading_text');
+import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
+import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
+
+const page_title = t('market.page_title');
+const page_description = t('market.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
@@ -31,7 +33,7 @@ const page_description = t('contracts.leading_text');
         cover={{
             image: "/images/contract-service-cover.jpg",
             image_990: "/images/contract-service-cover-990.jpg",
-            alt: t('contracts.cover_alt'),
+            alt: t('market.cover_alt'),
             overlay: true
         }}
     >
@@ -41,17 +43,15 @@ const page_description = t('contracts.leading_text');
                 <p>{page_description}</p>
             </Flexblock>
 
-            <ButtonStack>
-                <Button color={'green'} href={translatePath('/market/freight/')}>
-                    <MagnifierIcon slot="icon" />
-                    {t('freight_service')}
-                </Button>
+            <ButtonCardGrid>
+                <ButtonCard title={t('freight')} href={translatePath('/market/freight/')}>
+                    <FreightServiceEvEIcon slot="icon" />
+                </ButtonCard>
 
-                <Button color={'green'} href={translatePath('/market/contracts/')}>
-                    <MagnifierIcon slot="icon" />
-                    {t('contract_service')}
-                </Button>
-            </ButtonStack>
+                <ButtonCard title={t('contract')} href={translatePath('/market/contracts/')}>
+                    <ContractsServiceEvEIcon slot="icon" />
+                </ButtonCard>
+            </ButtonCardGrid>
         </Flexblock>
     </PageLanding>
 </Viewport>

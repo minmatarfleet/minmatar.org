@@ -17,10 +17,12 @@ import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import ButtonStack from '@components/blocks/ButtonStack.astro';
-import Button from '@components/blocks/Button.astro';
+import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
 
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ButtonCard from '@components/blocks/ButtonCard.astro';
+
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 
 const page_title = t('ships.page_title');
 const page_description = t('ships.leading_text');
@@ -40,18 +42,16 @@ const page_description = t('ships.leading_text');
                 <h1>{page_title}</h1>
                 <p>{page_description}</p>
             </Flexblock>
-            
-            <ButtonStack>
-                <Button color={'fleet-red'} href={translatePath('/ships/fitting/')}>
-                    <MagnifierIcon slot="icon" />
-                    {t('list_fits_button')}
-                </Button>
-                
-                <Button color={'fleet-red'} href={translatePath('/ships/doctrines/')}>
-                    <MagnifierIcon slot="icon" />
-                    {t('list_fits_button')}
-                </Button>
-            </ButtonStack>
+
+            <ButtonCardGrid>
+                <ButtonCard title={t('fittings')} href={translatePath('/ships/fitting/list')}>
+                    <FitsEvEIcon slot="icon" />
+                </ButtonCard>
+
+                <ButtonCard title={t('doctrines')} href={translatePath('/ships/doctrines/')}>
+                    <DoctrinesEvEIcon slot="icon" />
+                </ButtonCard>
+            </ButtonCardGrid>
         </Flexblock>
     </PageLanding>
 </Viewport>

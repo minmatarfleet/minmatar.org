@@ -19,7 +19,7 @@ import NeocomButton from '@components/blocks/NeocomButton.astro';
 
 import UserAuth from '@components/UserAuth.astro';
 
-import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
@@ -45,7 +45,7 @@ const page = Astro.url.pathname
         }
         {!is_prod_mode() &&
             <NeocomButton active={page.includes(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
-                <FitsEvEIcon />
+                <ShipTreeEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
@@ -125,6 +125,7 @@ const page = Astro.url.pathname
         box-sizing: border-box;
         animation: rotation 1s linear infinite;
 
+        &.htmx-request,
         &.active {
             border-bottom-color: rgba(255, 255, 255, 0.75);
         }
