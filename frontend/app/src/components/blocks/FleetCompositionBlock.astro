@@ -65,7 +65,7 @@ const members = composition.reduce(
                 size='sm'
                 hx-post={translatePath(`/partials/fleet_composition?id=${fleet_id}`)}
                 hx-target="#fleet-composition-component"
-                hx-swap="innerHTML transition:true"
+                hx-swap="outerHTML transition:true"
                 hx-indicator="#fleet-composition-dscan"
                 x-on:click="start_dscan_animation()"
                 hx-on::before-request="this.setAttribute('disabled','');"
