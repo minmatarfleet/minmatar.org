@@ -33,7 +33,6 @@ try {
 import { get_app_url } from '@helpers/env'
 const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
 
-console.log(corporations)
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -45,10 +44,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import CorporationsList from '@components/blocks/CorporationsList.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('corporations.list.page_title');
 ---
@@ -90,24 +86,15 @@ const page_title = t('corporations.list.page_title');
             </TextBox>
 
             <CorporationsList corporations={corporations}>
-                {get_all_corporations_error !== false &&
-                    <Flexblock>
-                        <p>{get_all_corporations_error}</p>
-                        <ButtonStack>
-                            <Button
-                                size='sm'
-                                hx-get={CORPORATIONS_LIST_PARTIAL_URL}
-                                hx-target="#corporations-list"
-                                hx-on::before-request="this.setAttribute('disabled','')"
-                                hx-on::after-request="this.removeAttribute('disabled')"
-                                hx-swap="outerHTML transition:true"
-                                type="button"
-                            >
-                                <RefreshIcon slot="icon" />
-                                {t('reload')}
-                            </Button>
-                        </ButtonStack>
-                    </Flexblock>
+                {get_all_corporations_error &&
+                    <ErrorRefetch
+                        args={{
+                            partial: CORPORATIONS_LIST_PARTIAL_URL,
+                            message: get_all_corporations_error,
+                            delay: 0,
+                            target: '#corporations-list',
+                        }}
+                    />
                 }
             </CorporationsList>
         </Flexblock>

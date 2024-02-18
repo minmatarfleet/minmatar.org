@@ -367,5 +367,8 @@ export const ui = {
         'get_corporation_error': 'An error occurred fetching the corporation.',
         'corporation_logo': 'corporation logo',
         'alliance_logo': 'alliance logo',
+        'retrying_in': 'Retrying in',
+        'retrying_now': 'Retrying now',
+        'seconds': 'seconds',
     },
 } as const;

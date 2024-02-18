@@ -33,32 +33,23 @@ const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_li
 
 import Partial from '@layouts/Partial.astro';
 
-import FlexInline from '@components/compositions/FlexInline.astro';
+const delay = parseInt(Astro.url.searchParams.get('delay'))
 
 import CorporationsList from '@components/blocks/CorporationsList.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
     <CorporationsList corporations={corporations}>
-        {get_all_corporations_error !== false &&
-            <FlexInline justification='space-between'>
-                <p>{get_all_corporations_error}</p>
-                <Button
-                    size='sm'
-                    hx-get={CORPORATIONS_LIST_PARTIAL_URL}
-                    hx-target="#corporations-list"
-                    hx-on::before-request="this.setAttribute('disabled','')"
-                    hx-on::after-request="this.removeAttribute('disabled')"
-                    hx-swap="outerHTML transition:true"
-                    type="button"
-                >
-                    <RefreshIcon slot="icon" />
-                    {t('reload')}
-                </Button>
-            </FlexInline>
+        {get_all_corporations_error &&
+            <ErrorRefetch
+                args={{
+                    partial: CORPORATIONS_LIST_PARTIAL_URL,
+                    message: get_all_corporations_error,
+                    delay: delay,
+                    target: '#corporations-list',
+                }}
+            />
         }
     </CorporationsList>
 </Partial>

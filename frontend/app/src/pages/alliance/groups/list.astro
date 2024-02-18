@@ -1,9 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -46,10 +45,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupsList from '@components/blocks/GroupsList.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('groups.list.page_title');
 ---
@@ -91,24 +87,15 @@ const page_title = t('groups.list.page_title');
             </TextBox>
 
             <GroupsList groups={groups}>
-                {get_available_groups_error !== false &&
-                    <Flexblock>
-                        <p>{get_available_groups_error}</p>
-                        <ButtonStack>
-                            <Button
-                                size='sm'
-                                hx-get={AVAILABLE_GROUPS_LIST_PARTIAL_URL}
-                                hx-target="#groups-list"
-                                hx-on::before-request="this.setAttribute('disabled','')"
-                                hx-on::after-request="this.removeAttribute('disabled')"
-                                hx-swap="outerHTML transition:true"
-                                type="button"
-                            >
-                                <RefreshIcon slot="icon" />
-                                {t('reload')}
-                            </Button>
-                        </ButtonStack>
-                    </Flexblock>
+                {get_available_groups_error &&
+                    <ErrorRefetch
+                        args={{
+                            partial: AVAILABLE_GROUPS_LIST_PARTIAL_URL,
+                            message: get_available_groups_error,
+                            delay: 0,
+                            target: '#groups-list',
+                        }}
+                    />
                 }
             </GroupsList>
         </Flexblock>

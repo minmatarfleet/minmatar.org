@@ -1,0 +1,56 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { ErrorRefetchParams } from '@dtypes/layout_components';
+interface Props {
+    args:    ErrorRefetchParams;
+}
+
+const {
+    args
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+let url = new URL(args.partial)
+const MAX_RETRYING_TIME_SECONDS = import.meta.env.MAX_RETRYING_TIME_SECONDS ?? 30
+const RETRYING_TIME_INCREMENT_SECONDS = import.meta.env.RETRYING_TIME_INCREMENT_SECONDS ?? 5
+const next_delay = (args.delay < MAX_RETRYING_TIME_SECONDS ? args.delay + RETRYING_TIME_INCREMENT_SECONDS : MAX_RETRYING_TIME_SECONDS)
+
+url.searchParams.append('delay', next_delay.toString())
+---
+<Flexblock>
+    <p>{args.message}</p>
+    <div
+        class="[ loading ]"
+        hx-get={`${url.toString()}`}
+        hx-trigger={`load delay:${args.delay}s`}
+        hx-target={args.target}
+        hx-swap="outerHTML transition:true"
+        x-data={`{
+            countdown: ${args.delay},
+            timer: null,
+            get_text() {
+                return (this.countdown > 0 ? '${t('retrying_in')} '+this.countdown+' ${t('seconds')}' : '${t('retrying_now')}')
+            },
+            tick(that) {
+                console.log('tick')
+                if (that.countdown > 0) {
+                    that.countdown--
+                } else if (that.timer) {
+                    clearInterval(that.timer)
+                }
+            },
+            start_countdown() {
+                this.timer = setInterval(this.tick, 1000, this)
+            }
+        }`}
+        x-init="start_countdown"
+        x-text="get_text()"
+    >
+        {args.delay > 0 ? `${t('retrying_in')} ${args.delay} ${t('seconds')}` : t('retrying_now')}
+    </div>
+</Flexblock>

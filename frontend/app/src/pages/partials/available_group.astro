@@ -67,14 +67,12 @@ if (create_group_request_error) {
 import { get_app_url } from '@helpers/env'
 const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
 
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
 import Partial from '@layouts/Partial.astro';
 
-import FlexInline from '@components/compositions/FlexInline.astro';
-
 import GroupItem from '@components/blocks/GroupItem.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
@@ -84,20 +82,14 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             alert={alert}
         />
         :
-        <FlexInline justification='space-between'>
-            <p>{get_group_request_error}</p>
-            <Button
-                size='sm'
-                hx-get={`${AVAILABLE_GROUP_PARTIAL_URL}?id=${group_id}`}
-                hx-target={`#group-item-${group_id}`}
-                hx-on::before-request="this.setAttribute('disabled','')"
-                hx-on::after-request="this.removeAttribute('disabled')"
-                hx-swap="outerHTML transition:true"
-                type="button"
-            >
-                <RefreshIcon slot="icon" />
-                {t('reload')}
-            </Button>
-        </FlexInline>
+        
+        <ErrorRefetch
+            args={{
+                partial: AVAILABLE_GROUP_PARTIAL_URL,
+                message: get_group_request_error,
+                delay: delay,
+                target: `#group-item-${group_id}`,
+            }}
+        />
     }
 </Partial>

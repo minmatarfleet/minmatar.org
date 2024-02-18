@@ -31,32 +31,24 @@ try {
 import { get_app_url } from '@helpers/env'
 const AVAILABLE_GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/available_groups_list/`
 
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
 import GroupsList from '@components/blocks/GroupsList.astro';
 import Partial from '@layouts/Partial.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
     <GroupsList groups={groups}>
-        {get_available_groups_error !== false &&
-            <FlexInline justification='space-between'>
-                <p>{get_available_groups_error}</p>
-                <Button
-                    size='sm'
-                    hx-get={AVAILABLE_GROUPS_LIST_PARTIAL_URL}
-                    hx-target="#groups-list"
-                    hx-on::before-request="this.setAttribute('disabled','')"
-                    hx-on::after-request="this.removeAttribute('disabled')"
-                    hx-swap="outerHTML transition:true"
-                    type="button"
-                >
-                    <RefreshIcon slot="icon" />
-                    {t('reload')}
-                </Button>
-            </FlexInline>
+        {get_available_groups_error &&
+            <ErrorRefetch
+                args={{
+                    partial: AVAILABLE_GROUPS_LIST_PARTIAL_URL,
+                    message: get_available_groups_error,
+                    delay: delay,
+                    target: '#groups-list',
+                }}
+            />
         }
     </GroupsList>
 </Partial>

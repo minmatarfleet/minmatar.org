@@ -61,9 +61,9 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
 const page_title = t('account.page_title');
 ---
@@ -157,22 +157,15 @@ const page_title = t('account.page_title');
                     pilots={pilots}
                     readonly={readonly}
                 >
-                    {get_characters_error !== false &&
-                        <FlexInline justification='space-between'>
-                            <p>{get_characters_error}</p>
-                            <Button
-                                size='sm'
-                                hx-get={CHARACTER_PARTIAL_URL}
-                                hx-target="#pilots-list"
-                                hx-on::before-request="this.setAttribute('disabled','')"
-                                hx-on::after-request="this.removeAttribute('disabled')"
-                                hx-swap="outerHTML transition:true"
-                                type="button"
-                            >
-                                <RefreshIcon slot="icon" />
-                                {t('reload')}
-                            </Button>
-                        </FlexInline>
+                    {get_characters_error &&
+                        <ErrorRefetch
+                            args={{
+                                partial: CHARACTER_PARTIAL_URL,
+                                message: get_characters_error,
+                                delay: 0,
+                                target: '#pilots-list',
+                            }}
+                        />
                     }
                 </PilotsList>
             </ComponentBlock>

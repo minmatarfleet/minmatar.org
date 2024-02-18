@@ -64,12 +64,10 @@ const CORPORATION_ITEM_PARTIAL_URL = `${get_app_url()}/partials/corporation_item
 
 import Partial from '@layouts/Partial.astro';
 
-import FlexInline from '@components/compositions/FlexInline.astro';
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import CorporationItem from '@components/blocks/CorporationItem.astro';
-import Button from '@components/blocks/Button.astro';
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
@@ -79,20 +77,13 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             alert={alert}
         />
         :
-        <FlexInline justification='space-between'>
-            <p>{get_corporation_error}</p>
-            <Button
-                size='sm'
-                hx-get={`${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`}
-                hx-target={`#corporation-item-${corporation_id}`}
-                hx-on::before-request="this.setAttribute('disabled','')"
-                hx-on::after-request="this.removeAttribute('disabled')"
-                hx-swap="outerHTML transition:true"
-                type="button"
-            >
-                <RefreshIcon slot="icon" />
-                {t('reload')}
-            </Button>
-        </FlexInline>
+        <ErrorRefetch
+            args={{
+                partial: `${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`,
+                message: get_corporation_error,
+                delay: delay,
+                target: `#corporation-item-${corporation_id}`,
+            }}
+        />
     }
 </Partial>
