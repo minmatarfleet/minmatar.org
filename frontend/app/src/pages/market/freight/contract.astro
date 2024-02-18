@@ -16,7 +16,7 @@ import type { FreightCalculation } from '@dtypes/layout_components'
 const from = Astro.cookies.has('from') ? Astro.cookies.get('from').value : ''
 if (!Astro.cookies.has('contract')) {
 
-    return Astro.redirect(translatePath(`/freight/${from}`))
+    return Astro.redirect(translatePath(`/market/freight/${from}`))
 }
 
 const calculation:FreightCalculation = Astro.cookies.get('contract').json();
@@ -64,7 +64,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:!block ]" href={translatePath(`/freight/${from}`)}>
+                <Button class="[ !hidden sm:!block ]" href={translatePath(`/market/freight/${from}`)}>
                     <HistoryIcon slot="icon" />
                     {t('recalculate')}
                 </Button>

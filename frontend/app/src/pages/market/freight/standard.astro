@@ -12,7 +12,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 if (is_prod_mode())
     return HTTP_404_Not_Found()
 
-Astro.cookies.delete('contract', { path: '/freight/' })
+Astro.cookies.delete('contract', { path: '/market/freight/' })
 
 if (Astro.request.method === "POST") {
     try {
@@ -25,10 +25,10 @@ if (Astro.request.method === "POST") {
     }
     // TODO: Replace the static JSON value `calculation` with the endpoint request using the id
     //                                👇
-    Astro.cookies.set('contract', calculation, { path: '/freight/' })
-    Astro.cookies.set('from', 'standard', { path: '/freight/' })
+    Astro.cookies.set('contract', calculation, { path: '/market/freight/' })
+    Astro.cookies.set('from', 'standard', { path: '/market/freight/' })
 
-    return Astro.redirect(translatePath('/freight/contract'))
+    return Astro.redirect(translatePath('/market/freight/contract'))
 }
 
 import routes_options from '@json/hosted/freight.standard.route.options.json';
@@ -78,11 +78,11 @@ const page_title = t('freight.standard.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button color={'green'} class="[ !hidden md:!flex ]" href={translatePath('/freight/wormhole/')}>
+                <Button color={'green'} class="[ !hidden md:!flex ]" href={translatePath('/market/freight/wormhole/')}>
                     <AddIcon slot="icon" />
                     {t('wormhole_freight')}
                 </Button>
-                <Button class="[ !hidden lg:!flex ]" href={translatePath('/freight/summary/')}>
+                <Button class="[ !hidden lg:!flex ]" href={translatePath('/market/freight/summary/')}>
                     <HistoryIcon slot="icon" />
                     {t('30_day_summary')}
                 </Button>
