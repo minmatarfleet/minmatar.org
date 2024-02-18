@@ -47,7 +47,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                 <Button
                     size='sm'
                     hx-get={AVAILABLE_GROUPS_LIST_PARTIAL_URL}
-                    hx-target="#pilots-list"
+                    hx-target="#groups-list"
                     hx-on::before-request="this.setAttribute('disabled','')"
                     hx-on::after-request="this.removeAttribute('disabled')"
                     hx-swap="outerHTML transition:true"
