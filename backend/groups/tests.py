@@ -279,6 +279,28 @@ class GroupTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 204)
 
+    def test_get_groups_managed_sucesss(self):
+        group = Group.objects.create(name="Test Group")
+        requestable_group = RequestableGroup.objects.create(group=group)
+        requestable_group.group_managers.add(self.user)
+
+        response = self.client.get(
+            f"{BASE_URL}managed", HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                    "description": None,
+                    "image_url": None,
+                    "status": None,
+                }
+            ],
+        )
+
 
 class GroupRequestTestCase(TestCase):
     """Test cases for the group request endpoints."""

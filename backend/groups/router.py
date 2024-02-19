@@ -47,6 +47,17 @@ def get_available_groups(request):
     return response
 
 
+@router.get("/manage", response=List[GroupSchema], auth=AuthBearer())
+def get_managed_groups(request):
+    groups = RequestableGroup.objects.filter(
+        group_managers__id=request.user.id
+    )
+    response = []
+    for group in groups:
+        response.append(get_group(group.group.id, request.user.id))
+    return response
+
+
 # get group by id
 @router.get(
     "/{group_id}",
