@@ -21,7 +21,6 @@ def get_user_profile(user_id: int) -> UserProfileSchema:
             f"{p._meta.app_label}.{p.codename}"  # pylint: disable=protected-access
             for p in user.user_permissions.all()
         ],
-        "is_staff": user.is_staff,
         "is_superuser": user.is_superuser,
         "eve_character_profile": {
             "character_id": primary_character.character.character_id,
