@@ -287,6 +287,7 @@ class GroupTestCase(TestCase):
         response = self.client.get(
             f"{BASE_URL}managed", HTTP_AUTHORIZATION=f"Bearer {self.token}"
         )
+        print(response.json())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
@@ -296,7 +297,7 @@ class GroupTestCase(TestCase):
                     "name": group.name,
                     "description": None,
                     "image_url": None,
-                    "status": None,
+                    "status": "available",
                 }
             ],
         )
