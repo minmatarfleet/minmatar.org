@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("eveonline", "0020_alter_evecharacter_character_id_and_more"),
     ]

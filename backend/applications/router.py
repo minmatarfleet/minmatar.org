@@ -45,7 +45,6 @@ class ErrorResponse(BaseModel):
     response=List[CorporationApplicationResponse],
 )
 def get_corporation_applications(request, corporation_id: int):
-
     applications = EveCorporationApplication.objects.filter(
         corporation__corporation_id=corporation_id
     )
