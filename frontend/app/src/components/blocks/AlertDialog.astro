@@ -36,6 +36,7 @@ interface Props {
                     x-bind:hx-trigger="alert_dialog_partial ? 'intersect' : false"
                     x-bind:hx-swap="alert_dialog_partial ? 'innerHTML transition:true' : false"
                     hx-target="#alert-dialog-description"
+                    hx-indicator=".loader"
                 ></div>
             </Flexblock>
 
@@ -50,6 +51,7 @@ interface Props {
                     x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false"
                     x-bind:hx-target="alert_dialog_hx?.target ?? false"
                     x-bind:hx-swap="alert_dialog_hx?.swap ?? false"
+                    hx-indicator=".loader"
                 >
                     {t('ok')}
                 </Button>

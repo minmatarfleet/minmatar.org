@@ -29,6 +29,7 @@ url.searchParams.append('delay', next_delay.toString())
         hx-get={`${url.toString()}`}
         hx-trigger={`load delay:${args.delay}s`}
         hx-target={args.target}
+        hx-indicator=".loader"
         hx-swap="outerHTML transition:true"
         x-data={`{
             countdown: ${args.delay},

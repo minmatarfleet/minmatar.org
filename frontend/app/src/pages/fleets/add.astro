@@ -149,6 +149,7 @@ const today = new Date().toISOString().split("T")[0]
                                                 hx-target="#doctrine-hx-target"
                                                 hx-trigger="change"
                                                 hx-swap="innerHTML transition:true"
+                                                hx-indicator=".loader"
                                             >
                                                 {doctrines_select_options.map((option) => 
                                                     <option value={option.id}>{option.name}</option>

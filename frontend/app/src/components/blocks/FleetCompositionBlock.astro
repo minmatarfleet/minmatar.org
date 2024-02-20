@@ -40,6 +40,8 @@ const members = composition.reduce(
         start_dscan_animation() {
             this.dscan_active = true
 
+            document.getElementById('fleet-composition-dscan').classList.add('fade')
+
             if (this.remove_dscan_class_timer) clearTimeout(this.remove_dscan_class_timer)
 
             setTimeout(() => { play_sound('/sounds/dscan.mp3') } )
@@ -66,7 +68,7 @@ const members = composition.reduce(
                 hx-post={translatePath(`/partials/fleet_composition?id=${fleet_id}`)}
                 hx-target="#fleet-composition-component"
                 hx-swap="outerHTML transition:true"
-                hx-indicator="#fleet-composition-dscan"
+                hx-indicator=".loader"
                 x-on:click="start_dscan_animation()"
                 hx-on::before-request="this.setAttribute('disabled','');"
                 hx-on::after-request="this.removeAttribute('disabled')"
@@ -99,7 +101,7 @@ const members = composition.reduce(
         transition: var(--slow-transition);
     }
 
-    :global(#fleet-composition-dscan.htmx-request > div) {
+    :global(#fleet-composition-dscan.fade > div) {
         opacity: 0.25
     }
 
