@@ -398,5 +398,6 @@ export const ui = {
         'corporation_history': 'Corporation history',
         'to': 'to',
         'to_this_day': 'to this day',
+        'zkillboard': 'Zkillboard',
     },
 } as const;

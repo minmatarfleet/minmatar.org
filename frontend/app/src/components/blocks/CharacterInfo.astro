@@ -20,7 +20,7 @@ import { is_prod_mode } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
 import { format_date } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
-import { get_character_faction, get_race_cover_image } from '@helpers/eve'
+import { get_character_faction, get_race_cover_image, get_zkillboard_character_link } from '@helpers/eve'
 import type { CharacterRaces } from '@dtypes/layout_components'
 
 let character:CharacterEvE
@@ -48,6 +48,8 @@ import AllianceBadge from '@components/blocks/AllianceBadge.astro'
 import VerticalCenter from '@components/blocks/VerticalCenter.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import SectionH4 from '@components/blocks/SectionH4.astro';
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
 import AmarrLogo from '@components/logos/AmarrLogo.astro';
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
@@ -89,12 +91,13 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                                     id: character.alliance_id
                                 }} />
                             }
+                            <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
                         </Flexblock>
                     </Flexblock>
                 </VerticalCenter>
-                <VerticalCenter>
+                <picture>
                     {race == 'amarr' &&
-                        <AmarrLogo />
+                            <AmarrLogo />
                     }
                     {race == 'minmatar' &&
                         <MinmatarLogo />
@@ -105,7 +108,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                     {race == 'gallente' &&
                         <GallenteLogo />
                     }
-                </VerticalCenter>
+                </picture>
             </FluidFixed>
         </FixedFluid>
         
