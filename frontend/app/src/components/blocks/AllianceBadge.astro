@@ -1,0 +1,46 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AllianceBadgeProps } from '@dtypes/layout_components'
+import { get_alliance_by_id } from '@helpers/api.eveonline/alliances'
+import type { AllianceEvE } from '@dtypes/api.eveonline'
+import { is_prod_mode } from '@helpers/env'
+
+interface Props {
+    alliance: AllianceBadgeProps;
+}
+
+const {
+    alliance,
+} = Astro.props
+
+let alliance_eve:AllianceEvE
+let get_eve_alliance_error
+if (!alliance?.name) {
+    try {
+        alliance_eve = await get_alliance_by_id(alliance.id)
+    } catch (error) {
+        get_eve_alliance_error = (is_prod_mode() ? t('get_eve_alliance_error') : error.message)
+    }
+}
+
+const alliance_name = alliance?.name ?? (alliance_eve?.name ?? get_eve_alliance_error)
+
+import { get_alliance_logo } from '@helpers/eve_image_server';
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+---
+<FixedFluid
+    width='32px'
+    gap='var(--space-2xs)'
+    class="[ items-center ]"
+>
+    <picture>
+        <img src={get_alliance_logo(alliance.id)} width="32" height="32" />
+    </picture>
+    <small>
+        <span class="[ text-[var(--highlight)] ]">{alliance_name}</span>
+    </small>
+</FixedFluid>

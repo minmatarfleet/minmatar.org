@@ -1,0 +1,17 @@
+---
+interface Props {
+    heading_text: string;
+    [propName: string]: any;
+}
+
+const {
+    heading_text,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+<Flexblock gap='var(--space-xs)' {...attributes}>
+    <h4 set:html={heading_text} />
+    <slot />
+</Flexblock>

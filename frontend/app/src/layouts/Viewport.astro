@@ -16,12 +16,14 @@ import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
+import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
 import {
 	AlertDialogXData,
 	ConfirmDialogXData,
+	ModalXData,
 	PersonaFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
@@ -83,6 +85,7 @@ import '../styles/base.scss';
 		x-data={`{
 			${components?.alert_dialog ? AlertDialogXData : ''}
 			${components?.confirm_dialog ? ConfirmDialogXData : ''}
+			${components?.modal ? ModalXData : ''}
 			${components?.personas_finder ? PersonaFinderXData : ''}
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
@@ -113,6 +116,9 @@ import '../styles/base.scss';
 		}
 		{components?.confirm_dialog &&
 			<ConfirmDialog />
+		}
+		{components?.modal &&
+			<Modal />
 		}
 		{components?.personas_finder &&
 			<PersonaFinder />

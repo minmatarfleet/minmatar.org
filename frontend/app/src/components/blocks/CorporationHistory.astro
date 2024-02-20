@@ -1,0 +1,91 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { marked } from 'marked';
+
+import { get_corporation_history } from '@helpers/api.eveonline/characters'
+import type { CorporationHistoryItem } from '@dtypes/layout_components'
+import type { CorporationHistoryEvE } from '@dtypes/api.eveonline'
+import { is_prod_mode } from '@helpers/env'
+import { from_to_text, format_date, from_to_now_text } from '@helpers/date'
+
+interface Props {
+    character_id?:          number;
+    corporation_history?:   CorporationHistoryEvE[];
+}
+
+const {
+    character_id,
+    corporation_history,
+} = Astro.props
+
+let corporation_history_eve:CorporationHistoryEvE[]
+let get_eve_corporation_history_error
+
+if (!corporation_history && character_id) {
+    try {
+        corporation_history_eve = await get_corporation_history(character_id)
+    } catch (error) {
+        get_eve_corporation_history_error = (is_prod_mode() ? t('get_eve_corporation_history_error') : error.message)
+    }
+}
+
+const history:CorporationHistoryEvE[] = corporation_history ?? (corporation_history_eve ?? [])
+const history_items:CorporationHistoryItem[] = history.map( (i, index) => {
+    const prev = (index > 0 ? history[index - 1] : null)
+    
+    const membership_time_text = (prev ?
+        from_to_text(lang, prev.start_date, i.start_date)
+        :
+        from_to_now_text(lang, i.start_date)
+    )
+
+    return {
+        corporation_id: i.corporation_id,
+        membership_time_text: membership_time_text
+    }
+})
+
+import { get_app_url } from '@helpers/env'
+const CORPORATION_HISTORY_PARTIAL_URL = `${get_app_url()}/partials/corporation_history_component/`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import Context from '@components/layout/Context.astro';
+import DebugTag from '@components/blocks/DebugTag.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import SectionH4 from '@components/blocks/SectionH4.astro';
+---
+<SectionH4
+    heading_text={t('corporation_history')}
+    id="corporation-history"
+>
+    {!corporation_history && !character_id && 
+        <DebugTag set:html={marked.parse(t('corporation_history_params_error'))} />
+    }
+    {get_eve_corporation_history_error &&
+        <ErrorRefetch
+            args={{
+                partial: `${CORPORATION_HISTORY_PARTIAL_URL}?character_id=${character_id}`,
+                message: get_eve_corporation_history_error,
+                delay: delay,
+                target: '#corporation-history',
+            }}
+        />
+    }
+    <Context>
+        {history_items.map( (i) => 
+            <CorporationBadge
+                corporation={{
+                    id: i.corporation_id,
+                    size: 'lg',
+                    description: i.membership_time_text
+                }}
+            />
+        )}
+    </Context>
+</SectionH4>

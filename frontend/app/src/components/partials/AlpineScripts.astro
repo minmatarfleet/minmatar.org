@@ -22,8 +22,11 @@ export const AlertDialogXData = `
 
         const properties = {...defaults, ...args}
 
-        this.alert_dialog_title = properties.title
+        if (this.alert_dialog_partial != properties.partial)
+            this.alert_dialog_content = ''
+
         this.alert_dialog_content = properties.content
+        this.alert_dialog_title = properties.title
         this.alert_dialog_return_on_accept = properties.return_on_accept
         this.alert_dialog_partial = properties.partial
         this.alert_dialog_hx = properties.hx
@@ -80,8 +83,11 @@ export const ConfirmDialogXData = `
 
         const properties = {...defaults, ...args}
 
-        this.confirm_dialog_title = properties.title
+        if (this.confirm_dialog_partial != properties.partial)
+            this.confirm_dialog_content = ''
+
         this.confirm_dialog_content = properties.content
+        this.confirm_dialog_title = properties.title
         this.confirm_dialog_return_on_accept = properties.return_on_accept
         this.confirm_dialog_partial = properties.partial
         this.confirm_dialog_hx = properties.hx
@@ -108,6 +114,55 @@ export const ConfirmDialogXData = `
                     body.removeEventListener('click', listener);
                     resolve({
                         action: event.target.getAttribute('confirm-dialog-action')
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
+
+export const ModalXData = `
+    modal_open: false,
+    modal_content: '',
+    modal_partial: '',
+    async show_modal(args) {
+        const defaults =  {
+            content: '',
+            partial: '',
+            return_on_accept: true,
+        }
+
+        const properties = {...defaults, ...args}
+
+        if (this.modal_partial != properties.partial)
+            this.modal_content = ''
+
+        this.modal_content = properties.content
+        this.modal_return_on_accept = properties.return_on_accept
+        this.modal_partial = properties.partial
+
+        this.modal_open = true
+
+        setTimeout(function () {
+            htmx.process(document.querySelector('.modal'))
+        })
+
+        return new Promise((resolve) => {
+            this.modal_close().then((result) => {
+                this.modal_open = false
+                resolve(result.action == 'accept' ? this.modal_return_on_accept : false)
+            })
+        })
+    },
+    modal_close() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('modal-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('modal-action')
                     });
                 }
             };

@@ -1,3 +1,4 @@
+export type Locales = 'en'
 export type ButtonColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
 export type ButtonSizes = 'sm' | 'lg'
 export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
@@ -5,6 +6,7 @@ export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'gree
 export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-around' | 'space-between'
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
+export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
 
 export function is_of_structure_slots_type(value: string): value is StructureSlots {
     return [ 'High Power Slots', 'Medium Power Slots', 'Low Power Slots', 'Rig Slots', 'Service Slots', 'Charges' ].includes(value);
@@ -212,6 +214,7 @@ export interface PageVideoOptions {
 export interface ViewportComponents {   
 	alert_dialog?:			boolean;
 	confirm_dialog?:		boolean;
+	modal?:		            boolean;
 	personas_finder?:		boolean;
 	corporation_finder?:	boolean;
 	alliance_finder?:		boolean;
@@ -285,3 +288,31 @@ export interface CharacterBasic {
 }
 
 export type GroupRequestAction = 'accept' | 'deny'
+
+export interface ModalCover {
+    image:          string;
+    image_990:      string;
+    alt?:           string;
+    animated?:      boolean;
+    scrollable?:    boolean;
+    overlay?:       boolean;
+}
+
+export type BadgeSize = 'sm' | 'lg'
+
+export interface CorporationBadgeProps {
+    id:             number;
+    name?:          string;
+    size?:          BadgeSize;
+    description?:   string;
+}
+
+export interface AllianceBadgeProps {
+    id:     number;
+    name?:  string;
+}
+
+export interface CorporationHistoryItem {
+    corporation_id:         number;
+    membership_time_text?:  string;
+}

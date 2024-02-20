@@ -1,0 +1,63 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Dialog from '@components/blocks/Dialog.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+---
+
+<div
+    class="[ modal ]"
+>
+    <Dialog
+        x-bind:class="modal_open ? 'open' : ''"
+        x-bind:aria-hidden="modal_open == false"
+        breakout={true}
+        aria-describedby="modal-description"
+        class="[ w-full max-w-[770px] ]"
+        thin={true}
+    >
+        <div
+            id="modal-description"
+            class="[ modal-content ]"
+            x-html="modal_content"
+            x-bind:hx-get="modal_partial ? (modal_partial ?? false) : false"
+            x-bind:hx-trigger="modal_partial ? 'intersect' : false"
+            x-bind:hx-swap="modal_partial ? 'innerHTML transition:true' : false"
+            hx-target="#modal-description"
+            hx-indicator=".loader"
+        />
+    </Dialog>
+
+    <div
+        class="modal-backdrop"
+        x-bind:class="{ open: modal_open }"
+        modal-action="cancel"
+    />
+</div>
+
+<style lang="scss">
+    :global([modal-action] *) {
+        pointer-events: none !important;
+    }
+
+    :global(.modal .modal-content p) {
+        font-size: var(--step--1);
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+</style>
