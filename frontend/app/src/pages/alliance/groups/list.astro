@@ -8,9 +8,6 @@ const translatePath = useTranslatedPath(lang);
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-if (is_prod_mode())
-    return HTTP_404_Not_Found()
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
