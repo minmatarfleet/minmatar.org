@@ -21,12 +21,12 @@ if (!auth_token || !user)
     return HTTP_404_Forbidden()
 
 import type { GroupRequestUI } from '@dtypes/layout_components'
-import { get_all_groups_requests } from '@helpers/fetching/corporations'
+// import { get_all_groups_requests } from '@helpers/fetching/corporations'
 
 let group_requests:GroupRequestUI[] = []
 let get_all_corporations_error:string | false = false
 try {
-    group_requests = await get_all_groups_requests(auth_token, user.user_id)
+    group_requests = [] // await get_all_groups_requests(auth_token, user.user_id)
 } catch (error) {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }
