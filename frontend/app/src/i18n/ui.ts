@@ -40,7 +40,7 @@ export const ui = {
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'alliance.page_title': 'Alliance',
-        'alliance.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
+        'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
 
         'ships.page_title': 'Ships',
@@ -104,7 +104,7 @@ export const ui = {
         'freight.summary.current_title': 'Current Summary',
         
         'groups.page_title': 'Teams',
-        'groups.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
+        'groups.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
         
         'account.page_title': 'Account details',
