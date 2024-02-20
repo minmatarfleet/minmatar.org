@@ -39,9 +39,9 @@ def get_corporations(request):
         response.append(
             {
                 "corporation_id": corporation.corporation_id,
-                "corporation_name": corporation.corporation_name,
+                "corporation_name": corporation.name,
                 "alliance_id": corporation.alliance.alliance_id,
-                "alliance_name": corporation.alliance.alliance_name,
+                "alliance_name": corporation.alliance.name,
                 "corporation_type": corporation.corporation_type,
             }
         )
