@@ -41,7 +41,7 @@ try {
 import { get_app_url } from '@helpers/env'
 const DELETE_ACCOUNT_URL = `${get_app_url()}/api/auth`
 const CLEAR_ACCOUNT_CACHE_URL = `${get_app_url()}/api/cache`
-const CHARACTER_PARTIAL_URL = `${get_app_url()}/partials/character/`
+const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component/`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -61,9 +61,9 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
 const page_title = t('account.page_title');
 ---
@@ -97,25 +97,7 @@ const page_title = t('account.page_title');
             </FlexInline>
         </FlexInline>
         
-        <Context>
-            <ComponentBlock width='narrow'>
-                <div class="ph-item">
-                    <div class="ph-col-12">
-                        <div class="ph-picture"></div>
-                        <div class="ph-row">
-                            <div class="ph-col-6 big"></div>
-                            <div class="ph-col-4 empty big"></div>
-                            <div class="ph-col-2 big"></div>
-                            <div class="ph-col-4"></div>
-                            <div class="ph-col-8 empty"></div>
-                            <div class="ph-col-6"></div>
-                            <div class="ph-col-6 empty"></div>
-                            <div class="ph-col-12"></div>
-                        </div>
-                    </div>
-                </div>
-            </ComponentBlock>
-            
+        <Context>            
             <ComponentBlock width='narrow'>
                 <FlexInline gap="var(--space-3xl)" justification='space-between'>
                     <FlexInline gap="var(--space-3xl)">
@@ -171,28 +153,26 @@ const page_title = t('account.page_title');
                     },
                 }`}
             >
-                <PilotsList
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    {get_characters_error !== false &&
-                        <FlexInline justification='space-between'>
-                            <p>{get_characters_error}</p>
-                            <Button
-                                size='sm'
-                                hx-get={CHARACTER_PARTIAL_URL}
-                                hx-target="#pilots-list"
-                                hx-on::before-request="this.setAttribute('disabled','')"
-                                hx-on::after-request="this.removeAttribute('disabled')"
-                                hx-swap="outerHTML transition:true"
-                                type="button"
-                            >
-                                <RefreshIcon slot="icon" />
-                                {t('reload')}
-                            </Button>
-                        </FlexInline>
-                    }
-                </PilotsList>
+                {get_characters_error ?
+                    <PilotsList
+                        pilots={pilots}
+                        readonly={readonly}
+                    >
+                        <ErrorRefetch
+                            args={{
+                                partial: PILOTS_LIST_PARTIAL_URL,
+                                message: get_characters_error,
+                                delay: 0,
+                                target: '#pilots-list',
+                            }}
+                        />
+                    </PilotsList>
+                    :
+                    <PilotsList
+                        pilots={pilots}
+                        readonly={readonly}
+                    />
+                }
             </ComponentBlock>
 
             <Context>

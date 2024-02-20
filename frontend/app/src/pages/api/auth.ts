@@ -24,8 +24,6 @@ export async function DELETE({ params, cookies }) {
         delete_account_error = (is_prod_mode() ? t('delete_account_error') : error.message)
     }
 
-    console.log(delete_account_error)
-
     if (!status)
         return HTTP_404_Not_Found()
     

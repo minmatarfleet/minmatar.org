@@ -1,0 +1,57 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import type { CorporationObject } from '@dtypes/layout_components'
+import { get_corporations_for_corporations_list } from '@helpers/fetching/corporations'
+
+let corporations:CorporationObject[] = []
+let get_all_corporations_error:string | false = false
+try {
+    corporations = await get_corporations_for_corporations_list(auth_token, user.user_id)
+} catch (error) {
+    get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
+
+import Partial from '@layouts/Partial.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+import CorporationsList from '@components/blocks/CorporationsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+<Partial>
+    {get_all_corporations_error ?
+        <CorporationsList corporations={corporations}>
+            <ErrorRefetch
+                args={{
+                    partial: CORPORATIONS_LIST_PARTIAL_URL,
+                    message: get_all_corporations_error,
+                    delay: delay,
+                    target: '#corporations-list',
+                }}
+            />
+        </CorporationsList>
+        :
+        <CorporationsList corporations={corporations} />
+    }
+</Partial>

@@ -1,0 +1,124 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+const group_id = parseInt(Astro.url.searchParams.get('group_id'))
+const request_id = parseInt(Astro.url.searchParams.get('request_id'))
+const action = Astro.url.searchParams.get('action')
+import type { Alert, GroupRequestUI } from '@dtypes/layout_components'
+
+let alert:Alert | false = false
+
+import type { GroupRequest } from '@dtypes/api.minmatar.org'
+import { approve_group_request, deny_group_request } from '@helpers/api.minmatar.org/groups'
+import { query_string } from '@helpers/string';
+
+let group_action_request:GroupRequest
+let group_request_action_error:string | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        if (action == 'accept')
+            group_action_request = await approve_group_request(auth_token, group_id, request_id)
+        else
+            group_action_request = await deny_group_request(auth_token, group_id, request_id)
+    } catch (error) {
+        group_request_action_error = is_prod_mode() ? (action == 'accept' ? t('approve_request_error') : t('deny_request_error')) : error.message
+    }
+}
+
+import type { GroupRequestListUI } from '@dtypes/layout_components'
+import { get_group_requests_by_id, get_group_request_by_id } from '@helpers/fetching/group_requests'
+
+let group_requests:GroupRequestListUI
+let get_group_requests_error:string | false = false
+try {
+    group_requests = await get_group_requests_by_id(auth_token, group_id)
+} catch (error) {
+    get_group_requests_error = is_prod_mode() ? t('get_group_requests_error') : error.message
+}
+
+if (group_request_action_error) {
+    const group_request:GroupRequestUI = group_requests.requests.filter( (i) => i.request_id == request_id )[0]
+
+    alert = {
+        title: (action == 'accept' ? t('accept_group_request_dialog_title') : t('deny_group_request_dialog_title')),
+        content: group_request_action_error,
+    }
+
+    if (group_requests) {
+        const params = query_string({
+            character_id: group_request.character_id.toString(),
+            character_name: group_request.character_name,
+            group_id: group_request.character_id.toString(),
+            group_name: group_request.group_name,
+            group_image: JSON.stringify(group_request.group_image),
+            group_description: group_request.description,
+            corporation_id: group_request.corporation_id,
+            corporation_name: group_request.corporation_name,
+            type: action,
+            message: group_request_action_error
+        })
+
+        alert.partial = `${translatePath('/partials/dialog_with_group_request/')}?${params}`
+    }
+}
+
+let get_group_request_error:string | false = false
+if (group_action_request?.approved_by) {
+    try {
+        const group_request:GroupRequestUI = await get_group_request_by_id(auth_token, group_id, request_id)
+        
+        alert = {
+            title: (action == 'accept' ? t('accept_group_request_dialog_title') : t('deny_group_request_dialog_title')),
+            content: (action == 'accept' ? t('approve_group_request_sucessfull_text') : t('deny_group_request_sucessfull_text')),
+        }
+
+        if (group_request) {
+            const params = query_string({
+                character_id: group_request.character_id.toString(),
+                character_name: group_request.character_name,
+                group_id: group_request.character_id.toString(),
+                group_name: group_request.group_name,
+                group_image: JSON.stringify(group_request.group_image),
+                group_description: group_request.description,
+                corporation_id: group_request.corporation_id,
+                corporation_name: group_request.corporation_name,
+                type: action,
+                message: (action == 'accept' ? t('approve_group_request_sucessfull_text') : t('deny_group_request_sucessfull_text'))
+            })
+
+            alert.partial = `${translatePath('/partials/dialog_with_group_request/')}?${params}`
+        }
+    } catch (error) {
+        get_group_request_error = is_prod_mode() ? t('get_group_request_error') : error.message
+        console.log(get_group_request_error)
+    }
+}
+
+import Partial from '@layouts/Partial.astro';
+
+import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
+---
+<Partial>
+    <GroupRequestBlock
+        group_requests={group_requests}
+        alert={alert}
+    />
+</Partial>

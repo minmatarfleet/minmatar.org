@@ -1,0 +1,57 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden  } from '@helpers/http_responses'
+
+if (is_prod_mode())
+    return HTTP_404_Not_Found();
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
+
+import ButtonCard from '@components/blocks/ButtonCard.astro';
+
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+
+const page_title = t('ships.page_title');
+const page_description = t('ships.leading_text');
+---
+
+<Viewport title={page_title} meta_description={page_description}>
+    <PageLanding
+        cover={{
+            image: "/images/fits-cover.jpg",
+            image_990: "/images/fits-cover-990.jpg",
+            alt: t('ships.cover_alt'),
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Flexblock>
+                <h1>{page_title}</h1>
+                <p>{page_description}</p>
+            </Flexblock>
+
+            <ButtonCardGrid>
+                <ButtonCard title={t('fittings')} href={translatePath('/ships/fitting/list')}>
+                    <FitsEvEIcon slot="icon" />
+                </ButtonCard>
+
+                <ButtonCard title={t('doctrines')} href={translatePath('/ships/doctrines/')}>
+                    <DoctrinesEvEIcon slot="icon" />
+                </ButtonCard>
+            </ButtonCardGrid>
+        </Flexblock>
+    </PageLanding>
+</Viewport>

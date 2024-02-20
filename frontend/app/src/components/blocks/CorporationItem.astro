@@ -1,0 +1,84 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Alert, CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:  CorporationObject;
+    alert?: Alert | false;
+}
+
+const {
+    corporation,
+    alert = false,
+} = Astro.props
+
+import { get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server';
+
+import { get_app_url } from '@helpers/env'
+const CORPORATION_ITEM_PARTIAL_URL = `${get_app_url()}/partials/corporation_item_component/`
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+---
+
+<FixedFluid
+    width='64px'
+    class="[ corporation-item ]"
+    id={`corporation-item-${corporation.corporation_id}`}
+    x-data={`{
+        corporation_item_init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    x-init="corporation_item_init()"
+>
+    <picture>
+        <img src={get_corporation_logo(corporation.corporation_id)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
+    </picture>
+    <FlexInline justification='space-between'>
+        <VerticalCenter>
+            <Flexblock gap='0' class="[ w-full ]">
+                <span>
+                    {corporation.corporation_name}
+                </span>
+                <FixedFluid width='32px' class="[ items-center ]">
+                    <picture>
+                        <img src={get_alliance_logo(corporation.alliance_id)} width="32" height="32" alt={`${corporation.alliance_name} ${t('alliance_logo')}`} />
+                    </picture>
+                    <small>
+                        {corporation.alliance_name}
+                    </small>
+                </FixedFluid>
+            </Flexblock>
+        </VerticalCenter>
+        <VerticalCenter>
+        </VerticalCenter>
+    </FlexInline>
+</FixedFluid>
+
+<style lang="scss">
+    .corporation-item {
+        picture {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1/1;
+        }
+
+        a {
+            display: inline-block;
+
+            > .flex-inline {
+                max-width: fit-content;
+            }
+        }
+    }
+</style>

@@ -1,0 +1,58 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { GroupRequestListUI, Alert } from '@dtypes/layout_components'
+
+interface Props {
+    group_requests:     GroupRequestListUI;
+    alert?: Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    group_requests,
+    alert = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import GroupRequestItem from '@components/blocks/GroupRequestItem.astro';
+import GroupItem from '@components/blocks/GroupItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+<ComponentBlock
+    id={`group-request-list-${group_requests.group_id}`}
+    width='narrow'
+    x-data={`{
+        group_request_list_init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    x-init="group_request_list_init()"
+>
+    <Flexblock>
+        <GroupItem
+            group={{
+                id: group_requests.group_id,
+                name: group_requests.group_name,
+                image_url: group_requests.group_image,
+                description: `${group_requests.requests.length} ${group_requests.requests.length == 1 ? t('pending_request') : t('pending_requests')}`
+            }}
+        />
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center ]"
+        >
+            {group_requests.requests.map( (group_request) => 
+                <GroupRequestItem group_request={group_request} />
+            )}
+            {group_requests.requests.length == 0 &&
+                t('empty_group_request_text')
+            }
+        </Flexblock>
+    </Flexblock>
+</ComponentBlock>

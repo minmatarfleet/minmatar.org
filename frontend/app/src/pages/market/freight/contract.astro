@@ -1,0 +1,193 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+if (is_prod_mode())
+    return HTTP_404_Not_Found()
+
+import type { FreightCalculation } from '@dtypes/layout_components'
+
+const from = Astro.cookies.has('from') ? Astro.cookies.get('from').value : ''
+if (!Astro.cookies.has('contract')) {
+
+    return Astro.redirect(translatePath(`/market/freight/${from}`))
+}
+
+const calculation:FreightCalculation = Astro.cookies.get('contract').json();
+
+import { number_name } from '@helpers/numbers.ts';
+
+import Viewport from '@layouts/Viewport.astro';
+import PageAside from '@components/page/PageAside.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Context from '@components/layout/Context.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import PageBody from '@components/page/partials/PageBody.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+
+const page_title = t('freight.contract.page_title');
+---
+
+<Viewport title={page_title}>
+    <PageAside
+        cover={{
+            image: "/images/freight-service-cover.jpg",
+            image_990: "/images/freight-service-cover-990.jpg",
+            alt: t('freight.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden sm:!block ]" href={translatePath(`/market/freight/${from}`)}>
+                    <HistoryIcon slot="icon" />
+                    {t('recalculate')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p>{t('freight.contract.instruction_paragraph')}</p>
+            </TextBox>
+
+            <Context>
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_1_title')}</h2>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('contract_type')}>
+                                {t('courier')}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('availability')}>
+                                {t('private')}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('name')}</h4>
+                                    <p>{calculation.name}</p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">{calculation.name}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_2_title')}</h2>
+                        <p>{calculation.pick_up_station}</p>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_3_title')}</h2>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('ship_to')}</h4>
+                                    <p>{calculation.ship_to}</p>
+                                </Flexblock>
+                                {calculation.ship_to != t('fl33t_structure') && 
+                                    <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{calculation.ship_to}</ClipboardButton>
+                                }
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('reward')}</h4>
+                                    <p><span data-tippy-content={number_name(calculation.reward, lang)}>{calculation.reward.toLocaleString()}</span></p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{calculation.reward}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('collateral')}</h4>
+                                    <p><span data-tippy-content={number_name(calculation.collateral, lang)}>{calculation.collateral.toLocaleString()}</span></p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{calculation.collateral}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('expiration')}>
+                                {`${calculation.expiration} ${t('days')}`}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('days_to_complete')}>
+                                {calculation.days_to_complete}
+                            </TextGroup>
+                        </VerticalCenter>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('freight.contract.step_4_title')}</h2>
+                        <p>{t('freight.contract.step_4_text')}</p>
+                    </Flexblock>
+                </ComponentBlock>
+            </Context>
+        </Flexblock>
+
+        <ComponentBlock slot="aside" class="sticky top-[170px]">
+            <Flexblock>
+                <FixedFluid width="48" class="[ items-center ]">
+                    <TutorialIcon />
+                    <h2>{t('freight.standard.faq_title')}</h2>
+                </FixedFluid>
+                <h3>{t('freight.contract.faq_1_title')}</h3>
+                <p>{t('freight.contract.faq_1_text')}</p>
+                <h3>{t('freight.standard.faq_3_title')}</h3>
+                <p>{t('freight.standard.faq_3_text')}</p>
+            </Flexblock>
+        </ComponentBlock>
+    </PageAside>
+</Viewport>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

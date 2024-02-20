@@ -13,18 +13,19 @@ import * as jose from 'jose'
 
 const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
 
-import NeocomButton from '@components/blocks/NeocomButton.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
-import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+
+import NeocomButton from '@components/blocks/NeocomButton.astro';
+
+import UserAuth from '@components/UserAuth.astro';
+
+import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
-import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
-import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
-import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
+import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
-import UserAuth from '@components/UserAuth.astro';
 
 const page = Astro.url.pathname
 ---
@@ -38,13 +39,13 @@ const page = Astro.url.pathname
             <UserAuth active={page.includes(translatePath('/account/'))} />
         </Flexblock>
         {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/fitting/'))} title={t('neocom.fitting')} href={translatePath('/fitting/')}>
-                <FitsEvEIcon />
+            <NeocomButton active={page.includes(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
+                <AllianceEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/doctrines/'))} title={t('neocom.doctrines')} href={translatePath('/doctrines/')}>
-                <DoctrinesEvEIcon />
+            <NeocomButton active={page.includes(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
+                <ShipTreeEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
@@ -52,29 +53,17 @@ const page = Astro.url.pathname
                 <FleetEvEIcon />
             </NeocomButton>
         }
+        {!is_prod_mode() &&
+            <NeocomButton active={page.includes(translatePath('/market/'))} title={t('neocom.market')} href={translatePath('/market/')}>
+                <MarketEvEIcon />
+            </NeocomButton>
+        }
         <NeocomButton active={page.includes(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
             <IntelEvEIcon />
         </NeocomButton>
-        {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/contracts/'))} title={t('neocom.contracts_service')} href={translatePath('/contracts/')}>
-                <ContractsServiceEvEIcon />
-            </NeocomButton>
-        }
-        {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/freight/'))} title={t('neocom.freight_service')} href={translatePath('/freight/')}>
-                <FreightServiceEvEIcon />
-            </NeocomButton>
-        }
-        {!is_prod_mode() && user &&
-            <NeocomButton active={page.includes(translatePath('/groups/'))} title={t('neocom.groups')} href={translatePath('/groups/')}>
-                <GroupsEvEIcon />
-            </NeocomButton>
-        }
-        {!is_prod_mode() &&
-            <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
-                <ZkillboardEvEIcon />
-            </NeocomButton>
-        }
+        <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
+            <ZkillboardEvEIcon />
+        </NeocomButton>
     </nav>
     <Flexblock gap="0" x-data="neocom_clock()" x-init="init()">
         <div class="[ loader-wrapper ]">
@@ -136,6 +125,7 @@ const page = Astro.url.pathname
         box-sizing: border-box;
         animation: rotation 1s linear infinite;
 
+        &.htmx-request,
         &.active {
             border-bottom-color: rgba(255, 255, 255, 0.75);
         }

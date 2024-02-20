@@ -1,0 +1,176 @@
+<div class="[ relative ]">
+    <div class="fug">
+                    
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            fill="none"
+            viewBox="0 0 95 104"
+            class="nav bi bi-rocket-takeoff-fill"
+        >
+            <path fill="currentColor" d="M92.115 68.216v7.814h-3.42V56.987l-3.38 3.447h-.04V76.03l-4.27 4.366v3.333l-11.04-3.806v-4.198l-8.512-5.108V54.545l1.971-7.514V31.045l2.354-8.978V1.474L57.681 0l-8.097 1.474v20.593l4.325 36.644v20.684l-6.402-5.63-6.416 5.626V58.71l4.329-36.644V1.474L37.323 0l-8.097 1.474v20.593l2.355 8.978V47.03l1.98 7.523v16.063l-8.526 5.108v4.198l-11.044 3.806v-3.333L9.72 76.03V60.434h-.036l-3.38-3.447V76.03h-3.42v-7.814L0 65.269v33.01l2.885 2.947V95.5h4.4l28.201 4.43V95.5h4.548v3.925L47.507 104l7.459-4.575V95.5H59.523v4.43l28.196-4.43h4.396v5.726L95 98.279v-33.01l-2.885 2.947z"></path>
+        </svg>
+
+        <div class="stars">
+            <svg
+                class="star bi bi-star-fill"
+                width="12"
+                height="1.5"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#f1d9a042; stop-opacity:0" />
+                        <stop offset="100%" style="stop-color:#F1D9A0; stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grad)" />
+            </svg>
+            <svg
+                class="star bi bi-star-fill"
+                width="7"
+                height="1.5"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#f1d9a042; stop-opacity:0" />
+                        <stop offset="100%" style="stop-color:#F1D9A0; stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grad)" />
+            </svg>
+            <svg
+                class="star bi bi-star-fill"
+                width="12"
+                height="1.5"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#f1d9a042; stop-opacity:0" />
+                        <stop offset="100%" style="stop-color:#F1D9A0; stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grad)" />
+            </svg>
+        </div>
+    </div>
+</div>
+
+<style lang="scss">
+    .relative {
+    }
+
+    .fug {
+        transform: rotate(-90deg) scale(2);
+        height: 33px;
+        width: 64px;
+    }
+
+    .fug .nav {
+        position: absolute;
+        height: 1.4em;
+        width: 1.5em;
+        left: 0.3em;
+        bottom: 0.3em;
+        transition: 0.4s;
+        z-index: 10;
+        padding: 3px;
+        fill: #fff;
+        transform: rotate(90deg);
+    }
+
+    .fug .nav {
+        transition: 0.4s;
+        transform: translateX(1.3em) rotate(90deg);
+        animation: 4s nav linear infinite;
+        padding: 0px;
+    }
+
+    @keyframes nav {
+        0% {
+            transform: translateX(1.3em) rotate(90deg);
+        }
+        10% {
+            transform: translateX(1.1em) rotate(90deg);
+        }
+        30% {
+            transform: translateX(1.2em) rotate(90deg);
+        }
+        50% {
+            transform: translateX(1em) rotate(90deg);
+        }
+        70% {
+            transform: translateX(1.2em) rotate(90deg);
+        }
+        80% {
+            transform: translateX(1em) rotate(90deg);
+        }
+        90% {
+            transform: translateX(1.2em) rotate(90deg);
+        }
+        100% {
+            transform: translateX(1.3em) rotate(90deg);
+        }
+    }
+
+    .star {
+        opacity: 0;
+        transition: 0.2s linear;
+        transform-origin: 100% 0%;
+    }
+
+    .star {
+        opacity: 0.5;
+        transition: 0.2s linear;
+        animation: 4s piscar linear infinite;
+    }
+
+    .star:nth-last-child(1) {
+        position: absolute;
+        top: 12px;
+        left: 9px;
+    }
+
+    .star:nth-last-child(2) {
+        position: absolute;
+        top: 16px;
+        left: 13px;
+    }
+
+    .star:nth-last-child(3) {
+        position: absolute;
+        top: 20px;
+        left: 9px;
+    }
+
+    @keyframes piscar {
+        0% {
+            transform: translateX(0.3em) scaleX(1.4);
+        }
+        10% {
+            transform: translateX(0.1em) scaleX(1.9);
+        }
+        30% {
+            transform: translateX(0.2em) scaleX(1.7);
+        }
+        50% {
+            transform: translateX(0em) scaleX(1.9);
+        }
+        70% {
+            transform: translateX(0.2em) scaleX(1.7);
+        }
+        80% {
+            transform: translateX(0em) scaleX(2.1);
+        }
+        90% {
+            transform: translateX(0.2em) scaleX(1.8);
+        }
+        100% {
+            transform: translateX(0.3em) scaleX(1.4);
+        }
+    }
+
+</style>

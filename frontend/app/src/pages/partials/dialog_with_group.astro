@@ -12,7 +12,7 @@ import type { Group } from '@dtypes/api.minmatar.org'
 
 const name = Astro.url.searchParams.get('name')
 const description = Astro.url.searchParams.get('description')
-const image_url = Astro.url.searchParams.get('image_url')
+const image_url = JSON.parse(Astro.url.searchParams.get('image_url'))
 const message = Astro.url.searchParams.get('message')
 
 const group:Group = {
