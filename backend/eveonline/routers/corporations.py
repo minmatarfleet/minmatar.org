@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ninja import Router, Schema
 
@@ -11,9 +11,9 @@ router = Router(tags=["Corporations"])
 class CorporationResponse(Schema):
     corporation_id: int
     corporation_name: str
-    alliance_id: int
-    alliance_name: str
     corporation_type: str
+    alliance_id: Optional[int] = None
+    alliance_name: Optional[str] = None
 
 
 class CorporationApplicationResponse(Schema):
