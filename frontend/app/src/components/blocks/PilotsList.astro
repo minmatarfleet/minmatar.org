@@ -126,7 +126,21 @@ delete attributes.class
                     <FluidFixed width='46px' breakpoint='60%'>
                         <VerticalCenter>
                             <Flexblock gap='0' class="[ w-full ]">
-                                <span class="truncate text-[var(--highlight)]" set:text={pilot.character_name} />
+                                <span
+                                    class="truncate cursor-pointer text-[var(--highlight)]"
+                                    set:text={pilot.character_name}
+                                    x-data={`{
+                                        show_character_modal() {
+                                            show_modal({
+                                                content: '<p class="[ flex min-h-[80vh] items-center justify-center loading ]">${t('requesting_concord')}</p>',
+                                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                                    character_id: pilot.character_id.toString(),
+                                                })}',
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_character_modal()"
+                                />
                                 <small class="truncate">
                                     {pilot.character_id == primary_pilot_id ?
                                         t('main_character') :
