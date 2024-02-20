@@ -46,6 +46,6 @@ export async function get_corporation_history(character_id:number) {
 
         return await response.json() as CorporationHistoryEvE[];
     } catch (error) {
-        throw new Error(`Error fetching character: ${error.message}`);
+        throw new Error(`Error fetching corporation history: ${error.message}`);
     }
 }

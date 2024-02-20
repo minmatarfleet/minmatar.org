@@ -22,6 +22,6 @@ export async function get_alliance_by_id(id:number) {
 
         return await response.json() as AllianceEvE;
     } catch (error) {
-        throw new Error(`Error fetching character: ${error.message}`);
+        throw new Error(`Error fetching alliance: ${error.message}`);
     }
 }
