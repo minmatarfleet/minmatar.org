@@ -25,7 +25,11 @@ export const AlertDialogXData = `
         if (this.alert_dialog_partial != properties.partial)
             this.alert_dialog_content = ''
 
-        this.alert_dialog_content = properties.content
+        if (properties.partial) {
+            this.alert_dialog_content = '<div class="[ rifter-dialog ]">'+this.rifter_animation+'</div>'
+        } else
+            this.alert_dialog_content = properties.content
+
         this.alert_dialog_title = properties.title
         this.alert_dialog_return_on_accept = properties.return_on_accept
         this.alert_dialog_partial = properties.partial
@@ -86,7 +90,11 @@ export const ConfirmDialogXData = `
         if (this.confirm_dialog_partial != properties.partial)
             this.confirm_dialog_content = ''
 
-        this.confirm_dialog_content = properties.content
+        if (properties.partial) {
+            this.confirm_dialog_content = '<div class="[ rifter-dialog ]">'+this.rifter_animation+'</div>'
+        } else
+            this.confirm_dialog_content = properties.content
+
         this.confirm_dialog_title = properties.title
         this.confirm_dialog_return_on_accept = properties.return_on_accept
         this.confirm_dialog_partial = properties.partial
@@ -137,7 +145,11 @@ export const ModalXData = `
         if (this.modal_partial != properties.partial)
             this.modal_content = ''
 
-        this.modal_content = properties.content
+        if (properties.partial) {
+            this.modal_content = '<div class="[ rifter-modal ]">'+this.rifter_animation+'</div>'
+        } else
+            this.modal_content = properties.content
+
         this.modal_return_on_accept = properties.return_on_accept
         this.modal_partial = properties.partial
 
@@ -262,5 +274,11 @@ export const UtilitiesXData = `
     },
     get_alliance_logo(id, size = 32) {
         return 'https://images.evetech.net/alliances/'+id+'/logo?size='+size;
+    },`
+
+export const RifterAnimationXData = `
+    rifter_animation: false,
+    rifter_animation_init() {
+        this.rifter_animation = $refs.rifter.outerHTML
     },`
 ---

@@ -99,3 +99,15 @@ code {
     color: var(--highlight);
     padding-inline: var(--space-3xs);
 }
+
+.rifter-dialog,
+.rifter-modal {
+    display: flex;
+    min-height: 128px;
+    align-items: center;
+    justify-content: center;
+}
+
+.rifter-modal {
+    min-height: 80vh;
+}

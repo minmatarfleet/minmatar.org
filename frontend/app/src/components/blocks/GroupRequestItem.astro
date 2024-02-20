@@ -46,7 +46,6 @@ import Button from '@components/blocks/Button.astro';
                 show_accept_group_request_dialog() {
                     show_confirm_dialog({
                         title: '${t('accept_group_request_dialog_title')}',
-                        content: '<p class="loading">${t('requesting_concord')}</p>',
                         partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
                             character_id: group_request.character_id.toString(),
                             character_name: group_request.character_name,
@@ -84,7 +83,6 @@ import Button from '@components/blocks/Button.astro';
                 show_deny_group_request_dialog() {
                     show_confirm_dialog({
                         title: '${t('deny_group_request_dialog_title')}',
-                        content: '<p class="loading">${t('requesting_concord')}</p>',
                         partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
                             character_id: group_request.character_id.toString(),
                             character_name: group_request.character_name,

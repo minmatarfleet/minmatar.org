@@ -27,7 +27,8 @@ import {
 	PersonaFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
-	UtilitiesXData
+	UtilitiesXData,
+	RifterAnimationXData
 } from '@components/partials/AlpineScripts.astro';
 
 import type { ViewportComponents } from '@dtypes/layout_components'
@@ -52,6 +53,7 @@ import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
 import 'tippy.js/dist/tippy.css';
 import '../styles/base.scss';
+import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <!doctype html>
@@ -90,7 +92,9 @@ import '../styles/base.scss';
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
             ${UtilitiesXData}
+            ${RifterAnimationXData}
 		}`}
+		x-init="rifter_animation_init"
 	>
 		<div
 			class="[ viewport-layout-inner ]"
@@ -137,6 +141,10 @@ import '../styles/base.scss';
 				{middleware_error}
 			</div>
 		}
+
+		<div class="[ hidden ]">
+			<RifterIcon x-ref="rifter" />
+		</div>
 	</body>
 </html>
 
