@@ -36,15 +36,17 @@ def get_corporations(request):
     corporations = EveCorporation.objects.all()
     response = []
     for corporation in corporations:
-        response.append(
-            {
-                "corporation_id": corporation.corporation_id,
-                "corporation_name": corporation.name,
-                "alliance_id": corporation.alliance.alliance_id,
-                "alliance_name": corporation.alliance.name,
-                "corporation_type": corporation.corporation_type,
-            }
-        )
+        payload = {
+            "corporation_id": corporation.corporation_id,
+            "corporation_name": corporation.name,
+            "alliance_id": corporation.alliance.alliance_id,
+            "alliance_name": corporation.alliance.name,
+            "corporation_type": corporation.corporation_type,
+        }
+        if corporation.hasattr("alliance"):
+            payload["alliance_id"] = corporation.alliance.alliance_id
+            payload["alliance_name"] = corporation.alliance.name
+        response.append(payload)
     return response
 
 
