@@ -26,8 +26,6 @@ export async function DELETE({ params, cookies, redirect }) {
         delete_character_error = (is_prod_mode() ? t('delete_character_error') : error.message)
     }
 
-    console.log(delete_character_error)
-
     if (!status)
         return HTTP_404_Not_Found()
 
@@ -37,7 +35,7 @@ export async function DELETE({ params, cookies, redirect }) {
     if (character_id == primary_character_id) {
         cookies.delete('primary_pilot', { path: '/' })
 
-        return redirect(translatePath(`/partials/character?redirect=${translatePath('/account')}`))
+        return redirect(translatePath(`/partials/pilots_list_component?redirect=${translatePath('/account')}`))
         /*return HTTP_200_Success(
             JSON.stringify({
                 success: true,
@@ -46,5 +44,5 @@ export async function DELETE({ params, cookies, redirect }) {
         )*/
     }
     
-    return redirect(translatePath(`/partials/character`))
+    return redirect(translatePath(`/partials/pilots_list_component`))
 }
