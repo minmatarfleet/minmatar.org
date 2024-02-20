@@ -82,7 +82,6 @@ import Tag from './Tag.astro';
                             
                             show_confirm_dialog({
                                 title: '${t('join_request_dialog_title')}',
-                                content: '<p class="loading">${t('requesting_concord')}</p>',
                                 partial: '${translatePath('/partials/dialog_with_group/')}?${query_string({
                                     name: group.name,
                                     description: group.description,

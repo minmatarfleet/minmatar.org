@@ -45,7 +45,6 @@ delete attributes.class
                 x-data={`{
                     show_character_modal() {
                         show_modal({
-                            content: '<p class="[ flex min-h-[80vh] items-center justify-center loading ]">${t('requesting_concord')}</p>',
                             partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
                                 character_id: character_id.toString(),
                             })}',

@@ -132,7 +132,6 @@ delete attributes.class
                                     x-data={`{
                                         show_character_modal() {
                                             show_modal({
-                                                content: '<p class="[ flex min-h-[80vh] items-center justify-center loading ]">${t('requesting_concord')}</p>',
                                                 partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
                                                     character_id: pilot.character_id.toString(),
                                                 })}',
@@ -160,7 +159,6 @@ delete attributes.class
                                         show_remove_character_dialog() {
                                             show_confirm_dialog({
                                                 title: '${t('remove_pilot_dialog_title')}',
-                                                content: '<p class="loading">${t('requesting_concord')}</p>',
                                                 partial: '${translatePath('/partials/dialog_with_character/')}?${query_string({
                                                     id: pilot.character_id.toString(),
                                                     character_name: pilot.character_name,
