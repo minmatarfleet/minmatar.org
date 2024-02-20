@@ -41,7 +41,7 @@ try {
 import { get_app_url } from '@helpers/env'
 const DELETE_ACCOUNT_URL = `${get_app_url()}/api/auth`
 const CLEAR_ACCOUNT_CACHE_URL = `${get_app_url()}/api/cache`
-const CHARACTER_PARTIAL_URL = `${get_app_url()}/partials/character/`
+const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component/`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -160,7 +160,7 @@ const page_title = t('account.page_title');
                     {get_characters_error &&
                         <ErrorRefetch
                             args={{
-                                partial: CHARACTER_PARTIAL_URL,
+                                partial: PILOTS_LIST_PARTIAL_URL,
                                 message: get_characters_error,
                                 delay: 0,
                                 target: '#pilots-list',

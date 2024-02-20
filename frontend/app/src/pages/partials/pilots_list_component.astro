@@ -40,8 +40,6 @@ if (Astro.request.method === "DELETE") {
         delete_character_error = (is_prod_mode() ? t('delete_character_error') : error.message)
     }
 
-    console.log(delete_character_error)
-
     if (status) {
         const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
         const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
@@ -79,7 +77,7 @@ try {
 }
 
 import { get_app_url } from '@helpers/env'
-const CHARACTER_PARTIAL_URL = `${get_app_url()}/partials/character/`
+const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component/`
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
@@ -99,7 +97,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         {get_characters_error &&
             <ErrorRefetch
                 args={{
-                    partial: CHARACTER_PARTIAL_URL,
+                    partial: PILOTS_LIST_PARTIAL_URL,
                     message: get_characters_error,
                     delay: delay,
                     target: '#pilots-list',
