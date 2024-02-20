@@ -5,12 +5,14 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 interface Props {
     breakout?:          boolean;
     fixed?:             boolean;
+    thin?:              boolean;
     [propName: string]: any;
 }
 
 const {
     breakout = false,
     fixed = true,
+    thin = false,
     ...attributes
 } = Astro.props;
 
@@ -22,15 +24,21 @@ delete attributes.class
     class:list={['dialog solid-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]}
     {...attributes}
 >
-    <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)'>
-        <Flexblock gap='var(--space-m)'>
-            <slot name="header" />
-            <div class="[ cover-body ]">
-                <slot />
-            </div>
-            <slot name="footer" />
-        </Flexblock>
-    </Wrapper>
+    {thin ?
+        <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)'>
+            <slot />
+        </Wrapper>
+        :
+        <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)'>
+            <Flexblock gap='var(--space-m)'>
+                <slot name="header" />
+                <div class="[ cover-body ]">
+                    <slot />
+                </div>
+                <slot name="footer" />
+            </Flexblock>
+        </Wrapper>
+    }
 </div>
 
 <style lang="scss" is:global>

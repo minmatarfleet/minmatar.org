@@ -1,0 +1,169 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+interface Props {
+    character_id:   number;
+    [propName: string]: any;
+}
+
+const {
+    character_id,
+    ...attributes
+} = Astro.props
+
+
+import { get_player_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server';
+import { is_prod_mode } from '@helpers/env'
+import type { CharacterEvE } from '@dtypes/api.eveonline'
+import { format_date } from '@helpers/date'
+import { get_character_by_id } from '@helpers/api.eveonline/characters'
+import { get_character_faction, get_race_cover_image } from '@helpers/eve'
+import type { CharacterRaces } from '@dtypes/layout_components'
+
+let character:CharacterEvE
+let get_character_error:string | false = false
+try {
+    character = await get_character_by_id(character_id);
+} catch (error) {
+    get_character_error = (is_prod_mode() ? t('get_eve_character_error') : error.message)
+}
+
+const race:CharacterRaces = get_character_faction(character.race_id)
+
+const cover:string = get_race_cover_image(race)
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+
+import Context from '@components/layout/Context.astro';
+
+import CorporationHistory from '@components/blocks/CorporationHistory.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import AllianceBadge from '@components/blocks/AllianceBadge.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import SectionH4 from '@components/blocks/SectionH4.astro';
+
+import AmarrLogo from '@components/logos/AmarrLogo.astro';
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
+import CaldariLogo from '@components/logos/CaldariLogo.astro';
+import GallenteLogo from '@components/logos/GallenteLogo.astro'
+---
+
+<Wrapper
+    class="[ character-info overflow-y-auto ]"
+    padding_inline='var(--space-s)'
+    padding_block='var(--space-s)'
+>
+    <img src={cover} class="sticky top-[0]" />
+
+    <Flexblock
+        gap='var(--space-s)'
+    >
+        <FixedFluid
+            width='192px'
+            class="[ items-center ]"
+        >
+            <picture>
+                <img width="192" height="192" src={get_player_icon(character_id, 256)} />
+            </picture>
+            <FluidFixed class="[ w-full ]" width='32px'>
+                <VerticalCenter>
+                    <Flexblock gap='var(--space-xs)' class="[ w-full ]">
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <span class="[ text-[var(--highlight)] ]">{character.name}</span>
+                            <small>Born: {format_date(lang, character.birthday)}</small>
+                            <small>Security Status: {character.security_status.toFixed(1)}</small>
+                        </Flexblock>
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <CorporationBadge corporation={{
+                                id: character.corporation_id
+                            }} />
+                            <AllianceBadge alliance={{
+                                id: character.alliance_id
+                            }} />
+                        </Flexblock>
+                    </Flexblock>
+                </VerticalCenter>
+                <VerticalCenter>
+                    {race == 'amarr' &&
+                        <AmarrLogo />
+                    }
+                    {race == 'minmatar' &&
+                        <MinmatarLogo />
+                    }
+                    {race == 'caldari' &&
+                        <CaldariLogo />
+                    }
+                    {race == 'gallente' &&
+                        <GallenteLogo />
+                    }
+                </VerticalCenter>
+            </FluidFixed>
+        </FixedFluid>
+        
+        <Context>
+            <ComponentBlock>
+                <SectionH4 heading_text={t('description')}>
+                    <p set:html={character.description} />
+                </SectionH4>
+            </ComponentBlock>
+            <ComponentBlock>
+                <CorporationHistory character_id={character_id} />
+            </ComponentBlock>
+        </Context>
+    </Flexblock>
+</Wrapper>
+
+<style lang="scss">
+    .character-info {
+        width: 100%;
+        max-width: 60rem;
+        min-height: 80vh;
+        min-height: 80svh;
+        max-height: 500px;
+        position: relative;
+
+        &:after {
+            content: ' ';
+            z-index: -1;
+            inset: 0;
+            position: fixed;
+            background-image: linear-gradient(
+                to bottom,
+                hsla(0, 0%, 7%, 0) 0%,
+                hsla(0, 0%, 7%, 0.187) 9.8%,
+                hsla(0, 0%, 7%, 0.349) 19.6%,
+                hsla(0, 0%, 7%, 0.488) 29.2%,
+                hsla(0, 0%, 7%, 0.606) 38.6%,
+                hsla(0, 0%, 7%, 0.704) 47.7%,
+                hsla(0, 0%, 7%, 0.784) 56.4%,
+                hsla(0, 0%, 7%, 0.848) 64.5%,
+                hsla(0, 0%, 7%, 0.898) 72.1%,
+                hsla(0, 0%, 7%, 0.936) 78.9%,
+                hsla(0, 0%, 7%, 0.963) 85%,
+                hsla(0, 0%, 7%, 0.981) 90.1%,
+                hsla(0, 0%, 7%, 0.992) 94.3%,
+                hsla(0, 0%, 7%, 0.998) 97.4%,
+                hsl(0, 0%, 7%) 99.3%,
+                hsl(0, 0%, 7%) 100%
+            );
+        }
+
+        > img {
+            position: fixed;
+            top: 0;
+            right: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+    }
+</style>

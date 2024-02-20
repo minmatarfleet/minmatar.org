@@ -117,20 +117,38 @@ export const ConfirmDialogXData = `
 
 export const ModalXData = `
     modal_open: false,
-    modal_title: '',
     modal_content: '',
-    async show_modal(title, content, return_on_accept = true) {
-        this.modal_title = title
-        this.modal_content = content
-        this.modal_open = true        
+    modal_partial: '',
+    async show_modal(args) {
+        const defaults =  {
+            content: '',
+            partial: '',
+            return_on_accept: true,
+        }
 
-        const result = await this.modal_close()
-        this.modal_open = false
-        return result.action == 'accept' ? return_on_accept : false
+        console.log(args)
+
+        const properties = {...defaults, ...args}
+
+        this.modal_content = properties.content
+        this.modal_return_on_accept = properties.return_on_accept
+        this.modal_partial = properties.partial
+
+        this.modal_open = true
+
+        setTimeout(function () {
+            htmx.process(document.querySelector('.modal'))
+        })
+
+        return new Promise((resolve) => {
+            this.modal_close().then((result) => {
+                this.modal_open = false
+                resolve(result.action == 'accept' ? this.modal_return_on_accept : false)
+            })
+        })
     },
     modal_close() {
         const body = document.querySelector("body");
-        console.log(document.querySelector(".modal"))
 
         return new Promise(function (resolve, reject) {
             var listener = event => {

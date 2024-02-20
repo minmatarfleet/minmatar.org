@@ -5,10 +5,6 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 import Dialog from '@components/blocks/Dialog.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Button from '@components/blocks/Button.astro';
-import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 
 interface Props {
     [propName: string]: any;
@@ -20,20 +16,22 @@ interface Props {
 >
     <Dialog
         x-bind:class="modal_open ? 'open' : ''"
+        x-bind:aria-hidden="modal_open == false"
         breakout={true}
-        class="[ w-full max-w-[1000px] ]"
+        aria-describedby="modal-description"
+        class="[ w-full max-w-[770px] ]"
+        thin={true}
     >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <FlexInline justification='space-between'>
-                    <h3 x-text="modal_title"/>
-                    <Button size='sm' modal-action="cancel">
-                        <TrashIcon slot="icon" />
-                    </Button>
-                </FlexInline>
-                <div class="[ modal-content ]" x-html="modal_content" />
-            </Flexblock>
-        </Flexblock>
+        <div
+            id="modal-description"
+            class="[ modal-content ]"
+            x-html="modal_content"
+            x-bind:hx-get="modal_partial ? (modal_partial ?? false) : false"
+            x-bind:hx-trigger="modal_partial ? 'intersect' : false"
+            x-bind:hx-swap="modal_partial ? 'innerHTML transition:true' : false"
+            hx-target="#modal-description"
+            hx-indicator=".loader"
+        />
     </Dialog>
 
     <div
