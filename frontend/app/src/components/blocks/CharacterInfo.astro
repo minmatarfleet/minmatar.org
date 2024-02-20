@@ -84,9 +84,11 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                             <CorporationBadge corporation={{
                                 id: character.corporation_id
                             }} />
-                            <AllianceBadge alliance={{
-                                id: character.alliance_id
-                            }} />
+                            {character.alliance_id &&
+                                <AllianceBadge alliance={{
+                                    id: character.alliance_id
+                                }} />
+                            }
                         </Flexblock>
                     </Flexblock>
                 </VerticalCenter>
