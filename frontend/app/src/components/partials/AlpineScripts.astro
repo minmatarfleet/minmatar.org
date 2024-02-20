@@ -114,6 +114,36 @@ export const ConfirmDialogXData = `
             body.addEventListener('click', listener);
         });
     },`
+
+export const ModalXData = `
+    modal_open: false,
+    modal_title: '',
+    modal_content: '',
+    async show_modal(title, content, return_on_accept = true) {
+        this.modal_title = title
+        this.modal_content = content
+        this.modal_open = true        
+
+        const result = await this.modal_close()
+        this.modal_open = false
+        return result.action == 'accept' ? return_on_accept : false
+    },
+    modal_close() {
+        const body = document.querySelector("body");
+        console.log(document.querySelector(".modal"))
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('modal-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('modal-action')
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
     
 export const PersonaFinderXData = `
     personas_finder_open: false,
