@@ -1,5 +1,9 @@
 import type { Locales, CharacterRaces } from '@dtypes/layout_components'
 
+export const get_zkillboard_character_link = (character_id):string => {
+    return `https://zkillboard.com/character/${character_id}/`
+}
+
 export const get_character_faction = (race_id:number, locale:Locales = 'en'):CharacterRaces => {
     const faction_by_race_id = {
         1: 'caldari',
