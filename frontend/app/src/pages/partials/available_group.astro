@@ -76,13 +76,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
-    {get_group_request_error === false ?
-        <GroupItem
-            group={group}
-            alert={alert}
-        />
-        :
-        
+    {get_group_request_error ?
         <ErrorRefetch
             args={{
                 partial: AVAILABLE_GROUP_PARTIAL_URL,
@@ -90,6 +84,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                 delay: delay,
                 target: `#group-item-${group_id}`,
             }}
+        />
+        :
+        <GroupItem
+            group={group}
+            alert={alert}
         />
     }
 </Partial>

@@ -40,8 +40,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
-    <CorporationsList corporations={corporations}>
-        {get_all_corporations_error &&
+    {get_all_corporations_error ?
+        <CorporationsList corporations={corporations}>
             <ErrorRefetch
                 args={{
                     partial: CORPORATIONS_LIST_PARTIAL_URL,
@@ -50,6 +50,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                     target: '#corporations-list',
                 }}
             />
-        }
-    </CorporationsList>
+        </CorporationsList>
+        :
+        <CorporationsList corporations={corporations} />
+    }
 </Partial>

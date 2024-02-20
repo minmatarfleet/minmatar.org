@@ -87,14 +87,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
-    <PilotsList
-        pilots={pilots}
-        readonly={readonly}
-        empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-        removed_character={removed_character_id}
-        alert={alert}
-    >
-        {get_characters_error &&
+    {get_characters_error ?
+        <PilotsList
+            pilots={pilots}
+            readonly={readonly}
+            empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+            removed_character={removed_character_id}
+            alert={alert}
+        >
             <ErrorRefetch
                 args={{
                     partial: PILOTS_LIST_PARTIAL_URL,
@@ -103,8 +103,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                     target: '#pilots-list',
                 }}
             />
-        }
-    </PilotsList>
+        </PilotsList>
+        :
+        <PilotsList
+            pilots={pilots}
+            readonly={readonly}
+            empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+            removed_character={removed_character_id}
+            alert={alert}
+        />
+    }
 </Partial>
 
 {redirect &&

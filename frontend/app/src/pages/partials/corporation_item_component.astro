@@ -71,12 +71,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
-    {get_corporation_error === false ?
-        <CorporationItem
-            corporation={corporation}
-            alert={alert}
-        />
-        :
+    {get_corporation_error ?
         <ErrorRefetch
             args={{
                 partial: `${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`,
@@ -84,6 +79,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                 delay: delay,
                 target: `#corporation-item-${corporation_id}`,
             }}
+        />
+        :
+        <CorporationItem
+            corporation={corporation}
+            alert={alert}
         />
     }
 </Partial>

@@ -39,8 +39,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 <Partial>
-    <GroupsList groups={groups}>
-        {get_available_groups_error &&
+    {get_available_groups_error ?
+        <GroupsList groups={groups}>
             <ErrorRefetch
                 args={{
                     partial: AVAILABLE_GROUPS_LIST_PARTIAL_URL,
@@ -49,6 +49,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                     target: '#groups-list',
                 }}
             />
-        }
-    </GroupsList>
+        </GroupsList>
+        :
+        <GroupsList groups={groups} />
+    }
 </Partial>

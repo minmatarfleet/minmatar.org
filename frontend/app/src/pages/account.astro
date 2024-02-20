@@ -153,11 +153,11 @@ const page_title = t('account.page_title');
                     },
                 }`}
             >
-                <PilotsList
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    {get_characters_error &&
+                {get_characters_error ?
+                    <PilotsList
+                        pilots={pilots}
+                        readonly={readonly}
+                    >
                         <ErrorRefetch
                             args={{
                                 partial: PILOTS_LIST_PARTIAL_URL,
@@ -166,8 +166,13 @@ const page_title = t('account.page_title');
                                 target: '#pilots-list',
                             }}
                         />
-                    }
-                </PilotsList>
+                    </PilotsList>
+                    :
+                    <PilotsList
+                        pilots={pilots}
+                        readonly={readonly}
+                    />
+                }
             </ComponentBlock>
 
             <Context>
