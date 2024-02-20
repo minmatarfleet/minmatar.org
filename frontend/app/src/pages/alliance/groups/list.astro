@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -33,7 +34,6 @@ try {
 import { get_app_url } from '@helpers/env'
 const AVAILABLE_GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/available_groups_list/`
 
-console.log(groups)
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -45,7 +45,10 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupsList from '@components/blocks/GroupsList.astro';
+import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
 const page_title = t('groups.list.page_title');
 ---
@@ -79,6 +82,14 @@ const page_title = t('groups.list.page_title');
                     <small>{groups.length} {groups.length != 1 ? t('groups_available').toLowerCase() : t('group_available').toLowerCase()}</small>
                 </Flexblock>
             </FlexInline>
+            <FlexInline>
+                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                    <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/groups/requests/')}>
+                        <ArrowDown slot="icon" />
+                        {t('team_requests')}
+                    </Button>
+                }
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
@@ -86,8 +97,8 @@ const page_title = t('groups.list.page_title');
                 <p>{t('groups.list.leading_text')}</p>
             </TextBox>
 
-            <GroupsList groups={groups}>
-                {get_available_groups_error &&
+            {get_available_groups_error ?
+                <GroupsList groups={groups}>
                     <ErrorRefetch
                         args={{
                             partial: AVAILABLE_GROUPS_LIST_PARTIAL_URL,
@@ -96,8 +107,10 @@ const page_title = t('groups.list.page_title');
                             target: '#groups-list',
                         }}
                     />
-                }
-            </GroupsList>
+                </GroupsList>
+                :
+                <GroupsList groups={groups} />
+            }
         </Flexblock>
 	</PageDefault>
 </Viewport>

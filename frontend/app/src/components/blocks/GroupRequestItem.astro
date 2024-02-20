@@ -1,0 +1,137 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { query_string } from '@helpers/string';
+import type { GroupRequestUI } from '@dtypes/layout_components'
+
+interface Props {
+    group_request:  GroupRequestUI
+}
+
+const {
+    group_request
+} = Astro.props
+
+import { get_app_url } from '@helpers/env'
+const GROUP_REQUEST_LIST_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_request_list_item`
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+---
+<FlexInline
+    class="[ group-request-item ]"
+    justification='space-between'
+>
+    <PilotBadge
+        class="basis-[300px]"
+        character_id={group_request.character_id}
+        character_name={group_request.character_name}
+        corporation={{
+            id: group_request.corporation_id,
+            name: group_request.corporation_name,
+        }}
+    />
+    <FlexInline>
+        <Button
+            size='sm'
+            type="button"
+            color='green'
+            x-data={`{
+                show_accept_group_request_dialog() {
+                    show_confirm_dialog({
+                        title: '${t('accept_group_request_dialog_title')}',
+                        content: '<p class="loading">${t('requesting_concord')}</p>',
+                        partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
+                            character_id: group_request.character_id.toString(),
+                            character_name: group_request.character_name,
+                            group_id: group_request.character_id.toString(),
+                            group_name: group_request.group_name,
+                            group_image: group_request.group_image,
+                            group_description: group_request.description,
+                            corporation_id: group_request.corporation_id,
+                            corporation_name: group_request.corporation_name,
+                            type: 'accept',
+                            message: t('accept_group_request_dialog_text'),
+                        })}',
+                        return_on_accept: ${group_request.group_id},
+                        hx: {
+                            method: 'post',
+                            url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
+                                group_id: group_request.group_id.toString(),
+                                request_id: group_request.request_id.toString(),
+                                action: 'accept'
+                            })}',
+                            target: '${`#group-request-list-${group_request.group_id}`}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    }).then( (group_id) => console.log(group_id) )
+                }
+            }`}
+            x-on:click="show_accept_group_request_dialog()"
+        >
+            {t('accept')}
+        </Button>
+        
+        <Button
+            size='sm'
+            x-data={`{
+                show_deny_group_request_dialog() {
+                    show_confirm_dialog({
+                        title: '${t('deny_group_request_dialog_title')}',
+                        content: '<p class="loading">${t('requesting_concord')}</p>',
+                        partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
+                            character_id: group_request.character_id.toString(),
+                            character_name: group_request.character_name,
+                            group_id: group_request.character_id.toString(),
+                            group_name: group_request.group_name,
+                            group_image: group_request.group_image,
+                            group_description: group_request.description,
+                            corporation_id: group_request.corporation_id,
+                            corporation_name: group_request.corporation_name,
+                            type: 'deny',
+                            message: t('deny_group_request_dialog_text'),
+                        })}',
+                        return_on_deny: ${group_request.group_id},
+                        hx: {
+                            method: 'post',
+                            url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
+                                group_id: group_request.group_id.toString(),
+                                request_id: group_request.request_id.toString(),
+                                action: 'deny'
+                            })}',
+                            target: '${`#group-request-list-${group_request.group_id}`}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    }).then( (group_id) => console.log(group_id) )
+                }
+            }`}
+            x-on:click="show_deny_group_request_dialog()"
+        >
+            {t('deny')}
+        </Button>
+    </FlexInline>
+</FlexInline>
+
+<style lang="scss">
+    .group-request-item {
+        @media (hover: hover) {
+            .action-button {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .action-button {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+</style>

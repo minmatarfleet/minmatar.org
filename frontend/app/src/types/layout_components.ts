@@ -246,13 +246,29 @@ export interface CorporationObject {
     status?:            string;
 }
 
-export interface GroupRequestUI {
-    character_id:       number;
-    character_name:     string;
-    corporation_id:    number;
-    corporation_name:  string;
+export interface CorporationBasic {
+    id:     number;
+    name:   string;
+}
+
+export interface GroupRequestListUI {
     group_id:           number;
     group_name:         string;
+    group_image:        string;
+    requests:           GroupRequestUI[];
+}
+
+export interface GroupRequestUI {
+    request_id:         number;
+    approved:           null | boolean;
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number;
+    corporation_name:   string;
+    group_id:           number;
+    group_name:         string;
+    group_image:        string;
+    description:        string;
 }
 
 export interface ErrorRefetchParams {
@@ -261,3 +277,11 @@ export interface ErrorRefetchParams {
     delay:      number;
     target:     string,
 }
+
+export interface CharacterBasic {
+    character_id:       number;
+    character_name:     string;
+    corporation:        CorporationBasic;
+}
+
+export type GroupRequestAction = 'accept' | 'deny'

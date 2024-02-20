@@ -115,6 +115,8 @@ export const ui = {
         'groups.list.page_title': 'Teams',
         'groups.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
+        'groups.requests.page_title': 'Team requests',
+        
         'groups.management.page_title': 'Goups management',
         
         'corporations.page_title': 'Corporations',
@@ -123,8 +125,6 @@ export const ui = {
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
-        
-        'groups.requests.page_title': 'Goups requests',
         
         'freight.standard.page_title': 'Standard Freight',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
@@ -171,6 +171,7 @@ export const ui = {
         'icon.pilots.alt': 'Eve Online Pilot License Icon',
         'icon.market.alt': 'Eve Online Market Icon',
         'icon.corporation.alt': 'Eve Online Corporation Icon',
+        'icon.ships.alt': 'Eve Online Ship tree Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -348,12 +349,13 @@ export const ui = {
         'group_logo': 'Group logo',
         'view_group_description': 'View group description',
         'join': 'Join',
-        'group_management': 'Group management',
+        'group_management': 'Manage teams',
         'empty_groups_text': 'No groups found',
         'get_group_request_error': 'An error occurred while fetching the group request.',
         'create_group_joining_request_error': 'An error occurred while processing the joining rerquest.',
         'get_all_corporations_error': 'An error occurred while fetching the corporations.',
         'join_request_dialog_title': 'Group join request',
+        'join_request_dialog_text': 'Proceed joining the following team?',
         'pending': 'Pending',
         'joined': 'Joined',
         'freight_service': 'Freight service',
@@ -370,5 +372,21 @@ export const ui = {
         'retrying_in': 'Retrying in',
         'retrying_now': 'Retrying now',
         'seconds': 'seconds',
+        'pending_requests': 'pending requests',
+        'pending_request': 'pending request',
+        'empty_group_request_text': 'No join request found',
+        'accept': 'Accept',
+        'deny': 'Deny',
+        'accept_group_request_dialog_title': 'Accept team request',
+        'deny_group_request_dialog_title': 'Deny team request',
+        'accept_group_request_dialog_text': 'Proceed accepting the following team request?',
+        'deny_group_request_dialog_text': 'Proceed denying the following team request?',
+        'approve_request_error': 'An error occurred while accepting the team request.',
+        'deny_request_error': 'An error occurred while denying the team request.',
+        'get_group_requests_error': 'An error occurred while fetching the group requests.',
+        'approve_group_request_sucessfull_text': 'Team request accepted successfully!',
+        'deny_group_request_sucessfull_text': 'Team request denied successfully!',
+        'team_requests': 'Team requests',
+        'no_groups_owned': 'No owned groups found. Try contacting with a platform admin to in quire about groups ownership.',
     },
 } as const;

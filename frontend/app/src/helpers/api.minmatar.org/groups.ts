@@ -52,6 +52,31 @@ export async function get_available_groups(access_token:string) {
     }
 }
 
+export async function get_managed_groups(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+    
+    console.log(`Requesting: ${API_ENDPOINT}/managed`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/managed`, {
+            headers: headers
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as Group[];
+    } catch (error) {
+        throw new Error(`Error fetching managed groups: ${error.message}`);
+    }
+}
+
 export async function get_group_by_id(access_token:string, id:number) {
     const headers = {
         'Content-Type': 'application/json',
@@ -148,7 +173,7 @@ export async function approve_group_request(access_token:string, group_id:number
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        return await response.json() as GroupRequest;
+        return await response.json() as GroupRequest
     } catch (error) {
         throw new Error(`Error approving group request: ${error.message}`);
     }

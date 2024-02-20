@@ -29,7 +29,7 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
 const page_title = t('groups.page_title');
 const page_description = t('groups.leading_text');
@@ -56,10 +56,10 @@ const page_description = t('groups.leading_text');
                     {t('view_groups')}
                 </Button>
                 
-                {/*user?.permissions?.includes('auth.change_group')*/ true &&
-                    <Button color={'green'} href={translatePath('/alliance/groups/add/')}>
-                        <AddIcon slot="icon" />
-                        {t('add_group')}
+                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                    <Button href={translatePath('/alliance/groups/requests/')}>
+                        <ArrowDown slot="icon" />
+                        {t('team_requests')}
                     </Button>
                 }
             </ButtonStack>

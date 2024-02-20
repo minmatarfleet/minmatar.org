@@ -1,0 +1,105 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+if (is_prod_mode())
+    return HTTP_404_Not_Found()
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+if (!user.is_superuser && !user?.permissions?.includes('auth.change_group'))
+    return HTTP_404_Not_Found()
+
+import type { GroupRequestListUI } from '@dtypes/layout_components'
+import { get_all_groups_requests } from '@helpers/fetching/group_requests'
+
+let groups_requests:GroupRequestListUI[] = []
+let get_all_corporations_error:string | false = false
+try {
+    groups_requests = await get_all_groups_requests(auth_token)
+    groups_requests.sort( (a, b) => {
+        return b.requests.length - a.requests.length
+    })
+} catch (error) {
+    get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const GROUP_REQUESTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/group_requests_list_component/`
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import GroupRequestsList from '@components/blocks/GroupRequestsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Button from '@components/blocks/Button.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('groups.requests.page_title');
+---
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/groups-cover.jpg",
+            image_990: "/images/groups-cover-990.jpg",
+            alt: t('groups.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            group_name: '',
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/groups/list/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_groups')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        {get_all_corporations_error ?
+            <GroupRequestsList groups_requests={groups_requests}>
+                <ErrorRefetch
+                    args={{
+                        partial: GROUP_REQUESTS_LIST_PARTIAL_URL,
+                        message: get_all_corporations_error,
+                        delay: 0,
+                        target: '#group-request-list',
+                    }}
+                />
+            </GroupRequestsList>
+            :
+            <GroupRequestsList groups_requests={groups_requests} />
+        }
+    </PageDefault>
+</Viewport>

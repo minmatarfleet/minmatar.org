@@ -1,0 +1,37 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { GroupRequestListUI } from '@dtypes/layout_components'
+
+interface Props {
+    groups_requests:     Array<GroupRequestListUI>;
+    [propName: string]: any;
+}
+
+const {
+    groups_requests = [],
+} = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
+---
+<Flexblock
+    id="group-request-list"
+    class="[ group-request-list ]"
+    gap='var(--space-3xs)'
+>
+    {groups_requests.map( (group_requests) => 
+        <GroupRequestBlock group_requests={group_requests} />
+    )}
+    {groups_requests.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_groups_owned')}</p>
+            </TextBox>
+        </slot>
+    }
+</Flexblock>

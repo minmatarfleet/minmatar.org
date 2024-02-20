@@ -7,7 +7,7 @@ const translatePath = useTranslatedPath(lang);
 
 import type { Group } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
-import { query_string } from '@helpers/string';
+import { query_string, is_valid_http_url } from '@helpers/string';
 
 interface Props {
     group:  Group;
@@ -30,6 +30,7 @@ import Button from '@components/blocks/Button.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
+import Tag from './Tag.astro';
 ---
 
 <FixedFluid
@@ -43,7 +44,7 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
     }`}
     x-init="group_item_init()"
 >
-    <picture>
+    <picture class:list={{ bordered: !group?.image_url }}>
         {!group?.image_url ?
             <GroupsEvEIcon />
             :
@@ -53,14 +54,18 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
     <FlexInline justification='space-between'>
         <VerticalCenter>
             <Flexblock gap='0' class="[ w-full ]">
-                <span>
+                <span class="text-[var(--highlight)]">
                     {group.name}
                 </span>
-                <small>
-                    <a href={group.description} target="_blank">
-                        {t('view_group_description')}
-                    </a>
-                </small>
+                {is_valid_http_url(group.description) ?
+                    <small>
+                        <a href={group.description} target="_blank">
+                            {t('view_group_description')}
+                        </a>
+                    </small>
+                    :
+                    <small>{group.description}</small>
+                }
             </Flexblock>
         </VerticalCenter>
         <VerticalCenter>
@@ -82,7 +87,7 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
                                     name: group.name,
                                     description: group.description,
                                     image_url: JSON.stringify(group.image_url),
-                                    message: t('remove_pilot_dialog_text')
+                                    message: t('join_request_dialog_text')
                                 })}',
                                 return_on_accept: ${group.id},
                                 hx: {
@@ -103,10 +108,10 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
                 </Button>
             }
             {group?.status == 'requested' &&
-                <small>{t('pending')}</small>
+                <Tag color='alliance-blue' text={t('pending')} />
             }
             {group?.status == 'confirmed' &&
-                <small>{t('joined')}</small>
+                <Tag color='green' text={t('joined')} />
             }
         </VerticalCenter>
     </FlexInline>
@@ -119,10 +124,15 @@ import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
             justify-content: center;
             align-items: center;
             aspect-ratio: 1/1;
+
+            &.bordered {
+                border: solid 1px var(--border-color)
+            }
         }
 
         a {
             display: inline-block;
+            color: var(--fleet-yellow);
 
             > .flex-inline {
                 max-width: fit-content;
