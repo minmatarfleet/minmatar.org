@@ -22,8 +22,11 @@ export const AlertDialogXData = `
 
         const properties = {...defaults, ...args}
 
-        this.alert_dialog_title = properties.title
+        if (this.alert_dialog_partial != properties.partial)
+            this.alert_dialog_content = ''
+
         this.alert_dialog_content = properties.content
+        this.alert_dialog_title = properties.title
         this.alert_dialog_return_on_accept = properties.return_on_accept
         this.alert_dialog_partial = properties.partial
         this.alert_dialog_hx = properties.hx
@@ -80,8 +83,11 @@ export const ConfirmDialogXData = `
 
         const properties = {...defaults, ...args}
 
-        this.confirm_dialog_title = properties.title
+        if (this.confirm_dialog_partial != properties.partial)
+            this.confirm_dialog_content = ''
+
         this.confirm_dialog_content = properties.content
+        this.confirm_dialog_title = properties.title
         this.confirm_dialog_return_on_accept = properties.return_on_accept
         this.confirm_dialog_partial = properties.partial
         this.confirm_dialog_hx = properties.hx
@@ -126,9 +132,10 @@ export const ModalXData = `
             return_on_accept: true,
         }
 
-        console.log(args)
-
         const properties = {...defaults, ...args}
+
+        if (this.modal_partial != properties.partial)
+            this.modal_content = ''
 
         this.modal_content = properties.content
         this.modal_return_on_accept = properties.return_on_accept
