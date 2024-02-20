@@ -43,7 +43,7 @@ def get_corporations(request):
             "alliance_name": corporation.alliance.name,
             "corporation_type": corporation.corporation_type,
         }
-        if corporation.hasattr("alliance"):
+        if corporation.alliance is not None:
             payload["alliance_id"] = corporation.alliance.alliance_id
             payload["alliance_name"] = corporation.alliance.name
         response.append(payload)
