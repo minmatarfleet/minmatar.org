@@ -1,10 +1,15 @@
 import { useTranslations } from '@i18n/utils';
 import type { Locales } from '@dtypes/layout_components'
 
-const options = JSON.parse(import.meta.env.DATETIME_FORMAT)
+const datetime_options = JSON.parse(import.meta.env.DATETIME_FORMAT)
+const date_options = JSON.parse(import.meta.env.DATE_FORMAT ?? '{"weekday":"short","year":"numeric","month":"short","day":"numeric"}')
+
+export const format_date_time = (locale, date):string => {
+    return new Date(date).toLocaleDateString(locale, datetime_options)
+}
 
 export const format_date = (locale, date):string => {
-    return new Date(date).toLocaleDateString(locale, options)
+    return new Date(date).toLocaleDateString(locale, date_options)
 }
 
 export const days_diff_text = (locale:Locales = 'en', from:Date, to:Date):string => {

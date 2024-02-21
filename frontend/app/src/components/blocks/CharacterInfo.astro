@@ -18,7 +18,7 @@ const {
 import { get_player_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server';
 import { is_prod_mode } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
-import { format_date } from '@helpers/date'
+import { format_date_time } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
 import { get_character_faction, get_race_cover_image, get_zkillboard_character_link } from '@helpers/eve'
 import type { CharacterRaces } from '@dtypes/layout_components'
@@ -31,9 +31,16 @@ try {
     get_character_error = (is_prod_mode() ? t('get_eve_character_error') : error.message)
 }
 
-const race:CharacterRaces = get_character_faction(character.race_id)
+let race:CharacterRaces
+let cover:string
+if (character?.race_id) {
+    race = get_character_faction(character.race_id)
+    cover = get_race_cover_image(race)
+}
 
-const cover:string = get_race_cover_image(race)
+import { get_app_url } from '@helpers/env'
+const CHARACTER_MODAL_PARTIAL_URL = `${get_app_url()}/partials/character_modal_component`
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -48,6 +55,7 @@ import AllianceBadge from '@components/blocks/AllianceBadge.astro'
 import VerticalCenter from '@components/blocks/VerticalCenter.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import SectionH4 from '@components/blocks/SectionH4.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
@@ -58,80 +66,91 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
 ---
 
 <Wrapper
+    id="character-info"
     class="[ character-info overflow-y-auto ]"
     padding_inline='var(--space-s)'
     padding_block='var(--space-s)'
 >
-    <img src={cover} class="sticky top-[0]" />
+    {get_character_error ?
+        <ErrorRefetch
+            args={{
+                partial: `${CHARACTER_MODAL_PARTIAL_URL}?character_id=${character_id}`,
+                message: get_character_error,
+                delay: delay,
+                target: '#character-info',
+            }}
+        />
+        :
+        <img src={cover} class="sticky top-[0]" />
 
-    <Flexblock
-        gap='var(--space-s)'
-    >
-        <FixedFluid
-            width='192px'
-            class="[ items-center ]"
+        <Flexblock
+            gap='var(--space-s)'
         >
-            <picture>
-                <img width="192" height="192" src={get_player_icon(character_id, 256)} />
-            </picture>
-            <FluidFixed class="[ w-full ]" width='32px'>
-                <VerticalCenter>
-                    <Flexblock gap='var(--space-xs)' class="[ w-full ]">
-                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                            <span class="[ text-[var(--highlight)] ]">{character.name}</span>
-                            <small>Born: {format_date(lang, character.birthday)}</small>
-                            <small>Security Status: {character.security_status.toFixed(1)}</small>
-                        </Flexblock>
-                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                            <CorporationBadge corporation={{
-                                id: character.corporation_id
-                            }} />
-                            {character.alliance_id &&
-                                <AllianceBadge alliance={{
-                                    id: character.alliance_id
-                                }} />
-                            }
-                            <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
-                        </Flexblock>
-                    </Flexblock>
-                </VerticalCenter>
+            <FixedFluid
+                width='192px'
+                class="[ items-center ]"
+            >
                 <picture>
-                    {race == 'amarr' &&
-                            <AmarrLogo />
-                    }
-                    {race == 'minmatar' &&
-                        <MinmatarLogo />
-                    }
-                    {race == 'caldari' &&
-                        <CaldariLogo />
-                    }
-                    {race == 'gallente' &&
-                        <GallenteLogo />
-                    }
+                    <img width="192" height="192" src={get_player_icon(character_id, 256)} />
                 </picture>
-            </FluidFixed>
-        </FixedFluid>
-        
-        <Context>
-            <ComponentBlock>
-                <SectionH4 heading_text={t('description')}>
-                    <p set:html={character.description} />
-                </SectionH4>
-            </ComponentBlock>
-            <ComponentBlock>
-                <CorporationHistory character_id={character_id} />
-            </ComponentBlock>
-        </Context>
-    </Flexblock>
+                <FluidFixed class="[ w-full ]" width='32px'>
+                    <VerticalCenter>
+                        <Flexblock gap='var(--space-xs)' class="[ w-full ]">
+                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                                <span class="[ text-[var(--highlight)] ]">{character.name}</span>
+                                <small>Born: {format_date_time(lang, character.birthday)}</small>
+                                <small>Security Status: {character.security_status.toFixed(1)}</small>
+                            </Flexblock>
+                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                                <CorporationBadge corporation={{
+                                    id: character.corporation_id
+                                }} />
+                                {character.alliance_id &&
+                                    <AllianceBadge alliance={{
+                                        id: character.alliance_id
+                                    }} />
+                                }
+                                <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                            </Flexblock>
+                        </Flexblock>
+                    </VerticalCenter>
+                    <picture>
+                        {race == 'amarr' &&
+                                <AmarrLogo />
+                        }
+                        {race == 'minmatar' &&
+                            <MinmatarLogo />
+                        }
+                        {race == 'caldari' &&
+                            <CaldariLogo />
+                        }
+                        {race == 'gallente' &&
+                            <GallenteLogo />
+                        }
+                    </picture>
+                </FluidFixed>
+            </FixedFluid>
+            
+            <Context>
+                <ComponentBlock>
+                    <SectionH4 heading_text={t('description')}>
+                        <p set:html={character.description} />
+                    </SectionH4>
+                </ComponentBlock>
+                <ComponentBlock>
+                    <CorporationHistory character_id={character_id} />
+                </ComponentBlock>
+            </Context>
+        </Flexblock>
+    }
 </Wrapper>
 
 <style lang="scss">
     .character-info {
         width: 100%;
         max-width: 60rem;
-        min-height: 80vh;
-        min-height: 80svh;
-        max-height: 500px;
+        max-height: min(800px, 90vh);
+        height: 100%;
         position: relative;
 
         &:after {
