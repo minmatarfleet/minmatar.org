@@ -17,3 +17,5 @@ export const is_valid_http_url = (string:string):boolean => {
 
     return url.protocol === "http:" || url.protocol === "https:";
 }
+
+export const is_html = RegExp.prototype.test.bind(/(<([^>]+)>)/i)
