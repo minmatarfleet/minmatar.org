@@ -38,7 +38,7 @@ delete attributes.class
         <img src={get_player_icon(character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${character_name}`} />
     </picture>
     <VerticalCenter>
-        <Flexblock gap='0' class="[ w-full ]">
+        <Flexblock gap='0'>
             <span
                 class="truncate text-[var(--highlight)] cursor-pointer"
                 set:text={character_name}
