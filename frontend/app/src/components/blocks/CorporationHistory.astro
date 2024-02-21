@@ -11,6 +11,10 @@ import type { CorporationHistoryItem } from '@dtypes/layout_components'
 import type { CorporationHistoryEvE } from '@dtypes/api.eveonline'
 import { is_prod_mode } from '@helpers/env'
 import { from_to_text, from_to_now_text } from '@helpers/date'
+import type { NamesAndCategoriesEvE } from '@dtypes/api.eveonline'
+import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
+let names_and_categories:NamesAndCategoriesEvE[]
+let get_names_and_categories_error:string | false = false
 
 interface Props {
     character_id?:          number;
@@ -24,54 +28,42 @@ const {
 
 let corporation_history_eve:CorporationHistoryEvE[]
 let get_eve_corporation_history_error
+let history_items:CorporationHistoryItem[]
+const names_by_id = {}
 
 if (!corporation_history && character_id) {
     try {
         corporation_history_eve = await get_corporation_history(character_id)
+
+        const history:CorporationHistoryEvE[] = corporation_history ?? (corporation_history_eve ?? [])
+
+        const unique_corporation_ids:number[] = []
+        history.forEach( (i) => {
+            if (!unique_corporation_ids.includes(i.corporation_id))
+                unique_corporation_ids.push(i.corporation_id)
+        })
+
+        history_items = history.map( (i, index) => {
+            const prev = (index > 0 ? history[index - 1] : null)
+            
+            const membership_time_text = (prev ?
+                from_to_text(lang, prev.start_date, i.start_date)
+                :
+                from_to_now_text(lang, i.start_date)
+            )
+
+            return {
+                corporation_id: i.corporation_id,
+                membership_time_text: membership_time_text
+            }
+        })
+
+        names_and_categories = await get_names_and_categories_by_ids(unique_corporation_ids);
+
+        names_and_categories.forEach( (i) => names_by_id[i.id] = i.name )
     } catch (error) {
         get_eve_corporation_history_error = (is_prod_mode() ? t('get_eve_corporation_history_error') : error.message)
     }
-}
-
-const history:CorporationHistoryEvE[] = corporation_history ?? (corporation_history_eve ?? [])
-
-const unique_corporation_ids:number[] = []
-history.forEach( (i) => {
-    if (!unique_corporation_ids.includes(i.corporation_id))
-        unique_corporation_ids.push(i.corporation_id)
-})
-
-const history_items:CorporationHistoryItem[] = history.map( (i, index) => {
-    const prev = (index > 0 ? history[index - 1] : null)
-    
-    const membership_time_text = (prev ?
-        from_to_text(lang, prev.start_date, i.start_date)
-        :
-        from_to_now_text(lang, i.start_date)
-    )
-
-    return {
-        corporation_id: i.corporation_id,
-        membership_time_text: membership_time_text
-    }
-})
-
-import type { NamesAndCategoriesEvE } from '@dtypes/api.eveonline'
-import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
-let names_and_categories:NamesAndCategoriesEvE[]
-let get_names_and_categories_error:string | false = false
-try {
-    console.log(unique_corporation_ids)
-    names_and_categories = await get_names_and_categories_by_ids(unique_corporation_ids);
-} catch (error) {
-    get_names_and_categories_error = (is_prod_mode() ? t('get_eve_names_and_categories_error') : error.message)
-}
-
-const names_by_id = {}
-try {
-    names_and_categories.forEach( (i) => names_by_id[i.id] = i.name )
-} catch (error) {
-    console.log(error)
 }
 
 import { get_app_url } from '@helpers/env'

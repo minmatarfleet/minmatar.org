@@ -15,12 +15,12 @@ const {
 } = Astro.props
 
 
-import { get_player_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server';
+import { get_player_icon } from '@helpers/eve_image_server';
 import { is_prod_mode } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
 import { format_date_time } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
-import { get_character_faction, get_race_cover_image, get_zkillboard_character_link } from '@helpers/eve'
+import { get_character_faction, get_race_cover_image, get_zkillboard_character_link, parse_eve_html } from '@helpers/eve'
 import type { CharacterRaces } from '@dtypes/layout_components'
 
 let character:CharacterEvE
@@ -123,7 +123,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
         <Context>
             <ComponentBlock>
                 <SectionH4 heading_text={t('description')}>
-                    <p set:html={character.description} />
+                    <div class="[ eve-html overflow-x-auto ]" set:html={parse_eve_html(character.description)} />
                 </SectionH4>
             </ComponentBlock>
             <ComponentBlock>
