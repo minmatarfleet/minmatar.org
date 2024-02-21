@@ -111,3 +111,9 @@ code {
 .rifter-modal {
     min-height: 80vh;
 }
+
+.eve-html {
+    a[href]:not([class]) {
+        color: inherit
+    }
+}
