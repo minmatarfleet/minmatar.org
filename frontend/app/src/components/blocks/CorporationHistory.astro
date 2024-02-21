@@ -71,7 +71,7 @@ const CORPORATION_HISTORY_PARTIAL_URL = `${get_app_url()}/partials/corporation_h
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-import Context from '@components/layout/Context.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 import DebugTag from '@components/blocks/DebugTag.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -94,7 +94,7 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
             }}
         />
         :
-        <Context>
+        <Flexblock gap='var(--space-3xs)' class="[ w-full overflow-y-auto max-h-[380px] ]">
             {history_items.map( (i) => 
                 <CorporationBadge
                     corporation={{
@@ -105,6 +105,6 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
                     }}
                 />
             )}
-        </Context>
+        </Flexblock>
     }
 </SectionH4>

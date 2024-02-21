@@ -22,7 +22,7 @@ const next_delay = (args.delay < MAX_RETRYING_TIME_SECONDS ? args.delay + RETRYI
 
 url.searchParams.append('delay', next_delay.toString())
 ---
-<Flexblock>
+<Flexblock gap='var(--space-3xs)'>
     <p>{args.message}</p>
     <div
         class="[ loading ]"

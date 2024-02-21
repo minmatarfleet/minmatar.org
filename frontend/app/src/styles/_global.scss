@@ -51,22 +51,22 @@ a[href]:not([class]) {
 @media (hover: hover) {
     /* width */
     ::-webkit-scrollbar {
-        width: var(--space-s);
+        width: var(--space-3xs);
     }
 
     /* Track */
     ::-webkit-scrollbar-track {
-        background: #333;
+        background: transparent;
     }
 
     /* Handle */
     ::-webkit-scrollbar-thumb {
-        background: #555;
+        background: #444;
     }
 
     /* Handle on hover */
     ::-webkit-scrollbar-thumb:hover {
-        background: #888;
+        background: #555;
     }
 }
 
@@ -116,4 +116,10 @@ code {
     a[href]:not([class]) {
         color: inherit
     }
+
+    padding: var(--space-3xs) var(--space-2xs);
+    border: solid 1px var(--border-color);
+    background-color: var(--background);
+    max-height: 400px;
+    overflow-y: auto;
 }

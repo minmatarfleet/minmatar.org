@@ -21,6 +21,7 @@ import type { CharacterEvE } from '@dtypes/api.eveonline'
 import { format_date_time } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
 import { get_character_faction, get_race_cover_image, get_zkillboard_character_link, parse_eve_html } from '@helpers/eve'
+import { is_html } from '@helpers/string'
 import type { CharacterRaces } from '@dtypes/layout_components'
 import { get_app_url } from '@helpers/env'
 
@@ -132,7 +133,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
             <Context>
                 <ComponentBlock>
                     <SectionH4 heading_text={t('description')}>
-                        <div class="[ eve-html overflow-x-auto ]" set:html={parse_eve_html(character.description)} />
+                        <div class:list={{ 'eve-html': is_html(character.description) }} set:html={parse_eve_html(character.description)} />
                     </SectionH4>
                 </ComponentBlock>
                 <ComponentBlock>
