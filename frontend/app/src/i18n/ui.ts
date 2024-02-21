@@ -342,6 +342,7 @@ export const ui = {
         'private': 'Private',
         'danger_zone': 'Danger zone',
         'unknown_pilot': 'Unknown pilot',
+        'unknown_corporation': 'Unknown corporation',
         'missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the header. Otherwise use PageLanding layout.',
         'missing_aside_slot': '⚠️&nbsp;<b>Aside slot missing:</b>&nbsp;Add&nbsp;`slot="aside"`&nbsp;attribute on the element meant to be on the aside. Otherwise use PageDefault layout.',
         'get_available_groups_error': 'An error occurred while fetching teams.',
@@ -399,5 +400,6 @@ export const ui = {
         'to': 'to',
         'to_this_day': 'to this day',
         'zkillboard': 'Zkillboard',
+        'get_eve_names_and_categories_error': 'Error retrieving names',
     },
 } as const;

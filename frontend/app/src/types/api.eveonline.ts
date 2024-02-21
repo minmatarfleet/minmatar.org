@@ -59,3 +59,9 @@ export interface CorporationHistoryEvE {
     record_id:      number;
     start_date:     Date;
 }
+
+export interface NamesAndCategoriesEvE {
+    category: string;
+    id:       number;
+    name:     string;
+}

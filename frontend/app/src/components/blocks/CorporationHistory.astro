@@ -34,6 +34,13 @@ if (!corporation_history && character_id) {
 }
 
 const history:CorporationHistoryEvE[] = corporation_history ?? (corporation_history_eve ?? [])
+
+const unique_corporation_ids:number[] = []
+history.forEach( (i) => {
+    if (!unique_corporation_ids.includes(i.corporation_id))
+        unique_corporation_ids.push(i.corporation_id)
+})
+
 const history_items:CorporationHistoryItem[] = history.map( (i, index) => {
     const prev = (index > 0 ? history[index - 1] : null)
     
@@ -48,6 +55,24 @@ const history_items:CorporationHistoryItem[] = history.map( (i, index) => {
         membership_time_text: membership_time_text
     }
 })
+
+import type { NamesAndCategoriesEvE } from '@dtypes/api.eveonline'
+import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
+let names_and_categories:NamesAndCategoriesEvE[]
+let get_names_and_categories_error:string | false = false
+try {
+    console.log(unique_corporation_ids)
+    names_and_categories = await get_names_and_categories_by_ids(unique_corporation_ids);
+} catch (error) {
+    get_names_and_categories_error = (is_prod_mode() ? t('get_eve_names_and_categories_error') : error.message)
+}
+
+const names_by_id = {}
+try {
+    names_and_categories.forEach( (i) => names_by_id[i.id] = i.name )
+} catch (error) {
+    console.log(error)
+}
 
 import { get_app_url } from '@helpers/env'
 const CORPORATION_HISTORY_PARTIAL_URL = `${get_app_url()}/partials/corporation_history_component/`
@@ -82,6 +107,7 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
             <CorporationBadge
                 corporation={{
                     id: i.corporation_id,
+                    name: names_by_id[i.corporation_id] ?? t('unknown_corporation'),
                     size: 'lg',
                     description: i.membership_time_text
                 }}
