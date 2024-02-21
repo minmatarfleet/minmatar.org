@@ -64,85 +64,73 @@ import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
 import CaldariLogo from '@components/logos/CaldariLogo.astro';
 import GallenteLogo from '@components/logos/GallenteLogo.astro'
 ---
-
 <Wrapper
     id="character-info"
     class="[ character-info overflow-y-auto ]"
     padding_inline='var(--space-s)'
     padding_block='var(--space-s)'
 >
-    {get_character_error ?
-        <ErrorRefetch
-            args={{
-                partial: `${CHARACTER_MODAL_PARTIAL_URL}?character_id=${character_id}`,
-                message: get_character_error,
-                delay: delay,
-                target: '#character-info',
-            }}
-        />
-        :
-        <img src={cover} class="sticky top-[0]" />
+    <img src={cover} />
 
-        <Flexblock
-            gap='var(--space-s)'
+    <Flexblock
+        gap='var(--space-s)'
+    >
+        <FixedFluid
+            width='192px'
+            class="[ items-center ]"
         >
-            <FixedFluid
-                width='192px'
-                class="[ items-center ]"
-            >
-                <picture>
-                    <img width="192" height="192" src={get_player_icon(character_id, 256)} />
-                </picture>
-                <FluidFixed class="[ w-full ]" width='32px'>
-                    <VerticalCenter>
-                        <Flexblock gap='var(--space-xs)' class="[ w-full ]">
-                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                <span class="[ text-[var(--highlight)] ]">{character.name}</span>
-                                <small>Born: {format_date_time(lang, character.birthday)}</small>
-                                <small>Security Status: {character.security_status.toFixed(1)}</small>
-                            </Flexblock>
-                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                <CorporationBadge corporation={{
-                                    id: character.corporation_id
-                                }} />
-                                {character.alliance_id &&
-                                    <AllianceBadge alliance={{
-                                        id: character.alliance_id
-                                    }} />
-                                }
-                                <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
-                            </Flexblock>
+            <picture>
+                <img width="192" height="192" src={get_player_icon(character_id, 256)} />
+            </picture>
+            <FluidFixed class="[ w-full ]" width='32px'>
+                <VerticalCenter>
+                    <Flexblock gap='var(--space-xs)' class="[ w-full ]">
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <span class="[ text-[var(--highlight)] ]">{character.name}</span>
+                            <small>Born: {format_date_time(lang, character.birthday)}</small>
+                            <small>Security Status: {character.security_status.toFixed(1)}</small>
                         </Flexblock>
-                    </VerticalCenter>
-                    <picture>
-                        {race == 'amarr' &&
-                                <AmarrLogo />
-                        }
-                        {race == 'minmatar' &&
-                            <MinmatarLogo />
-                        }
-                        {race == 'caldari' &&
-                            <CaldariLogo />
-                        }
-                        {race == 'gallente' &&
-                            <GallenteLogo />
-                        }
-                    </picture>
-                </FluidFixed>
-            </FixedFluid>
-            
-            <Context>
-                <ComponentBlock>
-                    <SectionH4 heading_text={t('description')}>
-                        <p set:html={character.description} />
-                    </SectionH4>
-                </ComponentBlock>
-                <ComponentBlock>
-                    <CorporationHistory character_id={character_id} />
-                </ComponentBlock>
-            </Context>
-        </Flexblock>
-    }
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <CorporationBadge corporation={{
+                                id: character.corporation_id
+                            }} />
+                            {character.alliance_id &&
+                                <AllianceBadge alliance={{
+                                    id: character.alliance_id
+                                }} />
+                            }
+                            <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                        </Flexblock>
+                    </Flexblock>
+                </VerticalCenter>
+                <picture>
+                    {race == 'amarr' &&
+                            <AmarrLogo />
+                    }
+                    {race == 'minmatar' &&
+                        <MinmatarLogo />
+                    }
+                    {race == 'caldari' &&
+                        <CaldariLogo />
+                    }
+                    {race == 'gallente' &&
+                        <GallenteLogo />
+                    }
+                </picture>
+            </FluidFixed>
+        </FixedFluid>
+        
+        <Context>
+            <ComponentBlock>
+                <SectionH4 heading_text={t('description')}>
+                    <p set:html={character.description} />
+                </SectionH4>
+            </ComponentBlock>
+            <ComponentBlock>
+                <CorporationHistory character_id={character_id} />
+            </ComponentBlock>
+        </Context>
+    </Flexblock>
 </Wrapper>
 
 <style lang="scss">
