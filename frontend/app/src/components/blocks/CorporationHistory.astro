@@ -84,7 +84,7 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
     {!corporation_history && !character_id && 
         <DebugTag set:html={marked.parse(t('corporation_history_params_error'))} />
     }
-    {get_eve_corporation_history_error &&
+    {get_eve_corporation_history_error ?
         <ErrorRefetch
             args={{
                 partial: `${CORPORATION_HISTORY_PARTIAL_URL}?character_id=${character_id}`,
@@ -93,17 +93,18 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
                 target: '#corporation-history',
             }}
         />
+        :
+        <Context>
+            {history_items.map( (i) => 
+                <CorporationBadge
+                    corporation={{
+                        id: i.corporation_id,
+                        name: names_by_id[i.corporation_id] ?? t('unknown_corporation'),
+                        size: 'lg',
+                        description: i.membership_time_text
+                    }}
+                />
+            )}
+        </Context>
     }
-    <Context>
-        {history_items.map( (i) => 
-            <CorporationBadge
-                corporation={{
-                    id: i.corporation_id,
-                    name: names_by_id[i.corporation_id] ?? t('unknown_corporation'),
-                    size: 'lg',
-                    description: i.membership_time_text
-                }}
-            />
-        )}
-    </Context>
 </SectionH4>
