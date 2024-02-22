@@ -434,5 +434,7 @@ export const ui = {
         'month': 'month',
         'months': 'months',
         'team_logo': 'team logo',
+        'unknown_user': 'Unknown user',
+        'unknown_character': 'Removed character',
     },
 } as const;

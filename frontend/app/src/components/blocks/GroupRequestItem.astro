@@ -40,46 +40,48 @@ import Button from '@components/blocks/Button.astro';
         }}
     />
     <FlexInline>
-        <Button
-            size='sm'
-            type="button"
-            color='green'
-            x-data={`{
-                show_accept_group_request_dialog() {
-                    show_confirm_dialog({
-                        title: '${group_type === 'team' ? t('accept_team_request_dialog_title') : t('accept_group_request_dialog_title')}',
-                        partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
-                            character_id: group_request.character_id.toString(),
-                            character_name: group_request.character_name,
-                            group_id: group_request.character_id.toString(),
-                            group_name: group_request.group_name,
-                            group_image: group_request.group_image,
-                            group_description: group_request.description,
-                            corporation_id: group_request.corporation_id,
-                            corporation_name: group_request.corporation_name,
-                            type: 'accept',
-                            group_type: group_type,
-                            message: (group_type === 'team' ? t('accept_team_request_dialog_text') : t('accept_group_request_dialog_text')),
-                        })}',
-                        return_on_accept: ${group_request.group_id},
-                        hx: {
-                            method: 'post',
-                            url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
-                                group_id: group_request.group_id.toString(),
+        {group_request.character_id > 0 &&
+            <Button
+                size='sm'
+                type="button"
+                color='green'
+                x-data={`{
+                    show_accept_group_request_dialog() {
+                        show_confirm_dialog({
+                            title: '${group_type === 'team' ? t('accept_team_request_dialog_title') : t('accept_group_request_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
+                                character_id: group_request.character_id.toString(),
+                                character_name: group_request.character_name,
+                                group_id: group_request.character_id.toString(),
+                                group_name: group_request.group_name,
+                                group_image: group_request.group_image,
+                                group_description: group_request.description,
+                                corporation_id: group_request.corporation_id,
+                                corporation_name: group_request.corporation_name,
+                                type: 'accept',
                                 group_type: group_type,
-                                request_id: group_request.request_id.toString(),
-                                action: 'accept'
+                                message: (group_type === 'team' ? t('accept_team_request_dialog_text') : t('accept_group_request_dialog_text')),
                             })}',
-                            target: '${`#group-request-list-${group_request.group_id}`}',
-                            swap: 'outerHTML transition:true'
-                        }
-                    }).then( (group_id) => console.log(group_id) )
-                }
-            }`}
-            x-on:click="show_accept_group_request_dialog()"
-        >
-            {t('accept')}
-        </Button>
+                            return_on_accept: ${group_request.group_id},
+                            hx: {
+                                method: 'post',
+                                url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
+                                    group_id: group_request.group_id.toString(),
+                                    group_type: group_type,
+                                    request_id: group_request.request_id.toString(),
+                                    action: 'accept'
+                                })}',
+                                target: '${`#group-request-list-${group_request.group_id}`}',
+                                swap: 'outerHTML transition:true'
+                            }
+                        }).then( (group_id) => console.log(group_id) )
+                    }
+                }`}
+                x-on:click="show_accept_group_request_dialog()"
+            >
+                {t('accept')}
+            </Button>
+        }
         
         <Button
             size='sm'
