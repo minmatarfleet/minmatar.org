@@ -4,10 +4,32 @@
     max-height: min(800px, 90vh);
     height: 100%;
     position: relative;
+    background-position: top left;
+    background-repeat: no-repeat;
 
-    &:after {
+    > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    &.amarr-cover {
+        background-image: url('/images/character-info-amarr-cover.jpg');
+    }
+
+    &.minmatar-cover {
+        background-image: url('/images/character-info-minmatar-cover.jpg');
+    }
+
+    &.caldari-cover {
+        background-image: url('/images/character-info-caldari-cover.jpg');
+    }
+
+    &.gallente-cover {
+        background-image: url('/images/character-info-gallente-cover.jpg');
+    }
+
+    &:before {
         content: ' ';
-        z-index: -1;
         inset: 0;
         position: fixed;
         background-image: linear-gradient(

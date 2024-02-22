@@ -18,10 +18,12 @@ if (!auth_token || !user) {
     return Astro.redirect(get_auth_url())
 }
 
+import type { Alert, GroupRequestUI, GroupItemType } from '@dtypes/layout_components'
+
 const group_id = parseInt(Astro.url.searchParams.get('group_id'))
+const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
 const request_id = parseInt(Astro.url.searchParams.get('request_id'))
 const action = Astro.url.searchParams.get('action')
-import type { Alert, GroupRequestUI } from '@dtypes/layout_components'
 
 let alert:Alert | false = false
 
@@ -73,6 +75,7 @@ if (group_request_action_error) {
             corporation_id: group_request.corporation_id,
             corporation_name: group_request.corporation_name,
             type: action,
+            group_type: group_type,
             message: group_request_action_error
         })
 
@@ -86,7 +89,11 @@ if (group_action_request?.approved_by) {
         const group_request:GroupRequestUI = await get_group_request_by_id(auth_token, group_id, request_id)
         
         alert = {
-            title: (action == 'accept' ? t('accept_group_request_dialog_title') : t('deny_group_request_dialog_title')),
+            title: (action == 'accept' ?
+                group_type === 'team' ? t('accept_team_request_dialog_title') : t('accept_group_request_dialog_title')
+                :
+                group_type === 'team' ? t('deny_team_request_dialog_title') : t('deny_group_request_dialog_title')
+                ),
             content: (action == 'accept' ? t('approve_group_request_sucessfull_text') : t('deny_group_request_sucessfull_text')),
         }
 
@@ -101,7 +108,12 @@ if (group_action_request?.approved_by) {
                 corporation_id: group_request.corporation_id,
                 corporation_name: group_request.corporation_name,
                 type: action,
-                message: (action == 'accept' ? t('approve_group_request_sucessfull_text') : t('deny_group_request_sucessfull_text'))
+                group_type: group_type,
+                message: (action == 'accept' ?
+                    group_type === 'team' ? t('approve_team_request_sucessfull_text') : t('approve_group_request_sucessfull_text')
+                    :
+                    group_type === 'team' ? t('deny_team_request_sucessfull_text') : t('deny_group_request_sucessfull_text')
+                )
             })
 
             alert.partial = `${translatePath('/partials/dialog_with_group_request/')}?${params}`
@@ -120,5 +132,6 @@ import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
     <GroupRequestBlock
         group_requests={group_requests}
         alert={alert}
+        group_type={group_type}
     />
 </Partial>

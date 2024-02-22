@@ -50,7 +50,7 @@ import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('groups.requests.page_title');
+const page_title = t('teams.requests.page_title');
 ---
 <Viewport
     title={page_title}
@@ -64,7 +64,7 @@ const page_title = t('groups.requests.page_title');
         cover={{
             image: "/images/groups-cover.jpg",
             image_990: "/images/groups-cover-990.jpg",
-            alt: t('groups.cover_alt'),
+            alt: t('teams.cover_alt'),
             animated: false,
             scrollable: true,
             overlay: true
@@ -78,18 +78,21 @@ const page_title = t('groups.requests.page_title');
                 {page_title}
             </PageTitle>
             <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/groups/list/')}>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/teams/list/')}>
                     <MagnifierIcon slot="icon" />
-                    {t('view_groups')}
+                    {t('view_teams')}
                 </Button>
             </FlexInline>
         </FlexInline>
 
         {get_all_corporations_error ?
-            <GroupRequestsList groups_requests={groups_requests}>
+            <GroupRequestsList
+                groups_requests={groups_requests}
+                groups_type='team'
+            >
                 <ErrorRefetch
                     args={{
-                        partial: GROUP_REQUESTS_LIST_PARTIAL_URL,
+                        partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=team`,
                         message: get_all_corporations_error,
                         delay: 0,
                         target: '#group-request-list',
@@ -97,7 +100,10 @@ const page_title = t('groups.requests.page_title');
                 />
             </GroupRequestsList>
             :
-            <GroupRequestsList groups_requests={groups_requests} />
+            <GroupRequestsList
+                groups_requests={groups_requests}
+                groups_type='team'
+            />
         }
     </PageDefault>
 </Viewport>

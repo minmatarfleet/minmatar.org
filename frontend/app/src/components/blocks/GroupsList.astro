@@ -5,15 +5,16 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 import type { Group } from '@dtypes/api.minmatar.org'
+import type { GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
     groups?:            Array<Group>;
-    [propName: string]: any;
+    groups_type:        GroupItemType;
 }
 
 const {
     groups = [],
-    ...attributes
+    groups_type,
 } = Astro.props
 
 import Grid from '@components/compositions/Grid.astro';
@@ -30,7 +31,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 >
     {groups.map((group) =>
         <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
-            <GroupItem group={group} />
+            <GroupItem
+                group={group}
+                type={groups_type}
+            />
         </ComponentBlock>
     )}
     {groups.length == 0 &&

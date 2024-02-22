@@ -1,17 +1,19 @@
 ---
 import type { Group, Character } from '@dtypes/api.minmatar.org'
-import type { CharacterBasic, GroupRequestAction } from '@dtypes/layout_components'
+import type { CharacterBasic, GroupRequestAction, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
     character:  CharacterBasic;
     type:       GroupRequestAction;
     group:      Group;
+    group_type: GroupItemType,
 }
 
 const {
     group,
     type,
-    character
+    character,
+    group_type,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -43,6 +45,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
     </Wrapper>
     <GroupItem
         group={group}
+        type={group_type}
     />
 </Flexblock>
 

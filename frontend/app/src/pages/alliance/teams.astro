@@ -6,10 +6,7 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
-
-if (is_prod_mode())
-    return HTTP_404_Not_Found()
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -17,7 +14,7 @@ import * as jose from 'jose'
 const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
 
 if (!user)
-    return HTTP_403_Forbidden()
+    return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -29,9 +26,10 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
-const page_title = t('corporations.page_title');
-const page_description = t('corporations.leading_text');
+const page_title = t('teams.page_title');
+const page_description = t('teams.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
@@ -39,7 +37,7 @@ const page_description = t('corporations.leading_text');
         cover={{
             image: "/images/groups-cover.jpg",
             image_990: "/images/groups-cover-990.jpg",
-            alt: t('groups.cover_alt'),
+            alt: t('teams.cover_alt'),
             overlay: true
         }}
     >
@@ -50,10 +48,17 @@ const page_description = t('corporations.leading_text');
             </Flexblock>
             
             <ButtonStack>
-                <Button href={translatePath('/alliance/corporations/list/')}>
+                <Button href={translatePath('/alliance/teams/list/')}>
                     <MagnifierIcon slot="icon" />
-                    {t('view_groups')}
+                    {t('view_teams')}
                 </Button>
+                
+                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                    <Button href={translatePath('/alliance/teams/requests/')}>
+                        <ArrowDown slot="icon" />
+                        {t('team_requests')}
+                    </Button>
+                }
             </ButtonStack>
         </Flexblock>
     </PageLanding>

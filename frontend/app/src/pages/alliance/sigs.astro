@@ -16,6 +16,8 @@ const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro
 if (!user)
     return HTTP_404_Not_Found()
 
+import { marked } from 'marked';
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -29,7 +31,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
 const page_title = t('groups.page_title');
-const page_description = t('groups.leading_text');
+const page_description = t('groups.leading_text_p1');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
@@ -44,19 +46,22 @@ const page_description = t('groups.leading_text');
         <Flexblock gap='var(--space-2xl)'>
             <Flexblock>
                 <h1>{page_title}</h1>
-                <p>{page_description}</p>
+                <Flexblock gap='var(--space-s)'>
+                    <p set:html={marked.parseInline(t('groups.leading_text_p1'))} />
+                    <p set:html={marked.parseInline(t('groups.leading_text_p2'))} />
+                </Flexblock>
             </Flexblock>
             
             <ButtonStack>
-                <Button href={translatePath('/alliance/groups/list/')}>
+                <Button href={translatePath('/alliance/sigs/list/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_groups')}
                 </Button>
                 
                 {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
-                    <Button href={translatePath('/alliance/groups/requests/')}>
+                    <Button href={translatePath('/alliance/sigs/requests/')}>
                         <ArrowDown slot="icon" />
-                        {t('team_requests')}
+                        {t('group_requests')}
                     </Button>
                 }
             </ButtonStack>

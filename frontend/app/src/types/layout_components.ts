@@ -316,3 +316,5 @@ export interface CorporationHistoryItem {
     corporation_id:         number;
     membership_time_text?:  string;
 }
+
+export type GroupItemType = 'group' | 'team'

@@ -18,9 +18,9 @@ if (!auth_token || !user) {
     return Astro.redirect(get_auth_url())
 }
 
-const group_id:number = parseInt(Astro.url.searchParams.get('id'))
-
-import type { Alert } from '@dtypes/layout_components'
+import type { Alert, GroupItemType } from '@dtypes/layout_components'
+const group_id = parseInt(Astro.url.searchParams.get('id'))
+const type = Astro.url.searchParams.get('type') as GroupItemType
 
 let alert:Alert | false = false
 
@@ -48,7 +48,7 @@ try {
 
 if (create_group_request_error) {
     alert = {
-        title: t('join_request_dialog_title'),
+        title: (type === 'team' ? t('team_join_request_dialog_title') : t('group_join_request_dialog_title')),
         content: create_group_request_error,
     }
 
@@ -57,7 +57,8 @@ if (create_group_request_error) {
             name: group.name,
             description: group.description,
             image_url: JSON.stringify(group.image_url),
-            message: create_group_request_error
+            message: create_group_request_error,
+            type: type,
         })
 
         alert.partial = `${translatePath('/partials/dialog_with_group/')}?${params}`
@@ -65,7 +66,7 @@ if (create_group_request_error) {
 }
 
 import { get_app_url } from '@helpers/env'
-const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
+const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item_component/`
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -73,13 +74,18 @@ import Partial from '@layouts/Partial.astro';
 
 import GroupItem from '@components/blocks/GroupItem.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+const partial_query_string = query_string({
+    id: group.id.toString(),
+    type: type,
+})
 ---
 
 <Partial>
     {get_group_request_error ?
         <ErrorRefetch
             args={{
-                partial: AVAILABLE_GROUP_PARTIAL_URL,
+                partial: `${GROUP_ITEM_PARTIAL_URL}${partial_query_string}`,
                 message: get_group_request_error,
                 delay: delay,
                 target: `#group-item-${group_id}`,
@@ -89,6 +95,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         <GroupItem
             group={group}
             alert={alert}
+            type={type}
         />
     }
 </Partial>

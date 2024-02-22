@@ -6,14 +6,16 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { query_string } from '@helpers/string';
-import type { GroupRequestUI } from '@dtypes/layout_components'
+import type { GroupRequestUI, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
-    group_request:  GroupRequestUI
+    group_request:  GroupRequestUI,
+    group_type:     GroupItemType,
 }
 
 const {
-    group_request
+    group_request,
+    group_type,
 } = Astro.props
 
 import { get_app_url } from '@helpers/env'
@@ -45,7 +47,7 @@ import Button from '@components/blocks/Button.astro';
             x-data={`{
                 show_accept_group_request_dialog() {
                     show_confirm_dialog({
-                        title: '${t('accept_group_request_dialog_title')}',
+                        title: '${group_type === 'team' ? t('accept_team_request_dialog_title') : t('accept_group_request_dialog_title')}',
                         partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
                             character_id: group_request.character_id.toString(),
                             character_name: group_request.character_name,
@@ -56,13 +58,15 @@ import Button from '@components/blocks/Button.astro';
                             corporation_id: group_request.corporation_id,
                             corporation_name: group_request.corporation_name,
                             type: 'accept',
-                            message: t('accept_group_request_dialog_text'),
+                            group_type: group_type,
+                            message: (group_type === 'team' ? t('accept_team_request_dialog_text') : t('accept_group_request_dialog_text')),
                         })}',
                         return_on_accept: ${group_request.group_id},
                         hx: {
                             method: 'post',
                             url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
                                 group_id: group_request.group_id.toString(),
+                                group_type: group_type,
                                 request_id: group_request.request_id.toString(),
                                 action: 'accept'
                             })}',
@@ -82,7 +86,7 @@ import Button from '@components/blocks/Button.astro';
             x-data={`{
                 show_deny_group_request_dialog() {
                     show_confirm_dialog({
-                        title: '${t('deny_group_request_dialog_title')}',
+                        title: '${group_type === 'team' ? t('deny_team_request_dialog_title') : t('deny_group_request_dialog_title')}',
                         partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
                             character_id: group_request.character_id.toString(),
                             character_name: group_request.character_name,
@@ -93,13 +97,15 @@ import Button from '@components/blocks/Button.astro';
                             corporation_id: group_request.corporation_id,
                             corporation_name: group_request.corporation_name,
                             type: 'deny',
-                            message: t('deny_group_request_dialog_text'),
+                            group_type: group_type,
+                            message: (group_type === 'team' ? t('deny_team_request_dialog_text') : t('deny_group_request_dialog_text')),
                         })}',
                         return_on_deny: ${group_request.group_id},
                         hx: {
                             method: 'post',
                             url: '${GROUP_REQUEST_LIST_ITEM_PARTIAL_URL}?${query_string({
                                 group_id: group_request.group_id.toString(),
+                                group_type: group_type,
                                 request_id: group_request.request_id.toString(),
                                 action: 'deny'
                             })}',
