@@ -41,7 +41,7 @@ delete attributes.class
         <Flexblock gap='0' class="[ w-full ]">
             <span
                 class="truncate text-[var(--highlight)] cursor-pointer max-w-fit"
-                set:text={character_name}
+                set:text={character_id > 0 ? character_name : `[ ${t('unknown_character')} ]`}
                 x-data={`{
                     show_character_modal() {
                         if (${character_id} == 0)
