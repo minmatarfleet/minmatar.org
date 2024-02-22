@@ -18,7 +18,7 @@ const {
 import { get_player_icon } from '@helpers/eve_image_server';
 import { is_prod_mode } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
-import { format_date_time } from '@helpers/date'
+import { format_date_time, humanize_date_diff } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
 import { get_character_faction, get_race_cover_image, get_zkillboard_character_link, parse_eve_html } from '@helpers/eve'
 import { is_html } from '@helpers/string'
@@ -66,9 +66,19 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
 ---
 <Wrapper
     id="character-info"
-    class="[ character-info overflow-y-auto ]"
+    class:list={[ 'character-info overflow-y-auto', cover ]}
     padding_inline='var(--space-s)'
     padding_block='var(--space-s)'
+    x-data={`{
+        tippy_options: {
+            delay: [ 1000, 200 ],
+            arrow: true,
+        },
+        init_js() {
+            tippy('[data-tippy-content]', this.tippy_options)
+        }
+    }`}
+    x-init="init_js()"
 >
     {get_character_error ?
         <ErrorRefetch
@@ -80,8 +90,6 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
             }}
         />
         :
-        <img src={cover} />
-
         <Flexblock
             gap='var(--space-s)'
         >
@@ -97,7 +105,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                         <Flexblock gap='var(--space-xs)' class="[ w-full ]">
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
                                 <span class="[ text-[var(--highlight)] ]">{character.name}</span>
-                                <small>Born: {format_date_time(lang, character.birthday)}</small>
+                                <small>Born: <span data-tippy-content={humanize_date_diff(lang, character.birthday, new Date())}>{format_date_time(lang, character.birthday)}</span></small>
                                 <small>Security Status: {character.security_status.toFixed(1)}</small>
                             </Flexblock>
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
@@ -113,20 +121,22 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                             </Flexblock>
                         </Flexblock>
                     </VerticalCenter>
-                    <picture>
-                        {race == 'amarr' &&
-                                <AmarrLogo />
-                        }
-                        {race == 'minmatar' &&
-                            <MinmatarLogo />
-                        }
-                        {race == 'caldari' &&
-                            <CaldariLogo />
-                        }
-                        {race == 'gallente' &&
-                            <GallenteLogo />
-                        }
-                    </picture>
+                    <VerticalCenter>
+                        <picture>
+                            {race == 'amarr' &&
+                                    <AmarrLogo />
+                            }
+                            {race == 'minmatar' &&
+                                <MinmatarLogo />
+                            }
+                            {race == 'caldari' &&
+                                <CaldariLogo />
+                            }
+                            {race == 'gallente' &&
+                                <GallenteLogo />
+                            }
+                        </picture>
+                    </VerticalCenter>
                 </FluidFixed>
             </FixedFluid>
             

@@ -14,7 +14,6 @@ import { from_to_text, from_to_now_text } from '@helpers/date'
 import type { NamesAndCategoriesEvE } from '@dtypes/api.eveonline'
 import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
 let names_and_categories:NamesAndCategoriesEvE[]
-let get_names_and_categories_error:string | false = false
 
 interface Props {
     character_id?:          number;
@@ -47,7 +46,7 @@ if (!corporation_history && character_id) {
             const prev = (index > 0 ? history[index - 1] : null)
             
             const membership_time_text = (prev ?
-                from_to_text(lang, prev.start_date, i.start_date)
+                from_to_text(lang, i.start_date, prev.start_date)
                 :
                 from_to_now_text(lang, i.start_date)
             )

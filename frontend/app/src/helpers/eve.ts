@@ -18,10 +18,10 @@ export const get_character_faction = (race_id:number, locale:Locales = 'en'):Cha
 
 export const get_race_cover_image = (race:CharacterRaces):string => {
     const covers_by_race = {
-        'amarr': '/images/character-info-amarr-cover.jpg',
-        'minmatar': '/images/character-info-minmatar-cover.jpg',
-        'caldari': '/images/character-info-caldari-cover.jpg',
-        'gallente': '/images/character-info-gallente-cover.jpg'
+        'amarr': 'amarr-cover',
+        'minmatar': 'minmatar-cover',
+        'caldari': 'caldari-cover',
+        'gallente': 'gallente-cover',
     }
 
     return covers_by_race[race] ?? covers_by_race.caldari
