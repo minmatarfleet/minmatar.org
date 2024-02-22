@@ -64,7 +64,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
 ---
 <Wrapper
     id="character-info"
-    class:list={[ 'character-info overflow-y-auto', cover ]}
+    class="character-info overflow-y-auto"
     padding_inline='var(--space-s)'
     padding_block='var(--space-s)'
     x-data={`{
@@ -88,6 +88,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
             }}
         />
         :
+        <div class:list={[ 'character-info-cover', cover]} />
         <Flexblock gap='var(--space-s)'>
             <FixedFluid
                 width='192px'
