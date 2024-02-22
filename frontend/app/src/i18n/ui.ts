@@ -164,6 +164,7 @@ export const ui = {
         'icon.doctrines.alt': 'EvE Online Hangar - Ship Icon',
         'icon.alliance.alt': 'EvE Online Alliance Icon',
         'icon.fits.alt': 'EvE Online Fitting Icon',
+        'icon.augmentation.alt': 'EvE Online Augmentation Icon',
         'icon.tutorial.alt': 'EvE Online Tutorial Icon',
         'icon.zkillboard.alt': 'Eve Online Combat Log Icon',
         'icon.intel.alt': 'Eve Online Structures Icon',
@@ -401,5 +402,10 @@ export const ui = {
         'to_this_day': 'to this day',
         'zkillboard': 'Zkillboard',
         'get_eve_names_and_categories_error': 'Error retrieving names',
+        'sigs': 'SIGs',
+        'year': 'year',
+        'years': 'years',
+        'month': 'month',
+        'months': 'months',
     },
 } as const;
