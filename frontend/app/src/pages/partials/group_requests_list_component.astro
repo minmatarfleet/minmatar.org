@@ -17,8 +17,10 @@ if (!auth_token || !user) {
     return Astro.redirect(get_auth_url())
 }
 
-import type { GroupRequestListUI } from '@dtypes/layout_components'
+import type { GroupRequestListUI, GroupItemType } from '@dtypes/layout_components'
 import { get_all_groups_requests } from '@helpers/fetching/group_requests'
+
+const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 
 let groups_requests:GroupRequestListUI[] = []
 let get_all_corporations_error:string | false = false
@@ -44,10 +46,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 <Partial>
     {get_all_corporations_error ?
-        <GroupRequestsList groups_requests={groups_requests}>
+        <GroupRequestsList
+            groups_requests={groups_requests}
+            groups_type={groups_type}
+        >
             <ErrorRefetch
                 args={{
-                    partial: GROUP_REQUESTS_LIST_PARTIAL_URL,
+                    partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
                     message: get_all_corporations_error,
                     delay: delay,
                     target: '#group-request-list',
@@ -55,6 +60,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             />
         </GroupRequestsList>
         :
-        <GroupRequestsList groups_requests={groups_requests} />
+        <GroupRequestsList
+            groups_requests={groups_requests}
+            groups_type={groups_type}
+        />
     }
 </Partial>

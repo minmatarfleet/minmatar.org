@@ -9,11 +9,13 @@ import GroupItem from '@components/blocks/GroupItem.astro';
 import Partial from '@layouts/Partial.astro';
 
 import type { Group } from '@dtypes/api.minmatar.org'
+import type { GroupItemType } from '@dtypes/layout_components'
 
 const name = Astro.url.searchParams.get('name')
 const description = Astro.url.searchParams.get('description')
 const image_url = JSON.parse(Astro.url.searchParams.get('image_url'))
 const message = Astro.url.searchParams.get('message')
+const type = Astro.url.searchParams.get('type') as GroupItemType
 
 const group:Group = {
     id: 0,
@@ -25,6 +27,9 @@ const group:Group = {
 <Partial>
     <Flexblock>
         <p>{message}</p>
-        <GroupItem group={group} />
+        <GroupItem
+            group={group}
+            type={type}
+        />
     </Flexblock>
 </Partial>

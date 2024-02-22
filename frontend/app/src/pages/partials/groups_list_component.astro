@@ -18,7 +18,10 @@ if (!auth_token || !user) {
 }
 
 import type { Group } from '@dtypes/api.minmatar.org'
+import type { GroupItemType } from '@dtypes/layout_components'
 import { get_available_groups } from '@helpers/api.minmatar.org/groups'
+
+const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 
 let groups:Group[] = []
 let get_available_groups_error:string | false = false
@@ -29,7 +32,7 @@ try {
 }
 
 import { get_app_url } from '@helpers/env'
-const AVAILABLE_GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/available_groups_list/`
+const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component/`
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
@@ -40,10 +43,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 <Partial>
     {get_available_groups_error ?
-        <GroupsList groups={groups}>
+        <GroupsList
+            groups={groups} 
+            groups_type={groups_type}
+        >
             <ErrorRefetch
                 args={{
-                    partial: AVAILABLE_GROUPS_LIST_PARTIAL_URL,
+                    partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
                     message: get_available_groups_error,
                     delay: delay,
                     target: '#groups-list',
@@ -51,6 +57,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             />
         </GroupsList>
         :
-        <GroupsList groups={groups} />
+        <GroupsList
+            groups={groups} 
+            groups_type={groups_type}
+        />
     }
 </Partial>

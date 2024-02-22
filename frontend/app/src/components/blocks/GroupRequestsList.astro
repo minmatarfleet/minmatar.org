@@ -4,15 +4,17 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { GroupRequestListUI } from '@dtypes/layout_components'
+import type { GroupRequestListUI, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
-    groups_requests:     Array<GroupRequestListUI>;
+    groups_requests:    Array<GroupRequestListUI>;
+    groups_type:        GroupItemType;
     [propName: string]: any;
 }
 
 const {
     groups_requests = [],
+    groups_type,
 } = Astro.props
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -25,7 +27,10 @@ import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
     gap='var(--space-3xs)'
 >
     {groups_requests.map( (group_requests) => 
-        <GroupRequestBlock group_requests={group_requests} />
+        <GroupRequestBlock
+            group_requests={group_requests}
+            group_type={groups_type}
+        />
     )}
     {groups_requests.length == 0 &&
         <slot>

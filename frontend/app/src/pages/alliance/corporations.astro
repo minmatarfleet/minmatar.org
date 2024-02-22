@@ -30,8 +30,8 @@ import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('groups.page_title');
-const page_description = t('groups.leading_text');
+const page_title = t('corporations.page_title');
+const page_description = t('corporations.leading_text');
 ---
 
 <Viewport title={page_title} meta_description={page_description}>
@@ -50,7 +50,7 @@ const page_description = t('groups.leading_text');
             </Flexblock>
             
             <ButtonStack>
-                <Button href={translatePath('/alliance/corporations/apply/')}>
+                <Button href={translatePath('/alliance/corporations/list/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_groups')}
                 </Button>

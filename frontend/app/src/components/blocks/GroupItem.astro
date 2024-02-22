@@ -6,21 +6,23 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import type { Group } from '@dtypes/api.minmatar.org'
-import type { Alert } from '@dtypes/layout_components'
+import type { Alert, GroupItemType } from '@dtypes/layout_components'
 import { query_string, is_valid_http_url } from '@helpers/string';
 
 interface Props {
     group:  Group;
+    type:   GroupItemType,
     alert?: Alert | false;
 }
 
 const {
     group,
+    type,
     alert = false,
 } = Astro.props
 
 import { get_app_url } from '@helpers/env'
-const AVAILABLE_GROUP_PARTIAL_URL = `${get_app_url()}/partials/available_group/`
+const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item_component/`
 
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -28,9 +30,13 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Tag from '@components/blocks/Tag.astro';
 
+import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
-import Tag from './Tag.astro';
+
+console.log('===========')
+console.log(type)
 ---
 
 <FixedFluid
@@ -46,9 +52,9 @@ import Tag from './Tag.astro';
 >
     <picture class:list={{ bordered: !group?.image_url }}>
         {!group?.image_url ?
-            <GroupsEvEIcon />
+            (type === 'team' ? <AugmentationEvEIcon /> : <GroupsEvEIcon /> )
             :
-            <img src={group.image_url} width="64" height="64" alt={`${group.name} ${t('group_logo')}`} />
+            <img src={group.image_url} width="64" height="64" alt={`${group.name} ${type === 'team' ? t('team_logo') : t('group_logo')}`} />
         }
     </picture>
     <FlexInline justification='space-between'>
@@ -60,7 +66,7 @@ import Tag from './Tag.astro';
                 {is_valid_http_url(group.description) ?
                     <small>
                         <a href={group.description} target="_blank">
-                            {t('view_group_description')}
+                            {type === 'team' ? t('view_team_description') : t('view_group_description')}
                         </a>
                     </small>
                     :
@@ -81,18 +87,20 @@ import Tag from './Tag.astro';
                             this.disabled = true
                             
                             show_confirm_dialog({
-                                title: '${t('join_request_dialog_title')}',
+                                title: '${type === 'team' ? t('team_join_request_dialog_title') : t('group_join_request_dialog_title')}',
                                 partial: '${translatePath('/partials/dialog_with_group/')}?${query_string({
                                     name: group.name,
                                     description: group.description,
                                     image_url: JSON.stringify(group.image_url),
-                                    message: t('join_request_dialog_text')
+                                    type: type,
+                                    message: (type === 'team' ? t('team_join_request_dialog_text') : t('group_join_request_dialog_text'))
                                 })}',
                                 return_on_accept: ${group.id},
                                 hx: {
                                     method: 'post',
-                                    url: '${AVAILABLE_GROUP_PARTIAL_URL}?${query_string({
-                                        id: group.id.toString()
+                                    url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                        id: group.id.toString(),
+                                        type: type,
                                     })}',
                                     target: '#group-item-${group.id}',
                                     swap: 'outerHTML transition:true'

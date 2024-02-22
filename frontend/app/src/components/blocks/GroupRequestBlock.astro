@@ -4,17 +4,18 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { GroupRequestListUI, Alert } from '@dtypes/layout_components'
+import type { GroupRequestListUI, Alert, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
     group_requests:     GroupRequestListUI;
-    alert?: Alert | false;
-    [propName: string]: any;
+    alert?:             Alert | false;
+    group_type:         GroupItemType;
 }
 
 const {
     group_requests,
     alert = false,
+    group_type,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -41,6 +42,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
                 image_url: group_requests.group_image,
                 description: `${group_requests.requests.length} ${group_requests.requests.length == 1 ? t('pending_request') : t('pending_requests')}`
             }}
+            type={group_type}
         />
 
         <Flexblock
@@ -48,7 +50,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
             class="[ min-h-[64px] justify-center ]"
         >
             {group_requests.requests.map( (group_request) => 
-                <GroupRequestItem group_request={group_request} />
+                <GroupRequestItem
+                    group_request={group_request} 
+                    group_type={group_type}
+                />
             )}
             {group_requests.requests.length == 0 &&
                 t('empty_group_request_text')
