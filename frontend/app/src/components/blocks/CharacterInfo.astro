@@ -6,12 +6,10 @@ const t = useTranslations(lang);
 
 interface Props {
     character_id:   number;
-    [propName: string]: any;
 }
 
 const {
     character_id,
-    ...attributes
 } = Astro.props
 
 
@@ -90,9 +88,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
             }}
         />
         :
-        <Flexblock
-            gap='var(--space-s)'
-        >
+        <Flexblock gap='var(--space-s)'>
             <FixedFluid
                 width='192px'
                 class="[ items-center ]"
@@ -100,7 +96,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                 <picture>
                     <img width="192" height="192" src={get_player_icon(character_id, 256)} />
                 </picture>
-                <FluidFixed class="[ w-full ]" width='32px'>
+                <div class="[ fluid-fixed-l ]" class="[ w-full ]" style='--fluid-fixed--width: 32px'>
                     <VerticalCenter>
                         <Flexblock gap='var(--space-xs)' class="[ w-full ]">
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
@@ -123,21 +119,21 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                     </VerticalCenter>
                     <VerticalCenter>
                         <picture>
-                            {race == 'amarr' &&
+                            {race === 'amarr' &&
                                     <AmarrLogo />
                             }
-                            {race == 'minmatar' &&
+                            {race === 'minmatar' &&
                                 <MinmatarLogo />
                             }
-                            {race == 'caldari' &&
+                            {race === 'caldari' &&
                                 <CaldariLogo />
                             }
-                            {race == 'gallente' &&
+                            {race === 'gallente' &&
                                 <GallenteLogo />
                             }
                         </picture>
                     </VerticalCenter>
-                </FluidFixed>
+                </div>
             </FixedFluid>
             
             <Context>
