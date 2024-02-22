@@ -14,7 +14,7 @@ export async function get_user_by_id(access_token:string, user_id:number) {
         const response = await fetch(`${API_ENDPOINT}/${user_id}/profile`, {
             headers: headers
         })
-
+        
         console.log(response)
 
         if (!response.ok) {

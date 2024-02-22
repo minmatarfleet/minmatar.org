@@ -53,7 +53,7 @@ const get_group_request = async (access_token:string, group:Group) => {
     api_requests = await get_group_requests(access_token, group.id)
     api_requests = api_requests.filter( (i) => i.approved === null )
 
-    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(access_token, group, api_request) ));
+    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(access_token, group, api_request) ?? null ));
 
     return {
         group_id: group.id,
@@ -67,7 +67,24 @@ const get_group_request_ui = async (access_token:string, group:Group, api_reques
     let request:GroupRequestUI
     let user_profile:UserProfile
     
-    user_profile = await cached_get_user_info(access_token, api_request.user)
+    try {
+        user_profile = await cached_get_user_info(access_token, api_request.user)
+    } catch (error) {
+        user_profile = {
+            user_id: api_request.user,
+            username: t('unknown_user'),
+            permissions: [],
+            is_superuser: false,
+            eve_character_profile: {
+                character_id: 0,
+                character_name: t('unknown_character'),
+                corporation_id: 0,
+                corporation_name: t('unknown_corporation'),
+                scopes: [],
+            },
+            discord_user_profile: null,
+        }
+    }
 
     request = {
         request_id: api_request.id,

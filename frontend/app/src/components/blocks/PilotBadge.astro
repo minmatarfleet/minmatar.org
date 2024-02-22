@@ -38,12 +38,15 @@ delete attributes.class
         <img src={get_player_icon(character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${character_name}`} />
     </picture>
     <VerticalCenter>
-        <Flexblock gap='0'>
+        <Flexblock gap='0' class="[ w-full ]">
             <span
-                class="truncate text-[var(--highlight)] cursor-pointer"
+                class="truncate text-[var(--highlight)] cursor-pointer max-w-fit"
                 set:text={character_name}
                 x-data={`{
                     show_character_modal() {
+                        if (${character_id} == 0)
+                            return
+
                         show_modal({
                             partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
                                 character_id: character_id.toString(),
@@ -62,9 +65,9 @@ delete attributes.class
                     <picture>
                         <img src={get_corporation_logo(corporation.id, 32)} width="24" height="24" alt={`${t('profile_picture_of')} ${character_name}`} />
                     </picture>
-                    <small class="truncate">
-                        {corporation.name}
-                    </small>
+                    <span class="[ truncate ]">
+                        <small>{corporation.name}</small>
+                    </span>
                 </FixedFluid>
                 :
                 <small class="truncate">
