@@ -25,6 +25,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ButtonCard from '@components/blocks/ButtonCard.astro';
 
+import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
 import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
 
@@ -49,9 +50,15 @@ const page_description = t('alliance.leading_text');
             
 
             <ButtonCardGrid>
-                <ButtonCard title={t('teams')} href={translatePath('/alliance/groups/')}>
-                    <GroupsEvEIcon slot="icon" />
+                <ButtonCard title={t('teams')} href={translatePath('/alliance/teams/')}>
+                    <AugmentationEvEIcon slot="icon" />
                 </ButtonCard>
+
+                {!is_prod_mode() &&
+                    <ButtonCard title={t('sigs')} href={translatePath('/alliance/sigs/')}>
+                        <GroupsEvEIcon slot="icon" />
+                    </ButtonCard>
+                }
 
                 {!is_prod_mode() &&
                     <ButtonCard title={t('corporations')} href={translatePath('/alliance/corporations/list/')}>
