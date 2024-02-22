@@ -24,14 +24,14 @@ import type { GroupRequestListUI } from '@dtypes/layout_components'
 import { get_all_groups_requests } from '@helpers/fetching/group_requests'
 
 let groups_requests:GroupRequestListUI[] = []
-let get_all_corporations_error:string | false = false
+let get_all_groups_requests_error:string | false = false
 try {
     groups_requests = await get_all_groups_requests(auth_token)
     groups_requests.sort( (a, b) => {
         return b.requests.length - a.requests.length
     })
 } catch (error) {
-    get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
+    get_all_groups_requests_error = is_prod_mode() ? t('get_all_groups_requests_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
@@ -85,7 +85,7 @@ const page_title = t('groups.requests.page_title');
             </FlexInline>
         </FlexInline>
 
-        {get_all_corporations_error ?
+        {get_all_groups_requests_error ?
             <GroupRequestsList
                 groups_requests={groups_requests}
                 groups_type='group'
@@ -93,7 +93,7 @@ const page_title = t('groups.requests.page_title');
                 <ErrorRefetch
                     args={{
                         partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=group`,
-                        message: get_all_corporations_error,
+                        message: get_all_groups_requests_error,
                         delay: 0,
                         target: '#group-request-list',
                     }}

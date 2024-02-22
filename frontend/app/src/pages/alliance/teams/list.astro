@@ -21,11 +21,11 @@ import type { Group } from '@dtypes/api.minmatar.org'
 import { get_available_groups } from '@helpers/api.minmatar.org/groups'
 
 let groups:Group[] = []
-let get_available_groups_error:string | false = false
+let get_available_teams_error:string | false = false
 try {
     groups = await get_available_groups(auth_token)
 } catch (error) {
-    get_available_groups_error = is_prod_mode() ? t('get_available_groups_error') : error.message
+    get_available_teams_error = is_prod_mode() ? t('get_available_teams_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
@@ -94,7 +94,7 @@ const page_title = t('groups.list.page_title');
                 <p>{t('teams.list.leading_text')}</p>
             </TextBox>
 
-            {get_available_groups_error ?
+            {get_available_teams_error ?
                 <GroupsList
                     groups={groups}
                     groups_type='team'
@@ -102,7 +102,7 @@ const page_title = t('groups.list.page_title');
                     <ErrorRefetch
                         args={{
                             partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=teams`,
-                            message: get_available_groups_error,
+                            message: get_available_teams_error,
                             delay: 0,
                             target: '#groups-list',
                         }}
