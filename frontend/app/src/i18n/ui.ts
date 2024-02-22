@@ -185,6 +185,8 @@ export const ui = {
         'icon.market.alt': 'Eve Online Market Icon',
         'icon.corporation.alt': 'Eve Online Corporation Icon',
         'icon.ships.alt': 'Eve Online Ship tree Icon',
+        'icon.skills.alt': 'Eve Online Skills Icon',
+        'icon.assets.alt': 'Eve Online Assets Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',

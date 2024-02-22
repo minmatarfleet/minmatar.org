@@ -3,6 +3,7 @@ import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils'
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 interface Props {
     character_id:   number;
@@ -56,11 +57,14 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
+import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
 
 import AmarrLogo from '@components/logos/AmarrLogo.astro';
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
 import CaldariLogo from '@components/logos/CaldariLogo.astro';
 import GallenteLogo from '@components/logos/GallenteLogo.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 <Wrapper
     id="character-info"
@@ -114,7 +118,13 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                                         id: character.alliance_id
                                     }} />
                                 }
-                                <a class="[ w-[32px] ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                                <FlexInline gap='var(--space-3xs)'>
+                                    {!is_prod_mode() &&
+                                        <a class="[ w-[32px] neocom-button ]" href={translatePath(`/character/skills?character_id=${character_id}`)}><SkillsEvEIcon /></a>
+                                        <a class="[ w-[32px] neocom-button ]" href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
+                                    }
+                                    <a class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                                </FlexInline>
                             </Flexblock>
                         </Flexblock>
                     </VerticalCenter>
