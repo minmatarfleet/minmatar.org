@@ -1,0 +1,112 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { SkillsetUI } from '@dtypes/api.minmatar.org'
+import { query_string, is_valid_http_url } from '@helpers/string';
+
+interface Props {
+    skillset:  SkillsetUI;
+}
+
+const {
+    skillset,
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import Wrapper from '@components/blocks/ComponentBlock.astro';
+import Progress from '@components/blocks/Progress.astro';
+---
+<StylessButton class="[ skillset-item ]">
+    <FixedFluid width='var(--space-m)' gap='0' breakpoint='10%'>
+        <span class="[ background ]"></span>
+        <Flexblock gap='0' class="[ min-h-[142px] ]">
+            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[82px] ]" padding_inline='0' padding_block='var(--space-m)'>
+                <h3>{skillset.name}</h3>
+            </Wrapper>
+            <Progress class="[ w-full ]" max="100" value={skillset.progress*100}>{skillset.progress*100}%</Progress>
+            <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline='0' padding_block='var(--space-2xs)'>
+                <small>{skillset.missing_skills.length} {skillset.missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}</small>
+            </Wrapper>
+        </Flexblock>
+    </FixedFluid>
+</StylessButton>
+
+<style lang="scss">
+    .skillset-item {
+        --sikillset-background-color: rgba(60, 60, 60, 0.5);
+        --sikillset-background-hover-color: rgba(80, 80, 80, 0.5);
+
+        padding: 0 10px 0 11px;
+        position: relative;
+
+        &:hover,
+        &:focus-visible {
+            &:before,
+            &:after,
+            .background {
+                background-color: var(--sikillset-background-hover-color);
+            }
+
+            outline: none;
+        }
+
+        &:before,
+        &:after {
+            content: '';
+            display: block;
+            position: absolute;
+            height: 142px;
+            top: 0;
+            background-color: var(--sikillset-background-color);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            transition: var(--fast-transition);
+        }
+
+        &:before {
+            width: 11px;
+            left: 0;
+            clip-path: url(#before-clip-path);
+            box-shadow: 1px 0 1px 1px var(var(--sikillset-background-color));
+        }
+
+        &:after {
+            width: 10px;
+            right: 0px;
+            clip-path: url(#after-clip-path);
+            z-index: -1;
+        }
+
+        .background {
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            background-color: var(--sikillset-background-color);
+            transition: var(--fast-transition);
+        }
+
+        // clip-path: polygon(9.400% 0.000%, 0.000% 8.200%, 0.000% 61.200%, 4.700% 65.900%, 4.700% 78.800%, 0.000% 82.300%, 0.000% 142.300%, 355.900% 142.300%, 365.300% 134.100%, 365.300% 43.500%, 360.600% 38.800%, 360.600% 25.900%, 365.300% 22.300%, 365.300% 0.000%);
+
+        > * {
+            min-height: 142px;
+        }
+
+        progress {
+            position: relative;
+            width: calc(100% + 10px);
+            z-index: 1;
+            position: relative;
+        }
+
+        h3 {
+            min-height: 42px;
+            display: flex;
+            align-items: flex-end;
+        }
+    }
+</style>

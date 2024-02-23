@@ -108,6 +108,8 @@ export const ui = {
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to grow to fight larger groups, and we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
 
+        'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
+
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
         'teams.cover_alt': 'An Amarr hauler initiating warp drive.',
@@ -441,5 +443,14 @@ export const ui = {
         'team_logo': 'team logo',
         'unknown_user': 'Unknown user',
         'unknown_character': 'Removed character',
+        'skills': 'Skills',
+        'assets': 'Assets',
+        'skillset': 'Skillset',
+        'skillsets': 'Skillsets',
+        'view_assets': 'View assets',
+        'in_progress': 'in progress',
+        'no_skillsets': 'No skillsets found',
+        'skill_missing': 'skill missing',
+        'skills_missing': 'skills missing',
     },
 } as const;

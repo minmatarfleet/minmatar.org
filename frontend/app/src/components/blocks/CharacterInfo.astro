@@ -120,10 +120,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                                 }
                                 <FlexInline gap='var(--space-3xs)'>
                                     {!is_prod_mode() &&
-                                        <a class="[ w-[32px] neocom-button ]" href={translatePath(`/character/skills?character_id=${character_id}`)}><SkillsEvEIcon /></a>
-                                        <a class="[ w-[32px] neocom-button ]" href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
+                                        <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('skillsets')} href={translatePath(`/character/skillsets?character_id=${character_id}`)}><SkillsEvEIcon /></a>
+                                        <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('assets')} href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
                                     }
-                                    <a class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                                    <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
                                 </FlexInline>
                             </Flexblock>
                         </Flexblock>

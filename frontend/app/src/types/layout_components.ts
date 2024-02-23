@@ -318,3 +318,16 @@ export interface CorporationHistoryItem {
 }
 
 export type GroupItemType = 'group' | 'team'
+
+export interface SkillsetUI {
+    id:             number;
+    name:           string;
+    progress:       number;
+    missing_skills: SkillsUI[];
+}
+
+export interface SkillsUI {
+    id:             number;
+    skill_name:     string;
+    skill_level:    number;
+}

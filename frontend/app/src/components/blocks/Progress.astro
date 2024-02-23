@@ -1,0 +1,25 @@
+<progress {...Astro.props}><slot /></progress>
+
+<style lang="scss">
+    progress {
+        --progress-height: var(--space-3xs);
+
+        &[value] {
+            -webkit-appearance: none;
+            appearance: none;
+
+            height: var(--progress-height);
+        }
+
+        &[value]::-webkit-progress-bar {
+            background-color: transparent;
+            border-radius: 0;
+        }
+
+        &[value]::-webkit-progress-value {
+            border-radius: 0; 
+            background-color: var(--highlight);
+            box-shadow: 0 0 10px 0px var(--highlight);
+        }
+    }
+</style>
