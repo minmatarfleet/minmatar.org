@@ -46,7 +46,7 @@ const {
 	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
 	meta_description = t('generic.meta_description'),
 	neocom = true,
-	components = {}
+	components = {},
 } = Astro.props
 
 import '@fontsource-variable/montserrat';
@@ -57,7 +57,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}

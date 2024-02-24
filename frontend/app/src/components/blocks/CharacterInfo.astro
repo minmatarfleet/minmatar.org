@@ -44,7 +44,6 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
-import FluidFixed from '@components/compositions/FluidFixed.astro'
 
 import Context from '@components/layout/Context.astro';
 
@@ -93,6 +92,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         />
         :
         <div class:list={[ 'character-info-cover', cover]} />
+        
         <Flexblock gap='var(--space-s)'>
             <FixedFluid
                 width='192px'
@@ -123,7 +123,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('skillsets')} href={translatePath(`/character/skillsets?character_id=${character_id}`)}><SkillsEvEIcon /></a>
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('assets')} href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
                                     }
-                                    <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank"><ZkillboardEvEIcon /></a>
+                                    <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank" rel="nofollow noopener noreferrer"><ZkillboardEvEIcon /></a>
                                 </FlexInline>
                             </Flexblock>
                         </Flexblock>
