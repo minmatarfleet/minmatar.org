@@ -45,7 +45,7 @@ import Progress from '@components/blocks/Progress.astro';
     <FixedFluid width='var(--space-m)' gap='0' breakpoint='10%'>
         <span class="[ background ]"></span>
         <Flexblock gap='0' class="[ min-h-[var(--sikillset-height)] ]">
-            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[82px] ]" padding_inline='0' padding_block='var(--space-m)'>
+            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[92px] ]" padding_inline='0' padding_block='var(--space-m)'>
                 <h3>{skillset.name}</h3>
             </Wrapper>
             <div class="[ progress-container ]">
@@ -64,8 +64,8 @@ import Progress from '@components/blocks/Progress.astro';
 
 <style lang="scss">
     .skillset-item {
-        --sikillset-background-color: rgba(60, 60, 60, 0.5);
-        --sikillset-background-hover-color: rgba(80, 80, 80, 0.5);
+        --sikillset-background-color: rgba(70, 70, 70, 0.5);
+        --sikillset-background-hover-color: rgba(100, 100, 100, 0.5);
         --sikillset-height: 142px;
 
         padding: 0 10px 0 11px;
@@ -126,7 +126,7 @@ import Progress from '@components/blocks/Progress.astro';
         }
 
         h3 {
-            min-height: 42px;
+            min-height: 47px;
             display: flex;
             align-items: flex-end;
             overflow: hidden;

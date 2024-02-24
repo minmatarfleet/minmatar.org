@@ -34,6 +34,7 @@ const SKILL_SQUARE_WIDTH = 10
 <FixedFluid
     class="[ skill-item ]"
     width={`${4*PIXEL_GAP + 5*SKILL_SQUARE_WIDTH}px`}
+    breakpoint='70%'
 >
     <FlexInline gap='1px'>
         <SkillSquare status={ current_skill_level > 1 ? 'learned' : 'unlearned' } />
@@ -52,11 +53,3 @@ const SKILL_SQUARE_WIDTH = 10
     </FlexInline>
     <span>{skill.skill_name} {SKILL_NUMBER[skill.skill_level]}</span>
 </FixedFluid>
-
-<style lang="scss">
-    .skill-item {
-        --sikillset-background-color: rgba(60, 60, 60, 0.5);
-        --sikillset-background-hover-color: rgba(80, 80, 80, 0.5);
-        --sikillset-height: 142px;
-    }
-</style>

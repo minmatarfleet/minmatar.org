@@ -44,7 +44,9 @@ const clipboard_text:string = skills_names.join('')
                     {missing_skills.length} {missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}
                 </small>
             </Flexblock>
-            <ClipboardButton id="copy-skills" class="[ relative ]">{clipboard_text}</ClipboardButton>
+            {missing_skills.length > 0 &&
+                <ClipboardButton id="copy-skills" class="[ relative ]">{clipboard_text}</ClipboardButton>
+            }
         </FlexInline>
 
         <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
