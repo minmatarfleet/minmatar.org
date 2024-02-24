@@ -64,13 +64,64 @@ const character_skills_info = {
         },
         {
             "id": 2,
-            "name": "Magic 14",
-            "progress": 0.5,
+            "name": "Kage bunshin no jutsu",
+            "progress": 0.95,
             "missing_skills": [
                 {
                     "id": 3,
                     "skill_name": "CPU Management",
                     "skill_level": 5
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Town Halls",
+            "progress": 0.98,
+            "missing_skills": [
+                {
+                    "id": 3,
+                    "skill_name": "CPU Management",
+                    "skill_level": 5
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "name": "Error 500",
+            "progress": 0.85,
+            "missing_skills": [
+                {
+                    "id": 3,
+                    "skill_name": "CPU Management",
+                    "skill_level": 5
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "CSS",
+            "progress": 0.1,
+            "missing_skills": [
+                {
+                    "id": 3,
+                    "skill_name": "CPU Management",
+                    "skill_level": 4
+                },
+                {
+                    "id": 3,
+                    "skill_name": "CPU Management",
+                    "skill_level": 5
+                },
+                {
+                    "id": 4,
+                    "skill_name": "Power Grid Management",
+                    "skill_level": 3
+                },
+                {
+                    "id": 4,
+                    "skill_name": "Power Grid Management",
+                    "skill_level": 4
                 },
                 {
                     "id": 4,
@@ -80,75 +131,13 @@ const character_skills_info = {
             ]
         },
         {
-            "id": 2,
-            "name": "Magic 14",
-            "progress": 0.5,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 5
-                }
-            ]
+            "id": 6,
+            "name": "Feeding",
+            "progress": 1,
+            "missing_skills": []
         },
         {
-            "id": 2,
-            "name": "Magic 14",
-            "progress": 0.5,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "name": "Magic 14",
-            "progress": 0.5,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "name": "Magic 14",
-            "progress": 0.5,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 2,
+            "id": 7,
             "name": "Magic 14",
             "progress": 0.5,
             "missing_skills": [
@@ -215,6 +204,12 @@ const page_title = `${character_skills_info.character_name} ${t('skillsets').toL
             </FlexInline>
         </FlexInline>
 
-        <SkillsetsList skillsets={character_skills_info.skillsets} />
+        <SkillsetsList
+            skillsets={character_skills_info.skillsets}
+            character={{
+                character_id: character_skills_info.character_id,
+                character_name: character_skills_info.character_name,
+            }}
+        />
     </PageDefault>
 </Viewport>
