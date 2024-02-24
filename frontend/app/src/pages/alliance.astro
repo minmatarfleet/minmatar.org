@@ -6,6 +6,7 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
+import { query_string } from '@helpers/string';
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -33,7 +34,13 @@ const page_title = t('alliance.page_title');
 const page_description = t('alliance.leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={page_description}
+    components={{
+        modal: true,
+    }}
+>
     <PageLanding
         cover={{
             image: "/images/alliance-cover.jpg",
@@ -67,5 +74,34 @@ const page_description = t('alliance.leading_text');
                 }
             </ButtonCardGrid>
         </Flexblock>
+
+        <small class="cover-credits">
+            {t('alliance.cover_credits')}
+            <span
+                x-data={`{
+                    show_character_modal() {
+                        show_modal({
+                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                character_id: '2120834555',
+                            })}',
+                        })
+                    }
+                }`}
+                x-on:click="show_character_modal()"
+            >Faye Vaelent</span>.
+        </small>
     </PageLanding>
 </Viewport>
+
+<style lang="scss">
+    .cover-credits {
+        position: fixed;
+        bottom: var(--space-s);
+        right: var(--space-s);
+
+        span {
+            color: var(--highlight);
+            cursor: pointer;
+        }
+    }
+</style>

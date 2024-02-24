@@ -42,6 +42,7 @@ export const ui = {
         'alliance.page_title': 'Alliance',
         'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
+        'alliance.cover_credits': 'All posters in the background art are courtesy of ',
 
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
