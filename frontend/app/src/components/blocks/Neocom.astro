@@ -34,7 +34,7 @@ const page = Astro.url.pathname
     <nav class="[ flex-block-l ]">
         <Flexblock gap="0">
             <NeocomButton href={translatePath('/')} overlay={true}>
-                <FleetLogo />
+                <FleetLogo square={true} />
             </NeocomButton>
             <UserAuth active={page.includes(translatePath('/account/'))} />
         </Flexblock>
@@ -67,7 +67,7 @@ const page = Astro.url.pathname
     </nav>
     <Flexblock gap="0" x-data="neocom_clock()" x-init="init()">
         <div class="[ loader-wrapper ]">
-            <span class="loader"></span>
+            <span class="loader active"></span>
         </div>
         <time class="[ clock ]" x-text="getTime()"></time>
     </Flexblock>
