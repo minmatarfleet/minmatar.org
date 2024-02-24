@@ -1,0 +1,34 @@
+---
+interface Props {
+    status:     'unlearned' | 'learned' | 'training' | 'progressed';
+}
+
+const {
+    status
+} = Astro.props
+---
+
+<span class:list={[ 'skill-square', status ]}></span>
+
+<style lang="scss">
+    .skill-square {
+        width: 10px;
+        height: 10px;
+
+        &.unlearned {
+            background-color: #524f4d;
+        }
+
+        &.learned {
+            background-color: white;
+        }
+
+        &.training {
+            background-color: #58a7bf;
+        }
+
+        &.progressed {
+            background: linear-gradient(45deg, white 50%, #58a7bf 50%);
+        }
+    }
+</style>

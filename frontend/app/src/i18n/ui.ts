@@ -452,5 +452,9 @@ export const ui = {
         'no_skillsets': 'No skillsets found',
         'skill_missing': 'skill missing',
         'skills_missing': 'skills missing',
+        'completed': 'Completed',
+        'skillset_missing_skills_modal_error': 'An error ocurred and missing skills cannot be displayed.',
+        'no_missing_skills': 'Skillset is fully trained',
+        'skillset_missing_skills': 'Skillset — Missing skills',
     },
 } as const;

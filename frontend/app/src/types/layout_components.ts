@@ -284,7 +284,7 @@ export interface ErrorRefetchParams {
 export interface CharacterBasic {
     character_id:       number;
     character_name:     string;
-    corporation:        CorporationBasic;
+    corporation?:       CorporationBasic;
 }
 
 export type GroupRequestAction = 'accept' | 'deny'
@@ -330,4 +330,9 @@ export interface SkillsUI {
     id:             number;
     skill_name:     string;
     skill_level:    number;
+}
+
+export interface SkillsetMissingSkillUI {
+    skillsets: SkillsetUI;
+    character: CharacterBasic;
 }

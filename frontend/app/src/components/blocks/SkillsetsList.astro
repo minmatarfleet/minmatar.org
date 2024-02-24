@@ -4,14 +4,16 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { SkillsetUI } from '@dtypes/layout_components'
+import type { SkillsetUI, CharacterBasic } from '@dtypes/layout_components'
 
 interface Props {
-    skillsets:    SkillsetUI[];
+    skillsets:      SkillsetUI[];
+    character:      CharacterBasic;
 }
 
 const {
     skillsets,
+    character,
 } = Astro.props
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -26,6 +28,7 @@ import SkillsetItem from '@components/blocks/SkillsetItem.astro';
 >
     {skillsets.map( (skillset) => 
         <SkillsetItem
+            character={character}
             skillset={skillset}
         />
     )}

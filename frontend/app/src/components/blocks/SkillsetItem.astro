@@ -5,35 +5,58 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { SkillsetUI } from '@dtypes/api.minmatar.org'
+import type { SkillsetUI, CharacterBasic, SkillsetMissingSkillUI } from '@dtypes/layout_components'
 import { query_string, is_valid_http_url } from '@helpers/string';
 
 interface Props {
     skillset:  SkillsetUI;
+    character: CharacterBasic;
 }
 
 const {
     skillset,
+    character,
 } = Astro.props
+
+const skillset_missing_skills:SkillsetMissingSkillUI = {
+    skillsets: skillset,
+    character: character,
+}
 
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import StylessButton from '@components/blocks/StylessButton.astro';
 import Wrapper from '@components/blocks/ComponentBlock.astro';
 import Progress from '@components/blocks/Progress.astro';
 ---
-<StylessButton class="[ skillset-item ]">
+<StylessButton
+    class="[ skillset-item ]"
+    x-data={`{
+        show_missing_skills_modal() {
+            show_modal({
+                partial: '${translatePath('/partials/missing_skills_modal_component/')}',
+                partial_params: ${JSON.stringify(skillset_missing_skills)}
+            })
+        }
+    }`}
+    x-on:click="show_missing_skills_modal()"
+>
     <FixedFluid width='var(--space-m)' gap='0' breakpoint='10%'>
         <span class="[ background ]"></span>
-        <Flexblock gap='0' class="[ min-h-[142px] ]">
+        <Flexblock gap='0' class="[ min-h-[var(--sikillset-height)] ]">
             <Wrapper class="[ background !pb-[var(--space-2xs)] h-[82px] ]" padding_inline='0' padding_block='var(--space-m)'>
                 <h3>{skillset.name}</h3>
             </Wrapper>
-            <Progress class="[ w-full ]" max="100" value={skillset.progress*100}>{skillset.progress*100}%</Progress>
+            <div class="[ progress-container ]">
+                <Progress class="[ w-full ]" max="100" value={skillset.progress*100}>{skillset.progress*100}%</Progress>
+            </div>
             <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline='0' padding_block='var(--space-2xs)'>
-                <small>{skillset.missing_skills.length} {skillset.missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}</small>
+                {skillset.missing_skills.length === 0 ?
+                    <small class="text-[var(--green)]"><b>{t('completed')}</b></small>
+                    :
+                    <small>{skillset.missing_skills.length} {skillset.missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}</small>
+                }
             </Wrapper>
         </Flexblock>
     </FixedFluid>
@@ -43,6 +66,7 @@ import Progress from '@components/blocks/Progress.astro';
     .skillset-item {
         --sikillset-background-color: rgba(60, 60, 60, 0.5);
         --sikillset-background-hover-color: rgba(80, 80, 80, 0.5);
+        --sikillset-height: 142px;
 
         padding: 0 10px 0 11px;
         position: relative;
@@ -63,7 +87,7 @@ import Progress from '@components/blocks/Progress.astro';
             content: '';
             display: block;
             position: absolute;
-            height: 142px;
+            height: var(--sikillset-height);
             top: 0;
             background-color: var(--sikillset-background-color);
             backdrop-filter: blur(var(--transparency-backdrop-blur));
@@ -90,23 +114,22 @@ import Progress from '@components/blocks/Progress.astro';
             transition: var(--fast-transition);
         }
 
-        // clip-path: polygon(9.400% 0.000%, 0.000% 8.200%, 0.000% 61.200%, 4.700% 65.900%, 4.700% 78.800%, 0.000% 82.300%, 0.000% 142.300%, 355.900% 142.300%, 365.300% 134.100%, 365.300% 43.500%, 360.600% 38.800%, 360.600% 25.900%, 365.300% 22.300%, 365.300% 0.000%);
-
         > * {
-            min-height: 142px;
+            min-height: var(--sikillset-height);
         }
 
-        progress {
+        .progress-container {
+            display: flex;
             position: relative;
             width: calc(100% + 10px);
             z-index: 1;
-            position: relative;
         }
 
         h3 {
             min-height: 42px;
             display: flex;
             align-items: flex-end;
+            overflow: hidden;
         }
     }
 </style>

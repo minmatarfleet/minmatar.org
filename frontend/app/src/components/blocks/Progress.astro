@@ -8,6 +8,8 @@
             -webkit-appearance: none;
             appearance: none;
 
+            -webkit-animation: expand 3s cubic-bezier(0.075, 0.820, 0.165, 1.000) both;
+	        animation: expand 3s cubic-bezier(0.075, 0.820, 0.165, 1.000) both;
             height: var(--progress-height);
         }
 
@@ -20,6 +22,16 @@
             border-radius: 0; 
             background-color: var(--highlight);
             box-shadow: 0 0 10px 0px var(--highlight);
+        }
+    }
+
+    @keyframes expand {
+        from {
+            width: 0;
+        }
+
+        to {
+            width: 100%;
         }
     }
 </style>
