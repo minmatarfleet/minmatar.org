@@ -20,6 +20,7 @@ interface Props {
     <Dialog
         x-bind:class="alert_dialog_open ? 'open' : ''"
         x-bind:aria-hidden="alert_dialog_open == false"
+        x-bind:inert="alert_dialog_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
         aria-labelledby="alert-dialog-title"

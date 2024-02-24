@@ -18,6 +18,7 @@ interface Props {
     <Dialog
         x-bind:class="modal_open ? 'open' : ''"
         x-bind:aria-hidden="modal_open == false"
+        x-bind:inert="modal_open == false"
         breakout={true}
         aria-describedby="modal-description"
         class="[ w-full max-w-[770px] ]"
@@ -69,7 +70,7 @@ interface Props {
         border: none;
         position: absolute;
         right: 10px;
-        top: 5px;
+        top: 3px;
         display: flex;
         background-color: transparent;
         color: var(--highlight);
