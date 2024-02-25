@@ -13,7 +13,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     {...Astro.props}
     x-data={`{
         get_assets_count() {
-            return assets_location.assets.reduce( (c, i) => c + i.count , 0 )
+            return assets_location.assets.reduce( (c, i) => c + (i.count ?? 1) , 0 )
         }
     }`}
 >

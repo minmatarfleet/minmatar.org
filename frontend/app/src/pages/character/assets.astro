@@ -47,9 +47,118 @@ const character_skills_info = {
     "assets": []
 }
 
-const assets_regions = []
-const assets_systems = []
-const assets_stations = []
+const assets_locations_icons = [
+    {
+        location_name: "Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+        assets: [
+            {
+                id: 37604,
+                name: "Apostle",
+            }
+        ]
+    },
+    {
+        location_name: "Sosala - WATERMELON",
+        assets: [
+            {
+                id: 631,
+                name: "Scythe",
+            },
+            {
+                id: 631,
+                name: "Scythe",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+            {
+                id: 608,
+                name: "Atron",
+            },
+        ]
+    }
+]
 
 const assets_locations = [
     {
@@ -79,6 +188,10 @@ const assets_locations = [
     }
 ]
 
+const assets_regions = []
+const assets_systems = []
+const assets_stations = assets_locations.map( (location) => location.location_name )
+
 let total_assets_count = 0
 assets_locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
 
@@ -89,15 +202,19 @@ import Viewport from '@layouts/Viewport.astro';
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
+import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import AssetsList from '@components/blocks/AssetsList.astro';
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 import Input from '@components/blocks/Input.astro';
+import RadioCheck from '@components/blocks/RadioCheck.astro';
 import Select from '@components/blocks/Select.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ListIcon from '@components/icons/buttons/ListIcon.astro';
+import IconList from '@components/icons/buttons/IconList.astro';
 
 const page_title = `${character_skills_info.character_name} ${t('assets').toLowerCase()}`
 ---
@@ -119,7 +236,9 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
             overlay: true
         }}
         x-data={`{
+            assets_style: 'list',
             assets_locations: ${JSON.stringify(assets_locations)},
+            assets_locations_icons: ${JSON.stringify(assets_locations_icons)},
             assets_locations_filtered: ${JSON.stringify(assets_locations)},
             asset_name: '',
             asset_region: '-1',
@@ -128,15 +247,20 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
             total_assets_count: ${total_assets_count},
             total_assets_count_unfiltered: ${total_assets_count},
             filter() {
-                if (this.asset_name === '') {
-                    this.assets_locations_filtered = this.assets_locations
+                if (this.asset_name === '' && this.asset_station === '-1') {
+                    this.assets_locations_filtered = (this.assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
+                    console.log(this.assets_locations_filtered)
                     this.total_assets_count = this.total_assets_count_unfiltered
                     return
                 }
 
                 this.assets_locations_filtered = []
                 this.total_assets_count = 0
-                this.assets_locations.forEach( (assets_location) => {
+                const assets = (this.assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
+                assets.forEach( (assets_location) => {
+                    if (this.asset_station !== '-1' && assets_location.location_name !== this.asset_station)
+                        return true
+
                     filtered_assets = assets_location.assets.filter( (asset) => asset.name.toLowerCase().includes(this.asset_name.toLowerCase()) )
                                       
                     if (filtered_assets.length > 0) {
@@ -177,7 +301,7 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:block ]">
+                <!--<div class="[ hidden 2xl:block ]">
                     <Select
                         x-model="asset_region"
                     >
@@ -197,20 +321,50 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
                             <option value={option}>{option}</option>
                         )}
                     </Select>
-                </div>
+                </div>-->
                 
                 <div class="[ hidden 2xl:block ]">
                     <Select
                         x-model="asset_station"
+                        width='280px'
+                        x-on:change="filter()"
                     >
                         <option selected value="-1">{t('stations')}</option>
                         {assets_stations.map((option) => 
-                            <option value={option}>{option}</option>
+                            <option>{option}</option>
                         )}
                     </Select>
                 </div>
             </FlexInline>
         </FlexInline>
+
+        <div slot="subheader" class="[ subheader-bar light-transparency ]">
+            <Wrapper max_width="var(--max-content-width)" padding_block='var(--space-xs)'>
+                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
+                    <FlexInline>
+                        <RadioCheck
+                            type="radio"
+                            value="list"
+                            name="assets-style"
+                            x-model="assets_style"
+                            checked
+                            x-on:change="filter()"
+                        >
+                            <ListIcon />
+                        </RadioCheck>
+                        <RadioCheck
+                            type="radio"
+                            value="icons"
+                            name="assets-style"
+                            x-model="assets_style"
+                            x-on:change="filter()"
+                        >
+                            <IconList />
+                        </RadioChecktype=>
+                    </FlexInline>
+                </Wrapper>
+            </Wrapper>
+        </div>
 
         <div x-ref="server_side_render">
             <AssetsList assets_locations={assets_locations} />
@@ -218,3 +372,11 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
         <AssetsListAlpine />
     </PageDefault>
 </Viewport>
+
+<style lang="scss">
+    .subheader-bar {
+        position: sticky;
+        z-index: var(--sticky-z-index);
+        top: calc(var(--space-xs)*2 + 66px);
+    }
+</style>
