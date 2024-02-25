@@ -2,7 +2,7 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import { cacheFn } from '@helpers/cache'
+import { cachePromise } from '@helpers/cache'
 import type { Group, GroupRequest, UserProfile } from '@dtypes/api.minmatar.org'
 import type { GroupRequestUI, GroupRequestListUI } from '@dtypes/layout_components'
 import { get_managed_groups, get_group_requests, get_group_by_id } from '@helpers/api.minmatar.org/groups'
@@ -68,7 +68,7 @@ const get_group_request_ui = async (access_token:string, group:Group, api_reques
     let user_profile:UserProfile
     
     try {
-        user_profile = await cached_get_user_info(access_token, api_request.user)
+        user_profile = await get_user_info(access_token, api_request.user)
     } catch (error) {
         user_profile = {
             user_id: api_request.user,
@@ -110,4 +110,4 @@ const get_user_info = async (access_token:string, user_id:number) => {
     return user_profile
 }
 
-const cached_get_user_info = cacheFn(get_user_info)
+const cached_get_user_info = cachePromise(get_user_info)
