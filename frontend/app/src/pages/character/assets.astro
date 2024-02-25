@@ -1,0 +1,220 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+    return HTTP_404_Not_Found()
+
+const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+if (isNaN(character_id))
+    return HTTP_404_Not_Found()
+
+/*import type { GroupRequestListUI } from '@dtypes/layout_components'
+import { get_all_groups_requests } from '@helpers/fetching/group_requests'
+
+let groups_requests:GroupRequestListUI[] = []
+let get_all_groups_requests_error:string | false = false
+try {
+    groups_requests = await get_all_groups_requests(auth_token)
+    groups_requests.sort( (a, b) => {
+        return b.requests.length - a.requests.length
+    })
+} catch (error) {
+    get_all_groups_requests_error = is_prod_mode() ? t('get_all_groups_requests_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const GROUP_REQUESTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/group_requests_list_component/`*/
+
+const character_skills_info = {
+    "character_id": 634915984,
+    "character_name": "BearThatCares",
+    "assets": []
+}
+
+const assets_regions = []
+const assets_systems = []
+const assets_stations = []
+
+const assets_locations = [
+    {
+        location_name: "Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+        assets: [
+            {
+                id: 37604,
+                name: "Apostle",
+                count: 1,
+            }
+        ]
+    },
+    {
+        location_name: "Sosala - WATERMELON",
+        assets: [
+            {
+                id: 631,
+                name: "Scythe",
+                count: 2
+            },
+            {
+                id: 608,
+                name: "Atron",
+                count: 22
+            },
+        ]
+    }
+]
+
+let total_assets_count = 0
+assets_locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import AssetsList from '@components/blocks/AssetsList.astro';
+import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
+import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = `${character_skills_info.character_name} ${t('assets').toLowerCase()}`
+---
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/assets-cover.jpg",
+            image_990: "/images/assets-cover-990.jpg",
+            alt: t('assets.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            assets_locations: ${JSON.stringify(assets_locations)},
+            assets_locations_filtered: ${JSON.stringify(assets_locations)},
+            asset_name: '',
+            asset_region: '-1',
+            asset_system: '-1',
+            asset_station: '-1',
+            total_assets_count: ${total_assets_count},
+            total_assets_count_unfiltered: ${total_assets_count},
+            filter() {
+                if (this.asset_name === '') {
+                    this.assets_locations_filtered = this.assets_locations
+                    this.total_assets_count = this.total_assets_count_unfiltered
+                    return
+                }
+
+                this.assets_locations_filtered = []
+                this.total_assets_count = 0
+                this.assets_locations.forEach( (assets_location) => {
+                    filtered_assets = assets_location.assets.filter( (asset) => asset.name.toLowerCase().includes(this.asset_name.toLowerCase()) )
+                                      
+                    if (filtered_assets.length > 0) {
+                        this.total_assets_count += filtered_assets.reduce( (c, asset) => c + asset.count , 0 )
+                        this.assets_locations_filtered.push({
+                            location_name: assets_location.location_name,
+                            assets: filtered_assets
+                        })
+                    }
+                })
+            },
+            init() {
+                $refs.server_side_render.remove()
+            },
+        }`}
+        x-init="init"
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <img height="64" width="64" src={get_player_icon(character_skills_info.character_id)} alt={`${t('profile_picture_of')} ${character_skills_info.character_name}`} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small
+                        x-text={'`${total_assets_count} ${total_assets_count != 1 ? `'+t('assets').toLowerCase()+'` : `'+t('asset').toLowerCase()+'`} '+t('in_inventory').toLowerCase()+'`'}
+                    >
+                        {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
+                    </small>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="asset_name"
+                    x-on:keyup="filter()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="asset_region"
+                    >
+                        <option selected value="-1">{t('regions')}</option>
+                        {assets_regions.map((option) => 
+                            <option value={option}>{option}</option>
+                        )}
+                    </Select>
+                </div>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="asset_system"
+                    >
+                        <option selected value="-1">{t('system')}</option>
+                        {assets_systems.map((option) => 
+                            <option value={option}>{option}</option>
+                        )}
+                    </Select>
+                </div>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="asset_station"
+                    >
+                        <option selected value="-1">{t('stations')}</option>
+                        {assets_stations.map((option) => 
+                            <option value={option}>{option}</option>
+                        )}
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        <div x-ref="server_side_render">
+            <AssetsList assets_locations={assets_locations} />
+        </div>
+        <AssetsListAlpine />
+    </PageDefault>
+</Viewport>

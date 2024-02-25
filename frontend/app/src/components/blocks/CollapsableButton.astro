@@ -13,11 +13,14 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 <style lang="scss">
     button {
         all: unset;
-        color: var(--highlight);
         cursor: pointer;
 
         &:focus {
             outline: revert;
+        }
+
+        svg {
+            color: var(--highlight);
         }
 
         .collapsed {

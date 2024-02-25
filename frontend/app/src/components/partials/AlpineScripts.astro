@@ -289,6 +289,9 @@ export const UtilitiesXData = `
     },
     get_alliance_logo(id, size = 32) {
         return 'https://images.evetech.net/alliances/'+id+'/logo?size='+size;
+    },
+    get_item_icon(id, size = 64) {
+        return 'https://images.evetech.net/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
     },`
 
 export const RifterAnimationXData = `

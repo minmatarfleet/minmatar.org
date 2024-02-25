@@ -1,0 +1,62 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AssetsLocationUI } from '@dtypes/layout_components'
+
+interface Props {
+    assets_location: AssetsLocationUI;
+}
+
+const {
+    assets_location,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CollapsableButton from '@components/blocks/CollapsableButton.astro';
+import AssetLocationItem from '@components/blocks/AssetLocationItem.astro';
+import AssetItem from '@components/blocks/AssetItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+
+<ComponentBlock
+    id="assets-location-list"
+    width='narrow'
+    x-data={`{
+        expanded: true,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+    {...Astro.props}
+>
+    <Flexblock>
+        <CollapsableButton x-on:click="toggle_collapse()">
+            <AssetLocationItem
+                asset_location={{
+                    location_name: assets_location.location_name,
+                    assets_count: assets_location.assets.reduce( (c, i) => c + i.count , 0 )
+                }}
+            />
+        </CollapsableButton>
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center ]"
+            x-show="expanded"
+            x-collapse.duration.100ms
+        >
+            {assets_location.assets.map( (asset) => 
+                <AssetItem
+                    asset={asset} 
+                />
+            )}
+            {assets_location.assets.length == 0 &&
+                t('empty_asset_location')
+            }
+        </Flexblock>
+    </Flexblock>
+</ComponentBlock>

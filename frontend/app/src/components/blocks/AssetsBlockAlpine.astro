@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CollapsableButton from '@components/blocks/CollapsableButton.astro';
+import AssetLocationItemAlpine from '@components/blocks/AssetLocationItemAlpine.astro';
+import AssetItemAlpine from '@components/blocks/AssetItemAlpine.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+
+<ComponentBlock
+    {...Astro.props}
+    class="assets-location-list"
+    width='narrow'
+    x-data={`{
+        expanded: true,
+        location_assets_count: 0,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+>
+    <Flexblock>
+        <CollapsableButton x-on:click="toggle_collapse()">
+            <AssetLocationItemAlpine />
+        </CollapsableButton>
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ assets-items ] [ min-h-[64px] justify-center ]"
+            x-show="expanded"
+            x-collapse.duration.100ms
+        >
+            <template x-for="asset in assets_location.assets">
+                <AssetItemAlpine />
+            </template>
+            <template x-if="assets_location.assets.length == 0">
+                {t('empty_asset_location')}
+            </template>
+        </Flexblock>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .assets-items {
+        position: relative;
+        top: calc(-1 * var(--space-3xs));
+        margin-block-end: calc(-1 * var(--space-3xs));
+    }
+</style>

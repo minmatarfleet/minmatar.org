@@ -1,0 +1,40 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AssetsLocationUI } from '@dtypes/layout_components'
+
+interface Props {
+    assets_locations: AssetsLocationUI[];
+}
+
+const {
+    assets_locations,
+} = Astro.props
+
+import AssetsBlock from '@components/blocks/AssetsBlock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    id="assets-list"
+    class="[ assets-list ]"
+    gap='var(--space-3xs)'
+>
+    <Flexblock gap='var(--space-3xs)'>
+        {assets_locations.map( (assets_location) => 
+            <AssetsBlock
+                assets_location={assets_location}
+            />
+        )}
+    </Flexblock>
+
+    {assets_locations.length == 0 &&
+        <TextBox>
+            <p>{t('no_assets')}</p>
+        </TextBox>
+    }
+</Flexblock>

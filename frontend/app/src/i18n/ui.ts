@@ -90,11 +90,11 @@ export const ui = {
         
         'market.page_title': 'Market',
         'market.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'market.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        'market.cover_alt': 'Interior of Jita 4.4 station',
         
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'contracts.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        'contracts.cover_alt': 'Interior of Jita 4.4 station',
         
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
@@ -110,6 +110,8 @@ export const ui = {
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
 
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
+
+        'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
@@ -445,6 +447,7 @@ export const ui = {
         'unknown_user': 'Unknown user',
         'unknown_character': 'Removed character',
         'skills': 'Skills',
+        'asset': 'Asset',
         'assets': 'Assets',
         'skillset': 'Skillset',
         'skillsets': 'Skillsets',
@@ -457,6 +460,12 @@ export const ui = {
         'skillset_missing_skills_modal_error': 'An error ocurred and missing skills cannot be displayed.',
         'no_missing_skills': 'Skillset is fully trained',
         'skillset_missing_skills': 'Skillset — Missing skills',
+        'in_inventory': 'in inventory',
         'credits': 'Credits',
+        'regions': 'Regions',
+        'stations': 'Stations',
+        'no_assets': 'No assets found',
+        'empty_asset_location': 'No assets found at location',
+        'icon': 'Icon',
     },
 } as const;

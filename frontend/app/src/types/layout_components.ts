@@ -341,3 +341,19 @@ export interface VideoWidgetCredits {
     character_id?:  number;
     character_name: string;
 }
+
+export interface AssetsLocationUI {
+    location_name: string;
+    assets:        AssetUI[];
+}
+
+export interface AssetUI {
+    id:     number;
+    name:   string;
+    count:  number;
+}
+
+export interface AssetLocationItemUI {
+    location_name:  string;
+    assets_count:   number;
+}

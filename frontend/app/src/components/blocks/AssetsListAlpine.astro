@@ -1,0 +1,33 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import AssetsBlockAlpine from '@components/blocks/AssetsBlockAlpine.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    id="assets-list"
+    class="[ assets-list ]"
+    gap='var(--space-3xs)'
+    {...Astro.props}
+>
+    <template x-for="assets_location in assets_locations_filtered">
+        <AssetsBlockAlpine />
+    </template>
+    <template x-if="assets_locations_filtered.length == 0">
+        <TextBox>
+            <p>{t('no_assets')}</p>
+        </TextBox>
+    </template>
+</Flexblock>
+
+<style lang="scss">
+    .assets-list {
+        position: relative;
+        top: calc(-1 * var(--space-3xs));
+    }
+</style>

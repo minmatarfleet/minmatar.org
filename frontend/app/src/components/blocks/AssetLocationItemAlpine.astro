@@ -1,0 +1,22 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    gap='0'
+    class="[ asset-location-item ] [ w-full ]"
+    {...Astro.props}
+    x-data={`{
+        get_assets_count() {
+            return assets_location.assets.reduce( (c, i) => c + i.count , 0 )
+        }
+    }`}
+>
+    <span class="text-[var(--highlight)]" x-text="assets_location.location_name" />
+    <small x-text={'`${get_assets_count()} ${get_assets_count() != 1 ? `'+t('assets').toLowerCase()+'` : `'+t('asset').toLowerCase()+'`}`'} />
+</Flexblock>
