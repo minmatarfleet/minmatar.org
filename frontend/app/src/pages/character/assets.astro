@@ -338,33 +338,27 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
             </FlexInline>
         </FlexInline>
 
-        <div slot="subheader" class="[ subheader-bar light-transparency ]">
-            <Wrapper max_width="var(--max-content-width)" padding_block='var(--space-xs)'>
-                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
-                    <FlexInline>
-                        <RadioCheck
-                            type="radio"
-                            value="list"
-                            name="assets-style"
-                            x-model="assets_style"
-                            checked
-                            x-on:change="filter()"
-                        >
-                            <ListIcon />
-                        </RadioCheck>
-                        <RadioCheck
-                            type="radio"
-                            value="icons"
-                            name="assets-style"
-                            x-model="assets_style"
-                            x-on:change="filter()"
-                        >
-                            <IconList />
-                        </RadioChecktype=>
-                    </FlexInline>
-                </Wrapper>
-            </Wrapper>
-        </div>
+        <FlexInline slot="subheader">
+            <RadioCheck
+                type="radio"
+                value="list"
+                name="assets-style"
+                x-model="assets_style"
+                checked
+                x-on:change="filter()"
+            >
+                <ListIcon />
+            </RadioCheck>
+            <RadioCheck
+                type="radio"
+                value="icons"
+                name="assets-style"
+                x-model="assets_style"
+                x-on:change="filter()"
+            >
+                <IconList />
+            </RadioChecktype=>
+        </FlexInline>
 
         <div x-ref="server_side_render">
             <AssetsList assets_locations={assets_locations} />
@@ -372,11 +366,3 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
         <AssetsListAlpine />
     </PageDefault>
 </Viewport>
-
-<style lang="scss">
-    .subheader-bar {
-        position: sticky;
-        z-index: var(--sticky-z-index);
-        top: calc(var(--space-xs)*2 + 66px);
-    }
-</style>
