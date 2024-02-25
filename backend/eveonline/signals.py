@@ -22,25 +22,28 @@ esi = EsiClientProvider()
     dispatch_uid="populate_eve_character_public_data",
 )
 def populate_eve_character_public_data(sender, instance, created, **kwargs):
-    logger.info("Populating name for character %s", instance.character_id)
-    esi_character = esi.client.Character.get_characters_character_id(
-        character_id=instance.character_id
-    ).results()
-    logger.debug("Setting character name to %s", esi_character["name"])
-    instance.character_name = esi_character["name"]
-    logger.debug("Setting corporation to %s", esi_character["corporation_id"])
-    if EveCorporation.objects.filter(
-        corporation_id=esi_character["corporation_id"]
-    ).exists():
-        instance.corporation = EveCorporation.objects.get(
-            corporation_id=esi_character["corporation_id"]
+    if created:
+        logger.info("Populating name for character %s", instance.character_id)
+        esi_character = esi.client.Character.get_characters_character_id(
+            character_id=instance.character_id
+        ).results()
+        logger.debug("Setting character name to %s", esi_character["name"])
+        instance.character_name = esi_character["name"]
+        logger.debug(
+            "Setting corporation to %s", esi_character["corporation_id"]
         )
-    else:
-        corporation = EveCorporation.objects.create(
+        if EveCorporation.objects.filter(
             corporation_id=esi_character["corporation_id"]
-        )
-        instance.corporation = corporation
-    instance.save()
+        ).exists():
+            instance.corporation = EveCorporation.objects.get(
+                corporation_id=esi_character["corporation_id"]
+            )
+        else:
+            corporation = EveCorporation.objects.create(
+                corporation_id=esi_character["corporation_id"]
+            )
+            instance.corporation = corporation
+        instance.save()
 
 
 @receiver(
@@ -50,30 +53,50 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
 )
 def populate_eve_character_private_data(sender, instance, created, **kwargs):
     """Populate skills for a character"""
-    if not instance.tokens.exists():
-        return
+    if created:
+        if not instance.tokens.exists():
+            return
 
-    # populate skills
-    logger.debug("Fetching skills for %s", instance.character_name)
-    required_scopes = ["esi-skills.read_skills.v1"]
-    token = Token.objects.filter(
-        character_id=instance.character_id,
-        scopes__name__in=required_scopes,
-    ).first()
-    if token:
-        response = esi.client.Skills.get_characters_character_id_skills(
+        # populate skills
+        logger.debug("Fetching skills for %s", instance.character_name)
+        required_scopes = ["esi-skills.read_skills.v1"]
+        token = Token.objects.filter(
             character_id=instance.character_id,
-            token=token.valid_access_token(),
-        ).results()
-        instance.skills_json = json.dumps(response)
+            scopes__name__in=required_scopes,
+        ).first()
+        if token:
+            response = esi.client.Skills.get_characters_character_id_skills(
+                character_id=instance.character_id,
+                token=token.valid_access_token(),
+            ).results()
+            instance.skills_json = json.dumps(response)
 
-    else:
-        logger.warning(
-            "Failed to populate skills, no token with required scopes for %s",
-            instance.character_name,
-        )
+        else:
+            logger.warning(
+                "Failed to populate skills, no token with required scopes for %s",
+                instance.character_name,
+            )
 
-    instance.save()
+        # populate assets
+        logger.debug("Fetching assets for %s", instance.character_name)
+        required_scopes = ["esi-assets.read_assets.v1"]
+        token = Token.objects.filter(
+            character_id=instance.character_id,
+            scopes__name__in=required_scopes,
+        ).first()
+        if token:
+            response = esi.client.Assets.get_characters_character_id_assets(
+                character_id=instance.character_id,
+                token=token.valid_access_token(),
+            ).results()
+            instance.assets_json = json.dumps(response)
+        else:
+            logger.warning(
+                "Failed to populate assets, no token with required scopes for %s",
+                instance.character_name,
+            )
+
+        instance.save()
 
 
 @receiver(signals.post_save, sender=Token)
