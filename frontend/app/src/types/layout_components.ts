@@ -208,7 +208,7 @@ export interface PageCoverOptions {
 export interface PageVideoOptions {
     id:        string;
     title:     string;
-    credits?:  string;
+    credits?:  VideoWidgetCredits;
 }
 
 export interface ViewportComponents {   
@@ -335,4 +335,9 @@ export interface SkillsUI {
 export interface SkillsetMissingSkillUI {
     skillsets: SkillsetUI;
     character: CharacterBasic;
+}
+
+export interface VideoWidgetCredits {
+    character_id?:  number;
+    character_name: string;
 }
