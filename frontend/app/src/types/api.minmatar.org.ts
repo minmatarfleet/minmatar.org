@@ -1,6 +1,14 @@
 export interface Character {
     character_id:   number;
     character_name: string;
+    skills:         Skill[];
+}
+
+export interface Skill {
+    active_skill_level:   number;
+    skill_id:             number;
+    skillpoints_in_skill: number;
+    trained_skill_level:  number;
 }
 
 export type GroupStatus = 'available' | 'requested' | 'confirmed'
@@ -8,18 +16,18 @@ export type GroupStatus = 'available' | 'requested' | 'confirmed'
 export interface Group {
     id:             number;
     name:           string;
-    description:    string;
-    image_url:      string;
-    status?:        GroupStatus;
+    description:    string | null;
+    image_url:      string | null;
+    status?:        GroupStatus | null;
 }
 
 export interface GroupRequest {
     id:             number;
     user:           number;
     group:          number;
-    approved:       boolean;
-    approved_by:    number;
-    approved_at:    string;
+    approved:       boolean | null;
+    approved_by:    number | null;
+    approved_at:    string | null;
 }
 
 export interface Corporation {
@@ -39,16 +47,16 @@ export interface CorporationApplication {
 export interface UserProfile {
     user_id:               number;
     username:              string;
-    permissions:           any[];
+    permissions:           string[];
     is_superuser:          boolean;
-    eve_character_profile: EveCharacterProfile;
-    discord_user_profile:  DiscordUserProfile;
+    eve_character_profile: EveCharacterProfile | null;
+    discord_user_profile:  DiscordUserProfile | null;
 }
 
 export interface DiscordUserProfile {
     id:          number;
     discord_tag: string;
-    avatar:      string;
+    avatar:      string | null;
 }
 
 export interface EveCharacterProfile {
