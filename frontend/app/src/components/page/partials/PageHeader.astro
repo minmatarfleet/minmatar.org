@@ -14,12 +14,12 @@ const subheader_content = await Astro.slots.render('subheader');
 ---
 
 <div class="[ post-header ]">
-    <Wrapper class="[ main-bar dark-transparency ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
+    <Wrapper class="[ main-bar darker-transparency ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
         <slot />
     </Wrapper>
 
     {subheader_content !== '' &&
-        <div class="[ subheader-bar ] [ light-transparency ]">
+        <div class="[ subheader-bar ] [ dark-transparency ]">
             <Wrapper max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                     <slot name="subheader" />
@@ -37,7 +37,11 @@ const subheader_content = await Astro.slots.render('subheader');
     .post-header {
         position: sticky;
         top: 0;
-        z-index: var(--sticky-z-index);
+        z-index: var(--header-z-index);
+
+        .subheader-bar {
+            //margin-top: -1px;
+        }
 
         .main-bar {
             min-height: var(--space-xl-2xl);
