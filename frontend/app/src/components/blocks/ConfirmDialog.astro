@@ -18,6 +18,21 @@ interface Props {
     class="[ confirm-dialog ]"
 >
     <Dialog
+        x-data={`{
+            close_dialog() {
+                if (!confirm_dialog_open)
+                    return
+
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.confirm-dialog-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
         x-bind:class="confirm_dialog_open ? 'open' : ''"
         x-bind:aria-hidden="confirm_dialog_open == false"
         x-bind:inert="confirm_dialog_open == false"

@@ -16,6 +16,21 @@ interface Props {
     class="[ modal ]"
 >
     <Dialog
+        x-data={`{
+            close_dialog() {
+                if (!modal_open)
+                    return
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.modal-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
         x-bind:class="modal_open ? 'open' : ''"
         x-bind:aria-hidden="modal_open == false"
         x-bind:inert="modal_open == false"
