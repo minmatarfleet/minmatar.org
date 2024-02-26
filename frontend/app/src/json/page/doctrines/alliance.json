@@ -2,7 +2,7 @@
     {
         "doctrine_name": "Heavy Armor",
         "id": 16,
-        "href": "/doctrines/alliance/heavy_armor",
+        "href": "/ships/doctrines/alliance/heavy_armor",
         "tags": [{
             "name": "Large Fleet",
             "color": "fleet-red",
