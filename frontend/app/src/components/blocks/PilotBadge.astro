@@ -27,16 +27,19 @@ import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 delete attributes.class
 ---
+
 <FixedFluid width='64px'  class:list={['pilot-item', Astro.props.class]} {...attributes}>
-    <picture>
-        <img src={get_player_icon(character_id, 256)} width="64" height="64" alt={`${t('profile_picture_of')} ${character_name}`} />
-    </picture>
+    <CharacterPicture
+        character_id={character_id}
+        character_name={character_name}
+    />
     <VerticalCenter>
         <Flexblock gap='0' class="[ w-full ]">
             <span
