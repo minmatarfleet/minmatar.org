@@ -1,11 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -195,8 +193,6 @@ const assets_stations = assets_locations.map( (location) => location.location_na
 let total_assets_count = 0
 assets_locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
 
-import { get_player_icon } from '@helpers/eve_image_server'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -211,6 +207,7 @@ import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
 import Select from '@components/blocks/Select.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ListIcon from '@components/icons/buttons/ListIcon.astro';
@@ -280,7 +277,10 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
-                <img height="64" width="64" src={get_player_icon(character_skills_info.character_id)} alt={`${t('profile_picture_of')} ${character_skills_info.character_name}`} />
+                <CharacterPicture
+                    character_id={character_skills_info.character_id}
+                    character_name={character_skills_info.character_name}
+                />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}
@@ -339,25 +339,27 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
         </FlexInline>
 
         <FlexInline slot="subheader">
-            <RadioCheck
-                type="radio"
-                value="list"
-                name="assets-style"
-                x-model="assets_style"
-                checked
-                x-on:change="filter()"
-            >
+            <RadioCheck data-tippy-content={t('list_view_mode')}>
+                <input
+                    type="radio"
+                    value="list"
+                    name="assets-style"
+                    x-model="assets_style"
+                    x-on:change="filter()"
+                    checked
+                />
                 <ListIcon />
             </RadioCheck>
-            <RadioCheck
-                type="radio"
-                value="icons"
-                name="assets-style"
-                x-model="assets_style"
-                x-on:change="filter()"
-            >
+            <RadioCheck data-tippy-content={t('icons_view_mode')}>
+                <input
+                    type="radio"
+                    value="icons"
+                    name="assets-style"
+                    x-model="assets_style"
+                    x-on:change="filter()"
+                />
                 <IconList />
-            </RadioChecktype=>
+            </RadioChecktype>
         </FlexInline>
 
         <div x-ref="server_side_render">

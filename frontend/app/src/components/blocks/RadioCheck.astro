@@ -1,22 +1,10 @@
----
-interface Props {
-    type:               'radio' | 'checkbox';
-    [propName: string]: any;
-}
-
-const {
-    type,
-    ...attributes
-} = Astro.props
----
-
-<label class="[ radio-icon ]">
-    <input type={type} {...attributes} />
+<label class="[ radio-icon ]" {...Astro.props}>
+    <slot name="input" />
     <slot />
 </label>
 
-<style lang="scss">
-    :global(.radio-icon :checked + *) {
+<style lang="scss" is:global>
+    .radio-icon :checked + * {
         color: var(--fleet-yellow);
     }
 

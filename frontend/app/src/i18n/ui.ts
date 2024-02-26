@@ -467,5 +467,7 @@ export const ui = {
         'no_assets': 'No assets found',
         'empty_asset_location': 'No assets found at location',
         'icon': 'Icon',
+        'list_view_mode': 'View mode (List)',
+        'icons_view_mode': 'View mode (Icons)',
     },
 } as const;
