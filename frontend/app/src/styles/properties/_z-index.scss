@@ -1,8 +1,11 @@
 :root {
-    --tooltips-z-index: 10005;
-    --dialog-close-z-index: 10004;
-    --dialog-z-index: 10003;
-    --backdrop-z-index: 10002;
-    --neocom-z-index: 10001;
-    --sticky-z-index: 10000;
+    --base-z-index: 10000;
+
+    --tooltips-z-index: calc(var(--dialog-close-z-index) + 1);
+    --dialog-close-z-index: calc(var(--dialog-z-index) + 1);
+    --dialog-z-index: calc(var(--backdrop-z-index) + 1);
+    --backdrop-z-index: calc(var(--neocom-z-index) + 1);
+    --neocom-z-index: calc(var(--header-z-index) + 1);
+    --header-z-index: calc(var(--base-z-index) + 1);
+    --sticky-z-index: var(--base-z-index);
 }
