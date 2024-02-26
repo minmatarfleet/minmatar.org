@@ -49,6 +49,8 @@ const {
 	components = {},
 } = Astro.props
 
+components.modal = components.modal ?? true
+
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
 import 'tippy.js/dist/tippy.css';
@@ -135,8 +137,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<AllianceFinder />
 		}
 
-		<FooterScripts />
-
 		{middleware_error &&
 			<div class="toast">
 				{middleware_error}
@@ -146,6 +146,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<div class="[ hidden ]">
 			<RifterIcon x-ref="rifter" />
 		</div>
+
+		<FooterScripts />
 	</body>
 </html>
 
