@@ -33,7 +33,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
     }`}
     {...Astro.props}
 >
-    <Flexblock>
+    <Flexblock gap='var(--component-block-gap)'>
         <CollapsableButton x-on:click="toggle_collapse()">
             <AssetLocationItem
                 asset_location={{

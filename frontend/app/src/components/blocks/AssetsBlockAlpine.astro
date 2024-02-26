@@ -13,10 +13,9 @@ import AssetItemAlpine from '@components/blocks/AssetItemAlpine.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 ---
 
-<ComponentBlock
+<div
     {...Astro.props}
     class="assets-location-list"
-    width='narrow'
     x-data={`{
         expanded: true,
         location_assets_count: 0,
@@ -25,50 +24,76 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         }
     }`}
 >
-    <Flexblock>
-        <CollapsableButton x-on:click="toggle_collapse()">
-            <AssetLocationItemAlpine />
-        </CollapsableButton>
+    <Flexblock gap='0'>
+        <ComponentBlock
+            class="[ sticky-location ]"
+            width='narrow'
+        >
+            <CollapsableButton class="[ !block !w-full ]" x-on:click="toggle_collapse()">
+                <AssetLocationItemAlpine />
+            </CollapsableButton>
+        </ComponentBlock>
 
-        <template x-if="assets_style === 'list'">
-            <Flexblock
-                gap='var(--space-3xs)'
-                class="[ assets-items ] [ min-h-[64px] justify-center ]"
-                x-show="expanded"
-                x-collapse.duration.0ms
-            >
-                <template x-for="asset in assets_location.assets">
-                    <AssetItemAlpine />
-                </template>
-                <template x-if="assets_location.assets.length == 0">
-                    {t('empty_asset_location')}
-                </template>
-            </Flexblock>
-        </template>
-        <template x-if="assets_style === 'icons'">
-            <Grid
-                row_gap='var(--space-3xs)'
-                column_gap='var(--space-2xs)'
-                min_item_width='64px'
-                class="grid-fill"
-                x-show="expanded"
-                x-collapse.duration.0ms
-            >
-                <template x-for="asset in assets_location.assets">
-                    <AssetItemAlpine />
-                </template>
-                <template x-if="assets_location.assets.length == 0">
-                    {t('empty_asset_location')}
-                </template>
-            </Grid>
-        </template>
+        <ComponentBlock
+            width='narrow'
+            x-show="expanded"
+            x-collapse.duration.0ms
+        >
+            <template x-if="assets_style === 'list'">
+                <Flexblock
+                    gap='var(--space-3xs)'
+                    class="[ assets-items ] [ min-h-[64px] justify-center ]"
+                    x-show="expanded"
+                    x-collapse.duration.0ms
+                >
+                    <template x-for="asset in assets_location.assets">
+                        <AssetItemAlpine />
+                    </template>
+                    <template x-if="assets_location.assets.length == 0">
+                        {t('empty_asset_location')}
+                    </template>
+                </Flexblock>
+            </template>
+            <template x-if="assets_style === 'icons'">
+                <Grid
+                    row_gap='var(--space-3xs)'
+                    column_gap='var(--space-2xs)'
+                    min_item_width='64px'
+                    class="grid-fill"
+                >
+                    <template x-for="asset in assets_location.assets">
+                        <AssetItemAlpine />
+                    </template>
+                    <template x-if="assets_location.assets.length == 0">
+                        {t('empty_asset_location')}
+                    </template>
+                </Grid>
+            </template>
+        </ComponentBlock>
     </Flexblock>
-</ComponentBlock>
+</div>
 
 <style lang="scss">
     .assets-items {
         position: relative;
         top: calc(-1 * var(--space-3xs));
         margin-block-end: calc(-1 * var(--space-3xs));
+    }
+
+    .sticky-location + div {
+        padding-block-start: 0 !important;
+    }
+
+    .sticky-location {
+        position: sticky;
+        top: 137px;
+        z-index: var(--sticky-z-index);
+        backdrop-filter: blur(10px);
+        padding-block-end: var(--space-l) !important;
+
+        button {
+            display: block;
+            width: 100%;
+        }
     }
 </style>
