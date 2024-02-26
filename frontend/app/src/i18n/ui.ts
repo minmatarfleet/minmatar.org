@@ -469,5 +469,6 @@ export const ui = {
         'icon': 'Icon',
         'list_view_mode': 'View mode (List)',
         'icons_view_mode': 'View mode (Icons)',
+        'block_missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the sticky header.',
     },
 } as const;

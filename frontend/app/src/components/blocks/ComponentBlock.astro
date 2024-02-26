@@ -2,9 +2,10 @@
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 interface Props {
-    padding_block?:  string;
-    padding_inline?: string;
-    width?:          'narrow' | 'normal';
+    padding_block?:     string;
+    padding_inline?:    string;
+    width?:             'narrow' | 'normal';
+    dark?:              boolean;
     [propName: string]: any;
 }
 
@@ -12,14 +13,17 @@ const {
     padding_block = 'var(--component-padding-block)',
     padding_inline = 'var(--space-l-xl)',
     width = 'normal',
+    dark = false,
     ...attributes
 } = Astro.props
+
+const effect = (dark ? 'solid-transparency' : 'light-transparency')
 
 delete attributes.class
 ---
 
 <Wrapper
-    class:list={['[ card component ][ light-transparency ]', Astro.props.class]}
+    class:list={['[ card component ]', Astro.props.class, effect]}
     padding_block={padding_block}
     padding_inline={padding_inline}
     max_width={(width == 'narrow' ? 'var(--max-text-width)' : '100%')}
