@@ -48,3 +48,6 @@ services:
         volumes:
             - "redis:/var/lib/redis"
             - "redis:/data"
+
+volumes:
+    redis: {}
