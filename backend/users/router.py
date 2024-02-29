@@ -1,3 +1,5 @@
+import logging
+
 import jwt
 from django.conf import settings
 from django.contrib.auth.models import Permission, User
@@ -12,6 +14,7 @@ from discord.models import DiscordUser
 from .helpers import get_user_profile
 from .schemas import UserProfileSchema
 
+logger = logging.getLogger(__name__)
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 router = Router(tags=["Authentication"])
 discord = DiscordClient()
@@ -27,7 +30,9 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
+    logger.info(f"Adding redirect URL to session: {redirect_url}")
     request.session["authentication_redirect_url"] = redirect_url
+    logger.info(f"Current session: {request.session}")
     return redirect(auth_url_discord)
 
 

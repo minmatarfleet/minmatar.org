@@ -30,6 +30,7 @@ class EveCharacter(models.Model):
 
     # data
     skills_json = models.TextField(blank=True, default="{}")
+    assets_json = models.TextField(blank=True, default="{}")
 
     @property
     def tokens(self):
@@ -39,7 +40,28 @@ class EveCharacter(models.Model):
         return str(self.character_name)
 
 
+class EveCharacterAsset(models.Model):
+    """Character asset model"""
+
+    type_id = models.IntegerField()
+    type_name = models.CharField(max_length=255)
+    location_id = models.BigIntegerField()
+    location_name = models.CharField(max_length=255)
+
+    character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+
+
 class EveCharacterSkillset(models.Model):
+    """List of skills to compare character skills against for progression"""
+
+    progress = models.FloatField()
+    missing_skills = models.TextField(blank=True)
+
+    character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+    eve_skillset = models.ForeignKey("EveSkillset", on_delete=models.CASCADE)
+
+
+class EveSkillset(models.Model):
     """List of skills to compare character skills against for progression"""
 
     name = models.CharField(max_length=255)

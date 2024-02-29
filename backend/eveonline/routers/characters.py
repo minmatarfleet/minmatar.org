@@ -10,7 +10,12 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterAsset,
+    EveCharacterSkillset,
+    EvePrimaryCharacter,
+)
 from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
 
 router = Router(tags=["Characters"])
@@ -29,6 +34,19 @@ class BasicCharacterResponse(BaseModel):
 
 class CharacterResponse(BasicCharacterResponse):
     skills: dict
+
+
+class CharacterSkillsetResponse(BaseModel):
+    name: str
+    progress: float
+    missing_skills: List[str]
+
+
+class CharacterAssetResponse(BaseModel):
+    type_id: int
+    type_name: str
+    location_id: int
+    location_name: str
 
 
 class ErrorResponse(BaseModel):
@@ -76,6 +94,83 @@ def get_character_by_id(request, character_id: int):
             "character_name": character.character_name,
             "skills": json.loads(character.skills_json),
         }
+
+    return 403, {
+        "detail": "You do not have permission to view this character."
+    }
+
+
+@router.get(
+    "/{int:character_id}/skillsets",
+    summary="Get skillsets for character by ID",
+    auth=AuthBearer(),
+    response={
+        200: List[CharacterSkillsetResponse],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_skillsets_for_character_by_id(request, character_id: int):
+    if not EveCharacter.objects.filter(character_id=character_id).exists():
+        return 404, {"detail": "Character not found."}
+
+    character = EveCharacter.objects.get(character_id=character_id)
+
+    if (
+        request.user.has_perm("eveonline.view_evecharacter")
+        or character.token
+        and character.token.user == request.user
+    ):
+        skillsets = EveCharacterSkillset.objects.filter(character=character)
+        response = []
+        for skillset in skillsets:
+            response.append(
+                {
+                    "name": skillset.skillset.name,
+                    "progress": skillset.progress,
+                    "missing_skills": skillset.missing_skills,
+                }
+            )
+        return response
+
+    return 403, {
+        "detail": "You do not have permission to view this character."
+    }
+
+
+@router.get(
+    "/{int:character_id}/assets",
+    summary="Get assets for character by ID",
+    auth=AuthBearer(),
+    response={
+        200: List[CharacterAssetResponse],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_assets_for_character_by_id(request, character_id: int):
+    if not EveCharacter.objects.filter(character_id=character_id).exists():
+        return 404, {"detail": "Character not found."}
+
+    character = EveCharacter.objects.get(character_id=character_id)
+
+    if (
+        request.user.has_perm("eveonline.view_evecharacter")
+        or character.token
+        and character.token.user == request.user
+    ):
+        assets = EveCharacterAsset.objects.filter(character=character)
+        response = []
+        for asset in assets:
+            response.append(
+                {
+                    "type_id": asset.type_id,
+                    "type_name": asset.type_name,
+                    "location_id": asset.location_id,
+                    "location_name": asset.location_name,
+                }
+            )
+        return response
 
     return 403, {
         "detail": "You do not have permission to view this character."
