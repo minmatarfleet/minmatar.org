@@ -8,9 +8,9 @@ from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
+from eveonline.tasks import update_character_assets, update_character_skills
 
 from .models import EveAlliance, EveCharacter, EveCorporation
-from eveonline.tasks import update_character_assets, update_character_skills
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()

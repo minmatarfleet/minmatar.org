@@ -7,8 +7,6 @@ from celery.app import trace
 from celery.schedules import crontab
 from django.conf import settings  # noqa
 
-from eveonline.tasks import update_characters
-
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 
@@ -37,6 +35,8 @@ trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 # Periodic tasks
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
+    from eveonline.tasks import update_characters  # noqa
+
     """Setup periodic tasks"""
     # Every 3 hours
     sender.add_periodic_task(
