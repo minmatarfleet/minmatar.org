@@ -55,7 +55,12 @@ def update_character_assets(eve_character_id):
     if token is None:
         logger.info("Skipping asset update for character %s", eve_character_id)
         return
+    esi_assets = esi.client.Assets.get_characters_character_id_assets(
+        character_id=eve_character_id, token=token.valid_access_token()
+    ).results()
     character = EveCharacter.objects.get(character_id=eve_character_id)
+    character.assets_json = json.dumps(esi_assets)
+    character.save()
     create_character_assets(character)
 
 
