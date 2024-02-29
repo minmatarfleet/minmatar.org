@@ -3,7 +3,7 @@ from typing import List, Optional
 from ninja import Router, Schema
 
 from authentication import AuthBearer
-from eveonline.models import EveCorporation, EveAlliance
+from eveonline.models import EveAlliance, EveCorporation
 
 router = Router(tags=["Corporations"])
 
