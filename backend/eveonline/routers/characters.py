@@ -128,7 +128,7 @@ def get_skillsets_for_character_by_id(request, character_id: int):
                 {
                     "name": skillset.eve_skillset.name,
                     "progress": skillset.progress,
-                    "missing_skills": skillset.missing_skills,
+                    "missing_skills": json.loads(skillset.missing_skills),
                 }
             )
         return response
