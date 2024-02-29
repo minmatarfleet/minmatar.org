@@ -60,11 +60,15 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
 
         # populate skills
         logger.debug("Fetching skills for %s", instance.character_name)
-        update_character_skills.apply_async(args=[instance.character_id])
+        update_character_skills.apply_async(
+            args=[instance.character_id], countdown=30
+        )
 
         # populate assets
         logger.debug("Fetching assets for %s", instance.character_name)
-        update_character_assets.apply_async(args=[instance.character_id])
+        update_character_assets.apply_async(
+            args=[instance.character_id], countdown=30
+        )
 
         instance.save()
 
