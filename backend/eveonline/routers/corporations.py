@@ -3,7 +3,7 @@ from typing import List, Optional
 from ninja import Router, Schema
 
 from authentication import AuthBearer
-from eveonline.models import EveCorporation
+from eveonline.models import EveCorporation, EveAlliance
 
 router = Router(tags=["Corporations"])
 
@@ -39,13 +39,16 @@ def get_corporations(request):
         payload = {
             "corporation_id": corporation.corporation_id,
             "corporation_name": corporation.name,
-            "alliance_id": corporation.alliance.alliance_id,
-            "alliance_name": corporation.alliance.name,
             "corporation_type": corporation.corporation_type,
         }
-        if corporation.alliance is not None:
-            payload["alliance_id"] = corporation.alliance.alliance_id
-            payload["alliance_name"] = corporation.alliance.name
+        if EveAlliance.objects.filter(
+            alliance_id=corporation.alliance_id
+        ).exists():
+            alliance = EveAlliance.objects.get(
+                alliance_id=corporation.alliance_id
+            )
+            payload["alliance_id"] = alliance.alliance_id
+            payload["alliance_name"] = alliance.name
         response.append(payload)
     return response
 
@@ -61,8 +64,12 @@ def get_corporation_by_id(request, corporation_id: int):
     response = {
         "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.corporation_name,
-        "alliance_id": corporation.alliance.alliance_id,
-        "alliance_name": corporation.alliance.alliance_name,
         "corporation_type": corporation.corporation_type,
     }
+    if EveAlliance.objects.filter(
+        alliance_id=corporation.alliance_id
+    ).exists():
+        alliance = EveAlliance.objects.get(alliance_id=corporation.alliance_id)
+        response["alliance_id"] = alliance.alliance_id
+        response["alliance_name"] = alliance.name
     return response
