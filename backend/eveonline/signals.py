@@ -10,6 +10,7 @@ from eveuniverse.models import EveFaction
 from discord.client import DiscordClient
 
 from .models import EveAlliance, EveCharacter, EveCorporation
+from eveonline.tasks import update_character_assets, update_character_skills
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -59,42 +60,11 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
 
         # populate skills
         logger.debug("Fetching skills for %s", instance.character_name)
-        required_scopes = ["esi-skills.read_skills.v1"]
-        token = Token.objects.filter(
-            character_id=instance.character_id,
-            scopes__name__in=required_scopes,
-        ).first()
-        if token:
-            response = esi.client.Skills.get_characters_character_id_skills(
-                character_id=instance.character_id,
-                token=token.valid_access_token(),
-            ).results()
-            instance.skills_json = json.dumps(response)
-
-        else:
-            logger.warning(
-                "Failed to populate skills, no token with required scopes for %s",
-                instance.character_name,
-            )
+        update_character_skills.apply_async(args=[instance.character_id])
 
         # populate assets
         logger.debug("Fetching assets for %s", instance.character_name)
-        required_scopes = ["esi-assets.read_assets.v1"]
-        token = Token.objects.filter(
-            character_id=instance.character_id,
-            scopes__name__in=required_scopes,
-        ).first()
-        if token:
-            response = esi.client.Assets.get_characters_character_id_assets(
-                character_id=instance.character_id,
-                token=token.valid_access_token(),
-            ).results()
-            instance.assets_json = json.dumps(response)
-        else:
-            logger.warning(
-                "Failed to populate assets, no token with required scopes for %s",
-                instance.character_name,
-            )
+        update_character_assets.apply_async(args=[instance.character_id])
 
         instance.save()
 
