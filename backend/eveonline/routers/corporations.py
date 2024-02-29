@@ -11,7 +11,6 @@ router = Router(tags=["Corporations"])
 class CorporationResponse(Schema):
     corporation_id: int
     corporation_name: str
-    corporation_type: str
     alliance_id: Optional[int] = None
     alliance_name: Optional[str] = None
 
@@ -39,7 +38,6 @@ def get_corporations(request):
         payload = {
             "corporation_id": corporation.corporation_id,
             "corporation_name": corporation.name,
-            "corporation_type": corporation.corporation_type,
         }
         if EveAlliance.objects.filter(
             alliance_id=corporation.alliance_id
