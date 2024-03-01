@@ -80,7 +80,7 @@ def get_corporations(
             alliance_id=corporation.alliance.alliance_id
         ).exists():
             alliance = EveAlliance.objects.get(
-                alliance_id=corporation.alliance_id
+                alliance_id=corporation.alliance.alliance_id
             )
             payload["alliance_id"] = alliance.alliance_id
             payload["alliance_name"] = alliance.name
