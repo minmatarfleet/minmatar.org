@@ -77,7 +77,7 @@ def get_corporations(
             "active": corporation.active,
         }
         if EveAlliance.objects.filter(
-            alliance_id=corporation.alliance_id
+            alliance_id=corporation.alliance.alliance_id
         ).exists():
             alliance = EveAlliance.objects.get(
                 alliance_id=corporation.alliance_id

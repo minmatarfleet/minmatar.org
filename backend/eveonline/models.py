@@ -95,9 +95,9 @@ class EveCorporation(models.Model):
 
     @property
     def type(self):
-        if self.alliance and self.alliance.id == 99011978:
+        if self.alliance and self.alliance.alliance_id == 99011978:
             return "alliance"
-        elif self.alliance and self.alliance.id == 99012009:
+        elif self.alliance and self.alliance.alliance_id == 99012009:
             return "associate"
         elif self.faction and self.faction.id == 500002:
             return "militia"
