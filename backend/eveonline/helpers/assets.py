@@ -5,7 +5,7 @@ from typing import List, Optional
 import pydantic
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveuniverse.models import EveStation, EveType
+from eveuniverse.models import EveGroup, EveStation, EveType
 
 from eveonline.models import EveCharacter, EveCharacterAsset
 
@@ -39,8 +39,22 @@ def create_character_assets(character: EveCharacter):
     assets: List[EveAssetResponse] = json.loads(character.assets_json)
     for asset in assets:
         asset = EveAssetResponse(**asset)
-        print(asset)
-        eve_type, _ = EveType.objects.get_or_create_esi(id=asset.type_id)
+        eve_type, _ = EveType.objects.get_or_create_esi(
+            id=asset.type_id,
+            include_children=True,
+            wait_for_children=True,
+        )
+        if eve_type.eve_market_group_id is None:
+            continue
+        eve_group, _ = EveGroup.objects.get_or_create_esi(
+            id=eve_type.eve_group.id,
+            include_children=True,
+            wait_for_children=True,
+        )
+        eve_category = eve_group.eve_category
+        if eve_category.name != "Ship":
+            continue
+        logger.info("Found asset %s", eve_type.name)
         location = None
         if asset.location_type == "station":
             location, _ = EveStation.objects.get_or_create_esi(
@@ -65,7 +79,6 @@ def create_character_assets(character: EveCharacter):
                 ).results()
             )
         else:
-            logger.info("Unknown location type: %s", asset.location_type)
             continue
 
         EveCharacterAsset.objects.create(
