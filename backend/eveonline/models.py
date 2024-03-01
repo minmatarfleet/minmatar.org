@@ -75,21 +75,11 @@ class EveSkillset(models.Model):
 class EveCorporation(models.Model):
     """Corporation model"""
 
-    types = (
-        ("alliance", "Alliance"),
-        ("militia", "Militia"),
-        ("associate", "Associate"),
-        ("public", "Public"),
-    )
-
     corporation_id = models.IntegerField()
 
     # autopopulated
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True, null=True)
-    type = models.CharField(
-        max_length=10, choices=types, blank=True, null=True
-    )
     member_count = models.IntegerField(blank=True, null=True)
 
     # relationships
@@ -103,10 +93,21 @@ class EveCorporation(models.Model):
         EveFaction, on_delete=models.SET_NULL, blank=True, null=True
     )
 
-    def __str__(self):
-        return str(self.name)
+    @property
+    def type(self):
+        if self.alliance and self.alliance.id == 99011978:
+            return "alliance"
+        elif self.alliance and self.alliance.id == 99012009:
+            return "associate"
+        elif self.faction and self.faction.id == 500002:
+            return "militia"
+        else:
+            return "public"
 
+    @property
     def active(self):
+        if not self.ceo:
+            return False
         if Token.objects.filter(
             character_id=self.ceo.character_id,
             scopes__name="esi-contracts.read_corporation_contracts.v1",
@@ -123,6 +124,9 @@ class EveCorporation(models.Model):
             if token_scopes.issuperset(required_scopes):
                 return True
         return False
+
+    def __str__(self):
+        return str(self.name)
 
 
 class EveAlliance(models.Model):

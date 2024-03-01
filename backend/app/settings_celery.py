@@ -13,4 +13,8 @@ CELERYBEAT_SCHEDULE = {
         "task": "eveonline.tasks.update_corporations",
         "schedule": crontab(minute=30),
     },
+    "eveonline_update_characters": {
+        "task": "eveonline.tasks.update_characters",
+        "schedule": crontab(minute=30),
+    },
 }

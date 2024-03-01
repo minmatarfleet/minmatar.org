@@ -1,5 +1,7 @@
+from enum import Enum
 from typing import List, Optional
 
+from eveuniverse.models import EveFaction
 from ninja import Router, Schema
 
 from authentication import AuthBearer
@@ -8,11 +10,22 @@ from eveonline.models import EveAlliance, EveCorporation
 router = Router(tags=["Corporations"])
 
 
+class CorporationType(str, Enum):
+    ALLIANCE = "alliance"
+    CORPORATION = "corporation"
+    MILITIA = "militia"
+    PUBLIC = "public"
+
+
 class CorporationResponse(Schema):
     corporation_id: int
     corporation_name: str
     alliance_id: Optional[int] = None
     alliance_name: Optional[str] = None
+    faction_id: Optional[int] = None
+    faction_name: Optional[str] = None
+    type: CorporationType
+    active: bool
 
 
 class CorporationApplicationResponse(Schema):
@@ -28,7 +41,6 @@ class CreateCorporationRequest(Schema):
 @router.get(
     "/corporations",
     response=List[CorporationResponse],
-    auth=AuthBearer(),
     summary="Get all corporations",
 )
 def get_corporations(request):
@@ -38,6 +50,8 @@ def get_corporations(request):
         payload = {
             "corporation_id": corporation.corporation_id,
             "corporation_name": corporation.name,
+            "type": corporation.type,
+            "active": corporation.active,
         }
         if EveAlliance.objects.filter(
             alliance_id=corporation.alliance_id
@@ -47,6 +61,12 @@ def get_corporations(request):
             )
             payload["alliance_id"] = alliance.alliance_id
             payload["alliance_name"] = alliance.name
+
+        if EveFaction.objects.filter(id=corporation.faction_id).exists():
+            faction = EveFaction.objects.get(id=corporation.faction_id)
+            payload["faction_id"] = faction.id
+            payload["faction_name"] = faction.name
+
         response.append(payload)
     return response
 
