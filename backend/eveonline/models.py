@@ -138,10 +138,5 @@ class EveAlliance(models.Model):
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True)
 
-    # relationships
-    executor_corporation = models.ForeignKey(
-        "EveCorporation", on_delete=models.SET_NULL, blank=True, null=True
-    )
-
     def __str__(self):
         return str(self.name)

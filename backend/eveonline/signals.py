@@ -96,13 +96,7 @@ def token_post_save(
 )
 def eve_corporation_post_save(sender, instance, created, **kwargs):
     if created:
-        update_corporation.apply_async(
-            args=[instance.corporation_id], countdown=30
-        )
-        discord.send_message(
-            "corporation",
-            f"New corporation created: {instance.name} ({instance.corporation_id})",
-        )
+        update_corporation(instance.corporation_id)
 
 
 @receiver(
@@ -112,16 +106,22 @@ def eve_corporation_post_save(sender, instance, created, **kwargs):
 )
 def eve_alliance_post_save(sender, instance, created, **kwargs):
     if created:
+        logger.info("Post create of alliance %s", instance.alliance_id)
         esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
             alliance_id=instance.alliance_id
         ).results()
+        logger.info("ESI alliance data: %s", esi_alliance)
         # public info
+        logger.info("Setting name to %s", esi_alliance["name"])
         instance.name = esi_alliance["name"]
+        logger.info("Setting ticker to %s", esi_alliance["ticker"])
         instance.ticker = esi_alliance["ticker"]
-        instance.faction = EveFaction.objects.get_or_create_esi(
-            id=esi_alliance["faction_id"],
-        )[0]
-        instance.excutor_corporation = EveCorporation.objects.get_or_create(
-            corporation_id=esi_alliance["executor_corporation_id"],
-        )[0]
+        if (
+            "faction_id" in esi_alliance
+            and esi_alliance["faction_id"] is not None
+        ):
+            logger.info("Setting faction to %s", esi_alliance["faction_id"])
+            instance.faction = EveFaction.objects.get_or_create_esi(
+                id=esi_alliance["faction_id"],
+            )[0]
         instance.save()

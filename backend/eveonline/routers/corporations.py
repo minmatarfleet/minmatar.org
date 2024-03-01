@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 from typing import List, Optional
 
@@ -7,12 +8,14 @@ from ninja import Router, Schema
 from authentication import AuthBearer
 from eveonline.models import EveAlliance, EveCorporation
 
+logger = logging.getLogger(__name__)
+
 router = Router(tags=["Corporations"])
 
 
 class CorporationType(str, Enum):
     ALLIANCE = "alliance"
-    CORPORATION = "corporation"
+    ASSOCIATE = "associate"
     MILITIA = "militia"
     PUBLIC = "public"
 
@@ -43,8 +46,28 @@ class CreateCorporationRequest(Schema):
     response=List[CorporationResponse],
     summary="Get all corporations",
 )
-def get_corporations(request):
-    corporations = EveCorporation.objects.all()
+def get_corporations(
+    request, corporation_type: Optional[CorporationType] = None
+):
+    if corporation_type:
+        logger.info("Getting corporations of type %s", corporation_type)
+    match corporation_type:
+        case CorporationType.ALLIANCE:
+            logger.info("Getting alliance corporations")
+            corporations = EveCorporation.objects.filter(
+                alliance__alliance_id=99011978
+            )
+        case CorporationType.ASSOCIATE:
+            logger.info("Getting associate corporations")
+            corporations = EveCorporation.objects.filter(
+                alliance__alliance_id=99012009
+            )
+        case CorporationType.MILITIA:
+            logger.info("Getting militia corporations")
+            corporations = EveCorporation.objects.filter(faction__id=500002)
+        case _:
+            logger.info("Getting public corporations")
+            corporations = EveCorporation.objects.all()
     response = []
     for corporation in corporations:
         payload = {

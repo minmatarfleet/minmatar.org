@@ -97,17 +97,27 @@ def update_corporation(corporation_id):
 
     # set alliance
     logger.info("Updating alliance for corporation %s", corporation.name)
-    if "alliance_id" in esi_corporation:
+    if (
+        "alliance_id" in esi_corporation
+        and esi_corporation["alliance_id"] is not None
+    ):
         logger.info("Setting alliance for corporation %s", corporation.name)
-        corporation.alliance = EveAlliance.objects.get_or_create(
+        alliance = EveAlliance.objects.get_or_create(
             alliance_id=esi_corporation["alliance_id"]
         )[0]
+        logger.info(
+            "Alliance for corporation %s is %s", corporation.name, alliance
+        )
+        corporation.alliance = alliance
     else:
         corporation.alliance = None
         logger.info("Corporation %s has no alliance", corporation.name)
     # set faction
     logger.info("Updating faction for corporation %s", corporation.name)
-    if "faction_id" in esi_corporation:
+    if (
+        "faction_id" in esi_corporation
+        and esi_corporation["faction_id"] is not None
+    ):
         logger.info("Setting faction for corporation %s", corporation.name)
         corporation.faction = EveFaction.objects.get_or_create_esi(
             id=esi_corporation["faction_id"]
