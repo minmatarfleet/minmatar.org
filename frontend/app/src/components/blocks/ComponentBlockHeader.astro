@@ -1,0 +1,74 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { marked } from 'marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CollapsableButton from '@components/blocks/CollapsableButton.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import DebugTag from '@components/blocks/DebugTag.astro';
+---
+
+<Flexblock
+    gap='0'
+    x-data={`{
+        expanded: true,
+        location_assets_count: 0,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+>
+    <div
+        class="[ sticky-header ]"
+        x-data={`{
+            top: 0,
+            set_top() {
+                this.top = document.querySelector('.post-header').offsetHeight
+            }
+        }`}
+        x-bind:style="`top: ${top}px;`"
+        x-init="set_top"
+        @resize.window.throttle.750ms="set_top"
+    >
+        <ComponentBlock
+            width='narrow'
+            dark={true}
+        >
+            <CollapsableButton class="[ !block !w-full ]" x-on:click="toggle_collapse()">
+                <slot name="header">
+                    <DebugTag set:html={marked.parse(t('block_missing_header_slot'))} />
+                </slot>
+            </CollapsableButton>
+        </ComponentBlock>
+    </div>
+
+    <ComponentBlock
+        width='narrow'
+        x-show="expanded"
+        x-collapse.duration.0ms
+    >
+        <slot />
+    </ComponentBlock>
+</Flexblock>
+
+<style lang="scss">
+    .content {
+        position: relative;
+    }
+
+    .sticky-header {
+        position: sticky;
+        top: 137px;
+        z-index: var(--sticky-z-index);
+
+        button {
+            display: block;
+            width: 100%;
+        }
+    }
+</style>

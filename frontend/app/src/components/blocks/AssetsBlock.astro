@@ -1,0 +1,53 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AssetsLocationUI } from '@dtypes/layout_components'
+
+interface Props {
+    assets_location: AssetsLocationUI;
+}
+
+const {
+    assets_location,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import AssetLocationItem from '@components/blocks/AssetLocationItem.astro';
+import AssetItem from '@components/blocks/AssetItem.astro';
+import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+---
+
+<div
+    id="assets-location-list"
+    {...Astro.props}
+>
+    <ComponentBlockHeader>
+        <AssetLocationItem
+            slot="header"
+            asset_location={{
+                location_name: assets_location.location_name,
+                assets_count: assets_location.assets.reduce( (c, i) => c + i.count , 0 )
+            }}
+        />
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center ]"
+            x-show="expanded"
+            x-collapse.duration.100ms
+        >
+            {assets_location.assets.map( (asset) => 
+                <AssetItem
+                    asset={asset} 
+                />
+            )}
+            {assets_location.assets.length == 0 &&
+                t('empty_asset_location')
+            }
+        </Flexblock>
+    </ComponentBlockHeader>
+</div>

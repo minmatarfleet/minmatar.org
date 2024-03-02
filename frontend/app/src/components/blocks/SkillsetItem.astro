@@ -1,0 +1,135 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { SkillsetUI, CharacterBasic, SkillsetMissingSkillUI } from '@dtypes/layout_components'
+import { query_string, is_valid_http_url } from '@helpers/string';
+
+interface Props {
+    skillset:  SkillsetUI;
+    character: CharacterBasic;
+}
+
+const {
+    skillset,
+    character,
+} = Astro.props
+
+const skillset_missing_skills:SkillsetMissingSkillUI = {
+    skillsets: skillset,
+    character: character,
+}
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import Wrapper from '@components/blocks/ComponentBlock.astro';
+import Progress from '@components/blocks/Progress.astro';
+---
+<StylessButton
+    class="[ skillset-item ]"
+    x-data={`{
+        show_missing_skills_modal() {
+            show_modal({
+                partial: '${translatePath('/partials/missing_skills_modal_component/')}',
+                partial_params: ${JSON.stringify(skillset_missing_skills)}
+            })
+        }
+    }`}
+    x-on:click="show_missing_skills_modal()"
+>
+    <FixedFluid width='var(--space-m)' gap='0' breakpoint='10%'>
+        <span class="[ background ]"></span>
+        <Flexblock gap='0' class="[ min-h-[var(--sikillset-height)] ]">
+            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[92px] ]" padding_inline='0' padding_block='var(--space-m)'>
+                <h3>{skillset.name}</h3>
+            </Wrapper>
+            <div class="[ progress-container ]">
+                <Progress class="[ w-full ]" max="100" value={skillset.progress*100}>{skillset.progress*100}%</Progress>
+            </div>
+            <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline='0' padding_block='var(--space-2xs)'>
+                {skillset.missing_skills.length === 0 ?
+                    <small class="text-[var(--green)]"><b>{t('completed')}</b></small>
+                    :
+                    <small>{skillset.missing_skills.length} {skillset.missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}</small>
+                }
+            </Wrapper>
+        </Flexblock>
+    </FixedFluid>
+</StylessButton>
+
+<style lang="scss">
+    .skillset-item {
+        --sikillset-background-color: rgba(70, 70, 70, 0.5);
+        --sikillset-background-hover-color: rgba(100, 100, 100, 0.5);
+        --sikillset-height: 142px;
+
+        padding: 0 10px 0 11px;
+        position: relative;
+
+        &:hover,
+        &:focus-visible {
+            &:before,
+            &:after,
+            .background {
+                background-color: var(--sikillset-background-hover-color);
+            }
+
+            outline: none;
+        }
+
+        &:before,
+        &:after {
+            content: '';
+            display: block;
+            position: absolute;
+            height: var(--sikillset-height);
+            top: 0;
+            background-color: var(--sikillset-background-color);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            transition: var(--fast-transition);
+        }
+
+        &:before {
+            width: 11px;
+            left: 0;
+            clip-path: url(#before-clip-path);
+            box-shadow: 1px 0 1px 1px var(var(--sikillset-background-color));
+        }
+
+        &:after {
+            width: 10px;
+            right: 0px;
+            clip-path: url(#after-clip-path);
+            z-index: -1;
+        }
+
+        .background {
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            background-color: var(--sikillset-background-color);
+            transition: var(--fast-transition);
+        }
+
+        > * {
+            min-height: var(--sikillset-height);
+        }
+
+        .progress-container {
+            display: flex;
+            position: relative;
+            width: calc(100% + 10px);
+            z-index: 1;
+        }
+
+        h3 {
+            min-height: 47px;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+    }
+</style>

@@ -1,9 +1,10 @@
 ---
 interface Props {
-    gap?: string;
-    width?: string;
-    breakpoint?: string;
-    centered?: boolean;
+    gap?:               string;
+    width?:             string;
+    breakpoint?:        string;
+    centered?:          boolean;
+    fluid_first?:       boolean;
     [propName: string]: any;
 }
 
@@ -12,13 +13,14 @@ const {
     width = '20rem',
     breakpoint = '50%',
     centered = false,
+    fluid_first = false,
     ...attributes
 } = Astro.props;
 
 delete attributes.class
 ---
 
-<div class:list={['fixed-fluid', Astro.props.class]} {...attributes} data-mod={ centered ? 'centered' : ''}>
+<div class:list={['fixed-fluid', { fluid_first: fluid_first }, Astro.props.class]} {...attributes} data-mod={ centered ? 'centered' : ''}>
     <slot />
 </div>
 
@@ -44,6 +46,10 @@ delete attributes.class
     .fixed-fluid {
         display: flex;
         flex-wrap: wrap;
+
+        &.fluid_first {
+            flex-direction: row-reverse;
+        }
 
         &[data-mod="no-stretch"] {
             align-items: flex-start;

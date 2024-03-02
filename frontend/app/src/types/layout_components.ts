@@ -208,7 +208,7 @@ export interface PageCoverOptions {
 export interface PageVideoOptions {
     id:        string;
     title:     string;
-    credits?:  string;
+    credits?:  VideoWidgetCredits;
 }
 
 export interface ViewportComponents {   
@@ -284,7 +284,7 @@ export interface ErrorRefetchParams {
 export interface CharacterBasic {
     character_id:       number;
     character_name:     string;
-    corporation:        CorporationBasic;
+    corporation?:       CorporationBasic;
 }
 
 export type GroupRequestAction = 'accept' | 'deny'
@@ -318,3 +318,42 @@ export interface CorporationHistoryItem {
 }
 
 export type GroupItemType = 'group' | 'team'
+
+export interface SkillsetUI {
+    id:             number;
+    name:           string;
+    progress:       number;
+    missing_skills: SkillsUI[];
+}
+
+export interface SkillsUI {
+    id:             number;
+    skill_name:     string;
+    skill_level:    number;
+}
+
+export interface SkillsetMissingSkillUI {
+    skillsets: SkillsetUI;
+    character: CharacterBasic;
+}
+
+export interface VideoWidgetCredits {
+    character_id?:  number;
+    character_name: string;
+}
+
+export interface AssetsLocationUI {
+    location_name: string;
+    assets:        AssetUI[];
+}
+
+export interface AssetUI {
+    id:     number;
+    name:   string;
+    count:  number;
+}
+
+export interface AssetLocationItemUI {
+    location_name:  string;
+    assets_count:   number;
+}

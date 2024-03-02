@@ -1,0 +1,75 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { SkillsetMissingSkillUI } from '@dtypes/layout_components'
+
+interface Props {
+    skillset_missing_skills:    SkillsetMissingSkillUI;
+}
+
+const {
+    skillset_missing_skills,
+} = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import SkillItem from '@components/blocks/SkillItem.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+
+const missing_skills = skillset_missing_skills.skillsets.missing_skills
+const CURRENT_SKILL_LEVEL = {}
+missing_skills.forEach( (skill) => {
+    CURRENT_SKILL_LEVEL[skill.id] = Math.min(skill.skill_level, CURRENT_SKILL_LEVEL[skill.id] ?? 5)
+})
+
+const skills_names:string[] = missing_skills.map( (skill) => `${skill.skill_name} ${skill.id}\n` )
+const clipboard_text:string = skills_names.join('')
+---
+
+<Wrapper
+    class="[ skillset-missing-skills ]"
+    padding_block='var(--component-padding-block)'
+    padding_inline='var(--space-l-xl)'
+>
+    <Flexblock>
+        <FlexInline justification='space-between' class="[ items-center ]">
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{skillset_missing_skills.skillsets.name} {t('skillset_missing_skills')}</h2>
+                <small class="!mt-[var(--space-3xs)]">
+                    {missing_skills.length} {missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}
+                </small>
+            </Flexblock>
+            {missing_skills.length > 0 &&
+                <ClipboardButton id="copy-skills" class="[ relative ]">{clipboard_text}</ClipboardButton>
+            }
+        </FlexInline>
+
+        <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
+            {missing_skills.map( (missing_skill) => 
+                <SkillItem
+                    current_skill_level={CURRENT_SKILL_LEVEL[missing_skill.id]}
+                    skill={missing_skill}
+                />
+            )}
+            {missing_skills.length == 0 &&
+                <slot>
+                    <TextBox>
+                        <p>{t('no_missing_skills')}</p>
+                    </TextBox>
+                </slot>
+            }
+        </Flexblock>
+    </Flexblock>
+</Wrapper>
+
+<style>
+    .skillset-missing-skills {
+        max-height: min(800px, 90vh);
+        overflow-y: auto;
+    }
+</style>

@@ -1,0 +1,125 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+---
+
+<CorporationSlide
+    id="blackomega-slide"
+    ceo_image='/images/corporations/omega/ceo.png'
+    ceo_character_id={1978535095}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ minokawa ]" src="/images/corporations/omega/minokawa.png" />
+    <img slot="ships" class="[ vindicator ]" src="/images/corporations/omega/vindicator.png" />
+
+    <Flexblock>
+        <p>Welcome to Black Omega Security, where the stars are our canvas and our ships are our brushstrokes. As a premier corporation within the vast expanse of New Eden, we specialize in commanding the mightiest vessels known to the universe: dreadnoughts and force auxiliaries (faxes).</p>
+        <p>At Black Omega Security, we don't merely pilot ships; we sculpt the very fabric of interstellar warfare. Our fleet of behemoths represents the pinnacle of engineering and firepower, capable of turning the tide of battles and shaping the destiny of nations. From the silent depths of space to the roaring chaos of combat, our presence is felt and feared.</p>
+        <p>Our corporation prides itself on the expertise and dedication of our pilots. Each member is a master of their craft, honing their skills through relentless training and unfaltering resolve. Together, we stand as a formidable force, united by a common purpose: to conquer the unknown and emerge victorious.</p>
+        <p>Whether you seek the thrill of battle or the glory of conquest, Black Omega Security offers unparalleled opportunities for those bold enough to seize them. Join us, and together, we shall write the next chapter in the annals of New Eden's history. Welcome aboard, pilot. Your journey begins here.</p>
+    </Flexblock>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    p {
+        font-size: var(--step--1);
+    }
+
+    .minokawa {
+        position: absolute;
+        top: 47%;
+        left: 60%;
+        height: auto;
+        width: 30%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .vindicator {
+        position: absolute;
+        top: 8%;
+        left: 39%;
+        width: 45%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    @keyframes minokawa {
+        from {
+            transform: scale(0);
+            top: 47%;
+            left: 60%;
+        }
+
+        to {
+            transform: scale(1);
+            top: -1%;
+            left: 22%;
+        }
+    }
+
+    @keyframes vindicator {
+        from {
+            transform: scale(0);
+            top: 8%;
+            left: 39%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 41%;
+            left: 10%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #blackomega-slide .ceo {
+        right: 7%;
+    }
+
+    .swiper-slide-active {
+        .minokawa {
+            animation: minokawa ease-out 0.25s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .vindicator {
+            animation: vindicator ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>

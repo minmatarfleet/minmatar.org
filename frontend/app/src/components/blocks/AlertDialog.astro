@@ -18,8 +18,24 @@ interface Props {
     class="[ alert-dialog ]"
 >
     <Dialog
+        x-data={`{
+            close_dialog() {
+                if (!alert_dialog_open)
+                    return
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.alert-dialog-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
         x-bind:class="alert_dialog_open ? 'open' : ''"
         x-bind:aria-hidden="alert_dialog_open == false"
+        x-bind:inert="alert_dialog_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
         aria-labelledby="alert-dialog-title"

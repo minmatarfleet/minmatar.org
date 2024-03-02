@@ -1,0 +1,20 @@
+<label class="[ radio-icon ]" {...Astro.props}>
+    <slot name="input" />
+    <slot />
+</label>
+
+<style lang="scss" is:global>
+    .radio-icon :checked + * {
+        color: var(--fleet-yellow);
+    }
+
+    .radio-icon {
+        cursor: pointer;
+
+        input {
+            position: absolute;
+            width: 1px;
+            opacity: 0;
+        }
+    }
+</style>

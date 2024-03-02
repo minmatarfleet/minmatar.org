@@ -42,6 +42,7 @@ export const ui = {
         'alliance.page_title': 'Alliance',
         'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
+        'alliance.cover_credits': 'All posters in the background art are courtesy of ',
 
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
@@ -89,11 +90,11 @@ export const ui = {
         
         'market.page_title': 'Market',
         'market.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'market.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        'market.cover_alt': 'Interior of Jita 4.4 station',
         
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'contracts.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        'contracts.cover_alt': 'Interior of Jita 4.4 station',
         
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
@@ -107,6 +108,10 @@ export const ui = {
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to grow to fight larger groups, and we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
+
+        'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
+
+        'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
@@ -133,7 +138,7 @@ export const ui = {
         
         'corporations.page_title': 'Corporations',
         'corporations.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
-        'corporations.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
+        'corporations.cover_alt': 'Outspace starry sky',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
@@ -185,6 +190,8 @@ export const ui = {
         'icon.market.alt': 'Eve Online Market Icon',
         'icon.corporation.alt': 'Eve Online Corporation Icon',
         'icon.ships.alt': 'Eve Online Ship tree Icon',
+        'icon.skills.alt': 'Eve Online Skills Icon',
+        'icon.assets.alt': 'Eve Online Assets Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -379,6 +386,7 @@ export const ui = {
         'corporation_join_request_dialog_title': 'Corporation join request',
         'group_join_request_dialog_title': 'Group join request',
         'team_join_request_dialog_title': 'Team join request',
+        'corporation_join_request_dialog_text': 'Proceed joining the following corporation?',
         'group_join_request_dialog_text': 'Proceed joining the following group?',
         'team_join_request_dialog_text': 'Proceed joining the following team?',
         'pending': 'Pending',
@@ -439,5 +447,30 @@ export const ui = {
         'team_logo': 'team logo',
         'unknown_user': 'Unknown user',
         'unknown_character': 'Removed character',
+        'skills': 'Skills',
+        'asset': 'Asset',
+        'assets': 'Assets',
+        'skillset': 'Skillset',
+        'skillsets': 'Skillsets',
+        'view_assets': 'View assets',
+        'in_progress': 'in progress',
+        'no_skillsets': 'No skillsets found',
+        'skill_missing': 'skill missing',
+        'skills_missing': 'skills missing',
+        'completed': 'Completed',
+        'skillset_missing_skills_modal_error': 'An error ocurred and missing skills cannot be displayed.',
+        'no_missing_skills': 'Skillset is fully trained',
+        'skillset_missing_skills': 'Skillset — Missing skills',
+        'in_inventory': 'in inventory',
+        'credits': 'Credits',
+        'regions': 'Regions',
+        'stations': 'Stations',
+        'no_assets': 'No assets found',
+        'empty_asset_location': 'No assets found at location',
+        'icon': 'Icon',
+        'list_view_mode': 'View mode (List)',
+        'icons_view_mode': 'View mode (Icons)',
+        'block_missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the sticky header.',
+        'enlist_today': 'Enlist today',
     },
 } as const;

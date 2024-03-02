@@ -1,0 +1,78 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import type { CorporationObject, Alert } from '@dtypes/layout_components'
+import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
+import type { CorporationApplication } from '@dtypes/api.minmatar.org'
+
+let corporation:CorporationObject
+let create_corporation_application_error:string | false = false
+let application:CorporationApplication 
+
+if (Astro.request.method === "POST") {
+    try {
+        corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
+        application = await create_corporation_application(auth_token, corporation.corporation_id)
+        corporation.status = application.status
+    } catch (error) {
+        create_corporation_application_error = is_prod_mode() ? t('create_corporation_application_error') : error.message
+    }
+}
+
+import { query_string } from '@helpers/string';
+let alert:Alert | false = false
+if (create_corporation_application_error) {
+    alert = {
+        title: t('corporation_join_request_dialog_title'),
+        content: create_corporation_application_error,
+    }
+
+    if (corporation) {
+        interface Message {
+            message: string
+        }
+
+        type Params = CorporationObject & Message
+
+        const params:Params = {
+            alliance_id: corporation.alliance_id,
+            corporation_id: corporation.corporation_id,
+            alliance_name: corporation.alliance_name,
+            corporation_name: corporation.corporation_name,
+            corporation_type: corporation.corporation_type,
+            message: create_corporation_application_error,
+        }
+
+        alert.partial = `${translatePath('/partials/dialog_with_corporation/')}?${query_string(params)}`
+    }
+}
+
+import Partial from '@layouts/Partial.astro';
+
+import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.astro';
+---
+
+<Partial>
+    <CorporationSlideStatus
+        corporation={corporation}
+        is_user_corporation={false}
+        alert={alert}
+    />
+</Partial>

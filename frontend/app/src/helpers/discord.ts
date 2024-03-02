@@ -1,4 +1,4 @@
-import { DiscordUser } from '@dtypes/discord'
+import type { DiscordUser } from '@dtypes/discord'
 
 const API_ENDPOINT = import.meta.env.API_ENDPOINT
 const CLIENT_ID = import.meta.env.CLIENT_ID
@@ -38,14 +38,14 @@ export async function request_access_token(code:string) {
     }
 }
 
-export async function get_discord_user(token_type:string, access_token:string):DiscordUser {
+export async function get_discord_user(token_type:string, access_token:string) {
     const response = await fetch(`${API_ENDPOINT}/users/@me`, {
         headers: {
             authorization: `Bearer ${access_token}`,
         },
     })
 
-    return await response.json()
+    return await response.json() as DiscordUser
 }
 
 export async function get_discord_member(access_token:string, user_id:string) {

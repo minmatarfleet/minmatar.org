@@ -1,0 +1,59 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import AssetLocationItemAlpine from '@components/blocks/AssetLocationItemAlpine.astro';
+import AssetItemAlpine from '@components/blocks/AssetItemAlpine.astro';
+import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+---
+
+<div
+    class="assets-location-list"
+    {...Astro.props}
+>
+    <ComponentBlockHeader>
+        <AssetLocationItemAlpine slot="header" />
+
+        <template x-if="assets_style === 'list'">
+            <Flexblock
+                gap='var(--space-3xs)'
+                class="[ assets-items ] [ min-h-[64px] justify-center ]"
+            >
+                <template x-for="asset in assets_location.assets">
+                    <AssetItemAlpine />
+                </template>
+                <template x-if="assets_location.assets.length == 0">
+                    {t('empty_asset_location')}
+                </template>
+            </Flexblock>
+        </template>
+        <template x-if="assets_style === 'icons'">
+            <Grid
+                row_gap='var(--space-3xs)'
+                column_gap='var(--space-2xs)'
+                min_item_width='64px'
+                class="grid-fill"
+            >
+                <template x-for="asset in assets_location.assets">
+                    <AssetItemAlpine />
+                </template>
+                <template x-if="assets_location.assets.length == 0">
+                    {t('empty_asset_location')}
+                </template>
+            </Grid>
+        </template>
+    </ComponentBlockHeader>
+</div>
+
+<style lang="scss">
+    .assets-items {
+        position: relative;
+        top: calc(-1 * var(--space-3xs));
+        margin-block-end: calc(-1 * var(--space-3xs));
+    }
+</style>

@@ -34,31 +34,31 @@ const page = Astro.url.pathname
     <nav class="[ flex-block-l ]">
         <Flexblock gap="0">
             <NeocomButton href={translatePath('/')} overlay={true}>
-                <FleetLogo />
+                <FleetLogo square={true} />
             </NeocomButton>
-            <UserAuth active={page.includes(translatePath('/account/'))} />
+            <UserAuth active={page.startsWith(translatePath('/account/'))} />
         </Flexblock>
         {user &&
-            <NeocomButton active={page.includes(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
+            <NeocomButton active={page.startsWith(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
                 <AllianceEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
+            <NeocomButton active={page.startsWith(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
                 <ShipTreeEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/fleets/'))} title={t('neocom.fleets')} href={translatePath('/fleets/')}>
+            <NeocomButton active={page.startsWith(translatePath('/fleets/'))} title={t('neocom.fleets')} href={translatePath('/fleets/')}>
                 <FleetEvEIcon />
             </NeocomButton>
         }
         {!is_prod_mode() &&
-            <NeocomButton active={page.includes(translatePath('/market/'))} title={t('neocom.market')} href={translatePath('/market/')}>
+            <NeocomButton active={page.startsWith(translatePath('/market/'))} title={t('neocom.market')} href={translatePath('/market/')}>
                 <MarketEvEIcon />
             </NeocomButton>
         }
-        <NeocomButton active={page.includes(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
+        <NeocomButton active={page.startsWith(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
             <IntelEvEIcon />
         </NeocomButton>
         <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
@@ -67,7 +67,7 @@ const page = Astro.url.pathname
     </nav>
     <Flexblock gap="0" x-data="neocom_clock()" x-init="init()">
         <div class="[ loader-wrapper ]">
-            <span class="loader"></span>
+            <span class="loader active"></span>
         </div>
         <time class="[ clock ]" x-text="getTime()"></time>
     </Flexblock>

@@ -1,0 +1,59 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
+const translatePath = useTranslatedPath(lang)
+
+import { query_string } from '@helpers/string';
+import type { EvEImageServiceSize } from '@dtypes/layout_components'
+
+interface Props {
+    character_id:   number;
+    character_name: string;
+    size?:          EvEImageServiceSize;
+    icon_quality?:  EvEImageServiceSize;
+}
+
+const {
+    character_id,
+    character_name,
+    size = 64,
+    icon_quality = 64,
+} = Astro.props
+
+import { get_player_icon } from '@helpers/eve_image_server'
+---
+<picture>
+    <img
+        height={size}
+        width={size}
+        src={get_player_icon(character_id, icon_quality ?? size)}
+        alt={`${t('profile_picture_of')} ${character_name}`}
+        x-data={`{
+            show_character_modal() {
+                if (${character_id} == 0)
+                    return
+
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: character_id.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    />
+</picture>
+
+<style lang="scss">
+    img {
+        cursor: pointer;
+        transition: var(--fast-transition);
+        filter: brightness(1);
+
+        &:hover {
+            filter: brightness(1.3);
+        }
+    }
+</style>

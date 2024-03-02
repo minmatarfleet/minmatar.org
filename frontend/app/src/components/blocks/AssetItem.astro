@@ -1,0 +1,42 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils'
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import type { AssetUI } from '@dtypes/layout_components'
+
+interface Props {
+    asset: AssetUI;
+}
+
+const {
+    asset
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+---
+
+<FixedFluid
+    width='64px'
+    class="[ asset-item ]"
+>
+    <picture>
+        <img src={get_item_icon(asset.id)} width="64" height="64" alt={`${asset.name} ${t('icon').toLowerCase()}`} />
+    </picture>
+    <FlexInline justification='space-between'>
+        <VerticalCenter>
+            <Flexblock gap='0' class="[ w-full ]">
+                <span>
+                    {asset.count} x {asset.name}
+                </span>
+            </Flexblock>
+        </VerticalCenter>
+    </FlexInline>
+</FixedFluid>

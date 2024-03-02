@@ -13,7 +13,12 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 const page_title = t('intel.tutrial.page_title');
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        modal: true,
+    }}
+>
     <PageVideo
         cover={{
             image: "/images/intel-cover.jpg",
@@ -26,7 +31,10 @@ const page_title = t('intel.tutrial.page_title');
         video={{
             id: 'ANKrefcxGNo',
             title: 'Structure Intel Course - EVE Online',
-            credits: 'BearThatCares'
+            credits: {
+                character_id: 634915984,
+                character_name: 'BearThatCares',
+            }
         }}
     >
         <Flexblock gap="var(--space-l)" class="[ slide-in ]">

@@ -16,8 +16,24 @@ interface Props {
     class="[ modal ]"
 >
     <Dialog
+        x-data={`{
+            close_dialog() {
+                if (!modal_open)
+                    return
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.modal-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
         x-bind:class="modal_open ? 'open' : ''"
         x-bind:aria-hidden="modal_open == false"
+        x-bind:inert="modal_open == false"
         breakout={true}
         aria-describedby="modal-description"
         class="[ w-full max-w-[770px] ]"
@@ -27,7 +43,9 @@ interface Props {
             id="modal-description"
             class="[ modal-content ]"
             x-html="modal_content"
-            x-bind:hx-get="modal_partial ? (modal_partial ?? false) : false"
+            x-bind:hx-get="modal_partial && !modal_partial_params ? modal_partial : false"
+            x-bind:hx-post="modal_partial && modal_partial_params ? modal_partial : false"
+            x-bind:hx-vals="JSON.stringify({ data: JSON.stringify(modal_partial_params) })"
             x-bind:hx-trigger="modal_partial ? 'intersect' : false"
             x-bind:hx-swap="modal_partial ? 'innerHTML transition:true' : false"
             hx-target="#modal-description"
@@ -67,7 +85,7 @@ interface Props {
         border: none;
         position: absolute;
         right: 10px;
-        top: 5px;
+        top: 3px;
         display: flex;
         background-color: transparent;
         color: var(--highlight);

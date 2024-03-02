@@ -1,10 +1,17 @@
 ---
-import Wrapper from "@components/compositions/Wrapper.astro";
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { VideoWidgetCredits } from '@dtypes/layout_components';
+import { query_string } from '@helpers/string';
 
 interface Props {
     videoid:        string;
     videotitle?:    string;
-    credits?:       false | string;
+    credits?:       false | VideoWidgetCredits;
 }
 
 const {
@@ -12,6 +19,8 @@ const {
     videotitle = 'YouTube video player',
     credits = false,
 } = Astro.props
+
+import Wrapper from "@components/compositions/Wrapper.astro";
 ---
 
 <Wrapper
@@ -28,7 +37,27 @@ const {
             posterquality="maxresdefault"
         />
     </div>
-    {credits !== false && <p>Credits: <span>{credits}</span></p>}
+    {credits !== false &&
+        <p>{t('credits')}:
+            {credits.character_id ?
+                <span
+                    class="[ cursor-pointer ]"
+                    x-data={`{
+                        show_character_modal() {
+                            show_modal({
+                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                    character_id: credits.character_id.toString(),
+                                })}',
+                            })
+                        }
+                    }`}
+                    x-on:click="show_character_modal()"
+                >{credits.character_name}</span>
+                :
+                <span>{credits.character_name}</span>
+            }
+        </p>
+    }
 </Wrapper>
 
 <script>

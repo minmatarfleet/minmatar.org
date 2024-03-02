@@ -46,8 +46,10 @@ const {
 	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
 	meta_description = t('generic.meta_description'),
 	neocom = true,
-	components = {}
+	components = {},
 } = Astro.props
+
+components.modal = components.modal ?? true
 
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
@@ -57,7 +59,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}
@@ -102,6 +104,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 				${[
 					components?.alert_dialog ? 'alert_dialog_open' : false,
 					components?.confirm_dialog ? 'confirm_dialog_open' : false,
+					components?.modal ? 'modal_open' : false,
 					components?.personas_finder ? 'personas_finder_open' : false,
 					components?.corporation_finder ? 'corporations_finder_open' : false,
 					components?.alliance_finder ? 'alliances_finder_open' : false,
@@ -134,8 +137,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<AllianceFinder />
 		}
 
-		<FooterScripts />
-
 		{middleware_error &&
 			<div class="toast">
 				{middleware_error}
@@ -145,6 +146,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<div class="[ hidden ]">
 			<RifterIcon x-ref="rifter" />
 		</div>
+
+		<FooterScripts />
 	</body>
 </html>
 

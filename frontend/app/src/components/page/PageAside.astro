@@ -34,6 +34,7 @@ const {
         <slot name="header">
             <DebugTag set:html={marked.parse(t('missing_header_slot'))} />
         </slot>
+        <slot name="subheader" slot="subheader" />
     </PageHeader>
 
     <PageBody max_width="var(--max-content-width)">

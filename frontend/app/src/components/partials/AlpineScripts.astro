@@ -1,4 +1,6 @@
 ---
+import { is_prod_mode } from '@helpers/env'
+
 export const AlertDialogXData = `
     alert_dialog_open: false,
     alert_dialog_title: '',
@@ -133,6 +135,7 @@ export const ModalXData = `
     modal_open: false,
     modal_content: '',
     modal_partial: '',
+    modal_partial_params: '',
     async show_modal(args) {
         const defaults =  {
             content: '',
@@ -142,8 +145,15 @@ export const ModalXData = `
 
         const properties = {...defaults, ...args}
 
-        if (this.modal_partial != properties.partial)
+        if (this.modal_partial != properties.partial) {
             this.modal_content = ''
+            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
+        }
+
+        if (properties.partial_params && (JSON.stringify(properties.partial_params) != JSON.stringify(this.modal_partial_params))) {
+            this.modal_content = ''
+            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
+        }
 
         if (properties.partial) {
             this.modal_content = '<div class="[ rifter-modal ]">'+this.rifter_animation+'</div>'
@@ -152,6 +162,11 @@ export const ModalXData = `
 
         this.modal_return_on_accept = properties.return_on_accept
         this.modal_partial = properties.partial
+
+        if (properties.partial_params)
+            this.modal_partial_params = properties.partial_params
+        else
+            properties.partial_params = null
 
         this.modal_open = true
 
@@ -274,6 +289,9 @@ export const UtilitiesXData = `
     },
     get_alliance_logo(id, size = 32) {
         return 'https://images.evetech.net/alliances/'+id+'/logo?size='+size;
+    },
+    get_item_icon(id, size = 64) {
+        return 'https://images.evetech.net/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
     },`
 
 export const RifterAnimationXData = `

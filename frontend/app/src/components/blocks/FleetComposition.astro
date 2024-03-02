@@ -52,7 +52,12 @@ const {
                 </FlexInline>
             </CollapsableButton>
 
-            <Flexblock gap="var(--space-3xs)" class="[ pl-[16px] ]" x-show="expanded && !global_collapse" x-collapse.duration.0ms>
+            <Flexblock
+                gap="var(--space-3xs)"
+                class="[ pl-[16px] ]"
+                x-show="expanded && !global_collapse"
+                x-collapse.duration.0ms
+            >
                 <Grid class="[ w-full ]" row_gap="var(--space-2xs)" column_gap="var(--space-2xs)" min_item_width="180px">
                     {group.pilots.map((pilot) =>
                         <FixedFluid class="[ items-center ]" gap="var(--space-2xs)" width="32px" data-member>

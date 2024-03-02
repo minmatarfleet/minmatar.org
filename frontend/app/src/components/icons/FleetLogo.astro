@@ -5,13 +5,17 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 interface Props {
-    width?: string,
-    height?: string
+    width?:     string;
+    height?:    string;
+    square?:  boolean;
 }
 
-const { width = '46' } = Astro.props;
+const {
+    width = '48',
+    square = false,
+} = Astro.props;
 ---
-<img src="/images/fleet-logo.svg" width={width} height={width} alt={t('icon.fleet.alt')} />
+<img src={square ? '/images/fleet-logo-square.svg' : '/images/fleet-logo.svg'} width={width} height={width} alt={t('icon.fleet.alt')} />
 
 <style>
     img {

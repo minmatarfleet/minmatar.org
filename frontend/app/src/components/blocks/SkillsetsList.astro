@@ -1,0 +1,59 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { SkillsetUI, CharacterBasic } from '@dtypes/layout_components'
+
+interface Props {
+    skillsets:      SkillsetUI[];
+    character:      CharacterBasic;
+}
+
+const {
+    skillsets,
+    character,
+} = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro';
+import Grid from '@components/compositions/Grid.astro';
+import SkillsetItem from '@components/blocks/SkillsetItem.astro';
+---
+<Grid
+    min_item_width='290px'
+    row_gap='var(--space-s)'
+    column_gap='var(--space-s)'
+    class="[ grid-fill ]"
+>
+    {skillsets.map( (skillset) => 
+        <SkillsetItem
+            character={character}
+            skillset={skillset}
+        />
+    )}
+    {skillsets.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_skillsets')}</p>
+            </TextBox>
+        </slot>
+    }
+</Grid>
+
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 142" width="11" height="142">
+    <defs>
+        <clipPath id="before-clip-path">
+            <polygon points="11.000 0.000, 9.400 0.000, 0.000 8.200, 0.000 61.200, 4.700 65.900, 4.700 78.800, 0.000 82.300, 0.000 142.000, 11.000 142.000" />
+        </clipPath>
+    </defs>
+</svg>
+
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 142" width="10" height="142">
+    <defs>
+        <clipPath id="after-clip-path">
+            <polygon points="0.000 97.000, 0.000 142.000, 1.000 142.000, 10.000 134.000, 10.000 97.000" />
+            <polygon points="10.000 92.000, 10.000 44.000, 5.000 39.000, 5.000 26.000, 10.000 22.000, 10.000 -0.100, 0.000 -0.000, 0.000 92.000" />
+        </clipPath>
+    </defs>
+</svg>

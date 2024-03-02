@@ -1,0 +1,55 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { SkillsUI } from '@dtypes/layout_components'
+
+interface Props {
+    skill:              SkillsUI;
+    current_skill_level:    number;
+}
+
+const {
+    skill,
+    current_skill_level = 5
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import SkillSquare from '@components/blocks/SkillSquare.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+const SKILL_NUMBER = {
+    1: 'I',
+    2: 'II',
+    3: 'III',
+    4: 'IV',
+    5: 'V',
+}
+const PIXEL_GAP = 1
+const SKILL_SQUARE_WIDTH = 10
+---
+<FixedFluid
+    class="[ skill-item ]"
+    width={`${4*PIXEL_GAP + 5*SKILL_SQUARE_WIDTH}px`}
+    breakpoint='70%'
+>
+    <FlexInline gap='1px'>
+        <SkillSquare status={ current_skill_level > 1 ? 'learned' : 'unlearned' } />
+        {skill.skill_level > 1 &&
+            <SkillSquare status={ current_skill_level > 2 ? 'learned' : 'unlearned' } />
+        }
+        {skill.skill_level > 2 &&
+            <SkillSquare status={ current_skill_level > 3 ? 'learned' : 'unlearned' } />
+        }
+        {skill.skill_level > 3 &&
+            <SkillSquare status={ current_skill_level > 4 ? 'learned' : 'unlearned' } />
+        }
+        {skill.skill_level > 4 &&
+            <SkillSquare status='unlearned' />
+        }
+    </FlexInline>
+    <span>{skill.skill_name} {SKILL_NUMBER[skill.skill_level]}</span>
+</FixedFluid>
