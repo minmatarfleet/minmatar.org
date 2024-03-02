@@ -327,13 +327,12 @@ export interface SkillsetUI {
 }
 
 export interface SkillsUI {
-    id:             number;
     skill_name:     string;
     skill_level:    number;
 }
 
 export interface SkillsetMissingSkillUI {
-    skillsets: SkillsetUI;
+    skillsets: Skillset;
     character: CharacterBasic;
 }
 
@@ -357,3 +356,25 @@ export interface AssetLocationItemUI {
     location_name:  string;
     assets_count:   number;
 }
+
+export interface SkillsetsUI {
+    character_id:   number;
+    character_name: string;
+    skillsets:      Skillset[];
+}
+
+export interface Skillset {
+    name:           string;
+    progress:       number;
+    missing_skills: MissingSkill[];
+}
+
+export interface MissingSkill {
+    skill_name:  string;
+    skill_level: number;
+}
+
+export type spaces = '0' | '1px' | '2px' | '--component-block-gap' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
+| 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
+| 'var(--space-3xs-2xs)' | 'var(--space-2xs-xs)' | 'var(--space-xs-s)' | 'var(--space-s-m)' | 'var(--space-m-l)' 
+| 'var(--space-l-xl)' | 'var(--space-xl-2xl)' | 'var(--space-2xl-3xl)' | 'var(--space-s-l)'
