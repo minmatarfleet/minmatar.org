@@ -1,9 +1,11 @@
 ---
 import Flexblock from "@components/compositions/Flexblock.astro";
 
+import type { spaces } from '@dtypes/layout_components'
+
 interface Props {
     title?:             false | string;
-    gap?:               string;
+    gap?:               spaces;
     [propName: string]: any;
 }
 
