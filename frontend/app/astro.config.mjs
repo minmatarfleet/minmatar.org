@@ -18,4 +18,11 @@ export default defineConfig({
         // alpine(),
         // svelte()
     ],
+    vite: {
+        server: {
+            watch: {
+                usePolling: true
+            }
+        }
+    }
 });

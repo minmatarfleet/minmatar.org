@@ -19,6 +19,7 @@
     "@fontsource/norwester": "^5.0.7",
     "@fontsource/qahiri": "^5.0.8",
     "@justinribeiro/lite-youtube": "^1.5.0",
+    "@midudev/tailwind-animations": "^0.0.7",
     "@types/alpinejs": "^3.13.5",
     "@types/marked": "^6.0.0",
     "alpinejs": "^3.13.3",
