@@ -5,11 +5,10 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { SkillsetUI, CharacterBasic, SkillsetMissingSkillUI } from '@dtypes/layout_components'
-import { query_string, is_valid_http_url } from '@helpers/string';
+import type { Skillset, CharacterBasic, SkillsetMissingSkillUI } from '@dtypes/layout_components'
 
 interface Props {
-    skillset:  SkillsetUI;
+    skillset:  Skillset;
     character: CharacterBasic;
 }
 
@@ -49,7 +48,7 @@ import Progress from '@components/blocks/Progress.astro';
                 <h3>{skillset.name}</h3>
             </Wrapper>
             <div class="[ progress-container ]">
-                <Progress class="[ w-full ]" max="100" value={skillset.progress*100}>{skillset.progress*100}%</Progress>
+                <Progress class="[ w-full ]" max="100" value={skillset.progress}>{skillset.progress}%</Progress>
             </div>
             <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline='0' padding_block='var(--space-2xs)'>
                 {skillset.missing_skills.length === 0 ?

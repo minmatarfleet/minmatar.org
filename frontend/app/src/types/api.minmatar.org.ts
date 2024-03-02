@@ -66,3 +66,9 @@ export interface EveCharacterProfile {
     corporation_name: string;
     scopes:           string[];
 }
+
+export interface CharacterSkillset {
+    name:           string;
+    progress:       number;
+    missing_skills: string[];
+}

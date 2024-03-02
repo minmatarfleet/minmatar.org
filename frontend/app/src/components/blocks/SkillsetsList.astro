@@ -4,10 +4,10 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { SkillsetUI, CharacterBasic } from '@dtypes/layout_components'
+import type { Skillset, CharacterBasic } from '@dtypes/layout_components'
 
 interface Props {
-    skillsets:      SkillsetUI[];
+    skillsets:      Skillset[];
     character:      CharacterBasic;
 }
 
@@ -21,6 +21,7 @@ import Grid from '@components/compositions/Grid.astro';
 import SkillsetItem from '@components/blocks/SkillsetItem.astro';
 ---
 <Grid
+    id="skillset-list"
     min_item_width='290px'
     row_gap='var(--space-s)'
     column_gap='var(--space-s)'

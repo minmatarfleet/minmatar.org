@@ -24,10 +24,10 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 const missing_skills = skillset_missing_skills.skillsets.missing_skills
 const CURRENT_SKILL_LEVEL = {}
 missing_skills.forEach( (skill) => {
-    CURRENT_SKILL_LEVEL[skill.id] = Math.min(skill.skill_level, CURRENT_SKILL_LEVEL[skill.id] ?? 5)
+    CURRENT_SKILL_LEVEL[skill.skill_name] = Math.min(skill.skill_level, CURRENT_SKILL_LEVEL[skill.skill_name] ?? 5)
 })
 
-const skills_names:string[] = missing_skills.map( (skill) => `${skill.skill_name} ${skill.id}\n` )
+const skills_names:string[] = missing_skills.map( (skill) => `${skill.skill_name} ${skill.skill_name}\n` )
 const clipboard_text:string = skills_names.join('')
 ---
 
@@ -52,7 +52,7 @@ const clipboard_text:string = skills_names.join('')
         <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
             {missing_skills.map( (missing_skill) => 
                 <SkillItem
-                    current_skill_level={CURRENT_SKILL_LEVEL[missing_skill.id]}
+                    current_skill_level={CURRENT_SKILL_LEVEL[missing_skill.skill_name]}
                     skill={missing_skill}
                 />
             )}
