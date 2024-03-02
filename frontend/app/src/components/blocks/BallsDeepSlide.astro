@@ -1,0 +1,148 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="ballsdeep-slide"
+    ceo_image='/images/corporations/ballsdeep/ceo.png'
+    ceo_character_id={2114993571}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ vedmak ]" src="/images/corporations/ballsdeep/vedmak.png" />
+    <img slot="ships" class="[ tengu ]" src="/images/corporations/ballsdeep/tengu.png" />
+    <img slot="ships" class="[ orthrus ]" src="/images/corporations/ballsdeep/orthrus.png" />
+
+    <p>You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .vedmak {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 27%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .tengu {
+        position: absolute;
+        top: 35%;
+        left: -40%;
+        width: 65%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .orthrus {
+        position: absolute;
+        left: -45%;
+        top: 30%;
+        width: 61%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes vedmak {
+        from {
+            transform: scale(0);
+            top: 40%;
+            left: 5%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 0%;
+            left: 36%;
+        }
+    }
+
+    @keyframes tengu {
+        from {
+            transform: scale(0);
+            top: 35%;
+            left: -40%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 30%;
+            left: 26%;
+        }
+    }
+
+    @keyframes orthrus {
+        from {
+            transform: scale(0);
+            left: -45%;
+            top: 30%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 49%;
+            left: 23%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #ballsdeep-slide .ceo {
+        left: 7%;
+    }
+
+    .swiper-slide-active {
+        .vedmak {
+            animation: vedmak ease-out 0.25s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .tengu {
+            animation: tengu ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .orthrus {
+            animation: orthrus ease-out 0.25s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>

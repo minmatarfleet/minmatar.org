@@ -67,15 +67,13 @@ const page_description = t('alliance.leading_text');
                     </ButtonCard>
                 }
 
-                {!is_prod_mode() &&
-                    <ButtonCard title={t('corporations')} href={translatePath('/alliance/corporations/list/')}>
-                        <CorporationEvEIcon slot="icon" />
-                    </ButtonCard>
-                }
+                <ButtonCard title={t('corporations')} href={translatePath('/alliance/corporations/list/')}>
+                    <CorporationEvEIcon slot="icon" />
+                </ButtonCard>
             </ButtonCardGrid>
         </Flexblock>
 
-        <small class="cover-credits">
+        <small class="[ cover-credits ][ hidden lg:block ]">
             {t('alliance.cover_credits')}
             <span
                 x-data={`{

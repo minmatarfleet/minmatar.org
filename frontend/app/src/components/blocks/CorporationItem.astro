@@ -41,22 +41,30 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
     x-init="corporation_item_init()"
 >
     <picture>
-        <img src={get_corporation_logo(corporation.corporation_id)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
+        <img src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
     </picture>
     <FlexInline justification='space-between'>
-        <VerticalCenter>
+        <VerticalCenter class="[ w-full ]">
             <Flexblock gap='0' class="[ w-full ]">
-                <span>
+                <span class="[ text-[var(--highlight)] ]">
                     {corporation.corporation_name}
                 </span>
-                <FixedFluid width='32px' class="[ items-center ]">
-                    <picture>
-                        <img src={get_alliance_logo(corporation.alliance_id)} width="32" height="32" alt={`${corporation.alliance_name} ${t('alliance_logo')}`} />
-                    </picture>
-                    <small>
-                        {corporation.alliance_name}
-                    </small>
-                </FixedFluid>
+                {corporation.alliance_id &&
+                    <FixedFluid
+                        width='24px'
+                        class="[ items-center w-full ]"
+                        gap='var(--space-3xs)'
+                    >
+                        <picture>
+                            <img src={get_alliance_logo(corporation.alliance_id)} width="24" height="24" alt={`${corporation.alliance_name} ${t('alliance_logo')}`} />
+                        </picture>
+                        <span>
+                            <small>
+                                {corporation.alliance_name}
+                            </small>
+                        </span>                        
+                    </FixedFluid>
+                }
             </Flexblock>
         </VerticalCenter>
         <VerticalCenter>

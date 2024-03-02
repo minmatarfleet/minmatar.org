@@ -138,7 +138,7 @@ export const ui = {
         
         'corporations.page_title': 'Corporations',
         'corporations.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
-        'corporations.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
+        'corporations.cover_alt': 'Outspace starry sky',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
@@ -386,6 +386,7 @@ export const ui = {
         'corporation_join_request_dialog_title': 'Corporation join request',
         'group_join_request_dialog_title': 'Group join request',
         'team_join_request_dialog_title': 'Team join request',
+        'corporation_join_request_dialog_text': 'Proceed joining the following corporation?',
         'group_join_request_dialog_text': 'Proceed joining the following group?',
         'team_join_request_dialog_text': 'Proceed joining the following team?',
         'pending': 'Pending',
@@ -470,5 +471,6 @@ export const ui = {
         'list_view_mode': 'View mode (List)',
         'icons_view_mode': 'View mode (Icons)',
         'block_missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the sticky header.',
+        'enlist_today': 'Enlist today',
     },
 } as const;

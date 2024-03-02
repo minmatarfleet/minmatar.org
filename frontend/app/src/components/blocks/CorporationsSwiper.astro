@@ -1,0 +1,166 @@
+---
+interface Props {
+    pagination_icons:   number[];
+}
+
+const {
+    pagination_icons
+} = Astro.props
+
+const pagination_template = `<span class="dot corporation-pagination border">
+                                <img
+                                    src="https://images.evetech.net/corporations/\$\{${JSON.stringify(pagination_icons)}[index]}/logo?size=64"
+                                    width="64"
+                                    height="64"
+                                />
+                            </span>`
+---
+
+<div
+    class="[ swiper-wrapper ][ select-none ]"
+    x-data={`{
+        swiper: null,
+        pagination_icons: ${JSON.stringify(pagination_icons)},
+        corporation_pagination(index) {
+            return this.pagination_icons[index]
+        },
+        init() {
+            this.swiper = new Swiper('.swiper', {
+                slidesPerView: 1,
+                loop: false,
+                effect: 'fade',
+                fadeEffect: {
+                    crossFade: true
+                },
+                pagination: {
+                    bulletClass: 'corporation-pagination',
+                    el: '.swiper-pagination',
+                    clickable: true,
+                    dynamicBullets: true,
+                    renderBullet: function (index, className) {
+                        return \`${pagination_template}\`;
+                    },
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+        }
+    }`}
+>
+    <slot />
+</div>
+<div class="[ swiper-pagination ]"></div>
+<div class="[ swiper-button-prev hidden lg:block ]"></div>
+<div class="[ swiper-button-next hidden lg:block ]"></div>
+
+<style lang="scss">
+    .swiper-button-prev,
+    .swiper-button-next {
+        top: auto;
+        bottom: 48px;
+        left: 52%;
+        position: fixed;
+    }
+
+    .swiper-button-prev {
+        transform: translateX(-230px);
+    }
+
+    .swiper-button-next {
+        transform: translateX(140px);
+    }
+
+    .swiper-pagination {
+        position: fixed;
+    }
+</style>
+
+<style lang="scss" is:global>
+    #corporations-list {
+        --swiper-pagination-bottom: 40px;
+        --swiper-navigation-color: var(--highlight);
+
+        .swiper-pagination-bullet-active-main {
+            transform: scale(0.8);
+        }
+
+        .swiper-pagination-bullet-active {
+            background-color: transparent;
+            opacity: 1;
+
+            &:before {
+                content: " ";
+                position: absolute;
+                bottom: -8px;
+                height: 2px;
+                left: 10px;
+                right: 10px;
+                background-color: var(--highlight);
+            }
+        }
+    }
+
+    .corporation-pagination {
+        width: 64px;
+        height: 64px;
+        cursor: pointer;
+        opacity: 0.6;
+        display: inline-block;
+        background-color: transparent;
+        transform: scale(0.33);
+        transition: var(--fast-transition);
+
+        &:hover {
+            opacity: 1;
+        }
+    }
+</style>
+<!--
+<script define:vars={{ pagination_icons }}>
+    window.corporation_pagination = function (index) {
+		return pagination_icons[index]
+	}
+</script>
+
+<script>
+    import Swiper from 'swiper/bundle';
+    import 'swiper/css/bundle';
+    
+    const swiper = new Swiper('.swiper', {
+        slidesPerView: 1,
+        loop: false,
+        /*autoplay: {
+            delay: 20000,
+        },*/
+        effect: 'fade',
+        fadeEffect: {
+            crossFade: true
+        },
+        pagination: {
+            bulletClass: 'corporation-pagination',
+            el: '.swiper-pagination',
+            clickable: true,
+            dynamicBullets: true,
+            renderBullet: function (index, className) {
+                return `<span class="dot corporation-pagination border">
+                    <img
+                        src="https://images.evetech.net/corporations/${corporation_pagination(index)}/logo?size=64"
+                        width="64"
+                        height="64"
+                    />
+                </span>`;
+            },
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+
+        /*// And if we need scrollbar
+        scrollbar: {
+            el: '.swiper-scrollbar',
+        },*/
+    });
+</script> -->

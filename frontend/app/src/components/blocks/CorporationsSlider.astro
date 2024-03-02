@@ -1,0 +1,78 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporations?:          CorporationObject[];
+    user_corporation_id?:   number;
+    [propName: string]:     any;
+}
+
+let {
+    corporations = [],
+    user_corporation_id = 0,
+} = Astro.props
+
+corporations = corporations.filter( (i) => i.corporation_id != 98735318 )
+
+const pagination_icons:number[] = []
+corporations.forEach( (corp, i) => pagination_icons[i] = corp.corporation_id );
+
+import { slugify } from '@helpers/string'
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import CorporationsSwiper from '@components/blocks/CorporationsSwiper.astro';
+import RattiniSlide from '@components/blocks/RattiniSlide.astro';
+import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
+import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
+---
+
+<div
+    class="[ swiper ][ w-full ]"
+    class:list={[ 'w-full', { swiper: corporations.length > 0 } ]}
+    id="corporations-list"
+>
+    {corporations.length > 0 &&
+        <CorporationsSwiper
+            pagination_icons={pagination_icons}
+        >
+            {corporations.map((corporation, index) =>
+                <div class="swiper-slide" id={slugify(corporation.corporation_name)}>
+                    {corporation.corporation_name == 'Rattini Tribe' &&
+                        <RattiniSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Black Omega Security' &&
+                        <BlackOmegaSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Balls Deep Inc.' &&
+                        <BallsDeepSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                </div>
+            )}
+        </CorporationsSwiper>
+    }
+    {corporations.length == 0 &&
+        <Wrapper padding_inline='0'>
+            <slot>
+                {t('empty_corporations_text')}
+            </slot>
+        </Wrapper>
+    }
+</div>

@@ -1,0 +1,148 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="rattini-slide"
+    ceo_image='/images/corporations/rattini/ceo.png'
+    ceo_character_id={634915984}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ rifter ]" src="/images/corporations/rattini/rifter.png" />
+    <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />
+    <img slot="ships" class="[ sleipnir ]" src="/images/corporations/rattini/sleipnir.png" />
+
+    <p>A cult of Minmatar pilots who worship a fictional deity, the Rat, who they believe is the source of their strength. Minmatar scientists speculate that a decade of failed mind state record scans in the heat of wormhole combat have altered their capsuleer memory banks permanantly.</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .rifter {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 32%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .scimitar {
+        position: absolute;
+        top: 48%;
+        left: -40%;
+        width: 53%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .sleipnir {
+        position: absolute;
+        left: -45%;
+        top: 30%;
+        width: 61%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes rifter {
+        from {
+            transform: scale(0);
+            top: 50%;
+            left: 5%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 12%;
+            left: 43%;
+        }
+    }
+
+    @keyframes scimitar {
+        from {
+            transform: scale(0);
+            top: 48%;
+            left: -40%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 26%;
+            left: 42%;
+        }
+    }
+
+    @keyframes sleipnir {
+        from {
+            transform: scale(0);
+            left: -45%;
+            top: 30%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 43%;
+            left: 31%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #rattini-slide .ceo {
+        left: 0%;
+    }
+
+    .swiper-slide-active {
+        .rifter {
+            animation: rifter ease-out 0.25s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .scimitar {
+            animation: scimitar ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .sleipnir {
+            animation: sleipnir ease-out 0.25s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
