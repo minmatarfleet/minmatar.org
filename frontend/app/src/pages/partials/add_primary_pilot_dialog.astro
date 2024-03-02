@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import Partial from '@layouts/Partial.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+const is_main = JSON.parse(Astro.url.searchParams.get('is_main')) as boolean
+---
+
+<Partial>
+    <Flexblock>
+        <p>{is_main ? t('add_primary_pilot_dialog_text') : t('add_pilot_dialog_text')}</p>
+        <Wrapper class="[ eve-html ]" padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)'>
+            <Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-fleets.read_fleet.v1</code>
+                    <small>Used for fleet participation rewards</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-fleets.write_fleet.v1</code>
+                    <small>Used for automatically updating MOTDs, squads, and wings</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-assets.read_assets.v1</code>
+                    <small>Used for verifying access to particular groups (capitals, black ops)</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-corporations.read_structures.v1</code>
+                    <small>Used for resolving assets in structures</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-skills.read_skills.v1</code>
+                    <small>Used for comparing against skillsets</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-characters.read_loyalty.v1</code>
+                    <small>Used for fetching loyalty points for buyback program</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-killmails.read_killmails.v1</code>
+                    <small>Used for fetching killmails for fleet activity announcements</small>
+                </Flexblock>
+                <Flexblock gap="var(--space-3xs)">
+                    <code>esi-characters.read_fw_stats.v1</code>
+                    <small>Used for fetching faction warfare statistics</small>
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+    </Flexblock>
+</Partial>
