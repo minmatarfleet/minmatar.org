@@ -148,11 +148,13 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             </FixedFluid>
             
             <Context>
-                <ComponentBlock>
-                    <SectionH4 heading_text={t('description')}>
-                        <div class:list={{ 'eve-html': is_html(character.description) }} set:html={parse_eve_html(character.description)} />
-                    </SectionH4>
-                </ComponentBlock>
+                {character.description !== '' &&
+                    <ComponentBlock>
+                        <SectionH4 heading_text={t('description')}>
+                            <div class:list={{ 'eve-html': is_html(character.description) }} set:html={parse_eve_html(character.description)} />
+                        </SectionH4>
+                    </ComponentBlock>
+                }
                 <ComponentBlock>
                     <CorporationHistory character_id={character_id} />
                 </ComponentBlock>
