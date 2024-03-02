@@ -37,29 +37,26 @@ const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
 import GroupsList from '@components/blocks/GroupsList.astro';
-import Partial from '@layouts/Partial.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_available_groups_error ?
-        <GroupsList
-            groups={groups} 
-            groups_type={groups_type}
-        >
-            <ErrorRefetch
-                args={{
-                    partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-                    message: get_available_groups_error,
-                    delay: delay,
-                    target: '#groups-list',
-                }}
-            />
-        </GroupsList>
-        :
-        <GroupsList
-            groups={groups} 
-            groups_type={groups_type}
+{get_available_groups_error ?
+    <GroupsList
+        groups={groups} 
+        groups_type={groups_type}
+    >
+        <ErrorRefetch
+            args={{
+                partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
+                message: get_available_groups_error,
+                delay: delay,
+                target: '#groups-list',
+            }}
         />
-    }
-</Partial>
+    </GroupsList>
+    :
+    <GroupsList
+        groups={groups} 
+        groups_type={groups_type}
+    />
+}

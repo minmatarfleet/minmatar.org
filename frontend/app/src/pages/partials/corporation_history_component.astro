@@ -1,9 +1,7 @@
 ---
 const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 
-import Partial from '@layouts/Partial.astro';
 import CorporationHistory from '@components/blocks/CorporationHistory.astro'
 ---
-<Partial>
-    <CorporationHistory character_id={character_id} />
-</Partial>
+
+<CorporationHistory character_id={character_id} />

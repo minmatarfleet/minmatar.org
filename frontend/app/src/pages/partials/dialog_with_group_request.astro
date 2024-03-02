@@ -8,7 +8,6 @@ import type { GroupRequestAction, GroupItemType } from '@dtypes/layout_component
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import GroupRequestBadge from '@components/blocks/GroupRequestBadge.astro';
-import Partial from '@layouts/Partial.astro';
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 const character_name = Astro.url.searchParams.get('character_name')
@@ -22,26 +21,25 @@ const type = Astro.url.searchParams.get('type') as GroupRequestAction
 const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
 const message = Astro.url.searchParams.get('message')
 ---
-<Partial>
-    <Flexblock>
-        <p>{message}</p>
-        <GroupRequestBadge
-            character={{
-                character_id: character_id,
-                character_name: character_name,
-                corporation: {
-                    id: corporation_id,
-                    name: corporation_name
-                }
-            }}
-            type={type}
-            group_type={group_type}
-            group={{
-                id: group_id,
-                name: group_name,
-                image_url: group_image,
-                description: group_description
-            }}
-        />
-    </Flexblock>
-</Partial>
+
+<Flexblock>
+    <p>{message}</p>
+    <GroupRequestBadge
+        character={{
+            character_id: character_id,
+            character_name: character_name,
+            corporation: {
+                id: corporation_id,
+                name: corporation_name
+            }
+        }}
+        type={type}
+        group_type={group_type}
+        group={{
+            id: group_id,
+            name: group_name,
+            image_url: group_image,
+            description: group_description
+        }}
+    />
+</Flexblock>

@@ -62,28 +62,24 @@ if (create_corporation_application_error) {
 import { get_app_url } from '@helpers/env'
 const CORPORATION_ITEM_PARTIAL_URL = `${get_app_url()}/partials/corporation_item_component/`
 
-import Partial from '@layouts/Partial.astro';
-
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import CorporationItem from '@components/blocks/CorporationItem.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_corporation_error ?
-        <ErrorRefetch
-            args={{
-                partial: `${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`,
-                message: get_corporation_error,
-                delay: delay,
-                target: `#corporation-item-${corporation_id}`,
-            }}
-        />
-        :
-        <CorporationItem
-            corporation={corporation}
-            alert={alert}
-        />
-    }
-</Partial>
+{get_corporation_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${CORPORATION_ITEM_PARTIAL_URL}?id=${corporation_id}`,
+            message: get_corporation_error,
+            delay: delay,
+            target: `#corporation-item-${corporation_id}`,
+        }}
+    />
+    :
+    <CorporationItem
+        corporation={corporation}
+        alert={alert}
+    />
+}

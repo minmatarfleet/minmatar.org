@@ -33,30 +33,26 @@ try {
 import { get_app_url } from '@helpers/env'
 const CORPORATIONS_SLIDER_PARTIAL_URL = `${get_app_url()}/partials/corporations_slider_component/`
 
-import Partial from '@layouts/Partial.astro';
-
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
 import CorporationsSlider from '@components/blocks/CorporationsSlider.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_all_corporations_error ?
-        <CorporationsSlider corporations={[]}>
-            <ErrorRefetch
-                args={{
-                    partial: CORPORATIONS_SLIDER_PARTIAL_URL,
-                    message: get_all_corporations_error,
-                    delay: delay,
-                    target: '#corporations-list',
-                }}
-            />
-        </CorporationsSlider>
-        :
-        <CorporationsSlider
-            corporations={corporations}
-            user_corporation_id={user_corporation_id}
+{get_all_corporations_error ?
+    <CorporationsSlider corporations={[]}>
+        <ErrorRefetch
+            args={{
+                partial: CORPORATIONS_SLIDER_PARTIAL_URL,
+                message: get_all_corporations_error,
+                delay: delay,
+                target: '#corporations-list',
+            }}
         />
-    }
-</Partial>
+    </CorporationsSlider>
+    :
+    <CorporationsSlider
+        corporations={corporations}
+        user_corporation_id={user_corporation_id}
+    />
+}

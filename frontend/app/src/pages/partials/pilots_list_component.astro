@@ -86,34 +86,32 @@ import PilotsList from '@components/blocks/PilotsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_characters_error ?
-        <PilotsList
-            pilots={pilots}
-            readonly={readonly}
-            empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-            removed_character={removed_character_id}
-            alert={alert}
-        >
-            <ErrorRefetch
-                args={{
-                    partial: PILOTS_LIST_PARTIAL_URL,
-                    message: get_characters_error,
-                    delay: delay,
-                    target: '#pilots-list',
-                }}
-            />
-        </PilotsList>
-        :
-        <PilotsList
-            pilots={pilots}
-            readonly={readonly}
-            empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
-            removed_character={removed_character_id}
-            alert={alert}
+{get_characters_error ?
+    <PilotsList
+        pilots={pilots}
+        readonly={readonly}
+        empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+        removed_character={removed_character_id}
+        alert={alert}
+    >
+        <ErrorRefetch
+            args={{
+                partial: PILOTS_LIST_PARTIAL_URL,
+                message: get_characters_error,
+                delay: delay,
+                target: '#pilots-list',
+            }}
         />
-    }
-</Partial>
+    </PilotsList>
+    :
+    <PilotsList
+        pilots={pilots}
+        readonly={readonly}
+        empty_text={get_characters_error ? get_characters_error : t('empty_pilots_text')}
+        removed_character={removed_character_id}
+        alert={alert}
+    />
+}
 
 {redirect &&
     <script define:vars={{ redirect }}>

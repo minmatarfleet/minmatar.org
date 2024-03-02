@@ -124,14 +124,11 @@ if (group_action_request?.approved_by) {
     }
 }
 
-import Partial from '@layouts/Partial.astro';
-
 import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
 ---
-<Partial>
-    <GroupRequestBlock
-        group_requests={group_requests}
-        alert={alert}
-        group_type={group_type}
-    />
-</Partial>
+
+<GroupRequestBlock
+    group_requests={group_requests}
+    alert={alert}
+    group_type={group_type}
+/>

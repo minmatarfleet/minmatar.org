@@ -31,27 +31,23 @@ try {
 import { get_app_url } from '@helpers/env'
 const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
 
-import Partial from '@layouts/Partial.astro';
-
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
 import CorporationsList from '@components/blocks/CorporationsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_all_corporations_error ?
-        <CorporationsList corporations={corporations}>
-            <ErrorRefetch
-                args={{
-                    partial: CORPORATIONS_LIST_PARTIAL_URL,
-                    message: get_all_corporations_error,
-                    delay: delay,
-                    target: '#corporations-list',
-                }}
-            />
-        </CorporationsList>
-        :
-        <CorporationsList corporations={corporations} />
-    }
-</Partial>
+{get_all_corporations_error ?
+    <CorporationsList corporations={corporations}>
+        <ErrorRefetch
+            args={{
+                partial: CORPORATIONS_LIST_PARTIAL_URL,
+                message: get_all_corporations_error,
+                delay: delay,
+                target: '#corporations-list',
+            }}
+        />
+    </CorporationsList>
+    :
+    <CorporationsList corporations={corporations} />
+}

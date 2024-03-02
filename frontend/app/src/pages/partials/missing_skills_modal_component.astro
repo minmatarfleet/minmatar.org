@@ -4,7 +4,6 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils'
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
 
-import Partial from '@layouts/Partial.astro'
 import SkillsetMissingSkills from '@components/blocks/SkillsetMissingSkills.astro'
 
 import type { SkillsetMissingSkillUI } from '@dtypes/layout_components'
@@ -19,6 +18,5 @@ try {
     skillset_missing_skills_modal_error = is_prod_mode() ? t('skillset_missing_skills_modal_error') : error.message
 }
 ---
-<Partial>
-    <SkillsetMissingSkills skillset_missing_skills={skillset_missing_skills} />
-</Partial>
+
+<SkillsetMissingSkills skillset_missing_skills={skillset_missing_skills} />
