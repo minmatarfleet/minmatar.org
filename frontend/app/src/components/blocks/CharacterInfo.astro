@@ -44,6 +44,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Context from '@components/layout/Context.astro';
 
@@ -63,7 +64,6 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro';
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
 import CaldariLogo from '@components/logos/CaldariLogo.astro';
 import GallenteLogo from '@components/logos/GallenteLogo.astro'
-import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 <Wrapper
     id="character-info"

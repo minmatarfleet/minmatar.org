@@ -37,7 +37,7 @@ interface Props {
         x-bind:aria-hidden="confirm_dialog_open == false"
         x-bind:inert="confirm_dialog_open == false"
         breakout={true}
-        class="[ w-full max-w-[500px] ]"
+        class="[ w-full max-w-[500px] max-h-[100vh] overflow-y-auto ]"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
     >

@@ -95,12 +95,16 @@ delete attributes.class
                                 if (pilots.length == 0) {
                                     show_alert_dialog({
                                         title: '${t('add_primary_pilot_dialog_title')}',
-                                        content: '${t('add_primary_pilot_dialog_text')}'
+                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
+                                            is_main: JSON.stringify(true),
+                                        })}',
                                     }).then( (accepted) => add_primary_pilot(accepted) )
                                 } else {
                                     show_alert_dialog({
                                         title: '${t('add_pilot_dialog_title')}',
-                                        content: '<p>${t('add_pilot_dialog_text')}</p>'
+                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
+                                            is_main: JSON.stringify(false),
+                                        })}',
                                     }).then( (accepted) => add_pilot(accepted) )
                                 }
                             }
