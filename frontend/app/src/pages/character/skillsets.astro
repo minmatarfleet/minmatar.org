@@ -24,132 +24,19 @@ const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 
-/*import type { GroupRequestListUI } from '@dtypes/layout_components'
-import { get_all_groups_requests } from '@helpers/fetching/group_requests'
+import type { SkillsetsUI } from '@dtypes/layout_components'
+import { get_skillsets } from '@helpers/fetching/characters'
 
-let groups_requests:GroupRequestListUI[] = []
-let get_all_groups_requests_error:string | false = false
+let character_skillsets:SkillsetsUI
+let get_character_skillsets_error:string | false = false
 try {
-    groups_requests = await get_all_groups_requests(auth_token)
-    groups_requests.sort( (a, b) => {
-        return b.requests.length - a.requests.length
-    })
+    character_skillsets = await get_skillsets(auth_token, character_id)
 } catch (error) {
-    get_all_groups_requests_error = is_prod_mode() ? t('get_all_groups_requests_error') : error.message
+    get_character_skillsets_error = is_prod_mode() ? t('get_character_skillsets_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
-const GROUP_REQUESTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/group_requests_list_component/`*/
-
-const character_skills_info = {
-    "character_id": 634915984,
-    "character_name": "BearThatCares",
-    "skillsets": [
-        {
-            "id": 1,
-            "name": "Amarr Dreadnought",
-            "progress": 0.85,
-            "missing_skills": [
-                {
-                    "id": 1,
-                    "skill_name": "Amarr Dreadnought",
-                    "skill_level": 5
-                },
-                {
-                    "id": 2,
-                    "skill_name": "Capital Energy Turret",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "name": "Kage bunshin no jutsu",
-            "progress": 0.95,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 3,
-            "name": "Town Halls",
-            "progress": 0.98,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 4,
-            "name": "Error 500",
-            "progress": 0.85,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 5,
-            "name": "CSS",
-            "progress": 0.1,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 4
-                },
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 3
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 4
-                },
-                {
-                    "id": 4,
-                    "skill_name": "Power Grid Management",
-                    "skill_level": 5
-                }
-            ]
-        },
-        {
-            "id": 6,
-            "name": "Feeding",
-            "progress": 1,
-            "missing_skills": []
-        },
-        {
-            "id": 7,
-            "name": "Magic 14",
-            "progress": 0.5,
-            "missing_skills": [
-                {
-                    "id": 3,
-                    "skill_name": "CPU Management",
-                    "skill_level": 5
-                }
-            ]
-        }
-    ]
-}
+const SKILLSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/skillsets_list_component`
 
 import { get_player_icon } from '@helpers/eve_image_server'
 
@@ -163,10 +50,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import SkillsetsList from '@components/blocks/SkillsetsList.astro';
 import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = `${character_skills_info.character_name} ${t('skillsets').toLowerCase()}`
+const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets').toLowerCase()}`
 ---
 <Viewport
     title={page_title}
@@ -188,12 +76,12 @@ const page_title = `${character_skills_info.character_name} ${t('skillsets').toL
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
-                <img height="64" width="64" src={get_player_icon(character_skills_info.character_id)} alt={`${t('profile_picture_of')} ${character_skills_info.character_name}`} />
+                <img height="64" width="64" src={get_player_icon(character_skillsets?.character_id ?? character_id)} alt={`${t('profile_picture_of')} ${character_skillsets?.character_name ?? t('unknown_character')}`} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small>{character_skills_info.skillsets.length} {t('skillset').toLowerCase()}{character_skills_info.skillsets.length != 1 ? 's' : ''} {t('in_progress').toLowerCase()}</small>
+                    <small>{character_skillsets?.skillsets.length ?? 0} {t('skillset').toLowerCase()}{(character_skillsets?.skillsets.length ?? 0) != 1 ? 's' : ''} {t('in_progress').toLowerCase()}</small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>
@@ -204,12 +92,31 @@ const page_title = `${character_skills_info.character_name} ${t('skillsets').toL
             </FlexInline>
         </FlexInline>
 
-        <SkillsetsList
-            skillsets={character_skills_info.skillsets}
-            character={{
-                character_id: character_skills_info.character_id,
-                character_name: character_skills_info.character_name,
-            }}
-        />
+        {get_character_skillsets_error ?
+            <SkillsetsList
+                skillsets={[]}
+                character={{
+                    character_id: character_id,
+                    character_name: '',
+                }}
+            >
+                <ErrorRefetch
+                    args={{
+                        partial: `${SKILLSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
+                        message: get_character_skillsets_error,
+                        delay: 0,
+                        target: '#skillset-list',
+                    }}
+                />
+            </SkillsetsList>
+            :
+            <SkillsetsList
+                skillsets={character_skillsets.skillsets}
+                character={{
+                    character_id: character_skillsets.character_id,
+                    character_name: character_skillsets.character_name,
+                }}
+            />
+        }
     </PageDefault>
 </Viewport>

@@ -1,4 +1,4 @@
-import type { Character } from '@dtypes/api.minmatar.org'
+import type { Character, CharacterSkillset } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
 
@@ -100,5 +100,30 @@ export async function get_primary_characters(access_token:string) {
         return await response.json() as Character;
     } catch (error) {
         throw new Error(`Error fetching main pilot: ${error.message}`);
+    }
+}
+
+export async function get_character_skillsets(access_token:string, character_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting: ${API_ENDPOINT}/${character_id}/skillsets`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/${character_id}/skillsets`, {
+            headers: headers
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as CharacterSkillset[];
+    } catch (error) {
+        throw new Error(`Error fetching character: ${error.message}`);
     }
 }
