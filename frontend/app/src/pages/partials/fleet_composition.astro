@@ -36,10 +36,7 @@ members.forEach(group => {
 })
 // End randomization for dispalying purpose
 
-import Partial from '@layouts/Partial.astro';
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 ---
 
-<Partial>
-    <FleetCompositionBlock composition={composition} fleet_id={fleet_id} />
-</Partial>
+<FleetCompositionBlock composition={composition} fleet_id={fleet_id} />

@@ -38,31 +38,27 @@ const GROUP_REQUESTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/group_request
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-import Partial from '@layouts/Partial.astro';
-
 import GroupRequestsList from '@components/blocks/GroupRequestsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-<Partial>
-    {get_all_corporations_error ?
-        <GroupRequestsList
-            groups_requests={groups_requests}
-            groups_type={groups_type}
-        >
-            <ErrorRefetch
-                args={{
-                    partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-                    message: get_all_corporations_error,
-                    delay: delay,
-                    target: '#group-request-list',
-                }}
-            />
-        </GroupRequestsList>
-        :
-        <GroupRequestsList
-            groups_requests={groups_requests}
-            groups_type={groups_type}
+{get_all_corporations_error ?
+    <GroupRequestsList
+        groups_requests={groups_requests}
+        groups_type={groups_type}
+    >
+        <ErrorRefetch
+            args={{
+                partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
+                message: get_all_corporations_error,
+                delay: delay,
+                target: '#group-request-list',
+            }}
         />
-    }
-</Partial>
+    </GroupRequestsList>
+    :
+    <GroupRequestsList
+        groups_requests={groups_requests}
+        groups_type={groups_type}
+    />
+}

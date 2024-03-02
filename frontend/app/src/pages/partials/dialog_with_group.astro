@@ -6,7 +6,6 @@ const t = useTranslations(lang);
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import GroupItem from '@components/blocks/GroupItem.astro';
-import Partial from '@layouts/Partial.astro';
 
 import type { Group } from '@dtypes/api.minmatar.org'
 import type { GroupItemType } from '@dtypes/layout_components'
@@ -24,12 +23,11 @@ const group:Group = {
     image_url: JSON.parse(image_url)
 }
 ---
-<Partial>
-    <Flexblock>
-        <p>{message}</p>
-        <GroupItem
-            group={group}
-            type={type}
-        />
-    </Flexblock>
-</Partial>
+
+<Flexblock>
+    <p>{message}</p>
+    <GroupItem
+        group={group}
+        type={type}
+    />
+</Flexblock>

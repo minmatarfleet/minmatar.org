@@ -64,15 +64,11 @@ if (create_corporation_application_error) {
     }
 }
 
-import Partial from '@layouts/Partial.astro';
-
 import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.astro';
 ---
 
-<Partial>
-    <CorporationSlideStatus
-        corporation={corporation}
-        is_user_corporation={false}
-        alert={alert}
-    />
-</Partial>
+<CorporationSlideStatus
+    corporation={corporation}
+    is_user_corporation={false}
+    alert={alert}
+/>

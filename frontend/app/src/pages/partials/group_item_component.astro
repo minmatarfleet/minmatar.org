@@ -70,8 +70,6 @@ const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item_component/`
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-import Partial from '@layouts/Partial.astro';
-
 import GroupItem from '@components/blocks/GroupItem.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
@@ -81,21 +79,19 @@ const partial_query_string = query_string({
 })
 ---
 
-<Partial>
-    {get_group_request_error ?
-        <ErrorRefetch
-            args={{
-                partial: `${GROUP_ITEM_PARTIAL_URL}${partial_query_string}`,
-                message: get_group_request_error,
-                delay: delay,
-                target: `#group-item-${group_id}`,
-            }}
-        />
-        :
-        <GroupItem
-            group={group}
-            alert={alert}
-            type={type}
-        />
-    }
-</Partial>
+{get_group_request_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${GROUP_ITEM_PARTIAL_URL}${partial_query_string}`,
+            message: get_group_request_error,
+            delay: delay,
+            target: `#group-item-${group_id}`,
+        }}
+    />
+    :
+    <GroupItem
+        group={group}
+        alert={alert}
+        type={type}
+    />
+}

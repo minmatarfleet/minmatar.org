@@ -6,15 +6,13 @@ const t = useTranslations(lang);
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
-import Partial from '@layouts/Partial.astro';
 
 const character_id = parseInt(Astro.url.searchParams.get('id'))
 const character_name = Astro.url.searchParams.get('character_name')
 const message = Astro.url.searchParams.get('message')
 ---
-<Partial>
-    <Flexblock>
-        <p>{message}</p>
-        <PilotBadge character_id={character_id} character_name={character_name} />
-    </Flexblock>
-</Partial>
+
+<Flexblock>
+    <p>{message}</p>
+    <PilotBadge character_id={character_id} character_name={character_name} />
+</Flexblock>
