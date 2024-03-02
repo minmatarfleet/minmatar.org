@@ -7,13 +7,13 @@
 
 @use 'properties/layout';
 @use 'properties/font-families';
+@use 'properties/font-sizes';
 @use 'properties/effects';
 @use 'properties/colors';
 @use 'properties/transitions';
 @use 'properties/z-index';
 
 @use 'components/tippy-theme';
-@use 'components/character-info';
 
 @use 'fonts';
 @use 'typography';
