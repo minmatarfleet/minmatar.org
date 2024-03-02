@@ -33,7 +33,7 @@ export async function create_corporation_application(access_token:string, corpor
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications`)
+    console.log(`Requesting POST: ${API_ENDPOINT}/${corporation_id}/applications`)
 
     try {
         const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications`, {
