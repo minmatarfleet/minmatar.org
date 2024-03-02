@@ -38,7 +38,6 @@ url.searchParams.append('delay', next_delay.toString())
                 return (this.countdown > 0 ? '${t('retrying_in')} '+this.countdown+' ${t('seconds')}' : '${t('retrying_now')}')
             },
             tick(that) {
-                console.log('tick')
                 if (that.countdown > 0) {
                     that.countdown--
                 } else if (that.timer) {

@@ -8,12 +8,12 @@ export interface DiscordUser {
     system?:            boolean;
     mfa_enabled?:       boolean;
     banner?:            string;
-    accent_color?:      integer;
+    accent_color?:      number;
     locale?:            string;
     verified?:          boolean;
     email?:             string;
-    flags?:             integer;
-    premium_type?:      integer;
-    public_flags?:      integer;
+    flags?:             number;
+    premium_type?:      number;
+    public_flags?:      number;
     avatar_decoration?: string;
 }

@@ -246,7 +246,6 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
             filter() {
                 if (this.asset_name === '' && this.asset_station === '-1') {
                     this.assets_locations_filtered = (this.assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
-                    console.log(this.assets_locations_filtered)
                     this.total_assets_count = this.total_assets_count_unfiltered
                     return
                 }
@@ -273,7 +272,6 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
                 $refs.server_side_render.remove()
             },
         }`}
-        x-init="init"
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
