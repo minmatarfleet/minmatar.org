@@ -8,6 +8,11 @@ export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
 export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
 
+export type spaces = '0' | '1px' | '2px' | 'var(--component-block-gap)' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
+| 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
+| 'var(--space-3xs-2xs)' | 'var(--space-2xs-xs)' | 'var(--space-xs-s)' | 'var(--space-s-m)' | 'var(--space-m-l)' 
+| 'var(--space-l-xl)' | 'var(--space-xl-2xl)' | 'var(--space-2xl-3xl)' | 'var(--space-s-l)'
+
 export function is_of_structure_slots_type(value: string): value is StructureSlots {
     return [ 'High Power Slots', 'Medium Power Slots', 'Low Power Slots', 'Rig Slots', 'Service Slots', 'Charges' ].includes(value);
 }
@@ -374,7 +379,30 @@ export interface MissingSkill {
     skill_level: number;
 }
 
-export type spaces = '0' | '1px' | '2px' | 'var(--component-block-gap)' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
-| 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
-| 'var(--space-3xs-2xs)' | 'var(--space-2xs-xs)' | 'var(--space-xs-s)' | 'var(--space-s-m)' | 'var(--space-m-l)' 
-| 'var(--space-l-xl)' | 'var(--space-xl-2xl)' | 'var(--space-2xl-3xl)' | 'var(--space-s-l)'
+export interface AssetsUI {
+    character_id:   number;
+    character_name: string;
+    locations:      AssetsLocation[];
+    location_icons: AssetsLocationIcons[];
+}
+
+export interface AssetsLocation {
+    location_name:  string;
+    assets:         AssetGroup[];
+}
+
+export interface AssetsLocationIcons {
+    location_name:  string;
+    assets:         Asset[];
+}
+
+export interface Asset {
+    id:     number;
+    name:   string;
+}
+
+export interface AssetGroup {
+    id:     number;
+    name:   string;
+    count:  number;
+}

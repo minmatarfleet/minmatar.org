@@ -4,6 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -22,183 +23,40 @@ const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 
-/*import type { GroupRequestListUI } from '@dtypes/layout_components'
-import { get_all_groups_requests } from '@helpers/fetching/group_requests'
+import type { AssetsUI, CharacterBasic } from '@dtypes/layout_components'
+import { get_assets } from '@helpers/fetching/characters'
 
-let groups_requests:GroupRequestListUI[] = []
-let get_all_groups_requests_error:string | false = false
+let character_assets:AssetsUI = {
+    character_id: 0,
+    character_name: '',
+    locations: [],
+    location_icons: [],
+}
+let get_character_assets_error:string | false = false
 try {
-    groups_requests = await get_all_groups_requests(auth_token)
-    groups_requests.sort( (a, b) => {
-        return b.requests.length - a.requests.length
-    })
+    character_assets = await get_assets(auth_token, character_id)
 } catch (error) {
-    get_all_groups_requests_error = is_prod_mode() ? t('get_all_groups_requests_error') : error.message
+    get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
-const GROUP_REQUESTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/group_requests_list_component/`*/
+const ASSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/assets_list_component`
 
-const character_skills_info = {
-    "character_id": 634915984,
-    "character_name": "BearThatCares",
-    "assets": []
-}
-
-const assets_locations_icons = [
-    {
-        location_name: "Jita IV - Moon 4 - Caldari Navy Assembly Plant",
-        assets: [
-            {
-                id: 37604,
-                name: "Apostle",
-            }
-        ]
-    },
-    {
-        location_name: "Sosala - WATERMELON",
-        assets: [
-            {
-                id: 631,
-                name: "Scythe",
-            },
-            {
-                id: 631,
-                name: "Scythe",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-            {
-                id: 608,
-                name: "Atron",
-            },
-        ]
-    }
-]
-
-const assets_locations = [
-    {
-        location_name: "Jita IV - Moon 4 - Caldari Navy Assembly Plant",
-        assets: [
-            {
-                id: 37604,
-                name: "Apostle",
-                count: 1,
-            }
-        ]
-    },
-    {
-        location_name: "Sosala - WATERMELON",
-        assets: [
-            {
-                id: 631,
-                name: "Scythe",
-                count: 2
-            },
-            {
-                id: 608,
-                name: "Atron",
-                count: 22
-            },
-        ]
-    }
-]
-
-const assets_regions = []
-const assets_systems = []
-const assets_stations = assets_locations.map( (location) => location.location_name )
+const assets_stations:string[] = character_assets.locations.map( (location):string => location.location_name )
 
 let total_assets_count = 0
-assets_locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
+character_assets.locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
+
+const character_info:CharacterBasic = {
+    character_id: character_assets.character_id ?? 0,
+    character_name: character_assets.character_name ?? '',
+}
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
@@ -208,12 +66,13 @@ import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
 import Select from '@components/blocks/Select.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ListIcon from '@components/icons/buttons/ListIcon.astro';
 import IconList from '@components/icons/buttons/IconList.astro';
 
-const page_title = `${character_skills_info.character_name} ${t('assets').toLowerCase()}`
+const page_title = `${character_info.character_name} ${t('assets').toLowerCase()}`
 ---
 <Viewport
     title={page_title}
@@ -234,15 +93,16 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
         }}
         x-data={`{
             assets_style: 'list',
-            assets_locations: ${JSON.stringify(assets_locations)},
-            assets_locations_icons: ${JSON.stringify(assets_locations_icons)},
-            assets_locations_filtered: ${JSON.stringify(assets_locations)},
+            assets_locations: ${JSON.stringify(character_assets.locations)},
+            assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
+            assets_locations_filtered: ${JSON.stringify(character_assets.locations)},
             asset_name: '',
             asset_region: '-1',
             asset_system: '-1',
             asset_station: '-1',
             total_assets_count: ${total_assets_count},
             total_assets_count_unfiltered: ${total_assets_count},
+            locations_options: ${JSON.stringify(assets_stations)},
             filter() {
                 if (this.asset_name === '' && this.asset_station === '-1') {
                     this.assets_locations_filtered = (this.assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
@@ -271,22 +131,24 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
             init() {
                 $refs.server_side_render.remove()
             },
+            character_id: ${character_info.character_id},
+            character_name: '${character_info.character_name}',
         }`}
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
                 <CharacterPicture
-                    character_id={character_skills_info.character_id}
-                    character_name={character_skills_info.character_name}
+                    character_id={character_info.character_id}
+                    character_name={character_info.character_name}
+                    x_character_id="character_id"
+                    x_character_name="character_name"
                 />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small
-                        x-text={'`${total_assets_count} ${total_assets_count != 1 ? `'+t('assets').toLowerCase()+'` : `'+t('asset').toLowerCase()+'`} '+t('in_inventory').toLowerCase()+'`'}
-                    >
-                        {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
+                    <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_progress').toLowerCase()}\``}>
+                        {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_progress').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -299,28 +161,6 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <!--<div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="asset_region"
-                    >
-                        <option selected value="-1">{t('regions')}</option>
-                        {assets_regions.map((option) => 
-                            <option value={option}>{option}</option>
-                        )}
-                    </Select>
-                </div>
-                
-                <div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="asset_system"
-                    >
-                        <option selected value="-1">{t('system')}</option>
-                        {assets_systems.map((option) => 
-                            <option value={option}>{option}</option>
-                        )}
-                    </Select>
-                </div>-->
-                
                 <div class="[ hidden 2xl:block ]">
                     <Select
                         x-model="asset_station"
@@ -328,9 +168,9 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
                         x-on:change="filter()"
                     >
                         <option selected value="-1">{t('stations')}</option>
-                        {assets_stations.map((option) => 
-                            <option>{option}</option>
-                        )}
+                        <template x-for="location_name in locations_options">
+                            <option x-text="location_name" />
+                        </template>
                     </Select>
                 </div>
             </FlexInline>
@@ -361,8 +201,23 @@ const page_title = `${character_skills_info.character_name} ${t('assets').toLowe
         </FlexInline>
 
         <div x-ref="server_side_render">
-            <AssetsList assets_locations={assets_locations} />
+            {!get_character_assets_error &&
+                <AssetsList assets_locations={character_assets.locations} />
+            }
         </div>
-        <AssetsListAlpine />
+        {get_character_assets_error ?
+            <AssetsListAlpine>
+                <ErrorRefetch
+                    args={{
+                        partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
+                        message: get_character_assets_error,
+                        delay: 0,
+                        target: '#assets-list',
+                    }}
+                />
+            </AssetsListAlpine>
+            :
+            <AssetsListAlpine />
+        }
     </PageDefault>
 </Viewport>

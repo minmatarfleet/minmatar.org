@@ -19,10 +19,13 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         <AssetsBlockAlpine />
     </template>
     <template x-if="assets_locations_filtered.length == 0">
-        <TextBox>
-            <p>{t('no_assets')}</p>
-        </TextBox>
+        {!Astro.slots.has('default') &&
+            <TextBox>
+                <p>{t('no_assets')}</p>
+            </TextBox>
+        }
     </template>
+    <slot />
 </Flexblock>
 
 <style lang="scss">
