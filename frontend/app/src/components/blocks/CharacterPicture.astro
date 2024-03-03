@@ -5,19 +5,22 @@ const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
 const translatePath = useTranslatedPath(lang)
 
-import { query_string } from '@helpers/string';
 import type { EvEImageServiceSize } from '@dtypes/layout_components'
 
 interface Props {
-    character_id:   number;
-    character_name: string;
-    size?:          EvEImageServiceSize;
-    icon_quality?:  EvEImageServiceSize;
+    character_id:       number;
+    character_name?:    string;
+    x_character_id?:    string | false;
+    x_character_name?:  string | false;
+    size?:              EvEImageServiceSize;
+    icon_quality?:      EvEImageServiceSize;
 }
 
 const {
     character_id,
     character_name,
+    x_character_id = false,
+    x_character_name = false,
     size = 64,
     icon_quality = 64,
 } = Astro.props
@@ -29,16 +32,16 @@ import { get_player_icon } from '@helpers/eve_image_server'
         height={size}
         width={size}
         src={get_player_icon(character_id, icon_quality ?? size)}
-        alt={`${t('profile_picture_of')} ${character_name}`}
+        x-bind:src={`${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`}
+        alt={`${t('profile_picture_of')} ${character_name ?? t('unknown_character')}`}
+        x-bind:alt={`'${t('profile_picture_of')} ' + (${x_character_name} ? ${x_character_name} : '${character_name ?? t('unknown_character')}')`}
         x-data={`{
             show_character_modal() {
-                if (${character_id} == 0)
+                if (!${x_character_id} && ${character_id} == 0)
                     return
 
                 show_modal({
-                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                        character_id: character_id.toString(),
-                    })}',
+                    partial: '${translatePath('/partials/character_modal_component/')}?character_id='+(${x_character_id} ? ${x_character_id} : '${character_id.toString()}'),
                 })
             }
         }`}

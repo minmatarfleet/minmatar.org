@@ -343,7 +343,7 @@ export const ui = {
         'no_roles_assigned': 'No roles assigned',
         'account_name': 'Account name',
         'roles': 'Roles',
-        'get_characters_error': 'An error occurred while fetching pilots. Please attempt to resolve it by reloading the page.',
+        'get_characters_error': 'An error occurred while fetching pilots.',
         'get_character_error': 'An error occurred while fetching the pilot.',
         'get_primary_characters_error': 'An error occurred while fetching the main pilot.',
         'delete_character_error': 'An error occurred while removing the pilot.',

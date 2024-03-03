@@ -9,11 +9,13 @@ import type { Skillset, CharacterBasic } from '@dtypes/layout_components'
 interface Props {
     skillsets:      Skillset[];
     character:      CharacterBasic;
+    'x-data'?:      string;
 }
 
 const {
     skillsets,
     character,
+    ...x_data
 } = Astro.props
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -26,6 +28,7 @@ import SkillsetItem from '@components/blocks/SkillsetItem.astro';
     row_gap='var(--space-s)'
     column_gap='var(--space-s)'
     class="[ grid-fill ]"
+    {...x_data}
 >
     {skillsets.map( (skillset) => 
         <SkillsetItem
