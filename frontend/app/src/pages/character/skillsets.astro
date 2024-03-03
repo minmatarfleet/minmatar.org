@@ -51,8 +51,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import SkillsetsList from '@components/blocks/SkillsetsList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const skillsets_count = character_skillsets?.skillsets.length ?? 0
 
 const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets').toLowerCase()}`
 ---
@@ -73,15 +76,27 @@ const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets'
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            character_id: false,
+            character_name: '',
+            skillsets_count: ${skillsets_count},
+        }`}
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
-                <img height="64" width="64" src={get_player_icon(character_skillsets?.character_id ?? character_id)} alt={`${t('profile_picture_of')} ${character_skillsets?.character_name ?? t('unknown_character')}`} />
+                <CharacterPicture
+                    character_id={character_skillsets?.character_id ?? 0}
+                    character_name={character_skillsets?.character_name ?? ''}
+                    x_character_id="character_id"
+                    x_character_name="character_id"
+                />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
-                        {page_title}
+                        <span x-text="character_name" /> {page_title}
                     </PageTitle>
-                    <small>{character_skillsets?.skillsets.length ?? 0} {t('skillset').toLowerCase()}{(character_skillsets?.skillsets.length ?? 0) != 1 ? 's' : ''} {t('in_progress').toLowerCase()}</small>
+                    <small x-text={`\`\${skillsets_count} \${skillsets_count != 1 ? '${t('skillsets').toLowerCase()}' : '${t('skillset').toLowerCase()}'} ${t('in_progress').toLowerCase()}\``}>
+                        {skillsets_count} {skillsets_count != 1 ? t('skillsets').toLowerCase() : t('skillset').toLowerCase()} {t('in_progress').toLowerCase()}
+                    </small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>

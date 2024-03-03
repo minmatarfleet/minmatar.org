@@ -40,6 +40,8 @@ const SKILLSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/skillsets_list_com
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
+const skillsets_count = character_skillsets?.skillsets.length ?? 0
+
 import SkillsetsList from '@components/blocks/SkillsetsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
@@ -68,5 +70,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             character_id: character_skillsets.character_id,
             character_name: character_skillsets.character_name,
         }}
+        x-data={`{
+            init() {
+                character_id = ${character_skillsets.character_id}
+                character_name = '${character_skillsets.character_name}'
+                skillsets_count = ${skillsets_count}
+            }
+        }`}
     />
 }
