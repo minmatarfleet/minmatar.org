@@ -129,7 +129,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                                     {user && user.is_superuser /*&& user?.permissions?.includes('auth.change_group')*/ &&
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('skillsets')} href={translatePath(`/character/skillsets?character_id=${character_id}`)}><SkillsEvEIcon /></a>
                                     }
-                                    {!is_prod_mode() && user && user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/ &&
+                                    {user && user.is_superuser /*&& user?.permissions?.includes('auth.change_group')*/ &&
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('assets')} href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
                                     }
                                     <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank" rel="nofollow noopener noreferrer"><ZkillboardEvEIcon /></a>

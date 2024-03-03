@@ -72,3 +72,10 @@ export interface CharacterSkillset {
     progress:       number;
     missing_skills: string[];
 }
+
+export interface CharacterAsset {
+    type_id:        number;
+    type_name:      string;
+    location_id:    number;
+    location_name:  string;
+}

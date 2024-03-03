@@ -1,4 +1,4 @@
-import type { Character, CharacterSkillset } from '@dtypes/api.minmatar.org'
+import type { Character, CharacterSkillset, CharacterAsset } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
 
@@ -124,6 +124,31 @@ export async function get_character_skillsets(access_token:string, character_id:
 
         return await response.json() as CharacterSkillset[];
     } catch (error) {
-        throw new Error(`Error fetching character: ${error.message}`);
+        throw new Error(`Error fetching character skillsets: ${error.message}`);
+    }
+}
+
+export async function get_character_assets(access_token:string, character_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting: ${API_ENDPOINT}/${character_id}/assets`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/${character_id}/assets`, {
+            headers: headers
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as CharacterAsset[];
+    } catch (error) {
+        throw new Error(`Error fetching character assets: ${error.message}`);
     }
 }
