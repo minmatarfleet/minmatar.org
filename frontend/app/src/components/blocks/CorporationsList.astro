@@ -7,13 +7,14 @@ const t = useTranslations(lang);
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
-    corporations?:            Array<CorporationObject>;
-    [propName: string]: any;
+    corporations?:          CorporationObject[];
+    user_corporation_id?:   number;
+    [propName: string]:     any;
 }
 
 const {
     corporations = [],
-    ...attributes
+    user_corporation_id = 0,
 } = Astro.props
 
 import Grid from '@components/compositions/Grid.astro';
@@ -30,7 +31,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 >
     {corporations.map((corporation) =>
         <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
-            <CorporationItem corporation={corporation} />
+            <CorporationItem
+                corporation={corporation}
+                is_user_corporation={corporation.corporation_id === user_corporation_id}
+            />
         </ComponentBlock>
     )}
     {corporations.length == 0 &&

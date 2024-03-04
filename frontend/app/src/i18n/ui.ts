@@ -143,6 +143,8 @@ export const ui = {
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
+        'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
+
         'freight.standard.page_title': 'Standard Freight',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
@@ -474,5 +476,7 @@ export const ui = {
         'enlist_today': 'Enlist today',
         'get_character_skillsets_error': 'An error occurred while fetching the character skillsets.',
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
+        'minmatar_fleet_associates': 'Minmatar Fleet Associates',
+        'view_corporations': 'View corporations',
     },
 } as const;

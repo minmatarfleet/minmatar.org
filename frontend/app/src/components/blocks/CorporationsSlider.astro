@@ -19,8 +19,13 @@ let {
 
 corporations = corporations.filter( (i) => i.corporation_id != 98735318 )
 
-const pagination_icons:number[] = []
-corporations.forEach( (corp, i) => pagination_icons[i] = corp.corporation_id );
+import { get_corporation_logo } from '@helpers/eve_image_server';
+import { get_alliance_logo } from '@helpers/eve_image_server';
+
+const pagination_icons:string[] = []
+corporations.forEach( (corp, i) => pagination_icons[i] = get_corporation_logo(corp.corporation_id, 64) );
+const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
+pagination_icons.push(get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64))
 
 import { slugify } from '@helpers/string'
 
@@ -30,6 +35,7 @@ import CorporationsSwiper from '@components/blocks/CorporationsSwiper.astro';
 import RattiniSlide from '@components/blocks/RattiniSlide.astro';
 import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
 import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
+import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 ---
 
 <div
@@ -66,6 +72,12 @@ import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
                     }
                 </div>
             )}
+            <div class="swiper-slide" id="minmatar-fleet-associates">
+                <AssociatesSlide
+                    id="associates-alliance"
+                    picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
+                />
+            </div>
         </CorporationsSwiper>
     }
     {corporations.length == 0 &&

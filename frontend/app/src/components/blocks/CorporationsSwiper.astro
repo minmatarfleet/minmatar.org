@@ -1,6 +1,6 @@
 ---
 interface Props {
-    pagination_icons:   number[];
+    pagination_icons:   string[];
 }
 
 const {
@@ -9,7 +9,7 @@ const {
 
 const pagination_template = `<span class="dot corporation-pagination border">
                                 <img
-                                    src="https://images.evetech.net/corporations/\$\{${JSON.stringify(pagination_icons)}[index]}/logo?size=64"
+                                    src="\$\{${JSON.stringify(pagination_icons)}[index]}"
                                     width="64"
                                     height="64"
                                 />

@@ -1,0 +1,236 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    id:                     string;
+    picture_placement:      'left' | 'right',
+}
+
+const {
+    id,
+    picture_placement = 'left'
+} = Astro.props
+
+const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
+
+import { get_alliance_logo } from '@helpers/eve_image_server';
+
+import FixedFluid from "@components/compositions/FixedFluid.astro"
+import Flexblock from "@components/compositions/Flexblock.astro"
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import VerticalCenter from "@components/blocks/VerticalCenter.astro"
+import ButtonStack from "@components/blocks/ButtonStack.astro"
+import Button from "@components/blocks/Button.astro"
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+---
+
+<FixedFluid
+    id={id}
+    class="[ corporation-intro ][ w-full items-center ]"
+    width='650px'
+    breakpoint='30%'
+    fluid_first={picture_placement === 'left'}
+>
+    <Wrapper
+        padding_block='var(--space-s)'
+        padding_inline='var(--space-s)'
+    >
+        <Flexblock gap='var(--space-xl)'>
+            <VerticalCenter>
+                <FixedFluid width='64px' class="[ items-center w-full ]">
+                    <picture class="[ border ]">
+                        <img src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64)} width="64" height="64" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
+                    </picture>
+                    <h2>{t('minmatar_fleet_associates')}</h2>
+                </FixedFluid>
+            </VerticalCenter>
+            <TextBox>
+                <p>Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and lnd courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences.</p>
+            </TextBox>
+            <ButtonStack>
+                <Button href={translatePath('/alliance/corporations/associates')}>{t('view_corporations')}</Button>
+            </ButtonStack>
+        </Flexblock>
+    </Wrapper>
+    
+    <div class="[ corporation-identity ]">
+        <picture>
+            <img class="[ ceos ]" src="/images/corporations/associates/ceos.png" />
+            <img class="[ athanor ]" src="/images/corporations/associates/athanor.png" />
+            <img class="[ mackinaw ]" src="/images/corporations/associates/mackinaw.png" />
+            <img class="[ nomad ]" src="/images/corporations/associates/nomad.png" />
+        </picture>
+    </div>
+</FixedFluid>
+
+<style lang="scss">
+    .corporation-intro {
+        position: relative;
+    }
+
+    h2 {
+        font-size: var(--step-2);
+    }
+
+    img {
+        image-rendering: pixelated;
+    }
+
+    .corporation-identity {
+        width: 100%;
+        justify-content: center;
+        display: flex;
+
+        @media screen and (max-width: 1279px) {
+            display: none;
+        }
+    }
+
+    picture {
+        aspect-ratio: 1 / 1;
+        max-width: 900px;
+        position: relative;
+        width: 100%;
+        display: flex;
+
+        &.ceo-right {
+            justify-content: flex-end;
+        }
+    }
+
+    .ceos {
+        z-index: 3;
+        position: relative;
+        transform: scale(0.85);
+        height: 99%;
+        opacity: 0;
+
+        img {
+            width: auto;
+            height: 100%;
+        }
+    }
+
+    .athanor {
+        position: absolute;
+        top: 6%;
+        left: 10%;
+        height: auto;
+        width: 64%;
+        z-index: 1;
+        opacity: 0;
+    }
+
+    .mackinaw {
+        position: absolute;
+        top: 66%;
+        left: 2%;
+        width: 38%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .nomad {
+        position: absolute;
+        top: 9%;
+        left: 6%;
+        width: 42%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes ceos {
+        from {
+            transform: scale(0.85);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @keyframes athanor {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes mackinaw {
+        from {
+            transform: scale(0);
+            top: 66%;
+            left: 2%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 8%;
+            left: 43%;
+        }
+    }
+
+    @keyframes nomad {
+        from {
+            transform: scale(0);
+            top: 64%;
+            left: 7%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 9%;
+            left: 6%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    .swiper-slide-active {
+        .ceos {
+            animation: ceos ease-out 1.5s;
+            animation-delay: 0.5s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
+            animation-fill-mode: forwards;
+        }
+
+        .athanor {
+            animation: athanor ease-out 1.5s;
+            animation-delay: 1s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .mackinaw {
+            animation: mackinaw ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .nomad {
+            animation: nomad ease-out 0.25s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
