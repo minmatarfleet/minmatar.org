@@ -19,16 +19,16 @@ export async function get_corporations_for_corporations_list(access_token:string
     return corporations
 }
 
-/*export async function get_corporations_for_corporations_list(access_token:string, user_id: number) {
+export async function get_associates_for_corporations_list(access_token:string, user_id: number) {
     let api_corporations:Corporation[] = []
     let corporations:CorporationObject[] = []
 
-    api_corporations = await get_all_corporations(access_token)
+    api_corporations = await get_all_corporations(access_token, 'associate')
 
     corporations = await Promise.all(api_corporations.map(async (i) => add_status_to_corporation(i, access_token, user_id)));
     
     return corporations
-}*/
+}
 
 export async function get_corporation_for_corporations_list_by_id(access_token:string, corporation_id:number, user_id: number) {
     let api_corporation:Corporation

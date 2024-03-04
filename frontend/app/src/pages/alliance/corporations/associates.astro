@@ -1,0 +1,107 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Forbidden()
+
+import type { CorporationObject } from '@dtypes/layout_components'
+import { get_associates_for_corporations_list, get_user_corporation_id } from '@helpers/fetching/corporations'
+
+let corporations:CorporationObject[] = []
+let get_all_corporations_error:string | false = false
+let user_corporation_id:number
+try {
+    user_corporation_id = await get_user_corporation_id(auth_token, user.user_id)
+    corporations = await get_associates_for_corporations_list(auth_token, user.user_id)
+} catch (error) {
+    get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CorporationsList from '@components/blocks/CorporationsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+const page_title = t('corporations.associates.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        wide={true}
+        cover={{
+            image: "/images/corporations-cover.jpg",
+            image_990: "/images/corporations-cover-990.jpg",
+            alt: t('corporations.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            corporation_name: '',
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small>{corporations.length} {corporations.length != 1 ? t('corporations').toLowerCase() : t('corporation').toLowerCase()}</small>
+                </Flexblock>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            {get_all_corporations_error ?
+                <CorporationsList corporations={corporations}>
+                    <ErrorRefetch
+                        args={{
+                            partial: CORPORATIONS_LIST_PARTIAL_URL,
+                            message: get_all_corporations_error,
+                            delay: 0,
+                            target: '#corporations-list',
+                        }}
+                    />
+                </CorporationsList>
+                :
+                <CorporationsList
+                    corporations={corporations}
+                    user_corporation_id={user_corporation_id}
+                />
+            }
+        </Flexblock>
+	</PageDefault>
+</Viewport>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>
