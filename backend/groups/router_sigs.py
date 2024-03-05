@@ -212,3 +212,34 @@ def deny_sig_request(request, sig_id: int, request_id: int):
         approved=sig_request.approved,
         approved_by=sig_request.approved_by.id,
     )
+
+
+@router.delete(
+    "/{sig_id}/members/{user_id}",
+    response={200: SigSchema, 404: ErrorResponse},
+    auth=AuthBearer(),
+    description="Remove a user from a special interest group",
+)
+def remove_sig_member(request, sig_id: int, user_id: int):
+    sig = Sig.objects.filter(id=sig_id).first()
+    if not sig:
+        return 404, {"detail": "Sig does not exist."}
+
+    if request.user not in sig.officers.all() and not request.user.has_perm(
+        "groups.change_sig"
+    ):
+        return 403, {
+            "detail": "You do not have permission to remove this user."
+        }
+    user = sig.members.filter(id=user_id).first()
+    if not user:
+        return 404, {"detail": "User does not exist."}
+    sig.members.remove(user)
+    return SigSchema(
+        id=sig.id,
+        name=sig.name,
+        description=sig.description,
+        image_url=sig.image_url,
+        officers=[officer.id for officer in sig.officers.all()],
+        members=[member.id for member in sig.members.all()],
+    )

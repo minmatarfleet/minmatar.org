@@ -212,3 +212,34 @@ def deny_team_request(request, team_id: int, request_id: int):
         approved=team_request.approved,
         approved_by=team_request.approved_by.id,
     )
+
+
+@router.delete(
+    "/{team_id}/members/{user_id}",
+    response={200: TeamSchema, 404: ErrorResponse},
+    auth=AuthBearer(),
+    description="Remove a member from a special interest group",
+)
+def remove_team_member(request, team_id: int, user_id: int):
+    team = Team.objects.filter(id=team_id).first()
+    if not team:
+        return 404, {"detail": "Team does not exist."}
+
+    if request.user != team.directors and not request.user.has_perm(
+        "groups.change_team"
+    ):
+        return 403, {
+            "detail": "You do not have permission to remove this member."
+        }
+    user = team.members.filter(id=user_id).first()
+    if not user:
+        return 404, {"detail": "User is not a member of this team."}
+    team.members.remove(user)
+    return TeamSchema(
+        id=team.id,
+        name=team.name,
+        description=team.description,
+        image_url=team.image_url,
+        officers=[officer.id for officer in team.officers.all()],
+        members=[member.id for member in team.members.all()],
+    )
