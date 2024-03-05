@@ -27,6 +27,7 @@ isort = "*"
 black = "*"
 flake8 = "*"
 pytest = "*"
+django-dotenv = "*"
 
 [requires]
 python_version = "3.10"

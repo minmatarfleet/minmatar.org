@@ -28,6 +28,7 @@ class ErrorResponse(BaseModel):
     response=List[GroupSchema],
     auth=AuthBearer(),
     description="Get the groups of the current user",
+    deprecated=True,
 )
 def get_current_groups(request):
     groups = Group.objects.filter(user__id=request.user.id)
@@ -37,7 +38,12 @@ def get_current_groups(request):
     return response
 
 
-@router.get("/available", response=List[GroupSchema], auth=AuthBearer())
+@router.get(
+    "/available",
+    response=List[GroupSchema],
+    auth=AuthBearer(),
+    deprecated=True,
+)
 def get_available_groups(request):
     available_groups = get_requestable_groups_for_user(request.user)
     response = []
@@ -47,7 +53,9 @@ def get_available_groups(request):
     return response
 
 
-@router.get("/managed", response=List[GroupSchema], auth=AuthBearer())
+@router.get(
+    "/managed", response=List[GroupSchema], auth=AuthBearer(), deprecated=True
+)
 def get_managed_groups(request):
     groups = RequestableGroup.objects.filter(
         group_managers__id=request.user.id
@@ -63,6 +71,7 @@ def get_managed_groups(request):
     "/{group_id}",
     response={200: GroupSchema, 404: ErrorResponse},
     auth=AuthBearer(),
+    deprecated=True,
 )
 def get_group_by_id(request, group_id: int):
     group = get_group(group_id, request.user.id)
@@ -88,6 +97,7 @@ class GroupRequestResponse(BaseModel):
         403: ErrorResponse,
         404: ErrorResponse,
     },
+    deprecated=True,
 )
 def get_group_requests(request, group_id: int):
     if not Group.objects.filter(id=group_id).exists():
@@ -130,6 +140,7 @@ def get_group_requests(request, group_id: int):
     "/{group_id}/requests",
     auth=AuthBearer(),
     response={201: GroupRequestResponse, 400: ErrorResponse},
+    deprecated=True,
 )
 def create_group_request(request, group_id: int):
     group = Group.objects.get(id=group_id)
@@ -164,6 +175,7 @@ def create_group_request(request, group_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
+    deprecated=True,
 )
 def approve_group_request(request, group_id: int, request_id: int):
     if not Group.objects.filter(id=group_id).exists():
@@ -209,6 +221,7 @@ def approve_group_request(request, group_id: int, request_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
+    deprecated=True,
 )
 def deny_group_request(request, group_id: int, request_id: int):
     if not Group.objects.filter(id=group_id).exists():
@@ -248,6 +261,7 @@ def deny_group_request(request, group_id: int, request_id: int):
     "/{group_id}/users",
     response={200: list, 403: ErrorResponse, 404: ErrorResponse},
     auth=AuthBearer(),
+    deprecated=True,
 )
 def get_group_users(request, group_id: int):
     if not Group.objects.filter(id=group_id).exists():
@@ -274,6 +288,7 @@ def get_group_users(request, group_id: int):
     "/{group_id}/users/{user_id}",
     response={204: None, 403: ErrorResponse, 404: ErrorResponse},
     auth=AuthBearer(),
+    deprecated=True,
 )
 def remove_user_from_group(request, group_id: int, user_id: int):
     if not Group.objects.filter(id=group_id).exists():

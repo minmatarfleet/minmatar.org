@@ -75,6 +75,8 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
+        logger.info(response.json())
+        logger.info(response.status_code)
         if response.status_code != 204:
             logger.info(response.json())
         return response.json()
