@@ -11,25 +11,30 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+import type { CorporationObject, CorporationType } from '@dtypes/layout_components'
+import { get_corporations_list, get_corporations_list_auth, get_user_corporation_id } from '@helpers/fetching/corporations'
 
-import type { CorporationObject } from '@dtypes/layout_components'
-import { get_corporations_for_corporations_list } from '@helpers/fetching/corporations'
+const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
 
 let corporations:CorporationObject[] = []
 let get_all_corporations_error:string | false = false
+let user_corporation_id:number
+
 try {
-    corporations = await get_corporations_for_corporations_list(auth_token, user.user_id)
+    user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
+
+    if (auth_token && user_id)
+        corporations = await get_corporations_list_auth(auth_token, user_id, corporation_type)
+    else
+        corporations = await get_corporations_list(corporation_type)
 } catch (error) {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
-const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
+const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/?corporation_type=${corporation_type}`
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
@@ -49,5 +54,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         />
     </CorporationsList>
     :
-    <CorporationsList corporations={corporations} />
+    <CorporationsList
+        corporations={corporations}
+        user_corporation_id={user_corporation_id}
+        x-data={`{
+            init() {
+                corporations_count = ${corporations.length}
+            }
+        }`}
+    />
 }

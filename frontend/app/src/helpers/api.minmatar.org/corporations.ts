@@ -1,14 +1,13 @@
-import type { Corporation } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
 
-export async function get_all_corporations(access_token:string, corporation_type:string) {
+export async function get_all_corporations(corporation_type:CorporationType) {
     const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        'Content-Type': 'application/json'
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/corporations`)
+    console.log(`Requesting: ${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`)
 
     try {
         const response = await fetch(`${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`, {
@@ -27,10 +26,9 @@ export async function get_all_corporations(access_token:string, corporation_type
     }
 }
 
-export async function get_corporation_by_id(access_token:string, id:number) {
+export async function get_corporation_by_id(id:number) {
     const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        'Content-Type': 'application/json'
     }
 
     console.log(`Requesting: ${API_ENDPOINT}/corporations/${id}`)

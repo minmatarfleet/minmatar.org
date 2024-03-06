@@ -368,8 +368,8 @@ export const ui = {
         'unknown_corporation': 'Unknown corporation',
         'missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the header. Otherwise use PageLanding layout.',
         'missing_aside_slot': '⚠️&nbsp;<b>Aside slot missing:</b>&nbsp;Add&nbsp;`slot="aside"`&nbsp;attribute on the element meant to be on the aside. Otherwise use PageDefault layout.',
-        'get_available_groups_error': 'An error occurred while fetching groups.',
-        'get_available_teams_error': 'An error occurred while fetching teams.',
+        'get_sigs_error': 'An error occurred while fetching sigs.',
+        'get_teams_error': 'An error occurred while fetching teams.',
         'groups_available': 'Groups available',
         'group_available': 'Group available',
         'teams_available': 'Teams available',
@@ -478,5 +478,8 @@ export const ui = {
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
         'minmatar_fleet_associates': 'Minmatar Fleet Associates',
         'view_corporations': 'View corporations',
+        'error_status_corp': 'Error retrieving status',
+        'authentication_missing_dialog': 'The following action require you to be authenticated. Proceed with authentication?',
+        'add_primary_pilot_dialog_required_text': 'The action requested requires you to have a primary character added. If you select yes to add one, you will undergo the main pilot setting process outside of our site. Once it is successfully completed, we will return you to our platform. The following scopes will be requested:'
     },
 } as const;

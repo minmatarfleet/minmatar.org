@@ -19,13 +19,18 @@ const {
     alert = false,
 } = Astro.props
 
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+
 import { query_string } from '@helpers/string';
 import { get_app_url } from '@helpers/env'
-const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${get_app_url()}/partials/corporation_request_status_item`
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${get_app_url()}/partials/corporation_request_status_item/`
 
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
+import ButtonAddPrimary from './ButtonAddPrimary.astro';
 ---
 <div
     id={`corporation-status-${corporation.corporation_id}`}
@@ -39,7 +44,15 @@ import Tag from '@components/blocks/Tag.astro';
         <div class="[ max-w-fit ]"><Tag color='green' text={t('joined')} /></div>
         :
         <ButtonStack>
-            {!corporation?.status &&
+            {corporation?.status == 'available' && !primary_character_id &&
+                <ButtonAddPrimary
+                    color='green'
+                    dialog_title={t('corporation_join_request_dialog_title')}
+                >
+                    {t('enlist_today')}
+                </ButtonAddPrimary>
+            }
+            {corporation?.status == 'available' && primary_character_id &&
                 <Button
                     type="button"
                     size='sm'
@@ -79,8 +92,19 @@ import Tag from '@components/blocks/Tag.astro';
                     {t('enlist_today')}
                 </Button>
             }
+            {corporation?.status == 'unauth' &&
+                <ButtonAuth
+                    color='green'
+                    dialog_title={t('corporation_join_request_dialog_title')}
+                >
+                    {t('enlist_today')}
+                </ButtonAuth>
+            }
             {corporation?.status == 'requested' &&
                 <Tag color='alliance-blue' text={t('pending')} />
+            }
+            {corporation?.status == 'error' &&
+                <Tag text={t('error_status_corp')} />
             }
         </ButtonStack>
     }

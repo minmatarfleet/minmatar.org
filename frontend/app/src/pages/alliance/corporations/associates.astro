@@ -11,26 +11,29 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-if (!auth_token || !user)
-    return HTTP_404_Forbidden()
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
 import type { CorporationObject } from '@dtypes/layout_components'
-import { get_associates_for_corporations_list, get_user_corporation_id } from '@helpers/fetching/corporations'
+import { get_corporations_list_auth, get_corporations_list, get_user_corporation_id } from '@helpers/fetching/corporations'
 
 let corporations:CorporationObject[] = []
 let get_all_corporations_error:string | false = false
 let user_corporation_id:number
+
 try {
-    user_corporation_id = await get_user_corporation_id(auth_token, user.user_id)
-    corporations = await get_associates_for_corporations_list(auth_token, user.user_id)
+    user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
+
+    if (auth_token && user_id)
+        corporations = await get_corporations_list_auth(auth_token, user_id, 'associate')
+    else
+        corporations = await get_corporations_list('associate')
 } catch (error) {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
-const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/`
+const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/?corporation_type=associate`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -65,6 +68,7 @@ const page_title = t('corporations.associates.page_title');
         }}
         x-data={`{
             corporation_name: '',
+            corporations_count: ${corporations.length}
         }`}
     >
         <FlexInline slot="header" justification='space-between'>
@@ -73,7 +77,9 @@ const page_title = t('corporations.associates.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small>{corporations.length} {corporations.length != 1 ? t('corporations').toLowerCase() : t('corporation').toLowerCase()}</small>
+                    <small x-text={`\`\${corporations_count} \${corporations_count != 1 ? '${t('corporations').toLowerCase()}' : '${t('corporation').toLowerCase()}'}\``}>
+                        {corporations.length} {corporations.length != 1 ? t('corporations').toLowerCase() : t('corporation').toLowerCase()}
+                    </small>
                 </Flexblock>
             </FlexInline>
         </FlexInline>

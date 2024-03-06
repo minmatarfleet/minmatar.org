@@ -245,13 +245,16 @@ export interface RequestListObject {
     group_name:     string;
 }
 
+export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'error' | 'unauth'
+export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
+
 export interface CorporationObject {
     corporation_id:     number;
     corporation_name:   string;
     alliance_id:        number;
     alliance_name:      string,
-    corporation_type:   string;
-    status?:            string;
+    corporation_type:   CorporationType;
+    status?:            GroupStatus;
 }
 
 export interface CorporationBasic {

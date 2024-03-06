@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    color?:         ButtonColors;
+    size?:          ButtonSizes;
+    narrow?:        boolean;
+    dialog_title:   string;
+    redirect?:      string;
+}
+
+const {
+    color = 'fleet-red',
+    size = 'lg',
+    narrow = false,
+    dialog_title,
+    redirect = Astro.url,
+} = Astro.props;
+
+import { query_string } from '@helpers/string';
+import { get_app_url } from '@helpers/env'
+const ADD_PRIMARY_CHARACTER_INIT_PARTIAL_URL = `${get_app_url()}/redirects/add_primary_character_init?redirect=${redirect}`
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    type="button"
+    color={color}
+    size={size}
+    narrow={narrow}
+    x-data={`{
+        add_primary_pilot(accepted) {
+            if (accepted) window.location.href = "${ADD_PRIMARY_CHARACTER_INIT_PARTIAL_URL}"
+        },
+        show_add_pilot_disclaimer() {
+            show_alert_dialog({
+                title: '${dialog_title}',
+                partial: '${translatePath('/partials/add_primary_pilot_dialog_disclaimer/')}?${query_string({
+                    is_main: JSON.stringify(true),
+                })}',
+            }).then( (accepted) => add_primary_pilot(accepted) )
+        }
+    }`}
+    x-on:click="show_add_pilot_disclaimer"
+>
+    <slot />
+</Button>

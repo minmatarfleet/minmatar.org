@@ -15,6 +15,7 @@ interface Props {
 const {
     corporations = [],
     user_corporation_id = 0,
+    ...atributes
 } = Astro.props
 
 import Grid from '@components/compositions/Grid.astro';
@@ -28,6 +29,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
     row_gap='var(--space-2xs)'
     column_gap='var(--space-2xs)'
     class="grid-fill"
+    {...atributes}
 >
     {corporations.map((corporation) =>
         <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
