@@ -38,11 +38,9 @@ const page = Astro.url.pathname
             </NeocomButton>
             <UserAuth active={page.startsWith(translatePath('/account/'))} />
         </Flexblock>
-        {user &&
-            <NeocomButton active={page.startsWith(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
-                <AllianceEvEIcon />
-            </NeocomButton>
-        }
+        <NeocomButton active={page.startsWith(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
+            <AllianceEvEIcon />
+        </NeocomButton>
         {!is_prod_mode() &&
             <NeocomButton active={page.startsWith(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
                 <ShipTreeEvEIcon />

@@ -10,7 +10,8 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
 if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
@@ -24,8 +25,8 @@ let corporations:CorporationObject[] = []
 let get_all_corporations_error:string | false = false
 let user_corporation_id:number
 try {
-    user_corporation_id = await get_user_corporation_id(auth_token, user.user_id)
-    corporations = await get_corporations_for_corporations_list(auth_token, user.user_id)
+    user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
+    corporations = await get_corporations_for_corporations_list(user_id, 'alliance')
 } catch (error) {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }

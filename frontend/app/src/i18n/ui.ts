@@ -368,8 +368,8 @@ export const ui = {
         'unknown_corporation': 'Unknown corporation',
         'missing_header_slot': '⚠️&nbsp;<b>Header slot missing:</b>&nbsp;Add&nbsp;`slot="header"`&nbsp;attribute on the element meant to be on the header. Otherwise use PageLanding layout.',
         'missing_aside_slot': '⚠️&nbsp;<b>Aside slot missing:</b>&nbsp;Add&nbsp;`slot="aside"`&nbsp;attribute on the element meant to be on the aside. Otherwise use PageDefault layout.',
-        'get_available_groups_error': 'An error occurred while fetching groups.',
-        'get_available_teams_error': 'An error occurred while fetching teams.',
+        'get_sigs_error': 'An error occurred while fetching sigs.',
+        'get_teams_error': 'An error occurred while fetching teams.',
         'groups_available': 'Groups available',
         'group_available': 'Group available',
         'teams_available': 'Teams available',
@@ -478,5 +478,6 @@ export const ui = {
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
         'minmatar_fleet_associates': 'Minmatar Fleet Associates',
         'view_corporations': 'View corporations',
+        'error_status_corp': 'Error retrieving status'
     },
 } as const;

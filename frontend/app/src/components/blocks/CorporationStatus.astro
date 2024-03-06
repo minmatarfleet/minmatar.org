@@ -39,7 +39,7 @@ import Tag from '@components/blocks/Tag.astro';
         <div class="[ max-w-fit ]"><Tag color='green' text={t('joined')} /></div>
         :
         <ButtonStack>
-            {!corporation?.status &&
+            {corporation?.status == 'available' &&
                 <Button
                     type="button"
                     size='sm'
@@ -81,6 +81,9 @@ import Tag from '@components/blocks/Tag.astro';
             }
             {corporation?.status == 'requested' &&
                 <Tag color='alliance-blue' text={t('pending')} />
+            }
+            {corporation?.status == 'error' &&
+                <Tag text={t('error_status_corp')} />
             }
         </ButtonStack>
     }

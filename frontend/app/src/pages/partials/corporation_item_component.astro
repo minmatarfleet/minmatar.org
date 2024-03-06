@@ -25,7 +25,7 @@ import type { Alert, CorporationObject } from '@dtypes/layout_components'
 let alert:Alert | false = false
 
 import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
-import { get_corporation_for_corporations_list_by_id } from '@helpers/fetching/corporations'
+import { get_corporation_list_by_id_auth, get_corporation_list_by_id } from '@helpers/fetching/corporations'
 import { query_string } from '@helpers/string';
 
 let create_corporation_application_error:string | false = false
@@ -40,7 +40,10 @@ if (Astro.request.method === "POST") {
 let corporation:CorporationObject
 let get_corporation_error:string | false = false
 try {
-    corporation = await get_corporation_for_corporations_list_by_id(auth_token, corporation_id, user.user_id)
+    if (auth_token)
+        corporation = await get_corporation_list_by_id_auth(auth_token, corporation_id, user.user_id)
+    else
+        corporation = await get_corporation_list_by_id(corporation_id)
 } catch (error) {
     get_corporation_error = is_prod_mode() ? t('get_corporation_error') : error.message
 }

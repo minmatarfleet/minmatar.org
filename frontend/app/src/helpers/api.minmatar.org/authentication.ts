@@ -2,10 +2,9 @@ import type { UserProfile } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/users`
 
-export async function get_user_by_id(access_token:string, user_id:number) {
+export async function get_user_by_id(user_id:number) {
     const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
+        'Content-Type': 'application/json'
     }
 
     console.log(`Requesting: ${API_ENDPOINT}/${user_id}/profile`)
