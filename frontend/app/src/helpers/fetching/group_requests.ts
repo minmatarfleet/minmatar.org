@@ -41,7 +41,7 @@ export async function get_group_request_by_id(access_token:string, group_id:numb
     api_requests = await get_group_requests(access_token, group_id)
     api_request = api_requests[0]
 
-    request = await get_group_request_ui(access_token, group, api_request)
+    request = await get_group_request_ui(group, api_request)
 
     return request
 }
@@ -53,7 +53,7 @@ const get_group_request = async (access_token:string, group:Group) => {
     api_requests = await get_group_requests(access_token, group.id)
     api_requests = api_requests.filter( (i) => i.approved === null )
 
-    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(access_token, group, api_request) ?? null ));
+    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(group, api_request) ?? null ));
 
     return {
         group_id: group.id,
@@ -63,12 +63,12 @@ const get_group_request = async (access_token:string, group:Group) => {
     }
 }
 
-const get_group_request_ui = async (access_token:string, group:Group, api_request:GroupRequest) => {
+const get_group_request_ui = async (group:Group, api_request:GroupRequest) => {
     let request:GroupRequestUI
     let user_profile:UserProfile
     
     try {
-        user_profile = await get_user_info(access_token, api_request.user)
+        user_profile = await get_user_info(api_request.user)
     } catch (error) {
         user_profile = {
             user_id: api_request.user,
@@ -102,10 +102,10 @@ const get_group_request_ui = async (access_token:string, group:Group, api_reques
     return request
 }
 
-const get_user_info = async (access_token:string, user_id:number) => {
+const get_user_info = async (user_id:number) => {
     let user_profile:UserProfile
 
-    user_profile = await get_user_by_id(access_token, user_id)
+    user_profile = await get_user_by_id(user_id)
 
     return user_profile
 }

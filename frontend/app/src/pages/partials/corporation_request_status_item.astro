@@ -18,7 +18,7 @@ if (!auth_token || !user) {
     return Astro.redirect(get_auth_url())
 }
 
-import type { CorporationObject, Alert } from '@dtypes/layout_components'
+import type { CorporationObject, Alert, GroupStatus } from '@dtypes/layout_components'
 import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
 import type { CorporationApplication } from '@dtypes/api.minmatar.org'
 
@@ -30,7 +30,7 @@ if (Astro.request.method === "POST") {
     try {
         corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
         application = await create_corporation_application(auth_token, corporation.corporation_id)
-        corporation.status = application.status
+        corporation.status = application.status as GroupStatus
     } catch (error) {
         create_corporation_application_error = is_prod_mode() ? t('create_corporation_application_error') : error.message
     }
