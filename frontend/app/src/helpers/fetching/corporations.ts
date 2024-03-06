@@ -1,4 +1,6 @@
 import { useTranslations } from '@i18n/utils';
+import { get_user_character } from '@helpers/fetching/characters'
+import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 
 const t = useTranslations('en');
 
@@ -92,8 +94,8 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
     return corporation
 }
 
-export async function get_user_corporation_id(user_id: number) {
-    let user_profile:UserProfile
-    user_profile = await get_user_by_id(user_id)
-    return user_profile.eve_character_profile.corporation_id
+export async function get_user_corporation_id(user_id:number) {
+    let user_character:EveCharacterProfile
+    user_character = (user_id ? await get_user_character(user_id) : null)
+    return !user_character ? null : (user_character?.corporation_id ?? null)
 }

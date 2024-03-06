@@ -1,6 +1,13 @@
-import type { CharacterSkillset, Character, CharacterAsset } from '@dtypes/api.minmatar.org'
+import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type { SkillsetsUI, Skillset, MissingSkill, AssetsUI, AssetsLocation, Asset, AssetsLocationIcons, AssetGroup } from '@dtypes/layout_components'
 import { get_character_by_id, get_character_skillsets, get_character_assets } from '@helpers/api.minmatar.org/characters'
+import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
+
+export async function get_user_character(user_id: number) {
+    let user_profile:UserProfile
+    user_profile = await get_user_by_id(user_id)
+    return user_profile.eve_character_profile as EveCharacterProfile
+}
 
 export async function get_skillsets(access_token:string, character_id: number) {
     let skillsets:Skillset[]

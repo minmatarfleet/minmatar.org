@@ -1,0 +1,10 @@
+---
+import { get_api_url, get_app_url } from '@helpers/env'
+
+const redirect = Astro.url.searchParams.get('redirect_url')
+Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
+
+import { get_auth_url } from '@helpers/env'
+
+return Astro.redirect(get_auth_url())
+---

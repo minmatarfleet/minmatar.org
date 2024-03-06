@@ -23,6 +23,7 @@ let user_corporation_id:number
 
 try {
     user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
+
     if (auth_token && user_id)
         corporations = await get_corporations_list_auth(auth_token, user_id, 'alliance')
     else

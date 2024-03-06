@@ -478,6 +478,8 @@ export const ui = {
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
         'minmatar_fleet_associates': 'Minmatar Fleet Associates',
         'view_corporations': 'View corporations',
-        'error_status_corp': 'Error retrieving status'
+        'error_status_corp': 'Error retrieving status',
+        'authentication_missing_dialog': 'The following action require you to be authenticated. Proceed with authentication?',
+        'add_primary_pilot_dialog_required_text': 'The action requested requires you to have a primary character added. If you select yes to add one, you will undergo the main pilot setting process outside of our site. Once it is successfully completed, we will return you to our platform. The following scopes will be requested:'
     },
 } as const;
