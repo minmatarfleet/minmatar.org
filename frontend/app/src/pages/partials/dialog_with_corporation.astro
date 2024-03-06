@@ -7,14 +7,14 @@ const t = useTranslations(lang);
 import Flexblock from '@components/compositions/Flexblock.astro';
 import CorporationItem from '@components/blocks/CorporationItem.astro';
 
-import type { CorporationObject } from '@dtypes/layout_components'
+import type { CorporationObject, CorporationType, GroupStatus } from '@dtypes/layout_components'
 
 const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
 const corporation_name = Astro.url.searchParams.get('corporation_name')
 const alliance_id = parseInt(Astro.url.searchParams.get('alliance_id'))
 const alliance_name = Astro.url.searchParams.get('alliance_name')
-const corporation_type = Astro.url.searchParams.get('corporation_type')
-const status = Astro.url.searchParams.get('status')
+const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
+const status = Astro.url.searchParams.get('status') as GroupStatus
 const message = Astro.url.searchParams.get('message')
 
 const corporation:CorporationObject = {

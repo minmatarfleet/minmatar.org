@@ -18,24 +18,16 @@ export interface Group {
     name:           string;
     description:    string | null;
     image_url:      string | null;
-    officers:       number[];
-    members:        number[];
+    status?:        GroupStatus | null;
 }
 
-export interface SigRequest {
+export interface GroupRequest {
     id:             number;
     user:           number;
-    sig_id:         number;
+    group:          number;
     approved:       boolean | null;
     approved_by:    number | null;
-}
-
-export interface TeamRequest {
-    id:             number;
-    user:           number;
-    team_id:        number;
-    approved:       boolean | null;
-    approved_by:    number | null;
+    approved_at:    string | null;
 }
 
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
