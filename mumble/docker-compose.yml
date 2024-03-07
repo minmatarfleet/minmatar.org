@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  murmur:
+    image: mumblevoip/mumble-server:v1.4.230-6
+    container_name: mumble-murmur
+    hostname: murmur
+    restart: on-failure
+    volumes:
+      - murmur:/data
+      - ./config/murmur.ini:/data/murmur.ini
+    environment:
+      - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
+      - MUMBLE_VERBOSE=true
+    ports:
+      - 64738:64738
+      - 64738:64738/udp
+    expose:
+      - 6502
+
+  auth:
+    build:
+      context: ./auth/
+      dockerfile: Dockerfile
+    container_name: mumble-auth
+    depends_on:
+      - murmur
+    expose:
+      - 6502
+
+volumes:
+  murmur: {}
