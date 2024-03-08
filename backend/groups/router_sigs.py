@@ -74,7 +74,6 @@ def get_current_sigs(request):
 @router.get(
     "/{sig_id}",
     response={200: SigSchema, 404: ErrorResponse},
-    auth=AuthBearer(),
     description="Get a special interest group by id",
 )
 def get_sig_by_id(request, sig_id: int):
