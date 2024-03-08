@@ -21,7 +21,7 @@ class TeamSchema(BaseModel):
     name: str
     description: Optional[str]
     image_url: Optional[str]
-    officers: List[int] = []
+    directors: List[int] = []
     members: List[int] = []
 
 
@@ -40,7 +40,7 @@ def get_teams(request):
                 name=team.name,
                 description=team.description,
                 image_url=team.image_url,
-                officers=[officer.id for officer in team.officers.all()],
+                directors=[officer.id for officer in team.directors.all()],
                 members=[member.id for member in team.members.all()],
             )
         )
@@ -64,7 +64,7 @@ def get_current_teams(request):
                 name=team.name,
                 description=team.description,
                 image_url=team.image_url,
-                officers=[officer.id for officer in team.officers.all()],
+                directors=[officer.id for officer in team.directors.all()],
                 members=[member.id for member in team.members.all()],
             )
         )
@@ -74,7 +74,6 @@ def get_current_teams(request):
 @router.get(
     "/{team_id}",
     response={200: TeamSchema, 404: ErrorResponse},
-    auth=AuthBearer(),
     description="Get a special interest group by id",
 )
 def get_team_by_id(request, team_id: int):
@@ -86,7 +85,7 @@ def get_team_by_id(request, team_id: int):
         name=team.name,
         description=team.description,
         image_url=team.image_url,
-        officers=[officer.id for officer in team.officers.all()],
+        directors=[officer.id for officer in team.directors.all()],
         members=[member.id for member in team.members.all()],
     )
 
@@ -161,7 +160,7 @@ def approve_team_request(request, team_id: int, request_id: int):
     if not team:
         return 404, {"detail": "Team does not exist."}
 
-    if request.user not in team.officers.all() and not request.user.has_perm(
+    if request.user not in team.directors.all() and not request.user.has_perm(
         "groups.change_team"
     ):
         return 403, {
@@ -193,7 +192,7 @@ def deny_team_request(request, team_id: int, request_id: int):
     if not team:
         return 404, {"detail": "Team does not exist."}
 
-    if request.user not in team.officers.all() and not request.user.has_perm(
+    if request.user not in team.directors.all() and not request.user.has_perm(
         "groups.change_team"
     ):
         return 403, {
@@ -240,6 +239,6 @@ def remove_team_member(request, team_id: int, user_id: int):
         name=team.name,
         description=team.description,
         image_url=team.image_url,
-        officers=[officer.id for officer in team.officers.all()],
+        directors=[officer.id for officer in team.directors.all()],
         members=[member.id for member in team.members.all()],
     )
