@@ -29,9 +29,7 @@ class Team(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
-    directors = models.ForeignKey(
-        "auth.User", on_delete=models.CASCADE, related_name="directed_teams"
-    )
+    directors = models.ManyToManyField("auth.User", related_name="director_of")
     members = models.ManyToManyField("auth.User", related_name="teams")
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
 
