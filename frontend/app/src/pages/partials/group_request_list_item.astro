@@ -27,19 +27,33 @@ const action = Astro.url.searchParams.get('action')
 
 let alert:Alert | false = false
 
-import type { GroupRequest } from '@dtypes/api.minmatar.org'
-import { approve_group_request, deny_group_request } from '@helpers/api.minmatar.org/groups'
+import type { SigRequest, TeamRequest } from '@dtypes/api.minmatar.org'
+import {
+    approve_group_request as approve_sig_request,
+    deny_group_request as deny_sig_request
+} from '@helpers/api.minmatar.org/sigs'
+import {
+    approve_group_request as approve_team_request,
+    deny_group_request as deny_team_request
+} from '@helpers/api.minmatar.org/teams'
 import { query_string } from '@helpers/string';
 
-let group_action_request:GroupRequest
+let group_action_request:SigRequest | TeamRequest
 let group_request_action_error:string | false = false
 
 if (Astro.request.method === "POST") {
     try {
-        if (action == 'accept')
-            group_action_request = await approve_group_request(auth_token, group_id, request_id)
-        else
-            group_action_request = await deny_group_request(auth_token, group_id, request_id)
+        if (action == 'accept') {
+            if (group_type == 'team')
+                group_action_request = await approve_team_request(auth_token, group_id, request_id)
+            else
+                group_action_request = await approve_sig_request(auth_token, group_id, request_id)
+        } else {
+            if (group_type == 'team')
+                group_action_request = await deny_team_request(auth_token, group_id, request_id)
+            else
+                group_action_request = await deny_sig_request(auth_token, group_id, request_id)
+        }
     } catch (error) {
         group_request_action_error = is_prod_mode() ? (action == 'accept' ? t('approve_request_error') : t('deny_request_error')) : error.message
     }
@@ -51,7 +65,7 @@ import { get_group_requests_by_id, get_group_request_by_id } from '@helpers/fetc
 let group_requests:GroupRequestListUI
 let get_group_requests_error:string | false = false
 try {
-    group_requests = await get_group_requests_by_id(auth_token, group_id)
+    group_requests = await get_group_requests_by_id(auth_token, group_id, group_type)
 } catch (error) {
     get_group_requests_error = is_prod_mode() ? t('get_group_requests_error') : error.message
 }
@@ -86,7 +100,7 @@ if (group_request_action_error) {
 let get_group_request_error:string | false = false
 if (group_action_request?.approved_by) {
     try {
-        const group_request:GroupRequestUI = await get_group_request_by_id(auth_token, group_id, request_id)
+        const group_request:GroupRequestUI = await get_group_request_by_id(auth_token, group_id, request_id, group_type)
         
         alert = {
             title: (action == 'accept' ?

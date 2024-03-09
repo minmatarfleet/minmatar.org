@@ -58,7 +58,7 @@ const page_description = t('groups.leading_text_p1');
                     {t('view_groups')}
                 </Button>
                 
-                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                {!is_prod_mode() && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
                     <Button href={translatePath('/alliance/sigs/requests/')}>
                         <ArrowDown slot="icon" />
                         {t('group_requests')}

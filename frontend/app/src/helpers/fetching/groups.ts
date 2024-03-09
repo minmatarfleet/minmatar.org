@@ -1,0 +1,167 @@
+import { useTranslations } from '@i18n/utils';
+
+const t = useTranslations('en');
+
+import type { Group, SigRequest, TeamRequest, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { GroupItemType, GroupItemUI, GroupMembersUI, MemberUI } from '@dtypes/layout_components'
+
+import {
+    get_groups as get_sigs,
+    get_current_groups as get_current_sigs,
+    get_group_requests as get_sigs_requests,
+    get_group_by_id as get_sig_by_id
+} from '@helpers/api.minmatar.org/sigs'
+import {
+    get_groups as get_teams,
+    get_current_groups as get_current_teams,
+    get_group_requests as get_teams_requests,
+    get_group_by_id as get_team_by_id
+} from '@helpers/api.minmatar.org/teams'
+
+import { get_user_character } from '@helpers/fetching/characters'
+
+export async function get_groups_auth(access_token:string, user_id: number, group_type:GroupItemType) {
+    let api_groups:Group[]
+    let groups:GroupItemUI[]
+
+    api_groups = (group_type === 'team' ? await get_teams() : await get_sigs())
+
+    groups = await Promise.all(api_groups.map(async (i) => add_status_to_group(access_token, i, user_id, group_type) ));
+
+    return groups
+}
+
+export async function get_groups(group_type:GroupItemType) {
+    let api_groups:Group[]
+    let groups:GroupItemUI[]
+
+    api_groups = (group_type === 'team' ? await get_teams() : await get_sigs())
+
+    groups = api_groups.map( (api_group):GroupItemUI => {
+        return {
+            id: api_group.id,
+            name: api_group.name,
+            description: api_group.description,
+            image_url: api_group.image_url,
+            status: 'unauth'
+        }
+    } )
+
+    return groups
+}
+
+export async function get_group_by_id_auth(access_token:string, group_id:number, user_id: number, group_type:GroupItemType) {
+    let api_group:Group
+
+    if (group_type == 'team')
+        api_group = await get_team_by_id(group_id)
+    else
+        api_group = await get_sig_by_id(group_id)
+
+    return await add_status_to_group(access_token, api_group, user_id, group_type)
+}
+
+export async function get_group_by_id(group_id:number, group_type:GroupItemType) {
+    let api_group:Group
+
+    if (group_type == 'team')
+        api_group = await get_team_by_id(group_id)
+    else
+        api_group = await get_sig_by_id(group_id)
+    
+    return {
+        id: api_group.id,
+        name: api_group.name,
+        description: api_group.description,
+        image_url: api_group.image_url,
+        status: 'unauth'
+    } as GroupItemUI
+}
+
+const add_status_to_group = async (
+    access_token:string,
+    api_group:Group,
+    user_id:number,
+    group_type:GroupItemType
+) => {
+    let group_requests:SigRequest[] | TeamRequest[]
+
+    const group:GroupItemUI = {
+        id: api_group.id,
+        name: api_group.name,
+        description: api_group.description,
+        image_url: api_group.image_url,
+        status: 'available'
+    }
+
+    try {
+        group_requests = (group_type === 'team' ? await get_sigs_requests(access_token, api_group.id) : await get_teams_requests(access_token, api_group.id))
+    } catch (error) {
+        group.status = 'error'
+        return group
+    }
+    
+    const user_request = user_id ? group_requests.filter( (request) => request.user == user_id ) : []
+
+    if (user_request.length > 0) {
+        if (user_request[0].approved === null)
+            group.status = 'requested'
+        else if (user_request[0].approved === false)
+            group.status = 'denied'
+        else if (user_request[0].approved === true)
+            group.status = 'confirmed'
+    }
+
+    return group
+}
+
+export async function get_all_groups_members(access_token:string, group_type:GroupItemType) {
+    let groups:Group[]
+    let groups_members:GroupMembersUI[]
+
+    if(group_type === 'team')
+        groups = await get_current_teams(access_token)
+    else
+        groups = await get_current_sigs(access_token)
+
+    groups_members = await Promise.all(groups.map(async (group) => {
+        let members:MemberUI[]
+
+        members = await Promise.all(group.members.map(async (member_id) => {
+            return await get_member(member_id)
+        }))
+
+        return {
+            id: group.id,
+            name: group.name,
+            description: group.description,
+            officers: group.officers,
+            members: members,
+        } as GroupMembersUI
+    }));
+
+    return groups_members
+}
+
+const get_member = async (user_id:number) => {
+    let character_profile:EveCharacterProfile
+    
+    try {
+        character_profile = await get_user_character(user_id)
+    } catch (error) {
+        character_profile = {
+            character_id: 0,
+            character_name: t('unknown_character'),
+            corporation_id: 0,
+            corporation_name: t('unknown_corporation'),
+            scopes: [],
+        }
+    }
+
+    return {
+        character_id: character_profile.character_id,
+        character_name: character_profile.character_name,
+        corporation_id: character_profile.corporation_id,
+        corporation_name: character_profile.corporation_name,
+    } as MemberUI
+}

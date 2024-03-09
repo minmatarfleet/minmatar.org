@@ -7,8 +7,7 @@ const t = useTranslations(lang);
 import Flexblock from '@components/compositions/Flexblock.astro';
 import GroupItem from '@components/blocks/GroupItem.astro';
 
-import type { Group } from '@dtypes/api.minmatar.org'
-import type { GroupItemType } from '@dtypes/layout_components'
+import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
 
 const name = Astro.url.searchParams.get('name')
 const description = Astro.url.searchParams.get('description')
@@ -16,7 +15,7 @@ const image_url = JSON.parse(Astro.url.searchParams.get('image_url'))
 const message = Astro.url.searchParams.get('message')
 const type = Astro.url.searchParams.get('type') as GroupItemType
 
-const group:Group = {
+const group:GroupItemUI = {
     id: 0,
     name: name,
     description: description,

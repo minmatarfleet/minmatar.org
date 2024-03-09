@@ -53,7 +53,7 @@ const page_description = t('teams.leading_text');
                     {t('view_teams')}
                 </Button>
                 
-                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                {!is_prod_mode() &&(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
                     <Button href={translatePath('/alliance/teams/requests/')}>
                         <ArrowDown slot="icon" />
                         {t('team_requests')}

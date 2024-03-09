@@ -6,30 +6,30 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
-if (!auth_token || !user)
-    return HTTP_404_Forbidden()
+import type { GroupItemUI } from '@dtypes/layout_components'
+import { get_groups_auth, get_groups } from '@helpers/fetching/groups'
 
-import type { Group } from '@dtypes/api.minmatar.org'
-import { get_available_groups } from '@helpers/api.minmatar.org/groups'
-
-let groups:Group[] = []
-let get_available_teams_error:string | false = false
+let groups:GroupItemUI[] = []
+let get_groups_error:string
 try {
-    groups = await get_available_groups(auth_token)
+    if (auth_token && user_id)
+        groups = await get_groups_auth(auth_token, user_id, 'team')
+    else
+        groups = await get_groups('group')
 } catch (error) {
-    get_available_teams_error = is_prod_mode() ? t('error') : error.message
+    get_groups_error = is_prod_mode() ? t('get_groups_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
-const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component/`
+const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -47,7 +47,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
-const page_title = t('groups.list.page_title');
+const page_title = t('teams.list.page_title');
 ---
 
 <Viewport
@@ -79,14 +79,16 @@ const page_title = t('groups.list.page_title');
                     <small>{groups.length} {groups.length != 1 ? t('teams_available').toLowerCase() : t('team_available').toLowerCase()}</small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
-                {(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
-                    <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/teams/requests/')}>
-                        <ArrowDown slot="icon" />
-                        {t('team_requests')}
-                    </Button>
-                }
-            </FlexInline>
+            {!is_prod_mode() &&
+                <FlexInline>
+                    {user && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                        <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/teams/requests/')}>
+                            <ArrowDown slot="icon" />
+                            {t('team_requests')}
+                        </Button>
+                    }
+                </FlexInline>
+            }
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
@@ -94,15 +96,15 @@ const page_title = t('groups.list.page_title');
                 <p>{t('teams.list.leading_text')}</p>
             </TextBox>
 
-            {get_available_teams_error ?
+            {get_groups_error ?
                 <GroupsList
                     groups={groups}
-                    groups_type='team'
+                    groups_type='group'
                 >
                     <ErrorRefetch
                         args={{
-                            partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=teams`,
-                            message: get_available_teams_error,
+                            partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=team`,
+                            message: get_groups_error,
                             delay: 0,
                             target: '#groups-list',
                         }}

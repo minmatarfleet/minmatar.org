@@ -245,7 +245,7 @@ export interface RequestListObject {
     group_name:     string;
 }
 
-export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'error' | 'unauth'
+export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'denied' |'error' | 'unauth'
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export interface CorporationObject {
@@ -260,6 +260,14 @@ export interface CorporationObject {
 export interface CorporationBasic {
     id:     number;
     name:   string;
+}
+
+export interface GroupRequest {
+    id:             number;
+    user:           number;
+    group:          number;
+    approved:       boolean | null;
+    approved_by:    number | null;
 }
 
 export interface GroupRequestListUI {
@@ -326,6 +334,14 @@ export interface CorporationHistoryItem {
 }
 
 export type GroupItemType = 'group' | 'team'
+
+export interface GroupItemUI {
+    id:             number;
+    name:           string;
+    description:    string | null;
+    image_url:      string | null;
+    status?:        GroupStatus;
+}
 
 export interface SkillsetUI {
     id:             number;
@@ -408,4 +424,19 @@ export interface AssetGroup {
     id:     number;
     name:   string;
     count:  number;
+}
+
+export interface GroupMembersUI {
+    id:             number;
+    name:           string;
+    description:    string;
+    members:        MemberUI[];
+    officers:       number[];
+}
+
+export interface MemberUI {
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number;
+    corporation_name:   string;
 }

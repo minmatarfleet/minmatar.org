@@ -1,0 +1,116 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { Alert, GroupItemUI, GroupItemType } from '@dtypes/layout_components'
+
+interface Props {
+    group:      GroupItemUI;
+    group_type: GroupItemType;
+    alert?:     Alert | false;
+}
+
+const {
+    group,
+    group_type,
+    alert = false,
+} = Astro.props
+
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+
+import { query_string } from '@helpers/string';
+import { get_app_url } from '@helpers/env'
+const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item_component/`
+
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import Tag from '@components/blocks/Tag.astro';
+import ButtonAddPrimary from './ButtonAddPrimary.astro';
+
+const DIALOG_TITLE = {
+    'team': t('team_join_request_dialog_title'),
+    'group': t('group_join_request_dialog_title')
+}
+
+const DIALOG_TEXT = {
+    'team': t('team_join_request_dialog_text'),
+    'group': t('group_join_request_dialog_text')
+}
+---
+<div
+    id={`corporation-status-${group.id}`}
+    x-data={`{
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+>
+    <ButtonStack>
+        {group?.status == 'available' && !primary_character_id &&
+            <ButtonAddPrimary
+                color='green'
+                dialog_title={DIALOG_TITLE[group_type]}
+            >
+                {t('join')}
+            </ButtonAddPrimary>
+        }
+        {group?.status == 'available' && primary_character_id &&
+            <Button
+                type="button"
+                size='sm'
+                color='green'
+                x-bind:disabled="disabled"
+                x-data={`{
+                    disabled: false,
+                    show_join_request_dialog() {
+                        this.disabled = true
+                        
+                        show_confirm_dialog({
+                            title: '${DIALOG_TITLE[group_type]}',
+                            partial: '${translatePath('/partials/dialog_with_group/')}?${query_string({
+                                name: group.name,
+                                description: group.description,
+                                image_url: JSON.stringify(group.image_url),
+                                type: group_type,
+                                message: DIALOG_TEXT[group_type]
+                            })}',
+                            return_on_accept: ${group.id},
+                            hx: {
+                                method: 'post',
+                                url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                    id: group.id.toString(),
+                                    type: group_type,
+                                })}',
+                                target: '#group-item-${group.id}',
+                                swap: 'outerHTML transition:true'
+                            }
+                        }).then( (group_id) => { this.disabled = !!group_id } )
+                    }
+                }`}
+                x-on:click="show_join_request_dialog()"
+                type="button"
+            >
+                {t('join')}
+            </Button>
+        }
+        {group?.status == 'unauth' &&
+            <ButtonAuth
+                color='green'
+                dialog_title={DIALOG_TITLE[group_type]}
+            >
+                {t('join')}
+            </ButtonAuth>
+        }
+        {group?.status == 'requested' &&
+            <Tag color='alliance-blue' text={t('pending')} />
+        }
+        {group?.status == 'error' &&
+            <Tag text={t('error_status_corp')} />
+        }
+    </ButtonStack>
+</div>

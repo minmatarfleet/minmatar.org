@@ -12,43 +12,52 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+if (!auth_token || !user_id)
+    return HTTP_404_Not_Found()
 
-import type { Alert, GroupItemType } from '@dtypes/layout_components'
+import type { Alert, GroupItemType, GroupItemUI } from '@dtypes/layout_components'
 const group_id = parseInt(Astro.url.searchParams.get('id'))
 const type = Astro.url.searchParams.get('type') as GroupItemType
 
 let alert:Alert | false = false
 
-import type { Group, GroupRequest } from '@dtypes/api.minmatar.org'
-import { get_group_by_id, create_group_request } from '@helpers/api.minmatar.org/groups'
+import { get_group_by_id_auth } from '@helpers/fetching/groups'
+import { create_group_request as create_sig_request } from '@helpers/api.minmatar.org/sigs'
+import { create_group_request as create_team_request } from '@helpers/api.minmatar.org/teams'
 import { query_string } from '@helpers/string';
 
-let group_join_request:GroupRequest | false = false
 let create_group_request_error:string | false = false
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && auth_token) {
     try {
-        group_join_request = await create_group_request(auth_token, group_id)
+        if (type === 'team')
+            await create_team_request(auth_token, group_id)
+        else
+            await create_sig_request(auth_token, group_id)
     } catch (error) {
         create_group_request_error = is_prod_mode() ? t('create_group_joining_request_error') : error.message
     }
 }
 
-let group:Group
+let group:GroupItemUI
 let get_group_request_error:string | false = false
 try {
-    group = await get_group_by_id(auth_token, group_id)
+    group = await get_group_by_id_auth(auth_token, group_id, user_id, type)
 } catch (error) {
     get_group_request_error = is_prod_mode() ? t('get_group_request_error') : error.message
 }
 
+console.log(group)
+
+const ALERT_TITLE = {
+    'team': t('team_join_request_dialog_title'),
+    'group': t('group_join_request_dialog_title'),
+}
+
 if (create_group_request_error) {
     alert = {
-        title: (type === 'team' ? t('team_join_request_dialog_title') : t('group_join_request_dialog_title')),
+        title: ALERT_TITLE[type],
         content: create_group_request_error,
     }
 
@@ -74,7 +83,7 @@ import GroupItem from '@components/blocks/GroupItem.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const partial_query_string = query_string({
-    id: group.id.toString(),
+    id: group_id.toString(),
     type: type,
 })
 ---
