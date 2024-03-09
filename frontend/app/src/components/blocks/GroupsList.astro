@@ -4,11 +4,10 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { Group } from '@dtypes/api.minmatar.org'
-import type { GroupItemType } from '@dtypes/layout_components'
+import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
-    groups?:            Array<Group>;
+    groups?:            GroupItemUI[];
     groups_type:        GroupItemType;
 }
 

@@ -3,57 +3,84 @@ import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
 import { cachePromise } from '@helpers/cache'
-import type { Group, GroupRequest, UserProfile } from '@dtypes/api.minmatar.org'
-import type { GroupRequestUI, GroupRequestListUI } from '@dtypes/layout_components'
-import { get_managed_groups, get_group_requests, get_group_by_id } from '@helpers/api.minmatar.org/groups'
+import type { Group, SigRequest, TeamRequest, UserProfile } from '@dtypes/api.minmatar.org'
+import type { GroupRequestUI, GroupRequestListUI, GroupItemType } from '@dtypes/layout_components'
+import {
+    get_current_groups as get_current_sigs,
+    get_group_requests as get_sigs_requests,
+    get_group_by_id as get_sig_by_id
+} from '@helpers/api.minmatar.org/sigs'
+import {
+    get_current_groups as get_current_teams,
+    get_group_requests as get_teams_requests,
+    get_group_by_id as get_team_by_id
+} from '@helpers/api.minmatar.org/teams'
 import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
 
-export async function get_all_groups_requests(access_token:string) {
+export async function get_all_groups_requests(access_token:string, group_type:GroupItemType) {
     let groups:Group[] = []
     let requests:GroupRequestListUI[]
 
-    groups = await get_managed_groups(access_token)
+    if(group_type === 'team')
+        groups = await get_current_teams(access_token)
+    else
+        groups = await get_current_sigs(access_token)
 
-    requests = await Promise.all(groups.map(async (request) => get_group_request(access_token, request)));
+    requests = await Promise.all(groups.map(async (request) => get_group_request(access_token, request, group_type)));
 
     return requests
 }
 
-export async function get_group_requests_by_id(access_token:string, group_id:number) {
+export async function get_group_requests_by_id(access_token:string, group_id:number, group_type:GroupItemType) {
     let group:Group
     let request:GroupRequestListUI
 
-    group = await get_group_by_id(access_token, group_id)
+    if(group_type === 'team')
+        group = await get_team_by_id(group_id)
+    else
+        group = await get_sig_by_id(group_id)
 
-    request = await get_group_request(access_token, group)
+    request = await get_group_request(access_token, group, group_type)
 
     return request
 }
 
-export async function get_group_request_by_id(access_token:string, group_id:number, request_id:number) {
+export async function get_group_request_by_id(access_token:string, group_id:number, request_id:number, group_type:GroupItemType) {
     let group:Group
-    let api_request:GroupRequest
-    let api_requests:GroupRequest[]
+    let api_request:SigRequest | TeamRequest
+    let api_requests:(SigRequest | TeamRequest)[]
     let request:GroupRequestUI
 
-    group = await get_group_by_id(access_token, group_id)
+    if(group_type === 'team')
+        group = await get_team_by_id(group_id)
+    else
+        group = await get_sig_by_id(group_id)
 
-    api_requests = await get_group_requests(access_token, group_id)
+
+    if(group_type === 'team')
+        api_requests = await get_teams_requests(access_token, group_id)
+    else
+        api_requests = await get_sigs_requests(access_token, group_id)
+
     api_request = api_requests[0]
 
-    request = await get_group_request_ui(group, api_request)
+    request = await get_group_request_ui(group, api_request, group_type)
 
     return request
 }
 
-const get_group_request = async (access_token:string, group:Group) => {
-    let api_requests:GroupRequest[]
+const get_group_request = async (access_token:string, group:Group, group_type:GroupItemType) => {
+    let api_requests:(SigRequest | TeamRequest)[]
     let requests:GroupRequestUI[]
 
-    api_requests = await get_group_requests(access_token, group.id)
+    if(group_type === 'team')
+        api_requests = await get_teams_requests(access_token, group.id)
+    else
+        api_requests = await get_sigs_requests(access_token, group.id)
+
     api_requests = api_requests.filter( (i) => i.approved === null )
 
-    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(group, api_request) ?? null ));
+    requests = await Promise.all(api_requests.map(async (api_request) => get_group_request_ui(group, api_request, group_type) ?? null ));
 
     return {
         group_id: group.id,
@@ -63,7 +90,7 @@ const get_group_request = async (access_token:string, group:Group) => {
     }
 }
 
-const get_group_request_ui = async (group:Group, api_request:GroupRequest) => {
+const get_group_request_ui = async (group:Group, api_request:SigRequest | TeamRequest, group_type:GroupItemType) => {
     let request:GroupRequestUI
     let user_profile:UserProfile
     

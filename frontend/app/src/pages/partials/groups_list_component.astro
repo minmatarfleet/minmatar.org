@@ -11,36 +11,33 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
+import { get_groups_auth, get_groups } from '@helpers/fetching/groups'
 
-import type { Group } from '@dtypes/api.minmatar.org'
-import type { GroupItemType } from '@dtypes/layout_components'
-import { get_available_groups } from '@helpers/api.minmatar.org/groups'
-
-const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
-
-let groups:Group[] = []
-let get_available_groups_error:string | false = false
+let groups:GroupItemUI[] = []
+let get_groups_error:string
 try {
-    groups = await get_available_groups(auth_token)
+    if (auth_token && user_id)
+        groups = await get_groups_auth(auth_token, user_id, 'team')
+    else
+        groups = await get_groups('group')
 } catch (error) {
-    get_available_groups_error = is_prod_mode() ? t('error') : error.message
+    get_groups_error = is_prod_mode() ? t('get_groups_error') : error.message
 }
 
 import { get_app_url } from '@helpers/env'
 const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component/`
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
+const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 
 import GroupsList from '@components/blocks/GroupsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_available_groups_error ?
+{get_groups_error ?
     <GroupsList
         groups={groups} 
         groups_type={groups_type}
@@ -48,7 +45,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         <ErrorRefetch
             args={{
                 partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-                message: get_available_groups_error,
+                message: get_groups_error,
                 delay: delay,
                 target: '#groups-list',
             }}

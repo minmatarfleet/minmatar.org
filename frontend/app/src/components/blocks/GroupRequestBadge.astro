@@ -1,11 +1,11 @@
 ---
-import type { Group, Character } from '@dtypes/api.minmatar.org'
-import type { CharacterBasic, GroupRequestAction, GroupItemType } from '@dtypes/layout_components'
+import type { Character } from '@dtypes/api.minmatar.org'
+import type { GroupItemUI, CharacterBasic, GroupRequestAction, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
     character:  CharacterBasic;
     type:       GroupRequestAction;
-    group:      Group;
+    group:      GroupItemUI;
     group_type: GroupItemType,
 }
 

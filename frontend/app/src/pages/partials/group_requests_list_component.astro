@@ -25,7 +25,7 @@ const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 let groups_requests:GroupRequestListUI[] = []
 let get_all_corporations_error:string | false = false
 try {
-    groups_requests = await get_all_groups_requests(auth_token)
+    groups_requests = await get_all_groups_requests(auth_token, groups_type)
     groups_requests.sort( (a, b) => {
         return b.requests.length - a.requests.length
     })
