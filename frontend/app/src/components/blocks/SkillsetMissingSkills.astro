@@ -16,10 +16,12 @@ const {
 
 import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+
 import SkillItem from '@components/blocks/SkillItem.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
 
 const missing_skills = skillset_missing_skills.skillsets.missing_skills
 const CURRENT_SKILL_LEVEL = {}
@@ -37,17 +39,23 @@ const clipboard_text:string = skills_names.join('')
     padding_inline='var(--space-l-xl)'
 >
     <Flexblock>
-        <FlexInline justification='space-between' class="[ items-center ]">
+        <FixedFluid
+            class="[ items-center ]"
+            fluid_first={true}
+            width='150px'
+        >
+            {missing_skills.length > 0 &&
+                <div class="[ flex justify-end ]">
+                    <ClipboardButton id="copy-skills" class="[ relative w-fit ]">{clipboard_text}</ClipboardButton>
+                </div>
+            }
             <Flexblock gap="var(--space-3xs)">
                 <h2>{skillset_missing_skills.skillsets.name} {t('skillset_missing_skills')}</h2>
                 <small class="!mt-[var(--space-3xs)]">
                     {missing_skills.length} {missing_skills.length === 1 ? t('skill_missing') : t('skills_missing')}
                 </small>
             </Flexblock>
-            {missing_skills.length > 0 &&
-                <ClipboardButton id="copy-skills" class="[ relative ]">{clipboard_text}</ClipboardButton>
-            }
-        </FlexInline>
+        </FixedFluid>
 
         <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
             {missing_skills.map( (missing_skill) => 
