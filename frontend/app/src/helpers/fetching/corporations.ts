@@ -8,7 +8,6 @@ import type { Corporation, CorporationApplication, UserProfile, CorporationType 
 import type { CorporationObject, GroupStatus } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications } from '@helpers/api.minmatar.org/applications'
-import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
 
 export async function get_corporations_list_auth(access_token:string, user_id: number, corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
@@ -43,13 +42,10 @@ export async function get_corporations_list(corporation_type:CorporationType) {
 
 export async function get_corporation_list_by_id_auth(access_token:string, corporation_id:number, user_id: number) {
     let api_corporation:Corporation
-    let corporation:CorporationObject
 
     api_corporation = await get_corporation_by_id(corporation_id)
 
-    corporation = await add_status_to_corporation(access_token, api_corporation, user_id)
-    
-    return corporation
+    return await add_status_to_corporation(access_token, api_corporation, user_id)
 }
 
 export async function get_corporation_list_by_id(corporation_id:number) {
