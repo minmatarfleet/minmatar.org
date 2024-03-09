@@ -65,15 +65,17 @@ const pagination_template = `<span class="dot corporation-pagination border">
     }
 
     .swiper-button-prev {
-        transform: translateX(-230px);
+        transform: translateX(-182px);
     }
 
     .swiper-button-next {
-        transform: translateX(140px);
+        transform: translateX(170px);
     }
 
     .swiper-pagination {
         position: fixed;
+        transform: translateX(-42%) !important;
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 </style>
 
