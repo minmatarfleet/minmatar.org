@@ -41,7 +41,7 @@ class TeamRequest(models.Model):
     """Model for a user request to join a team"""
 
     user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
-    team = models.ForeignKey("auth.Group", on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
     approved = models.BooleanField(null=True, blank=True, default=None)
     approved_by = models.ForeignKey(
         "auth.User",
@@ -74,7 +74,7 @@ class SigRequest(models.Model):
     """Model for a user request to join"""
 
     user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
-    sig = models.ForeignKey("auth.Group", on_delete=models.CASCADE)
+    sig = models.ForeignKey(Sig, on_delete=models.CASCADE)
     approved = models.BooleanField(null=True, blank=True, default=None)
     approved_by = models.ForeignKey(
         "auth.User",
