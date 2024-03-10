@@ -41,13 +41,12 @@ const Element = href ? 'a' : 'button';
 </Element>
 
 <style lang="scss">
-
     button,
     a[href].button {
         --background-color: var(--color_prop);
         --font-size: var(--step--0);
 
-        display: block;
+        display: inline-block;
         text-decoration: none;
         font-size: var(--font-size);
         font-family: var(--button-font);
