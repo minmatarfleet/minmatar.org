@@ -144,8 +144,6 @@ def request_to_join_team(request, team_id: int):
         id=team_request.id,
         user=team_request.user.id,
         team_id=team_request.team.id,
-        approved=team_request.approved,
-        approved_by=team_request.approved_by.id,
     )
 
 
