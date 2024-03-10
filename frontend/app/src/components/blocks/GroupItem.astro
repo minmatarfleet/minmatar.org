@@ -75,15 +75,17 @@ const DESCRIPTION_TEXT = {
                 <span class="text-[var(--highlight)]">
                     {group.name}
                 </span>
-                {is_valid_http_url(group.description) ?
-                    <small>
-                        <a href={group.description} target="_blank">
-                            {DESCRIPTION_TEXT[type]}
-                        </a>
-                    </small>
-                    :
-                    <small>{group.description}</small>
-                }
+                <slot>
+                    {is_valid_http_url(group.description) ?
+                        <small>
+                            <a href={group.description} target="_blank">
+                                {DESCRIPTION_TEXT[type]}
+                            </a>
+                        </small>
+                        :
+                        <small>{group.description}</small>
+                    }
+                </slot>
             </Flexblock>
         </VerticalCenter>
         <VerticalCenter>

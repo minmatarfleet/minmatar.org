@@ -4,6 +4,14 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+interface Props {
+    id?:        string;
+}
+
+const {
+    id,
+} = Astro.props
+
 import { marked } from 'marked';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -20,6 +28,17 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         location_assets_count: 0,
         toggle_collapse() {
             this.expanded = !this.expanded
+
+            if (!global_collapsed) return
+            
+            if (this.expanded)
+                global_collapsed = global_collapsed.filter( (id) => id !== ${id} )
+            else
+                global_collapsed.push(${id})
+        },
+        init() {
+            if (global_collapsed)
+                this.expanded = !global_collapsed.includes(${id})
         }
     }`}
 >
@@ -37,7 +56,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
     >
         <ComponentBlock
             width='narrow'
-            dark={true}
+            class="[ border-bottom ]"
         >
             <CollapsableButton class="[ !block !w-full ]" x-on:click="toggle_collapse()">
                 <slot name="header">

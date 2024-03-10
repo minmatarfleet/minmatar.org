@@ -59,6 +59,13 @@ const page_description = t('teams.leading_text');
                         {t('team_requests')}
                     </Button>
                 }
+                
+                {!is_prod_mode() && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                    <Button href={translatePath('/alliance/teams/members/')}>
+                        <MagnifierIcon slot="icon" />
+                        {t('view_members')}
+                    </Button>
+                }
             </ButtonStack>
         </Flexblock>
     </PageLanding>

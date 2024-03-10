@@ -112,6 +112,9 @@ const add_status_to_group = async (
             group.status = 'confirmed'
     }
 
+    if (api_group.members.includes(user_id))
+        group.status = 'confirmed'
+
     return group
 }
 
@@ -135,7 +138,8 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
             id: group.id,
             name: group.name,
             description: group.description,
-            officers: group.officers,
+            image_url: group.image_url,
+            officers: group?.officers ?? group.directors,
             members: members,
         } as GroupMembersUI
     }));
@@ -159,6 +163,7 @@ const get_member = async (user_id:number) => {
     }
 
     return {
+        user_id: user_id,
         character_id: character_profile.character_id,
         character_name: character_profile.character_name,
         corporation_id: character_profile.corporation_id,

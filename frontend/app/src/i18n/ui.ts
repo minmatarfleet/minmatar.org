@@ -108,6 +108,10 @@ export const ui = {
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to grow to fight larger groups, and we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
+        
+        'groups.members.page_title': 'SIGs members',
+
+        'teams.members.page_title': 'Teams members',
 
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
 
@@ -448,7 +452,7 @@ export const ui = {
         'months': 'months',
         'team_logo': 'team logo',
         'unknown_user': 'Unknown user',
-        'unknown_character': 'Removed character',
+        'unknown_character': 'Removed character / Error fetching',
         'skills': 'Skills',
         'asset': 'Asset',
         'assets': 'Assets',
@@ -483,5 +487,20 @@ export const ui = {
         'add_primary_pilot_dialog_required_text': 'The action requested requires you to have a primary character added. If you select yes to add one, you will undergo the main pilot setting process outside of our site. Once it is successfully completed, we will return you to our platform. The following scopes will be requested:',
         'error': 'Error',
         'get_groups_error': 'An error occurred while fetching the SIGs.',
+        'item': 'Item',
+        'items': 'Items',
+        'view_mode': 'view mode',
+        'no_groups': 'No groups',
+        'no_members': 'No members found',
+        'get_groups_members_error': 'An error occurred while fetching groups members.',
+        'SIGs': 'SIGs',
+        'remove_group_member_dialog_title': 'Remove member from SIG',
+        'remove_team_member_dialog_title': 'Remove member from team',
+        'remove_group_member_dialog_text': 'Proceed removing the following group member?',
+        'remove_team_member_dialog_text': 'Proceed removing the following team member?',
+        'delete_member_error': 'An error occurred while removing the member.',
+        'group_leader': 'Group leader',
+        'team_director': 'Team director',
+        'view_members': 'View members',
     },
 } as const;

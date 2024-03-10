@@ -64,6 +64,13 @@ const page_description = t('groups.leading_text_p1');
                         {t('group_requests')}
                     </Button>
                 }
+                
+                {!is_prod_mode() && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                    <Button href={translatePath('/alliance/sigs/members/')}>
+                        <MagnifierIcon slot="icon" />
+                        {t('view_members')}
+                    </Button>
+                }
             </ButtonStack>
         </Flexblock>
     </PageLanding>

@@ -430,13 +430,20 @@ export interface GroupMembersUI {
     id:             number;
     name:           string;
     description:    string;
+    image_url:      string | null,
     members:        MemberUI[];
     officers:       number[];
 }
 
 export interface MemberUI {
+    user_id?:           number;
     character_id:       number;
     character_name:     string;
     corporation_id:     number;
     corporation_name:   string;
+}
+
+export interface SelectOptions {
+    value?: string | number;
+    label:  string;
 }
