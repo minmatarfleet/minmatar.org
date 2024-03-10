@@ -3,12 +3,14 @@ import type { spaces } from '@dtypes/layout_components'
 interface Props {
     gap?:               spaces;
     centered?:          boolean;
+    first_element_gap?: boolean,
     [propName: string]: any;
 }
 
 const {
     gap = 'var(--space-s)',
     centered = false,
+    first_element_gap = false,
     ...attributes
 } = Astro.props;
 
@@ -19,15 +21,20 @@ const gap_token = (matches ? matches[1] : gap)
 delete attributes.class
 ---
 
-<div class:list={['flex-block', Astro.props.class, `gap-${gap_token}`]} {...attributes} data-mod={ centered ? 'centered' : ''}>
+<div class:list={['flex-block', Astro.props.class, `gap-${gap_token}`, {first_element_gap: first_element_gap}]} {...attributes} data-mod={ centered ? 'centered' : ''}>
     <slot />
 </div>
 
-<style lang="scss" is:global>
+<style lang="scss" is:global define:vars={{ flex_block_gap: gap }}>
     .flex-block {        
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
+
+        &.first_element_gap {
+            position: relative;
+            top: calc(-1 * var(--flex_block_gap));
+        }
 
         &[data-mod="centered"] {
             align-items: center;
@@ -38,138 +45,138 @@ delete attributes.class
         }*/
 
         &.gap-0 {
-            > * + * {
+            > * {
                 margin-block-start: 0;
             }
         }
                 
         &.gap-1px {
-            > * + * {
+            > * {
                 margin-block-start: 1px;
             }
         }
 
         &.gap-2px {
-            > * + * {
+            > * {
                 margin-block-start: 2px;
             }
         }
 
         &.gap---component-block-gap {
-            > * + * {
+            > * {
                 margin-block-start: var(--component-block-gap);
             }
         }
 
         &.gap---space-3xs {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-3xs);
             }
         }
 
         &.gap---space-2xs {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-2xs);
             }
         }
 
         &.gap---space-xs {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-xs);
             }
         }
 
         &.gap---space-s {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-s);
             }
         }
 
         &.gap---space-m {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-m);
             }
         }
 
         &.gap---space-l {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-l);
             }
         }
 
         &.gap---space-xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-xl);
             }
         }
 
         &.gap---space-2xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-2xl);
             }
         }
 
         &.gap---space-3xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-3xl);
             }
         }
 
         &.gap---space-3xs-2xs {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-3xs-2xs);
             }
         }
 
         &.gap---space-2xs-xs {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-2xs-xs);
             }
         }
 
         &.gap---space-xs-s {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-xs-s);
             }
         }
 
         &.gap---space-s-m {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-s-m);
             }
         }
 
         &.gap---space-m-l {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-m-l);
             }
         }
 
         &.gap---space-l-xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-l-xl);
             }
         }
 
         &.gap---space-xl-2xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-xl-2xl);
             }
         }
 
         &.gap---space-2xl-3xl {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-2xl-3xl);
             }
         }
 
         &.gap---space-s-l {
-            > * + * {
+            > * {
                 margin-block-start: var(--space-s-l);
             }
         }
 
-        > * {
+        &:not(.first_element_gap) > :first-child {
             margin-block: 0;
         }
 

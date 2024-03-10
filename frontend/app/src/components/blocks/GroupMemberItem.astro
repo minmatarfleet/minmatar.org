@@ -1,0 +1,139 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { MemberUI, GroupItemUI, GroupItemType } from '@dtypes/layout_components'
+
+interface Props {
+    member:     MemberUI,
+    group:      GroupItemUI,
+    group_type: GroupItemType;
+    is_officer?:    boolean,
+    [propName: string]: any;
+}
+
+const {
+    member,
+    group,
+    group_type,
+    is_officer = false,
+    ...attributes
+} = Astro.props
+
+import { query_string } from '@helpers/string'
+import { get_app_url } from '@helpers/env'
+const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
+
+const REMOVE_MEMBER_DIALOG_TITLE = {
+    'team': t('remove_team_member_dialog_title'),
+    'group': t('remove_group_member_dialog_title'),
+}
+
+const REMOVE_MEMBER_DIALOG_TEXT = {
+    'team': t('remove_team_member_dialog_text'),
+    'group': t('remove_group_member_dialog_text'),
+}
+
+const GROUP_LEADER = {
+    'team': t('team_director'),
+    'group': t('group_leader'),
+}
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import Tag from './Tag.astro';
+---
+
+<FixedFluid
+    id={`group-member-item-${group.id}-${member.character_id}`}
+    class="[ group-member-item ][ items-center ]"
+    width='100px'
+    {...attributes}
+    fluid_first={true}
+>
+    <div class="[ flex justify-end ]">
+        {is_officer ?
+            <Tag text={GROUP_LEADER[group_type]} />
+            :
+            <Button
+                class="[ hover-reveal ]"
+                size='sm'
+                type="button"
+                narrow={true}
+                x-data={`{
+                    show_remove_character_dialog() {
+                        show_confirm_dialog({
+                            title: '${REMOVE_MEMBER_DIALOG_TITLE[group_type]}',
+                            partial: '${translatePath('/partials/dialog_with_group_request/')}?${query_string({
+                                character_id: member.character_id.toString(),
+                                character_name: member.character_name,
+                                group_id: group.id.toString(),
+                                group_name: group.name,
+                                group_image: group.image_url,
+                                group_description: group.description,
+                                corporation_id: member.corporation_id,
+                                corporation_name: member.corporation_name,
+                                type: 'deny',
+                                group_type: group_type,
+                                message: REMOVE_MEMBER_DIALOG_TEXT[group_type],
+                            })}',
+                            return_on_accept: '#group-member-item-${group.id}-${member.character_id}',
+                            hx: {
+                                method: 'delete',
+                                url: '${GROUPS_MEMBERS_PARTIAL_URL}?${query_string({
+                                    group_id: group.id.toString(),
+                                    group_type: group_type,
+                                    user_id: member.user_id.toString(),
+                                    character_id: member.character_id.toString(),
+                                    character_name: member.character_name,
+                                    group_name: group.name,
+                                    group_image: group.image_url,
+                                    group_description: group.description,
+                                    corporation_id: member.corporation_id,
+                                    corporation_name: member.corporation_name,
+                                })}',
+                                target: '#groups-members-list',
+                                swap: 'outerHTML transition:true'
+                            }
+                        }).then( (el) => document.querySelector(el).classList.add('blink-animation') )
+                    }
+                }`}
+                x-on:click="show_remove_character_dialog()"
+            >
+                <TrashIcon slot="icon" />
+            </Button>
+        }
+    </div>
+    <PilotBadge
+        character_id={member.character_id}
+        character_name={member.character_name}
+        corporation={{
+            id: member.corporation_id,
+            name: member.corporation_name
+        }}
+    />
+</FixedFluid>
+
+<style lang="scss">
+    .group-member-item {
+        @media (hover: hover) {
+            .hover-reveal {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .hover-reveal {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+</style>

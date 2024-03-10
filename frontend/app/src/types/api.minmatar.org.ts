@@ -18,7 +18,8 @@ export interface Group {
     name:           string;
     description:    string | null;
     image_url:      string | null;
-    officers:       number[];
+    officers?:      number[];
+    directors?:     number[];
     members:        number[];
 }
 

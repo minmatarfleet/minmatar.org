@@ -1,0 +1,52 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Alert, GroupMembersUI, GroupItemType } from '@dtypes/layout_components'
+
+interface Props {
+    groups:         GroupMembersUI[];
+    type:           GroupItemType;
+    alert?:         Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    groups,
+    type,
+    alert = false,
+    ...attributes
+} = Astro.props
+
+import GroupMembersBlock from '@components/blocks/GroupMembersBlock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    id="groups-members-list"
+    class="[ groups-members-list ]"
+    gap='var(--space-3xs)'
+    {...attributes}
+>
+    <Flexblock gap='var(--space-3xs)'>
+        <p x-show="total_members_filtered == 0" style="display: none">{t('no_members')}</p>
+
+        {groups.map( (group) => 
+            <GroupMembersBlock
+                group={group}
+                type={type}
+            />
+        )}
+    </Flexblock>
+
+    {groups.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_members')}</p>
+            </TextBox>
+        </slot>
+    }
+</Flexblock>

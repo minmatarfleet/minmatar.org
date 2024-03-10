@@ -1,0 +1,155 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+console.log(user)
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+    return HTTP_404_Not_Found()
+
+import type { GroupMembersUI, SelectOptions, GroupItemType, Alert } from '@dtypes/layout_components'
+import { get_all_groups_members } from '@helpers/fetching/groups'
+import { remove_group_member as remove_sig_member } from '@helpers/api.minmatar.org/sigs'
+import { remove_group_member as remove_team_member } from '@helpers/api.minmatar.org/teams'
+
+const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
+
+let delete_member_error:string | false = false
+if (Astro.request.method === "DELETE") {
+    const user_id = parseInt(Astro.url.searchParams.get('user_id'))
+    const group_id = parseInt(Astro.url.searchParams.get('group_id'))
+
+    try {
+        if (group_type == 'team')
+            await remove_team_member(auth_token, group_id, user_id)
+        else if (group_type == 'group')
+            await remove_sig_member(auth_token, group_id, user_id)
+    } catch (error) {
+        delete_member_error = (is_prod_mode() ? t('delete_member_error') : error.message)
+    }
+}
+
+import { query_string } from '@helpers/string'
+let alert:Alert | false = false
+
+if (delete_member_error) {
+    const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+    const character_name = Astro.url.searchParams.get('character_name')
+    const group_id = parseInt(Astro.url.searchParams.get('group_id'))
+    const group_name = Astro.url.searchParams.get('group_name')
+    const group_image = JSON.parse(Astro.url.searchParams.get('group_image'))
+    const group_description = Astro.url.searchParams.get('group_description')
+    const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
+    const corporation_name = Astro.url.searchParams.get('corporation_name')
+
+    const REMOVE_MEMBER_DIALOG_TITLE = {
+        'team': t('remove_team_member_dialog_title'),
+        'group': t('remove_group_member_dialog_title'),
+    }
+
+    alert = {
+        title: REMOVE_MEMBER_DIALOG_TITLE[group_type],
+        content: delete_member_error,
+    }
+
+    const params = query_string({
+        character_id: character_id.toString(),
+        character_name: character_name,
+        group_id: group_id.toString(),
+        group_name: group_name,
+        group_image: group_image,
+        group_description: group_description,
+        corporation_id: corporation_id,
+        corporation_name: corporation_name,
+        type: 'deny',
+        group_type: group_type,
+        message: delete_member_error
+    })
+
+    alert.partial = `${translatePath('/partials/dialog_with_group_request/')}?${params}`
+}
+
+let groups_members:GroupMembersUI[] = []
+let get_groups_members_error:string | false = false
+
+try {
+    groups_members = await get_all_groups_members(auth_token, group_type)
+} catch (error) {
+    get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
+}
+
+console.log(groups_members)
+
+import { get_app_url } from '@helpers/env'
+const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
+
+let TOTAL_MEMBERS = 0
+const GROUPS_UNFILTERED = {}
+groups_members.forEach( (group) => {
+    GROUPS_UNFILTERED[group.id] = group.members.map( (member) => member.character_id )
+    TOTAL_MEMBERS += group.members.length
+})
+
+const GROUPS_MEMBERS_COUNT = {}
+groups_members.forEach( (group) => {
+    GROUPS_MEMBERS_COUNT[group.id] = group.members.length
+})
+
+const groups_options = groups_members.map( (group):SelectOptions => {
+    return {
+        value: group.id,
+        label: group.name
+    }
+} )
+
+import GroupsMembers from '@components/blocks/GroupsMembers.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_groups_members_error ?
+    <GroupsMembers
+        groups={[]}
+        type={group_type}
+    >
+        <ErrorRefetch
+            args={{
+                partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=${group_type}`,
+                message: get_groups_members_error,
+                delay: 0,
+                target: '#groups-members-list',
+            }}
+        />
+    </GroupsMembers>
+    :
+    <GroupsMembers
+        groups={groups_members}
+        type={group_type}
+        x-data={`{
+            init() {
+                groups_members = ${JSON.stringify(groups_members)}
+                groups_unfiltered = ${JSON.stringify(GROUPS_UNFILTERED)}
+                groups_filtered = ${JSON.stringify(GROUPS_UNFILTERED)}
+                groups_filtered_members_count = ${JSON.stringify(GROUPS_MEMBERS_COUNT)}
+                total_members_filtered = ${TOTAL_MEMBERS}
+                groups_options = ${JSON.stringify(groups_options)}
+
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
+    />
+}

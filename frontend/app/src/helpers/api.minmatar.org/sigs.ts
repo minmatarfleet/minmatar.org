@@ -184,10 +184,10 @@ export async function remove_group_member(access_token:string, id:number, user_i
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}/member/${user_id}`)
+    console.log(`Requesting DELETE: ${API_ENDPOINT}/${id}/members/${user_id}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/member/${user_id}`, {
+        const response = await fetch(`${API_ENDPOINT}/${id}/members/${user_id}`, {
             method: 'DELETE',
             headers: headers
         })

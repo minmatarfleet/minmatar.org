@@ -29,3 +29,7 @@ export const slugify = (string:string):string => {
 }
 
 export const is_html = RegExp.prototype.test.bind(/(<([^>]+)>)/i)
+
+export const capitalize = (text:string):string => {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}

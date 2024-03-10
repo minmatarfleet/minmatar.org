@@ -1,0 +1,177 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+    return HTTP_404_Not_Found()
+
+import type { GroupMembersUI, SelectOptions } from '@dtypes/layout_components'
+import { get_all_groups_members } from '@helpers/fetching/groups'
+
+let groups_members:GroupMembersUI[] = []
+let get_groups_members_error:string | false = false
+try {
+    groups_members = await get_all_groups_members(auth_token, 'team')
+} catch (error) {
+    get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
+}
+console.log(groups_members)
+import { get_app_url } from '@helpers/env'
+const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
+
+let TOTAL_MEMBERS = 0
+const GROUPS_UNFILTERED = {}
+groups_members.forEach( (group) => {
+    GROUPS_UNFILTERED[group.id] = group.members.map( (member) => member.character_id )
+    TOTAL_MEMBERS += group.members.length
+})
+
+const GROUPS_MEMBERS_COUNT = {}
+groups_members.forEach( (group) => {
+    GROUPS_MEMBERS_COUNT[group.id] = group.members.length
+})
+
+const groups_options = groups_members.map( (group):SelectOptions => {
+    return {
+        value: group.id,
+        label: group.name
+    }
+} )
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import GroupsMembers from '@components/blocks/GroupsMembers.astro';
+import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('teams.members.page_title')
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/groups-cover.jpg",
+            image_990: "/images/groups-cover-990.jpg",
+            alt: t('groups.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            global_collapsed: [],
+            groups_members: ${JSON.stringify(groups_members)},
+            groups_unfiltered: ${JSON.stringify(GROUPS_UNFILTERED)},
+            groups_filtered: ${JSON.stringify(GROUPS_UNFILTERED)},
+            groups_filtered_members_count: ${JSON.stringify(GROUPS_MEMBERS_COUNT)},
+            total_members_filtered: ${TOTAL_MEMBERS},
+            groups_options: ${JSON.stringify(groups_options)},
+            member_name: '',
+            group_filter: '-1',
+            filter() {
+                if (this.member_name === '' && this.group_filter === '-1') {
+                    this.groups_filtered = this.groups_unfiltered
+                    this.groups_filtered_members_count = ${JSON.stringify(GROUPS_MEMBERS_COUNT)}
+                    this.total_members_filtered = ${TOTAL_MEMBERS}
+                    return
+                }
+
+                this.groups_filtered = {}
+                this.groups_filtered_members_count = {}
+                this.total_members_filtered = 0
+
+                this.groups_members.forEach( (group) => {
+                    if (this.group_filter !== '-1' && parseInt(this.group_filter) !== group.id) {
+                        this.groups_filtered[group.id] = []
+                        this.groups_filtered_members_count[group.id] = 0
+                        return true
+                    }
+
+                    const members = group.members.filter( (member) => member.character_name.toLowerCase().includes(this.member_name.toLowerCase()) )
+                    
+                    if (members.length > 0) {
+                        this.total_members_filtered += members.length
+                        this.groups_filtered[group.id] = members.map( (member) => member.character_id )
+                        this.groups_filtered_members_count[group.id] = members.length
+                    }
+                })
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="member_name"
+                    x-on:keyup="filter()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="group_filter"
+                        width='280px'
+                        x-on:change="filter()"
+                    >
+                        <option selected value="-1">{t('SIGs')}</option>
+                        <template x-for="group in groups_options">
+                            <option x-bind:value="group.value" x-text="group.label" />
+                        </template>
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        {get_groups_members_error ?
+            <GroupsMembers
+                groups={[]}
+                type='team'
+            >
+                <ErrorRefetch
+                    args={{
+                        partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=team`,
+                        message: get_groups_members_error,
+                        delay: 0,
+                        target: '#assets-list',
+                    }}
+                />
+            </GroupsMembers>
+            :
+            <GroupsMembers
+                groups={groups_members}
+                type='team'
+            />
+        }
+    </PageDefault>
+</Viewport>
