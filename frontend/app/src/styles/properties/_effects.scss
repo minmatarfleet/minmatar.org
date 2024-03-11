@@ -1,16 +1,22 @@
 :root {
-    --light-transparency-background:    rgba(25, 25, 25, 0.5);
-    --solid-transparency-background:    rgba(22, 22, 22, 0.85);
-    --dark-transparency-background:     rgba(18, 18, 18, 0.5);
-    --darker-transparency-background:   rgba(0, 0, 0, 0.5);
-    --transparency-background:          rgba(0, 0, 0, 0.25);
-    --transparency-border-color:        #222;
-    --transparency-backdrop-blur:       10px;
+    --light-transparency-background:        rgba(25, 25, 25, 0.5);
+    --solid-transparency-background:        rgba(22, 22, 22, 0.85);
+    --dark-transparency-background:         rgba(18, 18, 18, 0.5);
+    --darker-transparency-background:       rgba(0, 0, 0, 0.5);
+    --transparency-background:              rgba(0, 0, 0, 0.25);
+    --transparency-border-color:            #222;
+    --transparency-backdrop-blur:           10px;
+    --transparency-backdrop-blur-heavier:   15px;
 }
 
 .light-transparency {
     background-color: var(--light-transparency-background);
     backdrop-filter: blur(var(--transparency-backdrop-blur));
+}
+
+.light-transparency-heavier {
+    background-color: var(--light-transparency-background);
+    backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
 }
 
 .transparency {

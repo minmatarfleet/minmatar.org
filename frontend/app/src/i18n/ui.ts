@@ -502,5 +502,6 @@ export const ui = {
         'group_leader': 'Group leader',
         'team_director': 'Team director',
         'view_members': 'View members',
+        'error_loading_content_reload': 'An error ocurred fetching the content. You may reload the page to fix it.',
     },
 } as const;

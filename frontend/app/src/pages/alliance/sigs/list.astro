@@ -42,10 +42,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupsList from '@components/blocks/GroupsList.astro';
-import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-
-import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
 const page_title = t('groups.list.page_title');
 ---
@@ -71,24 +68,12 @@ const page_title = t('groups.list.page_title');
         }`}
     >
         <FlexInline slot="header" justification='space-between'>
-            <FlexInline>
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                    <small>{groups.length} {groups.length != 1 ? t('groups_available').toLowerCase() : t('group_available').toLowerCase()}</small>
-                </Flexblock>
-            </FlexInline>
-            {!is_prod_mode() &&
-                <FlexInline>
-                    {user && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
-                        <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/sigs/requests/')}>
-                            <ArrowDown slot="icon" />
-                            {t('group_requests')}
-                        </Button>
-                    }
-                </FlexInline>
-            }
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small>{groups.length} {groups.length != 1 ? t('groups_available').toLowerCase() : t('group_available').toLowerCase()}</small>
+            </Flexblock>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

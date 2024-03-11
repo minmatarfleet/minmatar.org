@@ -11,10 +11,11 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-if (!user)
-    return HTTP_404_Not_Found()
+import { is_director } from '@helpers/fetching/groups'
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -24,6 +25,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
@@ -53,14 +55,18 @@ const page_description = t('teams.leading_text');
                     {t('view_teams')}
                 </Button>
                 
-                {!is_prod_mode() &&(user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                {user_is_director === null &&
+                    <Tag text={t('error_loading_content_reload')} />
+                }
+                
+                {user_is_director &&
                     <Button href={translatePath('/alliance/teams/requests/')}>
                         <ArrowDown slot="icon" />
                         {t('team_requests')}
                     </Button>
                 }
                 
-                {!is_prod_mode() && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
+                {user_is_director &&
                     <Button href={translatePath('/alliance/teams/members/')}>
                         <MagnifierIcon slot="icon" />
                         {t('view_members')}
