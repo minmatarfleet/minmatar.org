@@ -16,7 +16,10 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
-if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+import { is_director } from '@helpers/fetching/groups'
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+
+if (!user_is_director)
     return HTTP_404_Not_Found()
 
 import type { GroupMembersUI, SelectOptions } from '@dtypes/layout_components'
@@ -29,7 +32,7 @@ try {
 } catch (error) {
     get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
 }
-console.log(groups_members)
+
 import { get_app_url } from '@helpers/env'
 const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
 
