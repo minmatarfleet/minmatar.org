@@ -49,5 +49,31 @@ services:
             - "redis:/var/lib/redis"
             - "redis:/data"
 
+    mumble_murmur:
+        image: mumblevoip/mumble-server:v1.4.230-6
+        hostname: murmur
+        restart: on-failure
+        volumes:
+            - murmur_data:/data
+            - ./mumble/murmur/murmur.ini:/data/murmur.ini
+        environment:
+            - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
+            - MUMBLE_VERBOSE=true
+        ports:
+            - 64738:64738
+            - 64738:64738/udp
+        expose:
+            - 6502
+
+    mumble_auth:
+        build:
+        context: ./mumble/auth/
+        dockerfile: Dockerfile
+        depends_on:
+            - mumble_murmur
+        expose:
+            - 6502
+
 volumes:
     redis: {}
+    murmur_data: {}
