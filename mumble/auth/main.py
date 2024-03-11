@@ -16,7 +16,7 @@ class Authenticator(Murmur.ServerAuthenticator):
         Murmur.ServerAuthenticator.__init__(self)
 
     def authenticate(self, name, pw, certificates, certhash, certstrong, context=None):
-        print("Authenticating user: {0}".format(name))
+        print("Authenticating user: {0}/{1}".format(name, pw))
         return -1, None, None
 
     def getInfo(self, id, current=None):

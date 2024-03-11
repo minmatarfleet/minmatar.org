@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "groups.apps.GroupsConfig",
     "applications.apps.ApplicationsConfig",
     "users.apps.UsersConfig",
+    # Mumble
+    "mumble.apps.MumbleConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',

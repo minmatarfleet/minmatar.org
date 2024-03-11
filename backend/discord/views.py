@@ -8,6 +8,7 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 
 from .models import DiscordUser
+from mumble.models import MumbleAccess
 
 # Create your views here.
 
@@ -58,6 +59,8 @@ def discord_login_redirect(request: HttpRequest):
         discord_tag=user["username"] + "#" + user["discriminator"],
         avatar=user["avatar"],
     )
+
+    MumbleAccess.objects.create_mumble_access(django_user)
 
     login(request, django_user)
     if request.session.get("next"):

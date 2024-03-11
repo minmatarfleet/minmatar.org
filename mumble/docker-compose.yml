@@ -7,8 +7,8 @@ services:
     hostname: murmur
     restart: on-failure
     volumes:
-      - murmur:/data
-      - ./config/murmur.ini:/data/murmur.ini
+      - murmur_data:/data
+      - ./murmur/murmur.ini:/data/murmur.ini
     environment:
       - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
       - MUMBLE_VERBOSE=true
@@ -29,4 +29,4 @@ services:
       - 6502
 
 volumes:
-  murmur: {}
+  murmur_data: {}
