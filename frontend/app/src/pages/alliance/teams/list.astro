@@ -71,24 +71,12 @@ const page_title = t('teams.list.page_title');
         }`}
     >
         <FlexInline slot="header" justification='space-between'>
-            <FlexInline>
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                    <small>{groups.length} {groups.length != 1 ? t('teams_available').toLowerCase() : t('team_available').toLowerCase()}</small>
-                </Flexblock>
-            </FlexInline>
-            {!is_prod_mode() &&
-                <FlexInline>
-                    {user && (user.is_superuser || user?.permissions?.includes('auth.change_group')) &&
-                        <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/teams/requests/')}>
-                            <ArrowDown slot="icon" />
-                            {t('team_requests')}
-                        </Button>
-                    }
-                </FlexInline>
-            }
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small>{groups.length} {groups.length != 1 ? t('teams_available').toLowerCase() : t('team_available').toLowerCase()}</small>
+            </Flexblock>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

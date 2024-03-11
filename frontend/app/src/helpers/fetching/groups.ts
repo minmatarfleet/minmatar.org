@@ -170,3 +170,27 @@ const get_member = async (user_id:number) => {
         corporation_name: character_profile.corporation_name,
     } as MemberUI
 }
+
+export async function is_director(access_token:string, user_id:number) {
+    let groups:Group[]
+    
+    try {
+        groups = await get_current_teams(access_token)
+    } catch (error) {
+        return null
+    }
+    
+    return groups.filter( (group) => group.directors.includes(user_id) ).length > 0
+}
+
+export async function is_officer(access_token:string, user_id:number) {
+    let groups:Group[]
+    
+    try {
+        groups = await get_current_sigs(access_token)
+    } catch (error) {
+        return null
+    }
+    
+    return groups.filter( (group) => group.officers.includes(user_id) ).length > 0
+}

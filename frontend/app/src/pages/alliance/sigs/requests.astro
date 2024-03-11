@@ -17,7 +17,10 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
-if (!user.is_superuser && !user?.permissions?.includes('auth.change_group'))
+import { is_officer } from '@helpers/fetching/groups'
+const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+
+if (!user_is_officer)
     return HTTP_404_Not_Found()
 
 import type { GroupRequestListUI } from '@dtypes/layout_components'
@@ -78,9 +81,9 @@ const page_title = t('groups.requests.page_title');
                 {page_title}
             </PageTitle>
             <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/sigs/list/')}>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/sigs/members/')}>
                     <MagnifierIcon slot="icon" />
-                    {t('view_groups')}
+                    {t('view_members')}
                 </Button>
             </FlexInline>
         </FlexInline>
