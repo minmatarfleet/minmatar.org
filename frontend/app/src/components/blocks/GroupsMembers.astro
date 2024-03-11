@@ -31,16 +31,18 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     gap='var(--space-3xs)'
     {...attributes}
 >
-    <Flexblock gap='var(--space-3xs)'>
-        <p x-show="total_members_filtered == 0" style="display: none">{t('no_members')}</p>
+    {groups.length > 0 &&
+        <Flexblock gap='var(--space-3xs)'>
+            <p x-show="total_members_filtered == 0" style="display: none">{t('no_members')}</p>
 
-        {groups.map( (group) => 
-            <GroupMembersBlock
-                group={group}
-                type={type}
-            />
-        )}
-    </Flexblock>
+            {groups.map( (group) => 
+                <GroupMembersBlock
+                    group={group}
+                    type={type}
+                />
+            )}
+        </Flexblock>
+    }
 
     {groups.length == 0 &&
         <slot>
