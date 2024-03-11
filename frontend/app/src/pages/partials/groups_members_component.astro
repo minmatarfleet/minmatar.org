@@ -14,20 +14,25 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-console.log(user)
+const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
 
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
-if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_officer = (
+    auth_token && user ?
+    ( group_type === 'group' ? await is_officer(auth_token, user.user_id) : await is_director(auth_token, user.user_id) ) :
+    false
+)
+
+if (!user_is_officer)
     return HTTP_404_Not_Found()
 
 import type { GroupMembersUI, SelectOptions, GroupItemType, Alert } from '@dtypes/layout_components'
 import { get_all_groups_members } from '@helpers/fetching/groups'
 import { remove_group_member as remove_sig_member } from '@helpers/api.minmatar.org/sigs'
 import { remove_group_member as remove_team_member } from '@helpers/api.minmatar.org/teams'
-
-const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
 
 let delete_member_error:string | false = false
 if (Astro.request.method === "DELETE") {
