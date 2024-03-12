@@ -1,11 +1,10 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -31,8 +30,6 @@ try {
 } catch (error) {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }
-
-console.log(corporations)
 
 import { get_app_url } from '@helpers/env'
 const CORPORATIONS_SLIDER_PARTIAL_URL = `${get_app_url()}/partials/corporations_slider_component/`

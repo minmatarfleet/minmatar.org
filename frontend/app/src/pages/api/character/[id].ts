@@ -2,7 +2,7 @@ import { useTranslations, useTranslatedPath } from '@i18n/utils';
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { delete_characters } from '@helpers/api.minmatar.org/characters'
 
 export async function DELETE({ params, cookies, redirect }) {
@@ -18,12 +18,11 @@ export async function DELETE({ params, cookies, redirect }) {
         return HTTP_403_Forbidden()
     }
 
-    let delete_character_error = false
     let status = false
     try {
         status = await delete_characters(auth_token, character_id)
     } catch (error) {
-        delete_character_error = (is_prod_mode() ? t('delete_character_error') : error.message)
+        console.log(is_prod_mode() ? t('delete_character_error') : error.message)
     }
 
     if (!status)
@@ -36,12 +35,6 @@ export async function DELETE({ params, cookies, redirect }) {
         cookies.delete('primary_pilot', { path: '/' })
 
         return redirect(translatePath(`/partials/pilots_list_component?redirect=${translatePath('/account')}`))
-        /*return HTTP_200_Success(
-            JSON.stringify({
-                success: true,
-                redirect: translatePath('/account')
-            })
-        )*/
     }
     
     return redirect(translatePath(`/partials/pilots_list_component`))

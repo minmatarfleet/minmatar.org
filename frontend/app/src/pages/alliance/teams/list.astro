@@ -1,9 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -42,10 +41,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupsList from '@components/blocks/GroupsList.astro';
-import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-
-import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
 
 const page_title = t('teams.list.page_title');
 ---

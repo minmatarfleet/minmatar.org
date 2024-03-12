@@ -147,8 +147,8 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_progress').toLowerCase()}\``}>
-                        {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_progress').toLowerCase()}
+                    <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory').toLowerCase()}\``}>
+                        {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>

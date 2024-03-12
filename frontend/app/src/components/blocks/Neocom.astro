@@ -5,13 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { User } from '@dtypes/jwt'
-
 import { is_prod_mode } from '@helpers/env'
-
-import * as jose from 'jose'
-
-const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 

@@ -1,9 +1,4 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
@@ -20,7 +15,6 @@ const {
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
-import TextBox from '@components/layout/TextBox.astro';
 ---
 
 <CorporationSlide
