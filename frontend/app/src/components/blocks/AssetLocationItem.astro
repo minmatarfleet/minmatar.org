@@ -25,6 +25,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         {asset_location.location_name}
     </span>
     <small>
-        {asset_location.assets_count} {asset_location.assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()}
+        {asset_location.assets_count} {asset_location.assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory')}
     </small>
 </Flexblock>

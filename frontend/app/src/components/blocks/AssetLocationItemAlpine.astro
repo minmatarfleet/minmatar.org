@@ -18,5 +18,5 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     }`}
 >
     <span class="text-[var(--highlight)]" x-text="assets_location.location_name" />
-    <small x-text={'`${get_assets_count()} ${get_assets_count() != 1 ? `'+t('assets').toLowerCase()+'` : `'+t('asset').toLowerCase()+'`}`'} />
+    <small x-text={`\`\${get_assets_count()} \${get_assets_count() != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory')}\``} />
 </Flexblock>
