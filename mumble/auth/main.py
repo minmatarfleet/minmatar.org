@@ -27,17 +27,20 @@ class Database:
     def get_mumble_access_by_username(self, username):
         query = """
             SELECT
-                mm.*
-            FROM
-                mumble_mumbleaccess mm
-            INNER JOIN esi_token et ON
-                et.user_id = mm.user_id 
-            INNER JOIN eveonline_eveprimarycharacter ee ON
-                ee.character_id = et.character_id
+                mm.id,
+                mm.password,
+                mm.user_id
+            FROM esi_token et
+            INNER JOIN eveonline_evecharacter ee ON
+                ee.character_id = et.character_id 
+            INNER JOIN eveonline_eveprimarycharacter ee2 ON
+                ee2.character_id = ee.id 
+            INNER JOIN mumble_mumbleaccess mm ON
+                mm.user_id = et.user_id 
             WHERE et.character_name = ?
             LIMIT 1
         """
-        self.cursor.execute(query, (username))
+        self.cursor.execute(query, [username])
         return self.cursor.fetchone()
 
 
@@ -56,9 +59,21 @@ class Authenticator(Murmur.ServerAuthenticator):
         Murmur.ServerAuthenticator.__init__(self)
 
     def authenticate(self, name, pw, certificates, certhash, certstrong, context=None):
-        print("Authenticating user: {0}/{1}".format(name, pw))
+        try:
+            print("Authenticating user: {0}".format(name))
 
-        (mumble_password) = db.get_mumble_access_by_username(name)
+            mumble_access = db.get_mumble_access_by_username(name)
+            if mumble_access == None:
+                print("Failed authenticating: {0}".format(name))
+                return -1, None, None
+
+            (_, mumble_password, user_id) = mumble_access
+            if mumble_password == pw:
+                return user_id, "[FL33T] " + name, None
+
+        except Exception as e: 
+            print("Error authenticating: {0}".format(e))
+            return -1, None, None
 
         return -1, None, None
 

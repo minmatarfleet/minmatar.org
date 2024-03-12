@@ -19,5 +19,14 @@
 
 Navigate to `/api/docs` for endpoints or `/admin` for the admin panel.
 
+## Setting your user as admin
+```python
+python3 manage.py shell_plus
+user = User.objects.all()[0]
+user.is_superuser = True
+user.is_staff = True
+user.save()
+```
+
 ## Commands
 - `for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done` set local environment variables
