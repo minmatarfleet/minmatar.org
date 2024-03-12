@@ -51,7 +51,7 @@ export async function get_assets(access_token:string, character_id: number) {
     assets_locations_icons = assets_locations_names.map( (location_name):AssetsLocationIcons => {
         return {
             location_name: location_name,
-            assets: assets.filter( (asset) => asset.location_name !== location_name )
+            assets: assets.filter( (asset) => asset.location_name === location_name )
                     .map( (i):Asset => {
                         return {
                             id: i.type_id,
