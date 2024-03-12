@@ -16,12 +16,11 @@ export async function DELETE({ params, cookies }) {
         return HTTP_403_Forbidden()
     }
 
-    let delete_account_error = false
     let status = false
     try {
         status = await delete_account(auth_token)
     } catch (error) {
-        delete_account_error = (is_prod_mode() ? t('delete_account_error') : error.message)
+        console.log(is_prod_mode() ? t('delete_account_error') : error.message)
     }
 
     if (!status)

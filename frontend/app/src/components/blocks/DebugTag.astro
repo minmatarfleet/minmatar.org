@@ -3,12 +3,10 @@ import type { TagColors } from '@dtypes/layout_components';
 
 interface Props {
     color?: TagColors | string;
-    [propName: string]: any;
 }
 
 const {
     color = 'fleet-red',
-    ...attributes
 } = Astro.props;
 
 const tag_color = `var(--${color})`;

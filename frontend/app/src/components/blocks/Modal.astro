@@ -1,8 +1,7 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 
 import Dialog from '@components/blocks/Dialog.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';

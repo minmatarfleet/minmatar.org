@@ -136,5 +136,3 @@ const get_user_info = async (user_id:number) => {
 
     return user_profile
 }
-
-const cached_get_user_info = cachePromise(get_user_info)

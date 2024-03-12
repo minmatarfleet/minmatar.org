@@ -113,7 +113,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 }
 
 {redirect &&
-    <script define:vars={{ redirect }}>
+    <script define:vars={{ redirect }} is:inline>
         if (redirect) navigate(redirect)
     </script>
 }
