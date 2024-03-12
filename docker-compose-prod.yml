@@ -67,10 +67,14 @@ services:
 
     mumble_auth:
         build:
-        context: ./mumble/auth/
-        dockerfile: Dockerfile
+            context: ./mumble/auth/
+            dockerfile: Dockerfile
+        restart: on-failure
+        env_file:
+            - mumble/auth/.env
         depends_on:
             - mumble_murmur
+            - db
         expose:
             - 6502
 

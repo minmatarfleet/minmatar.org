@@ -11,6 +11,8 @@ services:
             - ./backend/sql:/docker-entrypoint-initdb.d
         ports:
             - "3306:3306"
+        networks:
+            - local-network
         healthcheck:
             test:
                 [
@@ -27,6 +29,8 @@ services:
 
     redis:
         image: redis:6.0.9-alpine
+        networks:
+            - local-network
         volumes:
             - "redis:/var/lib/redis"
             - "redis:/data"
@@ -39,6 +43,8 @@ services:
         command: ./app-start.sh
         env_file:
             - backend/.env
+        networks:
+            - local-network
         depends_on:
             db:
                 condition: service_healthy
@@ -51,6 +57,10 @@ services:
             - app
         env_file:
             - frontend/.env
+        networks:
+            local-network:
+                aliases:
+                    - local.minmatar.org
 
     proxy:
         image: nginx:stable
@@ -62,6 +72,11 @@ services:
             - "443:443"
         depends_on:
             - app
+            - frontend
+        networks:
+            local-network:
+                aliases:
+                    - api.local.minmatar.org
 
     beat:
         build:
@@ -70,6 +85,8 @@ services:
         restart: always
         env_file: backend/.env
         command: celery -A app beat -l info
+        networks:
+            - local-network
         depends_on:
             - db
             - app
@@ -81,10 +98,49 @@ services:
         restart: always
         env_file: backend/.env
         command: celery -A app worker -l info
+        networks:
+            - local-network
         depends_on:
             - db
             - app
 
+    mumble_murmur:
+        image: mumblevoip/mumble-server:v1.4.230-6
+        hostname: murmur
+        restart: on-failure
+        volumes:
+            - murmur_data:/data
+            - ./mumble/murmur/murmur.ini:/data/murmur.ini
+        environment:
+            - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
+            - MUMBLE_VERBOSE=true
+        networks:
+            - local-network
+        ports:
+            - 64738:64738
+            - 64738:64738/udp
+        expose:
+            - 6502
+
+    mumble_auth:
+        build:
+            context: ./mumble/auth/
+            dockerfile: Dockerfile
+        restart: on-failure
+        env_file:
+            - mumble/auth/.env
+        networks:
+            - local-network
+        depends_on:
+            - mumble_murmur
+            - db
+        expose:
+            - 6502
+
 volumes:
     database: {}
     redis: {}
+    murmur_data: {}
+
+networks:
+    local-network:

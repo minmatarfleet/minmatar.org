@@ -22,6 +22,9 @@ services:
     build:
       context: ./auth/
       dockerfile: Dockerfile
+    env_file:
+      - auth/.env
+    restart: on-failure
     container_name: mumble-auth
     depends_on:
       - murmur
