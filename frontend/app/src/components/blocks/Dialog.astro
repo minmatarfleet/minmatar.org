@@ -6,6 +6,7 @@ interface Props {
     breakout?:          boolean;
     fixed?:             boolean;
     thin?:              boolean;
+    non_centered?:      boolean;
     [propName: string]: any;
 }
 
@@ -13,6 +14,7 @@ const {
     breakout = false,
     fixed = true,
     thin = false,
+    non_centered = false,
     ...attributes
 } = Astro.props;
 
@@ -21,7 +23,7 @@ delete attributes.class
 
 <div
     role="dialog"
-    class:list={['dialog solid-transparency', { breakout: breakout }, { fixed: fixed }, Astro.props.class]}
+    class:list={['dialog solid-transparency', { breakout: breakout }, { 'non-centered': non_centered }, { fixed: fixed }, Astro.props.class]}
     {...attributes}
 >
     {thin ?
@@ -56,10 +58,18 @@ delete attributes.class
         box-shadow: 0 0 50px 0px black;
         z-index: var(--dialog-z-index);
 
+        &.non-centered {
+            transform: translateX(-50%) scale(0.7);
+        }
+
         &.open {
             transform: translate(-50%, -50%) scale(1);
             opacity: 1;
             pointer-events: all;
+
+            &.non-centered {
+                transform: translateX(-50%) scale(1);
+            }
         }
 
         &:not(.breakout) {
@@ -70,19 +80,6 @@ delete attributes.class
 
         &.fixed {
             position: fixed;
-        }
-    }
-
-    @keyframes dialog {
-        0% {
-            opacity: 0;
-            -webkit-transform: translateX(-50%) translateY(-50%) translateZ(0);
-                    transform: translateX(-50%) translateY(-50%) translateZ(0);
-        }
-        100% {
-            opacity: 1;
-            -webkit-transform: translateX(-50%) translateY(-50%) translateZ(160px);
-                    transform: translateX(-50%) translateY(-50%) translateZ(160px);
         }
     }
 </style>

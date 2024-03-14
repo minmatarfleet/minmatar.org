@@ -12,7 +12,8 @@
         "alt": "icon.augmentation.alt",
         "path": "/alliance/teams/",
         "icon": "/images/icons/48px-Augmentations.png",
-        "publish": true
+        "publish": true,
+        "description": "page_finder.teams.description"
     },
     {
         "slug": "teams.list",
@@ -40,7 +41,8 @@
         "alt": "icon.groups.alt",
         "path": "/alliance/sigs/",
         "icon": "/images/icons/48px-Grouplist.png",
-        "publish": true
+        "publish": true,
+        "description": "page_finder.groups.description"
     },
     {
         "slug": "groups.list",
@@ -81,11 +83,14 @@
         "alt": "icon.intel.alt",
         "path": "/intel/",
         "publish": true,
-        "icon": "/images/icons/48px-Structurebrowser.png"
+        "icon": "/images/icons/48px-Structurebrowser.png",
+        "description": "page_finder.intel.description"
     },
     {
         "slug": "intel.tutrial",
         "path": "/intel/tutorial/",
-        "publish": true
+        "publish": true,
+        "keywords": [ "tutorial" ],
+        "description": "page_finder.intel.tutorial.description"
     }
 ]

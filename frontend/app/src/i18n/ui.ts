@@ -505,5 +505,9 @@ export const ui = {
         'view_members': 'View members',
         'error_loading_content_reload': 'An error ocurred fetching the content. You may reload the page to fix it.',
         'page_finder.alliance.description': 'Alliance landing page',
+        'page_finder.teams.description': 'Teams landing page',
+        'page_finder.groups.description': 'Special Interest Groups landing page',
+        'page_finder.intel.description': 'Intel landing page',
+        'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
     },
 } as const;
