@@ -462,4 +462,5 @@ export interface Permissions {
     group_officer?: boolean;
     team_director?: boolean;
     superuser?:     boolean;
+    auth?:          boolean;
 }

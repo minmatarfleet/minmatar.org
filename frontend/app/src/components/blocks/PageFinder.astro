@@ -33,6 +33,9 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (!page?.permissions)
         return true
 
+    if (page.permissions?.auth && !user)
+        return false
+
     if (page.permissions?.group_officer && !user_is_officer)
         return false
 
