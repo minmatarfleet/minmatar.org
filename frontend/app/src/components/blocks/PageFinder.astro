@@ -45,9 +45,16 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     return true
 })
 
+const filter_pages = pages.map( (page) => {
+    return {
+        slug: page.slug,
+        keywords: page?.keywords ?? [],
+        title: t(`${page.slug}.page_title` as any)
+    }
+})
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
@@ -58,21 +65,28 @@ import Input from '@components/blocks/Input.astro';
     transition:persist
     class="[ pages-finder ]"    
     x-data={`{
-        filter: '',
-        show_item(el) {
-            const name_container = el.querySelector('span')
-            const role_container = el.querySelector('small')
-            const show_item = (
-                this.filter != '' && name_container.textContent.toLowerCase().includes(this.filter.toLowerCase())
-            )
+        search: '',
+        filtered_pages: [ false ],
+        pages: ${JSON.stringify(filter_pages)},
+        page_filter() {
+            if (this.search === '') {
+                this.filtered_pages = [ false ]
+                return
+            }
 
-            return show_item
+            const filtered_pages = []
+
+            this.pages.forEach( (page) => {
+                if ( this.search !== '' && ( page.title.toLowerCase().includes(this.search.toLowerCase()) || page?.keywords.includes(this.search.toLowerCase()) ) )
+                    filtered_pages.push(page.slug)
+            })
+            
+            this.filtered_pages = filtered_pages
         },
         async ctrl_shift_p(e) {
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
                 show_pages_finder().then( (path) => {
-                    if (path)
-                        return navigate(path) 
+                    if (path) return navigate(path)
                 });
             }
         },
@@ -82,8 +96,6 @@ import Input from '@components/blocks/Input.astro';
     }`}
 >
     <Dialog
-        x-bind:class="pages_finder_open ? 'open' : ''"
-        x-bind:aria-hidden="pages_finder_open == false"
         breakout={true}
         non_centered={true}
         class="[ w-full max-w-[750px] ]"
@@ -91,6 +103,9 @@ import Input from '@components/blocks/Input.astro';
             close_dialog() {
                 if (!pages_finder_open)
                     return
+
+                search = ''
+                filtered_pages = [ false ]
                 
                 var clickEvent = new MouseEvent("click", {
                     "view": window,
@@ -102,20 +117,43 @@ import Input from '@components/blocks/Input.astro';
             }
         }`}
         @keyup.escape.window="close_dialog()"
+        x-bind:class="pages_finder_open ? 'open' : ''"
+        x-bind:aria-hidden="pages_finder_open == false"
+        thin={true}
     >
         <Flexblock gap="0">
-            <Input placeholder={t('find_page_placeholder')} x-model="filter" />
+            <Input
+                placeholder={t('find_page_placeholder')}
+                x-model="search"
+                x-on:keyup="page_filter()"
+                class="[ relative z-10 ]"
+            />
 
             <div class="[ relative ]">
-                <Flexblock gap='var(--space-2xs)'>
-                    <Flexblock class="[ page-list ][ light-transparency w-full ]" gap='var(--space-2xs)'>
+                <Flexblock gap='var(--space-3xs)'>
+                    <Flexblock
+                        class="[ page-list ][ light-transparency w-full ]"
+                        gap='var(--space-2xs)'
+                        x-show="search !== ''"
+                    >
+                        <div
+                            class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
+                            x-show="search !== '' && filtered_pages.length === 0"
+                        >
+                            <span>No pages found</span>
+                        </div>
                         {pages.map((page) =>
                             <button
                                 type="button"
                                 page-finder-action="accept"
                                 page-finder-data={JSON.stringify(translatePath(page.path))}
                                 x-show="show_item($el)"
-                                x-on:click="filter = ''"
+                                x-on:click="search = ''"
+                                x-data={`{
+                                    show_item() {
+                                        return filtered_pages.includes('${page.slug}')
+                                    }
+                                }`}
                             >
                                 <FlexInline
                                     class="[ items-center ]"
@@ -141,7 +179,7 @@ import Input from '@components/blocks/Input.astro';
                         )}
                     </Flexblock>
 
-                    <FlexInline>
+                    <FlexInline justification='center'>
                         <FlexInline gap="var(--space-3xs)">
                             (<Kbd>Shift</Kbd>
                             <span>+</span>)
@@ -180,17 +218,25 @@ import Input from '@components/blocks/Input.astro';
         width: 48px;
     }
 
+    :global([style="display: none;"] ~ button) {
+        margin-block-start: 0 !important;
+    }
+
+    :global(:not([style="display: none;"]) ~ button) {
+        margin-block-start: var(--space-2xs) !important;
+    }
+
     .dialog {
         top: 12%;
     }
     
     .page-list {
-        // position: absolute;
         overflow-y: auto;
         max-height: 320px;
         background-color: #171616;
         border: solid 1px var(--border-color);
         border-top: none;
+        height: calc(100% - 20px);
     }
 
     [page-finder-action="close"] {
