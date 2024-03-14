@@ -45,10 +45,13 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     return true
 })
 
-import Dialog from '@components/blocks/Dialog.astro';
-import Input from '@components/blocks/Input.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Kbd from '@components/blocks/Kbd.astro';
+import Input from '@components/blocks/Input.astro';
 ---
 
 <div
@@ -65,17 +68,16 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
             return show_item
         },
-        async ctrl_shift_f(e) {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyP') {
+        async ctrl_shift_p(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
                 show_pages_finder().then( (path) => {
-                    console.log(path)
                     if (path)
                         return navigate(path) 
                 });
             }
         },
         init() {
-            document.addEventListener('keyup', this.ctrl_shift_f, false);
+            document.addEventListener('keyup', this.ctrl_shift_p, false);
         }
     }`}
 >
@@ -83,6 +85,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         x-bind:class="pages_finder_open ? 'open' : ''"
         x-bind:aria-hidden="pages_finder_open == false"
         breakout={true}
+        non_centered={true}
         class="[ w-full max-w-[750px] ]"
         x-data={`{
             close_dialog() {
@@ -100,42 +103,63 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         }`}
         @keyup.escape.window="close_dialog()"
     >
-        <Input placeholder={t('find_page_placeholder')} x-model="filter" />
+        <Flexblock gap="0">
+            <Input placeholder={t('find_page_placeholder')} x-model="filter" />
 
-        <div class="[ relative ]">
-            <Flexblock class="[ page-list ][ light-transparency w-full ]" gap='0'>
-                {pages.map((page) =>
-                    <button
-                        type="button"
-                        page-finder-action="accept"
-                        page-finder-data={JSON.stringify(translatePath(page.path))}
-                        x-show="show_item($el)"
-                        x-on:click="filter = ''"
-                    >
-                        <FlexInline
-                            class="[ items-center ]"
-                            gap='var(--space-2xs)'
-                        >
-                            <picture>
-                                {page.icon &&
-                                    <img src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
-                                }
-                            </picture>
-                            <Flexblock gap='0' class="[ items-start ]">
-                                <span class="[ truncate ]">
-                                    {t(`${page.slug}.page_title` as any)}
-                                    <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
-                                </span>
-                                {page?.description &&
-                                    <small>{t(page.description as any)}</small>
-                                }
-                                <small><code class="[ p-0 ]">{page.path}</code></small>
-                            </Flexblock>
+            <div class="[ relative ]">
+                <Flexblock gap='var(--space-2xs)'>
+                    <Flexblock class="[ page-list ][ light-transparency w-full ]" gap='0'>
+                        {pages.map((page) =>
+                            <button
+                                type="button"
+                                page-finder-action="accept"
+                                page-finder-data={JSON.stringify(translatePath(page.path))}
+                                x-show="show_item($el)"
+                                x-on:click="filter = ''"
+                            >
+                                <FlexInline
+                                    class="[ items-center ]"
+                                    gap='var(--space-2xs)'
+                                >
+                                    <picture>
+                                        {page.icon &&
+                                            <img src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
+                                        }
+                                    </picture>
+                                    <Flexblock gap='0' class="[ items-start ]">
+                                        <span class="[ truncate ]">
+                                            {t(`${page.slug}.page_title` as any)}
+                                            <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
+                                        </span>
+                                        {page?.description &&
+                                            <small>{t(page.description as any)}</small>
+                                        }
+                                        <small><code class="[ p-0 ]">{page.path}</code></small>
+                                    </Flexblock>
+                                </FlexInline>
+                            </button>
+                        )}
+                    </Flexblock>
+
+                    <FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            (<Kbd>Shift</Kbd>
+                            <span>+</span>)
+                            <Kbd>Tab</Kbd>
+                            <small>to navigate</small>
                         </FlexInline>
-                    </button>
-                )}
-            </Flexblock>
-        </div>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Enter</Kbd>
+                            <small>to select</small>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Esc</Kbd>
+                            <small>to close</small>
+                        </FlexInline>
+                    </FlexInline>
+                </Flexblock>
+            </div>
+        </Flexblock>
     </Dialog>
 
     <div
@@ -157,11 +181,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     }
 
     .dialog {
-        top: 22%;
+        top: 12%;
     }
     
     .page-list {
-        position: absolute;
+        // position: absolute;
         overflow-y: auto;
         max-height: 320px;
         background-color: #171616;
