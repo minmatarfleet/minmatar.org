@@ -62,6 +62,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
 import Input from '@components/blocks/Input.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
 
 <div
@@ -132,7 +134,9 @@ import Input from '@components/blocks/Input.astro';
                 x-model="search"
                 x-on:keyup="page_filter()"
                 class="[ relative z-10 ]"
-            />
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
 
             <div class="[ relative ]">
                 <Flexblock gap='var(--space-3xs)'>
