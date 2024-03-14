@@ -1,0 +1,206 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+
+import type { PageFinderUI } from '@dtypes/layout_components'
+import sitemap from '@json/sitemap.json'
+
+console.log(sitemap)
+
+interface Props {
+    [propName: string]: any;
+}
+
+const pages = sitemap.filter( (page:PageFinderUI) => {
+    if (!page.publish && is_prod_mode())
+        return false
+
+    if (!page?.permissions)
+        return true
+
+    if (page.permissions?.group_officer && !user_is_officer)
+        return false
+
+    if (page.permissions?.team_director && !user_is_director)
+        return false
+
+    if (page.permissions?.superuser && (!user || !user?.is_superuser))
+        return false
+
+    return true
+})
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Input from '@components/blocks/Input.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<div
+    transition:persist
+    class="[ pages-finder ]"    
+    x-data={`{
+        filter: '',
+        show_item(el) {
+            const name_container = el.querySelector('span')
+            const role_container = el.querySelector('small')
+            const show_item = (
+                this.filter != '' && name_container.textContent.toLowerCase().includes(this.filter.toLowerCase())
+            )
+
+            return show_item
+        },
+        async ctrl_shift_f(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyP') {
+                show_pages_finder().then( (path) => {
+                    console.log(path)
+                    if (path)
+                        return navigate(path) 
+                });
+            }
+        },
+        init() {
+            document.addEventListener('keyup', this.ctrl_shift_f, false);
+        }
+    }`}
+>
+    <Dialog
+        x-bind:class="pages_finder_open ? 'open' : ''"
+        x-bind:aria-hidden="pages_finder_open == false"
+        breakout={true}
+        class="[ w-full max-w-[750px] ]"
+        x-data={`{
+            close_dialog() {
+                if (!pages_finder_open)
+                    return
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.pages-finder-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
+    >
+        <Input placeholder={t('find_page_placeholder')} x-model="filter" />
+
+        <div class="[ relative ]">
+            <Flexblock class="[ page-list ][ light-transparency w-full ]" gap='0'>
+                {pages.map((page) =>
+                    <button
+                        type="button"
+                        page-finder-action="accept"
+                        page-finder-data={JSON.stringify(translatePath(page.path))}
+                        x-show="show_item($el)"
+                        x-on:click="filter = ''"
+                    >
+                        <FlexInline
+                            class="[ items-center ]"
+                            gap='var(--space-2xs)'
+                        >
+                            <picture>
+                                {page.icon &&
+                                    <img src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
+                                }
+                            </picture>
+                            <Flexblock gap='0' class="[ items-start ]">
+                                <span class="[ truncate ]">
+                                    {t(`${page.slug}.page_title` as any)}
+                                    <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
+                                </span>
+                                {page?.description &&
+                                    <small>{t(page.description as any)}</small>
+                                }
+                                <small><code class="[ p-0 ]">{page.path}</code></small>
+                            </Flexblock>
+                        </FlexInline>
+                    </button>
+                )}
+            </Flexblock>
+        </div>
+    </Dialog>
+
+    <div
+        class="pages-finder-backdrop"
+        x-bind:class="pages_finder_open ? 'open' : ''"
+        page-finder-action="close"
+        x-on:click="filter = ''"
+    />
+</div>
+
+<style lang="scss">
+    :global([page-finder-action] *) {
+        pointer-events: none !important;
+    }
+
+    picture {
+        aspect-ratio: 1/1;
+        width: 48px;
+    }
+
+    .dialog {
+        top: 22%;
+    }
+    
+    .page-list {
+        position: absolute;
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+    }
+
+    [page-finder-action="close"] {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+
+    [page-finder-action="accept"] {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+        
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>

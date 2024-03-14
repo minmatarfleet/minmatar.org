@@ -447,3 +447,19 @@ export interface SelectOptions {
     value?: string | number;
     label:  string;
 }
+
+export interface PageFinderUI {
+    slug:           string;
+    alt?:           string;
+    path:           string;
+    icon?:          string;
+    description?:   string;
+    publish:        boolean;
+    permissions?:   Permissions;
+}
+
+export interface Permissions {
+    group_officer?: boolean;
+    team_director?: boolean;
+    superuser?:     boolean;
+}

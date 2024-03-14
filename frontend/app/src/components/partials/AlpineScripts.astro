@@ -225,6 +225,34 @@ export const PersonaFinderXData = `
             body.addEventListener('click', listener);
         });
     },`
+    
+export const PageFinderXData = `
+    pages_finder_open: false,
+    page_finder_role: 'all',
+    async show_pages_finder() {
+        this.pages_finder_open = true
+        document.querySelector('.pages-finder input').focus()
+        
+        const result = await this.pages_finder_accept()
+        this.pages_finder_open = false
+        return result.action == 'accept' ? result.page_id : false
+    },
+    pages_finder_accept() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('page-finder-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('page-finder-action'),
+                        page_id: JSON.parse(event.target.getAttribute('page-finder-data'))
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
 
 export const CorporationFinderXData = `
     corporations_finder_open: false,
