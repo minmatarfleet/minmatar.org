@@ -104,7 +104,7 @@ export const ui = {
         'freight.summary.historical_header': 'Historical Summary',
         'freight.summary.current_title': 'Current Summary',
         
-        'groups.page_title': 'SIGs',
+        'groups.page_title': 'Special Groups of Interest',
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to grow to fight larger groups, and we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',

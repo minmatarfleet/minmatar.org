@@ -41,6 +41,7 @@
     },
     {
         "slug": "groups",
+        "keywords": [ "sigs" ],
         "alt": "icon.groups.alt",
         "path": "/alliance/sigs/",
         "icon": "/images/icons/48px-Grouplist.png",
@@ -49,7 +50,7 @@
     },
     {
         "slug": "groups.list",
-        "keywords": [ "sig" ],
+        "keywords": [ "sigs" ],
         "path": "/alliance/sigs/list/",
         "publish": true,
         "description": "page_finder.groups.list.description"
