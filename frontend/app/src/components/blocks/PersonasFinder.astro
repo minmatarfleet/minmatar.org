@@ -43,7 +43,7 @@ const translations = {
     }`}
 >
     <Dialog
-        x-bind:class="personas_finder_open ? 'open' : ''"
+        x-bind:class="(personas_finder_open ? 'open' : '')"
         x-bind:aria-hidden="personas_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
@@ -58,7 +58,7 @@ const translations = {
                         persona-finder-action="accept"
                         persona-finder-data={JSON.stringify(persona)}
                         x-show="show_item($el)"
-                        x-on:click="filter = ''"
+                        x-on:click="(filter = '')"
                     >
                         <FixedFluid width='64px'>
                             <picture>
@@ -78,9 +78,9 @@ const translations = {
     </Dialog>
 
     <div
-        x-bind:class="personas_finder_open ? 'open' : ''"
+        x-bind:class="(personas_finder_open ? 'open' : '')"
         persona-finder-action="close"
-        x-on:click="filter = ''"
+        x-on:click="(filter = '')"
     />
 </div>
 
