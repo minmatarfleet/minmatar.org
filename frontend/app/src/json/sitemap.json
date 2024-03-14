@@ -1,5 +1,14 @@
 [
     {
+        "slug": "account",
+        "path": "/account/",
+        "publish": true,
+        "description": "page_finder.account.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
         "slug": "alliance",
         "alt": "icon.alliance.alt",
         "path": "/alliance/",
