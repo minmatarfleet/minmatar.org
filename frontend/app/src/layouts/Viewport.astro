@@ -18,6 +18,7 @@ import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
+import PageFinder from '@components/blocks/PageFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
 import {
@@ -25,6 +26,7 @@ import {
 	ConfirmDialogXData,
 	ModalXData,
 	PersonaFinderXData,
+	PageFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
@@ -93,6 +95,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${components?.personas_finder ? PersonaFinderXData : ''}
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
+            ${PageFinderXData}
             ${UtilitiesXData}
             ${RifterAnimationXData}
 		}`}
@@ -136,6 +139,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		{components?.alliance_finder &&
 			<AllianceFinder />
 		}
+
+		<PageFinder />
 
 		{middleware_error &&
 			<div class="toast">

@@ -132,7 +132,7 @@ export const ui = {
         'teams.list.page_title': 'Teams',
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
-        'groups.requests.page_title': 'Group requests',
+        'groups.requests.page_title': 'SIGs requests',
 
         'teams.requests.page_title': 'Team requests',
         
@@ -309,6 +309,7 @@ export const ui = {
         'general': 'General',
         'auto_accept_group_policy': 'Auto-accept group policy',
         'find_persona_placeholder': 'Type persona name to find',
+        'find_page_placeholder': 'Type page title to find',
         'add_persona': 'Add persona',
         'add_pilot': 'Add additional character',
         'empty_pilots_text': 'No pilot found',
@@ -503,5 +504,6 @@ export const ui = {
         'team_director': 'Team director',
         'view_members': 'View members',
         'error_loading_content_reload': 'An error ocurred fetching the content. You may reload the page to fix it.',
+        'page_finder.alliance.description': 'Alliance landing page',
     },
 } as const;

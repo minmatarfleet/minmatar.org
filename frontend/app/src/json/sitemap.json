@@ -1,0 +1,91 @@
+[
+    {
+        "slug": "alliance",
+        "alt": "icon.alliance.alt",
+        "path": "/alliance/",
+        "icon": "/images/icons/48px-Alliances.png",
+        "publish": true,
+        "description": "page_finder.alliance.description"
+    },
+    {
+        "slug": "teams",
+        "alt": "icon.augmentation.alt",
+        "path": "/alliance/teams/",
+        "icon": "/images/icons/48px-Augmentations.png",
+        "publish": true
+    },
+    {
+        "slug": "teams.list",
+        "path": "/alliance/teams/list/",
+        "publish": true
+    },
+    {
+        "slug": "teams.requests",
+        "path": "/alliance/teams/requests/",
+        "publish": true,
+        "permissions" : {
+            "team_director": true
+        }
+    },
+    {
+        "slug": "teams.members",
+        "path": "/alliance/teams/members/",
+        "publish": true,
+        "permissions" : {
+            "team_director": true
+        }
+    },
+    {
+        "slug": "groups",
+        "alt": "icon.groups.alt",
+        "path": "/alliance/sigs/",
+        "icon": "/images/icons/48px-Grouplist.png",
+        "publish": true
+    },
+    {
+        "slug": "groups.list",
+        "keywords": [ "sig" ],
+        "path": "/alliance/sigs/list/",
+        "publish": true
+    },
+    {
+        "slug": "groups.requests",
+        "path": "/alliance/sigs/requests/",
+        "publish": true,
+        "permissions" : {
+            "group_officer": true
+        }
+    },
+    {
+        "slug": "groups.members",
+        "path": "/alliance/sigs/members/",
+        "publish": true,
+        "permissions" : {
+            "group_officer": true
+        }
+    },
+    {
+        "slug": "corporations.list",
+        "alt": "icon.corporation.alt",
+        "path": "/alliance/corporations/list/",
+        "icon": "/images/icons/48px-CorporationIcon.png",
+        "publish": true
+    },
+    {
+        "slug": "corporations.associates",
+        "path": "/alliance/corporations/associates/",
+        "publish": true
+    },
+    {
+        "slug": "intel",
+        "alt": "icon.intel.alt",
+        "path": "/intel/",
+        "publish": true,
+        "icon": "/images/icons/48px-Structurebrowser.png"
+    },
+    {
+        "slug": "intel.tutrial",
+        "path": "/intel/tutorial/",
+        "publish": true
+    }
+]
