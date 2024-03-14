@@ -30,7 +30,7 @@ interface Props {
             }
         }`}
         @keyup.escape.window="close_dialog()"
-        x-bind:class="modal_open ? 'open' : ''"
+        x-bind:class="(modal_open ? 'open' : '')"
         x-bind:aria-hidden="modal_open == false"
         x-bind:inert="modal_open == false"
         breakout={true}
