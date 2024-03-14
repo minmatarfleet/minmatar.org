@@ -228,7 +228,6 @@ export const PersonaFinderXData = `
     
 export const PageFinderXData = `
     pages_finder_open: false,
-    page_finder_role: 'all',
     async show_pages_finder() {
         this.pages_finder_open = true
         document.querySelector('.pages-finder input').focus()
@@ -243,7 +242,7 @@ export const PageFinderXData = `
         return new Promise(function (resolve, reject) {
             var listener = event => {
                 if (event.target.hasAttribute('page-finder-action')) {
-                    body.removeEventListener('click', listener);
+                    body.removeEventListener('click', listener)
                     resolve({
                         action: event.target.getAttribute('page-finder-action'),
                         page_id: JSON.parse(event.target.getAttribute('page-finder-data'))
