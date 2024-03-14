@@ -18,12 +18,14 @@
     {
         "slug": "teams.list",
         "path": "/alliance/teams/list/",
-        "publish": true
+        "publish": true,
+        "description": "page_finder.teams.list.description"
     },
     {
         "slug": "teams.requests",
         "path": "/alliance/teams/requests/",
         "publish": true,
+        "description": "page_finder.teams.requests.description",
         "permissions" : {
             "team_director": true
         }
@@ -32,6 +34,7 @@
         "slug": "teams.members",
         "path": "/alliance/teams/members/",
         "publish": true,
+        "description": "page_finder.teams.members.description",
         "permissions" : {
             "team_director": true
         }
@@ -48,12 +51,14 @@
         "slug": "groups.list",
         "keywords": [ "sig" ],
         "path": "/alliance/sigs/list/",
-        "publish": true
+        "publish": true,
+        "description": "page_finder.groups.list.description"
     },
     {
         "slug": "groups.requests",
         "path": "/alliance/sigs/requests/",
         "publish": true,
+        "description": "page_finder.groups.requests.description",
         "permissions" : {
             "group_officer": true
         }
@@ -62,6 +67,7 @@
         "slug": "groups.members",
         "path": "/alliance/sigs/members/",
         "publish": true,
+        "description": "page_finder.groups.requests.description",
         "permissions" : {
             "group_officer": true
         }
@@ -71,11 +77,13 @@
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/list/",
         "icon": "/images/icons/48px-CorporationIcon.png",
+        "description": "page_finder.corporations.list.description",
         "publish": true
     },
     {
         "slug": "corporations.associates",
         "path": "/alliance/corporations/associates/",
+        "description": "page_finder.corporations.associates.description",
         "publish": true
     },
     {

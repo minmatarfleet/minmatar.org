@@ -509,5 +509,13 @@ export const ui = {
         'page_finder.groups.description': 'Special Interest Groups landing page',
         'page_finder.intel.description': 'Intel landing page',
         'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
+        'page_finder.teams.list.description': 'List of Teams available to apply',
+        'page_finder.groups.list.description': 'List of Groups of Interest available to apply',
+        'page_finder.groups.requests.description': 'List of managed SIGs joining requests',
+        'page_finder.teams.requests.description': 'List of managed Teams joining requests',
+        'page_finder.groups.members.description': 'List of members of managed SIGs',
+        'page_finder.teams.members.description': 'List of members of managed teams',
+        'page_finder.corporations.list.description': 'Minmatar Fleet Alliance corporations portfolio',
+        'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
     },
 } as const;
