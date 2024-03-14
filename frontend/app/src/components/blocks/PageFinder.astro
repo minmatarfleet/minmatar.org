@@ -77,7 +77,9 @@ import Input from '@components/blocks/Input.astro';
             const filtered_pages = []
 
             this.pages.forEach( (page) => {
-                if ( this.search !== '' && ( page.title.toLowerCase().includes(this.search.toLowerCase()) || page?.keywords.includes(this.search.toLowerCase()) ) )
+                const search = page.title.toLowerCase().concat(' ', page?.keywords.join(' ') ?? '')
+                
+                if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
                     filtered_pages.push(page.slug)
             })
             
