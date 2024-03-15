@@ -518,5 +518,6 @@ export const ui = {
         'page_finder.corporations.list.description': 'Minmatar Fleet Alliance corporations portfolio',
         'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
         'page_finder.account.description': 'Your profile management page',
+        'hotkeys': 'Hotkeys',
     },
 } as const;
