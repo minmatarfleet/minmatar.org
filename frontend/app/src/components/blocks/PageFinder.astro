@@ -90,12 +90,12 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
             
             this.filtered_pages = filtered_pages
         },
-        async ctrl_shift_p(e) {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyE')
+        async ctrl_shift_q(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyQ')
                 show_pages_finder()
         },
         init() {
-            document.addEventListener('keyup', this.ctrl_shift_p, false);
+            document.addEventListener('keyup', this.ctrl_shift_q, false);
         }
     }`}
 >
