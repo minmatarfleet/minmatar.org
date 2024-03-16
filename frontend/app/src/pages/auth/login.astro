@@ -6,6 +6,8 @@ const translatePath = useTranslatedPath(lang);
 
 import * as jose from 'jose'
 
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
 let token = null
@@ -13,6 +15,7 @@ let user = null
 try {
     token = Astro.url.searchParams.get('token')
     user = jose.decodeJwt(token)
+    await get_characters(token)
 } catch (error) {
     throw new Error(`Error during token exchange: ${error.message}`)
 }
