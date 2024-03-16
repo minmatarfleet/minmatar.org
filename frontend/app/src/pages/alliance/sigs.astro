@@ -15,6 +15,7 @@ import { is_officer } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 
 import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -28,6 +29,7 @@ import Tag from '@components/blocks/Tag.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
+import { MarkdownError } from 'node_modules/astro/dist/core/errors';
 
 const page_title = t('groups.page_title');
 const page_description = t('groups.leading_text_p1');
@@ -46,8 +48,8 @@ const page_description = t('groups.leading_text_p1');
             <Flexblock>
                 <h1>{page_title}</h1>
                 <Flexblock gap='var(--space-s)'>
-                    <p set:html={marked.parseInline(t('groups.leading_text_p1'))} />
-                    <p set:html={marked.parseInline(t('groups.leading_text_p2'))} />
+                    <p set:html={marked.parseInline(t('groups.leading_text_p1'), { renderer })} />
+                    <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
                 </Flexblock>
             </Flexblock>
             
