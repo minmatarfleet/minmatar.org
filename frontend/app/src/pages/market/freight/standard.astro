@@ -35,6 +35,7 @@ import routes_options from '@json/hosted/freight.standard.route.options.json';
 import sizes_options from '@json/hosted/freight.standard.size.options.json';
 
 import { marked } from 'marked';
+import { renderer } from '@helpers/marked'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -105,7 +106,7 @@ const page_title = t('freight.standard.page_title');
                         <Wrapper
                             padding_block="var(--space-2xs)"
                             padding_inline="var(--space-s)"
-                            set:html={marked.parse(t('freight.standard.jita_hauling_ads'))}
+                            set:html={marked.parseInline(t('freight.standard.jita_hauling_ads'), { renderer })}
                         />
                     </VerticalCenter>
                 </FixedFluid>
