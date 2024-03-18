@@ -91,7 +91,7 @@
                 let hour = this.time.getUTCHours()
                 let minute = this.time.getUTCMinutes()
 
-                return `${hour < 9 ? '0' : ''}${hour}:${minute < 9 ? '0' : ''}${minute}`
+                return `${hour < 10 ? '0' : ''}${hour}:${minute < 10 ? '0' : ''}${minute}`
             },
         }
     }
