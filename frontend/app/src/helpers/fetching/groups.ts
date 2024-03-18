@@ -228,8 +228,6 @@ export async function get_all_members(access_token:string, user_id:number) {
         })
     })
 
-    console.log(members)
-
     team_members.forEach( (group) => {
         group.members.forEach( (member) => {
             if (character_ids.includes(member.character_id))
@@ -247,8 +245,6 @@ export async function get_all_members(access_token:string, user_id:number) {
             })
         })
     })
-
-    console.log(members)
 
     return members
 }
