@@ -11,7 +11,12 @@ import { query_string } from '@helpers/string';
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const user:User | false = Astro.cookies.has('auth_token') ? jose.decodeJwt(Astro.cookies.get('auth_token').value) as User : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -54,11 +59,13 @@ const page_description = t('alliance.leading_text');
             
 
             <ButtonCardGrid>
-                <ButtonCard title={t('teams')} href={translatePath('/alliance/teams/')}>
-                    <AugmentationEvEIcon slot="icon" />
-                </ButtonCard>
+                {user_is_director &&
+                    <ButtonCard title={t('teams')} href={translatePath('/alliance/teams/')}>
+                        <AugmentationEvEIcon slot="icon" />
+                    </ButtonCard>
+                }
 
-                {!is_prod_mode() &&
+                {user_is_officer &&
                     <ButtonCard title={t('sigs')} href={translatePath('/alliance/sigs/')}>
                         <GroupsEvEIcon slot="icon" />
                     </ButtonCard>
