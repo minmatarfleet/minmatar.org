@@ -7,6 +7,16 @@ const t = useTranslations(lang);
 const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+
 import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 
@@ -18,6 +28,7 @@ import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
+import CharacterFinder from '@components/blocks/CharacterFinder.astro';
 import PageFinder from '@components/blocks/PageFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
@@ -27,6 +38,7 @@ import {
 	ModalXData,
 	PersonaFinderXData,
 	PageFinderXData,
+	CharacterFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
@@ -95,6 +107,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${components?.personas_finder ? PersonaFinderXData : ''}
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
+			${user_is_officer || user_is_director ? CharacterFinderXData : ''}
             ${PageFinderXData}
             ${UtilitiesXData}
             ${RifterAnimationXData}
@@ -111,6 +124,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 					components?.personas_finder ? 'personas_finder_open' : false,
 					components?.corporation_finder ? 'corporations_finder_open' : false,
 					components?.alliance_finder ? 'alliances_finder_open' : false,
+					user_is_officer || user_is_director ? 'characters_finder_open' : false,
 					'pages_finder_open',
 				].join(' || ')}
 			`}
@@ -139,6 +153,10 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		}
 		{components?.alliance_finder &&
 			<AllianceFinder />
+		}
+
+		{(user_is_officer || user_is_director) &&
+			<CharacterFinder />
 		}
 
 		<PageFinder />

@@ -1,0 +1,253 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { get_all_members } from '@helpers/fetching/groups'
+import type { CharacterBasic } from '@dtypes/layout_components'
+
+let members:CharacterBasic[]
+let get_groups_members_error:string | false = false
+try {
+    members = (auth_token && user ? await get_all_members(auth_token, user.user_id) : [])
+} catch (error) {
+    get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
+}
+
+console.log(members)
+
+interface Props {
+    [propName: string]: any;
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Kbd from '@components/blocks/Kbd.astro';
+import Input from '@components/blocks/Input.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+---
+
+<div
+    transition:persist
+    class="[ characters-finder ]"    
+    x-data={`{
+        search: '',
+        filtered_characters: [ false ],
+        characters: ${JSON.stringify(members)},
+        character_filter() {
+            if (this.search === '') {
+                this.filtered_characters = [ false ]
+                return
+            }
+
+            const filtered_characters = []
+
+            this.characters.forEach( (character) => {
+                const search = character.character_name.toLowerCase()
+                
+                if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
+                    filtered_characters.push(character.character_id)
+            })
+            
+            this.filtered_characters = filtered_characters
+        },
+        async ctrl_shift_f(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+                show_characters_finder().then( (character_id) => {
+                    if (!character_id)
+                        return
+
+                    show_modal({
+                        partial: \`${translatePath('/partials/character_modal_component/')}?character_id=\${character_id}\`,
+                    })
+                })
+            }
+        },
+        init() {
+            document.addEventListener('keyup', this.ctrl_shift_f, false);
+        }
+    }`}
+>
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        class="[ w-full max-w-[500px] ]"
+        x-data={`{
+            close_dialog() {
+                if (!characters_finder_open)
+                    return
+
+                search = ''
+                filtered_characters = [ false ]
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.characters-finder-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
+        x-bind:class="(characters_finder_open ? 'open' : '')"
+        x-bind:aria-hidden="characters_finder_open == false"
+        thin={true}
+    >
+        <Flexblock gap="0">
+            <Input
+                placeholder={t('find_character_placeholder')}
+                x-model="search"
+                x-on:keyup="character_filter()"
+                class="[ relative z-10 ]"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+
+            <div class="[ relative ]">
+                <Flexblock gap='var(--space-3xs)'>
+                    <Flexblock
+                        class="[ character-finder-list ][ light-transparency w-full ]"
+                        gap='var(--space-2xs)'
+                        x-show="(search !== '')"
+                    >
+                        <div
+                            class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
+                            x-show="search !== '' && filtered_characters.length === 0"
+                        >
+                            <span>{t('no_characters')}</span>
+                        </div>
+                        {members.map((member) =>
+                            <StylessButton
+                                type="button"
+                                character-finder-action="accept"
+                                character-finder-data={member.character_id}
+                                x-show="show_item($el)"
+                                x-on:click="(search = '')"
+                                x-data={`{
+                                    show_item() {
+                                        return filtered_characters.includes(${member.character_id})
+                                    }
+                                }`}
+                            >
+                                <PilotBadge
+                                    character_id={member.character_id}
+                                    character_name={member.character_name}
+                                    corporation={member.corporation}
+                                />
+                            </StylessButton>
+                        )}
+                    </Flexblock>
+
+                    <FlexInline justification='center'>
+                        <FlexInline gap="var(--space-3xs)">
+                            <span class="[ text-[var(--highlight)] ]">(</span>
+                            <Kbd>Shift</Kbd>
+                            <span class="[ text-[var(--highlight)] ]">+</span>
+                            <span class="[ text-[var(--highlight)] ]">)</span>
+                            <Kbd>Tab</Kbd>
+                            <small>to navigate</small>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Enter</Kbd>
+                            <small>to select</small>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Esc</Kbd>
+                            <small>to close</small>
+                        </FlexInline>
+                    </FlexInline>
+                </Flexblock>
+            </div>
+        </Flexblock>
+    </Dialog>
+
+    <div
+        class="characters-finder-backdrop"
+        x-bind:class="(characters_finder_open ? 'open' : '')"
+        character-finder-action="close"
+        x-on:click="(filter = '')"
+    />
+</div>
+
+<style lang="scss">
+    :global([character-finder-action] *) {
+        pointer-events: none !important;
+    }
+
+    picture {
+        aspect-ratio: 1/1;
+        width: 48px;
+    }
+
+    :global(.character-finder-list [style="display: none;"] ~ button) {
+        margin-block-start: 0 !important;
+    }
+
+    :global(.character-finder-list :not([style="display: none;"]) ~ button) {
+        margin-block-start: var(--space-2xs) !important;
+    }
+
+    .dialog {
+        top: 12%;
+    }
+    
+    .character-finder-list {
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+        height: calc(100% - 20px);
+    }
+
+    [character-finder-action="close"] {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+
+    [character-finder-action="accept"] {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+        
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>
