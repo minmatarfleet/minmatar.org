@@ -5,7 +5,6 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
 import { query_string } from '@helpers/string';
 
 import type { User } from '@dtypes/jwt'

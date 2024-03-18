@@ -146,7 +146,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                             class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
                             x-show="search !== '' && filtered_pages.length === 0"
                         >
-                            <span>No pages found</span>
+                            <span>{t('no_pages')}</span>
                         </div>
                         {pages.map((page) =>
                             <a
