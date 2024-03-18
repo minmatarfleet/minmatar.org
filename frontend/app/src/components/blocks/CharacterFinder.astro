@@ -24,8 +24,6 @@ try {
     get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
 }
 
-console.log(members)
-
 interface Props {
     [propName: string]: any;
 }
@@ -43,7 +41,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
 
 <div
-    transition:persist
     class="[ characters-finder ]"    
     x-data={`{
         search: '',
