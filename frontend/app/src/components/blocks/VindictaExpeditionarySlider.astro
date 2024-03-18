@@ -1,0 +1,145 @@
+---
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<CorporationSlide
+    id="vindicta-slide"
+    ceo_image='/images/corporations/vindicta/ceo.png'
+    ceo_character_id={2120708580}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ firetail ]" src="/images/corporations/vindicta/firetail.png" />
+    <img slot="ships" class="[ thrasher ]" src="/images/corporations/vindicta/thrasher.png" />
+    <img slot="ships" class="[ cyclone ]" src="/images/corporations/vindicta/cyclone.png" />
+
+    <Flexblock>
+        <p>Our focus is clear - the crucible of battle is our home. Engage in Faction Warfare, roam the warzones, and partake in epic clashes where victory is forged by the fires of combat.</p>
+    </Flexblock>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .firetail {
+        position: absolute;
+        top: 22%;
+        right: 27%;
+        height: auto;
+        width: 32%;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .thrasher {
+        position: absolute;
+        top: 22%;
+        right: 29%;
+        width: 53%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .cyclone {
+        position: absolute;
+        right: 24%;
+        top: 30%;
+        width: 50%;
+        height: auto;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    @keyframes firetail {
+        from {
+            transform: scale(0);
+            top: 22%;
+            right: 27%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 12%;
+            right: 43%;
+        }
+    }
+
+    @keyframes thrasher {
+        from {
+            transform: scale(0);
+            top: 22%;
+            right: 29%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 29%;
+            right: 49%;
+        }
+    }
+
+    @keyframes cyclone {
+        from {
+            transform: scale(0);
+            top: 30%;
+            right: 24%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 43%;
+            right: 46%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #vindicta-slide .ceo {
+        right: 7%;
+    }
+
+    .swiper-slide-active {
+        .firetail {
+            animation: firetail ease-out 0.25s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .thrasher {
+            animation: thrasher ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .cyclone {
+            animation: cyclone ease-out 0.25s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
