@@ -16,7 +16,7 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 import { get_all_members } from '@helpers/fetching/groups'
 import type { CharacterBasic } from '@dtypes/layout_components'
 
-let members:CharacterBasic[]
+let members:CharacterBasic[] = []
 let get_groups_members_error:string | false = false
 try {
     members = (auth_token && user ? await get_all_members(auth_token, user.user_id) : [])
@@ -120,7 +120,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                 <Flexblock gap='var(--space-3xs)'>
                     <Flexblock
                         class="[ character-finder-list ][ light-transparency w-full ]"
-                        gap='var(--space-2xs)'
+                        gap='var(--space-3xs)'
                         x-show="(search !== '')"
                     >
                         <div
@@ -197,7 +197,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
     }
 
     :global(.character-finder-list :not([style="display: none;"]) ~ button) {
-        margin-block-start: var(--space-2xs) !important;
+        margin-block-start: var(--space-3xs) !important;
     }
 
     .dialog {
