@@ -55,7 +55,12 @@ import Wrapper from '@components/compositions/Wrapper.astro'
                 <p>Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and lnd courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences.</p>
             </TextBox>
             <ButtonStack>
-                <Button href={translatePath('/alliance/corporations/associates')}>{t('view_corporations')}</Button>
+                <Button
+                    size='sm'
+                    href={translatePath('/alliance/corporations/associates')}
+                >
+                    {t('view_corporations')}
+                </Button>
             </ButtonStack>
         </Flexblock>
     </Wrapper>
