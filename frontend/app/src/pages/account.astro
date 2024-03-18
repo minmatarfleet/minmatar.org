@@ -13,6 +13,10 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+
 if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
     return Astro.redirect(get_auth_url())
@@ -257,14 +261,28 @@ const page_title = t('account.page_title');
                     <TutorialIcon />
                     <h2>{t('hotkeys')}</h2>
                 </FixedFluid>
-                <FlexInline gap="var(--space-3xs)">
-                    <Kbd>Ctrl</Kbd>
-                    <span class="[ text-[var(--highlight)] ]">+</span>
-                    <Kbd>Shift</Kbd>
-                    <span class="[ text-[var(--highlight)] ]">+</span>
-                    <Kbd>Q</Kbd>
-                    <small>Quick navigation</small>
-                </FlexInline>
+
+                <Flexblock gap='var(--space-3xs)'>
+                    <FlexInline gap="var(--space-3xs)">
+                        <Kbd>Ctrl</Kbd>
+                        <span class="[ text-[var(--highlight)] ]">+</span>
+                        <Kbd>Shift</Kbd>
+                        <span class="[ text-[var(--highlight)] ]">+</span>
+                        <Kbd>Q</Kbd>
+                        <small>Quick navigation</small>
+                    </FlexInline>
+
+                    {(user_is_officer || user_is_director) &&
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Ctrl</Kbd>
+                            <span class="[ text-[var(--highlight)] ]">+</span>
+                            <Kbd>Shift</Kbd>
+                            <span class="[ text-[var(--highlight)] ]">+</span>
+                            <Kbd>F</Kbd>
+                            <small>Membership finder</small>
+                        </FlexInline>
+                    }
+                </Flexblock>
             </Flexblock>
         </ComponentBlock>
     </PageAside>

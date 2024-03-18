@@ -3,7 +3,7 @@ import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
 import type { Group, SigRequest, TeamRequest, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { GroupItemType, GroupItemUI, GroupMembersUI, MemberUI } from '@dtypes/layout_components'
+import type { GroupItemType, GroupItemUI, GroupMembersUI, MemberUI, CharacterBasic } from '@dtypes/layout_components'
 
 import {
     get_groups as get_sigs,
@@ -193,4 +193,62 @@ export async function is_officer(access_token:string, user_id:number) {
     }
     
     return groups.filter( (group) => group.officers.includes(user_id) ).length > 0
+}
+
+export async function get_all_members(access_token:string, user_id:number) {
+    let groups_members:GroupMembersUI[] = []
+    let team_members:GroupMembersUI[] = []
+    let character_ids:number[] = []
+    let members:CharacterBasic[] = []
+    
+    const user_is_officer = await is_officer(access_token, user_id)
+    const user_is_director = await is_director(access_token, user_id)
+
+    if (user_is_officer)
+        groups_members = await get_all_groups_members(access_token, 'group')
+    
+    if (user_is_director)
+        team_members = await get_all_groups_members(access_token, 'team')
+
+    groups_members.forEach( (group) => {
+        group.members.forEach( (member) => {
+            if (character_ids.includes(member.character_id))
+                return true
+
+            character_ids.push(member.character_id)
+
+            members.push({
+                character_id: member.character_id,
+                character_name: member.character_name,
+                corporation: {
+                    id: member.corporation_id,
+                    name: member.corporation_name
+                }
+            })
+        })
+    })
+
+    console.log(members)
+
+    team_members.forEach( (group) => {
+        group.members.forEach( (member) => {
+            if (character_ids.includes(member.character_id))
+                return true
+
+            character_ids.push(member.character_id)
+
+            members.push({
+                character_id: member.character_id,
+                character_name: member.character_name,
+                corporation: {
+                    id: member.corporation_id,
+                    name: member.corporation_name
+                }
+            })
+        })
+    })
+
+    console.log(members)
+
+    return members
 }

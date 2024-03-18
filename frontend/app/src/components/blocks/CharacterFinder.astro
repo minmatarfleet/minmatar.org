@@ -11,50 +11,24 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+import { get_all_members } from '@helpers/fetching/groups'
+import type { CharacterBasic } from '@dtypes/layout_components'
 
-import type { PageFinderUI } from '@dtypes/layout_components'
-import sitemap from '@json/sitemap.json'
+let members:CharacterBasic[]
+let get_groups_members_error:string | false = false
+try {
+    members = (auth_token && user ? await get_all_members(auth_token, user.user_id) : [])
+} catch (error) {
+    get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
+}
 
-console.log(sitemap)
+console.log(members)
 
 interface Props {
     [propName: string]: any;
 }
-
-const pages = sitemap.filter( (page:PageFinderUI) => {
-    if (!page.publish && is_prod_mode())
-        return false
-
-    if (!page?.permissions)
-        return true
-
-    if (page.permissions?.auth && !user)
-        return false
-
-    if (page.permissions?.group_officer && !user_is_officer)
-        return false
-
-    if (page.permissions?.team_director && !user_is_director)
-        return false
-
-    if (page.permissions?.superuser && (!user || !user?.is_superuser))
-        return false
-
-    return true
-})
-
-const filter_pages = pages.map( (page) => {
-    return {
-        slug: page.slug,
-        keywords: page?.keywords ?? [],
-        title: t(`${page.slug}.page_title` as any)
-    }
-})
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -62,54 +36,64 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
 import Input from '@components/blocks/Input.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
 
 <div
     transition:persist
-    class="[ pages-finder ]"    
+    class="[ characters-finder ]"    
     x-data={`{
         search: '',
-        filtered_pages: [ false ],
-        pages: ${JSON.stringify(filter_pages)},
-        page_filter() {
+        filtered_characters: [ false ],
+        characters: ${JSON.stringify(members)},
+        character_filter() {
             if (this.search === '') {
-                this.filtered_pages = [ false ]
+                this.filtered_characters = [ false ]
                 return
             }
 
-            const filtered_pages = []
+            const filtered_characters = []
 
-            this.pages.forEach( (page) => {
-                const search = page.title.toLowerCase().concat(' ', page?.keywords.join(' ') ?? '')
+            this.characters.forEach( (character) => {
+                const search = character.character_name.toLowerCase()
                 
                 if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
-                    filtered_pages.push(page.slug)
+                    filtered_characters.push(character.character_id)
             })
             
-            this.filtered_pages = filtered_pages
+            this.filtered_characters = filtered_characters
         },
-        async ctrl_shift_q(e) {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyQ')
-                show_pages_finder()
+        async ctrl_shift_f(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+                show_characters_finder().then( (character_id) => {
+                    if (!character_id)
+                        return
+
+                    show_modal({
+                        partial: \`${translatePath('/partials/character_modal_component/')}?character_id=\${character_id}\`,
+                    })
+                })
+            }
         },
         init() {
-            document.addEventListener('keyup', this.ctrl_shift_q, false);
+            document.addEventListener('keyup', this.ctrl_shift_f, false);
         }
     }`}
 >
     <Dialog
         breakout={true}
         non_centered={true}
-        class="[ w-full max-w-[750px] ]"
+        class="[ w-full max-w-[500px] ]"
         x-data={`{
             close_dialog() {
-                if (!pages_finder_open)
+                if (!characters_finder_open)
                     return
 
                 search = ''
-                filtered_pages = [ false ]
+                filtered_characters = [ false ]
                 
                 var clickEvent = new MouseEvent("click", {
                     "view": window,
@@ -117,19 +101,19 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     "cancelable": false
                 });
 
-                document.querySelector('.pages-finder-backdrop').dispatchEvent(clickEvent);
+                document.querySelector('.characters-finder-backdrop').dispatchEvent(clickEvent);
             }
         }`}
         @keyup.escape.window="close_dialog()"
-        x-bind:class="(pages_finder_open ? 'open' : '')"
-        x-bind:aria-hidden="pages_finder_open == false"
+        x-bind:class="(characters_finder_open ? 'open' : '')"
+        x-bind:aria-hidden="characters_finder_open == false"
         thin={true}
     >
         <Flexblock gap="0">
             <Input
-                placeholder={t('find_page_placeholder')}
+                placeholder={t('find_character_placeholder')}
                 x-model="search"
-                x-on:keyup="page_filter()"
+                x-on:keyup="character_filter()"
                 class="[ relative z-10 ]"
             >
                 <MagnifierIcon slot="icon" />
@@ -138,50 +122,35 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
             <div class="[ relative ]">
                 <Flexblock gap='var(--space-3xs)'>
                     <Flexblock
-                        class="[ page-finder-list ][ light-transparency w-full ]"
+                        class="[ character-finder-list ][ light-transparency w-full ]"
                         gap='var(--space-2xs)'
                         x-show="(search !== '')"
                     >
                         <div
                             class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
-                            x-show="search !== '' && filtered_pages.length === 0"
+                            x-show="search !== '' && filtered_characters.length === 0"
                         >
-                            <span>{t('no_pages')}</span>
+                            <span>{t('no_characters')}</span>
                         </div>
-                        {pages.map((page) =>
-                            <a
-                                href={translatePath(page.path)}
-                                page-finder-action="accept"
-                                page-finder-data={JSON.stringify(translatePath(page.path))}
+                        {members.map((member) =>
+                            <StylessButton
+                                type="button"
+                                character-finder-action="accept"
+                                character-finder-data={member.character_id}
                                 x-show="show_item($el)"
                                 x-on:click="(search = '')"
                                 x-data={`{
                                     show_item() {
-                                        return filtered_pages.includes('${page.slug}')
+                                        return filtered_characters.includes(${member.character_id})
                                     }
                                 }`}
                             >
-                                <FlexInline
-                                    class="[ items-center ]"
-                                    gap='var(--space-2xs)'
-                                >
-                                    <picture>
-                                        {page.icon &&
-                                            <img src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
-                                        }
-                                    </picture>
-                                    <Flexblock gap='0' class="[ items-start ]">
-                                        <span class="[ truncate ]">
-                                            {t(`${page.slug}.page_title` as any)}
-                                            <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
-                                        </span>
-                                        {page?.description &&
-                                            <small>{t(page.description as any)}</small>
-                                        }
-                                        <small><code class="[ p-0 ]">{page.path}</code></small>
-                                    </Flexblock>
-                                </FlexInline>
-                            </a>
+                                <PilotBadge
+                                    character_id={member.character_id}
+                                    character_name={member.character_name}
+                                    corporation={member.corporation}
+                                />
+                            </StylessButton>
                         )}
                     </Flexblock>
 
@@ -209,15 +178,15 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
     </Dialog>
 
     <div
-        class="pages-finder-backdrop"
-        x-bind:class="(pages_finder_open ? 'open' : '')"
-        page-finder-action="close"
+        class="characters-finder-backdrop"
+        x-bind:class="(characters_finder_open ? 'open' : '')"
+        character-finder-action="close"
         x-on:click="(filter = '')"
     />
 </div>
 
 <style lang="scss">
-    :global([page-finder-action] *) {
+    :global([character-finder-action] *) {
         pointer-events: none !important;
     }
 
@@ -226,11 +195,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         width: 48px;
     }
 
-    :global(.page-finder-list [style="display: none;"] ~ a) {
+    :global(.character-finder-list [style="display: none;"] ~ button) {
         margin-block-start: 0 !important;
     }
 
-    :global(.page-finder-list :not([style="display: none;"]) ~ a) {
+    :global(.character-finder-list :not([style="display: none;"]) ~ button) {
         margin-block-start: var(--space-2xs) !important;
     }
 
@@ -238,7 +207,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         top: 12%;
     }
     
-    .page-finder-list {
+    .character-finder-list {
         overflow-y: auto;
         max-height: 320px;
         background-color: #171616;
@@ -247,7 +216,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         height: calc(100% - 20px);
     }
 
-    [page-finder-action="close"] {
+    [character-finder-action="close"] {
         position: fixed;
         inset: 0;
         z-index: var(--backdrop-z-index);
@@ -258,7 +227,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         }
     }
 
-    [page-finder-action="accept"] {
+    [character-finder-action="accept"] {
         background-color: transparent;
         cursor: pointer;
         border: none;

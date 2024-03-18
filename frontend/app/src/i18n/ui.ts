@@ -519,5 +519,8 @@ export const ui = {
         'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
         'page_finder.account.description': 'Your profile management page',
         'hotkeys': 'Hotkeys',
+        'find_character_placeholder': 'Type character name to find',
+        'no_characters': 'No characters found',
+        'no_pages': 'No pages found',
     },
 } as const;
