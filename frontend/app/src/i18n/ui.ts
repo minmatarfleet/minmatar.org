@@ -527,5 +527,7 @@ export const ui = {
         'membership_finder': 'Membership finder',
         'close_dialogs': 'Close dialogs',
         'get_roles_error': 'An error ocurred fetching the user roles.',
+        'report_issues_text': 'If you find any issue you can report it at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
+        'contribute': 'Contribute',
     },
 } as const;
