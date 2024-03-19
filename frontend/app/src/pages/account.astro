@@ -269,7 +269,7 @@ const page_title = t('account.page_title');
                         <Kbd>Shift</Kbd>
                         <span class="[ text-[var(--highlight)] ]">+</span>
                         <Kbd>Q</Kbd>
-                        <small>Quick navigation</small>
+                        <small>{t('quick_navigation')}</small>
                     </FlexInline>
 
                     {(user_is_officer || user_is_director) &&
@@ -279,9 +279,14 @@ const page_title = t('account.page_title');
                             <Kbd>Shift</Kbd>
                             <span class="[ text-[var(--highlight)] ]">+</span>
                             <Kbd>F</Kbd>
-                            <small>Membership finder</small>
+                            <small>{t('membership_finder')}</small>
                         </FlexInline>
                     }
+
+                    <FlexInline gap="var(--space-3xs)">
+                        <Kbd>Esc</Kbd>
+                        <small>{t('close_dialogs')}</small>
+                    </FlexInline>
                 </Flexblock>
             </Flexblock>
         </ComponentBlock>
