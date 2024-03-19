@@ -16,6 +16,7 @@ export const ui = {
         'neocom.doctrines': 'Doctrines',
         'neocom.fleets': 'Fleets',
         'neocom.intel': 'Intel',
+        'neocom.help': 'Help',
         'neocom.zkillboard': 'Zkillboard',
 
         'generic.meta_description': 'The ultimate platform for Minmatar pilots, provided by the Minmatar Fleet Alliance.',
@@ -525,5 +526,6 @@ export const ui = {
         'quick_navigation': 'Quick navigation',
         'membership_finder': 'Membership finder',
         'close_dialogs': 'Close dialogs',
+        'get_roles_error': 'An error ocurred fetching the user roles.',
     },
 } as const;
