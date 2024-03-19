@@ -4,63 +4,25 @@ import { getLangFromUrl, useTranslations, } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import { is_prod_mode } from '@helpers/env'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-import { is_officer, is_director } from '@helpers/fetching/groups'
-
-let user_is_officer = false
-let user_is_director = false
-let get_roles_error:string
-
-try {
-    user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-    user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
-} catch (error) {
-    get_roles_error = (is_prod_mode() ? t('get_roles_error') : error.message)
-}
-
-import { get_app_url } from '@helpers/env'
-
-const HELP_MODAL_PARTIAL_URL = `${get_app_url()}/partials/help_modal_component`
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
 import InterContext from '@components/layout/InterContext.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Hotkeys from '@components/blocks/Hotkeys.astro'
 ---
 
-{get_roles_error ?
-    <ErrorRefetch
-        args={{
-            partial: HELP_MODAL_PARTIAL_URL,
-            message: get_roles_error,
-            delay: delay,
-            target: '#hotkeys',
-        }}
-    />
-    :
-    <Wrapper
-        padding_block='var(--component-padding-block)'
-        padding_inline='var(--space-l-xl)'
-    >
-        <InterContext>
-            <Hotkeys user_is_officer={user_is_officer} user_is_director={user_is_director} />
-            
-            <Flexblock>
-                <h2>{t('contribute')}</h2>
-                <p set:html={marked.parseInline(t('report_issues_text'), { renderer })} />
-            </Flexblock>
-        </InterContext>
-    </Wrapper>
-}
+<Wrapper
+    padding_block='var(--component-padding-block)'
+    padding_inline='var(--space-l-xl)'
+>
+    <InterContext>
+        <Hotkeys />
+        
+        <Flexblock>
+            <h2>{t('contribute')}</h2>
+            <p set:html={marked.parseInline(t('report_issues_text'), { renderer })} />
+        </Flexblock>
+    </InterContext>
+</Wrapper>
