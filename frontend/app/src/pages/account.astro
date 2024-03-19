@@ -263,29 +263,35 @@ const page_title = t('account.page_title');
                 </FixedFluid>
 
                 <Flexblock gap='var(--space-3xs)'>
-                    <FlexInline gap="var(--space-3xs)">
-                        <Kbd>Ctrl</Kbd>
-                        <span class="[ text-[var(--highlight)] ]">+</span>
-                        <Kbd>Shift</Kbd>
-                        <span class="[ text-[var(--highlight)] ]">+</span>
-                        <Kbd>Q</Kbd>
+                    <FlexInline justification='space-between'>
                         <small>{t('quick_navigation')}</small>
-                    </FlexInline>
-
-                    {(user_is_officer || user_is_director) &&
                         <FlexInline gap="var(--space-3xs)">
                             <Kbd>Ctrl</Kbd>
                             <span class="[ text-[var(--highlight)] ]">+</span>
                             <Kbd>Shift</Kbd>
                             <span class="[ text-[var(--highlight)] ]">+</span>
-                            <Kbd>F</Kbd>
+                            <Kbd>Q</Kbd>
+                        </FlexInline>
+                    </FlexInline>
+
+                    {(user_is_officer || user_is_director) &&
+                        <FlexInline justification='space-between'>
                             <small>{t('membership_finder')}</small>
+                            <FlexInline gap="var(--space-3xs)">
+                                <Kbd>Ctrl</Kbd>
+                                <span class="[ text-[var(--highlight)] ]">+</span>
+                                <Kbd>Shift</Kbd>
+                                <span class="[ text-[var(--highlight)] ]">+</span>
+                                <Kbd>F</Kbd>
+                            </FlexInline>
                         </FlexInline>
                     }
 
-                    <FlexInline gap="var(--space-3xs)">
-                        <Kbd>Esc</Kbd>
+                    <FlexInline justification='space-between'>
                         <small>{t('close_dialogs')}</small>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Esc</Kbd>
+                        </FlexInline>
                     </FlexInline>
                 </Flexblock>
             </Flexblock>
