@@ -522,5 +522,8 @@ export const ui = {
         'find_character_placeholder': 'Type character name to find',
         'no_characters': 'No characters found',
         'no_pages': 'No pages found',
+        'quick_navigation': 'Quick navigation',
+        'membership_finder': 'Membership finder',
+        'close_dialogs': 'Close dialogs',
     },
 } as const;
