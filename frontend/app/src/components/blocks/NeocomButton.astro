@@ -96,12 +96,14 @@ const optional_attributes = {
         }
     }
 
-    :global(a.neocom-button img) {
+    :global(a.neocom-button img),
+    :global(button.neocom-button img) {
         transition: var(--fast-transition);
         filter: drop-shadow(0 0 5px transparent);
     }
 
-    :global(a.neocom-button:hover img) {
+    :global(a.neocom-button:hover img),
+    :global(button.neocom-button:hover img) {
         filter: drop-shadow(0 0 5px white);
     }
 </style>
