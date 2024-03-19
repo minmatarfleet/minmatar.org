@@ -100,14 +100,14 @@ const page_title = t('account.page_title');
         
         <Context>            
             <ComponentBlock width='narrow'>
-                <FlexInline gap="var(--space-3xl)" justification='space-between'>
-                    <FlexInline gap="var(--space-3xl)">
-                        <VerticalCenter>
+                <FlexInline justification='space-between'>
+                    <FlexInline class="[ grow ]">
+                        <VerticalCenter class="[ basis-48 ]">
                             <TextGroup title={t('account_name')}>
                                 {user.username}
                             </TextGroup>
                         </VerticalCenter>
-                        <VerticalCenter>
+                        <VerticalCenter class="[ basis-48 ]">
                             <TextGroup title={t('roles')}>
                                 {roles_semantic_list}
                             </TextGroup>
