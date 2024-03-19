@@ -1,10 +1,13 @@
 ---
+import StylessButton from './StylessButton.astro';
+
 interface Props {
-    active?: boolean;
-    title?: string;
-    href: string;
-    external?: boolean;
-    overlay?: boolean;
+    active?:    boolean;
+    title?:     string;
+    href?:      string;
+    external?:  boolean;
+    overlay?:   boolean;
+    [propName: string]: any;
 }
 
 const {
@@ -12,7 +15,8 @@ const {
     title,
     href,
     external = false,
-    overlay = false
+    overlay = false,
+    ...attributes
 } = Astro.props;
 
 const optional_attributes = {
@@ -20,19 +24,22 @@ const optional_attributes = {
 }
 ---
 
-<a href={ href }
+<StylessButton
+    href={ href }
     class:list={[ 'neocom-button', { active: active, overlay: overlay } ]}
     {...optional_attributes}
+    {...attributes}
     data-astro-prefetch="hover"
     data-tippy-content={title}
     data-tippy-delay="[1000, 200]"
     data-tippy-placement='right'
 >
     <slot />
-</a>
+</StylessButton>
 
 <style lang="scss">
-    a {
+    a,
+    button {
         text-decoration: none;
         display: flex;
         position: relative;

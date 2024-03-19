@@ -13,10 +13,6 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
-
 if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
     return Astro.redirect(get_auth_url())
@@ -49,14 +45,13 @@ const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageAside from '@components/page/PageAside.astro';
+import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Context from '@components/layout/Context.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import TextGroup from '@components/blocks/TextGroup.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
@@ -65,12 +60,10 @@ import PilotsList from '@components/blocks/PilotsList.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
-import Kbd from '@components/blocks/Kbd.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
 const page_title = t('account.page_title');
 ---
@@ -83,7 +76,7 @@ const page_title = t('account.page_title');
         modal: true
     }}
 >
-    <PageAside
+    <PageDefault
         cover={{
             image: "/images/account-cover.jpg",
             image_990: "/images/account-cover-990.jpg",
@@ -251,52 +244,7 @@ const page_title = t('account.page_title');
                 </ComponentBlock>
             </Context>
         </Context>
-
-        <ComponentBlock
-            slot="aside"
-            width='narrow'
-        >
-            <Flexblock>
-                <FixedFluid width="48" class="[ items-center ]">
-                    <TutorialIcon />
-                    <h2>{t('hotkeys')}</h2>
-                </FixedFluid>
-
-                <Flexblock gap='var(--space-3xs)'>
-                    <FlexInline justification='space-between'>
-                        <small>{t('quick_navigation')}</small>
-                        <FlexInline gap="var(--space-3xs)">
-                            <Kbd>Ctrl</Kbd>
-                            <span class="[ text-[var(--highlight)] ]">+</span>
-                            <Kbd>Shift</Kbd>
-                            <span class="[ text-[var(--highlight)] ]">+</span>
-                            <Kbd>Q</Kbd>
-                        </FlexInline>
-                    </FlexInline>
-
-                    {(user_is_officer || user_is_director) &&
-                        <FlexInline justification='space-between'>
-                            <small>{t('membership_finder')}</small>
-                            <FlexInline gap="var(--space-3xs)">
-                                <Kbd>Ctrl</Kbd>
-                                <span class="[ text-[var(--highlight)] ]">+</span>
-                                <Kbd>Shift</Kbd>
-                                <span class="[ text-[var(--highlight)] ]">+</span>
-                                <Kbd>F</Kbd>
-                            </FlexInline>
-                        </FlexInline>
-                    }
-
-                    <FlexInline justification='space-between'>
-                        <small>{t('close_dialogs')}</small>
-                        <FlexInline gap="var(--space-3xs)">
-                            <Kbd>Esc</Kbd>
-                        </FlexInline>
-                    </FlexInline>
-                </Flexblock>
-            </Flexblock>
-        </ComponentBlock>
-    </PageAside>
+    </PageDefault>
 </Viewport>
 
 <style lang="scss">

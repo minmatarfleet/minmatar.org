@@ -1,8 +1,24 @@
-<button {...Astro.props}>
+---
+interface Props {
+    href?:      string;
+}
+
+const {
+    href,
+} = Astro.props;
+
+const Element = href ? 'a' : 'button';
+---
+
+<Element
+    href={ href }
+    {...Astro.props}
+>
     <slot />
-</button>
+</Element>
 
 <style lang="scss">
+    a,
     button {
         border: none;
         padding: 0;

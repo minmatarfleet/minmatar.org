@@ -20,6 +20,7 @@ import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
 const page = Astro.url.pathname
 ---
@@ -52,6 +53,19 @@ const page = Astro.url.pathname
         }
         <NeocomButton active={page.startsWith(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
             <IntelEvEIcon />
+        </NeocomButton>
+        <NeocomButton
+            title={t('neocom.intel')}
+            x-data={`{
+                show_help_modal() {
+                    show_modal({
+                        partial: '${translatePath('/partials/help_modal_component/')}',
+                    })
+                }
+            }`}
+            x-on:click="show_help_modal()"
+        >
+            <TutorialIcon />
         </NeocomButton>
         <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
             <ZkillboardEvEIcon />
