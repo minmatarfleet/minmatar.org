@@ -25,6 +25,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import AllianceSwiper from '@components/blocks/AllianceSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Tag from '@components/blocks/Tag.astro';
 
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
@@ -83,6 +84,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                     {t('view_groups')}
                                 </Button>
                                 
+                                {user_is_officer === null &&
+                                    <Tag text={t('page_reload_error')} />
+                                }
                                 {user_is_officer &&
                                     <Button size='sm' href={translatePath('/alliance/sigs/requests/')}>
                                         {t('group_requests')}
@@ -114,6 +118,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                     {t('view_teams')}
                                 </Button>
                                 
+                                {user_is_director === null &&
+                                    <Tag text={t('page_reload_error')} />
+                                }
                                 {user_is_director &&
                                     <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
                                         {t('team_requests')}
