@@ -34,7 +34,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <Wrapper
-    class="[ alliance-reel ][ lg:!px-[var(--space-xl)] ]"
+    class="[ alliance-reel ]"
     padding_block='0'
     padding_inline='0'
     max_width='100%'
@@ -152,6 +152,19 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
     .swiper-button-prev,
     .swiper-button-next {
         --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
     }
 
     .swiper-button-next.swiper-button-disabled,
