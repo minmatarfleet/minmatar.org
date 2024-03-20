@@ -21,15 +21,11 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 
-import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
-import ButtonCard from '@components/blocks/ButtonCard.astro';
-
-import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
-import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
-import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
+import AllianceReel from '@components/blocks/AllianceReel.astro';
+// import AllianceBento from '@components/blocks/AllianceBento.astro';
 
 const page_title = t('alliance.page_title');
 const page_description = t('alliance.leading_text');
@@ -49,31 +45,24 @@ const page_description = t('alliance.leading_text');
             alt: t('alliance.cover_alt'),
             overlay: true
         }}
+        wide={true}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <Flexblock>
-                <h1>{page_title}</h1>
-                <p>{page_description}</p>
-            </Flexblock>
+            <Wrapper
+                max_width="var(--max-landing-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+            </Wrapper>
             
-
-            <ButtonCardGrid>
-                {user_is_director &&
-                    <ButtonCard title={t('teams')} href={translatePath('/alliance/teams/')}>
-                        <AugmentationEvEIcon slot="icon" />
-                    </ButtonCard>
-                }
-
-                {user_is_officer &&
-                    <ButtonCard title={t('sigs')} href={translatePath('/alliance/sigs/')}>
-                        <GroupsEvEIcon slot="icon" />
-                    </ButtonCard>
-                }
-
-                <ButtonCard title={t('corporations')} href={translatePath('/alliance/corporations/list/')}>
-                    <CorporationEvEIcon slot="icon" />
-                </ButtonCard>
-            </ButtonCardGrid>
+            <AllianceReel
+                user_is_officer={user_is_officer}
+                user_is_director={user_is_director}
+            />
         </Flexblock>
 
         <small class="[ cover-credits ][ hidden lg:block ]">
