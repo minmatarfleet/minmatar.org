@@ -61,8 +61,10 @@ import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 import GroupsMembers from '@components/blocks/GroupsMembers.astro';
+import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -156,25 +158,31 @@ const page_title = t('groups.members.page_title')
             </FlexInline>
         </FlexInline>
 
-        {get_groups_members_error ?
-            <GroupsMembers
-                groups={[]}
-                type='group'
-            >
-                <ErrorRefetch
-                    args={{
-                        partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=group`,
-                        message: get_groups_members_error,
-                        delay: 0,
-                        target: '#assets-list',
-                    }}
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('groups.members.leading_text')}</p>
+            </TextBox>
+
+            {get_groups_members_error ?
+                <GroupsMembers
+                    groups={[]}
+                    type='group'
+                >
+                    <ErrorRefetch
+                        args={{
+                            partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=group`,
+                            message: get_groups_members_error,
+                            delay: 0,
+                            target: '#assets-list',
+                        }}
+                    />
+                </GroupsMembers>
+                :
+                <GroupsMembers
+                    groups={groups_members}
+                    type='group'
                 />
-            </GroupsMembers>
-            :
-            <GroupsMembers
-                groups={groups_members}
-                type='group'
-            />
-        }
+            }
+        </Flexblock>
     </PageDefault>
 </Viewport>

@@ -1,0 +1,117 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    user_is_officer?:   boolean;
+    user_is_director?:  boolean;
+}
+
+const {
+    user_is_officer = false,
+    user_is_director = false,
+} = Astro.props
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
+import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
+import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
+---
+
+<FlexInline
+    class="[ alliance-reel ]"
+    padding_block='0'
+    padding_inline='var(--space-xl)'
+    max_width='100%'
+>
+    <ComponentBlock max_width='700px'>
+        <Flexblock>
+            <FlexInline gap='var(--space-2xs)'>
+                <CorporationEvEIcon />
+                <h2>{t('corporations')}</h2>
+            </FlexInline>
+            
+            <Flexblock gap='var(--space-m)'>
+                <p>{t('corporations.leading_text')}</p>
+
+                <FlexInline>
+                    <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
+                        {t('view_corporations')}
+                    </Button>
+                    <Button size='sm' href={translatePath('/alliance/corporations/associates/')}>
+                        {t('view_associates_corporations')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock max_width='700px'>
+        <Flexblock>
+            <FlexInline gap='var(--space-2xs)'>
+                <GroupsEvEIcon />
+                <h2>{t('groups.page_title')}</h2>
+            </FlexInline>
+            
+            <Flexblock gap='var(--space-m)'>
+                <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
+
+                <FlexInline>
+                    <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
+                        {t('view_groups')}
+                    </Button>
+                    
+                    {user_is_officer &&
+                        <Button size='sm' href={translatePath('/alliance/sigs/requests/')}>
+                            {t('group_requests')}
+                        </Button>
+                        
+                        <Button size='sm' href={translatePath('/alliance/sigs/members/')}>
+                            {t('view_members')}
+                        </Button>
+                    }
+                </FlexInline>
+            </Flexblock>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock max_width='700px'>
+        <Flexblock>
+            <FlexInline gap='var(--space-2xs)'>
+                <AugmentationEvEIcon />
+                <h2>{t('teams.page_title')}</h2>
+            </FlexInline>
+            
+            <Flexblock gap='var(--space-m)'>
+                <p>{t('teams.leading_text')}</p>
+
+                <FlexInline>
+                    <Button size='sm' href={translatePath('/alliance/teams/list/')}>
+                        {t('view_teams')}
+                    </Button>
+                    
+                    {user_is_director &&
+                        <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
+                            {t('team_requests')}
+                        </Button>
+                        
+                        <Button size='sm' href={translatePath('/alliance/teams/members/')}>
+                            {t('view_members')}
+                        </Button>
+                    }
+                </FlexInline>
+            </Flexblock>
+        </Flexblock>
+    </ComponentBlock>
+</FlexInline>
