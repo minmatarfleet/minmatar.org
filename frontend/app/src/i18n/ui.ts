@@ -217,7 +217,7 @@ export const ui = {
         '30_day_summary': '30 day summary',
         'list_fits_button': 'List all fits',
         'fleet_notification_title': 'Next incoming fleet',
-        'skip_to_content': 'Skip to content',
+        'skip_to_content': 'Skip Neocom',
         'view_details': 'View details',
         'fleet_commander': 'Fleet Commander',
         'type': 'Type',
@@ -534,5 +534,6 @@ export const ui = {
         'report_issues_text': 'If you find any issue you can report it at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
         'contribute': 'Contribute',
         'view_associates_corporations': 'View associates corporations',
+        'page_reload_error': 'A page reload might be desired to show all options.',
     },
 } as const;
