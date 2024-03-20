@@ -46,8 +46,10 @@ import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 import GroupRequestsList from '@components/blocks/GroupRequestsList.astro';
+import TextBox from '@components/layout/TextBox.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
 
@@ -88,25 +90,31 @@ const page_title = t('groups.requests.page_title');
             </FlexInline>
         </FlexInline>
 
-        {get_all_groups_requests_error ?
-            <GroupRequestsList
-                groups_requests={groups_requests}
-                groups_type='group'
-            >
-                <ErrorRefetch
-                    args={{
-                        partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=group`,
-                        message: get_all_groups_requests_error,
-                        delay: 0,
-                        target: '#group-request-list',
-                    }}
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('groups.requests.leading_text')}</p>
+            </TextBox>
+
+            {get_all_groups_requests_error ?
+                <GroupRequestsList
+                    groups_requests={groups_requests}
+                    groups_type='group'
+                >
+                    <ErrorRefetch
+                        args={{
+                            partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=group`,
+                            message: get_all_groups_requests_error,
+                            delay: 0,
+                            target: '#group-request-list',
+                        }}
+                    />
+                </GroupRequestsList>
+                :
+                <GroupRequestsList
+                    groups_requests={groups_requests}
+                    groups_type='group'
                 />
-            </GroupRequestsList>
-            :
-            <GroupRequestsList
-                groups_requests={groups_requests}
-                groups_type='group'
-            />
-        }
+            }
+        </Flexblock>
     </PageDefault>
 </Viewport>

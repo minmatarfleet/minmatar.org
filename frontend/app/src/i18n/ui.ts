@@ -111,8 +111,10 @@ export const ui = {
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
         
         'groups.members.page_title': 'SIGs members',
+        'groups.members.leading_text': 'Here a list of all members for your managed group(s). You may use the filters to look up for your members faster.',
 
         'teams.members.page_title': 'Teams members',
+        'teams.members.leading_text': 'Here a list of all members for your managed team(s). You may use the filters to look up for your members faster.',
 
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
 
@@ -134,8 +136,10 @@ export const ui = {
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
         'groups.requests.page_title': 'SIGs requests',
+        'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
 
         'teams.requests.page_title': 'Team requests',
+        'teams.requests.leading_text': 'Here a list of all the joining requests for your managed team(s).',
         
         'groups.management.page_title': 'Goups management',
 
@@ -229,7 +233,7 @@ export const ui = {
         'copy_to_clipboard': 'Copy to Clipboard',
         'copy': 'Copy',
         'ideal_composition': 'Ideal Composition',
-        'filter': 'Filter',
+        'filter': 'Search',
         'doctrine': 'Doctrine',
         'no_results': 'The capacitor is empty!',
         'back_to_safe': 'Back to the home station',
@@ -524,10 +528,11 @@ export const ui = {
         'no_characters': 'No characters found',
         'no_pages': 'No pages found',
         'quick_navigation': 'Quick navigation',
-        'membership_finder': 'Membership finder (only officers and directors)',
+        'membership_finder': 'Membership finder (officers and directors only)',
         'close_dialogs': 'Close dialogs',
         'get_roles_error': 'An error ocurred fetching the user roles.',
         'report_issues_text': 'If you find any issue you can report it at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
         'contribute': 'Contribute',
+        'view_associates_corporations': 'View associates corporations',
     },
 } as const;
