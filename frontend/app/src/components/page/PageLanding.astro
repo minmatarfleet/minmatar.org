@@ -7,12 +7,14 @@ import type { PageCoverOptions } from '@dtypes/layout_components'
 interface Props {
     cover?:                 false | PageCoverOptions;
     wide?:                  boolean;
+    fullscreen?:            boolean;
     [propName: string]:     any;
 }
 
 const {
     cover,
     wide = false,
+    fullscreen = false,
     ...attributes
 } = Astro.props;
 
@@ -21,7 +23,7 @@ const max_width = (wide ? 'var(--max-content-width)' : 'var(--max-text-width)')
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 
-    <Wrapper max_width={max_width} padding_block={wide ? '0' : 'var(--space-2xl)'} neocom={true}>
+    <Wrapper max_width={max_width} padding_block={fullscreen ? '0' : 'var(--space-2xl)'} neocom={true}>
         <slot />
     </Wrapper>
 </main>
