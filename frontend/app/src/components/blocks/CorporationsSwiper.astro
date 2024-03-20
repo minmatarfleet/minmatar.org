@@ -64,6 +64,11 @@ const pagination_template = `<span class="dot corporation-pagination border">
         position: fixed;
     }
 
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
     .swiper-button-prev {
         transform: translateX(-182px);
     }
