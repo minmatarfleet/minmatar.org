@@ -17,16 +17,10 @@
         "description": "page_finder.alliance.description"
     },
     {
-        "slug": "teams",
-        "alt": "icon.augmentation.alt",
-        "path": "/alliance/teams/",
-        "icon": "/images/icons/48px-Augmentations.png",
-        "publish": true,
-        "description": "page_finder.teams.description"
-    },
-    {
         "slug": "teams.list",
+        "alt": "icon.augmentation.alt",
         "path": "/alliance/teams/list/",
+        "icon": "/images/icons/48px-Augmentations.png",
         "publish": true,
         "description": "page_finder.teams.list.description"
     },
@@ -49,18 +43,11 @@
         }
     },
     {
-        "slug": "groups",
-        "keywords": [ "sigs" ],
-        "alt": "icon.groups.alt",
-        "path": "/alliance/sigs/",
-        "icon": "/images/icons/48px-Grouplist.png",
-        "publish": true,
-        "description": "page_finder.groups.description"
-    },
-    {
         "slug": "groups.list",
         "keywords": [ "sigs" ],
+        "alt": "icon.groups.alt",
         "path": "/alliance/sigs/list/",
+        "icon": "/images/icons/48px-Grouplist.png",
         "publish": true,
         "description": "page_finder.groups.list.description"
     },
