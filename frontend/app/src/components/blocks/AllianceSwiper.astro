@@ -1,0 +1,49 @@
+---
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline
+    class="[ swiper-wrapper ][ select-none ]"
+    gap='0'
+    x-data={`{
+        swiper: null,
+        corporation_pagination(index) {
+            return this.pagination_icons[index]
+        },
+        init() {
+            this.swiper = new Swiper('.swiper', {
+                slidesPerView: "auto",
+                spaceBetween: 20,
+                pagination: {
+                    clickable: true,
+                    el: ".swiper-pagination",
+                },
+                loop: false,
+                fadeEffect: {
+                    crossFade: true
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+        }
+    }`}
+>
+    <slot />
+</FlexInline>
+
+<div class="swiper-pagination"></div>
+
+<style lang="scss">
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+     .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+     }
+</style>
