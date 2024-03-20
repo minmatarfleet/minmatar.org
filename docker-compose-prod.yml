@@ -74,7 +74,6 @@ services:
             - mumble/auth/.env
         depends_on:
             - mumble_murmur
-            - db
         expose:
             - 6502
 
