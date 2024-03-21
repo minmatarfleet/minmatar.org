@@ -73,12 +73,14 @@ delete attributes.class
                     </span>
                 </FixedFluid>
                 :
-                <small class="truncate">
-                    {character_id == primary_pilot_id ?
-                    t('main_character') :
-                    t('alt_character')
-                    }
-                </small>
+                <slot>
+                    <small class="truncate">
+                        {character_id == primary_pilot_id ?
+                        t('main_character') :
+                        t('alt_character')
+                        }
+                    </small>
+                </slot>
             }
         </Flexblock>
     </VerticalCenter>

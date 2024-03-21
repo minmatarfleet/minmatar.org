@@ -1,0 +1,82 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AssetsUI } from '@dtypes/layout_components'
+
+interface Props {
+    character_assets:   AssetsUI;
+}
+
+const {
+    character_assets,
+} = Astro.props
+
+let total_assets_count = 0
+character_assets.locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import AssetsList from '@components/blocks/AssetsList.astro';
+import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
+---
+
+<Flexblock
+    class="[ user-assets ]"
+    gap='var(--space-xl)'
+    x-data={`{
+        assets_locations: ${JSON.stringify(character_assets.locations)},
+        assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
+        assets_locations_filtered: ${JSON.stringify(character_assets.locations)},
+        total_assets_count: ${total_assets_count},
+        total_assets_count_unfiltered: ${total_assets_count},
+        filter() {
+            if (asset_name === '' && asset_station === '-1') {
+                this.assets_locations_filtered = (assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
+                this.total_assets_count = this.total_assets_count_unfiltered
+                return
+            }
+
+            this.assets_locations_filtered = []
+            this.total_assets_count = 0
+            const assets = (assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
+            assets.forEach( (assets_location) => {
+                if (asset_station !== '-1' && assets_location.location_name !== asset_station)
+                    return true
+
+                filtered_assets = assets_location.assets.filter( (asset) => asset.name.toLowerCase().includes(asset_name.toLowerCase()) )
+                                
+                if (filtered_assets.length > 0) {
+                    this.total_assets_count += filtered_assets.reduce( (c, asset) => c + (asset?.count ?? 1) , 0 )
+                    this.assets_locations_filtered.push({
+                        location_name: assets_location.location_name,
+                        assets: filtered_assets
+                    })
+                }
+            })
+        },
+        init() {
+            $refs.server_side_render.remove()
+        },
+        character_id: ${character_assets.character_id},
+        character_name: '${character_assets.character_name}',
+    }`}
+    x-effect="filter()"
+>
+    <PilotBadge
+        character_id={character_assets.character_id}
+        character_name={character_assets.character_name}
+    >
+        <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory').toLowerCase()}\``}>
+            {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
+        </small>
+    </PilotBadge>
+
+    <div x-ref="server_side_render">
+        <AssetsList assets_locations={character_assets.locations} />
+    </div>
+    <AssetsListAlpine />
+</Flexblock>

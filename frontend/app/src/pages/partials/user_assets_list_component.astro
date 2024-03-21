@@ -1,0 +1,66 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+import type { AssetsUI } from '@dtypes/layout_components'
+import { get_user_assets } from '@helpers/fetching/characters'
+
+let characters_assets:AssetsUI[] = []
+let get_character_assets_error:string | false = false
+try {
+    characters_assets = await get_user_assets(auth_token)
+} catch (error) {
+    get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const USER_ASSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/user_assets_list_component`
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let assets_stations:string[] = []
+characters_assets.map( (character_assets) => {
+    character_assets.locations.map( (location) => {
+        if (!assets_stations.includes(location.location_name))
+            assets_stations.push(location.location_name)
+    })
+})
+
+import UserAssets from '@components/blocks/UserAssets.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_character_assets_error ?
+    <UserAssets characters_assets={[]}>
+        <ErrorRefetch
+            args={{
+                partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
+                message: get_character_assets_error,
+                delay: delay,
+                target: '#user-assets',
+            }}
+        />
+    </UserAssets>
+    :
+    <UserAssets
+        characters_assets={characters_assets}
+        x-data={`{
+            init() {
+                locations_options = ${JSON.stringify(assets_stations)}
+            }
+        }`}
+    />
+}

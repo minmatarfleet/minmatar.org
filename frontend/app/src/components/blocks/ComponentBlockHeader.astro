@@ -29,7 +29,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         toggle_collapse() {
             this.expanded = !this.expanded
 
-            if (!global_collapsed) return
+            if (typeof global_collapsed !== 'undefined') return
             
             if (this.expanded)
                 global_collapsed = global_collapsed.filter( (id) => id !== ${id} )
@@ -37,7 +37,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
                 global_collapsed.push(${id})
         },
         init() {
-            if (global_collapsed)
+            if (typeof global_collapsed !== 'undefined')
                 this.expanded = !global_collapsed.includes(${id})
         }
     }`}

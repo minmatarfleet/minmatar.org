@@ -1,0 +1,35 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { AssetsUI } from '@dtypes/layout_components'
+
+interface Props {
+    characters_assets:   AssetsUI[];
+    [propName: string]: any;
+}
+
+const {
+    characters_assets,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import UserLocationAssets from '@components/blocks/UserLocationAssets.astro';
+---
+
+<Flexblock
+    id="user-assets"
+    gap='var(--space-xl)'
+    {...attributes}
+>
+    {characters_assets.map( (character_assets) => 
+        <UserLocationAssets
+            character_assets={character_assets}
+        />
+    )}
+    <slot />
+</Flexblock>
