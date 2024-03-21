@@ -58,7 +58,7 @@ const page = Astro.url.pathname
             <IntelEvEIcon />
         </NeocomButton>
         {primary_character &&
-            <NeocomButton active={page.startsWith(translatePath('/character/'))} title={t('neocom.assets')} href={translatePath('/character/assets/user/')}>
+            <NeocomButton active={page.startsWith(translatePath('/character/assets/user/'))} title={t('neocom.assets')} href={translatePath('/character/assets/user/')}>
                 <AssetsEvEIcon />
             </NeocomButton>
         }
