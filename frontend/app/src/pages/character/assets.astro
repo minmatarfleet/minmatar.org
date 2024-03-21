@@ -120,7 +120,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                     filtered_assets = assets_location.assets.filter( (asset) => asset.name.toLowerCase().includes(this.asset_name.toLowerCase()) )
                                       
                     if (filtered_assets.length > 0) {
-                        this.total_assets_count += filtered_assets.reduce( (c, asset) => c + asset.count , 0 )
+                        this.total_assets_count += filtered_assets.reduce( (c, asset) => c + (asset?.count ?? 1) , 0 )
                         this.assets_locations_filtered.push({
                             location_name: assets_location.location_name,
                             assets: filtered_assets

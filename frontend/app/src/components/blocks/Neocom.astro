@@ -5,6 +5,8 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+const primary_character = Astro.cookies.has('primary_pilot')
+
 import { is_prod_mode } from '@helpers/env'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -16,6 +18,7 @@ import UserAuth from '@components/UserAuth.astro';
 import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
+import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
@@ -54,6 +57,11 @@ const page = Astro.url.pathname
         <NeocomButton active={page.startsWith(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
             <IntelEvEIcon />
         </NeocomButton>
+        {primary_character &&
+            <NeocomButton active={page.startsWith(translatePath('/character/'))} title={t('neocom.assets')} href={translatePath('/character/assets/user/')}>
+                <AssetsEvEIcon />
+            </NeocomButton>
+        }
         <NeocomButton
             title={t('neocom.help')}
             x-data={`{

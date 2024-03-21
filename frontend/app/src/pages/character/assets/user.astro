@@ -1,0 +1,158 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+import type { AssetsUI } from '@dtypes/layout_components'
+import { get_user_assets } from '@helpers/fetching/characters'
+
+let characters_assets:AssetsUI[] = []
+let get_character_assets_error:string | false = false
+try {
+    characters_assets = await get_user_assets(auth_token)
+} catch (error) {
+    get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const USER_ASSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/user_assets_list_component`
+
+let assets_stations:string[] = []
+characters_assets.map( (character_assets) => {
+    character_assets.locations.map( (location) => {
+        if (!assets_stations.includes(location.location_name))
+            assets_stations.push(location.location_name)
+    })
+})
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import UserAssets from '@components/blocks/UserAssets.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Input from '@components/blocks/Input.astro';
+import RadioCheck from '@components/blocks/RadioCheck.astro';
+import Select from '@components/blocks/Select.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ListIcon from '@components/icons/buttons/ListIcon.astro';
+import IconList from '@components/icons/buttons/IconList.astro';
+
+const page_title = t('assets.user.page_title')
+---
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/assets-cover.jpg",
+            image_990: "/images/assets-cover-990.jpg",
+            alt: t('assets.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            assets_style: 'list',
+            asset_name: '',
+            asset_region: '-1',
+            asset_system: '-1',
+            asset_station: '-1',
+            locations_options: ${JSON.stringify(assets_stations)},
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="asset_name"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="asset_station"
+                        width='280px'
+                    >
+                        <option selected value="-1">{t('stations')}</option>
+                        <template x-for="location_name in locations_options">
+                            <option x-text="location_name" />
+                        </template>
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader">
+            <RadioCheck data-tippy-content={t('list_view_mode')}>
+                <input
+                    type="radio"
+                    value="list"
+                    name="assets-style"
+                    x-model="assets_style"
+                    x-on:change="filter()"
+                    checked
+                />
+                <ListIcon />
+            </RadioCheck>
+            <RadioCheck data-tippy-content={t('icons_view_mode')}>
+                <input
+                    type="radio"
+                    value="icons"
+                    name="assets-style"
+                    x-model="assets_style"
+                    x-on:change="filter()"
+                />
+                <IconList />
+            </RadioChecktype>
+        </FlexInline>
+
+        {get_character_assets_error ?
+            <UserAssets characters_assets={[]}>
+                <ErrorRefetch
+                    args={{
+                        partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
+                        message: get_character_assets_error,
+                        delay: 0,
+                        target: '#user-assets',
+                    }}
+                />
+            </UserAssets>
+            :
+            <UserAssets
+                characters_assets={characters_assets}
+            />
+        }
+    </PageDefault>
+</Viewport>

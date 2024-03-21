@@ -16,6 +16,7 @@ export const ui = {
         'neocom.doctrines': 'Doctrines',
         'neocom.fleets': 'Fleets',
         'neocom.intel': 'Intel',
+        'neocom.assets': 'My assets',
         'neocom.help': 'Help',
         'neocom.zkillboard': 'Zkillboard',
 
@@ -123,6 +124,8 @@ export const ui = {
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
         'teams.cover_alt': 'An Amarr hauler initiating warp drive.',
+
+        'assets.user.page_title': 'My assets',
         
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
@@ -146,11 +149,11 @@ export const ui = {
         'teams.management.page_title': 'Teams management',
         
         'corporations.page_title': 'Corporations',
-        'corporations.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'corporations.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation CEO, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         'corporations.cover_alt': 'Outspace starry sky',
 
         'corporations.list.page_title': 'Corporations',
-        'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation CEO, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
         
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
 
@@ -513,6 +516,7 @@ export const ui = {
         'page_finder.teams.description': 'Teams landing page',
         'page_finder.groups.description': 'Special Interest Groups landing page',
         'page_finder.intel.description': 'Intel landing page',
+        'page_finder.assets.user.description': 'View all your characters assets',
         'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
         'page_finder.teams.list.description': 'List of Teams available to apply',
         'page_finder.groups.list.description': 'List of Special Groups of Interest available to apply',

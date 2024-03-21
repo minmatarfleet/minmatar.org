@@ -26,7 +26,12 @@ if (isNaN(character_id))
 import type { AssetsUI, CharacterBasic } from '@dtypes/layout_components'
 import { get_assets } from '@helpers/fetching/characters'
 
-let character_assets:AssetsUI
+let character_assets:AssetsUI = {
+    character_id: 0,
+    character_name: '',
+    locations: [],
+    location_icons: [],
+}
 let get_character_assets_error:string | false = false
 try {
     character_assets = await get_assets(auth_token, character_id)

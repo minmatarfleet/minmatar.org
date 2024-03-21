@@ -1,6 +1,6 @@
 import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type { SkillsetsUI, Skillset, MissingSkill, AssetsUI, AssetsLocation, Asset, AssetsLocationIcons, AssetGroup } from '@dtypes/layout_components'
-import { get_character_by_id, get_character_skillsets, get_character_assets } from '@helpers/api.minmatar.org/characters'
+import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
 
 export async function get_user_character(user_id: number) {
@@ -98,4 +98,30 @@ const parse_missing_skill = (skill_name):MissingSkill => {
         skill_level: list.pop(),
         skill_name: list.join(" ")
     }
+}
+
+export async function get_user_assets(access_token:string) {
+    let characters:Character[]
+    let characters_assets:AssetsUI[]
+
+    characters = await get_characters(access_token)
+    
+    characters_assets = await Promise.all(characters.map(async (character) => {
+        let character_assets:AssetsUI = {
+            character_id: character.character_id,
+            character_name: character.character_name,
+            locations: [],
+            location_icons: [],
+        }
+
+        try {
+            character_assets = await get_assets(access_token, character.character_id)
+        } catch (error) {
+            throw new Error(error);
+        }
+
+        return character_assets
+    }))
+
+    return characters_assets
 }

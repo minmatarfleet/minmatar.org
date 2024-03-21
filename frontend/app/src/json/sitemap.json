@@ -97,5 +97,13 @@
         "publish": true,
         "keywords": [ "tutorial" ],
         "description": "page_finder.intel.tutorial.description"
+    },
+    {
+        "slug": "assets.user",
+        "alt": "icon.assets.alt",
+        "path": "/character/assets/user/",
+        "publish": true,
+        "icon": "/images/icons/48px-Assets.png",
+        "description": "page_finder.assets.user.description"
     }
 ]
