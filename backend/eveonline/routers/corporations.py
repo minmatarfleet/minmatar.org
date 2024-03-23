@@ -76,16 +76,22 @@ def get_corporations(
             "type": corporation.type,
             "active": corporation.active,
         }
-        if corporation.alliance and EveAlliance.objects.filter(
-            alliance_id=corporation.alliance.alliance_id
-        ).exists():
+        if (
+            corporation.alliance
+            and EveAlliance.objects.filter(
+                alliance_id=corporation.alliance.alliance_id
+            ).exists()
+        ):
             alliance = EveAlliance.objects.get(
                 alliance_id=corporation.alliance.alliance_id
             )
             payload["alliance_id"] = alliance.alliance_id
             payload["alliance_name"] = alliance.name
 
-        if corporation.faction and EveFaction.objects.filter(id=corporation.faction_id).exists():
+        if (
+            corporation.faction
+            and EveFaction.objects.filter(id=corporation.faction_id).exists()
+        ):
             faction = EveFaction.objects.get(id=corporation.faction_id)
             payload["faction_id"] = faction.id
             payload["faction_name"] = faction.name
