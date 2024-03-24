@@ -45,7 +45,7 @@ def eve_corporation_application_post_save(
         message += f"{application_url}\n"
         response = discord.create_forum_thread(
             channel_id=APPLICATION_CHANNEL_ID,
-            title=f"{primary_character.character_name} - {instance.corporation.name}",
+            title=f"{primary_character.character.character_name} - {instance.corporation.name}",
             message=message,
         )
         instance.discord_thread_id = int(response.json()["id"])
