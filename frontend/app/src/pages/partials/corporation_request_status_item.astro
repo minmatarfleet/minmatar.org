@@ -28,13 +28,13 @@ let application:CorporationApplication
 
 if (Astro.request.method === "POST") {
     try {
+        corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
         const application_text = await Astro.request.formData()
-        const description = JSON.parse( application_text.get("data").valueOf() as string ) as string
+        const description = JSON.parse(JSON.parse( application_text.get("data").valueOf() as string ))
 
         if (!description)
             throw new Error(t('invalid_description'));
 
-        corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
         application = await create_corporation_application(auth_token, corporation.corporation_id, description)
         corporation.status = application.status as CorporationStatusType
     } catch (error) {
