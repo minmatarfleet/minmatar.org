@@ -160,8 +160,8 @@ def get_corporation_by_id(request, corporation_id: int):
             "character_id": character.character_id,
             "character_name": character.character_name,
         }
-        if primary_character:
-            payload["primary_character_id"] = primary_character.character_id
+        if primary_character and primary_character.character.character_id != character.character_id:
+            payload["primary_character_id"] = primary_character.character.character_id
             payload["primary_character_name"] = (
                 primary_character.character.character_name
             )
