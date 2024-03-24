@@ -151,7 +151,7 @@ def get_corporation_by_id(request, corporation_id: int):
         response["faction_name"] = faction.name
 
     # populate members
-    characters = EveCharacter.objects.filter(corporation_id=corporation_id)
+    characters = EveCharacter.objects.filter(corporation__corporation_id=corporation_id)
     for character in characters:
         primary_character = EvePrimaryCharacter.objects.filter(
             character=character
