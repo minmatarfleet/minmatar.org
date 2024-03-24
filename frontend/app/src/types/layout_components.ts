@@ -192,7 +192,7 @@ export interface Alert {
     hx?:            HXDialogOptions;
 }
 
-export type RequestType = 'get' | 'post' | 'put' | 'pathc' | 'delete'
+export type RequestType = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
 export interface HXDialogOptions {
     method?:    RequestType;
@@ -246,6 +246,7 @@ export interface RequestListObject {
 }
 
 export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'denied' |'error' | 'unauth'
+export type CorporationStatusType = 'available' | 'pending' | 'confirmed' | 'denied' |'error' | 'unauth'
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export interface CorporationObject {
@@ -254,7 +255,7 @@ export interface CorporationObject {
     alliance_id:        number;
     alliance_name:      string,
     corporation_type:   CorporationType;
-    status?:            GroupStatus;
+    status?:            CorporationStatusType;
 }
 
 export interface CorporationBasic {
