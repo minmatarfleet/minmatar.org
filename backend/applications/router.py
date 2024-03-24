@@ -5,7 +5,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCorporation
 
 from .models import EveCorporationApplication
 
@@ -48,7 +48,6 @@ def get_corporation_applications(request, corporation_id: int):
     applications = EveCorporationApplication.objects.filter(
         corporation__corporation_id=corporation_id
     )
-    print(applications)
     response = []
     for application in applications:
         response.append(
@@ -65,20 +64,26 @@ def get_corporation_applications(request, corporation_id: int):
     "/corporations/{corporation_id}/applications",
     summary="Create a corporation application",
     auth=AuthBearer(),
-    response=CorporationApplicationResponse,
+    response={"200": CorporationApplicationResponse, "404": ErrorResponse},
 )
 def create_corporation_application(
     request, corporation_id: int, payload: CorporationApplicationRequest
 ):
+    corporation = EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).first()
+    if not corporation:
+        return 404, {"detail": "Corporation not found."}
+
     application = EveCorporationApplication.objects.create(
-        corporation_id=corporation_id,
+        corporation=corporation,
         user_id=request.user.id,
         description=payload.description,
     )
     return {
         "status": application.status,
         "user_id": application.user.id,
-        "corporation_id": application.corporation_id,
+        "corporation_id": application.corporation.id,
     }
 
 
