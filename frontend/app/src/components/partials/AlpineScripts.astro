@@ -70,6 +70,7 @@ export const ConfirmDialogXData = `
     confirm_dialog_open: false,
     confirm_dialog_title: '',
     confirm_dialog_content: '',
+    confirm_dialog_accept_disabled: false,
     confirm_dialog_return_on_accept: true,
     confirm_dialog_hx: {},
     confirm_dialog_partial: false,
@@ -78,12 +79,14 @@ export const ConfirmDialogXData = `
             title: '',
             content: '',
             partial: '',
+            accept_disabled: false,
             return_on_accept: true,
             hx: {
                 method: 'get',
                 url: false,
                 target: false,
                 swap: false,
+                vals: false,
             }
         }
 
@@ -100,6 +103,8 @@ export const ConfirmDialogXData = `
         this.confirm_dialog_title = properties.title
         this.confirm_dialog_return_on_accept = properties.return_on_accept
         this.confirm_dialog_partial = properties.partial
+        this.confirm_dialog_post_params = properties.post_params
+        this.confirm_dialog_accept_disabled = properties.accept_disabled
         this.confirm_dialog_hx = properties.hx
 
         this.confirm_dialog_open = true
