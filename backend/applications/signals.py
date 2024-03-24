@@ -35,7 +35,7 @@ def eve_corporation_application_post_save(
         message = ""
         message += f"<@{user.discord_user.id}>"
         message += "\n\n"
-        message += f"Main Character: {primary_character.character.name}\n"
+        message += f"Main Character: {primary_character.character.character_name}\n"
         message += f"Applying to: {instance.corporation.name}\n"
         message += f"Description: {instance.description}\n"
         application_url = settings.SITE_URL + reverse(
