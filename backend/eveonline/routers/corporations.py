@@ -6,7 +6,12 @@ from eveuniverse.models import EveFaction
 from ninja import Router, Schema
 
 from authentication import AuthBearer
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePrimaryCharacter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +25,13 @@ class CorporationType(str, Enum):
     PUBLIC = "public"
 
 
+class CorporationMemberResponse(Schema):
+    character_id: int
+    character_name: str
+    primary_character_id: Optional[int] = None
+    primary_character_name: Optional[str] = None
+
+
 class CorporationResponse(Schema):
     corporation_id: int
     corporation_name: str
@@ -28,6 +40,7 @@ class CorporationResponse(Schema):
     faction_id: Optional[int] = None
     faction_name: Optional[str] = None
     type: CorporationType
+    members: List[CorporationMemberResponse] = []
     active: bool
 
 
@@ -110,13 +123,45 @@ def get_corporation_by_id(request, corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     response = {
         "corporation_id": corporation.corporation_id,
-        "corporation_name": corporation.corporation_name,
-        "corporation_type": corporation.corporation_type,
+        "corporation_name": corporation.name,
+        "corporation_type": corporation.type,
     }
-    if EveAlliance.objects.filter(
-        alliance_id=corporation.alliance_id
-    ).exists():
-        alliance = EveAlliance.objects.get(alliance_id=corporation.alliance_id)
+    # populate alliance details
+    if (
+        corporation.alliance
+        and EveAlliance.objects.filter(
+            alliance_id=corporation.alliance.alliance_id
+        ).exists()
+    ):
+        alliance = EveAlliance.objects.get(
+            alliance_id=corporation.alliance.alliance_id
+        )
         response["alliance_id"] = alliance.alliance_id
         response["alliance_name"] = alliance.name
+
+    # populate faction details
+    if (
+        corporation.faction
+        and EveFaction.objects.filter(id=corporation.faction_id).exists()
+    ):
+        faction = EveFaction.objects.get(id=corporation.faction_id)
+        response["faction_id"] = faction.id
+        response["faction_name"] = faction.name
+
+    # populate members
+    characters = EveCharacter.objects.filter(corporation_id=corporation_id)
+    for character in characters:
+        primary_character = EvePrimaryCharacter.objects.filter(
+            character=character
+        ).first()
+        payload = {
+            "character_id": character.character_id,
+            "character_name": character.character_name,
+        }
+        if primary_character:
+            payload["primary_character_id"] = primary_character.character_id
+            payload["primary_character_name"] = (
+                primary_character.character.character_name
+            )
+        response["members"].append(payload)
     return response
