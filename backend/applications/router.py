@@ -64,7 +64,7 @@ def get_corporation_applications(request, corporation_id: int):
     "/corporations/{corporation_id}/applications",
     summary="Create a corporation application",
     auth=AuthBearer(),
-    response={"200": CorporationApplicationResponse, "404": ErrorResponse},
+    response={200: CorporationApplicationResponse, 404: ErrorResponse},
 )
 def create_corporation_application(
     request, corporation_id: int, payload: CorporationApplicationRequest
