@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 discord = DiscordClient()
 esi = EsiClientProvider()
 
-APPLICATION_CHANNEL_ID = 1207699583266852905
+APPLICATION_CHANNEL_ID = 1097522187952467989
 
 
 @receiver(
