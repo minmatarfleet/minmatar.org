@@ -37,5 +37,5 @@ class EveCorporationApplication(models.Model):
             primary_character = EvePrimaryCharacter.objects.get(
                 character__token__user=self.user
             )
-            return f"{primary_character.character_name}'s application to {self.corporation.name}"
+            return f"{primary_character.character.character_name}'s application to {self.corporation.name}"
         return f"{self.user}'s application to {self.corporation.name}"
