@@ -124,7 +124,8 @@ def get_corporation_by_id(request, corporation_id: int):
     response = {
         "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
-        "corporation_type": corporation.type,
+        "type": corporation.type,
+        "active": corporation.active,
     }
     # populate alliance details
     if (
