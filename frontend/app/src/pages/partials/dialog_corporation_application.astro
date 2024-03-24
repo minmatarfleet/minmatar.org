@@ -32,8 +32,8 @@ import Textarea from '@components/blocks/Textarea.astro';
     x-data={`{
         application_text: '',
         update_status() {
-            confirm_dialog_accept_disabled = !this.application_text
             confirm_dialog_hx.vals = JSON.stringify(this.application_text)
+            confirm_dialog_set_accept_disable(!this.application_text)
         }
     }`}
     x-init="update_status"

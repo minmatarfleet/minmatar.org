@@ -540,6 +540,6 @@ export const ui = {
         'view_associates_corporations': 'View associates corporations',
         'page_reload_error': 'A page reload might be desired to show all options.',
         'application_text': 'Application text',
-        'invalid_description': 'Invalid description',
+        'invalid_description': 'The application text is not valid.',
     },
 } as const;
