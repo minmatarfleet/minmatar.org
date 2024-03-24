@@ -46,6 +46,10 @@ ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
 ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
 
+# MUMBLE
+MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
+MUMBLE_MURMUR_PORT = os.environ.get("MUMBLE_MURMUR_PORT", "")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
