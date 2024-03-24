@@ -16,14 +16,38 @@ let {
     user_corporation_id = 0,
 } = Astro.props
 
-corporations = corporations.filter( (i) => i.corporation_id != 98735318 )
+const CORPORATIONS_WIDTH_SLIDE = [
+    'Rattini Tribe',
+    'Black Omega Security',
+    'Balls Deep Inc.',
+    'Vindicta Expeditionary',
+]
+
+let corporations_with_no_slide:CorporationObject[] = []
+let corp_filter:number[] = []
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 import { get_alliance_logo } from '@helpers/eve_image_server';
 
+corporations = corporations.filter( (i) => i.corporation_id != 98735318 ) // Hide Minmatar Fleet Holdings
+
 const pagination_icons:string[] = []
-corporations.forEach( (corp, i) => pagination_icons[i] = get_corporation_logo(corp.corporation_id, 64) );
+corporations.forEach( (corp, i) => {
+    if (!CORPORATIONS_WIDTH_SLIDE.includes(corp.corporation_name)) {
+        corporations_with_no_slide.push(corp)
+        corp_filter.push(corp.corporation_id)
+    } else
+        pagination_icons.push(get_corporation_logo(corp.corporation_id, 64))
+});
+
+corporations = corporations.filter( (i) => !corp_filter.includes(i.corporation_id) )
+
+const MINMATAR_FLEET_ID = 99011978
 const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
+
+if (corporations_with_no_slide.length > 0)
+    pagination_icons.push(get_alliance_logo(MINMATAR_FLEET_ID, 64))
+
 pagination_icons.push(get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64))
 
 import { slugify } from '@helpers/string'
@@ -36,6 +60,7 @@ import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
 import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
 import VindictaExpeditionarySlider from '@components/blocks/VindictaExpeditionarySlider.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
+import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
 
 <div
@@ -79,10 +104,20 @@ import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
                     }
                 </div>
             )}
+            {corporations_with_no_slide.length > 0 &&
+                <div class="swiper-slide" id="minmatar-fleet-no-slide">
+                    <FleetCorporationsSlide
+                        id="slideless-alliance-corps"
+                        picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
+                        user_corporation_id={user_corporation_id}
+                        corporations={corporations_with_no_slide}
+                    />
+                </div>
+            }
             <div class="swiper-slide" id="minmatar-fleet-associates">
                 <AssociatesSlide
                     id="associates-alliance"
-                    picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
+                    picture_placement={(corporations.length + (corporations_with_no_slide.length > 0 ? 1 : 0))%2 == 0 ? 'left' : 'right'}
                 />
             </div>
         </CorporationsSwiper>

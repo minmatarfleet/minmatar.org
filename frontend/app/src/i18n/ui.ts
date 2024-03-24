@@ -490,6 +490,7 @@ export const ui = {
         'get_character_skillsets_error': 'An error occurred while fetching the character skillsets.',
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
         'minmatar_fleet_associates': 'Minmatar Fleet Associates',
+        'minmatar_fleet_new': 'Minmatar Fleet New members',
         'view_corporations': 'View corporations',
         'error_status_corp': 'Error retrieving status',
         'authentication_missing_dialog': 'The following action require you to be authenticated. Proceed with authentication?',
@@ -541,5 +542,6 @@ export const ui = {
         'page_reload_error': 'A page reload might be desired to show all options.',
         'application_text': 'Application text',
         'invalid_description': 'The application text is not valid.',
+        'minmatar_fleet_alliance': 'Minmatar Fleet Alliance',
     },
 } as const;
