@@ -30,6 +30,7 @@ class CorporationMemberResponse(Schema):
     character_name: str
     primary_character_id: Optional[int] = None
     primary_character_name: Optional[str] = None
+    registered: bool = False
 
 
 class CorporationResponse(Schema):
@@ -151,19 +152,29 @@ def get_corporation_by_id(request, corporation_id: int):
         response["faction_name"] = faction.name
 
     # populate members
-    characters = EveCharacter.objects.filter(corporation__corporation_id=corporation_id)
+    characters = EveCharacter.objects.filter(
+        corporation__corporation_id=corporation_id
+    )
     for character in characters:
-        primary_character = EvePrimaryCharacter.objects.filter(
-            character=character
-        ).first()
         payload = {
             "character_id": character.character_id,
             "character_name": character.character_name,
         }
-        if primary_character and primary_character.character.character_id != character.character_id:
-            payload["primary_character_id"] = primary_character.character.character_id
-            payload["primary_character_name"] = (
-                primary_character.character.character_name
-            )
+        if character.token:
+            payload["registered"] = True
+            primary_character = EvePrimaryCharacter.objects.filter(
+                character__token__user=character.token.user
+            ).first()
+            if (
+                primary_character
+                and primary_character.character.character_id
+                != character.character_id
+            ):
+                payload["primary_character_id"] = (
+                    primary_character.character.character_id
+                )
+                payload["primary_character_name"] = (
+                    primary_character.character.character_name
+                )
         response["members"].append(payload)
     return response
