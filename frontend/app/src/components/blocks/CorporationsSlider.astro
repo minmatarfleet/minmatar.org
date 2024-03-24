@@ -23,9 +23,7 @@ import { get_alliance_logo } from '@helpers/eve_image_server';
 
 const pagination_icons:string[] = []
 corporations.forEach( (corp, i) => pagination_icons[i] = get_corporation_logo(corp.corporation_id, 64) );
-const VINDICTA_ID = 98760041
 const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
-pagination_icons.push(get_corporation_logo(VINDICTA_ID, 64))
 pagination_icons.push(get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64))
 
 import { slugify } from '@helpers/string'
@@ -82,23 +80,9 @@ import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
                 </div>
             )}
             <div class="swiper-slide" id="minmatar-fleet-associates">
-                <VindictaExpeditionarySlider
-                    corporation={{
-                        alliance_id: 99011978,
-                        alliance_name: 'Minmatar Fleet Alliance',
-                        corporation_id: 98760041,
-                        corporation_name: 'Vindicta Expeditionary',
-                        corporation_type: 'alliance',
-                        status: 'available',
-                    }}
-                    is_user_corporation={98760041 === user_corporation_id}
-                    picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
-                />
-            </div>
-            <div class="swiper-slide" id="minmatar-fleet-associates">
                 <AssociatesSlide
                     id="associates-alliance"
-                    picture_placement={(corporations.length+1)%2 == 0 ? 'left' : 'right'}
+                    picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
                 />
             </div>
         </CorporationsSwiper>
