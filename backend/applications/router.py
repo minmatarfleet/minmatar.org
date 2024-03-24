@@ -80,7 +80,7 @@ def create_corporation_application(
         user_id=request.user.id,
         description=payload.description,
     )
-    return {
+    return 200, {
         "status": application.status,
         "user_id": application.user.id,
         "corporation_id": application.corporation.id,
