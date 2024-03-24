@@ -4,8 +4,8 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 
 const t = useTranslations('en');
 
-import type { Corporation, CorporationApplication, UserProfile, CorporationType } from '@dtypes/api.minmatar.org'
-import type { CorporationObject, GroupStatus } from '@dtypes/layout_components'
+import type { Corporation, CorporationApplication, CorporationType } from '@dtypes/api.minmatar.org'
+import type { CorporationObject, CorporationStatusType } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications } from '@helpers/api.minmatar.org/applications'
 
@@ -85,7 +85,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
     const user_application = user_id ? corporation_applications.filter( (application) => application.user_id == user_id ) : []
 
     if (user_application.length > 0)
-        corporation.status = user_application[0].status as GroupStatus
+        corporation.status = user_application[0].status as CorporationStatusType
 
     return corporation
 }

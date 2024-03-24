@@ -27,7 +27,11 @@ export async function get_corporation_applications(access_token:string, corporat
     }
 }
 
-export async function create_corporation_application(access_token:string, corporation_id:number) {
+export async function create_corporation_application(access_token:string, corporation_id:number, description:string) {
+    const data = JSON.stringify({
+        'description': description,
+    });
+
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
@@ -38,6 +42,7 @@ export async function create_corporation_application(access_token:string, corpor
     try {
         const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications`, {
             headers: headers,
+            body: data,
             method: 'POST'
         })
 
