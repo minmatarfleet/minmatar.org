@@ -53,6 +53,7 @@
     },
     {
         "slug": "groups.requests",
+        "keywords": [ "special", "interest", "groups" ],
         "path": "/alliance/sigs/requests/",
         "publish": true,
         "description": "page_finder.groups.requests.description",
@@ -63,6 +64,7 @@
     {
         "slug": "groups.members",
         "path": "/alliance/sigs/members/",
+        "keywords": [ "special", "interest", "groups" ],
         "publish": true,
         "description": "page_finder.groups.requests.description",
         "permissions" : {

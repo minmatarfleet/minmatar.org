@@ -34,6 +34,7 @@ import CorporationsSwiper from '@components/blocks/CorporationsSwiper.astro';
 import RattiniSlide from '@components/blocks/RattiniSlide.astro';
 import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
 import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
+import VindictaExpeditionarySlider from '@components/blocks/VindictaExpeditionarySlider.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 ---
 
@@ -64,6 +65,13 @@ import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
                     }
                     {corporation.corporation_name == 'Balls Deep Inc.' &&
                         <BallsDeepSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Vindicta Expeditionary' &&
+                        <VindictaExpeditionarySlider
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
