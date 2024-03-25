@@ -14,6 +14,7 @@ router = Router(tags=["Applications"])
 
 class CorporationApplicationResponse(BaseModel):
     status: str
+    application_id: int
     user_id: int
     corporation_id: int
 
@@ -55,6 +56,7 @@ def get_corporation_applications(request, corporation_id: int):
                 "status": application.status,
                 "user_id": application.user.id,
                 "corporation_id": application.corporation_id,
+                "application_id": application.id,
             }
         )
     return response
@@ -84,6 +86,7 @@ def create_corporation_application(
         "status": application.status,
         "user_id": application.user.id,
         "corporation_id": application.corporation.id,
+        "application_id": application.id,
     }
 
 
@@ -147,6 +150,7 @@ def accept_corporation_application(
         "status": application.status,
         "user_id": application.user.id,
         "corporation_id": application.corporation.id,
+        "application_id": application.id,
     }
 
 
@@ -178,4 +182,5 @@ def reject_corporation_application(
         "status": application.status,
         "user_id": application.user.id,
         "corporation_id": application.corporation.id,
+        "application_id": application.id,
     }

@@ -26,7 +26,9 @@ class EveCharacter(models.Model):
         "EveCorporation", on_delete=models.CASCADE, blank=True, null=True
     )
 
-    token = models.OneToOneField(Token, on_delete=models.CASCADE, null=True, blank=True)
+    token = models.OneToOneField(
+        Token, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     # data
     skills_json = models.TextField(blank=True, default="{}")
