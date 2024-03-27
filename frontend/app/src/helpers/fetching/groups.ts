@@ -164,10 +164,10 @@ const get_member = async (user_id:number) => {
 
     return {
         user_id: user_id,
-        character_id: character_profile.character_id,
-        character_name: character_profile.character_name,
-        corporation_id: character_profile.corporation_id,
-        corporation_name: character_profile.corporation_name,
+        character_id: character_profile?.character_id ?? 0,
+        character_name: character_profile?.character_name ?? t('unknown_character'),
+        corporation_id: character_profile?.corporation_id ?? 0,
+        corporation_name: character_profile?.corporation_name ?? t('unknown_corporation'),
     } as MemberUI
 }
 
