@@ -113,6 +113,7 @@ def get_corporation_application_by_id(
         )
     return {
         "status": application.status,
+        "application_id": application.id,
         "user_id": application.user.id,
         "corporation_id": application.corporation.corporation_id,
         "description": application.description,
