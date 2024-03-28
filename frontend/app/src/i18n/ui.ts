@@ -553,5 +553,6 @@ export const ui = {
         'applications': 'Applications',
         'view_application': 'View application',
         'view_applications': 'View applications',
+        'loading': 'Loading',
     },
 } as const;

@@ -1,0 +1,43 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    element?:           string;
+    partial?:           string;
+    [propName: string]: any;
+}
+
+const {
+    element = 'span',
+    partial,
+    ...attributes
+} = Astro.props
+
+const Element = element
+---
+
+{!partial ?
+    <Element {...attributes}>
+        <slot />
+    </Element>
+    :
+    <Element
+        data-tippy-content={`
+            <span
+                hx-trigger="intersect"
+                hx-swap="outerHTML transition:true"
+                hx-get='${translatePath(partial)}'
+            >
+                ${t('loading')}
+            <Element>
+        `}
+        data-tippy-allowhtml='true'
+        {...attributes}
+    >
+        <slot />
+    </Element>
+}

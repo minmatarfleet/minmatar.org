@@ -60,6 +60,9 @@
     const tippy_options = {
         delay: [ 100, 200 ],
         arrow: true,
+        onShow(instance) {
+            htmx.process(instance.popper)
+        }
     }
 
     document.addEventListener('astro:page-load', () => {
