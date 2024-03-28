@@ -132,3 +132,11 @@ code {
 .border-bottom {
     border-bottom: solid 1px var(--border-color);
 }
+
+.correct-gaps > [style="display: none;"] ~ * {
+    margin-block-start: 0 !important;
+}
+
+.correct-gaps > :not([style="display: none;"]) ~ * {
+    margin-block-start: var(--space-s) !important;
+}
