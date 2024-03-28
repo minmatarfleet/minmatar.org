@@ -13,14 +13,15 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
 import { is_officer } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
+const can_view_page = is_superuser || (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 
-if (!user_is_officer)
+if (!can_view_page)
     return HTTP_404_Not_Found()
 
 import type { GroupRequestListUI } from '@dtypes/layout_components'

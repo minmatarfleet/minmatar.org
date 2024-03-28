@@ -28,6 +28,9 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (!page.publish && is_prod_mode())
         return false
 
+    if (user && user?.is_superuser)
+        return true
+
     if (!page?.permissions)
         return true
 
@@ -38,9 +41,6 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
         return false
 
     if (page.permissions?.team_director && !user_is_director)
-        return false
-
-    if (page.permissions?.superuser && (!user || !user?.is_superuser))
         return false
 
     if (page.permissions?.user && (!user || (page.permissions.user.filter( (i) => user?.permissions.includes(i) ).length !== page.permissions.user.length) ))
