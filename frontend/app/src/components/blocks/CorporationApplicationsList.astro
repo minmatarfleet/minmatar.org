@@ -1,0 +1,48 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Alert, CorporationApplications } from '@dtypes/layout_components'
+
+interface Props {
+    corporations:   CorporationApplications[];
+    alert?:         Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    corporations,
+    alert = false,
+    ...attributes
+} = Astro.props
+
+import CorporationApplicationsBlock from '@components/blocks/CorporationApplicationsBlock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<div
+    id="corporations-applications-list"
+    class="[ corporations-applications-list ]"
+    {...attributes}
+>
+    {corporations.length > 0 &&
+        <Flexblock>
+            <p x-show="total_applications_filtered == 0" style="display: none">{t('no_applications')}</p>
+
+            {corporations.map( (corporation) => 
+                <CorporationApplicationsBlock corporation={corporation} />
+            )}
+        </Flexblock>
+    }
+
+    {corporations.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_applications')}</p>
+            </TextBox>
+        </slot>
+    }
+</div>

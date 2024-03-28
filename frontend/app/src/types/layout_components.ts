@@ -236,13 +236,39 @@ export interface GroupListObject {
 
 export type GroupRequestType = 'join' | 'leave'
 
-export interface RequestListObject {
-    id:             number;
-    type:           GroupRequestType;
-    character_name: string;
-    character_corp: string;
-    character_org:  string;
-    group_name:     string;
+export interface ApplicationOld {
+    id:                     number;
+    applied_corporation:    number;
+    character_name:         string;
+    corporation_id:         number;
+    corporation_name:       string;
+    description:            string;
+    status:                 CorporationStatusType;
+}
+
+export interface CorporationApplications {
+    corporation_id:         number;
+    corporation_name:       string;
+    applications:           ApplicationBasic[];
+}
+
+export interface ApplicationBasic {
+    id:                     number;
+    applied_corporation:    number;
+    character_id:           number;
+    character_name:         string;
+    corporation_id:         number;
+    corporation_name:       string;
+}
+
+export interface Application {
+    id:                     number;
+    applied_corporation:    number;
+    character_name:         string;
+    corporation_id:         number;
+    corporation_name:       string;
+    description:            string;
+    status:                 CorporationStatusType;
 }
 
 export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'denied' |'error' | 'unauth'

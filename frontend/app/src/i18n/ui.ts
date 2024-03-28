@@ -157,6 +157,9 @@ export const ui = {
         
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
 
+        'corporations.applications.page_title': 'Corporations applications',
+        'corporations.applications.leading_text': 'Here a list of all the applications to join alliance corporations.',
+
         'freight.standard.page_title': 'Standard Freight',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
@@ -538,10 +541,16 @@ export const ui = {
         'get_roles_error': 'An error ocurred fetching the user roles.',
         'report_issues_text': 'If you find any issue you can report it at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
         'contribute': 'Contribute',
-        'view_associates_corporations': 'View associates corporations',
+        'view_associates_corporations': 'View associates',
         'page_reload_error': 'A page reload might be desired to show all options.',
         'application_text': 'Application text',
         'invalid_description': 'The application text is not valid.',
         'minmatar_fleet_alliance': 'Minmatar Fleet Alliance',
+        'get_all_corporations_applications_error': 'An error ocurred fetching corporation applications.',
+        'no_applications': 'No applications found.',
+        'application': 'Application',
+        'applications': 'Applications',
+        'view_application': 'View application',
+        'view_applications': 'View applications',
     },
 } as const;

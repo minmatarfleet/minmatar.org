@@ -51,8 +51,25 @@ export interface Corporation {
 
 export interface CorporationApplication {
     status:         string;
+    application_id: number;
     user_id:        number;
     corporation_id: number;
+}
+
+export interface CorporationApplicationDetails {
+    status:         string;
+    application_id: number;
+    user_id:        number;
+    corporation_id: number;
+    description:    string;
+    created_at:     Date;
+    updated_at:     Date;
+    characters:     Character[];
+}
+
+export interface Character {
+    character_id:   number;
+    character_name: string;
 }
 
 export interface UserProfile {

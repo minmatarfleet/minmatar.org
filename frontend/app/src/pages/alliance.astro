@@ -14,6 +14,7 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
+const can_view_applications = (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
@@ -60,6 +61,7 @@ const page_description = t('alliance.leading_text');
             </Wrapper>
             
             <AllianceReel
+                can_view_applications={can_view_applications}
                 user_is_officer={user_is_officer}
                 user_is_director={user_is_director}
             />
