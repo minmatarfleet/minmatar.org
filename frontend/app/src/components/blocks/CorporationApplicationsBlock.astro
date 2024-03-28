@@ -8,10 +8,12 @@ import type { CorporationApplications } from '@dtypes/layout_components'
 
 interface Props {
     corporation:  CorporationApplications;
+    [propName: string]: any;
 }
 
 const {
     corporation,
+    ...attributes
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -19,12 +21,10 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import CorporationApplicationItem from '@components/blocks/CorporationApplicationItem.astro';
 import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
-
-console.log(JSON.stringify(corporation.applications, null, "  "))
 ---
 
 <div
-    {...Astro.props}
+    {...attributes}
     x-data={`{
         show_corporation() {
             return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].length > 0

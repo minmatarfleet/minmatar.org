@@ -25,15 +25,16 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
-<Flexblock
+<div
     id="groups-members-list"
     class="[ groups-members-list ]"
-    gap='var(--space-3xs)'
     {...attributes}
 >
     {groups.length > 0 &&
-        <Flexblock gap='var(--space-3xs)'>
-            <p x-show="total_members_filtered == 0" style="display: none">{t('no_members')}</p>
+        <Flexblock
+            class="[ correct-gaps ]"
+        >
+            <p x-show="total_members_filtered == 0" style="display: none;">{t('no_members')}</p>
 
             {groups.map( (group) => 
                 <GroupMembersBlock
@@ -51,4 +52,4 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             </TextBox>
         </slot>
     }
-</Flexblock>
+</div>
