@@ -52,6 +52,7 @@ a[href]:not([class]) {
     /* width */
     ::-webkit-scrollbar {
         width: var(--space-3xs);
+        height: var(--space-3xs);
     }
 
     /* Track */
