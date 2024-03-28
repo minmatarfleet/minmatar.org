@@ -1,0 +1,184 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const can_view_applications = (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
+
+if (!auth_token || !can_view_applications)
+    return HTTP_404_Not_Found()
+
+import type { CorporationApplications, SelectOptions } from '@dtypes/layout_components'
+import { get_all_corporations_applications } from '@helpers/fetching/applications'
+
+let corporations_applications:CorporationApplications[] = []
+let get_all_corporations_applications_error:string | false = false
+try {
+    corporations_applications = await get_all_corporations_applications(auth_token)
+    corporations_applications.sort( (a, b) => {
+        return b.applications.length - a.applications.length
+    })
+} catch (error) {
+    get_all_corporations_applications_error = is_prod_mode() ? t('get_all_corporations_applications_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+const CORPORATIONS_APPLICATIONS_PARTIAL_URL = `${get_app_url()}/partials/corporations_applications_component`
+
+let TOTAL_APPLICATIONS = 0
+const CORPORATIONS_UNFILTERED = {}
+corporations_applications.forEach( (corporation) => {
+    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.applications.map( (application) => application.id )
+    TOTAL_APPLICATIONS += corporation.applications.length
+})
+
+const CORPORATIONS_APPLICATIONS_COUNT = {}
+corporations_applications.forEach( (corporation) => {
+    CORPORATIONS_APPLICATIONS_COUNT[corporation.corporation_id] = corporation.applications.length
+})
+
+const corporations_options = corporations_applications.map( (corporation):SelectOptions => {
+    return {
+        value: corporation.corporation_id,
+        label: corporation.corporation_name,
+    }
+} )
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationApplicationsList from '@components/blocks/CorporationApplicationsList.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('corporations.applications.page_title')
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/corporations-cover.jpg",
+            image_990: "/images/corporations-cover-990.jpg",
+            alt: t('corporations.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            global_collapsed: [],
+            corporations_applications: ${JSON.stringify(corporations_applications)},
+            corporations_unfiltered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
+            corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
+            corporations_filtered_applications_count: ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)},
+            total_applications_filtered: ${TOTAL_APPLICATIONS},
+            corporations_options: ${JSON.stringify(corporations_options)},
+            character_name: '',
+            corporation_filter: '-1',
+            filter() {
+                console.log(this.character_name)
+                if (this.character_name === '' && this.corporation_filter === '-1') {
+                    this.corporations_filtered = this.corporations_unfiltered
+                    this.corporations_filtered_applicationss_count = ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)}
+                    this.total_applications_filtered = ${TOTAL_APPLICATIONS}
+                    return
+                }
+
+                this.corporations_filtered = {}
+                this.corporations_filtered_applicationss_count = {}
+                this.total_applications_filtered = 0
+
+                this.corporations_applications.forEach( (corporation) => {
+                    if (this.corporation_filter !== '-1' && parseInt(this.corporation_filter) !== corporation.corporation_id) {
+                        this.corporations_filtered[corporation.corporation_id] = []
+                        this.corporations_filtered_applications_count[corporation.corporation_id] = 0
+                        return true
+                    }
+
+                    const applications = corporation.applications.filter( (application) => application.character_name.toLowerCase().includes(this.character_name.toLowerCase()) )
+                    
+                    if (applications.length > 0) {
+                        this.total_applications_filtered += applications.length
+                        this.corporations_filtered[corporation.corporation_id] = applications.map( (application) => application.id )
+                        this.corporations_filtered_applications_count[corporation.corporation_id] = applications.length
+                    }
+                })
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="character_name"
+                    x-on:keyup="filter()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+                
+                <div class="[ hidden 2xl:block ]">
+                    <Select
+                        x-model="corporation_filter"
+                        width='280px'
+                        x-on:change="filter()"
+                    >
+                        <option selected value="-1">{t('corporations')}</option>
+                        <template x-for="corporation in corporations_options">
+                            <option x-bind:value="corporation.value" x-text="corporation.label" />
+                        </template>
+                    </Select>
+                </div>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('corporations.applications.leading_text')}</p>
+            </TextBox>
+
+            {get_all_corporations_applications_error ?
+                <CorporationApplicationsList
+                    corporations={[]}
+                >
+                    <ErrorRefetch
+                        args={{
+                            partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
+                            message: get_all_corporations_applications_error,
+                            delay: 0,
+                            target: '#corporations-applications-list',
+                        }}
+                    />
+                </CorporationApplicationsList>
+                :
+                <CorporationApplicationsList corporations={corporations_applications} />
+            }
+        </Flexblock>
+    </PageDefault>
+</Viewport>

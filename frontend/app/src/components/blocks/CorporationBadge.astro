@@ -48,9 +48,12 @@ import TextBadge from '@components/blocks/TextBadge.astro';
     </picture>
     <Flexblock gap='0' class="[ w-full ]">
         {size == 'lg' ?
-            <TextBadge subtext={description}>
+            <span>
                 <span class="[ text-[var(--highlight)] max-w-fit ]">{corporation_name}</span>
-            </TextBadge>
+            </span>
+            <slot>
+                <small>{description}</small>
+            </slot>
             :
             <small class="[ max-w-fit ]">
                 <a class="[ text-[var(--highlight)] ]">{corporation_name}</a>

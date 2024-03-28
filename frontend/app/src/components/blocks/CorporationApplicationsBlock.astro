@@ -1,0 +1,79 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationApplications } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:  CorporationApplications;
+}
+
+const {
+    corporation,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import CorporationApplicationItem from '@components/blocks/CorporationApplicationItem.astro';
+import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+
+console.log(JSON.stringify(corporation.applications, null, "  "))
+---
+
+<div
+    {...Astro.props}
+    x-data={`{
+        show_corporation() {
+            return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].length > 0
+        },
+        get_applications_count() {
+            if ("${corporation.corporation_id}" in corporations_filtered_applications_count)
+                return corporations_filtered_applications_count[${corporation.corporation_id}]
+
+            return 0
+        }
+    }`}
+    x-show="show_corporation()"
+>
+    <ComponentBlockHeader
+        id={corporation.corporation_id.toString()}
+    >
+        <CorporationBadge
+            slot="header"
+            corporation={{
+                id: corporation.corporation_id,
+                name: corporation.corporation_name,
+                size: 'lg',
+            }}
+        >
+            <small
+                x-text={'`${get_applications_count()} ${get_applications_count() != 1 ? `'+t('applications').toLowerCase()+'` : `'+t('application').toLowerCase()+'`}`'}
+            >
+                {corporation.applications.length} {corporation.applications.length != 1 ? t('applications').toLowerCase() : t('application').toLowerCase()}
+            </small>
+        </CorporationBadge>
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center correct-first-element-margin ]"
+            x-show="expanded"
+            first_element_gap={true}
+            x-collapse.duration.100ms
+        >
+            {corporation.applications.map( (application) => 
+                <CorporationApplicationItem
+                    application={application}
+                    x-data={`{
+                        show_item() {
+                            return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].includes(${application.id})
+                        }
+                    }`}
+                    x-show="show_item()"
+                />
+            )}
+        </Flexblock>
+    </ComponentBlockHeader>
+</div>

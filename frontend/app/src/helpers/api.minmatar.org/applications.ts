@@ -1,4 +1,4 @@
-import type { CorporationApplication } from '@dtypes/api.minmatar.org'
+import type { CorporationApplication, CorporationApplicationDetails } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/applications/corporations`
 
@@ -63,7 +63,7 @@ export async function get_corporation_applications_by_id(access_token:string, co
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
-
+    
     console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications/${application_id}`)
 
     try {
@@ -77,7 +77,7 @@ export async function get_corporation_applications_by_id(access_token:string, co
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        return await response.json() as CorporationApplication[];
+        return await response.json() as CorporationApplicationDetails;
     } catch (error) {
         throw new Error(`Error fetching corporation application: ${error.message}`);
     }
