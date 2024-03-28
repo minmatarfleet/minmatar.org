@@ -29,8 +29,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     {...attributes}
 >
     {corporations.length > 0 &&
-        <Flexblock>
-            <p x-show="total_applications_filtered == 0" style="display: none">{t('no_applications')}</p>
+        <Flexblock class="[ correct-gaps ]">
+            <p x-show="total_applications_filtered == 0" style="display: none;">{t('no_applications')}</p>
 
             {corporations.map( (corporation) => 
                 <CorporationApplicationsBlock corporation={corporation} />

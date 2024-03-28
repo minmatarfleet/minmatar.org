@@ -530,6 +530,7 @@ export const ui = {
         'page_finder.teams.members.description': 'List of members of managed teams',
         'page_finder.corporations.list.description': 'Minmatar Fleet Alliance corporations portfolio',
         'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
+        'page_finder.corporations.applications.description': 'List of submitted corporation applications',
         'page_finder.account.description': 'Your profile management page',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
