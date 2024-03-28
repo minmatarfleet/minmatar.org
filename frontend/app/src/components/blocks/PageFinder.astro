@@ -43,6 +43,9 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (page.permissions?.superuser && (!user || !user?.is_superuser))
         return false
 
+    if (page.permissions?.user && (!user || (page.permissions.user.filter( (i) => user?.permissions.includes(i) ).length !== page.permissions.user.length) ))
+        return false
+
     return true
 })
 

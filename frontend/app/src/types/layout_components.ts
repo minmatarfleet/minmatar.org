@@ -490,4 +490,5 @@ export interface Permissions {
     team_director?: boolean;
     superuser?:     boolean;
     auth?:          boolean;
+    user?:          string[];
 }
