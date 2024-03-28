@@ -12,10 +12,12 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const can_view_applications = (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-if (!auth_token || !can_view_applications)
+const can_view_page = is_superuser || (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
+
+if (!can_view_page)
     return HTTP_404_Not_Found()
 
 import type { CorporationApplications, SelectOptions } from '@dtypes/layout_components'
@@ -23,8 +25,9 @@ import { get_all_corporations_applications } from '@helpers/fetching/application
 
 let corporations_applications:CorporationApplications[] = []
 let get_all_corporations_applications_error:string | false = false
+
 try {
-    corporations_applications = await get_all_corporations_applications(auth_token)
+    corporations_applications = await get_all_corporations_applications(auth_token as string)
     corporations_applications.sort( (a, b) => {
         return b.applications.length - a.applications.length
     })
@@ -82,9 +85,9 @@ const page_title = t('corporations.applications.page_title')
 >
     <PageDefault
         cover={{
-            image: "/images/corporations-cover.jpg",
-            image_990: "/images/corporations-cover-990.jpg",
-            alt: t('corporations.cover_alt'),
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover-990.jpg",
+            alt: t('alliance.cover_alt'),
             animated: false,
             scrollable: true,
             overlay: true
