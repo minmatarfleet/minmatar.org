@@ -95,6 +95,15 @@
         }
     },
     {
+        "slug": "corporations.applications.records",
+        "path": "/alliance/corporations/applications/records/",
+        "description": "page_finder.corporations.applications.records.description",
+        "publish": true,
+        "permissions" : {
+            "user": [ "auth.change_evecorporationapplication" ]
+        }
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",
