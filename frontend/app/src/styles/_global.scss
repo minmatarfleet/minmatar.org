@@ -43,7 +43,7 @@ body,
     }
 }
 
-a[href]:not([class]) {
+a[href] {
     color: var(--highlight);
     text-decoration: none;
 }
@@ -93,6 +93,12 @@ a[href]:not([class]) {
     position: absolute;
     width: 1px;
     white-space: nowrap;
+}
+
+pre {
+    background-color: var(--component-background);
+    padding: var(--space-3xs);
+    border: solod 1px var(--border-color);
 }
 
 code {
