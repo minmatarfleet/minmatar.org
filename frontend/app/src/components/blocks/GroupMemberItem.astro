@@ -24,8 +24,7 @@ const {
 } = Astro.props
 
 import { query_string } from '@helpers/string'
-import { get_app_url } from '@helpers/env'
-const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
+const GROUPS_MEMBERS_PARTIAL_URL = translatePath('/partials/groups_members_component')
 
 const REMOVE_MEMBER_DIALOG_TITLE = {
     'team': t('remove_team_member_dialog_title'),

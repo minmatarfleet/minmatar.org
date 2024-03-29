@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -27,8 +28,7 @@ try {
     get_groups_error = is_prod_mode() ? t('get_groups_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
-const GROUPS_LIST_PARTIAL_URL = `${get_app_url()}/partials/groups_list_component/`
+const GROUPS_LIST_PARTIAL_URL = translatePath('/partials/groups_list_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType

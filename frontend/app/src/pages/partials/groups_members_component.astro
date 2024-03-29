@@ -100,8 +100,7 @@ try {
 
 console.log(groups_members)
 
-import { get_app_url } from '@helpers/env'
-const GROUPS_MEMBERS_PARTIAL_URL = `${get_app_url()}/partials/groups_members_component`
+const GROUPS_MEMBERS_PARTIAL_URL = translatePath('/partials/groups_members_component')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

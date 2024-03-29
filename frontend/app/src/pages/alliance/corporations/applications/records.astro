@@ -35,8 +35,7 @@ try {
     get_all_corporations_applications_error = is_prod_mode() ? t('get_all_corporations_applications_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
-const CORPORATIONS_APPLICATIONS_PARTIAL_URL = `${get_app_url()}/partials/corporations_applications_component`
+const CORPORATIONS_APPLICATIONS_PARTIAL_URL = translatePath('/partials/corporations_applications_component')
 
 let TOTAL_APPLICATIONS = 0
 const CORPORATIONS_UNFILTERED = {}

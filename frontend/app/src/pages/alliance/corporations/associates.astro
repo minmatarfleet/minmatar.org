@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -31,8 +32,7 @@ try {
     get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
-const CORPORATIONS_LIST_PARTIAL_URL = `${get_app_url()}/partials/corporations_list_component/?corporation_type=associate`
+const CORPORATIONS_LIST_PARTIAL_URL = `${translatePath('/partials/corporations_list_component')}?corporation_type=associate`
 
 import Viewport from '@layouts/Viewport.astro';
 

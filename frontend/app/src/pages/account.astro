@@ -38,10 +38,9 @@ try {
     readonly = true
 }
 
-import { get_app_url } from '@helpers/env'
-const DELETE_ACCOUNT_URL = `${get_app_url()}/api/auth`
-const CLEAR_ACCOUNT_CACHE_URL = `${get_app_url()}/api/cache`
-const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component/`
+const DELETE_ACCOUNT_URL = translatePath('/api/auth')
+const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
+const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
 
 import Viewport from '@layouts/Viewport.astro';
 

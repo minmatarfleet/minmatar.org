@@ -44,7 +44,7 @@ try {
     get_character_error = (is_prod_mode() ? t('get_eve_character_error') : error.message)
 }
 
-const CHARACTER_MODAL_PARTIAL_URL = `${get_app_url()}/partials/character_modal_component`
+const CHARACTER_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import Wrapper from '@components/compositions/Wrapper.astro'

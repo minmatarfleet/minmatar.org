@@ -35,8 +35,7 @@ try {
     get_character_skillsets_error = is_prod_mode() ? t('get_character_skillsets_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
-const SKILLSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/skillsets_list_component`
+const SKILLSETS_LIST_PARTIAL_URL = translatePath('/partials/skillsets_list_component')
 
 import Viewport from '@layouts/Viewport.astro';
 
