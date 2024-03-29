@@ -160,7 +160,7 @@ export const ui = {
         'corporations.applications.page_title': 'Corporations applications',
         'corporations.applications.leading_text': 'Here a list of all the applications to join alliance corporations.',
 
-        'corporations.applications.records.page_title': 'Corporations applications record',
+        'corporations.applications.records.page_title': 'Corporations applications records',
         'corporations.applications.records.leading_text': 'Here a list of all the processed applications.',
 
         'corporations.application.leading_text': 'Review the following application.',
@@ -536,6 +536,7 @@ export const ui = {
         'page_finder.corporations.list.description': 'Minmatar Fleet Alliance corporations portfolio',
         'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
         'page_finder.corporations.applications.description': 'List of submitted corporation applications',
+        'page_finder.corporations.applications.records.description': 'List of processed corporation applications',
         'page_finder.account.description': 'Your profile management page',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
