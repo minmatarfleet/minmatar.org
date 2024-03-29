@@ -99,6 +99,12 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
                     {t('enlist_today')}
                 </ButtonAuth>
             }
+            {corporation?.status === 'accepted' &&
+                <Tag color='green' text={t('accepted')} />
+            }
+            {corporation?.status === 'rejected' &&
+                <Tag text={t('denied')} />
+            }
             {corporation?.status == 'pending' &&
                 <Tag color='alliance-blue' text={t('pending')} />
             }
