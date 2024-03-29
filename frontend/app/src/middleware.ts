@@ -6,7 +6,6 @@ import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 const ONE_DAY_IN_MS = 24*60*60*1000
 
 export const onRequest = async ({ locals, cookies, request }, next) => {
-    console.log(request.url)
     const lang = 'en'
     const t = useTranslations(lang);
     const translatePath = useTranslatedPath(lang);
