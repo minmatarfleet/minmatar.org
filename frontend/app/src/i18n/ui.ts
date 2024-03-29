@@ -568,6 +568,7 @@ export const ui = {
         'accept_application_dialog_text': 'Proceed accepting the application?',
         'deny_application_dialog_text': 'Proceed denying the application?',
         'application_created': 'Date of creation',
+        'application_processed': 'Date processed',
         'markdown_support': 'Markdown is supported',
         'approve_application_error': 'An error occurred while accepting the application.',
         'deny_application_error': 'An error occurred while denying the application.',

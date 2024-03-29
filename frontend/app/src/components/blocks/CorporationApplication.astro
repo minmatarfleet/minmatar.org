@@ -49,9 +49,6 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
-
-console.log('==============================')
-console.log(application.status)
 ---
 
 <Flexblock
@@ -171,11 +168,19 @@ console.log(application.status)
             )}
         </Context>
 
-        <Flexblock>
-            <Context>
-                <label>{t('application_created')}</label>
-                <p>{format_date_time(lang, application.created_at)}</p>
-            </Context>
+        <Flexblock gap='var(--space-l)'>
+            <FlexInline>
+                <Flexblock gap='var(--space-3xs)' class="[ basis-[250px] ]">
+                    <label>{t('application_created')}</label>
+                    <p>{format_date_time(lang, application.created_at)}</p>
+                </Flexblock>
+                {(application.status === 'accepted' || application.status === 'rejected') &&
+                    <Flexblock gap='var(--space-3xs)' class="[ basis-[250px] ]">
+                        <label>{t('application_processed')}</label>
+                        <p>{format_date_time(lang, application.updated_at)}</p>
+                    </Flexblock>
+                }
+            </FlexInline>
 
             <Context>
                 <label>{t('application_text')}</label>
