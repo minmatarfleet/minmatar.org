@@ -41,13 +41,12 @@ try {
     get_corporation_application_error = is_prod_mode() ? t('get_corporation_application_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
 import { query_string } from '@helpers/string';
 const corporation:CorporationBasic = {
     id: corporation_id,
     name: corporation_eve.name,
 }
-const CORPORATION_APPLICATION_PARTIAL_URL = `${get_app_url()}/partials/corporation_application_component?${query_string({
+const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
     corporation: JSON.stringify(corporation),
     application_id: application_id,
 })}`

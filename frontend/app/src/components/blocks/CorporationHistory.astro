@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { marked } from 'marked';
 
@@ -65,8 +66,7 @@ if (!corporation_history && character_id) {
     }
 }
 
-import { get_app_url } from '@helpers/env'
-const CORPORATION_HISTORY_PARTIAL_URL = `${get_app_url()}/partials/corporation_history_component/`
+const CORPORATION_HISTORY_PARTIAL_URL = translatePath('/partials/corporation_history_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

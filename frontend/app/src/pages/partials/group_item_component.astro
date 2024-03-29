@@ -74,8 +74,7 @@ if (create_group_request_error) {
     }
 }
 
-import { get_app_url } from '@helpers/env'
-const GROUP_ITEM_PARTIAL_URL = `${get_app_url()}/partials/group_item_component/`
+const GROUP_ITEM_PARTIAL_URL = translatePath('/partials/group_item_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

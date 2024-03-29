@@ -29,9 +29,9 @@ const {
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
-const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}/redirects/add_primary_character&token_type=Basic`
-const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}/account&token_type=Basic`
-const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}/partials/pilots_list_component`
+const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}&token_type=Basic`
+const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/pilots_list_component')}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';

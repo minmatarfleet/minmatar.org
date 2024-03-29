@@ -24,8 +24,7 @@ const {
 } = Astro.props;
 
 import { query_string } from '@helpers/string';
-import { get_app_url } from '@helpers/env'
-const ADD_PRIMARY_CHARACTER_INIT_PARTIAL_URL = `${get_app_url()}/redirects/add_primary_character_init?redirect=${redirect}`
+const ADD_PRIMARY_CHARACTER_INIT_PARTIAL_URL = `${translatePath('/redirects/add_primary_character_init')}?redirect=${redirect}`
 
 import Button from '@components/blocks/Button.astro';
 ---

@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -39,8 +40,7 @@ try {
     get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
 }
 
-import { get_app_url } from '@helpers/env'
-const ASSETS_LIST_PARTIAL_URL = `${get_app_url()}/partials/assets_list_component`
+const ASSETS_LIST_PARTIAL_URL = translatePath('/partials/assets_list_component')
 
 const assets_stations:string[] = character_assets.locations.map( (location):string => location.location_name )
 

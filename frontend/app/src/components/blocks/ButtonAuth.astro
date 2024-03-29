@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
@@ -20,8 +21,7 @@ const {
     dialog_title,
 } = Astro.props;
 
-import { get_app_url } from '@helpers/env'
-const AUTH_REDIRECT_URL = `${get_app_url()}/redirects/auth_init?redirect_url=${Astro.url}`
+const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
 import Button from '@components/blocks/Button.astro';
 ---
