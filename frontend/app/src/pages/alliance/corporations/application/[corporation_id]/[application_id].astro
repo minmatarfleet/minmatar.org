@@ -56,14 +56,17 @@ import Viewport from '@layouts/Viewport.astro';
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
+import TextBox from '@components/layout/TextBox.astro';
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import CorporationApplication from '@components/blocks/CorporationApplication.astro';
-import TextBox from '@components/layout/TextBox.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-
+import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = `${application.character_name} ${t('application').toLowerCase()}`
 ---
@@ -90,6 +93,10 @@ const page_title = `${application.character_name} ${t('application').toLowerCase
                 {page_title}
             </PageTitle>
             <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/corporations/applications/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_applications')}
+                </Button>
             </FlexInline>
         </FlexInline>
 
