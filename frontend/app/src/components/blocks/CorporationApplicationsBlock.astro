@@ -66,6 +66,7 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             {corporation.applications.map( (application) => 
                 <CorporationApplicationItem
                     application={application}
+                    corporation_id={corporation.corporation_id}
                     x-data={`{
                         show_item() {
                             return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].includes(${application.id})

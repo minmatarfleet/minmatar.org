@@ -1,0 +1,135 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+const can_view_page = is_superuser || (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '0')
+const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')
+
+const valid_request = (corporation_id > 0 && application_id > 0)
+
+if (!can_view_page || !valid_request)
+    return HTTP_404_Not_Found()
+
+import type { ApplicationDetail, CorporationBasic } from '@dtypes/layout_components'
+import { get_application_by_id } from '@helpers/fetching/applications'
+import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
+import type { CorporationEvE } from '@dtypes/api.eveonline'
+
+let application:ApplicationDetail
+let get_corporation_application_error:string | false = false
+let corporation_eve:CorporationEvE
+
+try {
+    application = await get_application_by_id(auth_token as string, corporation_id, application_id)
+    corporation_eve = await get_corporation_by_id(corporation_id)
+} catch (error) {
+    get_corporation_application_error = is_prod_mode() ? t('get_corporation_application_error') : error.message
+}
+
+import { get_app_url } from '@helpers/env'
+import { query_string } from '@helpers/string';
+const corporation:CorporationBasic = {
+    id: corporation_id,
+    name: corporation_eve.name,
+}
+const CORPORATION_APPLICATION_PARTIAL_URL = `${get_app_url()}/partials/corporation_application_component?${query_string({
+    corporation: JSON.stringify(corporation),
+    application_id: application_id,
+})}`
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationApplication from '@components/blocks/CorporationApplication.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = `${application.character_name} ${t('application').toLowerCase()}`
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover-990.jpg",
+            alt: t('alliance.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/corporations/applications/')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_applications')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('corporations.application.leading_text')}</p>
+            </TextBox>
+
+            {get_corporation_application_error ?
+                <CorporationApplication
+                    application={null}
+                    corporation_id={null}
+                    corporation_name={null}
+                >
+                    <ErrorRefetch
+                        args={{
+                            partial: CORPORATION_APPLICATION_PARTIAL_URL,
+                            message: get_corporation_application_error,
+                            delay: 0,
+                            target: '#corporation-application',
+                        }}
+                    />
+                </CorporationApplication>
+                :
+                <ComponentBlock>
+                    <CorporationApplication
+                        application={application}
+                        corporation_id={corporation_id}
+                        corporation_name={corporation_eve.name}
+                    />
+                </ComponentBlock>
+            }
+        </Flexblock>
+    </PageDefault>
+</Viewport>

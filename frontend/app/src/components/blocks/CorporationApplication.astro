@@ -1,0 +1,186 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { ApplicationDetail, CharacterBasic, CorporationBasic, Alert } from '@dtypes/layout_components'
+
+interface Props {
+    application:        ApplicationDetail;
+    corporation_id:     number;
+    corporation_name:   string;
+    alert?:             Alert | false;
+}
+
+const {
+    application,
+    corporation_id,
+    corporation_name,
+    alert = false,
+} = Astro.props
+
+const character:CharacterBasic = {
+    character_id: application.character_id,
+    character_name: application.character_name,
+    corporation: {
+        id: application.corporation_id,
+        name: application.corporation_name,
+    }
+}
+
+const corporation:CorporationBasic = {
+    id: corporation_id,
+    name: corporation_name,
+}
+
+import { query_string } from '@helpers/string';
+const CORPORATION_APPLICATION_PARTIAL_URL = translatePath('/partials/corporation_application_component')
+
+import { format_date_time } from '@helpers/date'
+import { marked } from 'marked';
+
+import Context from '@components/layout/Context.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
+
+console.log('==============================')
+console.log(application.status)
+---
+
+<Flexblock
+    id="corporation-application"
+    gap='var(--space-l)'
+    x-data={`{
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+>
+    <FlexInline
+        justification='space-between'
+    >
+        <div class="[ grow ]">
+            <CorporationBadge
+                corporation={{
+                    id: corporation_id,
+                    name: corporation_name,
+                    size: 'lg',
+                }}
+            />
+        </div>
+        <FlexInline>
+            {application?.status == 'pending' &&
+                <Button
+                    size='sm'
+                    type="button"
+                    color='green'
+                    x-data={`{
+                        show_accept_application_dialog() {
+                            show_confirm_dialog({
+                                title: '${t('accept_application_dialog_title')}',
+                                partial: '${translatePath('/partials/dialog_with_application/')}?${query_string({
+                                    character: JSON.stringify(character),
+                                    corporation: JSON.stringify(corporation),
+                                    application_id: application.id.toString(),
+                                    type: 'accept',
+                                    message: t('accept_application_dialog_text'),
+                                })}',
+                                hx: {
+                                    method: 'post',
+                                    url: '${CORPORATION_APPLICATION_PARTIAL_URL}?${query_string({
+                                        corporation: JSON.stringify(corporation),
+                                        application_id: application.id.toString(),
+                                        action: 'accept'
+                                    })}',
+                                    target: '#corporation-application',
+                                    swap: 'outerHTML transition:true'
+                                }
+                            })
+                        }
+                    }`}
+                    x-on:click="show_accept_application_dialog()"
+                >
+                    {t('accept')}
+                </Button>
+                
+                <Button
+                    size='sm'
+                    x-data={`{
+                        show_deny_application_dialog() {
+                            show_confirm_dialog({
+                                title: '${t('deny_application_dialog_title')}',
+                                partial: '${translatePath('/partials/dialog_with_application/')}?${query_string({
+                                    character: JSON.stringify(character),
+                                    corporation: JSON.stringify(corporation),
+                                    application_id: application.id.toString(),
+                                    type: 'deny',
+                                    message: t('deny_application_dialog_text'),
+                                })}',
+                                hx: {
+                                    method: 'post',
+                                    url: '${CORPORATION_APPLICATION_PARTIAL_URL}?${query_string({
+                                        corporation: JSON.stringify(corporation),
+                                        application_id: application.id.toString(),
+                                        action: 'deny'
+                                    })}',
+                                    target: '#corporation-application',
+                                    swap: 'outerHTML transition:true'
+                                }
+                            })
+                        }
+                    }`}
+                    x-on:click="show_deny_application_dialog()"
+                >
+                    {t('deny')}
+                </Button>
+            }
+            {application?.status === 'accepted' &&
+                <Tag color='green' text={t('accepted')} />
+            }
+            {application?.status === 'rejected' &&
+                <Tag text={t('denied')} />
+            }
+        </FlexInline>
+    </FlexInline>
+
+    <FixedFluid
+        width='350px'
+    >
+        <Context>
+            <PilotBadge
+                character_id={application.character_id}
+                character_name={application.character_name}
+            >
+                <small class="truncate">{t('main_character')}</small>
+            </PilotBadge>
+
+            {application.alts.map( (alt) =>
+                <PilotBadge
+                    character_id={alt.character_id}
+                    character_name={alt.character_name}
+                >
+                    <small class="truncate">{t('alt_character')}</small>
+                </PilotBadge>
+            )}
+        </Context>
+
+        <Flexblock>
+            <Context>
+                <label>{t('application_created')}</label>
+                <p>{format_date_time(lang, application.created_at)}</p>
+            </Context>
+
+            <Context>
+                <label>{t('application_text')}</label>
+                <Flexblock set:html={marked.parse(application.description)} />
+            </Context>
+        </Flexblock>
+    </FixedFluid>
+</Flexblock>

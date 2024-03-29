@@ -1,0 +1,62 @@
+---
+import type { CorporationBasic, CharacterBasic, GroupRequestAction } from '@dtypes/layout_components'
+
+interface Props {
+    character:      CharacterBasic;
+    corporation:    CorporationBasic;
+    type:           GroupRequestAction;
+}
+
+const {
+    character,
+    corporation,
+    type,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+---
+
+<Flexblock gap="var(--space-2xs)">
+    <PilotBadge
+        class="[ w-full ]"
+        character_id={character.character_id}
+        character_name={character.character_name}
+        corporation={character.corporation}
+    />
+    <Wrapper
+        padding_block='0'
+        padding_inline='23px'
+        max_width='64px'
+        class:list={ [ type, '!flex' ] }
+    >
+        {type == 'deny' ?
+            <TrashIcon />
+            :
+            <ArrowDown />
+        }
+    </Wrapper>
+    <CorporationBadge
+        corporation={{
+            id: corporation.id,
+            name: corporation.name,
+            size: 'lg',
+        }}
+        border={true}
+    />
+</Flexblock>
+
+<style lang="scss">
+    .accept {
+        color: var(--green);
+    }
+
+    .deny {
+        color: var(--fleet-red);
+    }
+</style>

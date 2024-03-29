@@ -27,7 +27,7 @@ let corporations_applications:CorporationApplications[] = []
 let get_all_corporations_applications_error:string | false = false
 
 try {
-    corporations_applications = await get_all_corporations_applications(auth_token as string)
+    corporations_applications = await get_all_corporations_applications(auth_token as string, true)
     corporations_applications.sort( (a, b) => {
         return b.applications.length - a.applications.length
     })
@@ -74,7 +74,7 @@ import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('corporations.applications.page_title')
+const page_title = t('corporations.applications.records.page_title')
 ---
 
 <Viewport
@@ -164,16 +164,16 @@ const page_title = t('corporations.applications.page_title')
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/alliance/corporations/applications/records')}
+                href={translatePath('/alliance/corporations/applications/')}
                 size='sm'
             >
-                {t('view_records')}
+                {t('view_active_applications')}
             </Button>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{t('corporations.applications.leading_text')}</p>
+                <p>{t('corporations.applications.records.leading_text')}</p>
             </TextBox>
 
             {get_all_corporations_applications_error ?

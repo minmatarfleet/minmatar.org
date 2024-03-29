@@ -1,0 +1,119 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+const can_view_page = is_superuser || (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
+
+import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
+
+const corporation_id = corporation?.id ?? 0
+const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')
+
+const valid_request = (corporation_id > 0 && application_id > 0)
+
+if (!can_view_page || !valid_request)
+    return HTTP_404_Not_Found()
+
+import type { ApplicationDetail, Alert } from '@dtypes/layout_components'
+import { get_application_by_id } from '@helpers/fetching/applications'
+import { accept_corporation_applications, reject_corporation_applications } from '@helpers/api.minmatar.org/applications'
+
+let application:ApplicationDetail
+let get_corporation_application_error:string | false = false
+let application_action_error
+let action
+
+if (Astro.request.method === "POST") {
+    action = Astro.url.searchParams.get('action')
+
+    try {
+        if (action == 'accept') {
+            await accept_corporation_applications(auth_token as string, corporation_id, application_id)
+        } else {
+            await reject_corporation_applications(auth_token as string, corporation_id, application_id)
+        }
+    } catch (error) {
+        application_action_error = is_prod_mode() ? (action == 'accept' ? t('approve_application_error') : t('deny_application_error')) : error.message
+    }
+}
+
+try {
+    application = await get_application_by_id(auth_token as string, corporation_id, application_id)
+} catch (error) {
+    get_corporation_application_error = is_prod_mode() ? t('get_corporation_application_error') : error.message
+}
+
+let alert:Alert | false = false
+if (application_action_error) {
+    alert = {
+        title: (action === 'accept' ? t('accept_application_dialog_title') : t('deny_application_dialog_title')),
+        content: application_action_error,
+    }
+
+    if (corporation) {
+        const character:CharacterBasic = {
+            character_id: application.character_id,
+            character_name: application.character_name,
+        }
+
+        const params = {
+            character: JSON.stringify(character),
+            corporation: JSON.stringify(corporation),
+            application_id: application.id.toString(),
+            type: action,
+            message: application_action_error,
+        }
+
+        alert.partial = `${translatePath('/partials/dialog_with_application/')}?${query_string(params)}`
+    }
+}
+
+import { query_string } from '@helpers/string';
+const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
+    corporation_id: corporation_id,
+    application_id: application_id,
+})}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import CorporationApplication from '@components/blocks/CorporationApplication.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_corporation_application_error ?
+    <CorporationApplication
+        application={null}
+        corporation_id={null}
+        corporation_name={null}
+    >
+        <ErrorRefetch
+            args={{
+                partial: translatePath(CORPORATION_APPLICATION_PARTIAL_URL),
+                message: get_corporation_application_error,
+                delay: delay,
+                target: '#corporation-application',
+            }}
+        />
+    </CorporationApplication>
+    :
+    <CorporationApplication
+        application={application}
+        corporation_id={corporation_id}
+        corporation_name={corporation.name}
+        alert={alert}
+    />
+}

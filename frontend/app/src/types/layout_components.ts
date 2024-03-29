@@ -259,6 +259,7 @@ export interface ApplicationBasic {
     character_name:         string;
     corporation_id:         number;
     corporation_name:       string;
+    status:                 CorporationStatusType;
 }
 
 export interface Application {
@@ -271,8 +272,22 @@ export interface Application {
     status:                 CorporationStatusType;
 }
 
+export interface ApplicationDetail {
+    id:                     number;
+    applied_corporation:    number;
+    character_id:           number;
+    character_name:         string;
+    corporation_id:         number;
+    corporation_name:       string;
+    description:            string;
+    created_at:             Date;
+    updated_at:             Date;
+    status:                 CorporationStatusType;
+    alts:                   CharacterBasic[];
+}
+
 export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'denied' |'error' | 'unauth'
-export type CorporationStatusType = 'available' | 'pending' | 'confirmed' | 'denied' |'error' | 'unauth'
+export type CorporationStatusType = 'available' | 'pending' | 'accepted' | 'rejected' |'error' | 'unauth'
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export interface CorporationObject {
