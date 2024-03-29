@@ -26,6 +26,8 @@ const corporation:CorporationObject = {
 import Flexblock from '@components/compositions/Flexblock.astro';
 import CorporationItem from '@components/blocks/CorporationItem.astro';
 import Textarea from '@components/blocks/Textarea.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Markdown from '@components/icons/buttons/Markdown.astro';
 ---
 
 <Flexblock
@@ -44,5 +46,9 @@ import Textarea from '@components/blocks/Textarea.astro';
     <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
         <label for="description">{t('application_text')}</label>
         <Textarea id="description" x-model="application_text" rows="5" />
+        <FlexInline gap='var(--space-3xs)'>
+            <Markdown />
+            <small>{t('markdown_support')}</small>
+        </FlexInline>
     </Flexblock>
 </Flexblock>

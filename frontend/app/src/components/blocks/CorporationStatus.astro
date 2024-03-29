@@ -65,7 +65,7 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
                             
                             show_confirm_dialog({
                                 title: '${t('corporation_join_request_dialog_title')}',
-                                partial: '${translatePath('/partials/dialog_corporation_application/')}?${query_string({
+                                partial: '${translatePath('/partials/dialog_apply_corporation/')}?${query_string({
                                     corporation_id: corporation.corporation_id,
                                     corporation_name: corporation.corporation_name,
                                     alliance_id: corporation.alliance_id,

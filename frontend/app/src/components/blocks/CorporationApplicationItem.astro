@@ -9,12 +9,14 @@ import { query_string } from '@helpers/string';
 import type { ApplicationBasic } from '@dtypes/layout_components'
 
 interface Props {
-    application:  ApplicationBasic,
+    application:    ApplicationBasic,
+    corporation_id: number;
     [propName: string]: any;
 }
 
 const {
     application,
+    corporation_id,
     ...attributes
 } = Astro.props
 
@@ -43,7 +45,10 @@ import Button from '@components/blocks/Button.astro';
             <Button
                 size='sm'
                 type="button"
-                href='#'
+                href={`${translatePath('/alliance/corporations/application')}?${query_string({
+                    corporation_id: corporation_id,
+                    application_id: application.id,
+                })}`}
             >
                 {t('view_application')}
             </Button>

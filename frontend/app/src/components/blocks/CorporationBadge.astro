@@ -10,11 +10,13 @@ import type { CorporationEvE } from '@dtypes/api.eveonline'
 import { is_prod_mode } from '@helpers/env'
 
 interface Props {
-    corporation: CorporationBadgeProps;
+    corporation:    CorporationBadgeProps;
+    border?:        boolean;
 }
 
 const {
     corporation,
+    border = false,
 } = Astro.props
 
 let corporation_eve:CorporationEvE
@@ -36,14 +38,14 @@ import { get_corporation_logo } from '@helpers/eve_image_server';
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import TextBadge from '@components/blocks/TextBadge.astro';
+const gap = size === 'sm' ? 'var(--space-2xs)' : 'var(--space-s)'
 ---
 <FixedFluid
     width={`${logo_size}px`}
-    gap='var(--space-2xs)'
+    gap={gap}
     class="[ items-center ]"
 >
-    <picture>
+    <picture class:list={{ border: border }}>
         <img src={get_corporation_logo(corporation.id, logo_size)} width={logo_size} height={logo_size} />
     </picture>
     <Flexblock gap='0' class="[ w-full ]">

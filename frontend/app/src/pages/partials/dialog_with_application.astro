@@ -1,0 +1,33 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { GroupRequestAction, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import ApplicationBadge from '@components/blocks/ApplicationBadge.astro';
+
+const character = JSON.parse(Astro.url.searchParams.get('character')) as CharacterBasic
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
+const type = Astro.url.searchParams.get('type') as GroupRequestAction
+const message = Astro.url.searchParams.get('message')
+---
+
+<Flexblock>
+    <p>{message}</p>
+
+    <ApplicationBadge
+        character={{
+            character_id: character.character_id,
+            character_name: character.character_name,
+            corporation: character.corporation
+        }}
+        type={type}
+        corporation={{
+            id: corporation.id,
+            name: corporation.name,
+        }}
+    />
+</Flexblock>
