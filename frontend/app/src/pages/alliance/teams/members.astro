@@ -98,6 +98,7 @@ const page_title = t('teams.members.page_title')
             groups_filtered: ${JSON.stringify(GROUPS_UNFILTERED)},
             groups_filtered_members_count: ${JSON.stringify(GROUPS_MEMBERS_COUNT)},
             total_members_filtered: ${TOTAL_MEMBERS},
+            total_members_unfiltered: ${TOTAL_MEMBERS},
             groups_options: ${JSON.stringify(groups_options)},
             member_name: '',
             group_filter: '-1',
@@ -105,7 +106,7 @@ const page_title = t('teams.members.page_title')
                 if (this.member_name === '' && this.group_filter === '-1') {
                     this.groups_filtered = this.groups_unfiltered
                     this.groups_filtered_members_count = ${JSON.stringify(GROUPS_MEMBERS_COUNT)}
-                    this.total_members_filtered = ${TOTAL_MEMBERS}
+                    this.total_members_filtered = this.total_members_unfiltered
                     return
                 }
 
