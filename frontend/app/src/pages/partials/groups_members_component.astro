@@ -152,6 +152,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                 groups_filtered = ${JSON.stringify(GROUPS_UNFILTERED)}
                 groups_filtered_members_count = ${JSON.stringify(GROUPS_MEMBERS_COUNT)}
                 total_members_filtered = ${TOTAL_MEMBERS}
+                total_members_unfiltered = ${TOTAL_MEMBERS}
                 groups_options = ${JSON.stringify(groups_options)}
 
                 ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}

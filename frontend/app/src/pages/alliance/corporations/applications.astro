@@ -99,6 +99,7 @@ const page_title = t('corporations.applications.page_title')
             corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
             corporations_filtered_applications_count: ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)},
             total_applications_filtered: ${TOTAL_APPLICATIONS},
+            total_applications_unfiltered: ${TOTAL_APPLICATIONS},
             corporations_options: ${JSON.stringify(corporations_options)},
             character_name: '',
             corporation_filter: '-1',
@@ -107,7 +108,7 @@ const page_title = t('corporations.applications.page_title')
                 if (this.character_name === '' && this.corporation_filter === '-1') {
                     this.corporations_filtered = this.corporations_unfiltered
                     this.corporations_filtered_applicationss_count = ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)}
-                    this.total_applications_filtered = ${TOTAL_APPLICATIONS}
+                    this.total_applications_filtered = this.total_applications_unfiltered
                     return
                 }
 
