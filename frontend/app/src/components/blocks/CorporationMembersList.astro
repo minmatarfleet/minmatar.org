@@ -1,0 +1,48 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Alert, CorporationMembers } from '@dtypes/layout_components'
+
+interface Props {
+    corporations:   CorporationMembers[];
+    alert?:         Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    corporations,
+    alert = false,
+    ...attributes
+} = Astro.props
+
+import CorporationMembersBlock from '@components/blocks/CorporationMembersBlock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<div
+    id="corporations-members-list"
+    class="[ corporations-members-list ]"
+    {...attributes}
+>
+    {corporations.length > 0 &&
+        <Flexblock class="[ correct-gaps ]">
+            <p x-show="total_members_filtered == 0" style="display: none;">{t('no_members')}</p>
+
+            {corporations.map( (corporation) => 
+                <CorporationMembersBlock corporation={corporation} />
+            )}
+        </Flexblock>
+    }
+
+    {corporations.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_members')}</p>
+            </TextBox>
+        </slot>
+    }
+</div>

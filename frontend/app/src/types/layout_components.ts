@@ -286,6 +286,21 @@ export interface ApplicationDetail {
     alts:                   CharacterBasic[];
 }
 
+export interface CorporationMembers {
+    corporation_id:     number;
+    corporation_name:   string;
+    type:               CorporationType;
+    members:            CharacterKind[];
+    active:             boolean;
+}
+
+export interface CharacterKind {
+    character_id:       number;
+    character_name:     string;
+    is_main:            boolean;
+    main_character?:    CharacterBasic;
+}
+
 export type GroupStatus = 'available' | 'requested' | 'confirmed' | 'denied' |'error' | 'unauth'
 export type CorporationStatusType = 'available' | 'pending' | 'accepted' | 'rejected' |'error' | 'unauth'
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'

@@ -69,6 +69,11 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                         {t('view_applications')}
                                     </Button>
                                 }
+                                {can_view_applications &&
+                                    <Button size='sm' href={translatePath('/alliance/corporations/members/')}>
+                                        {t('view_members')}
+                                    </Button>
+                                }
                             </FlexInline>
                         </Flexblock>
                     </Flexblock>

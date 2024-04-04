@@ -1,0 +1,80 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationMembers } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:  CorporationMembers;
+    [propName: string]: any;
+}
+
+const {
+    corporation,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import CorporationMemberItem from '@components/blocks/CorporationMemberItem.astro';
+import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+---
+
+<div
+    {...attributes}
+    x-data={`{
+        show_corporation() {
+            return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].length > 0
+        },
+        get_members_count() {
+            if ("${corporation.corporation_id}" in corporations_filtered_members_count)
+                return corporations_filtered_members_count[${corporation.corporation_id}]
+
+            return 0
+        }
+    }`}
+    x-show="show_corporation()"
+>
+    <ComponentBlockHeader
+        id={corporation.corporation_id.toString()}
+    >
+        <CorporationBadge
+            slot="header"
+            corporation={{
+                id: corporation.corporation_id,
+                name: corporation.corporation_name,
+                size: 'lg',
+            }}
+        >
+            <small
+                x-text={'`${get_members_count()} ${get_members_count() != 1 ? `'+t('members').toLowerCase()+'` : `'+t('member').toLowerCase()+'`}`'}
+            >
+                {corporation.members.length} {corporation.members.length != 1 ? t('members').toLowerCase() : t('member').toLowerCase()}
+            </small>
+        </CorporationBadge>
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center correct-first-element-margin ]"
+            x-show="expanded"
+            first_element_gap={true}
+            x-collapse.duration.100ms
+        >
+            {corporation.members.map( (member) => 
+                <CorporationMemberItem
+                    member={member}
+                    corporation_id={corporation.corporation_id}
+                    x-data={`{
+                        show_item() {
+                            return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].includes(${member.character_id})
+                        }
+                    }`}
+                    x-show="show_item()"
+                />
+            )}
+        </Flexblock>
+    </ComponentBlockHeader>
+</div>

@@ -26,9 +26,10 @@ export async function get_all_corporations(corporation_type:CorporationType) {
     }
 }
 
-export async function get_corporation_by_id(id:number) {
+export async function get_corporation_by_id(access_token:string, id:number) {
     const headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
     }
 
     console.log(`Requesting: ${API_ENDPOINT}/corporations/${id}`)
