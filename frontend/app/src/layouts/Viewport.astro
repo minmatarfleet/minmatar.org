@@ -29,6 +29,7 @@ import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import CharacterFinder from '@components/blocks/CharacterFinder.astro';
+import MemberFinder from '@components/blocks/MemberFinder.astro';
 import PageFinder from '@components/blocks/PageFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
@@ -39,6 +40,7 @@ import {
 	PersonaFinderXData,
 	PageFinderXData,
 	CharacterFinderXData,
+	MemberFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
@@ -107,7 +109,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${components?.personas_finder ? PersonaFinderXData : ''}
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
-			${user_is_officer || user_is_director ? CharacterFinderXData : ''}
+			${user ? CharacterFinderXData : ''}
+			${user_is_officer || user_is_director ? MemberFinderXData : ''}
             ${PageFinderXData}
             ${UtilitiesXData}
             ${RifterAnimationXData}
@@ -124,7 +127,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 					components?.personas_finder ? 'personas_finder_open' : false,
 					components?.corporation_finder ? 'corporations_finder_open' : false,
 					components?.alliance_finder ? 'alliances_finder_open' : false,
-					user_is_officer || user_is_director ? 'characters_finder_open' : false,
+					user ? 'characters_finder_open' : false,
+					user_is_officer || user_is_director ? 'members_finder_open' : false,
 					'pages_finder_open',
 				].join(' || ')}
 			`}
@@ -155,8 +159,12 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<AllianceFinder />
 		}
 
-		{(user_is_officer || user_is_director) &&
+		{(user) &&
 			<CharacterFinder transition:persist />
+		}
+
+		{(user_is_officer || user_is_director) &&
+			<MemberFinder transition:persist />
 		}
 
 		<PageFinder transition:persist />

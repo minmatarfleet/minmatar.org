@@ -5,7 +5,7 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 const t = useTranslations('en');
 
 import type { Corporation, CorporationApplication, CorporationType, CharacterCorp } from '@dtypes/api.minmatar.org'
-import type { CorporationObject, CorporationStatusType, CorporationMembers, CharacterKind } from '@dtypes/layout_components'
+import type { CorporationObject, CorporationStatusType, CorporationMembers, CharacterKind, CharacterBasic } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications } from '@helpers/api.minmatar.org/applications'
 
@@ -128,4 +128,31 @@ export async function get_all_corporation_members(access_token:string, corporati
     })))
 
     return corporation_members
+}
+
+export async function get_all_alliance_members(access_token:string) {
+    let members:CharacterBasic[] = []    
+    let api_corporations:Corporation[]
+    let corporation_members:CorporationMembers[]
+
+    api_corporations = await get_all_corporations('alliance')
+
+    corporation_members = (await Promise.all(api_corporations.map(async (corporation) => 
+        await get_all_corporation_members(access_token, corporation.corporation_id)
+    )))
+
+    corporation_members.map( (corporation) =>
+        corporation.members.map( (member) => {
+            members.push({
+                character_id: member.character_id,
+                character_name: member.character_name,
+                corporation: {
+                    id: corporation.corporation_id,
+                    name: corporation.corporation_name,
+                }
+            })
+        })
+    )
+
+    return members
 }
