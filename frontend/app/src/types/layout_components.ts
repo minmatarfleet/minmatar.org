@@ -522,3 +522,12 @@ export interface Permissions {
     auth?:          boolean;
     user?:          string[];
 }
+
+export type MetaGroupType = 'Tech I' | 'Tech II' | 'Storyline' | 'Faction' | 'Officer' | 'Deadspace' | 'Tech III'
+                            | 'Abyssal' | 'Premium' | 'Limited Time' | 'Structure Faction' | 'Structure Tech II' | 'Structure Tech I'
+
+export interface Module {
+    name:       string;
+    meta_name:  MetaGroupType;
+    slot_name:  string;
+}
