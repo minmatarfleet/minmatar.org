@@ -4,8 +4,8 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 
 const t = useTranslations('en');
 
-import type { Corporation, CorporationApplication, CorporationType } from '@dtypes/api.minmatar.org'
-import type { CorporationObject, CorporationStatusType } from '@dtypes/layout_components'
+import type { Corporation, CorporationApplication, CorporationType, CharacterCorp } from '@dtypes/api.minmatar.org'
+import type { CorporationObject, CorporationStatusType, CorporationMembers, CharacterKind } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications } from '@helpers/api.minmatar.org/applications'
 
@@ -32,7 +32,7 @@ export async function get_corporations_list(corporation_type:CorporationType) {
             alliance_name: i.alliance_name,
             corporation_id: i.corporation_id,
             corporation_name: i.corporation_name,
-            corporation_type: i.corporation_type,
+            corporation_type: i.type,
             status: 'unauth'
         }
     } )
@@ -43,24 +43,9 @@ export async function get_corporations_list(corporation_type:CorporationType) {
 export async function get_corporation_list_by_id_auth(access_token:string, corporation_id:number, user_id: number) {
     let api_corporation:Corporation
 
-    api_corporation = await get_corporation_by_id(corporation_id)
+    api_corporation = await get_corporation_by_id(access_token, corporation_id)
 
     return await add_status_to_corporation(access_token, api_corporation, user_id)
-}
-
-export async function get_corporation_list_by_id(corporation_id:number) {
-    let api_corporation:Corporation
-
-    api_corporation = await get_corporation_by_id(corporation_id)
-    
-    return {
-        alliance_id: api_corporation.alliance_id,
-        alliance_name: api_corporation.alliance_name,
-        corporation_id: api_corporation.corporation_id,
-        corporation_name: api_corporation.corporation_name,
-        corporation_type: api_corporation.corporation_type,
-        status: 'unauth'
-    } as CorporationObject
 }
 
 const add_status_to_corporation = async (access_token:string, api_corporation:Corporation, user_id:number) => {
@@ -71,7 +56,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         corporation_name: api_corporation.corporation_name,
         alliance_id: api_corporation.alliance_id,
         alliance_name: api_corporation.alliance_name,
-        corporation_type: api_corporation.corporation_type,
+        corporation_type: api_corporation.type,
         status: 'available'
     }
 
@@ -94,4 +79,53 @@ export async function get_user_corporation_id(user_id:number) {
     let user_character:EveCharacterProfile
     user_character = (user_id ? await get_user_character(user_id) : null)
     return !user_character ? null : (user_character?.corporation_id ?? null)
+}
+
+export async function get_all_corporations_members(access_token:string) {
+    let api_corporations:Corporation[]
+    let corporation_members:CorporationMembers[]
+
+    api_corporations = await get_all_corporations('alliance')
+
+    corporation_members = (await Promise.all(api_corporations.map(async (corporation) => 
+        await get_all_corporation_members(access_token, corporation.corporation_id)
+    )))
+
+    return corporation_members
+}
+
+export async function get_all_corporation_members(access_token:string, corporation_id:number) {
+    let api_corporation:Corporation
+    let corporation_members:CorporationMembers
+
+    api_corporation = await get_corporation_by_id(access_token, corporation_id)
+
+    corporation_members = {
+        corporation_id: api_corporation.corporation_id,
+        corporation_name: api_corporation.corporation_name,
+        active: api_corporation.active,
+        type: api_corporation.type,
+        members: []
+    }
+
+    corporation_members.members = (await Promise.all(api_corporation.members.map(async (api_member) => {
+        const is_alt = (api_member.primary_character_id !== null)
+
+        let member:CharacterKind = {
+            character_id: api_member.character_id,
+            character_name: api_member.character_name,
+            is_main: !is_alt
+        }
+        
+        if (is_alt) {
+            member.main_character = {
+                character_id: api_member.primary_character_id,
+                character_name: api_member.primary_character_name,
+            }
+        }
+
+        return member
+    })))
+
+    return corporation_members
 }

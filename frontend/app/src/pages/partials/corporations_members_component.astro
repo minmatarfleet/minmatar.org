@@ -1,0 +1,94 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+const can_view_page = is_superuser || (user ? user.permissions.includes('auth.change_evecorporationmember') : false)
+
+if (!can_view_page)
+    return HTTP_404_Not_Found()
+
+import type { CorporationMembers, SelectOptions } from '@dtypes/layout_components'
+import { get_all_corporations_members } from '@helpers/fetching/corporations'
+
+let corporations_members:CorporationMembers[] = []
+let get_all_corporations_members_error:string | false = false
+
+try {
+    corporations_members = await get_all_corporations_members(auth_token as string)
+    corporations_members.sort( (a, b) => {
+        return b.members.length - a.members.length
+    })
+} catch (error) {
+    get_all_corporations_members_error = is_prod_mode() ? t('get_all_corporations_members_error') : error.message
+}
+
+const CORPORATIONS_MEMBERS_PARTIAL_URL = translatePath('/partials/corporations_members_component')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let TOTAL_MEMBERS = 0
+const CORPORATIONS_UNFILTERED = {}
+corporations_members.forEach( (corporation) => {
+    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.members.map( (member) => member.character_id )
+    TOTAL_MEMBERS += corporation.members.length
+})
+
+const CORPORATIONS_MEMBERS_COUNT = {}
+corporations_members.forEach( (corporation) => {
+    CORPORATIONS_MEMBERS_COUNT[corporation.corporation_id] = corporation.members.length
+})
+
+const corporations_options = corporations_members.map( (corporation):SelectOptions => {
+    return {
+        value: corporation.corporation_id,
+        label: corporation.corporation_name,
+    }
+} )
+
+import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_all_corporations_members_error ?
+    <CorporationMembersList
+        corporations={[]}
+        type='corporation'
+    >
+        <ErrorRefetch
+            args={{
+                partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
+                message: get_all_corporations_members_error,
+                delay: delay,
+                target: '#corporations-members-list',
+            }}
+        />
+    </CorporationMembersList>
+    :
+    <CorporationMembersList
+        corporations={corporations_members}
+        x-data={`{
+            init() {
+                corporations_members = ${JSON.stringify(corporations_members)}
+                corporations_unfiltered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
+                corporations_filtered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
+                corporations_filtered_members_count = ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)}
+                total_members_filtered = ${TOTAL_MEMBERS}
+                total_members_unfiltered = ${TOTAL_MEMBERS}
+                corporations_options = ${JSON.stringify(corporations_options)}
+            }
+        }`}
+    />
+}

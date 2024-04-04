@@ -45,8 +45,20 @@ export interface Corporation {
     corporation_id:     number;
     corporation_name:   string;
     alliance_id:        number;
-    alliance_name:      string,
-    corporation_type:   CorporationType;
+    alliance_name:      string;
+    faction_id:         number;
+    faction_name:       string;
+    type:               CorporationType;
+    members:            CharacterCorp[];
+    active:             boolean;
+}
+
+export interface CharacterCorp {
+    character_id:           number;
+    character_name:         string;
+    primary_character_id:   number;
+    primary_character_name: string;
+    registered:             boolean;
 }
 
 export interface CorporationApplication {

@@ -95,6 +95,16 @@
         }
     },
     {
+        "slug": "corporations.members",
+        "path": "/alliance/corporations/members/",
+        "description": "page_finder.corporations.members.description",
+        "publish": true,
+        "keywords": [ "corporations" ],
+        "permissions" : {
+            "user": [ "auth.change_evecorporationapplication" ]
+        }
+    },
+    {
         "slug": "corporations.applications.records",
         "path": "/alliance/corporations/applications/records/",
         "description": "page_finder.corporations.applications.records.description",
