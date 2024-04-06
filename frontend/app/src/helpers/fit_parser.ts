@@ -43,7 +43,7 @@ export async function parse_eft(fitting_eft: string) {
 
         line = line.trim()
 
-        if (line.startsWith('[') && line.endsWith(']')) {
+        if (!section && line.startsWith('[') && line.endsWith(']')) {
             const ship_name = line.slice(1,-1).split(',')[0].trim()
 
             const ship_capbalitities = await get_ship_fitting_capabilities(ship_name)

@@ -14,15 +14,16 @@ const {
 } = Astro.props
 
 import Context from '@components/layout/Context.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Badge from '@components/blocks/Badge.astro';
 import CollapsableButton from '@components/blocks/CollapsableButton.astro';
-import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 ---
 
 <Flexblock
+    gap='var(--space-xs)'
     x-data={`{
         expanded: false,
         toggle_collapse() {
@@ -31,25 +32,29 @@ import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
     }`}
 >
     <CollapsableButton x-on:click="toggle_collapse()">
-        <FlexInline>
-            <CargoHoldEvEIcon />
-            <h2>{t('cargo_hold')}</h2>
+        <FlexInline gap="var(--space-xs)">
+            <slot />
         </FlexInline>
     </CollapsableButton>
 
-    <Context
-        x-show="expanded"
-        x-collapse.duration.0ms
-        style="display: none"
+    <Wrapper
+        padding_block='0'
+        padding_inline='var(--space-3xs)'
     >
-        {cargo.map( (item) =>
-            <Badge
-                size={32}
-                highlight={false}
-                title={`${item.amount} x ${item.name}`}
-            >
-                <ItemPicture item_id={item.id} slot="picture" size={32} icon_quality={32} />
-            </Badge>
-        )}
-    </Context>
+        <Context
+            x-show="expanded"
+            x-collapse.duration.0ms
+            style="display: none"
+        >
+            {cargo.map( (item) =>
+                <Badge
+                    size={32}
+                    highlight={false}
+                    title={`${item.amount} x ${item.name}`}
+                >
+                    <ItemPicture item_id={item.id} slot="picture" size={32} icon_quality={32} />
+                </Badge>
+            )}
+        </Context>
+    </Wrapper>
 </Flexblock>

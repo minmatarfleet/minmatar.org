@@ -16,7 +16,6 @@ let rig_slots:Module[] = []
 let subsystem_slots:Module[] = []
 
 try {
-    console.log('=============sup=================')
     console.log(fitting?.subsystem_slots)
 
     for (let i = 0; i < fitting.capabilities.low_slots; i++)
@@ -35,7 +34,6 @@ try {
         subsystem_slots.push(fitting?.subsystem_slots[i] ?? null)
 
 } catch (error) {
-    console.log('=============error=================')
     console.log(error)
 }
 
@@ -54,6 +52,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
             {high_slots.map( (ship_slot) =>
                 <FittingSlot
                     ship_slot={ship_slot}
+                    slot_type='High Slots'
                     placement='bottom'
                 />
             )}
@@ -67,6 +66,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
                 {rig_slots.map( (ship_slot) =>
                     <FittingSlot
                         ship_slot={ship_slot}
+                        slot_type='Rig Slots'
                         placement='right'
                     />
                 )}
@@ -77,6 +77,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
                     {subsystem_slots.map( (ship_slot) =>
                         <FittingSlot
                             ship_slot={ship_slot}
+                            slot_type='Subsystem Slots'
                             placement='right'
                         />
                     )}
@@ -92,6 +93,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
             {med_slots.map( (ship_slot) =>
                 <FittingSlot
                     ship_slot={ship_slot}
+                    slot_type='Medium Slots'
                     placement='left'
                 />
             )}
@@ -105,6 +107,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
             {low_slots.map( (ship_slot) =>
                 <FittingSlot
                     ship_slot={ship_slot}
+                    slot_type='Low Slots'
                     placement='top'
                 />
             )}
@@ -138,7 +141,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
         position: fixed;
         left: 50%;
         padding-block: var(--space-xl);
-        transform: translateX(-192px);
+        transform: translateX(-104px);
         z-index: 1;
         max-width: var(--max-text-width);
         min-height: 100vh;

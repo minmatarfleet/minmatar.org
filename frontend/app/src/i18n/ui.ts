@@ -219,6 +219,10 @@ export const ui = {
         'icon.assets.alt': 'Eve Online Assets Icon',
         'icon.fit_cargo.alt': 'Eve Online Cargo hold Icon',
         'icon.drones.alt': 'Eve Online Drones Icon',
+        'icon.fit_high.alt': 'Eve Online High Slot Icon',
+        'icon.fit_med.alt': 'Eve Online Medium Slot Icon',
+        'icon.fit_low.alt': 'Eve Online Low Slot Icon',
+        'icon.fit_rig.alt': 'Eve Online Rig Slot Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -587,5 +591,6 @@ export const ui = {
         'drone_bay': 'Drone Bay',
         'cargo_hold': 'Cargo Hold',
         'item_picture': 'Item picture',
+        'copy_fitting': 'Copy fitting',
     },
 } as const;
