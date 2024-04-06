@@ -1,0 +1,60 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+interface Props {
+    title:      string;
+    subtitle?:  string;
+    image?:     string,
+    size?:      number;
+    border?:    boolean;
+    highlight?: boolean;
+}
+
+const {
+    image,
+    title,
+    subtitle = false,
+    size = 64,
+    border = false,
+    highlight = true,
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+<FixedFluid
+    width={`${size}px`}
+    class="[ items-center ]"
+>
+    <slot name="picture">
+        <picture class:list={{ border: border }}>
+            {image &&
+                <img src={image} width={size} height={size} />
+            }
+        </picture>
+    </slot>
+    <Flexblock gap='0'>
+        <span
+            class:list={[
+                'min-w-[200px]',
+                { 'text-[var(--highlight)]': highlight }
+            ]}
+        >
+            {title}
+        </span>
+        <slot>
+            {subtitle &&
+                <small>{subtitle}</small>
+            }
+        </slot>
+    </Flexblock>
+</FixedFluid>
+
+<style lang="scss">
+    span {
+        text-wrap: balance;
+    }
+</style>

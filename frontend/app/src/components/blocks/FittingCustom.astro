@@ -1,0 +1,188 @@
+---
+import type { ShipFitting, Module } from '@dtypes/layout_components';
+
+interface Props {
+    fitting: ShipFitting;
+}
+
+const {
+    fitting,
+} = Astro.props
+
+let low_slots:Module[] = []
+let med_slots:Module[] = []
+let high_slots:Module[] = []
+let rig_slots:Module[] = []
+let subsystem_slots:Module[] = []
+
+try {
+    console.log(fitting?.subsystem_slots)
+
+    for (let i = 0; i < fitting.capabilities.low_slots; i++)
+        low_slots.push(fitting?.low_slots[i] ?? null)
+
+    for (let i = 0; i < fitting.capabilities.med_slots; i++)
+        med_slots.push(fitting?.med_slots[i] ?? null)
+
+    for (let i = 0; i < fitting.capabilities.high_slots; i++)
+        high_slots.push(fitting?.high_slots[i] ?? null)
+
+    for (let i = 0; i < fitting.capabilities.rig_slots; i++)
+        rig_slots.push(fitting?.rig_slots[i] ?? null)
+
+    for (let i = 0; i < fitting.capabilities.subsystem_slots; i++)
+        subsystem_slots.push(fitting?.subsystem_slots[i] ?? null)
+
+} catch (error) {
+    console.log(error)
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FittingSlot from '@components/blocks/FittingSlot.astro';
+---
+
+<div
+    id="fitting-custom" 
+    class="[ fitting-grid ][ w-full ]"
+>
+    <!-- Hight -->
+    <div class="[ high ]">
+        <FlexInline justification='center'>
+            {high_slots.map( (ship_slot) =>
+                <FittingSlot
+                    ship_slot={ship_slot}
+                    slot_type='High Slots'
+                    placement='bottom'
+                />
+            )}
+        </FlexInline>
+    </div>
+    
+    <div class="[ rigs ]">
+        <!-- Rigs and Subsystems -->
+        <Flexblock>
+            <Flexblock>
+                {rig_slots.map( (ship_slot) =>
+                    <FittingSlot
+                        ship_slot={ship_slot}
+                        slot_type='Rig Slots'
+                        placement='right'
+                    />
+                )}
+            </Flexblock>
+
+            {subsystem_slots.length > 0 &&
+                <Flexblock>
+                    {subsystem_slots.map( (ship_slot) =>
+                        <FittingSlot
+                            ship_slot={ship_slot}
+                            slot_type='Subsystem Slots'
+                            placement='right'
+                        />
+                    )}
+                </Flexblock>
+            }
+        </Flexblock>
+    </div>
+
+    <div class="[ empty ]"></div>
+
+    <div class="[ med ]">
+        <Flexblock>
+            {med_slots.map( (ship_slot) =>
+                <FittingSlot
+                    ship_slot={ship_slot}
+                    slot_type='Medium Slots'
+                    placement='left'
+                />
+            )}
+        </Flexblock>
+
+    </div>
+
+    <!-- Low -->
+    <div class="[ low ]">
+        <FlexInline justification='center'>
+            {low_slots.map( (ship_slot) =>
+                <FittingSlot
+                    ship_slot={ship_slot}
+                    slot_type='Low Slots'
+                    placement='top'
+                />
+            )}
+        </FlexInline>
+    </div>
+</div>
+
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="octagon-clip-path">
+            <path d="M56.4055 0.477051H8.54768L0.476562 8.54816V56.4059L8.54768 64.4771H56.4055L64.4766 56.4059V8.54816" />
+        </clipPath>
+    </defs>
+</svg>
+
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="octagon-inside-clip-path">
+            <path d="M47.19 0H6.81L0 6.81V47.19L6.81 54H47.19L54 47.19V6.81" />
+        </clipPath>
+    </defs>
+</svg>
+
+<style lang="scss">
+    svg {
+        position: absolute;
+        top: 0;
+    }
+
+    #fitting-custom {
+        position: fixed;
+        left: 50%;
+        padding-block: var(--space-xl);
+        transform: translateX(-104px);
+        z-index: 1;
+        max-width: var(--max-text-width);
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: 64px 1fr 64px;
+        grid-template-columns: 64px 1fr 64px;
+        grid-template-areas:
+            "high high high"
+            "rigs empty med"
+            "low low low";
+        pointer-events: none;
+
+        .high {
+            grid-area: high;
+            pointer-events: all;
+        }
+
+        .rigs {
+            grid-area: rigs;
+            align-self: center;
+            pointer-events: all;
+        }
+
+        .empty {
+            grid-area: empty;
+        }
+
+        .med {
+            grid-area: med;
+            align-self: center;
+            pointer-events: all;
+        }
+
+        .low {
+            grid-area: low;
+            pointer-events: all;
+        }
+    }
+
+    .wrapper {
+        display: flex;
+        align-items: center;
+    }
+</style>

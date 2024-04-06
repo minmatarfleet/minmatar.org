@@ -1,0 +1,198 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { get_item_icon } from '@helpers/eve_image_server';
+import type { Module, ShipsSlots } from '@dtypes/layout_components';
+
+interface Props {
+    ship_slot:  Module;
+    slot_type:  ShipsSlots;
+    placement:  'top' | 'right' | 'bottom' | 'left'
+}
+
+const {
+    ship_slot,
+    slot_type,
+    placement,
+} = Astro.props
+
+const MODULE_TIPPY_PARTIAL_URL = translatePath('/partials/module_tooltip_component')
+
+import Tippy from '@components/blocks/Tippy.astro';
+import LowSlotEvEIcon from '@components/icons/LowSlotEvEIcon.astro';
+import MediumSlotEvEIcon from '@components/icons/MediumSlotEvEIcon.astro';
+import HighSlotEvEIcon from '@components/icons/HighSlotEvEIcon.astro';
+import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
+---
+<div class="[ box-shadow ]">
+    <div
+        class:list={[
+            'fitting-slot',
+            { 'empty': !ship_slot },
+            { 'tech-1': ship_slot?.meta_name == 'Tech I' },
+            { 'tech-2': ship_slot?.meta_name == 'Tech II' },
+            { 'tech-3': ship_slot?.meta_name == 'Tech III' },
+            { 'storyline': ship_slot?.meta_name == 'Storyline' },
+            { 'faction': ship_slot?.meta_name == 'Faction' },
+            { 'officer': ship_slot?.meta_name == 'Officer' },
+            { 'deadspace': ship_slot?.meta_name == 'Deadspace' },
+            { 'abyssal': ship_slot?.meta_name == 'Abyssal' },
+        ]}
+    >
+        {ship_slot &&
+            <Tippy
+                data-tippy-placement={placement}
+                partial={`${MODULE_TIPPY_PARTIAL_URL}?module_name=${JSON.stringify(ship_slot.name)}`}
+                height='70px'
+                width='340px'
+            >
+                <picture>
+                    <img src={get_item_icon(ship_slot.id)} height="64" width="64" />
+                </picture>
+            </Tippy>
+        }
+        {!ship_slot && slot_type === 'Low Slots' &&
+            <LowSlotEvEIcon />
+        }
+        {!ship_slot && slot_type === 'Medium Slots' &&
+            <MediumSlotEvEIcon />
+        }
+        {!ship_slot && slot_type === 'High Slots' &&
+            <HighSlotEvEIcon />
+        }
+        {!ship_slot && slot_type === 'Rig Slots' &&
+            <RigSlotEveIcon />
+        }
+    </div>
+</div>
+
+<style lang="scss">
+    .box-shadow {
+        filter: drop-shadow(0 0 15px rgba(0,0,0,0.8));
+    }
+
+    .fitting-slot {
+        overflow: hidden;
+        padding: var(--space-3xs);
+        aspect-ratio: 1 / 1;
+        width: 64px;
+        height: 64px;
+        position: relative;
+        clip-path: url(#octagon-clip-path);
+
+        &.empty {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            &:before {
+                box-shadow: inset 0 0 8px 2px #666;
+                border: solid 2px #666;
+            }
+        }
+
+        &.tech-1 {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--tech-i);
+                border: solid 2px var(--tech-i);
+            }
+        }
+
+        &.tech-2 {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--tech-ii);
+                border: solid 2px var(--tech-ii);
+            }
+        }
+
+        &.tech-3 {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--tech-iii);
+                border: solid 2px var(--tech-iii);
+            }
+        }
+
+        &.storyline {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--storyline);
+                border: solid 2px var(--storyline);
+            }
+        }
+
+        &.faction {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--faction);
+                border: solid 2px var(--faction);
+            }
+        }
+
+        &.officer {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--officer);
+                border: solid 2px var(--officer);
+            }
+        }
+
+        &.deadspace {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--deadspace);
+                border: solid 2px var(--deadspace);
+            }
+        }
+
+        &.abyssal {
+            &:before {
+                box-shadow: inset 0 0 8px 2px var(--abyssal);
+                border: solid 2px var(--abyssal);
+            }
+        }
+
+        &:before {
+            content: '';
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            border-radius: 15px;
+        }
+
+        picture {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            height: 100%;
+            clip-path: url(#octagon-inside-clip-path);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(
+                145deg,
+                hsl(0, 0%, 0%) 0%,
+                hsl(0, 0%, 1.47%) 8.1%,
+                hsl(0, 0%, 2.87%) 15.5%,
+                hsl(0, 0%, 4.19%) 22.5%,
+                hsl(0, 0%, 5.44%) 29%,
+                hsl(0, 0%, 6.62%) 35.3%,
+                hsl(0, 0%, 7.71%) 41.2%,
+                hsl(0, 0%, 8.72%) 47.1%,
+                hsl(0, 0%, 9.64%) 52.9%,
+                hsl(0, 0%, 10.46%) 58.8%,
+                hsl(0, 0%, 11.19%) 64.7%,
+                hsl(0, 0%, 11.8%) 71%,
+                hsl(0, 0%, 12.31%) 77.5%,
+                hsl(0, 0%, 12.68%) 84.5%,
+                hsl(0, 0%, 12.92%) 91.9%,
+                hsl(0, 0%, 13%) 100%
+            );
+        }
+
+        img {
+            object-fit: none;
+        }
+    }
+</style>

@@ -22,6 +22,7 @@ const max_width = (wide ? 'var(--max-content-width)' : 'var(--max-text-width)')
 ---
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
+    <slot name="cover" />
 
     <Wrapper max_width={max_width} padding_block={fullscreen ? '0' : 'var(--space-2xl)'} neocom={true}>
         <slot />

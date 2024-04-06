@@ -2,6 +2,6 @@
     "name": "[ADV-30] Arazu",
     "image": "https://image.eveonline.com/Render/11969_64.png",
     "alt": "Arazu",
-    "description": "An Arazu designed for the FC of ENIs fleet (or co-FC). Very long range damps are very useful support in this type of fleet as is the long point. Cov and regular Cyno fitted for escalating if the situation asks for it. It is relatively thinly tanked and the explosive hole is not covered so stay at the back and avoid being get targeted.",
+    "description": "Heavy response battleship with long range refits. Flash form defaults to generic mids, but typically we will be refitting mids to 2x EWAR and 100mn AB.",
     "fitting_eft": "[Arazu, [X] Cyno]\r\n\r\nDamage Control II\r\nPower Diagnostic System II\r\nCo-Processor II\r\nCo-Processor II\r\n\r\n50MN Quad LiF Restrained Microwarpdrive\r\nLarge Shield Extender II\r\nLarge Shield Extender II\r\nLarge Azeotropic Restrained Shield Extender\r\nMultispectrum Shield Hardener II\r\nMultispectrum Shield Hardener II\r\n\r\nCynosural Field Generator I\r\nCovert Cynosural Field Generator I\r\nCovert Ops Cloaking Device II\r\nExpanded Probe Launcher I\r\n\r\nMedium Hyperspatial Velocity Optimizer II\r\nMedium Hyperspatial Velocity Optimizer II\r\n\r\n\r\nAcolyte II x5\r\nAcolyte II x3\r\n\r\n\r\nNanite Repair Paste x50\r\nSisters Combat Scanner Probe x8\r\nSisters Core Scanner Probe x8\r\nLiquid Ozone x250\r\nWarp Disruptor II x1\r\nWarp Scrambler II x1\r\n"
 }
