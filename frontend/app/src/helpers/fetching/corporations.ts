@@ -114,6 +114,7 @@ export async function get_all_corporation_members(access_token:string, corporati
         let member:CharacterKind = {
             character_id: api_member.character_id,
             character_name: api_member.character_name,
+            registered: api_member.registered,
             is_main: !is_alt
         }
         

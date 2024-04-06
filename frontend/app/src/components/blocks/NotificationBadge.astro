@@ -13,12 +13,13 @@ const {
     ...attributes
 } = Astro.props;
 
-const badge_color = `var(--${color})`;
+const badge_background_color = `var(--${color})`;
+const badge_color = (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)')
 ---
 
-<span class="[ badge ]" {...attributes}>{number}</span>
+<span class="[ badge ]" {...attributes}>{number < 100 ? number : '+99'}</span>
 
-<style lang="scss" define:vars={{ badge_color }}>
+<style lang="scss" define:vars={{ badge_background_color, badge_color }}>
     .badge {
         display: flex;
         justify-content: center;
@@ -28,7 +29,7 @@ const badge_color = `var(--${color})`;
         border-radius: 50%;
         font-size: var(--step--2);
         font-family: var(--badge-font);
-        color: var(--highlight);
-        background-color: var(--badge_color);
+        color: var(--badge_color);
+        background-color: var(--badge_background_color);
     }
 </style>

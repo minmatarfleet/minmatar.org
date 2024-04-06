@@ -1,0 +1,47 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { Alert, MainCharacters } from '@dtypes/layout_components'
+
+interface Props {
+    mains:          MainCharacters[];
+    alert?:         Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    mains,
+    alert = false,
+    ...attributes
+} = Astro.props
+
+import MainAltsBlock from '@components/blocks/MainAltsBlock.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<div
+    id="mains-alts-list"
+    class="[ mains-alts-list ]"
+    {...attributes}
+>
+    {mains.length > 0 &&
+        <Flexblock class="[ correct-gaps ]">
+            <p x-show="total_alts_filtered == 0" style="display: none;">{t('no_alts')}</p>
+            {mains.map( (main) => 
+                <MainAltsBlock main={main} />
+            )}
+        </Flexblock>
+    }
+
+    {mains.length == 0 &&
+        <slot>
+            <TextBox>
+                <p>{t('no_alts')}</p>
+            </TextBox>
+        </slot>
+    }
+</div>
