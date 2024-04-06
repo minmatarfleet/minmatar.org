@@ -21,7 +21,7 @@ const {
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
-import Tag from '@components/blocks/Tag.astro';
+import Tag from './Tag.astro';
 ---
 
 <FlexInline
@@ -33,14 +33,11 @@ import Tag from '@components/blocks/Tag.astro';
         class="basis-[300px]"
         character_id={member.character_id}
         character_name={member.character_name}
-    >
-        {member.is_main &&
-            <small class="truncate">{t('main_character')}</small>
-        }
-        {!member.is_main &&
-            <small class="truncate">{member.main_character.character_name} {t('alt_character').toLowerCase()}</small>
-        }
-    </PilotBadge>
+        corporation={{
+            id: member.corporation_id,
+            name: member.corporation_name,
+        }}
+    />
     {!member.registered &&
         <Tag text={t('unregistered')} />
     }

@@ -163,6 +163,12 @@ export const ui = {
         'corporations.members.page_title': 'Alliance members',
         'corporations.members.leading_text': 'Here a list of all the members in the alliance.',
 
+        'corporations.members.unregistered.page_title': 'Unregistered Alliance members',
+        'corporations.members.unregistered.leading_text': 'Here a list of all the unregistered members in the alliance.',
+
+        'corporations.members.mains.page_title': 'Alliance main characters',
+        'corporations.members.mains.leading_text': 'Here a list of all the main characters in the alliance.',
+
         'corporations.applications.records.page_title': 'Corporations applications records',
         'corporations.applications.records.leading_text': 'Here a list of all the processed applications.',
 
@@ -519,6 +525,7 @@ export const ui = {
         'view_mode': 'view mode',
         'no_groups': 'No groups',
         'no_members': 'No members found',
+        'no_alts': 'No alts found',
         'get_groups_members_error': 'An error occurred while fetching groups members.',
         'SIGs': 'SIGs',
         'remove_group_member_dialog_title': 'Remove member from SIG',
@@ -592,5 +599,10 @@ export const ui = {
         'cargo_hold': 'Cargo Hold',
         'item_picture': 'Item picture',
         'copy_fitting': 'Copy fitting',
+        'unregistered_members': 'Unregistered members',
+        'mains': 'Mains',
+        'unregistered': 'Unregistered',
+        'get_all_mains_alts_error': 'An error ocurred fetching all main characters info.',
+        'alts': 'Alts',
     },
 } as const;
