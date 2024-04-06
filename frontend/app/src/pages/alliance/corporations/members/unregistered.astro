@@ -31,7 +31,7 @@ let ALLIANCE_MEMBERS_COUNT = 0
 
 try {
     corporations_members = await get_all_corporations_members(auth_token as string)
-
+    
     corporations_members.sort( (a, b) => {
         return b.members.length - a.members.length
     })
@@ -41,6 +41,8 @@ try {
         MAIN_COUNT += corporation.members.filter( (member) => member.is_main ).length
 
         const unregistered_members = corporation.members.filter( (member) => !member.registered )
+
+        corporation.members = unregistered_members
         
         UNREGISTERED_COUNT += unregistered_members.length
 
@@ -52,7 +54,7 @@ try {
     get_all_corporations_members_error = is_prod_mode() ? t('get_all_corporations_members_error') : error.message
 }
 
-const CORPORATIONS_MEMBERS_PARTIAL_URL = `${translatePath('/partials/corporations_members_component')}?status=registered`
+const CORPORATIONS_MEMBERS_PARTIAL_URL = `${translatePath('/partials/corporations_members_component')}?status=unregistered`
 
 let TOTAL_MEMBERS = 0
 const CORPORATIONS_UNFILTERED = {}
@@ -91,7 +93,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('corporations.members.page_title')
+const page_title = t('corporations.members.unregistered.page_title')
 ---
 
 <Viewport
@@ -197,24 +199,24 @@ const page_title = t('corporations.members.page_title')
             </Button>
 
             <Button
-                color='transparent'
                 href={translatePath('/alliance/corporations/members')}
                 size='sm'
             >
                 {t('members')}
                 <NotificationBadge
+                    color='fleet-yellow'
                     x-text="ALLIANCE_MEMBERS_COUNT < 100 ? ALLIANCE_MEMBERS_COUNT : '+99'"
                     number={TOTAL_MEMBERS}
                 />
             </Button>
 
             <Button
+                color='transparent'
                 href={translatePath('/alliance/corporations/members/unregistered')}
                 size='sm'
             >
                 {t('unregistered')}
                 <NotificationBadge
-                    color='fleet-yellow'
                     x-text="UNREGISTERED_COUNT < 100 ? UNREGISTERED_COUNT : '+99'"
                     number={UNREGISTERED_COUNT}
                 />
@@ -223,7 +225,7 @@ const page_title = t('corporations.members.page_title')
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{t('corporations.members.leading_text')}</p>
+                <p>{t('corporations.members.unregistered.leading_text')}</p>
             </TextBox>
 
             {get_all_corporations_members_error ?

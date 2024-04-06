@@ -22,7 +22,8 @@ const {
 
 delete attributes.class
 
-const color_prop = `var(--${color})`;
+const button_background_color = `var(--${color})`;
+const button_color = (color !== 'transparent' ? 'var(--fleet-yellow)' : 'var(--highlight)');
 
 const Element = href ? 'a' : 'button';
 ---
@@ -32,7 +33,7 @@ const Element = href ? 'a' : 'button';
     class:list={['[ button ]', { narrow: narrow } ,Astro.props.class]}
     {...attributes}
     data-size={size}
-    style={`--color_prop: ${color_prop}`}
+    style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
 >
     <FlexInline gap="var(--space-xs)">
         <slot name="icon" />
@@ -43,7 +44,8 @@ const Element = href ? 'a' : 'button';
 <style lang="scss">
     button,
     a[href].button {
-        --background-color: var(--color_prop);
+        --background-color: var(--button_background_color);
+        --button-color: var(--button_color);
         --font-size: var(--step--0);
 
         display: inline-block;

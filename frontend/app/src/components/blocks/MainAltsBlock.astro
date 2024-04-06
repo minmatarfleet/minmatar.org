@@ -1,0 +1,84 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { MainCharacters } from '@dtypes/layout_components'
+
+interface Props {
+    main:  MainCharacters;
+    [propName: string]: any;
+}
+
+const {
+    main,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import MainAltItem from '@components/blocks/MainAltItem.astro';
+import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+---
+
+<div
+    {...attributes}
+    x-data={`{
+        show_main() {
+            return (character_name === '' && main_filter === '-1') || (("${main.character_id}" in mains_filtered) && mains_filtered[${main.character_id}].length > 0)
+        },
+        get_alts_count() {
+            if ("${main.character_id}" in mains_filtered_alts_count)
+                return mains_filtered_alts_count[${main.character_id}]
+
+            return 0
+        }
+    }`}
+    x-show="show_main()"
+>
+    <ComponentBlockHeader
+        id={main.character_id.toString()}
+    >
+        <PilotBadge
+            slot="header"
+            character_id={main.character_id}
+            character_name={main.character_name}
+            corporation={{
+                id: main.corporation_id,
+                name: main.corporation_name,
+            }}
+        >
+            <small
+                x-text={'`${get_alts_count()} ${get_alts_count() != 1 ? `'+t('alts').toLowerCase()+'` : `'+t('alt').toLowerCase()+'`}`'}
+            >
+                {main.alts.length} {main.alts.length != 1 ? t('alts').toLowerCase() : t('alt').toLowerCase()}
+            </small>
+        </PilotBadge>
+
+        <Flexblock
+            gap='var(--space-3xs)'
+            class="[ min-h-[64px] justify-center correct-first-element-margin ]"
+            x-show="expanded"
+            first_element_gap={true}
+            x-collapse.duration.100ms
+        >
+            {main.alts.map( (alt) => 
+                <MainAltItem
+                    member={alt}
+                    corporation_id={main.corporation_id}
+                    x-data={`{
+                        show_item() {
+                            return ("${main.character_id}" in mains_filtered) && mains_filtered[${main.character_id}].includes(${alt.character_id})
+                        }
+                    }`}
+                    x-show="show_item()"
+                />
+            )}
+            {main.alts.length === 0 &&
+                <p>{t('no_alts')}</p>
+            }
+        </Flexblock>
+    </ComponentBlockHeader>
+</div>

@@ -20,25 +20,55 @@ const can_view_page = is_superuser || (user ? user.permissions.includes('auth.ch
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import type { CorporationMembers, SelectOptions } from '@dtypes/layout_components'
+import type { CorporationMembers, MainCharacters, SelectOptions } from '@dtypes/layout_components'
 import { get_all_corporations_members } from '@helpers/fetching/corporations'
 
 let corporations_members:CorporationMembers[] = []
-let get_all_corporations_members_error:string | false = false
+let get_all_mains_alts_error:string | false = false
+let mains_alts:MainCharacters[] = []
 let MAIN_COUNT = 0
 let UNREGISTERED_COUNT = 0
 let ALLIANCE_MEMBERS_COUNT = 0
 
 try {
     corporations_members = await get_all_corporations_members(auth_token as string)
-
+    
     corporations_members.sort( (a, b) => {
         return b.members.length - a.members.length
     })
 
     corporations_members = corporations_members.map( (corporation) => {
         ALLIANCE_MEMBERS_COUNT += corporation.members.length
-        MAIN_COUNT += corporation.members.filter( (member) => member.is_main ).length
+
+        MAIN_COUNT += corporation.members.filter( (member) => {
+            if (member.is_main) {
+                mains_alts.push({
+                    character_id: member.character_id,
+                    character_name: member.character_name,
+                    corporation_id: corporation.corporation_id,
+                    corporation_name: corporation.corporation_name,
+                    alts: [],
+                })
+            }
+
+            return member.is_main 
+        }).length
+
+        corporation.members.map( (member) => {
+            if (!member.is_main) {
+                mains_alts.map( (main) => {
+                    if (main.character_id === member?.main_character?.character_id) {
+                        member.corporation_id = corporation.corporation_id
+                        member.corporation_name = corporation.corporation_name
+                        main.alts.push(member)
+                    }
+
+                    return main
+                })
+            }
+
+            return member.is_main 
+        }).length
 
         const unregistered_members = corporation.members.filter( (member) => !member.registered )
         
@@ -46,30 +76,28 @@ try {
 
         return corporation
     })
-
-    corporations_members = corporations_members.filter( (corporation) => corporation.members.length > 0 )
 } catch (error) {
-    get_all_corporations_members_error = is_prod_mode() ? t('get_all_corporations_members_error') : error.message
+    get_all_mains_alts_error = is_prod_mode() ? t('get_all_mains_alts_error') : error.message
 }
 
-const CORPORATIONS_MEMBERS_PARTIAL_URL = `${translatePath('/partials/corporations_members_component')}?status=registered`
+const MAINS_ALTS_PARTIAL_URL = `${translatePath('/partials/mains_alts_component')}`
 
-let TOTAL_MEMBERS = 0
-const CORPORATIONS_UNFILTERED = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.members.map( (member) => member.character_id )
-    TOTAL_MEMBERS += corporation.members.length
+let TOTAL_ALTS = 0
+const MAINS_UNFILTERED = {}
+mains_alts.forEach( (main) => {
+    MAINS_UNFILTERED[main.character_id] = main.alts.map( (alt) => alt.character_id )
+    TOTAL_ALTS += main.alts.length
 })
 
-const CORPORATIONS_MEMBERS_COUNT = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_MEMBERS_COUNT[corporation.corporation_id] = corporation.members.length
+const MAINS_ALTS_COUNT = {}
+mains_alts.forEach( (main) => {
+    MAINS_ALTS_COUNT[main.character_id] = main.alts.length
 })
 
-const corporations_options = corporations_members.map( (corporation):SelectOptions => {
+const mains_options = mains_alts.map( (main):SelectOptions => {
     return {
-        value: corporation.corporation_id,
-        label: corporation.corporation_name,
+        value: main.character_id,
+        label: main.character_name,
     }
 } )
 
@@ -81,17 +109,17 @@ import PageTitle from '@components/page/PageTitle.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
+import MainAltsList from '@components/blocks/MainAltsList.astro';
 import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
-import Select from '@components/blocks/Select.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
+import Select from '@components/blocks/Select.astro';
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('corporations.members.page_title')
+const page_title = t('corporations.members.mains.page_title')
 ---
 
 <Viewport
@@ -115,41 +143,41 @@ const page_title = t('corporations.members.page_title')
             ALLIANCE_MEMBERS_COUNT: ${ALLIANCE_MEMBERS_COUNT},
             UNREGISTERED_COUNT: ${UNREGISTERED_COUNT},
             global_collapsed: [],
-            corporations_members: ${JSON.stringify(corporations_members)},
-            corporations_unfiltered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered_members_count: ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)},
-            total_members_filtered: ${TOTAL_MEMBERS},
-            total_members_unfiltered: ${TOTAL_MEMBERS},
-            corporations_options: ${JSON.stringify(corporations_options)},
+            mains_alts: ${JSON.stringify(mains_alts)},
+            mains_unfiltered: ${JSON.stringify(MAINS_UNFILTERED)},
+            mains_filtered: ${JSON.stringify(MAINS_UNFILTERED)},
+            mains_filtered_alts_count: ${JSON.stringify(MAINS_ALTS_COUNT)},
+            total_alts_filtered: ${TOTAL_ALTS},
+            total_alts_unfiltered: ${TOTAL_ALTS},
+            mains_options: ${JSON.stringify(mains_options)},
             character_name: '',
-            corporation_filter: '-1',
+            main_filter: '-1',
             filter() {
                 console.log(this.character_name)
-                if (this.character_name === '' && this.corporation_filter === '-1') {
-                    this.corporations_filtered = this.corporations_unfiltered
-                    this.corporations_filtered_memberss_count = ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)}
-                    this.total_members_filtered = this.total_members_unfiltered
+                if (this.character_name === '' && this.main_filter === '-1') {
+                    this.mains_filtered = this.mains_unfiltered
+                    this.mains_filtered_alts_count = ${JSON.stringify(MAINS_ALTS_COUNT)}
+                    this.total_alts_filtered = this.total_alts_unfiltered
                     return
                 }
 
-                this.corporations_filtered = {}
-                this.corporations_filtered_memberss_count = {}
-                this.total_members_filtered = 0
+                this.mains_filtered = {}
+                this.mains_filtered_alts_count = {}
+                this.total_alts_filtered = 0
 
-                this.corporations_members.forEach( (corporation) => {
-                    if (this.corporation_filter !== '-1' && parseInt(this.corporation_filter) !== corporation.corporation_id) {
-                        this.corporations_filtered[corporation.corporation_id] = []
-                        this.corporations_filtered_members_count[corporation.corporation_id] = 0
+                this.mains_alts.forEach( (main) => {
+                    if (this.main_filter !== '-1' && parseInt(this.main_filter) !== main.character_id) {
+                        this.mains_filtered[main.character_id] = []
+                        this.mains_filtered_members_count[main.character_id] = 0
                         return true
                     }
 
-                    const members = corporation.members.filter( (member) => member.character_name.toLowerCase().includes(this.character_name.toLowerCase()) )
+                    const alts = main.alts.filter( (alt) => alt.character_name.toLowerCase().includes(this.character_name.toLowerCase()) )
                     
-                    if (members.length > 0) {
-                        this.total_members_filtered += members.length
-                        this.corporations_filtered[corporation.corporation_id] = members.map( (member) => member.character_id )
-                        this.corporations_filtered_members_count[corporation.corporation_id] = members.length
+                    if (alts.length > 0) {
+                        this.total_alts_filtered += alts.length
+                        this.mains_filtered[main.character_id] = alts.map( (alt) => alt.character_id )
+                        this.mains_filtered_alts_count[main.character_id] = alts.length
                     }
                 })
             },
@@ -170,13 +198,13 @@ const page_title = t('corporations.members.page_title')
                 
                 <div class="[ hidden 2xl:block ]">
                     <Select
-                        x-model="corporation_filter"
+                        x-model="main_filter"
                         width='280px'
                         x-on:change="filter()"
                     >
-                        <option selected value="-1">{t('corporations')}</option>
-                        <template x-for="corporation in corporations_options">
-                            <option x-bind:value="corporation.value" x-text="corporation.label" />
+                        <option selected value="-1">{t('mains')}</option>
+                        <template x-for="main in mains_options">
+                            <option x-bind:value="main.value" x-text="main.label" />
                         </template>
                     </Select>
                 </div>
@@ -185,26 +213,26 @@ const page_title = t('corporations.members.page_title')
 
         <FlexInline slot="subheader">
             <Button
+                color='transparent'
                 href={translatePath('/alliance/corporations/members/mains')}
                 size='sm'
             >
                 {t('mains')}
                 <NotificationBadge
-                    color='fleet-yellow'
                     x-text="MAIN_COUNT < 100 ? MAIN_COUNT : '+99'"
                     number={MAIN_COUNT}
                 />
             </Button>
 
             <Button
-                color='transparent'
                 href={translatePath('/alliance/corporations/members')}
                 size='sm'
             >
                 {t('members')}
                 <NotificationBadge
+                    color='fleet-yellow'
                     x-text="ALLIANCE_MEMBERS_COUNT < 100 ? ALLIANCE_MEMBERS_COUNT : '+99'"
-                    number={TOTAL_MEMBERS}
+                    number={TOTAL_ALTS}
                 />
             </Button>
 
@@ -223,24 +251,24 @@ const page_title = t('corporations.members.page_title')
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{t('corporations.members.leading_text')}</p>
+                <p>{t('corporations.members.mains.leading_text')}</p>
             </TextBox>
 
-            {get_all_corporations_members_error ?
-                <CorporationMembersList
-                    corporations={[]}
+            {get_all_mains_alts_error ?
+                <MainAltsList
+                    mains={[]}
                 >
                     <ErrorRefetch
                         args={{
-                            partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
-                            message: get_all_corporations_members_error,
+                            partial: MAINS_ALTS_PARTIAL_URL,
+                            message: get_all_mains_alts_error,
                             delay: 0,
-                            target: '#corporations-members-list',
+                            target: '#mains-alts-list',
                         }}
                     />
-                </CorporationMembersList>
+                </MainAltsList>
                 :
-                <CorporationMembersList corporations={corporations_members} />
+                <MainAltsList mains={mains_alts} />
             }
         </Flexblock>
     </PageDefault>

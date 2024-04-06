@@ -1,7 +1,7 @@
 export type Locales = 'en'
-export type ButtonColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
+export type ButtonColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'transparent'
 export type ButtonSizes = 'sm' | 'lg'
-export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
+export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'fleet-yellow'
 export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
 export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-around' | 'space-between'
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
@@ -294,9 +294,20 @@ export interface CorporationMembers {
     active:             boolean;
 }
 
+export interface MainCharacters {
+    character_id:     number;
+    character_name:   string;
+    corporation_id:     number;
+    corporation_name:   string;
+    alts:               CharacterKind[];
+}
+
 export interface CharacterKind {
     character_id:       number;
     character_name:     string;
+    corporation_id?:    number;
+    corporation_name?:  string;
+    registered:         boolean;
     is_main:            boolean;
     main_character?:    CharacterBasic;
 }
