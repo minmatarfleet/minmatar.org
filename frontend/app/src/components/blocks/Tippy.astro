@@ -31,14 +31,21 @@ const Element = element
     :
     <Element
         data-tippy-content={`
-            <span
-                hx-trigger="intersect"
-                hx-swap="outerHTML transition:true"
-                hx-get='${translatePath(partial)}'
-                style="width: ${width}; height: ${height}; display: flex; align-items: center; justify-content: center"
-            >
-                ${t('loading')}
-            <Element>
+            <div hx-on::after-request="
+                const popper = this.closest('[data-tippy-root]')
+                const instance = popper._tippy
+                instance.popperInstance.update()
+                popper.classList.remove('visually-hidden')
+            ">
+                <span
+                    hx-on::before-request="this.closest('[data-tippy-root]').classList.add('visually-hidden')"
+                    hx-trigger="intersect"
+                    hx-get='${translatePath(partial)}'
+                    hx-swap="outerHTML transition:false"
+                >
+                    ${t('loading')}
+                </span>
+            </div>
         `}
         data-tippy-allowhtml='true'
         {...attributes}
