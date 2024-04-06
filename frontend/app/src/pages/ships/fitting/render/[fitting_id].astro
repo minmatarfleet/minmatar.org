@@ -125,14 +125,14 @@ const page_title = fitting_parsed.name;
                     {fitting_parsed.drones.length > 0 &&
                         <Cargohold cargo={fitting_parsed.drones}>
                             <DronesEvEIcon />
-                            <h2>{t('drone_bay')}</h2>
+                            <h3>{t('drone_bay')}</h3>
                         </Cargohold>
                     }
 
                     {fitting_parsed.drones.length > 0 &&
                         <Cargohold cargo={fitting_parsed.cargohold}>
                             <CargoHoldEvEIcon />
-                            <h2>{t('cargo_hold')}</h2>
+                            <h3>{t('cargo_hold')}</h3>
                         </Cargohold>
                     }
                 </Flexblock>
