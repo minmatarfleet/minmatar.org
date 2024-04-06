@@ -6,10 +6,11 @@
     z-index: var(--tooltips-z-index) !important;
 
     .tippy-box {
+        font-size: inherit;
         filter:  drop-shadow( 1px  0px 0px var(--tippy-border-color)) drop-shadow(-1px  0px 0px var(--tippy-border-color)) drop-shadow( 0px  1px 0px var(--tippy-border-color)) drop-shadow( 0px -1px 0px var(--tippy-border-color));
         border-radius: 0;
         background-color: transparent;
-        color: var(--highlight);
+        color: inherit;
 
         .tippy-arrow {
             // color: var(--transparency-background);

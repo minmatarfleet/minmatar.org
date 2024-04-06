@@ -1,0 +1,32 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
+
+import type { EvEImageServiceSize } from '@dtypes/layout_components'
+
+interface Props {
+    item_id:        number;
+    item_name?:     string;
+    size?:          EvEImageServiceSize;
+    icon_quality?:  EvEImageServiceSize;
+}
+
+const {
+    item_id,
+    item_name,
+    size = 64,
+    icon_quality = 64,
+} = Astro.props
+
+import { get_item_icon } from '@helpers/eve_image_server';
+---
+<picture>
+    <img
+        height={size}
+        width={size}
+        src={get_item_icon(item_id, icon_quality ?? size)}
+        alt={item_name ?? t('item_picture')}
+    />
+</picture>

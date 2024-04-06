@@ -43,6 +43,7 @@ export async function get_module_props(module_name:string) {
     
     if (q.length > 0) {
         return {
+            id: q[0].typeId,
             name: q[0].moduleName,
             meta_name: q[0].metaName,
             slot_name: q[0].slotName

@@ -1,0 +1,159 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+if (is_prod_mode())
+    return HTTP_404_Not_Found()
+
+// TODO: Replace the static JSON below with the endpoint request using the id
+const { id } = Astro.params;
+console.log(`TODO: Fetch endpoint with id: ${id}`)
+// Replace me 👇
+import fit_details from '@json/page/fitting/list/adv-30-arazu.json';
+import { fitting } from '@/data/tempest.ts';
+
+import { get_item_id } from '@helpers/sde/items'
+import { get_item_icon } from '@helpers/eve_image_server';
+import { parse_eft } from '@helpers/fit_parser.ts';
+
+const fitting_parsed = await parse_eft(fitting)
+const ship_id = await get_item_id(fitting_parsed.ship_name)
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import FittingCustom from '@components/blocks/FittingCustom.astro';
+import Button from '@components/blocks/Button.astro';
+
+import DronesCargo from '@components/blocks/DronesCargo.astro';
+import Cargohold from '@components/blocks/CargoHold.astro';
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
+const page_title = fitting_parsed.name;
+---
+
+<Viewport title={page_title}>
+    <PageLanding
+        fullscreen={true}
+        wide={true}
+        x-data={`{
+            /*rotation_x: -0.565,
+            rotation_y: 0.208,
+            camera: null,
+            update() {
+                this.camera.rotationX = this.rotation_x
+                this.camera.rotationY = this.rotation_y
+            }*/
+        }`}
+        x-effect="update"
+    >
+        <canvas
+            slot="cover"
+            id="mainCanvas"
+            width="500"
+            height="500"
+            x-data={`{
+                init_ccpwgl() {                    
+                    var canvas = document.getElementById('mainCanvas');
+                    ccpwgl.initialize(canvas, demos.options);
+                    
+                    var camera = ccpwgl.createCamera(canvas, undefined, true);
+                    camera.rotationX = -0.565
+                    camera.rotationY = 0.208
+
+                    /*camera = ccpwgl.createCamera(canvas, undefined, true);
+                    camera.rotationX = rotation_x
+                    camera.rotationY = rotation_y*/
+
+                    camera.shift = 100.7
+
+                    var scene = ccpwgl.loadScene('res:/dx9/scene/wormholes/wormhole_class_00.red');
+                    scene.loadShip('mb2_t1:minmatarnavy:minmatar', function(){ camera.focus(this, 6)});
+                    scene.loadSun('res:/fisfx/lensflare/blue_small.red');
+                    scene.setSunDirection([-1, 0, 0.7]);
+
+                    if (demos.options.postprocess)
+                        ccpwgl.enablePostprocessing(true);
+                }
+            }`}
+            x-init="$nextTick(() => init_ccpwgl())"
+        />
+
+        <Wrapper
+            class="[ left-panel ]"
+            padding_inline='0'
+            padding_block='var(--space-xl)'
+            max_width='500px'
+        >
+            <Flexblock gap='var(--space-xl)'>
+                <FlexInline>
+                    <img height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
+                    <PageTitle>{page_title}</PageTitle>
+                </FlexInline>
+                <p>{fit_details.description}</p>
+                <!--<input type="number" x-model="rotation_x" step="0.001" />
+                <input type="number" x-model="rotation_y" step="0.001" /> -->
+                <ButtonStack>
+                    <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
+                        <ClipboardIcon slot="icon" />
+                        {t('copy_to_clipboard')}
+                    </Button>
+                </ButtonStack>
+
+                <Flexblock gap='var(--space-s)'>
+                    {fitting_parsed.drones.length > 0 &&
+                        <DronesCargo cargo={fitting_parsed.drones} />
+                    }
+
+                    {fitting_parsed.drones.length > 0 &&
+                        <Cargohold cargo={fitting_parsed.cargohold} />
+                    }
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+
+        <FittingCustom
+            fitting={fitting_parsed}
+        />
+    </PageLanding>
+</Viewport>
+
+<textarea id="fit-clipboard" set:html={fitting}></textarea>
+
+<script is:inline type="text/javascript" src="/ccpwgl/ccpwgl_int.js"></script>
+<script is:inline type="text/javascript" src="/ccpwgl/ccpwgl.js"></script>
+<script is:inline type="text/javascript" src="/ccpwgl/demos.js"></script>
+
+<style lang="scss">
+    #fit-clipboard {
+        display: none;
+    }
+
+    .left-panel {
+        position: absolute;
+    }
+</style>
+
+<style is:global>
+
+    #mainCanvas {
+        border: none;
+        position:fixed;
+        width:100%;
+        height:100%
+    }
+
+</style>

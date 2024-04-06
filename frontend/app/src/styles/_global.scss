@@ -146,3 +146,8 @@ code {
 .correct-gaps > :not([style="display: none;"]) ~ * {
     margin-block-start: var(--space-s) !important;
 }
+
+.bump {
+    position: relative;
+    z-index: 1;
+}

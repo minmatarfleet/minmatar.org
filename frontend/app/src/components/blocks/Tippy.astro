@@ -8,12 +8,16 @@ const translatePath = useTranslatedPath(lang);
 interface Props {
     element?:           string;
     partial?:           string;
+    height?:            string;
+    width?:             string;
     [propName: string]: any;
 }
 
 const {
     element = 'span',
     partial,
+    height = 'auto',
+    width = 'auto',
     ...attributes
 } = Astro.props
 
@@ -31,6 +35,7 @@ const Element = element
                 hx-trigger="intersect"
                 hx-swap="outerHTML transition:true"
                 hx-get='${translatePath(partial)}'
+                style="width: ${width}; height: ${height}; display: flex; align-items: center; justify-content: center"
             >
                 ${t('loading')}
             <Element>

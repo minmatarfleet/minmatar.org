@@ -1,6 +1,18 @@
 ---
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props;
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
-<Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+<Flexblock
+    gap='var(--space-3xs)'
+    class="[ w-full ]"
+    {...attributes}
+>
     <slot />
 </Flexblock>

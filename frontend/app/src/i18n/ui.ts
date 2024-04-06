@@ -217,6 +217,8 @@ export const ui = {
         'icon.ships.alt': 'Eve Online Ship tree Icon',
         'icon.skills.alt': 'Eve Online Skills Icon',
         'icon.assets.alt': 'Eve Online Assets Icon',
+        'icon.fit_cargo.alt': 'Eve Online Cargo hold Icon',
+        'icon.drones.alt': 'Eve Online Drones Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -581,5 +583,9 @@ export const ui = {
         'view_active_applications': 'View active applications',
         'view_records': 'View records',
         'get_all_corporations_members_error': 'An error ocurred fetching corporation members.',
+        'get_module_props_error': 'Module properties could not be retrieved.',
+        'drone_bay': 'Drone Bay',
+        'cargo_hold': 'Cargo Hold',
+        'item_picture': 'Item picture',
     },
 } as const;

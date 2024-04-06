@@ -7,6 +7,8 @@ export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-ar
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
 export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
+export type MetaGroupColors = 'tech-i' | 'tech-ii' | 'storyline' | 'faction' | 'officer' | 'deadspace' | 'tech-iii'
+                            | 'abyssal' | 'premium' | 'limited-time' | 'structure-faction' | 'structure-tech-ii' | 'structure-tech-i'
 
 export type spaces = '0' | '1px' | '2px' | 'var(--component-block-gap)' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
 | 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
@@ -526,8 +528,41 @@ export interface Permissions {
 export type MetaGroupType = 'Tech I' | 'Tech II' | 'Storyline' | 'Faction' | 'Officer' | 'Deadspace' | 'Tech III'
                             | 'Abyssal' | 'Premium' | 'Limited Time' | 'Structure Faction' | 'Structure Tech II' | 'Structure Tech I'
 
+export type ShipsSlots = 'High Slots' | 'Medium Slots' | 'Low Slots' | 'Rig Slots' | 'Subsystem Slots'
 export interface Module {
+    id:         number;
     name:       string;
     meta_name:  MetaGroupType;
     slot_name:  string;
+}
+
+export interface ShipFittingCapabilities {
+    high_slots?:        number;
+    med_slots?:         number;
+    low_slots?:         number;
+    rig_slots?:         number;
+    subsystem_slots?:   number;
+    pg_output?:         number;
+    cpu_output?:        number;
+    launchers?:         number;
+    turrets?:           number;
+}
+
+export interface CargoItem {
+    id:     number;
+    name:   string;
+    amount: number;
+}
+
+export interface ShipFitting {
+    name:               string;
+    ship_name:          string;
+    capabilities:       ShipFittingCapabilities;
+    low_slots?:         Module[];
+    med_slots?:         Module[];
+    high_slots?:        Module[];
+    rig_slots?:         Module[];
+    subsystem_slots?:   Module[];
+    drones?:            CargoItem[];
+    cargohold?:         CargoItem[];
 }
