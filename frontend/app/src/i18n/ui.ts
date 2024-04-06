@@ -553,6 +553,8 @@ export const ui = {
         'page_finder.corporations.associates.description': 'Minmatar Fleet Alliance Associates corporations recuitment',
         'page_finder.corporations.applications.description': 'List of submitted corporation applications',
         'page_finder.corporations.members.description': 'List of alliance corporations members',
+        'page_finder.corporations.members.unregistered.description': 'List of unregistered alliance corporation members',
+        'page_finder.corporations.members.mains.description': 'List of alliance mains characters with its alts',
         'page_finder.corporations.applications.records.description': 'List of processed corporation applications',
         'page_finder.account.description': 'Your profile management page',
         'hotkeys': 'Hotkeys',
