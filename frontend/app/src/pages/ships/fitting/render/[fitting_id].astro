@@ -28,8 +28,6 @@ import Viewport from '@layouts/Viewport.astro';
 import PageLanding from '@components/page/PageLanding.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import TextBox from '@components/layout/TextBox.astro';
-
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -127,7 +125,7 @@ const page_title = fitting_parsed.name;
                 <!--<input type="number" x-model="rotation_x" step="0.001" />
                 <input type="number" x-model="rotation_y" step="0.001" /> -->
 
-                <Flexblock gap='var(--space-xs)'>
+                <Flexblock gap='var(--space-3xs)'>
                     {fitting_parsed.drones.length > 0 &&
                         <Cargohold cargo={fitting_parsed.drones}>
                             <DronesEvEIcon />
