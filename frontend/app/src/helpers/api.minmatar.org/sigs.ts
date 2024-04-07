@@ -14,7 +14,7 @@ export async function get_groups() {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -39,7 +39,7 @@ export async function get_current_groups(access_token:string) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -63,7 +63,7 @@ export async function get_group_by_id(id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
@@ -88,7 +88,7 @@ export async function get_group_requests(access_token:string, id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
@@ -114,7 +114,7 @@ export async function create_group_request(access_token:string, id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
@@ -140,7 +140,7 @@ export async function approve_group_request(access_token:string, id:number, requ
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
@@ -166,7 +166,7 @@ export async function deny_group_request(access_token:string, id:number, request
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
@@ -192,7 +192,7 @@ export async function remove_group_member(access_token:string, id:number, user_i
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)

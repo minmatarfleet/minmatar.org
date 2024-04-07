@@ -14,7 +14,7 @@ export async function get_user_by_id(user_id:number) {
             headers: headers
         })
         
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -40,7 +40,7 @@ export async function delete_account(access_token:string) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

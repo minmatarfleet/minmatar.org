@@ -14,7 +14,7 @@ export async function get_all_corporations(corporation_type:CorporationType) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -39,7 +39,7 @@ export async function get_corporation_by_id(access_token:string, id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
