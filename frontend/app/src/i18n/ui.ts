@@ -53,6 +53,8 @@ export const ui = {
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
         'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
+        
+        'fitting.render.cover_alt': 'Open space with a whitish nubula in the background',
 
         'fitting.list.page_title': 'Fittings',
 

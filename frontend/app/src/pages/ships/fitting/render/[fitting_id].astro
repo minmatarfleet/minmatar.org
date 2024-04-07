@@ -48,6 +48,12 @@ const page_title = fitting_parsed.name;
 
 <Viewport title={page_title}>
     <PageLanding
+        cover={{
+            image: "/images/fitting-cover.jpg",
+            image_990: "/images/fitting-cover.jpg",
+            alt: t('fitting.render.cover_alt'),
+            animated: false,
+        }}
         fullscreen={true}
         wide={true}
         x-data={`{
@@ -59,7 +65,7 @@ const page_title = fitting_parsed.name;
                 this.camera.rotationY = this.rotation_y
             }*/
         }`}
-        x-effect="update"
+        x-effect-="update"
     >
         <canvas
             slot="cover"
@@ -69,7 +75,7 @@ const page_title = fitting_parsed.name;
             x-data={`{
                 init_ccpwgl() {                    
                     var canvas = document.getElementById('mainCanvas');
-                    ccpwgl.initialize(canvas, demos.options);
+                    ccpwgl.initialize(canvas, fitting.options);
                     
                     var camera = ccpwgl.createCamera(canvas, undefined, true);
                     camera.rotationX = -0.552
@@ -86,7 +92,7 @@ const page_title = fitting_parsed.name;
                     scene.loadSun('res:/fisfx/lensflare/blue_small.red');
                     scene.setSunDirection([-1, 0, 0.7]);
 
-                    if (demos.options.postprocess)
+                    if (fitting.options.postprocess)
                         ccpwgl.enablePostprocessing(true);
                 }
             }`}
@@ -147,9 +153,9 @@ const page_title = fitting_parsed.name;
 
 <textarea id="fit-clipboard" set:html={fitting}></textarea>
 
-<script is:inline type="text/javascript" src="/ccpwgl/ccpwgl_int.js"></script>
-<script is:inline type="text/javascript" src="/ccpwgl/ccpwgl.js"></script>
-<script is:inline type="text/javascript" src="/ccpwgl/demos.js"></script>
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl_int.min.js"></script>
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl.js"></script>
+<script is:inline type="text/javascript" src="/js/ccpwgl/fitting.js"></script>
 
 <style lang="scss">
     #fit-clipboard {
