@@ -2,7 +2,7 @@ import { db } from '@helpers/db';
 import { eq, and, or, sql } from 'drizzle-orm';
 import * as schema from '@/models/schema.ts';
 
-import type { ShipFittingCapabilities } from '@dtypes/layout_components'
+import type { ShipFittingCapabilities, ShipInfo } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
     console.log(`Requesting: db.get_ship_fitting_capabilities(${ship_name})`)
@@ -53,4 +53,48 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
     })
 
     return capabilities
+}
+
+export async function get_ship_info(ship_id:number) {
+    const q = await db.select({
+        groupName: schema.invGroups.groupName,
+        typeName: schema.invTypes.typeName,
+        raceName: schema.chrRaces.raceName,
+        metaGroupName: schema.invMetaGroups.metaGroupName,
+    })
+    .from(schema.invGroups)
+    .innerJoin(
+        schema.invTypes,
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
+    )
+    .innerJoin(
+        schema.chrRaces,
+        eq(schema.invTypes.raceId, schema.chrRaces.raceId),
+    )
+    .innerJoin(
+        schema.invMetaTypes,
+        eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
+    )
+    .innerJoin(
+        schema.invMetaGroups,
+        eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
+    )
+    .where(
+        and(
+            eq(schema.invTypes.typeId, ship_id),
+            eq(schema.invGroups.categoryId, 6),
+        )
+    )
+    .limit(1)
+
+    if (q.length > 0) {
+        return {
+            name: q[0].typeName,
+            type: q[0].groupName,
+            race: q[0].raceName,
+            meta: q[0].metaGroupName,
+        } as ShipInfo
+    } else {
+        return null
+    }
 }
