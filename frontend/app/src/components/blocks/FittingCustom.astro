@@ -16,21 +16,24 @@ let rig_slots:Module[] = []
 let subsystem_slots:Module[] = []
 
 try {
-    console.log(fitting?.subsystem_slots)
-
-    for (let i = 0; i < fitting.capabilities.low_slots; i++)
+    const low_slots_count = Math.max(fitting.capabilities.low_slots, fitting?.low_slots.length)
+    for (let i = 0; i < low_slots_count; i++)
         low_slots.push(fitting?.low_slots[i] ?? null)
 
-    for (let i = 0; i < fitting.capabilities.med_slots; i++)
+    const med_slots_count = Math.max(fitting.capabilities.med_slots, fitting?.med_slots.length)
+    for (let i = 0; i < med_slots_count; i++)
         med_slots.push(fitting?.med_slots[i] ?? null)
 
-    for (let i = 0; i < fitting.capabilities.high_slots; i++)
+    const high_slots_count = Math.max(fitting.capabilities.high_slots, fitting?.high_slots.length)
+    for (let i = 0; i < high_slots_count; i++)
         high_slots.push(fitting?.high_slots[i] ?? null)
 
-    for (let i = 0; i < fitting.capabilities.rig_slots; i++)
+    const rig_slots_count = Math.max(fitting.capabilities.rig_slots, fitting?.rig_slots.length)
+    for (let i = 0; i < rig_slots_count; i++)
         rig_slots.push(fitting?.rig_slots[i] ?? null)
 
-    for (let i = 0; i < fitting.capabilities.subsystem_slots; i++)
+    const subsystem_slots_count = fitting.capabilities?.subsystem_slots ? fitting?.rig_slots.length : 0
+    for (let i = 0; i < subsystem_slots_count; i++)
         subsystem_slots.push(fitting?.subsystem_slots[i] ?? null)
 
 } catch (error) {
