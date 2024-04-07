@@ -3,7 +3,7 @@ import { get_item_id } from '@helpers/sde/items'
 
 import type { Module, ShipFitting } from '@dtypes/layout_components';
 import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
-import { cachePromise } from '@helpers/cache'
+// import { cachePromise } from '@helpers/cache'
 
 export async function parse_eft(fitting_eft: string) {
     type EFTSection = 'name' | 'low' | 'med' | 'high' | 'rigs' | 'subsystems' | 'skip-drones' | 'drones' | 'skip-cargo' | 'cargo'
@@ -84,7 +84,7 @@ export async function parse_eft(fitting_eft: string) {
             }
 
             if (!ship_fitting[TRANSLATE[section]])
-                    ship_fitting[TRANSLATE[section]] = []
+                ship_fitting[TRANSLATE[section]] = []
 
             ship_fitting[TRANSLATE[section]].push({
                 id: await get_item_id(module_name),
@@ -95,7 +95,7 @@ export async function parse_eft(fitting_eft: string) {
             if (module_name === EMPTY_SLOTS_TAGS[section]) {
                 ship_fitting[TRANSLATE[section]].push(null)
             } else {
-                const module:Module = await cached_get_module_props(module_name)
+                const module:Module = await get_module_props(module_name)
 
                 if (module && (SHIP_SLOTS[section] !== module.slot_name))
                     throw new Error(`Error parsing EFT: Module ${module_name} is not ${SHIP_SLOTS[section]}`);
@@ -109,7 +109,7 @@ export async function parse_eft(fitting_eft: string) {
                     module
                     :
                     {
-                        id: await cached_get_item_id(module_name),
+                        id: await get_item_id(module_name),
                         name: module_name,
                         meta_name: 'Tech I',
                         slot_name: SHIP_SLOTS[section],
@@ -119,8 +119,9 @@ export async function parse_eft(fitting_eft: string) {
         }
     }
 
+    console.log('Done parsing eft')
     return ship_fitting
 }
 
-const cached_get_module_props = cachePromise(get_module_props)
-const cached_get_item_id = cachePromise(get_item_id)
+/*const cached_get_module_props = cachePromise(get_module_props)
+const cached_get_item_id = cachePromise(get_item_id)*/

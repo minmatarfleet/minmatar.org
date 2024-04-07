@@ -1,5 +1,4 @@
-import { sqliteTable, AnySQLiteColumn, integer, numeric, real, index, primaryKey, text, uniqueIndex } from "drizzle-orm/sqlite-core"
-  import { sql } from "drizzle-orm"
+import { sqliteTable, integer, numeric, real, index, primaryKey, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 export const crpNpcCorporations = sqliteTable("crpNPCCorporations", {
 	corporationId: integer("corporationID").primaryKey().notNull(),
