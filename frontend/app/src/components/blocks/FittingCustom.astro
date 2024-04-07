@@ -32,7 +32,7 @@ try {
     for (let i = 0; i < rig_slots_count; i++)
         rig_slots.push(fitting?.rig_slots[i] ?? null)
 
-    const subsystem_slots_count = fitting.capabilities?.subsystem_slots ? fitting?.rig_slots.length : 0
+    const subsystem_slots_count = fitting.capabilities?.subsystem_slots ? fitting?.subsystem_slots.length : 0
     for (let i = 0; i < subsystem_slots_count; i++)
         subsystem_slots.push(fitting?.subsystem_slots[i] ?? null)
 
@@ -64,7 +64,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
     
     <div class="[ rigs ]">
         <!-- Rigs and Subsystems -->
-        <Flexblock>
+        <Flexblock gap='var(--space-xl)'>
             <Flexblock>
                 {rig_slots.map( (ship_slot) =>
                     <FittingSlot

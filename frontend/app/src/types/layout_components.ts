@@ -577,3 +577,10 @@ export interface ShipFitting {
     drones?:            CargoItem[];
     cargohold?:         CargoItem[];
 }
+
+export interface ShipInfo {
+    name:    string;
+    type:    string;
+    race:    string;
+    meta:    string;
+}

@@ -17,11 +17,14 @@ import fit_details from '@json/page/fitting/list/adv-30-arazu.json';
 import { fitting } from '@/data/tempest.ts';
 
 import { get_item_id } from '@helpers/sde/items'
+import { get_ship_info } from '@helpers/sde/ships'
+import { get_ship_dna } from '@helpers/ccpwgl'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { parse_eft } from '@helpers/fit_parser.ts';
 
 const fitting_parsed = await parse_eft(fitting)
 const ship_id = await get_item_id(fitting_parsed.ship_name)
+const ship_dna = get_ship_dna(await get_ship_info(ship_id))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -71,7 +74,10 @@ const page_title = fitting_parsed.name;
             width="500"
             height="500"
             x-data={`{
-                init_ccpwgl() {                    
+                init_ccpwgl() {
+                    if (${ship_dna === null})
+                        return;
+
                     var canvas = document.getElementById('mainCanvas');
                     ccpwgl.initialize(canvas, fitting.options);
                     
@@ -86,7 +92,7 @@ const page_title = fitting_parsed.name;
                     camera.shift = 100.75
 
                     var scene = ccpwgl.loadScene('res:/dx9/scene/wormholes/wormhole_class_00.red');
-                    scene.loadShip('mb2_t1:minmatarnavy:minmatar', function(){ camera.focus(this, 6)});
+                    scene.loadShip('${ship_dna}', function(){ camera.focus(this, 3)});
                     scene.loadSun('res:/fisfx/lensflare/blue_small.red');
                     scene.setSunDirection([-1, 0, 0.7]);
 
@@ -103,24 +109,26 @@ const page_title = fitting_parsed.name;
             padding_block='var(--space-xl)'
             max_width='650px'
         >
-            <Flexblock gap='var(--space-xl)'>
-                <FlexInline justification='space-between'>
-                    <FlexInline>
-                        <img height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
-                        <PageTitle>{page_title}</PageTitle>
+            <Flexblock gap='var(--space-3xl)'>
+                <Flexblock gap='var(--space-xl)'>
+                    <FlexInline justification='space-between'>
+                        <FlexInline>
+                            <img height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
+                            <PageTitle>{page_title}</PageTitle>
+                        </FlexInline>
+                        <ButtonStack>
+                            <Button
+                                onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')"
+                                size='sm'
+                            >
+                                <ClipboardIcon slot="icon" />
+                                {t('copy')}
+                            </Button>
+                        </ButtonStack>
                     </FlexInline>
-                    <ButtonStack>
-                        <Button
-                            onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')"
-                            size='sm'
-                        >
-                            <ClipboardIcon slot="icon" />
-                            {t('copy')}
-                        </Button>
-                    </ButtonStack>
-                </FlexInline>
-                
-                <p>{fit_details.description}</p>
+                    
+                    <p>{fit_details.description}</p>
+                </Flexblock>
 
                 <!--<input type="number" x-model="rotation_x" step="0.001" />
                 <input type="number" x-model="rotation_y" step="0.001" /> -->
