@@ -5,6 +5,8 @@ import * as schema from '@/models/schema.ts';
 import type { ShipFittingCapabilities } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
+    console.log(`Requesting: db.get_ship_fitting_capabilities(${ship_name})`)
+
     const q = await db.select({
         attributeName: schema.dgmAttributeTypes.attributeName,
         value: schema.dgmTypeAttributes.valueFloat,

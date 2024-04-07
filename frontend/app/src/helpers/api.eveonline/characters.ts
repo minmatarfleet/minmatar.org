@@ -14,7 +14,7 @@ export async function get_character_by_id(character_id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -38,7 +38,7 @@ export async function get_corporation_history(character_id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

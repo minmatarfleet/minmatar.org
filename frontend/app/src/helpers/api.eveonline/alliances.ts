@@ -14,7 +14,7 @@ export async function get_alliance_by_id(id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -38,7 +38,7 @@ export async function get_alliance_corporations(id:number) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

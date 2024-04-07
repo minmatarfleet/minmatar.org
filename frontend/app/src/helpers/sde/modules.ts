@@ -5,6 +5,8 @@ import * as schema from '@/models/schema.ts';
 import type { Module } from '@dtypes/layout_components'
 
 export async function get_module_props(module_name:string) {
+    console.log(`Requesting: db.get_module_props(${module_name})`)
+
     const q = await db.select({
         typeId: schema.invTypes.typeId,
         moduleName: schema.invTypes.typeName,
@@ -39,7 +41,8 @@ export async function get_module_props(module_name:string) {
                 eq(schema.dgmEffects.effectName, 'subSystem'),
             ),
         )
-    );
+    )
+    .limit(1);
     
     if (q.length > 0) {
         return {

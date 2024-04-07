@@ -15,7 +15,7 @@ export async function get_characters(access_token:string) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -40,7 +40,7 @@ export async function get_character_by_id(access_token:string, character_id:numb
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -66,7 +66,7 @@ export async function delete_characters(access_token:string, character_id:number
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -91,7 +91,7 @@ export async function get_primary_characters(access_token:string) {
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (response.status != 200 && response.status != 404) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -116,7 +116,7 @@ export async function get_character_skillsets(access_token:string, character_id:
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -141,7 +141,7 @@ export async function get_character_assets(access_token:string, character_id:num
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

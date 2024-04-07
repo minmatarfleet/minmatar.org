@@ -15,7 +15,7 @@ export async function get_corporation_applications(access_token:string, corporat
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -46,7 +46,7 @@ export async function create_corporation_application(access_token:string, corpor
             method: 'POST'
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -71,7 +71,7 @@ export async function get_corporation_applications_by_id(access_token:string, co
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -97,7 +97,7 @@ export async function accept_corporation_applications(access_token:string, corpo
             method: 'POST'
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -123,7 +123,7 @@ export async function reject_corporation_applications(access_token:string, corpo
             method: 'POST'
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

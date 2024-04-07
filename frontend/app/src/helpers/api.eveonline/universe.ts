@@ -16,7 +16,7 @@ export async function get_names_and_categories_by_ids(ids:number[]) {
             body: JSON.stringify(ids),
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
