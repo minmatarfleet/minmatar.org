@@ -38,10 +38,12 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import FittingCustom from '@components/blocks/FittingCustom.astro';
 import Button from '@components/blocks/Button.astro';
-
 import Cargohold from '@components/blocks/CargoHold.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 
@@ -135,6 +137,12 @@ const page_title = fitting_parsed.name;
                 <input type="number" x-model="rotation_y" step="0.001" /> -->
 
                 <Flexblock gap='var(--space-3xs)'>
+                    <CollapsibleBlock>
+                        <FitsEvEIcon slot="head" />
+                        <h3 slot="head">{t('fitting')}</h3>
+                        <pre class="[ eve-html ]">{fitting}</pre>
+                    </CollapsibleBlock>
+
                     {fitting_parsed?.drones?.length > 0 &&
                         <Cargohold cargo={fitting_parsed.drones}>
                             <DronesEvEIcon />
