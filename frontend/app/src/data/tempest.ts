@@ -1,4 +1,4 @@
-export const fitting = `[Tempest Fleet Issue, [ADV-30] Tempest Fleet Issue]
+export const fitting = `[Vargur, [ADV-30] Tempest Fleet Issue]
 
 Damage Control II
 Imperial Navy 1600mm Steel Plates
