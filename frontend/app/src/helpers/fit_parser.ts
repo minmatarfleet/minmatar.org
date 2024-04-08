@@ -1,5 +1,5 @@
 import { get_module_props } from '@helpers/sde/modules'
-import { get_item_id } from '@helpers/sde/items'
+import { get_item_id, get_item_category } from '@helpers/sde/items'
 
 import type { Module, ShipFitting } from '@dtypes/layout_components';
 import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
@@ -63,14 +63,18 @@ export async function parse_eft(fitting_eft: string) {
             continue
         }
 
-        if (line === '' && section !== 'cargo') {
-            section = EFTSections[EFTSections.indexOf(section) + 1]
+        if (line === '') {
+            if (section !== 'cargo')
+                section = EFTSections[EFTSections.indexOf(section) + 1]
+            
             continue
         }
 
         if (!section) continue
 
-        let module_name:string = line
+        let module_name:string = line.split(',')[0]
+
+        console.log(module_name)
 
         if (section === 'drones' || section === 'cargo') {
             let words:string[] = line.split(' ')
@@ -83,6 +87,11 @@ export async function parse_eft(fitting_eft: string) {
                 module_name = words.join(' ')
             }
 
+            const item_id = await get_item_id(module_name)
+
+            if (section === 'drones' && await get_item_category(item_id) !== 'Drone')
+                section = 'cargo'
+
             if (!ship_fitting[TRANSLATE[section]])
                 ship_fitting[TRANSLATE[section]] = []
 
@@ -92,16 +101,20 @@ export async function parse_eft(fitting_eft: string) {
                 amount: amount,
             })
         } else {
+            if (section === 'name')
+                section = 'low'
+
+            if (!ship_fitting[TRANSLATE[section]])
+                ship_fitting[TRANSLATE[section]] = []
+
             if (module_name === EMPTY_SLOTS_TAGS[section]) {
                 ship_fitting[TRANSLATE[section]].push(null)
             } else {
                 const module:Module = await get_module_props(module_name)
 
+                console.log(section)
                 if (module && (SHIP_SLOTS[section] !== module.slot_name))
-                    throw new Error(`Error parsing EFT: Module ${module_name} is not ${SHIP_SLOTS[section]}`);
-
-                if (!ship_fitting[TRANSLATE[section]])
-                    ship_fitting[TRANSLATE[section]] = []
+                    throw new Error(`Error parsing EFT: Module "${module_name}" is not ${SHIP_SLOTS[section]}`);
 
                 ship_fitting[TRANSLATE[section]].push(
                     module

@@ -1,0 +1,118 @@
+{
+    "Astero": {
+        "skin": "soebase",
+        "race": "soe"
+    },
+    "Stratios": {
+        "skin": "soebase",
+        "race": "soe"
+    },
+    "Nestor": {
+        "skin": "soebase",
+        "race": "soe"
+    },
+    "Garmur": {
+        "skin": "mordubase",
+        "race": "mordu"
+    },
+    "Orthrus": {
+        "skin": "mordubase",
+        "race": "mordu"
+    },
+    "Barghest": {
+        "skin": "mordubase",
+        "race": "mordu"
+    },
+    "Dramiel": {
+        "skin": "angelbase",
+        "race": "angel"
+    },
+    "Mekubal": {
+        "skin": "angelbase",
+        "race": "angel"
+    },
+    "Cynabal": {
+        "skin": "angelbase",
+        "race": "angel"
+    },
+    "Khizriel": {
+        "skin": "angelbase",
+        "race": "angel"
+    },
+    "Machariel": {
+        "skin": "angelbase",
+        "race": "angel"
+    },
+    "Succubus": {
+        "skin": "sanshabase",
+        "race": "sansha"
+    },
+    "Phantasm": {
+        "skin": "sanshabase",
+        "race": "sansha"
+    },
+    "Nightmare": {
+        "skin": "sanshabase",
+        "race": "sansha"
+    },
+    "Revenant": {
+        "skin": "sanshabase",
+        "race": "sansha"
+    },
+    "Venture": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Prospect": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Endurance": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Procurer": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Covetor": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Retriever": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Hulk": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Skiff": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Mackinaw": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Noctis": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Porpoise": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Orca": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Rorqual": {
+        "skin": "orebase",
+        "race": "ore"
+    },
+    "Bowhead": {
+        "skin": "orebase",
+        "race": "ore"
+    }
+}
