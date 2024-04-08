@@ -1,0 +1,35 @@
+---
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import CollapsableButton from '@components/blocks/CollapsableButton.astro';
+---
+
+<Flexblock
+    gap='var(--space-3xs)'
+    x-data={`{
+        expanded: false,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+>
+    <CollapsableButton x-on:click="toggle_collapse()">
+        <FlexInline gap="var(--space-xs)">
+            <slot name="head" />
+        </FlexInline>
+    </CollapsableButton>
+
+    <Wrapper
+        padding_block='0'
+        padding_inline='var(--space-3xs)'
+    >
+        <div
+            x-show="expanded"
+            x-collapse.duration.0ms
+            style="display: none"
+        >
+            <slot />
+        </div>
+    </Wrapper>
+</Flexblock>
