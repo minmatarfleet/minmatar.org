@@ -23,6 +23,7 @@ import { get_item_icon } from '@helpers/eve_image_server';
 import { parse_eft } from '@helpers/fit_parser.ts';
 
 const fitting_parsed = await parse_eft(fitting)
+console.log(fitting_parsed)
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 const ship_dna = get_ship_dna(await get_ship_info(ship_id))
 
@@ -134,14 +135,14 @@ const page_title = fitting_parsed.name;
                 <input type="number" x-model="rotation_y" step="0.001" /> -->
 
                 <Flexblock gap='var(--space-3xs)'>
-                    {fitting_parsed.drones.length > 0 &&
+                    {fitting_parsed?.drones?.length > 0 &&
                         <Cargohold cargo={fitting_parsed.drones}>
                             <DronesEvEIcon />
                             <h3>{t('drone_bay')}</h3>
                         </Cargohold>
                     }
 
-                    {fitting_parsed.drones.length > 0 &&
+                    {fitting_parsed?.cargohold?.length > 0 &&
                         <Cargohold cargo={fitting_parsed.cargohold}>
                             <CargoHoldEvEIcon />
                             <h3>{t('cargo_hold')}</h3>
