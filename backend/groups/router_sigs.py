@@ -30,7 +30,7 @@ class SigSchema(BaseModel):
     response=List[SigSchema],
     description="List all available special interest groups",
 )
-async def get_sigs(request):
+def get_sigs(request):
     sigs = Sig.objects.all()
     response = []
     for sig in sigs:
@@ -54,7 +54,7 @@ async def get_sigs(request):
     auth=AuthBearer(),
     description="Get the special interest groups of the current user",
 )
-async def get_current_sigs(request):
+def get_current_sigs(request):
     sigs = Sig.objects.filter(members__id=request.user.id)
     response = []
     for sig in sigs:
@@ -76,7 +76,7 @@ async def get_current_sigs(request):
     response={200: SigSchema, 404: ErrorResponse},
     description="Get a special interest group by id",
 )
-async def get_sig_by_id(request, sig_id: int):
+def get_sig_by_id(request, sig_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
@@ -104,7 +104,7 @@ class SigRequestSchema(BaseModel):
     auth=AuthBearer(),
     description="Get all requests to join a special interest group",
 )
-async def get_sig_requests(request, sig_id: int):
+def get_sig_requests(request, sig_id: int):
     sig_requests = SigRequest.objects.filter(sig__id=sig_id)
     response = []
     for sig_request in sig_requests:
@@ -130,7 +130,7 @@ async def get_sig_requests(request, sig_id: int):
     auth=AuthBearer(),
     description="Request to join a special interest group",
 )
-async def request_to_join_sig(request, sig_id: int):
+def request_to_join_sig(request, sig_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
@@ -153,7 +153,7 @@ async def request_to_join_sig(request, sig_id: int):
     auth=AuthBearer(),
     description="Approve a request to join a special interest group",
 )
-async def approve_sig_request(request, sig_id: int, request_id: int):
+def approve_sig_request(request, sig_id: int, request_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
@@ -185,7 +185,7 @@ async def approve_sig_request(request, sig_id: int, request_id: int):
     auth=AuthBearer(),
     description="Deny a request to join a special interest group",
 )
-async def deny_sig_request(request, sig_id: int, request_id: int):
+def deny_sig_request(request, sig_id: int, request_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
@@ -217,7 +217,7 @@ async def deny_sig_request(request, sig_id: int, request_id: int):
     auth=AuthBearer(),
     description="Remove a user from a special interest group",
 )
-async def remove_sig_member(request, sig_id: int, user_id: int):
+def remove_sig_member(request, sig_id: int, user_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}

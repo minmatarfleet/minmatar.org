@@ -30,7 +30,7 @@ class TeamSchema(BaseModel):
     response=List[TeamSchema],
     description="List all available special interest groups",
 )
-async def get_teams(request):
+def get_teams(request):
     teams = Team.objects.all()
     response = []
     for team in teams:
@@ -54,7 +54,7 @@ async def get_teams(request):
     auth=AuthBearer(),
     description="Get the special interest groups of the current user",
 )
-async def get_current_teams(request):
+def get_current_teams(request):
     teams = Team.objects.filter(members__id=request.user.id)
     response = []
     for team in teams:
@@ -76,7 +76,7 @@ async def get_current_teams(request):
     response={200: TeamSchema, 404: ErrorResponse},
     description="Get a special interest group by id",
 )
-async def get_team_by_id(request, team_id: int):
+def get_team_by_id(request, team_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}
@@ -104,7 +104,7 @@ class TeamRequestSchema(BaseModel):
     auth=AuthBearer(),
     description="Get all requests to join a special interest group",
 )
-async def get_team_requests(request, team_id: int):
+def get_team_requests(request, team_id: int):
     team_requests = TeamRequest.objects.filter(team__id=team_id)
     response = []
     for team_request in team_requests:
@@ -130,7 +130,7 @@ async def get_team_requests(request, team_id: int):
     auth=AuthBearer(),
     description="Request to join a special interest group",
 )
-async def request_to_join_team(request, team_id: int):
+def request_to_join_team(request, team_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}
@@ -153,7 +153,7 @@ async def request_to_join_team(request, team_id: int):
     auth=AuthBearer(),
     description="Approve a request to join a special interest group",
 )
-async def approve_team_request(request, team_id: int, request_id: int):
+def approve_team_request(request, team_id: int, request_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}
@@ -185,7 +185,7 @@ async def approve_team_request(request, team_id: int, request_id: int):
     auth=AuthBearer(),
     description="Deny a request to join a special interest group",
 )
-async def deny_team_request(request, team_id: int, request_id: int):
+def deny_team_request(request, team_id: int, request_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}
@@ -217,7 +217,7 @@ async def deny_team_request(request, team_id: int, request_id: int):
     auth=AuthBearer(),
     description="Remove a member from a special interest group",
 )
-async def remove_team_member(request, team_id: int, user_id: int):
+def remove_team_member(request, team_id: int, user_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}

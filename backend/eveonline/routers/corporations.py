@@ -60,7 +60,7 @@ class CreateCorporationRequest(Schema):
     response=List[CorporationResponse],
     summary="Get all corporations",
 )
-async def get_corporations(
+def get_corporations(
     request, corporation_type: Optional[CorporationType] = None
 ):
     if corporation_type:
@@ -120,7 +120,7 @@ async def get_corporations(
     auth=AuthBearer(),
     summary="Get a corporation by ID",
 )
-async def get_corporation_by_id(request, corporation_id: int):
+def get_corporation_by_id(request, corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     response = {
         "corporation_id": corporation.corporation_id,

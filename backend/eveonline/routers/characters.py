@@ -59,7 +59,7 @@ class ErrorResponse(BaseModel):
     auth=AuthBearer(),
     response=List[BasicCharacterResponse],
 )
-async def get_characters(request):
+def get_characters(request):
     characters = EveCharacter.objects.filter(token__user=request.user)
     response = []
     for character in characters:
@@ -78,7 +78,7 @@ async def get_characters(request):
     auth=AuthBearer(),
     response={200: CharacterResponse, 403: ErrorResponse, 404: ErrorResponse},
 )
-async def get_character_by_id(request, character_id: int):
+def get_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
         return 404, {"detail": "Character not found."}
 
@@ -110,7 +110,7 @@ async def get_character_by_id(request, character_id: int):
         404: ErrorResponse,
     },
 )
-async def get_skillsets_for_character_by_id(request, character_id: int):
+def get_skillsets_for_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
         return 404, {"detail": "Character not found."}
 
@@ -148,7 +148,7 @@ async def get_skillsets_for_character_by_id(request, character_id: int):
         404: ErrorResponse,
     },
 )
-async def get_assets_for_character_by_id(request, character_id: int):
+def get_assets_for_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
         return 404, {"detail": "Character not found."}
 
@@ -188,7 +188,7 @@ async def get_assets_for_character_by_id(request, character_id: int):
         500: ErrorResponse,
     },
 )
-async def delete_character_by_id(request, character_id: int):
+def delete_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
         return 404, {"detail": "Character not found."}
     if not (
@@ -216,7 +216,7 @@ async def delete_character_by_id(request, character_id: int):
     auth=AuthBearer(),
     response={200: BasicCharacterResponse, 404: ErrorResponse},
 )
-async def get_primary_character(request):
+def get_primary_character(request):
     if not EvePrimaryCharacter.objects.filter(
         character__token__user=request.user
     ).exists():
@@ -234,7 +234,7 @@ async def get_primary_character(request):
 @router.get(
     "/primary/add", summary="Add primary character using EVE Online SSO"
 )
-async def add_primary_character(request, redirect_url: str):
+def add_primary_character(request, redirect_url: str):
     request.session["redirect_url"] = redirect_url
     scopes = BASIC_SCOPES
 
@@ -273,7 +273,7 @@ async def add_primary_character(request, redirect_url: str):
 
 
 @router.get("/add", summary="Add character using EVE Online SSO")
-async def add_character(request, redirect_url: str, token_type: TokenType):
+def add_character(request, redirect_url: str, token_type: TokenType):
     request.session["redirect_url"] = redirect_url
     scopes = None
     match token_type:
