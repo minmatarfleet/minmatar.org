@@ -5,6 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 const is_main = JSON.parse(Astro.url.searchParams.get('is_main')) as boolean
@@ -16,7 +17,7 @@ const is_main = JSON.parse(Astro.url.searchParams.get('is_main')) as boolean
         <Flexblock>
             <Flexblock gap="var(--space-3xs)">
                 <code>esi-fleets.read_fleet.v1</code>
-                <small>Used for fleet participation rewards</small>
+                <small>Used for tracking fleet participation</small>
             </Flexblock>
             <Flexblock gap="var(--space-3xs)">
                 <code>esi-fleets.write_fleet.v1</code>
@@ -40,11 +41,17 @@ const is_main = JSON.parse(Astro.url.searchParams.get('is_main')) as boolean
             </Flexblock>
             <Flexblock gap="var(--space-3xs)">
                 <code>esi-killmails.read_killmails.v1</code>
-                <small>Used for fetching killmails for fleet activity announcements</small>
+                <small>Used for fetching killmails for after action reports</small>
             </Flexblock>
             <Flexblock gap="var(--space-3xs)">
                 <code>esi-characters.read_fw_stats.v1</code>
                 <small>Used for fetching faction warfare statistics</small>
+            </Flexblock>
+            <Flexblock gap="var(--space-3xs)">
+                <code>
+                    esi-clones.read_clones.v1, esi-clones.read_implants.v1, esi-skills.read_skillqueue.v1
+                </code>
+                <small>Clones/implants added to notify pilots of clean pods during fleets</small>
             </Flexblock>
         </Flexblock>
     </Wrapper>
