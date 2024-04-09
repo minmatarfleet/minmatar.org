@@ -47,7 +47,7 @@ def create_character_assets(character: EveCharacter):
             include_children=True,
             wait_for_children=True,
         )
-        if eve_type.eve_market_group_id is None:
+        if eve_type.eve_group is None:
             logger.info(
                 "Skipping asset %s due to no market group", eve_type.name
             )
