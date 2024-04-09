@@ -91,27 +91,15 @@ def get_corporations(
             "type": corporation.type,
             "active": corporation.active,
         }
-        if (
-            corporation.alliance
-            and EveAlliance.objects.filter(
-                alliance_id=corporation.alliance.alliance_id
-            ).exists()
-        ):
+        if corporation.alliance:
             logger.info("Populating alliance details for %s", corporation.name)
-            alliance = EveAlliance.objects.get(
-                alliance_id=corporation.alliance.alliance_id
-            )
-            payload["alliance_id"] = alliance.alliance_id
-            payload["alliance_name"] = alliance.name
+            payload["alliance_id"] = corporation.alliance.alliance_id
+            payload["alliance_name"] = corporation.alliance.name
 
-        if (
-            corporation.faction
-            and EveFaction.objects.filter(id=corporation.faction_id).exists()
-        ):
+        if corporation.faction:
             logger.info("Populating faction details for %s", corporation.name)
-            faction = EveFaction.objects.get(id=corporation.faction_id)
-            payload["faction_id"] = faction.id
-            payload["faction_name"] = faction.name
+            payload["faction_id"] = corporation.faction.id
+            payload["faction_name"] = corporation.faction.name
 
         response.append(payload)
     logger.info("Finished processing corporations")
