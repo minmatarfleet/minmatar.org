@@ -11,10 +11,10 @@ CELERYBEAT_SCHEDULE = {
     },
     "eveonline_update_corporations": {
         "task": "eveonline.tasks.update_corporations",
-        "schedule": crontab(minute=30),
+        "schedule": crontab(hour="*/1"),
     },
     "eveonline_update_characters": {
         "task": "eveonline.tasks.update_characters",
-        "schedule": crontab(minute=30),
+        "schedule": crontab(hour="*/8"),
     },
 }

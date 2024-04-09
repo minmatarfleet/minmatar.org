@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 def update_characters():
     for character in EveCharacter.objects.all():
         logger.info("Updating character %s", character.character_id)
-        update_character_skills.apply_async(args=[character.character_id])
-        update_character_assets.apply_async(args=[character.character_id])
+        update_character_skills.apply_async(
+            args=[character.character_id], countdown=character.id % 1800
+        )
+        update_character_assets.apply_async(
+            args=[character.character_id], countdown=character.id % 1800
+        )
 
 
 @app.task
