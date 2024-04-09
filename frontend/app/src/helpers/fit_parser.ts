@@ -74,8 +74,6 @@ export async function parse_eft(fitting_eft: string) {
 
         let module_name:string = line.split(',')[0]
 
-        console.log(module_name)
-
         if (section === 'drones' || section === 'cargo') {
             let words:string[] = line.split(' ')
             const inline_amount_string:string = words.pop()
@@ -112,7 +110,6 @@ export async function parse_eft(fitting_eft: string) {
             } else {
                 const module:Module = await get_module_props(module_name)
 
-                console.log(section)
                 if (module && (SHIP_SLOTS[section] !== module.slot_name))
                     throw new Error(`Error parsing EFT: Module "${module_name}" is not ${SHIP_SLOTS[section]}`);
 

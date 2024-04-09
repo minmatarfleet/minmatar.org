@@ -2,7 +2,7 @@ import { db } from '@helpers/db';
 import { eq, and, or, sql } from 'drizzle-orm';
 import * as schema from '@/models/schema.ts';
 
-import type { ShipFittingCapabilities, ShipInfo } from '@dtypes/layout_components'
+import type { ShipFittingCapabilities, ShipInfo, ShipDNA } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
     console.log(`Requesting: db.get_ship_fitting_capabilities(${ship_name})`)
@@ -56,6 +56,8 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
 }
 
 export async function get_ship_info(ship_id:number) {
+    console.log(`Requesting: db.get_ship_info(${ship_id})`)
+
     const q = await db.select({
         groupName: schema.invGroups.groupName,
         typeName: schema.invTypes.typeName,
@@ -97,4 +99,32 @@ export async function get_ship_info(ship_id:number) {
     } else {
         return null
     }
+}
+
+export async function get_ship_graphics(ship_id:number) {
+    console.log(`Requesting: db.get_ship_dna(${ship_id})`)
+    
+    const q = await db.select({
+        sofFactionName: schema.eveGraphics.sofFactionName,
+        sofRaceName: schema.eveGraphics.sofRaceName,
+        sofHullName: schema.eveGraphics.sofHullName,
+    })
+    .from(schema.invTypes)
+    .innerJoin(
+        schema.eveGraphics,
+        eq(schema.invTypes.graphicId, schema.eveGraphics.graphicId),
+    )
+    .where(
+        eq(schema.invTypes.typeId, ship_id)
+    )
+    .limit(1)
+
+    if (q.length > 0) {
+        return {
+            model: q[0].sofHullName,
+            skin: q[0].sofFactionName,
+            race: q[0].sofRaceName,
+        } as ShipDNA
+    } else
+        return null
 }

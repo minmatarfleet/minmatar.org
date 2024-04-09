@@ -35,7 +35,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Battleship",
             "ship_name": "Vindicator",
-            "href": "/fitting/fits/adv-30-vindicator/"
+            "href": "/fitting/fits/adv-30-vindicator/",
+            "id": 1
         },
         {
             "image": "https://image.eveonline.com/Render/33472_256.png",
@@ -43,7 +44,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Battleship",
             "ship_name": "Nestor",
-            "href": "/fitting/fits/adv-30-nestor/"
+            "href": "/fitting/fits/adv-30-nestor/",
+            "id": 1
         },
         {
             "image": "https://image.eveonline.com/Render/11987_256.png",
@@ -51,7 +53,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Logistics",
             "ship_name": "Guardian",
-            "href": "/fitting/fits/adv-30-guardian/"
+            "href": "/fitting/fits/adv-30-guardian/",
+            "id": 1
         },
         {
             "image": "https://image.eveonline.com/Render/12017_256.png",
@@ -59,7 +62,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Heavy Interdiction Cruiser",
             "ship_name": "Devoter",
-            "href": "/fitting/fits/adv-30-devoter/"
+            "href": "/fitting/fits/adv-30-devoter/",
+            "id": 1
         },
         {
             "image": "https://image.eveonline.com/Render/17920_256.png",
@@ -67,7 +71,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Battleship",
             "ship_name": "Bhaalgorn",
-            "href": "/fitting/fits/adv-30-bhaalgorn/"
+            "href": "/fitting/fits/adv-30-bhaalgorn/",
+            "id": 1
         },
         {
             "image": "https://image.eveonline.com/Render/32311_256.png",
@@ -75,7 +80,8 @@
             "fitting_type": "ADV-30",
             "ship_type": "Battleship",
             "ship_name": "Typhoon Fleet Issue",
-            "href": "/fitting/fits/adv-30-typhoon-fleet-issue/"
+            "href": "/fitting/fits/adv-30-typhoon-fleet-issue/",
+            "id": 1
         }
     ],
     "support_fittings": {
@@ -87,7 +93,8 @@
                 "fitting_type": "ADV-30",
                 "ship_type": "Command Destroyer",
                 "ship_name": "Bifrost",
-                "href": "/fitting/fits/adv-30-bifrost/"
+                "href": "/fitting/fits/adv-30-bifrost/",
+                "id": 1
             },
             {
                 "image": "https://image.eveonline.com/Render/584_256.png",
@@ -95,7 +102,8 @@
                 "fitting_type": "NVY-30",
                 "ship_type": "Frigate",
                 "ship_name": "Griffin",
-                "href": "/fitting/fits/nvy-30-griffin/"
+                "href": "/fitting/fits/nvy-30-griffin/",
+                "id": 1
             },
             {
                 "image": "https://image.eveonline.com/Render/2161_256.png",
@@ -103,7 +111,8 @@
                 "fitting_type": "NVY-30",
                 "ship_type": "Frigate",
                 "ship_name": "Crucifier",
-                "href": "/fitting/fits/nvy-30-crucifier/"
+                "href": "/fitting/fits/nvy-30-crucifier/",
+                "id": 1
             },
             {
                 "image": "https://image.eveonline.com/Render/609_256.png",
@@ -111,7 +120,8 @@
                 "fitting_type": "NVY-30",
                 "ship_type": "Frigate",
                 "ship_name": "Maulus",
-                "href": "/fitting/fits/nvy-30-maulus/"
+                "href": "/fitting/fits/nvy-30-maulus/",
+                "id": 1
             },
             {
                 "image": "https://image.eveonline.com/Render/3766_256.png",
@@ -119,7 +129,8 @@
                 "fitting_type": "NVY-30",
                 "ship_type": "Frigate",
                 "ship_name": "Vigil",
-                "href": "/fitting/fits/nvy-30-vigil/"
+                "href": "/fitting/fits/nvy-30-vigil/",
+                "id": 1
             },
             {
                 "image": "https://image.eveonline.com/Render/37483_256.png",
@@ -127,7 +138,8 @@
                 "fitting_type": "ADV-30",
                 "ship_type": "Command Destroyer",
                 "ship_name": "Magus",
-                "href": "/fitting/fits/adv-30-backpack-magus/"
+                "href": "/fitting/fits/adv-30-backpack-magus/",
+                "id": 1
             }
         ]
     }

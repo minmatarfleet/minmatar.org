@@ -57,6 +57,9 @@
 </script>
 
 <script is:inline>
+    let weapon_firing_timer = null
+    let ccpwgl_context = null
+
     const tippy_options = {
         delay: [ 100, 200 ],
         arrow: true,
@@ -71,6 +74,7 @@
     }, { once: true })
 
     document.addEventListener('astro:before-preparation', () => {
+        clearInterval(weapon_firing_timer)
         document.querySelector('.loader').classList.add('active')
     })
 
@@ -78,6 +82,13 @@
         tippy('[data-tippy-content]', tippy_options)
         document.querySelector('.loader').classList.remove('active')
         htmx.process(document.body)
+
+        console.log(ccpwgl_context)
+        if (ccpwgl_context) {
+            console.log('Removing context')
+            console.log(ccpwgl_context.getExtension("WEBGL_lose_context").loseContext())
+            ccpwgl_context = null
+        }
     })
 </script>
 
@@ -99,3 +110,7 @@
         }
     }
 </script>
+
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl_int.min.js"></script>
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl.js"></script>
+<script is:inline type="text/javascript" src="/js/ccpwgl/fitting.js"></script>

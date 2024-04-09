@@ -608,5 +608,7 @@ export const ui = {
         'unregistered': 'Unregistered',
         'get_all_mains_alts_error': 'An error ocurred fetching all main characters info.',
         'alts': 'Alts',
+        'rotation_x': 'Rotation X',
+        'rotation_y': 'Rotation Y',
     },
 } as const;

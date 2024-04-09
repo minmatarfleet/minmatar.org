@@ -55,6 +55,7 @@ import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
+import Input from '@components/blocks/Input.astro';
 
 const page_title = fitting_parsed.name;
 ---
@@ -69,6 +70,16 @@ const page_title = fitting_parsed.name;
         }}
         fullscreen={true}
         wide={true}
+        x-data={`{
+            rotation_x: -0.565,
+            rotation_y: 0.208,
+            camera: null,
+            update() {
+                this.camera.rotationX = this.rotation_x
+                this.camera.rotationY = this.rotation_y
+            }
+        }`}
+        x-effect="update"
     >
         <canvas
             slot="cover"
@@ -82,7 +93,6 @@ const page_title = fitting_parsed.name;
 
                     let ship
                     let canvas
-                    let camera
                     let scene
 
                     canvas = document.getElementById('mainCanvas');
@@ -91,8 +101,9 @@ const page_title = fitting_parsed.name;
                     ccpwgl_context = canvas.getContext("webgl");
                     
                     camera = ccpwgl.createCamera(canvas, undefined, true);
-                    camera.rotationX = -0.552
-                    camera.rotationY = -0.196
+                    camera.rotationX = rotation_x
+                    camera.rotationY = rotation_y
+
                     camera.shift = 100.75
 
                     scene = ccpwgl.loadScene('res:/dx9/scene/wormholes/wormhole_class_00.red');
@@ -174,6 +185,17 @@ const page_title = fitting_parsed.name;
                     </FlexInline>
                     
                     <p>{fit_details.description}</p>
+                </Flexblock>
+
+                <Flexblock>
+                    <Flexblock gap='0'>
+                        <label for="doctrine">{t('rotation_x')}</label>
+                        <Input type="number" x-model="rotation_x" step="0.001" />
+                    </Flexblock>
+                    <Flexblock gap='0'>
+                        <label for="doctrine">{t('rotation_y')}</label>
+                        <Input type="number" x-model="rotation_y" step="0.001" />
+                    </Flexblock>
                 </Flexblock>
 
                 <Flexblock gap='var(--space-3xs)'>
