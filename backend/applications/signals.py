@@ -40,7 +40,7 @@ def eve_corporation_application_post_save(
         )
         message += f"Applying to: {instance.corporation.name}\n"
         message += f"Description: {instance.description}\n"
-        application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation.corporatoin_id}/{instance.id}"
+        application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation.corporation_id}/{instance.id}"
         application_url = settings.SITE_URL + reverse(
             "eveonline-corporations-applications-view",
             args=[instance.application.pk],
