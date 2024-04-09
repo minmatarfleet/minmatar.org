@@ -4,9 +4,12 @@ BASIC_SCOPES = [
     "esi-fleets.write_fleet.v1",
     "esi-assets.read_assets.v1",
     "esi-skills.read_skills.v1",
+    "esi-skills.read_skillqueue.v1",
     "esi-characters.read_loyalty.v1",
     "esi-killmails.read_killmails.v1",
     "esi-characters.read_fw_stats.v1",
+    "esi-clones.read_clones.v1",
+    "esi-clones.read_implants.v1",
 ]
 
 ADVANCED_SCOPES = [
