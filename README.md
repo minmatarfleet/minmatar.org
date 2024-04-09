@@ -28,6 +28,7 @@ You need to add the following,
   - Get the auth database password from BearThatCares
 3. Generate a self signed tls key that will be used for the reverse proxy. `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt`
   - these paths are the defaults in the compose file for mounting the tls certs. You can change these to be whatever you want.
+4. Fetch the eve static export `wget https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2`, unzip it using `bunzip2 sqlite-latest.sqlite.bz2`, and move it `mv sqlite-latest.sqlite ./frontend/app/src/data`
 4. Run `docker compose up -d` to create and start the containers. In the background this sets up the needed database users and database.
   - Append the `--build app` flag to the compose command to rebuild the image if you've made code changes.
 5. Navigate to https://localhost/api/ and you should also see the website (via the proxy)

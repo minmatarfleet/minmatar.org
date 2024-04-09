@@ -42,6 +42,8 @@ services:
             - frontend/.env
         ports:
             - "4321:4321"
+        volumes:
+            - "./frontend/app/src/data:/app/src/data"
 
     redis:
         image: redis:6.0.9-alpine
