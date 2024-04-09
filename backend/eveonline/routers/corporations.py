@@ -84,6 +84,7 @@ def get_corporations(
             corporations = EveCorporation.objects.all()
     response = []
     for corporation in corporations:
+        logger.info("Processing corporation %s", corporation.name)
         payload = {
             "corporation_id": corporation.corporation_id,
             "corporation_name": corporation.name,
@@ -96,6 +97,7 @@ def get_corporations(
                 alliance_id=corporation.alliance.alliance_id
             ).exists()
         ):
+            logger.info("Populating alliance details for %s", corporation.name)
             alliance = EveAlliance.objects.get(
                 alliance_id=corporation.alliance.alliance_id
             )
@@ -106,6 +108,7 @@ def get_corporations(
             corporation.faction
             and EveFaction.objects.filter(id=corporation.faction_id).exists()
         ):
+            logger.info("Populating faction details for %s", corporation.name)
             faction = EveFaction.objects.get(id=corporation.faction_id)
             payload["faction_id"] = faction.id
             payload["faction_name"] = faction.name
