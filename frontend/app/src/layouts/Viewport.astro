@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
 
 const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
@@ -66,6 +67,9 @@ const {
 } = Astro.props
 
 components.modal = components.modal ?? true
+
+const CHARACTER_FINDER_PARTIAL_URL = translatePath('/partials/character_finder_component')
+const MEMBER_FINDER_PARTIAL_URL = translatePath('/partials/member_finder_component')
 
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
@@ -160,11 +164,19 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		}
 
 		{(user) &&
-			<CharacterFinder transition:persist />
+			<div
+				transition:persist
+				hx-get={CHARACTER_FINDER_PARTIAL_URL}
+				hx-trigger="load"
+			/>
 		}
 
 		{(user_is_officer || user_is_director) &&
-			<MemberFinder transition:persist />
+			<div
+				transition:persist
+				hx-get={MEMBER_FINDER_PARTIAL_URL}
+				hx-trigger="load"
+			/>
 		}
 
 		<PageFinder transition:persist />
