@@ -37,6 +37,7 @@ export interface FitItem {
     ship_type:    string;
     ship_name:    string;
     href:         string;
+    id:           number;
 }
 
 export interface DoctrineItemObj {
@@ -583,4 +584,10 @@ export interface ShipInfo {
     type:    string;
     race:    string;
     meta:    string;
+}
+
+export interface ShipDNA {
+    model:  string;
+    skin:   string;
+    race:   string;
 }

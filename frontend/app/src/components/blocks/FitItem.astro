@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { get_item_icon_by_name } from '@helpers/eve_image_server';
 
@@ -50,7 +51,7 @@ const {
         </VerticalCenter>
 
         <VerticalCenter>
-            <Button href={fit.href}>
+            <Button href={translatePath(`/ships/fitting/redirect/${fit.id}`)}>
                 <MagnifierIcon slot="icon" />
                 {t('view_details')}
             </Button>
