@@ -110,24 +110,21 @@ class EveCorporation(models.Model):
     def active(self):
         if not self.ceo:
             return False
-        if Token.objects.filter(
-            character_id=self.ceo.character_id,
-            scopes__name="esi-contracts.read_corporation_contracts.v1",
-        ).exists():
-            required_scopes = set(CEO_SCOPES)
-            # check if has required scopes
-            scopes = Scope.objects.filter(
-                name__in=required_scopes,
-            )
-            # filter for a token with all required scopes
-            token_filter = Token.objects.filter(
-                character_id=self.ceo.character_id,
-            )
-            for scope in scopes:
-                token_filter = token_filter.filter(scopes=scope)
-            if token_filter.exists():
-                return True
-        return False
+
+        if not self.ceo.token:
+            return False
+
+        required_scopes = set(CEO_SCOPES)
+        token = self.ceo.token
+        required_scopes = Scope.objects.filter(
+            name__in=required_scopes,
+        )
+
+        for scope in required_scopes:
+            if scope not in token.scopes.all():
+                return False
+
+        return True
 
     def __str__(self):
         return str(self.name)
