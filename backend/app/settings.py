@@ -62,6 +62,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
+            "CONN_MAX_AGE": 3600,
             "NAME": os.environ.get("DB_NAME", "minmatar"),
             "USER": os.environ.get("DB_USER", "root"),
             "PASSWORD": os.environ.get("DB_PASSWORD", "example"),
