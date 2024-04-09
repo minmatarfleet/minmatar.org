@@ -66,10 +66,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         async ctrl_shift_f(e) {
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
                 show_characters_finder().then( (character_id) => {
+                    console.log(character_id)
                     if (!character_id)
                         return
 
-                    show_modal({
+                    show_persistent_modal({
                         partial: \`${translatePath('/partials/character_modal_component/')}?character_id=\${character_id}\`,
                     })
                 })

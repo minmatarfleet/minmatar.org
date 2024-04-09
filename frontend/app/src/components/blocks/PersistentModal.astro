@@ -1,0 +1,108 @@
+---
+import { getLangFromUrl } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+
+import Dialog from '@components/blocks/Dialog.astro';
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+---
+
+<div
+    class="[ persistent-modal ]"
+>
+    <Dialog
+        x-data={`{
+            close_dialog() {
+                if (!persistent_modal_open)
+                    return
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.persistent-modal-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
+        x-bind:class="(persistent_modal_open ? 'open' : '')"
+        x-bind:aria-hidden="persistent_modal_open == false"
+        x-bind:inert="persistent_modal_open == false"
+        breakout={true}
+        aria-describedby="persistent-modal-description"
+        class="[ w-full max-w-[770px] ]"
+        thin={true}
+    >
+        <div
+            id="persistent-modal-description"
+            class="[ persistent-modal-content ]"
+            x-html="persistent_modal_content"
+            x-bind:hx-get="persistent_modal_partial && !persistent_modal_partial_params ? persistent_modal_partial : false"
+            x-bind:hx-post="persistent_modal_partial && persistent_modal_partial_params ? persistent_modal_partial : false"
+            x-bind:hx-vals="JSON.stringify({ data: JSON.stringify(persistent_modal_partial_params) })"
+            x-bind:hx-trigger="persistent_modal_partial ? 'intersect' : false"
+            x-bind:hx-swap="persistent_modal_partial ? 'innerHTML transition:true' : false"
+            hx-target="#persistent-modal-description"
+            hx-indicator=".loader"
+        />
+        <button persistent-modal-action="cancel"><TrashIcon /></button>
+    </Dialog>
+
+    <div
+        class="persistent-modal-backdrop"
+        x-bind:class="{ open: persistent_modal_open }"
+        persistent-modal-action="cancel"
+    />
+</div>
+
+<style lang="scss">
+    :global([persistent-modal-action] *) {
+        pointer-events: none !important;
+    }
+
+    :global(.persistent_modal .persistent-modal-content p) {
+        font-size: var(--step--1);
+    }
+
+    .persistent-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+    
+    button {
+        border: none;
+        position: absolute;
+        right: 10px;
+        top: 3px;
+        display: flex;
+        background-color: transparent;
+        color: var(--highlight);
+        z-index: var(--dialog-close-z-index);
+        cursor: pointer;
+        padding: 6px 4px 20px 27px;
+
+        &:focus-visible {
+            outline: none;
+        }
+    }
+
+    :global([persistent-modal-action="cancel"] svg) {
+        transition: var(--fast-transition);
+        width: 12px;
+    }
+
+    :global([persistent-modal-action="cancel"]:focus-visible svg) {
+        transform: scale(1.5);
+    }
+</style>

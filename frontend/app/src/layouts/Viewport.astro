@@ -27,10 +27,9 @@ import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
+import PersistentModal from '@components/blocks/PersistentModal.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
-import CharacterFinder from '@components/blocks/CharacterFinder.astro';
-import MemberFinder from '@components/blocks/MemberFinder.astro';
 import PageFinder from '@components/blocks/PageFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
@@ -38,6 +37,7 @@ import {
 	AlertDialogXData,
 	ConfirmDialogXData,
 	ModalXData,
+	PersistentModalXData,
 	PersonaFinderXData,
 	PageFinderXData,
 	CharacterFinderXData,
@@ -79,7 +79,12 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html
+	lang="en"
+	x-data={`{
+		${PersistentModalXData}
+	}`}
+>
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}
@@ -113,6 +118,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${components?.personas_finder ? PersonaFinderXData : ''}
 			${components?.corporation_finder ? CorporationFinderXData : ''}
 			${components?.alliance_finder ? AllianceFinderXData : ''}
+			${components?.modal ? ModalXData : ''}
 			${user ? CharacterFinderXData : ''}
 			${user_is_officer || user_is_director ? MemberFinderXData : ''}
             ${PageFinderXData}
@@ -128,6 +134,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 					components?.alert_dialog ? 'alert_dialog_open' : false,
 					components?.confirm_dialog ? 'confirm_dialog_open' : false,
 					components?.modal ? 'modal_open' : false,
+					'persistent_modal_open',
 					components?.personas_finder ? 'personas_finder_open' : false,
 					components?.corporation_finder ? 'corporations_finder_open' : false,
 					components?.alliance_finder ? 'alliances_finder_open' : false,
@@ -153,6 +160,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		{components?.modal &&
 			<Modal />
 		}
+		<div transition:persist>
+			<PersistentModal />
+		</div>
 		{components?.personas_finder &&
 			<PersonaFinder />
 		}
@@ -168,6 +178,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 				transition:persist
 				hx-get={CHARACTER_FINDER_PARTIAL_URL}
 				hx-trigger="load"
+				hx-indicator=".loader"
 			/>
 		}
 
@@ -176,6 +187,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 				transition:persist
 				hx-get={MEMBER_FINDER_PARTIAL_URL}
 				hx-trigger="load"
+				hx-indicator=".loader"
 			/>
 		}
 
