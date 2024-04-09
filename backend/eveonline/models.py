@@ -2,7 +2,7 @@ import logging
 
 from django.db import models
 from esi.clients import EsiClientProvider
-from esi.models import Token
+from esi.models import Token, Scope
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
@@ -114,16 +114,18 @@ class EveCorporation(models.Model):
             character_id=self.ceo.character_id,
             scopes__name="esi-contracts.read_corporation_contracts.v1",
         ).exists():
-            # check if has required scopes
-            ceo_token = Token.objects.filter(
-                character_id=self.ceo.character_id,
-                scopes__name="esi-contracts.read_corporation_contracts.v1",
-            ).first()
-            token_scopes = set(
-                [scope.name for scope in ceo_token.scopes.all()]
-            )
             required_scopes = set(CEO_SCOPES)
-            if token_scopes.issuperset(required_scopes):
+            # check if has required scopes
+            scopes = Scope.objects.filter(
+                name__in=required_scopes,
+            )
+            # filter for a token with all required scopes
+            token_filter = Token.objects.filter(
+                character_id=self.ceo.character_id,
+            )
+            for scope in scopes:
+                token_filter = token_filter.filter(scopes=scope)
+            if token_filter.exists():
                 return True
         return False
 
