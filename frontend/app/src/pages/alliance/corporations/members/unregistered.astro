@@ -193,7 +193,7 @@ const page_title = t('corporations.members.unregistered.page_title')
                 {t('mains')}
                 <NotificationBadge
                     color='fleet-yellow'
-                    x-text="MAIN_COUNT < 100 ? MAIN_COUNT : '+99'"
+                    x-text="MAIN_COUNT"
                     number={MAIN_COUNT}
                 />
             </Button>
@@ -205,7 +205,7 @@ const page_title = t('corporations.members.unregistered.page_title')
                 {t('members')}
                 <NotificationBadge
                     color='fleet-yellow'
-                    x-text="ALLIANCE_MEMBERS_COUNT < 100 ? ALLIANCE_MEMBERS_COUNT : '+99'"
+                    x-text="ALLIANCE_MEMBERS_COUNT"
                     number={TOTAL_MEMBERS}
                 />
             </Button>
@@ -217,7 +217,7 @@ const page_title = t('corporations.members.unregistered.page_title')
             >
                 {t('unregistered')}
                 <NotificationBadge
-                    x-text="UNREGISTERED_COUNT < 100 ? UNREGISTERED_COUNT : '+99'"
+                    x-text="UNREGISTERED_COUNT"
                     number={UNREGISTERED_COUNT}
                 />
             </Button>
