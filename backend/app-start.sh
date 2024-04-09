@@ -7,4 +7,4 @@ echo "Starting App."
 python3 manage.py migrate
 
 # run the app
-python3 -m uvicorn app.asgi:application --host 0.0.0.0 --port 8000
+python3 -m uvicorn app.asgi:application --host 0.0.0.0 --port 8000 --workers 8
