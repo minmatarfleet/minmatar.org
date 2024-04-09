@@ -69,8 +69,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     if (!character_id)
                         return
 
-                    show_modal({
-                        partial: \`${translatePath('/partials/member_modal_component/')}?character_id=\${character_id}\`,
+                    show_persistent_modal({
+                        partial: \`${translatePath('/partials/character_modal_component/')}?character_id=\${character_id}\`,
                     })
                 })
             }

@@ -205,6 +205,72 @@ export const ModalXData = `
             body.addEventListener('click', listener);
         });
     },`
+
+export const PersistentModalXData = `
+    persistent_modal_open: false,
+    persistent_modal_content: '',
+    persistent_modal_partial: '',
+    persistent_modal_partial_params: '',
+    async show_persistent_modal(args) {
+        const defaults =  {
+            content: '',
+            partial: '',
+            return_on_accept: true,
+        }
+
+        const properties = {...defaults, ...args}
+
+        if (this.persistent_modal_partial != properties.partial) {
+            this.persistent_modal_content = ''
+            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
+        }
+
+        if (properties.partial_params && (JSON.stringify(properties.partial_params) != JSON.stringify(this.persistent_modal_partial_params))) {
+            this.persistent_modal_content = ''
+            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
+        }
+
+        if (properties.partial) {
+            this.persistent_modal_content = '<div class="[ rifter-modal ]">'+this.rifter_animation+'</div>'
+        } else
+            this.persistent_modal_content = properties.content
+
+        this.persistent_modal_return_on_accept = properties.return_on_accept
+        this.persistent_modal_partial = properties.partial
+
+        if (properties.partial_params)
+            this.persistent_modal_partial_params = properties.partial_params
+        else
+            properties.partial_params = null
+
+        this.persistent_modal_open = true
+
+        setTimeout(function () {
+            htmx.process(document.querySelector('.persistent-modal'))
+        })
+
+        return new Promise((resolve) => {
+            this.persistent_modal_close().then((result) => {
+                this.persistent_modal_open = false
+                resolve(result.action == 'accept' ? this.persistent_modal_return_on_accept : false)
+            })
+        })
+    },
+    persistent_modal_close() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('persistent-modal-action')) {
+                    body.removeEventListener('click', listener);
+                    resolve({
+                        action: event.target.getAttribute('persistent-modal-action')
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
     
 export const PersonaFinderXData = `
     personas_finder_open: false,
