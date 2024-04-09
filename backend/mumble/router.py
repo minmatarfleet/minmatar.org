@@ -26,7 +26,7 @@ class ErrorResponse(BaseModel):
     auth=AuthBearer(),
     response={200: MumbleConnectionInformationResponse, 404: ErrorResponse},
 )
-def get_mumble_connection(request):
+async def get_mumble_connection(request):
     if not MumbleAccess.objects.filter(user=request.user).exists():
         return 404, {"detail": "Mumble access not found."}
 

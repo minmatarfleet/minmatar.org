@@ -30,7 +30,7 @@ class ErrorResponse(BaseModel):
     description="Get the groups of the current user",
     deprecated=True,
 )
-def get_current_groups(request):
+async def get_current_groups(request):
     groups = Group.objects.filter(user__id=request.user.id)
     response = []
     for group in groups:
@@ -44,7 +44,7 @@ def get_current_groups(request):
     auth=AuthBearer(),
     deprecated=True,
 )
-def get_available_groups(request):
+async def get_available_groups(request):
     available_groups = get_requestable_groups_for_user(request.user)
     response = []
 
@@ -56,7 +56,7 @@ def get_available_groups(request):
 @router.get(
     "/managed", response=List[GroupSchema], auth=AuthBearer(), deprecated=True
 )
-def get_managed_groups(request):
+async def get_managed_groups(request):
     groups = RequestableGroup.objects.filter(
         group_managers__id=request.user.id
     )
@@ -73,7 +73,7 @@ def get_managed_groups(request):
     auth=AuthBearer(),
     deprecated=True,
 )
-def get_group_by_id(request, group_id: int):
+async def get_group_by_id(request, group_id: int):
     group = get_group(group_id, request.user.id)
     if not group:
         return 404, {"detail": "Group does not exist."}
@@ -99,7 +99,7 @@ class GroupRequestResponse(BaseModel):
     },
     deprecated=True,
 )
-def get_group_requests(request, group_id: int):
+async def get_group_requests(request, group_id: int):
     if not Group.objects.filter(id=group_id).exists():
         return 404, {"detail": "Group does not exist."}
     if not RequestableGroup.objects.filter(group__id=group_id).exists():
@@ -142,7 +142,7 @@ def get_group_requests(request, group_id: int):
     response={201: GroupRequestResponse, 400: ErrorResponse},
     deprecated=True,
 )
-def create_group_request(request, group_id: int):
+async def create_group_request(request, group_id: int):
     group = Group.objects.get(id=group_id)
     if GroupRequest.objects.filter(user=request.user, group=group).exists():
         return 400, {"detail": "You have already requested this group."}
@@ -177,7 +177,7 @@ def create_group_request(request, group_id: int):
     auth=AuthBearer(),
     deprecated=True,
 )
-def approve_group_request(request, group_id: int, request_id: int):
+async def approve_group_request(request, group_id: int, request_id: int):
     if not Group.objects.filter(id=group_id).exists():
         return 404, {"detail": "Group does not exist."}
     group = Group.objects.get(id=group_id)
@@ -223,7 +223,7 @@ def approve_group_request(request, group_id: int, request_id: int):
     auth=AuthBearer(),
     deprecated=True,
 )
-def deny_group_request(request, group_id: int, request_id: int):
+async def deny_group_request(request, group_id: int, request_id: int):
     if not Group.objects.filter(id=group_id).exists():
         return 404, {"detail": "Group does not exist."}
     group = Group.objects.get(id=group_id)
@@ -263,7 +263,7 @@ def deny_group_request(request, group_id: int, request_id: int):
     auth=AuthBearer(),
     deprecated=True,
 )
-def get_group_users(request, group_id: int):
+async def get_group_users(request, group_id: int):
     if not Group.objects.filter(id=group_id).exists():
         return 404, {"detail": "Group does not exist."}
     group = Group.objects.get(id=group_id)
@@ -290,7 +290,7 @@ def get_group_users(request, group_id: int):
     auth=AuthBearer(),
     deprecated=True,
 )
-def remove_user_from_group(request, group_id: int, user_id: int):
+async def remove_user_from_group(request, group_id: int, user_id: int):
     if not Group.objects.filter(id=group_id).exists():
         return 404, {"detail": "Group does not exist."}
     group = Group.objects.get(id=group_id)

@@ -45,7 +45,7 @@ class ErrorResponse(BaseModel):
     auth=AuthBearer(),
     response=List[CorporationApplicationResponse],
 )
-def get_corporation_applications(request, corporation_id: int):
+async def get_corporation_applications(request, corporation_id: int):
     applications = EveCorporationApplication.objects.filter(
         corporation__corporation_id=corporation_id
     )
@@ -68,7 +68,7 @@ def get_corporation_applications(request, corporation_id: int):
     auth=AuthBearer(),
     response={200: CorporationApplicationResponse, 404: ErrorResponse},
 )
-def create_corporation_application(
+async def create_corporation_application(
     request, corporation_id: int, payload: CorporationApplicationRequest
 ):
     corporation = EveCorporation.objects.filter(
@@ -96,7 +96,7 @@ def create_corporation_application(
     auth=AuthBearer(),
     response=CorporationApplicationDetailResponse,
 )
-def get_corporation_application_by_id(
+async def get_corporation_application_by_id(
     request, corporation_id: int, application_id: int
 ):
     application = EveCorporationApplication.objects.get(
@@ -132,7 +132,7 @@ def get_corporation_application_by_id(
         403: ErrorResponse,
     },
 )
-def accept_corporation_application(
+async def accept_corporation_application(
     request, corporation_id: int, application_id: int
 ):
     if not request.user.has_perm(
@@ -164,7 +164,7 @@ def accept_corporation_application(
         403: ErrorResponse,
     },
 )
-def reject_corporation_application(
+async def reject_corporation_application(
     request, corporation_id: int, application_id: int
 ):
     if not request.user.has_perm(

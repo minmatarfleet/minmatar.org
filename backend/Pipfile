@@ -20,6 +20,7 @@ backoff = "*"
 django-ninja = "*"
 pyjwt = "*"
 whitenoise = "*"
+gunicorn = "*"
 
 [dev-packages]
 pylint = "*"
