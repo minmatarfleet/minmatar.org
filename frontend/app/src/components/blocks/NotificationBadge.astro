@@ -17,7 +17,7 @@ const badge_background_color = `var(--${color})`;
 const badge_color = (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)')
 ---
 
-<span class="[ badge ]" {...attributes}>{number < 100 ? number : '+99'}</span>
+<span class="[ badge ]" {...attributes}>{number}</span>
 
 <style lang="scss" define:vars={{ badge_background_color, badge_color }}>
     .badge {
@@ -26,7 +26,6 @@ const badge_color = (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--flee
         align-items: center;
         width: 1.2rem;
         height: 1.2rem;
-        border-radius: 50%;
         font-size: var(--step--2);
         font-family: var(--badge-font);
         color: var(--badge_color);
