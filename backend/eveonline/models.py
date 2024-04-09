@@ -115,10 +115,10 @@ class EveCorporation(models.Model):
             scopes__name="esi-contracts.read_corporation_contracts.v1",
         ).exists():
             # check if has required scopes
-            ceo_token = Token.objects.get(
+            ceo_token = Token.objects.filter(
                 character_id=self.ceo.character_id,
                 scopes__name="esi-contracts.read_corporation_contracts.v1",
-            )
+            ).first()
             token_scopes = set(
                 [scope.name for scope in ceo_token.scopes.all()]
             )
