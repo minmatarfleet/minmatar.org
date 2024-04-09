@@ -114,6 +114,7 @@ def get_corporations(
             payload["faction_name"] = faction.name
 
         response.append(payload)
+    logger.info("Finished processing corporations")
     return response
 
 
