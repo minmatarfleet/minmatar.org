@@ -30,7 +30,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 >
     {mains.length > 0 &&
         <Flexblock class="[ correct-gaps ]">
-            <p x-show="total_alts_filtered == 0" style="display: none;">{t('no_alts')}</p>
+            <p x-show="(character_name !== '' || main_filter !== '-1') && total_alts_filtered == 0" style="display: none;">{t('no_characters')}</p>
             {mains.map( (main) => 
                 <MainAltsBlock main={main} />
             )}
@@ -40,7 +40,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     {mains.length == 0 &&
         <slot>
             <TextBox>
-                <p>{t('no_alts')}</p>
+                <p>{t('no_characters')}</p>
             </TextBox>
         </slot>
     }
