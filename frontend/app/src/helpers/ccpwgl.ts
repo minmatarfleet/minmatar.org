@@ -1,11 +1,7 @@
 import type { ShipInfo } from '@dtypes/layout_components'
-import models from '@/data/ccpwgl_object_models.json';
-import amarr_t2_skins from '@/data/amarr_t2_skins.json';
-import caldari_t2_skins from '@/data/caldari_t2_skins.json';
-import gallente_t2_skins from '@/data/gallente_t2_skins.json';
-import minmatar_t2_skins from '@/data/minmatar_t2_skins.json';
-import skins from '@/data/skins.json';
-import faction_ships from '@/data/faction_ships.json';
+import { get_ship_graphics, get_ship_info } from '@helpers/sde/ships'
+import { get_item_id } from '@helpers/sde/items'
+import skin_translation from '@/data/skin_translation.json'
 
 export const parse_faction_ship_name = (ship_info:ShipInfo) => {
     const FACTION_SUFIX = {
@@ -18,62 +14,28 @@ export const parse_faction_ship_name = (ship_info:ShipInfo) => {
     return ship_info.name.split(FACTION_SUFIX[ship_info.race] ?? '')[0].trim()
 }
 
-export const get_ship_dna = (ship_info:ShipInfo) => {
-    const SKIN_SUFIX = {
-        'Tech I': 'base',
-        'Faction': 'navy',
-        'Tech II': 'story',
-    }
+export async function get_ship_dna(ship_id:number) {
+    const ship_info = await get_ship_info(ship_id)
 
-    let ship_name = ship_info.name
-    console.log(ship_name)
-
-    let skin
-    switch (ship_info.meta) {
-        case 'Tech I':
-        case 'Faction':
-            if (faction_ships[ship_name]) {
-                ship_info.race = faction_ships[ship_name].race
-                ship_info.meta = 'Tech I'
-                skin = faction_ships[ship_name].skin ?? null
-            } else {
-                skin = ship_info.race.toLowerCase().concat(SKIN_SUFIX[ship_info.meta])
-            }
-            
-            break;
-
-        case 'Tech II':
-            switch (ship_info.race) {
-                case 'Amarr':
-                    skin = amarr_t2_skins[ship_name] ?? null
-                    break;
-                case 'Caldari':
-                    skin = caldari_t2_skins[ship_name] ?? null
-                    break;
-                case 'Gallente':
-                    skin = gallente_t2_skins[ship_name] ?? null
-                    break;
-                case 'Minmatar':
-                    skin = minmatar_t2_skins[ship_name] ?? null
-                    break;
-            }
-            skin = skins[skin] ?? null
-
-            break;
-    }
-
-    const race = ship_info.race.toLowerCase()
+    let ship_graphics = await get_ship_graphics(ship_id)
 
     if (ship_info.meta === 'Faction')
-        ship_name = parse_faction_ship_name(ship_info)
+        ship_graphics.model = await get_navy_ship_model(ship_info)
 
-    const model = models[ship_name]
+    console.log(skin_translation)
+    console.log(ship_graphics.skin)
+    ship_graphics.skin = skin_translation[ship_graphics.skin] ?? ship_graphics.skin
 
-    console.log(model)
-    console.log(skin)
-    console.log(race)
-    if (!model || !skin || !race)
+    if (!ship_graphics.model || !ship_graphics.skin || !ship_graphics.race)
         return null
 
-    return `${model}:${skin}:${race}`
+    return `${ship_graphics.model}:${ship_graphics.skin}:${ship_graphics.race}`
+}
+
+export async function get_navy_ship_model(ship_info:ShipInfo) {
+    const base_ship_name = parse_faction_ship_name(ship_info)
+    const base_ship_id = await get_item_id(base_ship_name)
+    const ship_graphics = await get_ship_graphics(base_ship_id)
+
+    return ship_graphics.model
 }
