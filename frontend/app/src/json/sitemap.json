@@ -95,13 +95,22 @@
         }
     },
     {
+        "slug": "corporations.applications.records",
+        "path": "/alliance/corporations/applications/records/",
+        "description": "page_finder.corporations.applications.records.description",
+        "publish": true,
+        "permissions" : {
+            "user": [ "auth.change_evecorporationapplication" ]
+        }
+    },
+    {
         "slug": "corporations.members.mains",
         "path": "/alliance/corporations/members/mains",
         "description": "page_finder.corporations.members.description",
         "publish": true,
         "keywords": [ "corporations", "alts" ],
         "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
+            "user": [ "eveonline.view_evecorporation" ]
         }
     },
     {
@@ -111,7 +120,7 @@
         "publish": true,
         "keywords": [ "corporations" ],
         "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
+            "user": [ "eveonline.view_evecorporation" ]
         }
     },
     {
@@ -121,16 +130,7 @@
         "publish": true,
         "keywords": [ "corporations" ],
         "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
-        }
-    },
-    {
-        "slug": "corporations.applications.records",
-        "path": "/alliance/corporations/applications/records/",
-        "description": "page_finder.corporations.applications.records.description",
-        "publish": true,
-        "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
+            "user": [ "eveonline.view_evecorporation" ]
         }
     },
     {
