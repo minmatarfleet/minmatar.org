@@ -125,5 +125,31 @@ def update_corporation(corporation_id):
     else:
         corporation.faction = None
         logger.info("Corporation %s has no faction", corporation.name)
+    # fetch and set members if active
+    if corporation.active and (
+        corporation.type == "alliance" or corporation.type == "associate"
+    ):
+        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        token = Token.objects.filter(
+            character_id=corporation.ceo.character_id,
+            scopes__name__in=required_scopes,
+        ).first()
+        logger.info("Updating corporation members for %s", corporation.name)
+        esi_members = (
+            esi.client.Corporation.get_corporations_corporation_id_members(
+                corporation_id=corporation_id,
+                token=token.valid_access_token(),
+            ).results()
+        )
+        for member_id in esi_members:
+            if not EveCharacter.objects.filter(
+                character_id=member_id
+            ).exists():
+                logger.info(
+                    "Creating character %s for corporation %s",
+                    member_id,
+                    corporation.name,
+                )
+                EveCharacter.objects.create(character_id=member_id)
 
     corporation.save()
