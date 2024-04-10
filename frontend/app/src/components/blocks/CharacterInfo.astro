@@ -106,7 +106,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                 class="[ items-center ]"
             >
                 <picture>
-                    <img width="192" height="192" src={get_player_icon(character_id, 256)} />
+                    <img loading="lazy" width="192" height="192" src={get_player_icon(character_id, 256)} />
                 </picture>
                 <div class="[ fluid-fixed-l ]" class="[ w-full ]" style='--fluid-fixed--width: 32px'>
                     <VerticalCenter>

@@ -28,7 +28,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
     class="[ asset-item ]"
 >
     <picture>
-        <img src={get_item_icon(asset.id)} width="64" height="64" alt={`${asset.name} ${t('icon').toLowerCase()}`} />
+        <img loading="lazy" src={get_item_icon(asset.id)} width="64" height="64" alt={`${asset.name} ${t('icon').toLowerCase()}`} />
     </picture>
     <FlexInline justification='space-between'>
         <VerticalCenter>

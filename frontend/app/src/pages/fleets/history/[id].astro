@@ -78,7 +78,7 @@ const page_title = `${t('fleet')} ${fleet.name}`;
                         <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
                             <h4>{t('fleet_commander')}</h4>
                             <FixedFluid width='32px' gap='var(--space-3xs)' class="[ items-center ]">
-                                <img src={fleet.fleet_commander_portrait} width="32" height="32" />
+                                <img loading="lazy" src={fleet.fleet_commander_portrait} width="32" height="32" />
                                 <p>{fleet.fleet_commander_name}</p>
                             </FixedFluid>
                         </Flexblock>

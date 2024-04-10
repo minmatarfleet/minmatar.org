@@ -51,7 +51,7 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
                 width='340px'
             >
                 <picture>
-                    <img src={get_item_icon(ship_slot.id)} height="64" width="64" />
+                    <img loading="lazy" src={get_item_icon(ship_slot.id)} height="64" width="64" />
                 </picture>
             </Tippy>
         }

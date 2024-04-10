@@ -53,7 +53,7 @@ interface Props {
                     >
                         <FixedFluid width='64px'>
                             <picture>
-                                <img src={get_alliance_logo(alliance.alliance_id, 64)} height="64" width="64" alt={`${alliance.name} ${t('profile_picture')}`} />
+                                <img loading="lazy" src={get_alliance_logo(alliance.alliance_id, 64)} height="64" width="64" alt={`${alliance.name} ${t('profile_picture')}`} />
                             </picture>
                             <VerticalCenter>
                                 <Flexblock gap='0' class="[ items-start ]">

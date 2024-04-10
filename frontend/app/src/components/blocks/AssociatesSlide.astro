@@ -46,7 +46,7 @@ import Wrapper from '@components/compositions/Wrapper.astro'
             <VerticalCenter>
                 <FixedFluid width='64px' class="[ items-center w-full ]">
                     <picture class="[ border ]">
-                        <img src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64)} width="64" height="64" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
+                        <img loading="lazy" src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64)} width="64" height="64" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
                     </picture>
                     <h2>{t('minmatar_fleet_associates')}</h2>
                 </FixedFluid>

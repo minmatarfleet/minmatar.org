@@ -25,7 +25,7 @@ const portrait = primary_pilot_avatar ?? (Astro.cookies.has('avatar') ? Astro.co
 ---
 
 <a href={href} class:list={[ { active: active } ]}>
-    <img
+    <img loading="lazy"
         class="confetti-image"
         src={portrait}
         width="48"

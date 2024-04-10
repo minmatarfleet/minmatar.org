@@ -32,7 +32,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     <slot name="picture">
         <picture class:list={{ border: border }}>
             {image &&
-                <img src={image} width={size} height={size} />
+                <img loading="lazy" src={image} width={size} height={size} />
             }
         </picture>
     </slot>

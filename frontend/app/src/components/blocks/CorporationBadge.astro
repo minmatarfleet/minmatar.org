@@ -46,7 +46,7 @@ const gap = size === 'sm' ? 'var(--space-2xs)' : 'var(--space-s)'
     class="[ items-center ]"
 >
     <picture class:list={{ border: border }}>
-        <img src={get_corporation_logo(corporation.id, logo_size)} width={logo_size} height={logo_size} />
+        <img loading="lazy" src={get_corporation_logo(corporation.id, logo_size)} width={logo_size} height={logo_size} />
     </picture>
     <Flexblock gap='0' class="[ w-full ]">
         {size == 'lg' ?

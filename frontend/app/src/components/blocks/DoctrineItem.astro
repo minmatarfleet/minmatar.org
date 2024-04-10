@@ -40,7 +40,7 @@ const {
         {doctrine.fits.map((fit) => 
             <a role="listitem" href={fit.href}>
                 <Picture64 role="listitem" text={fit.name}>
-                    <img class="[ w-full confetti-image ]" src={get_item_icon_by_name(fit.alt)} alt={fit.alt} height="64" width="64" />
+                    <img loading="lazy" class="[ w-full confetti-image ]" src={get_item_icon_by_name(fit.alt)} alt={fit.alt} height="64" width="64" />
                 </Picture64>
             </a>
         )}

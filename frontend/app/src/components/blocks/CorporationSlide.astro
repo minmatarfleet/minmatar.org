@@ -53,7 +53,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
             <VerticalCenter>
                 <FixedFluid width='64px' class="[ items-center w-full ]">
                     <picture class="[ border ]">
-                        <img src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
+                        <img loading="lazy" src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
                     </picture>
                     <h2>{corporation.corporation_name}</h2>
                 </FixedFluid>

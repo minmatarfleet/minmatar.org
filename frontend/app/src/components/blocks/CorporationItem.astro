@@ -39,7 +39,7 @@ import CorporationStatus from "@components/blocks/CorporationStatus.astro";
     x-init="corporation_item_init()"
 >
     <picture class="[ border ]">
-        <img src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
+        <img loading="lazy" src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
     </picture>
     <FlexInline justification='space-between' class="[ items-center ]">
         <Flexblock gap='0' class="[ grow ]">
@@ -53,7 +53,7 @@ import CorporationStatus from "@components/blocks/CorporationStatus.astro";
                     gap='var(--space-3xs)'
                 >
                     <picture>
-                        <img src={get_alliance_logo(corporation.alliance_id)} width="24" height="24" alt={`${corporation.alliance_name} ${t('alliance_logo')}`} />
+                        <img loading="lazy" src={get_alliance_logo(corporation.alliance_id)} width="24" height="24" alt={`${corporation.alliance_name} ${t('alliance_logo')}`} />
                     </picture>
                     <span>
                         <small>
