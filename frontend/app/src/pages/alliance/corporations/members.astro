@@ -192,7 +192,7 @@ const page_title = t('corporations.members.page_title')
                 <NotificationBadge
                     color='fleet-yellow'
                     x-text="MAIN_COUNT"
-                    number={MAIN_COUNT}
+                    number={MAIN_COUNT ?? 0}
                 />
             </Button>
 
@@ -204,7 +204,7 @@ const page_title = t('corporations.members.page_title')
                 {t('members')}
                 <NotificationBadge
                     x-text="ALLIANCE_MEMBERS_COUNT"
-                    number={TOTAL_MEMBERS}
+                    number={TOTAL_MEMBERS ?? 0}
                 />
             </Button>
 
@@ -216,7 +216,7 @@ const page_title = t('corporations.members.page_title')
                 <NotificationBadge
                     color='fleet-yellow'
                     x-text="UNREGISTERED_COUNT"
-                    number={UNREGISTERED_COUNT}
+                    number={UNREGISTERED_COUNT ?? 0}
                 />
             </Button>
         </FlexInline>

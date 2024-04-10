@@ -154,7 +154,7 @@ const page_title = t('corporations.members.mains.page_title')
             main_filter: '-1',
             filter() {
                 console.log(this.character_name)
-                if (this.character_name === '' && this.main_filter === '-1') {
+                if (this.character_name === '') {
                     this.mains_filtered = this.mains_unfiltered
                     this.mains_filtered_alts_count = ${JSON.stringify(MAINS_ALTS_COUNT)}
                     this.total_alts_filtered = this.total_alts_unfiltered
@@ -166,13 +166,13 @@ const page_title = t('corporations.members.mains.page_title')
                 this.total_alts_filtered = 0
 
                 this.mains_alts.forEach( (main) => {
-                    if (this.main_filter !== '-1' && parseInt(this.main_filter) !== main.character_id) {
-                        this.mains_filtered[main.character_id] = []
-                        this.mains_filtered_members_count[main.character_id] = 0
-                        return true
-                    }
+                    let alts
 
-                    const alts = main.alts.filter( (alt) => alt.character_name.toLowerCase().includes(this.character_name.toLowerCase()) )
+                    if (main.character_name.toLowerCase().includes(this.character_name.toLowerCase())) {
+                        alts = main.alts
+                        this.mains_filtered[main.character_id] = alts
+                    } else
+                        alts = main.alts.filter( (alt) => alt.character_name.toLowerCase().includes(this.character_name.toLowerCase()) )
                     
                     if (alts.length > 0) {
                         this.total_alts_filtered += alts.length
@@ -195,19 +195,6 @@ const page_title = t('corporations.members.mains.page_title')
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
-                
-                <div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="main_filter"
-                        width='280px'
-                        x-on:change="filter()"
-                    >
-                        <option selected value="-1">{t('mains')}</option>
-                        <template x-for="main in mains_options">
-                            <option x-bind:value="main.value" x-text="main.label" />
-                        </template>
-                    </Select>
-                </div>
             </FlexInline>
         </FlexInline>
 
@@ -220,7 +207,7 @@ const page_title = t('corporations.members.mains.page_title')
                 {t('mains')}
                 <NotificationBadge
                     x-text="MAIN_COUNT"
-                    number={MAIN_COUNT}
+                    number={MAIN_COUNT ?? 0}
                 />
             </Button>
 
@@ -232,7 +219,7 @@ const page_title = t('corporations.members.mains.page_title')
                 <NotificationBadge
                     color='fleet-yellow'
                     x-text="ALLIANCE_MEMBERS_COUNT"
-                    number={TOTAL_ALTS}
+                    number={TOTAL_ALTS ?? 0}
                 />
             </Button>
 
@@ -244,7 +231,7 @@ const page_title = t('corporations.members.mains.page_title')
                 <NotificationBadge
                     color='fleet-yellow'
                     x-text="UNREGISTERED_COUNT"
-                    number={UNREGISTERED_COUNT}
+                    number={UNREGISTERED_COUNT ?? 0}
                 />
             </Button>
         </FlexInline>
