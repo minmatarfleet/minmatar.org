@@ -75,6 +75,7 @@ delete attributes.class
         <FlexInline
             justification='space-between'
             gap="var(--space-s)"
+            class="[ items-center ]"
         >
             <Flexblock gap="var(--space-3xs)">
                 <h2>{t('pilot')}s</h2>
@@ -84,11 +85,29 @@ delete attributes.class
             </Flexblock>
             
             {!readonly &&
-                <VerticalCenter>
+                <FlexInline>
+                    {pilots.length > 0 &&
+                        <Button
+                            size='sm'
+                            type="button"
+                            x-data={`{
+                                show_add_pilot_disclaimer() {
+                                    show_alert_dialog({
+                                        title: '${t('add_primary_pilot_dialog_title')}',
+                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
+                                            is_main: JSON.stringify(true),
+                                        })}',
+                                    }).then( (accepted) => add_primary_pilot(accepted) )
+                                }
+                            }`}
+                            x-on:click="show_add_pilot_disclaimer"
+                        >
+                            {t('set_primary_pilot')}
+                        </Button>
+                    }
                     <Button
                         size='sm'
                         type="button"
-                        class="[ w-full ]"
                         x-data={`{
                             show_add_pilot_disclaimer() {
                                 if (pilots.length == 0) {
@@ -117,7 +136,7 @@ delete attributes.class
                             t('add_pilot')
                         }
                     </Button>
-                </VerticalCenter>
+                </FlexInline>
             }
         </FlexInline>
 
