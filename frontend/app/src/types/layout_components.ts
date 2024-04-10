@@ -542,10 +542,11 @@ export type MetaGroupType = 'Tech I' | 'Tech II' | 'Storyline' | 'Faction' | 'Of
 
 export type ShipsSlots = 'High Slots' | 'Medium Slots' | 'Low Slots' | 'Rig Slots' | 'Subsystem Slots'
 export interface Module {
-    id:         number;
-    name:       string;
-    meta_name:  MetaGroupType;
-    slot_name:  string;
+    id:             number;
+    name:           string;
+    meta_name:      MetaGroupType;
+    module_type:    string;
+    slot_name:      string;
 }
 
 export interface ShipFittingCapabilities {
@@ -579,11 +580,13 @@ export interface ShipFitting {
     cargohold?:         CargoItem[];
 }
 
+export type ShipsMetaType = 'Tech I' | 'Tech II' | 'Faction' | 'Tech III'
+
 export interface ShipInfo {
     name:    string;
     type:    string;
     race:    string;
-    meta:    string;
+    meta:    ShipsMetaType;
 }
 
 export interface ShipDNA {

@@ -14,9 +14,10 @@ const { id } = Astro.params;
 console.log(`TODO: Fetch endpoint with id: ${id}`)
 // Replace me 👇
 import fit_details from '@json/page/fitting/list/adv-30-arazu.json';
-import { fitting } from '@/data/tempest.ts';
+import { fitting } from '@/data/test_fitting';
 
 import { get_module_model } from '@helpers/sde/modules'
+import ccpwgl_turrets from '@/data/ccpwgl_turrets.json'
 import { get_item_id } from '@helpers/sde/items'
 import { get_ship_dna } from '@helpers/ccpwgl'
 import { get_item_icon } from '@helpers/eve_image_server';
@@ -27,14 +28,15 @@ let turrets:string[] = []
 
 await Promise.all(fitting_parsed?.high_slots.map(async (module, index) => {
     const res = module?.id ? await get_module_model(module.id) : null
-    if (res)
+    if (res && ccpwgl_turrets.includes(module.module_type))
         turrets.push(res)
 }))
 
+const DEFAULT_ZOOM = 3
+const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
-const ship_dna = await get_ship_dna(ship_id)
-
-const WEAPONS_TIMER_SECONDS = 60
+const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
+const CAMERA_ZOOM = fitting_parsed.subsystem_slots.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -84,6 +86,7 @@ const page_title = fitting_parsed.name;
                     let canvas
                     let camera
                     let scene
+                    let siege_state = ccpwgl.ShipSiegeState.SIEGE
 
                     canvas = document.getElementById('mainCanvas');
                     
@@ -99,19 +102,17 @@ const page_title = fitting_parsed.name;
                     scene.loadSun('res:/fisfx/lensflare/blue_small.red');
                     scene.setSunDirection([-1, 0, 0.7]);
                     
-                    ship = scene.loadShip('${ship_dna}', function() {
-                        camera.focus(this, 3)
-                        weapon_firing_timer = setInterval(() => fire_guns(ship), ${WEAPONS_TIMER_SECONDS * 1000})
+                    ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
+                        camera.focus(this, ${CAMERA_ZOOM})
+                        setTimeout(enter_siege_mode, 50000)
                     });
 
-                    function fit_turret(ship, res, slot) {
-                        if (res)
-                            ship.mountTurret(slot, res)
-                        else
-                            ship.removeTurret(slot)
+                    function enter_siege_mode() {
+                        ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
+                        setTimeout(fire_guns, 15000)
                     }
                     
-                    function fire_guns(ship) {
+                    function fire_guns() {
                         console.log('firing...')
 
                         pt = {
@@ -125,6 +126,20 @@ const page_title = fitting_parsed.name;
                             ship.setTurretTargetPosition(i + 1, pt);
                             ship.setTurretState(i + 1, ccpwgl.TurretState.FIRING);
                         }
+
+                        setTimeout(leave_siege_mode, 5000)
+                    }
+
+                    function leave_siege_mode() {
+                        ship.setSiegeState(ccpwgl.ShipSiegeState.NORMAL)
+                        setTimeout(enter_siege_mode, 50000)
+                    }
+
+                    function fit_turret(ship, res, slot) {
+                        if (res)
+                            ship.mountTurret(slot, res)
+                        else
+                            ship.removeTurret(slot)
                     }
 
                     ${JSON.stringify(turrets)}.map((res, index) => {
