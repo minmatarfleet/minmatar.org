@@ -82,6 +82,8 @@ try {
 
 const MAINS_ALTS_PARTIAL_URL = `${translatePath('/partials/mains_alts_component')}`
 
+mains_alts.sort( (a, b) => a.character_name.localeCompare(b.character_name))
+
 let TOTAL_ALTS = 0
 const MAINS_UNFILTERED = {}
 mains_alts.forEach( (main) => {
@@ -114,7 +116,6 @@ import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
-import Select from '@components/blocks/Select.astro';
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
