@@ -31,7 +31,7 @@ const {
         >
             {items.map((item) => 
                 <Picture64 role="listitem" text={item.name}>
-                    <img class="[ w-full ]" src={get_item_icon_by_name(item.alt)} alt={item.alt} height="64" width="64" />
+                    <img loading="lazy" class="[ w-full ]" src={get_item_icon_by_name(item.alt)} alt={item.alt} height="64" width="64" />
                 </Picture64>
             )}
         </Grid>

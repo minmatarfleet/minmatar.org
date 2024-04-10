@@ -62,7 +62,7 @@ const DESCRIPTION_TEXT = {
         </picture>
         :
         <picture>
-            <img src={group.image_url} width="64" height="64" alt={`${group.name} ${LOGO_TEXT[type]}`} />
+            <img loading="lazy" src={group.image_url} width="64" height="64" alt={`${group.name} ${LOGO_TEXT[type]}`} />
         </picture>
     }
     <FlexInline justification='space-between'>

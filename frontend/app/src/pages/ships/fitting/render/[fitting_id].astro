@@ -87,6 +87,7 @@ const page_title = fitting_parsed.name;
                     let camera
                     let scene
                     let siege_state = ccpwgl.ShipSiegeState.SIEGE
+                    let animation_timer
 
                     canvas = document.getElementById('mainCanvas');
                     
@@ -104,17 +105,18 @@ const page_title = fitting_parsed.name;
                     
                     ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
                         camera.focus(this, ${CAMERA_ZOOM})
-                        setTimeout(enter_siege_mode, 50000)
+                        animation_timer = setTimeout(enter_siege_mode, 50000)
                     });
 
                     function enter_siege_mode() {
+                        console.log('Entering siege mode...')
                         ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
-                        setTimeout(auto_fire_guns, 15000)
+                        animation_timer = setTimeout(auto_fire_guns, 15000)
                     }
 
                     function auto_fire_guns() {
                         fire_guns()
-                        setTimeout(leave_siege_mode, 5000)
+                        animation_timer = setTimeout(leave_siege_mode, 5000)
                     }
                     
                     function fire_guns() {
@@ -134,8 +136,10 @@ const page_title = fitting_parsed.name;
                     }
 
                     function leave_siege_mode() {
+                        console.log('Leaving siege mode...')
+
                         ship.setSiegeState(ccpwgl.ShipSiegeState.NORMAL)
-                        setTimeout(enter_siege_mode, 50000)
+                        animation_timer = setTimeout(enter_siege_mode, 50000)
                     }
 
                     function fit_turret(ship, res, slot) {
@@ -151,6 +155,10 @@ const page_title = fitting_parsed.name;
 
                     if (fitting.options.postprocess)
                         ccpwgl.enablePostprocessing(true);
+
+                    document.addEventListener('astro:after-swap', () => {
+                        clearTimeout(animation_timer)
+                    })
 
                     canvas.addEventListener('mousedown', function (event)
                     {
@@ -177,7 +185,7 @@ const page_title = fitting_parsed.name;
                 <Flexblock gap='var(--space-xl)'>
                     <FlexInline justification='space-between'>
                         <FlexInline>
-                            <img height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
+                            <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
                             <PageTitle>{page_title}</PageTitle>
                         </FlexInline>
                         <ButtonStack>

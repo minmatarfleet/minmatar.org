@@ -38,7 +38,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
     class="[ items-center ]"
 >
     <picture>
-        <img src={get_alliance_logo(alliance.id)} width="32" height="32" />
+        <img loading="lazy" src={get_alliance_logo(alliance.id)} width="32" height="32" />
     </picture>
     <small>
         <span class="[ text-[var(--highlight)] ]">{alliance_name}</span>

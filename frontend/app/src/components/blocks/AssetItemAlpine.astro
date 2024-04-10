@@ -19,7 +19,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
             {...Astro.props}
         >
             <picture>
-                <img x-bind:src="get_item_icon(asset.id)" width="64" height="64" x-bind:alt={'`${asset.name} '+t('icon').toLowerCase()+'`'} />
+                <img loading="lazy" x-bind:src="get_item_icon(asset.id)" width="64" height="64" x-bind:alt={'`${asset.name} '+t('icon').toLowerCase()+'`'} />
             </picture>
             <FlexInline justification='space-between'>
                 <VerticalCenter>
@@ -34,7 +34,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
     <template x-if="assets_style === 'icons'">
         <Flexblock class="[ asset-icon ]" gap='var(--space-3xs)'>
             <picture>
-                <img x-bind:src="get_item_icon(asset.id)" width="64" height="64" x-bind:alt={'`${asset.name} '+t('icon').toLowerCase()+'`'} />
+                <img loading="lazy" x-bind:src="get_item_icon(asset.id)" width="64" height="64" x-bind:alt={'`${asset.name} '+t('icon').toLowerCase()+'`'} />
             </picture>
             <small x-text={'`${asset.name}`'} />
         </Flexblock>

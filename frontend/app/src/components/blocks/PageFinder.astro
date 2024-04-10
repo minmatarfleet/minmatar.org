@@ -167,7 +167,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                 >
                                     <picture>
                                         {page.icon &&
-                                            <img src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
+                                            <img loading="lazy" src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
                                         }
                                     </picture>
                                     <Flexblock gap='0' class="[ items-start ]">

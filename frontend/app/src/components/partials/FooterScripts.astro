@@ -81,10 +81,8 @@
         document.querySelector('.loader').classList.remove('active')
         htmx.process(document.body)
 
-        console.log(ccpwgl_context)
         if (ccpwgl_context) {
             console.log('Removing context')
-            console.log(ccpwgl_context.getExtension("WEBGL_lose_context").loseContext())
             ccpwgl_context = null
         }
     })

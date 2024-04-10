@@ -15,7 +15,7 @@ const {
     square = false,
 } = Astro.props;
 ---
-<img src={square ? '/images/fleet-logo-square.svg' : '/images/fleet-logo.svg'} width={width} height={width} alt={t('icon.fleet.alt')} />
+<img loading="lazy" src={square ? '/images/fleet-logo-square.svg' : '/images/fleet-logo.svg'} width={width} height={width} alt={t('icon.fleet.alt')} />
 
 <style>
     img {

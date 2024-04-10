@@ -18,7 +18,7 @@ const {
 
 <FixedFluid width='64px' {...attributes}>
     <picture>
-        <img class="[ w-full ]" src={fittable.image ? fittable.image : `https://images.evetech.net/types/${modules_icon_lookup[fittable.name]}/icon?size=64`} alt={fittable.name} height="64" width="64" />
+        <img loading="lazy" class="[ w-full ]" src={fittable.image ? fittable.image : `https://images.evetech.net/types/${modules_icon_lookup[fittable.name]}/icon?size=64`} alt={fittable.name} height="64" width="64" />
     </picture>
     <p class="[ flex items-center ]">{fittable.amount} x {fittable.name}</p>
 </FixedFluid>
