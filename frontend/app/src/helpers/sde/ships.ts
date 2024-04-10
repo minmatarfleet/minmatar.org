@@ -73,11 +73,11 @@ export async function get_ship_info(ship_id:number) {
         schema.chrRaces,
         eq(schema.invTypes.raceId, schema.chrRaces.raceId),
     )
-    .innerJoin(
+    .leftJoin(
         schema.invMetaTypes,
         eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
     )
-    .innerJoin(
+    .leftJoin(
         schema.invMetaGroups,
         eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
     )
@@ -94,7 +94,7 @@ export async function get_ship_info(ship_id:number) {
             name: q[0].typeName,
             type: q[0].groupName,
             race: q[0].raceName,
-            meta: q[0].metaGroupName,
+            meta: q[0].metaGroupName ?? 'Tech I',
         } as ShipInfo
     } else {
         return null
