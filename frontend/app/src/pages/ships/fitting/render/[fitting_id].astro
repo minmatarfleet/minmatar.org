@@ -109,7 +109,12 @@ const page_title = fitting_parsed.name;
 
                     function enter_siege_mode() {
                         ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
-                        setTimeout(fire_guns, 15000)
+                        setTimeout(auto_fire_guns, 15000)
+                    }
+
+                    function auto_fire_guns() {
+                        fire_guns()
+                        setTimeout(leave_siege_mode, 5000)
                     }
                     
                     function fire_guns() {
@@ -126,8 +131,6 @@ const page_title = fitting_parsed.name;
                             ship.setTurretTargetPosition(i + 1, pt);
                             ship.setTurretState(i + 1, ccpwgl.TurretState.FIRING);
                         }
-
-                        setTimeout(leave_siege_mode, 5000)
                     }
 
                     function leave_siege_mode() {
