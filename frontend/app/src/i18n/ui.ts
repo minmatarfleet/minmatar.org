@@ -392,6 +392,7 @@ export const ui = {
         'no': 'No',
         'requesting_concord': 'Requesting for CONCORD approval',
         'add_primary_pilot': 'Add your main',
+        'set_primary_pilot': 'Set your main',
         'main_character': 'Main character',
         'alt_character': 'Alt character',
         'main': 'Main',
