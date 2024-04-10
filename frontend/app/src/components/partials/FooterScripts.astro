@@ -57,7 +57,6 @@
 </script>
 
 <script is:inline>
-    let weapon_firing_timer = null
     let ccpwgl_context = null
 
     const tippy_options = {
@@ -74,7 +73,6 @@
     }, { once: true })
 
     document.addEventListener('astro:before-preparation', () => {
-        clearInterval(weapon_firing_timer)
         document.querySelector('.loader').classList.add('active')
     })
 
