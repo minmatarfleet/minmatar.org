@@ -27,7 +27,7 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
     {...attributes}
     x-data={`{
         show_main() {
-            return (character_name === '' && main_filter === '-1') || (("${main.character_id}" in mains_filtered) && mains_filtered[${main.character_id}].length > 0)
+            return (character_name === '') || ("${main.character_id}" in mains_filtered)
         },
         get_alts_count() {
             if ("${main.character_id}" in mains_filtered_alts_count)
