@@ -2,7 +2,7 @@ import logging
 
 from django.db import models
 from esi.clients import EsiClientProvider
-from esi.models import Token, Scope
+from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
