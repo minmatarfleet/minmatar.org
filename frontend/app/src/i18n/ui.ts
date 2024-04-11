@@ -25,6 +25,7 @@ export const ui = {
         'index.page_title': 'Minmatar Fleet',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'An aerial view of a red Fortizar station.',
+        'index.description': 'Beautiful view of Minmatar Militia HQ in Auga system',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
@@ -45,10 +46,15 @@ export const ui = {
         'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
+        'alliance.description': 'Browse our corporations, teams and SIGs portfolio and submit your application',
+        'alliance.description.directors': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams members and applications',
+        'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications',
+        'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications',
 
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
+        'ships.description': 'Discover our alliance and militia doctrines and fittings. You may export them to use in EvE',
 
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
@@ -83,6 +89,7 @@ export const ui = {
         'intel.page_title': 'Intel',
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
+        'intel.description': 'Check our tutorial about how to scan structures',
 
         'intel.tutrial.page_title': 'How to scan structures?',
         'intel.tutrial.leading_text': 'In this course, you will learn how to obtain structures information and provide it to a fleet commander. Through this activity, you might just be the small spark that creates a war!',
@@ -122,6 +129,7 @@ export const ui = {
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
 
         'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
+        'assets.description': 'Locate your personal assets accross New Eden.',
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
@@ -131,6 +139,7 @@ export const ui = {
         
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
+        'account.description': 'Register you pilots and manage your account',
         
         'groups.add.page_title': 'Add group',
         
@@ -611,5 +620,10 @@ export const ui = {
         'alts': 'Alts',
         'rotation_x': 'Rotation X',
         'rotation_y': 'Rotation Y',
+        'zkillboard_description': 'Check out our numbers over zkillboard',
+        'authentication': 'Authentication',
+        'authentication_description': 'Log into our platform if you are already in Minmatar Fleet Discord server',
+        'clear_cache_description': 'Clean up session variables. May fix UI issues.',
+        'help_description': 'Find help and colaborate reporting issues. Check our **hotkeys** to step up your experience using our platform',
     },
 } as const;

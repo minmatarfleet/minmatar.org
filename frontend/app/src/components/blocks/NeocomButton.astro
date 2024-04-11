@@ -1,18 +1,24 @@
 ---
-import StylessButton from './StylessButton.astro';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 interface Props {
-    active?:    boolean;
-    title?:     string;
-    href?:      string;
-    external?:  boolean;
-    overlay?:   boolean;
+    active?:        boolean;
+    title?:         string;
+    description?:   string;
+    href?:          string;
+    external?:      boolean;
+    overlay?:       boolean;
     [propName: string]: any;
 }
 
 const {
     active = false,
     title,
+    description,
     href,
     external = false,
     overlay = false,
@@ -22,6 +28,9 @@ const {
 const optional_attributes = {
     ...(external && { "target": "_blank" }),
 }
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import Tippy from '@components/blocks/Tippy.astro';
 ---
 
 <StylessButton
@@ -29,12 +38,23 @@ const optional_attributes = {
     class:list={[ 'neocom-button', { active: active, overlay: overlay } ]}
     {...optional_attributes}
     {...attributes}
-    data-astro-prefetch="hover"
-    data-tippy-content={title}
     data-tippy-delay="[1000, 200]"
     data-tippy-placement='right'
 >
-    <slot />
+    {title &&
+        <Tippy
+            data-tippy-placement="right"
+            partial={`${translatePath('/partials/normal_tooltip')}?title=${title}${description ? `&description=${description}` : ''}`}
+            height='70px'
+            width='340px'
+            element='div'
+        >
+            <slot />
+        </Tippy>
+    }
+    {!title &&
+        <slot />
+    }
 </StylessButton>
 
 <style lang="scss">

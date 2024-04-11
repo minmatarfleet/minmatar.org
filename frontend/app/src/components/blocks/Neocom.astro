@@ -5,6 +5,16 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+interface Props {
+    user_is_officer:    boolean;
+    user_is_director:    boolean;
+}
+
+const {
+    user_is_officer,
+    user_is_director,
+} = Astro.props
+
 const primary_character = Astro.cookies.has('primary_pilot')
 
 import { is_prod_mode } from '@helpers/env'
@@ -12,7 +22,6 @@ import { is_prod_mode } from '@helpers/env'
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import NeocomButton from '@components/blocks/NeocomButton.astro';
-
 import UserAuth from '@components/UserAuth.astro';
 
 import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
@@ -32,38 +41,83 @@ const page = Astro.url.pathname
     <nav class="[ flex-block-l ]">
         <Flexblock class="[ grow ]" gap='var(--space-3xs)'>
             <Flexblock gap="0">
-                <NeocomButton href={translatePath('/')} overlay={true}>
+                <NeocomButton
+                    href={translatePath('/')}
+                    overlay={true}
+                    title='index.page_title'
+                    description='index.description'
+                >
                     <FleetLogo square={true} />
                 </NeocomButton>
                 <UserAuth active={page.startsWith(translatePath('/account/'))} />
             </Flexblock>
-            <NeocomButton active={page.startsWith(translatePath('/alliance/'))} title={t('neocom.alliance')} href={translatePath('/alliance/')}>
+            <NeocomButton
+                active={page.startsWith(translatePath('/alliance/'))}
+                title='neocom.alliance'
+                description={
+                    user_is_director && user_is_officer ? 'alliance.description.directors_officers' :
+                    user_is_director ? 'alliance.description.directors' :
+                    user_is_officer ? 'alliance.description.officers' :
+                    'alliance.description'
+                }
+                href={translatePath('/alliance/')}
+            >
                 <AllianceEvEIcon />
             </NeocomButton>
             {!is_prod_mode() &&
-                <NeocomButton active={page.startsWith(translatePath('/ships/'))} title={t('neocom.ships')} href={translatePath('/ships/')}>
+                <NeocomButton
+                    active={page.startsWith(translatePath('/ships/'))}
+                    title='neocom.ships'
+                    description='ships.description'
+                    href={translatePath('/ships/')}
+                >
                     <ShipTreeEvEIcon />
                 </NeocomButton>
             }
             {!is_prod_mode() &&
-                <NeocomButton active={page.startsWith(translatePath('/fleets/'))} title={t('neocom.fleets')} href={translatePath('/fleets/')}>
+                <NeocomButton
+                    active={page.startsWith(translatePath('/fleets/'))}
+                    title='neocom.fleets'
+                    description='fleets.leading_text'
+                    href={translatePath('/fleets/')}
+                >
                     <FleetEvEIcon />
                 </NeocomButton>
             }
             {!is_prod_mode() &&
-                <NeocomButton active={page.startsWith(translatePath('/market/'))} title={t('neocom.market')} href={translatePath('/market/')}>
+                <NeocomButton
+                    active={page.startsWith(translatePath('/market/'))}
+                    title='neocom.market'
+                    description='market.leading_text'
+                    href={translatePath('/market/')}
+                >
                     <MarketEvEIcon />
                 </NeocomButton>
             }
-            <NeocomButton active={page.startsWith(translatePath('/intel/'))} title={t('neocom.intel')} href={translatePath('/intel/')}>
+            <NeocomButton
+                active={page.startsWith(translatePath('/intel/'))}
+                title='neocom.intel'
+                description='intel.description'
+                href={translatePath('/intel/')}
+            >
                 <IntelEvEIcon />
             </NeocomButton>
             {primary_character &&
-                <NeocomButton active={page.startsWith(translatePath('/character/assets/user/'))} title={t('neocom.assets')} href={translatePath('/character/assets/user/')}>
+                <NeocomButton
+                    active={page.startsWith(translatePath('/character/assets/user/'))}
+                    title='neocom.assets'
+                    description='assets.description'
+                    href={translatePath('/character/assets/user/')}
+                >
                     <AssetsEvEIcon />
                 </NeocomButton>
             }
-            <NeocomButton title={t('neocom.zkillboard')} href="https://zkillboard.com/alliance/99011978" external={true}>
+            <NeocomButton
+                title='neocom.zkillboard'
+                description='zkillboard_description'
+                href="https://zkillboard.com/alliance/99011978"
+                external={true}
+            >
                 <ZkillboardEvEIcon />
             </NeocomButton>
         </Flexblock>
@@ -72,7 +126,8 @@ const page = Astro.url.pathname
             gap='var(--space-3xs)'
         >
             <NeocomButton
-                title={t('neocom.help')}
+                title='neocom.help'
+                description='help_description'
                 x-data={`{
                     show_help_modal() {
                         show_modal({
