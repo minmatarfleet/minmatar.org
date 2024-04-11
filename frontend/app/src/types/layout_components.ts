@@ -298,10 +298,11 @@ export interface CorporationMembers {
 }
 
 export interface MainCharacters {
-    character_id:     number;
-    character_name:   string;
+    character_id:       number;
+    character_name:     string;
     corporation_id:     number;
     corporation_name:   string;
+    registered:         boolean;
     alts:               CharacterKind[];
 }
 

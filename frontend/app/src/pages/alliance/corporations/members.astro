@@ -38,7 +38,7 @@ try {
 
     corporations_members = corporations_members.map( (corporation) => {
         ALLIANCE_MEMBERS_COUNT += corporation.members.length
-        MAIN_COUNT += corporation.members.filter( (member) => member.is_main ).length
+        MAIN_COUNT += corporation.members.filter( (member) => member.is_main && member.registered ).length
 
         const unregistered_members = corporation.members.filter( (member) => !member.registered )
         

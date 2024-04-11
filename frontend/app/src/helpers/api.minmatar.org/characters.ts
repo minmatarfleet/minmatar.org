@@ -167,7 +167,7 @@ export async function set_primary_characters(access_token:string, character_id:n
             headers: headers
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

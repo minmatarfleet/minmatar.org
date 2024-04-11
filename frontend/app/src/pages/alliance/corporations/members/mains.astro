@@ -26,7 +26,6 @@ import { get_all_corporations_members } from '@helpers/fetching/corporations'
 let corporations_members:CorporationMembers[] = []
 let get_all_mains_alts_error:string | false = false
 let mains_alts:MainCharacters[] = []
-let MAIN_COUNT = 0
 let UNREGISTERED_COUNT = 0
 let ALLIANCE_MEMBERS_COUNT = 0
 
@@ -40,13 +39,14 @@ try {
     corporations_members = corporations_members.map( (corporation) => {
         ALLIANCE_MEMBERS_COUNT += corporation.members.length
 
-        MAIN_COUNT += corporation.members.filter( (member) => {
+        corporation.members.filter( (member) => {
             if (member.is_main) {
                 mains_alts.push({
                     character_id: member.character_id,
                     character_name: member.character_name,
                     corporation_id: corporation.corporation_id,
                     corporation_name: corporation.corporation_name,
+                    registered: member.registered,
                     alts: [],
                 })
             }
@@ -83,6 +83,9 @@ try {
 const MAINS_ALTS_PARTIAL_URL = `${translatePath('/partials/mains_alts_component')}`
 
 mains_alts.sort( (a, b) => a.character_name.localeCompare(b.character_name))
+mains_alts = mains_alts.filter( (main) => main.registered )
+
+const MAIN_COUNT = mains_alts.length
 
 let TOTAL_ALTS = 0
 const MAINS_UNFILTERED = {}
