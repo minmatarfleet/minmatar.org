@@ -42,7 +42,7 @@ import CorporationStatus from "@components/blocks/CorporationStatus.astro";
         <img loading="lazy" src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
     </picture>
     <FlexInline justification='space-between' class="[ items-center ]">
-        <Flexblock gap='0' class="[ grow ]">
+        <Flexblock gap='0' class="[ grow basis-[220px] ]">
             <span class="[ text-[var(--highlight)] ]">
                 {corporation.corporation_name}
             </span>
