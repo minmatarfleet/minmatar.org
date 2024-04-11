@@ -5,7 +5,6 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 const is_main = JSON.parse(Astro.url.searchParams.get('is_main')) as boolean

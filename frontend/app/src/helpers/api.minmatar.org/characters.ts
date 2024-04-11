@@ -152,3 +152,29 @@ export async function get_character_assets(access_token:string, character_id:num
         throw new Error(`Error fetching character assets: ${error.message}`);
     }
 }
+
+export async function set_primary_characters(access_token:string, character_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting PUT: ${API_ENDPOINT}/primary?character_id=${character_id}`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/primary?character_id=${character_id}`, {
+            method: 'PUT',
+            headers: headers
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error setting main character: ${error.message}`);
+    }
+}

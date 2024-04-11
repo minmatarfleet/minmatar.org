@@ -401,7 +401,7 @@ export const ui = {
         'no': 'No',
         'requesting_concord': 'Requesting for CONCORD approval',
         'add_primary_pilot': 'Add your main',
-        'set_primary_pilot': 'Set your main',
+        'set_primary_pilot': 'Set as main',
         'main_character': 'Main character',
         'alt_character': 'Alt character',
         'main': 'Main',
@@ -625,5 +625,9 @@ export const ui = {
         'authentication_description': 'Log into our platform if you are already in Minmatar Fleet Discord server',
         'clear_cache_description': 'Clean up session variables. May fix UI issues.',
         'help_description': 'Find help and colaborate reporting issues. Check our **hotkeys** to step up your experience using our platform',
+        'ccp_disclaimer': 'EVE Online, its logo, and all affiliated logos, fonts, and designs are the intellectual property of CCP. Similarly, all artwork, screenshots, characters, vehicles, storylines, and world facts associated with these trademarks are CCP’s intellectual property. EVE Online and its logo are registered trademarks of CCP. CCP bears no responsibility for the content or operation of this website and cannot be held liable for any damages resulting from its use.',
+        'set_main_character_dialog_title': 'Set main character',
+        'set_main_character_dialog_text': 'Proceed setting the following pilot as main?',
+        'set_main_character_error': 'An error ocurred setting the main character',
     },
 } as const;

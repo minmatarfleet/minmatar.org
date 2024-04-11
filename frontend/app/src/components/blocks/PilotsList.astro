@@ -29,16 +29,15 @@ const {
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
-const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
+// const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
 const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}&token_type=Basic`
 const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/pilots_list_component')}`
+const SET_MAIN_CHARACTER_PARTIAL_URL = translatePath('/partials/set_primary_character')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
-import FluidFixed from '@components/compositions/FluidFixed.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
@@ -60,9 +59,6 @@ delete attributes.class
         enabled: true,
         add_pilot(accepted) {
             if (accepted) window.location.href = "${ADD_CHARACTER_URL}"
-        },
-        add_primary_pilot(accepted) {
-            if (accepted) window.location.href = "${ADD_PRIMARY_CHARACTER_URL}"
         },
         pilot_list_init() {
             ${removed_character !== false ? `stop_remove_animation(${removed_character})` : ''}
@@ -86,25 +82,6 @@ delete attributes.class
             
             {!readonly &&
                 <FlexInline>
-                    {pilots.length > 0 &&
-                        <Button
-                            size='sm'
-                            type="button"
-                            x-data={`{
-                                show_add_pilot_disclaimer() {
-                                    show_alert_dialog({
-                                        title: '${t('add_primary_pilot_dialog_title')}',
-                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
-                                            is_main: JSON.stringify(true),
-                                        })}',
-                                    }).then( (accepted) => add_primary_pilot(accepted) )
-                                }
-                            }`}
-                            x-on:click="show_add_pilot_disclaimer"
-                        >
-                            {t('set_primary_pilot')}
-                        </Button>
-                    }
                     <Button
                         size='sm'
                         type="button"
@@ -113,14 +90,14 @@ delete attributes.class
                                 if (pilots.length == 0) {
                                     show_alert_dialog({
                                         title: '${t('add_primary_pilot_dialog_title')}',
-                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
+                                        partial: '${translatePath('/partials/add_pilot_dialog/')}?${query_string({
                                             is_main: JSON.stringify(true),
                                         })}',
-                                    }).then( (accepted) => add_primary_pilot(accepted) )
+                                    }).then( (accepted) => add_pilot(accepted) )
                                 } else {
                                     show_alert_dialog({
                                         title: '${t('add_pilot_dialog_title')}',
-                                        partial: '${translatePath('/partials/add_primary_pilot_dialog/')}?${query_string({
+                                        partial: '${translatePath('/partials/add_pilot_dialog/')}?${query_string({
                                             is_main: JSON.stringify(false),
                                         })}',
                                     }).then( (accepted) => add_pilot(accepted) )
@@ -147,33 +124,63 @@ delete attributes.class
                         character_id={pilot.character_id}
                         character_name={pilot.character_name}
                     />
-                    <FluidFixed width='46px' breakpoint='60%'>
-                        <VerticalCenter>
-                            <Flexblock gap='0'>
-                                <span
-                                    class="truncate cursor-pointer text-[var(--highlight)]"
-                                    set:text={pilot.character_name}
+                    <FlexInline class="[ items-center ]">
+                        <Flexblock gap='0' class="[ grow ]">
+                            <span
+                                class="truncate cursor-pointer text-[var(--highlight)]"
+                                set:text={pilot.character_name}
+                                x-data={`{
+                                    show_character_modal() {
+                                        show_modal({
+                                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                                character_id: pilot.character_id.toString(),
+                                            })}'
+                                        })
+                                    }
+                                }`}
+                                x-on:click="show_character_modal()"
+                            />
+                            <small class="truncate">
+                                {pilot.character_id == primary_pilot_id ?
+                                    t('main_character') :
+                                    t('alt_character')
+                                }
+                            </small>
+                        </Flexblock>
+                        <FlexInline>
+                            {!readonly && pilot.character_id != primary_pilot_id &&
+                                <Button
+                                    class="[ action-button ]"
+                                    size='sm'
+                                    type="button"
                                     x-data={`{
-                                        show_character_modal() {
-                                            show_modal({
-                                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                                    character_id: pilot.character_id.toString(),
+                                        show_set_main_dialog() {
+                                            show_confirm_dialog({
+                                                title: '${t('set_main_character_dialog_title')}',
+                                                partial: '${translatePath('/partials/dialog_with_character/')}?${query_string({
+                                                    id: pilot.character_id,
+                                                    character_name: pilot.character_name,
+                                                    message: t('set_main_character_dialog_text')    
                                                 })}',
+                                                hx: {
+                                                    method: 'post',
+                                                    url: '${SET_MAIN_CHARACTER_PARTIAL_URL}?${query_string({
+                                                        id: pilot.character_id,
+                                                        character_name: pilot.character_name,
+                                                    })}',
+                                                    target: '#pilots-list',
+                                                    swap: 'outerHTML transition:true'
+                                                }
                                             })
                                         }
                                     }`}
-                                    x-on:click="show_character_modal()"
-                                />
-                                <small class="truncate">
-                                    {pilot.character_id == primary_pilot_id ?
-                                        t('main_character') :
-                                        t('alt_character')
-                                    }
-                                </small>
-                            </Flexblock>
-                        </VerticalCenter>
-                        <VerticalCenter>
-                            {!readonly && (pilot.character_id != primary_pilot_id || pilots.length == 1) &&
+                                    x-on:click="show_set_main_dialog"
+                                >
+                                    {t('set_primary_pilot')}
+                                </Button>
+                            }
+
+                            {!readonly &&
                                 <Button
                                     class="[ action-button ]"
                                     size='sm'
@@ -206,8 +213,8 @@ delete attributes.class
                                     <TrashIcon slot="icon" />
                                 </Button>
                             }
-                        </VerticalCenter>
-                    </FluidFixed>
+                        </FlexInline>
+                    </FlexInline>
                 </FixedFluid>
             )}
             {pilots.length == 0 &&
