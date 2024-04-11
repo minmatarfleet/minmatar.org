@@ -4,5 +4,5 @@ import { get_api_url, get_app_url } from '@helpers/env'
 const redirect = Astro.url.searchParams.get('redirect')
 Astro.cookies.set('redirect_after_add_primary_pilot', redirect, { path: '/' })
 
-return Astro.redirect(`${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${translatePath('/redirects/add_primary_character')}&token_type=Basic`)
+return Astro.redirect(`${get_api_url()}/api/eveonline/characters/add?redirect_url=${translatePath('/redirects/add_primary_character')}&token_type=Basic`)
 ---

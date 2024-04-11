@@ -1,0 +1,98 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import { set_primary_characters } from '@helpers/api.minmatar.org/characters'
+import type { Character } from '@dtypes/api.minmatar.org'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
+const character_id = parseInt(Astro.url.searchParams.get('id'))
+const character_name = Astro.url.searchParams.get('character_name')
+let set_main_character_error
+let pilots:Character[] = []
+let get_characters_error
+let readonly = false
+
+try {
+    await set_primary_characters(auth_token, character_id)
+
+    try {
+        pilots = await get_characters(auth_token);
+    } catch (error) {
+        get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
+        readonly = true
+    }
+} catch (error) {
+    set_main_character_error = (is_prod_mode() ? t('set_main_character_error') : error.message)
+}
+
+import type { Alert } from '@dtypes/layout_components'
+
+let alert:Alert
+import { query_string } from '@helpers/string';
+
+const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
+let redirect
+
+if (set_main_character_error) {
+    const params = query_string({
+        id: character_id.toString(),
+        character_name: character_name,
+        message: set_main_character_error,
+    })
+
+    alert = {
+        title: t('set_main_character_dialog_title'),
+        content: set_main_character_error,
+        partial: `${translatePath('/partials/dialog_with_character/')}?${params}`,
+    }
+} else {
+    redirect = translatePath('/redirects/add_primary_character')
+}
+
+import PilotsList from '@components/blocks/PilotsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+{!get_characters_error &&
+    <script define:vars={{ redirect }}>
+        window.location.href = redirect
+    </script>
+}
+{get_characters_error ?
+    <PilotsList
+        pilots={pilots}
+        readonly={readonly}
+        alert={alert}
+    >
+        <ErrorRefetch
+            args={{
+                partial: PILOTS_LIST_PARTIAL_URL,
+                message: get_characters_error,
+                delay: 0,
+                target: '#pilots-list',
+            }}
+        />
+    </PilotsList>
+    :
+    <PilotsList
+        pilots={pilots}
+        readonly={readonly}
+        alert={alert}
+    />
+}
