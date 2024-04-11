@@ -131,7 +131,7 @@ def update_corporation(corporation_id):
         logger.info("Corporation %s has no faction", corporation.name)
     # fetch and set members if active
     if corporation.active and (
-        corporation.type == "alliance" or corporation.type == "associate"
+        corporation.type in ["alliance", "associate"]
     ):
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]
         token = Token.objects.filter(
