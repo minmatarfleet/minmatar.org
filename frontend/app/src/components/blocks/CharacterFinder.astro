@@ -65,6 +65,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         },
         async ctrl_shift_f(e) {
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+                e.preventDefault()
+                
                 show_characters_finder().then( (character_id) => {
                     console.log(character_id)
                     if (!character_id)
@@ -77,7 +79,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
             }
         },
         init() {
-            document.addEventListener('keyup', this.ctrl_shift_f, false);
+            document.addEventListener('keydown', this.ctrl_shift_f, false);
         }
     }`}
 >
