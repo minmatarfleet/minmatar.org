@@ -45,6 +45,7 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
         <ButtonStack>
             {corporation?.status == 'available' && !primary_character_id &&
                 <ButtonAddPrimary
+                    size='sm'
                     color='green'
                     dialog_title={t('corporation_join_request_dialog_title')}
                 >
@@ -93,6 +94,7 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
             }
             {corporation?.status == 'unauth' &&
                 <ButtonAuth
+                    size='sm'
                     color='green'
                     dialog_title={t('corporation_join_request_dialog_title')}
                 >
