@@ -26,18 +26,11 @@ const character_id = parseInt(Astro.url.searchParams.get('id'))
 const character_name = Astro.url.searchParams.get('character_name')
 let set_main_character_error
 let pilots:Character[] = []
-let get_characters_error
+let get_characters_error:string | false = false
 let readonly = false
 
 try {
     await set_primary_characters(auth_token, character_id)
-
-    try {
-        pilots = await get_characters(auth_token);
-    } catch (error) {
-        get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
-        readonly = true
-    }
 } catch (error) {
     set_main_character_error = (is_prod_mode() ? t('set_main_character_error') : error.message)
 }
@@ -62,19 +55,42 @@ if (set_main_character_error) {
         content: set_main_character_error,
         partial: `${translatePath('/partials/dialog_with_character/')}?${params}`,
     }
+
+    try {
+        pilots = await get_characters(auth_token);
+    } catch (error) {
+        get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
+        readonly = true
+    }
 } else {
     redirect = translatePath('/redirects/add_primary_character')
 }
 
 import PilotsList from '@components/blocks/PilotsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import RifterIcon from '@components/icons/RifterIcon.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 ---
-{!get_characters_error &&
+
+{!set_main_character_error &&
+    <Wrapper
+        padding_inline='0'
+        padding_block='var(--space-l)'
+    >
+        <FlexInline class="[ items-center ]">
+            <RifterIcon/>
+            <p class="[ loading ]">{t('updating')}</p>
+        </FlexInline>
+    </Wrapper>
+    
     <script define:vars={{ redirect }}>
         window.location.href = redirect
     </script>
 }
-{get_characters_error ?
+
+{get_characters_error &&
     <PilotsList
         pilots={pilots}
         readonly={readonly}
@@ -89,7 +105,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             }}
         />
     </PilotsList>
-    :
+}
+
+{set_main_character_error &&
     <PilotsList
         pilots={pilots}
         readonly={readonly}

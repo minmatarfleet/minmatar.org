@@ -629,5 +629,6 @@ export const ui = {
         'set_main_character_dialog_title': 'Set main character',
         'set_main_character_dialog_text': 'Proceed setting the following pilot as main?',
         'set_main_character_error': 'An error ocurred setting the main character',
+        'updating': 'Updating',
     },
 } as const;
