@@ -1,0 +1,28 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const title = Astro.url.searchParams.get('title')
+const description = Astro.url.searchParams.get('description')
+
+import { marked } from 'marked';
+
+import Context from '@components/layout/Context.astro';
+---
+
+<Context>
+    {title &&
+        <h4>{t(title as any)}</h4>
+    }
+    {description &&
+        <small set:html={marked.parseInline(t(description as any))} />
+    }
+</Context>
+
+<style lang="scss">
+    small {
+        text-wrap: pretty;
+    }
+</style>

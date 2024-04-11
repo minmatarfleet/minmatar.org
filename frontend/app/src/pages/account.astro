@@ -54,6 +54,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import TextGroup from '@components/blocks/TextGroup.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Tippy from '@components/blocks/Tippy.astro';
 
 import PilotsList from '@components/blocks/PilotsList.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
@@ -113,28 +114,37 @@ const page_title = t('account.page_title');
                         </VerticalCenter>
                     </FlexInline>
                     <VerticalCenter>
-                        <Button
-                            size='sm'
-                            type="button"
-                            x-bind:disabled="disabled"
-                            x-data={`{
-                                disabled: false,
-                                async clear_cache() {
-                                    this.disabled = true
-                                    
-                                    await fetch(
-                                        '${CLEAR_ACCOUNT_CACHE_URL}', {
-                                            method: 'DELETE'
-                                        }
-                                    )
-
-                                    navigate('${translatePath('/account')}')
-                                }
-                            }`}
-                            x-on:click="clear_cache()"
+                        <Tippy
+                            data-tippy-placement="top"
+                            partial={`${translatePath('/partials/normal_tooltip')}?description=clear_cache_description`}
+                            height='70px'
+                            width='340px'
+                            element='div'
+                            show_delay={2000}
                         >
-                            {t('clear_account_cache')}
-                        </Button>
+                            <Button
+                                size='sm'
+                                type="button"
+                                x-bind:disabled="disabled"
+                                x-data={`{
+                                    disabled: false,
+                                    async clear_cache() {
+                                        this.disabled = true
+                                        
+                                        await fetch(
+                                            '${CLEAR_ACCOUNT_CACHE_URL}', {
+                                                method: 'DELETE'
+                                            }
+                                        )
+
+                                        navigate('${translatePath('/account')}')
+                                    }
+                                }`}
+                                x-on:click="clear_cache()"
+                            >
+                                {t('clear_account_cache')}
+                            </Button>
+                        </Tippy>
                     </VerticalCenter>
                 </FlexInline>
             </ComponentBlock>
