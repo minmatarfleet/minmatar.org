@@ -89,7 +89,7 @@ export const ui = {
         'intel.page_title': 'Intel',
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
-        'intel.description': 'Lear how to scan structures and use our tool to add structures on the video tutorial',
+        'intel.description': 'Watch the video tutorial to learn how to scan structures and use our tool to add them in our system',
 
         'intel.tutrial.page_title': 'How to scan structures?',
         'intel.tutrial.leading_text': 'In this course, you will learn how to obtain structures information and provide it to a fleet commander. Through this activity, you might just be the small spark that creates a war!',
