@@ -210,6 +210,35 @@ def delete_character_by_id(request, character_id: int):
     return 200, None
 
 
+@router.put(
+    "/primary",
+    summary="Set primary character",
+    auth=AuthBearer(),
+    response={200: None, 404: ErrorResponse},
+)
+def set_primary_character(request, character_id: int):
+    if not EveCharacter.objects.filter(character_id=character_id).exists():
+        return 404, {"detail": "Character not found."}
+
+    character = EveCharacter.objects.get(character_id=character_id)
+    if not character.token.user == request.user:
+        return 403, {
+            "detail": "You do not have permission to set this character as primary."
+        }
+
+    if EvePrimaryCharacter.objects.filter(
+        character__token__user=request.user
+    ).exists():
+        primary_character = EvePrimaryCharacter.objects.get(
+            character__token__user=request.user
+        )
+        primary_character.character = character
+        primary_character.save()
+    else:
+        EvePrimaryCharacter.objects.create(character=character)
+    return 200, None
+
+
 @router.get(
     "/primary",
     summary="Get primary character",
@@ -232,7 +261,9 @@ def get_primary_character(request):
 
 
 @router.get(
-    "/primary/add", summary="Add primary character using EVE Online SSO"
+    "/primary/add",
+    summary="Add primary character using EVE Online SSO",
+    deprecated=True,
 )
 def add_primary_character(request, redirect_url: str):
     request.session["redirect_url"] = redirect_url
@@ -301,6 +332,15 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 character_name=token.character_name,
                 token=token,
             )
+        # set as primary character if only one character
+        if (
+            not EvePrimaryCharacter.objects.filter(
+                character__token__user=request.user
+            ).exists()
+            and EveCharacter.objects.filter(token__user=request.user).count()
+            == 1
+        ):
+            EvePrimaryCharacter.objects.create(character=character)
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter

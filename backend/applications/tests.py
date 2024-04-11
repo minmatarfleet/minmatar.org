@@ -57,6 +57,7 @@ class EveCorporationApplicationTestCase(TestCase):
             response.json(),
             [
                 {
+                    "application_id": application.id,
                     "status": application.status,
                     "user_id": application.user.id,
                     "corporation_id": application.corporation_id,
