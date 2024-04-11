@@ -117,7 +117,7 @@ export const ui = {
         
         'groups.page_title': 'Special Groups of Interest',
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
-        'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to grow to fight larger groups, and we need to expand and create ways to maintain a close-knit feel in a large organization.',
+        'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
         
         'groups.members.page_title': 'SIGs members',
@@ -132,7 +132,7 @@ export const ui = {
         'assets.description': 'Locate your personal assets accross New Eden.',
 
         'teams.page_title': 'Teams',
-        'teams.leading_text': 'Teams are similar to special interest groups, but actually would kill the alliance if they disappeared. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
+        'teams.leading_text': 'Teams are similar to special interest groups, but without them our alliance would cease to exist. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
         'teams.cover_alt': 'An Amarr hauler initiating warp drive.',
 
         'assets.user.page_title': 'My assets',
@@ -160,11 +160,11 @@ export const ui = {
         'teams.management.page_title': 'Teams management',
         
         'corporations.page_title': 'Corporations',
-        'corporations.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation CEO, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'corporations.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.cover_alt': 'Outspace starry sky',
 
         'corporations.list.page_title': 'Corporations',
-        'corporations.list.leading_text': 'You are welcome to request membership in any of the following corporations. Your request will be promptly reviewed by the corporation CEO, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
 
