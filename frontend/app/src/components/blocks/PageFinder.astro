@@ -91,11 +91,13 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
             this.filtered_pages = filtered_pages
         },
         async ctrl_shift_q(e) {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyQ')
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyQ') {
+                e.preventDefault()
                 show_pages_finder()
+            }
         },
         init() {
-            document.addEventListener('keyup', this.ctrl_shift_q, false);
+            document.addEventListener('keydown', this.ctrl_shift_q, false);
         }
     }`}
 >
