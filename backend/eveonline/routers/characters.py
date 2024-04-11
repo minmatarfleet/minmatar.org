@@ -189,6 +189,7 @@ def get_assets_for_character_by_id(request, character_id: int):
     },
 )
 def delete_character_by_id(request, character_id: int):
+
     if not EveCharacter.objects.filter(character_id=character_id).exists():
         return 404, {"detail": "Character not found."}
     if not (
@@ -201,6 +202,20 @@ def delete_character_by_id(request, character_id: int):
             "detail": "You do not have permission to delete this character."
         }
 
+    # if user is primary character, pick a new primary character if possible
+    if EvePrimaryCharacter.objects.filter(
+        character__token__user=request.user
+    ).exists():
+        primary_character = EvePrimaryCharacter.objects.get(
+            character__token__user=request.user
+        )
+        if primary_character.character.character_id == character_id:
+            characters = EveCharacter.objects.filter(
+                token__user=request.user
+            ).exclude(character_id=character_id)
+            if characters.exists():
+                primary_character.character = characters.first()
+                primary_character.save()
     try:
         EveCharacter.objects.filter(character_id=character_id).delete()
         Token.objects.filter(character_id=character_id).delete()
