@@ -2,10 +2,10 @@
 
 import os
 
+import sentry_sdk
 from celery import Celery, signals
 from celery.app import trace
 from django.conf import settings  # noqa
-import sentry_sdk
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
