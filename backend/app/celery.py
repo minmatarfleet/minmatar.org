@@ -35,7 +35,7 @@ trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 @signals.celeryd_init.connect
 def init_sentry(**_kwargs):
     sentry_sdk.init(
-        dsn="https://3cad68d01bdc1ebbe39e4a86952e3b83@o4507073814528000.ingest.us.sentry.io/4507073815445504",
+        dsn="https://9cb0978f9e5df46c5519c368832551a9@o4507073814528000.ingest.us.sentry.io/4507074459140096",
         enable_tracing=True,
         traces_sample_rate=1.0,
         environment=settings.ENV,
