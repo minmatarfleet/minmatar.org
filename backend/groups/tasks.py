@@ -31,6 +31,8 @@ def update_affiliations():
                 "Checking if qualified for affiliation %s", affiliation
             )
             is_qualifying = False
+            if affiliation.auto_yes:
+                is_qualifying = True
             if (
                 primary_character.character.corporation
                 in affiliation.corporations.all()

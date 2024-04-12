@@ -80,9 +80,10 @@ class AffiliationType(models.Model):
     image_url = models.URLField(null=True, blank=True)
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
     priority = models.IntegerField(unique=True)
-    corporations = models.ManyToManyField(EveCorporation)
-    alliances = models.ManyToManyField(EveAlliance)
-    factions = models.ManyToManyField(EveFaction)
+    corporations = models.ManyToManyField(EveCorporation, blank=True)
+    alliances = models.ManyToManyField(EveAlliance, blank=True)
+    factions = models.ManyToManyField(EveFaction, blank=True)
+    default = models.BooleanField(default=False)
 
     def __str__(self):
         return self.group.name
