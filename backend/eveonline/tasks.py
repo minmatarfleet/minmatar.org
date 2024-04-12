@@ -84,18 +84,28 @@ def update_character_affilliations():
                 known_faction_ids.add(faction_id)
 
             updated = False
-            if corporation_id != character.corporation.corporation_id:
+            if (corporation_id and not character.corporation) or (
+                corporation_id
+                and corporation_id != character.corporation.corporation_id
+            ):
                 character.corporation = EveCorporation.objects.get(
                     corporation_id=corporation_id
                 )
                 updated = True
-            if alliance_id != character.alliance.alliance_id:
+
+            if (alliance_id and not character.alliance) or (
+                alliance_id and alliance_id != character.alliance.alliance_id
+            ):
                 character.alliance = EveAlliance.objects.get(
                     alliance_id=alliance_id
                 )
                 updated = True
 
-            if faction_id != character.faction.id:
+            if (
+                (faction_id and not character.faction)
+                or faction_id
+                and (faction_id != character.faction.id)
+            ):
                 character.faction = EveFaction.objects.get(id=faction_id)
                 updated = True
 
