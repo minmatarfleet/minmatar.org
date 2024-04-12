@@ -32,7 +32,7 @@ def update_character_affilliations():
             "Processing batch of %s characters", len(character_ids_batch)
         )
         results = esi.client.Character.post_characters_affiliation(
-            character_ids=character_ids_batch
+            characters=character_ids_batch
         ).results()
         for result in results:
             character_id = result["character_id"]
