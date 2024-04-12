@@ -25,6 +25,12 @@ class EveCharacter(models.Model):
     corporation = models.ForeignKey(
         "EveCorporation", on_delete=models.CASCADE, blank=True, null=True
     )
+    alliance = models.ForeignKey(
+        "EveAlliance", on_delete=models.CASCADE, blank=True, null=True
+    )
+    faction = models.ForeignKey(
+        EveFaction, on_delete=models.CASCADE, blank=True, null=True
+    )
 
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, null=True, blank=True

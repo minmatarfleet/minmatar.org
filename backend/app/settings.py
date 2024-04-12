@@ -15,6 +15,7 @@ from pathlib import Path
 
 from app.settings_celery import *  # noqa
 from app.settings_common import *  # noqa
+import sentry_sdk
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,4 +82,21 @@ LOGOUT_REDIRECT_URL = "/oauth2/login/"
 STATIC_ROOT = os.path.join(
     BASE_DIR,
     "static",
+)
+
+# Monitoring
+if DEBUG:
+    ENV = "development"
+else:
+    ENV = "production"
+sentry_sdk.init(
+    dsn="https://3cad68d01bdc1ebbe39e4a86952e3b83@o4507073814528000.ingest.us.sentry.io/4507073815445504",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+    environment=os.environ.get("ENV", ENV),
 )
