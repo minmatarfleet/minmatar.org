@@ -32,10 +32,13 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 
 
+SENTRY_CELERY_DSN = os.environ.get("SENTRY_CELERY_DSN", None)
+
+
 @signals.celeryd_init.connect
 def init_sentry(**_kwargs):
     sentry_sdk.init(
-        dsn="https://9cb0978f9e5df46c5519c368832551a9@o4507073814528000.ingest.us.sentry.io/4507074459140096",
+        dsn=SENTRY_CELERY_DSN,
         enable_tracing=True,
         traces_sample_rate=1.0,
         environment=settings.ENV,

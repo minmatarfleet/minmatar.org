@@ -86,12 +86,12 @@ STATIC_ROOT = os.path.join(
 )
 
 # Monitoring
+ENV = "production"
 if DEBUG:
     ENV = "development"
-else:
-    ENV = "production"
+
 sentry_sdk.init(
-    dsn="https://3cad68d01bdc1ebbe39e4a86952e3b83@o4507073814528000.ingest.us.sentry.io/4507073815445504",
+    dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     traces_sample_rate=1.0,
