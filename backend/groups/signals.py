@@ -3,7 +3,7 @@ import logging
 from django.db.models import signals
 from django.dispatch import receiver
 
-from groups.models import Sig, SigRequest, Team, TeamRequest
+from groups.models import Sig, SigRequest, Team, TeamRequest, UserAffiliation
 
 logger = logging.getLogger(__name__)
 
@@ -78,3 +78,23 @@ def team_members_changed(
             user.groups.remove(instance.group)
     else:
         pass
+
+
+@receiver(
+    signals.pre_delete,
+    sender=UserAffiliation,
+    dispatch_uid="user_affiliation_pre_delete",
+)
+def user_affiliation_pre_delete(sender, instance, **kwargs):
+    logger.info("User affiliation deleted, updating user groups")
+    instance.user.groups.remove(instance.affiliation.group)
+
+
+@receiver(
+    signals.post_save,
+    sender=UserAffiliation,
+    dispatch_uid="user_affiliation_post_save",
+)
+def user_affiliation_post_save(sender, instance, created, **kwargs):
+    logger.info("User affiliation saved, updating user groups")
+    instance.user.groups.add(instance.affiliation.group)

@@ -21,6 +21,7 @@ django-ninja = "*"
 pyjwt = "*"
 whitenoise = "*"
 gunicorn = "*"
+sentry-sdk = {extras = ["django","celery"], version = "*"}
 
 [dev-packages]
 pylint = "*"

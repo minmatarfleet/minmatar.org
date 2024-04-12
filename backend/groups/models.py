@@ -72,7 +72,7 @@ class SigRequest(models.Model):
         return f"{self.user} - {self.sig}"
 
 
-class AutoGroup(models.Model):
+class AffiliationType(models.Model):
     """Automatically assigned groups based on corporation, alliance or faction membership."""
 
     name = models.CharField(max_length=64)
@@ -86,3 +86,16 @@ class AutoGroup(models.Model):
 
     def __str__(self):
         return self.group.name
+
+
+class UserAffiliation(models.Model):
+    """One to one relationship table between Affiliation and User"""
+
+    affiliation = models.ForeignKey(AffiliationType, on_delete=models.CASCADE)
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("affiliation", "user")
+
+    def __str__(self):
+        return f"{self.user} - {self.affiliation}"

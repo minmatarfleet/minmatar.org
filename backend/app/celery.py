@@ -2,7 +2,8 @@
 
 import os
 
-from celery import Celery
+import sentry_sdk
+from celery import Celery, signals
 from celery.app import trace
 from django.conf import settings  # noqa
 
@@ -29,3 +30,13 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 # Remove result from default log message on task success
 trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
+
+
+@signals.celeryd_init.connect
+def init_sentry(**_kwargs):
+    sentry_sdk.init(
+        dsn="https://3cad68d01bdc1ebbe39e4a86952e3b83@o4507073814528000.ingest.us.sentry.io/4507073815445504",
+        enable_tracing=True,
+        traces_sample_rate=1.0,
+        environment=settings.ENV,
+    )
