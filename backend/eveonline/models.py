@@ -23,13 +23,13 @@ class EveCharacter(models.Model):
     character_id = models.IntegerField(unique=True)
     character_name = models.CharField(max_length=255, blank=True)
     corporation = models.ForeignKey(
-        "EveCorporation", on_delete=models.CASCADE, blank=True, null=True
+        "EveCorporation", on_delete=models.SET_NULL, blank=True, null=True
     )
     alliance = models.ForeignKey(
-        "EveAlliance", on_delete=models.CASCADE, blank=True, null=True
+        "EveAlliance", on_delete=models.SET_NULL, blank=True, null=True
     )
     faction = models.ForeignKey(
-        EveFaction, on_delete=models.CASCADE, blank=True, null=True
+        EveFaction, on_delete=models.SET_NULL, blank=True, null=True
     )
 
     token = models.OneToOneField(
