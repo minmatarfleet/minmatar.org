@@ -24,8 +24,8 @@ export const ui = {
 
         'index.page_title': 'Minmatar Fleet',
         'index.incoming_text': 'Next Minmatar fleet in',
-        'index.cover_alt': 'An aerial view of a red Fortizar station.',
-        'index.description': 'Beautiful view of Minmatar Militia HQ in Auga system',
+        'index.cover_alt': 'View of Watermelon Fortizar station with Sugar station in the background.',
+        'index.description': 'Outside view of Minmatar Fleet HQ — WATERMELON in Sosala system',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
@@ -569,6 +569,7 @@ export const ui = {
         'page_finder.corporations.members.mains.description': 'List of alliance mains characters with its alts',
         'page_finder.corporations.applications.records.description': 'List of processed corporation applications',
         'page_finder.account.description': 'Your profile management page',
+        'page_finder.index.description': 'Minmatar.org landing page',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
         'find_member_placeholder': 'Type member name to find',

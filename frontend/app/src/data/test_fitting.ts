@@ -1,55 +1,45 @@
-export const fitting = `[Legion, [ADV-30] DPS Legion]
+export const fitting = `[Minokawa, [FLEET] Active Minokawa]
 
 Damage Control II
-1600mm Rolled Tungsten Compact Plates
-Imperial Navy Multispectrum Energized Membrane
-Imperial Navy Multispectrum Energized Membrane
-Core C-Type Kinetic Armor Hardener
-Core C-Type EM Armor Hardener
-Core B-Type Thermal Armor Hardener
-Heat Sink II
+Capacitor Flux Coil II
+Capacitor Flux Coil II
+Capacitor Flux Coil II
 
-10MN Y-S8 Compact Afterburner
-Balmer Series Compact Tracking Disruptor I
+CONCORD Capital Shield Booster
+Pith X-Type Shield Boost Amplifier
+Pithum C-Type Multispectrum Shield Hardener
+Capital Cap Battery II
+Pith X-Type Thermal Shield Hardener
+Capital F-RX Compact Capacitor Booster
+Pith X-Type EM Shield Hardener
 
-Heavy Beam Laser II
-Heavy Beam Laser II
-Heavy Beam Laser II
-Heavy Beam Laser II
-Heavy Beam Laser II
-Heavy Beam Laser II
-[Empty High slot]
+Capital Asymmetric Enduring Remote Shield Booster
+Triage Module II
+Capital Asymmetric Enduring Remote Shield Booster
+Shield Command Burst II
+Imperial Navy Large EMP Smartbomb
+Shield Command Burst II
 
-Medium Trimark Armor Pump II
-Medium Trimark Armor Pump II
-Medium Trimark Armor Pump II
-
-Legion Core - Augmented Antimatter Reactor
-Legion Defensive - Augmented Plating
-Legion Offensive - Liquid Crystal Magnifiers
-Legion Propulsion - Intercalated Nanofibers
+Capital Semiconductor Memory Cell I
+Capital Semiconductor Memory Cell I
+Capital Semiconductor Memory Cell I
 
 
-Aurora M x12
-Gleam M x12
-Navy Cap Booster 400 x15
-Imperial Navy Multifrequency M x12
-Imperial Navy Standard M x6
-Missile Precision Disruption Script x1
-Missile Range Disruption Script x1
-Nanite Repair Paste x25
-ECCM Script x1
-Scan Resolution Script x1
-Targeting Range Script x1
-Scan Resolution Dampening Script x1
-Targeting Range Dampening Script x1
-Optimal Range Disruption Script x1
-Tracking Speed Disruption Script x1
-Inherent Implants 'Squire' Power Grid Management EG-602 x1
-Covert Ops Cloaking Device II x1
-Sensor Booster II x1
-Phased Muon Scoped Sensor Dampener x1
-Initiated Compact Warp Disruptor x1
-C-IR Compact Guidance Disruptor x1
-Legion Defensive - Covert Reconfiguration x1
+Warrior II x10
+Hornet EC-300 x5
+Heavy Hull Maintenance Bot II x5
+Heavy Shield Maintenance Bot II x10
+Light Hull Maintenance Bot II x5
+Light Shield Maintenance Bot II x5
+
+
+Navy Cap Booster 3200 x25
+Nanite Repair Paste x250
+Shield Extension Charge x1000
+Shield Harmonizing Charge x1000
+Agency 'Hardshell' TB7 Dose III x2
+Improved Blue Pill Booster x2
+Inherent Implants 'Squire' Capacitor Management EM-803 x1
+Inherent Implants 'Squire' Capacitor Systems Operation EO-603 x1
+Prototype Cloaking Device I x1
 `;

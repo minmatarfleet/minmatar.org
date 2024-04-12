@@ -36,6 +36,7 @@ const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
+
 const CAMERA_ZOOM = fitting_parsed?.subsystem_slots?.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
 import Viewport from '@layouts/Viewport.astro';
@@ -233,6 +234,10 @@ const page_title = fitting_parsed.name;
 </Viewport>
 
 <textarea id="fit-clipboard" set:html={fitting}></textarea>
+
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl_int.min.js"></script>
+<script is:inline type="text/javascript" src="http://localhost:3000/public/ccpwgl.js"></script>
+<script is:inline type="text/javascript" src="/js/ccpwgl/fitting.js"></script>
 
 <style lang="scss">
     #fit-clipboard {
