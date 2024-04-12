@@ -42,7 +42,7 @@ def update_character_affilliations():
 
             character = EveCharacter.objects.get(character_id=character_id)
             if (
-                corporation_id not in known_corporation_ids
+                corporation_id and corporation_id not in known_corporation_ids
                 and not EveCorporation.objects.filter(
                     corporation_id=corporation_id
                 ).exists()
@@ -55,7 +55,7 @@ def update_character_affilliations():
                 EveCorporation.objects.create(corporation_id=corporation_id)
                 known_corporation_ids.add(corporation_id)
             if (
-                alliance_id not in known_alliance_ids
+                alliance_id and alliance_id not in known_alliance_ids
                 and not EveAlliance.objects.filter(
                     alliance_id=alliance_id
                 ).exists()
@@ -69,7 +69,7 @@ def update_character_affilliations():
                 known_alliance_ids.add(alliance_id)
 
             if (
-                faction_id not in known_faction_ids
+                faction_id and faction_id not in known_faction_ids
                 and not EveFaction.objects.filter(id=faction_id).exists()
             ):
                 logger.info(
