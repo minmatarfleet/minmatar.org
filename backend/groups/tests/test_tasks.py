@@ -42,6 +42,10 @@ class UserAffiliationTestCase(TestCase):
             sender=EveCorporation,
             dispatch_uid="eve_corporation_post_save",
         )
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
 
         # create test client
         self.client = Client()
