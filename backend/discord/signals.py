@@ -65,7 +65,7 @@ def user_group_changed(
     sender, instance, action, reverse, **kwargs
 ):  # pylint: disable=unused-argument
     """Adds user to discord role when added to group"""
-    if action == "post_add":
+    if action == "pre_add":
         logger.info("User added to group, adding to discord role")
         for group in instance.groups.all():
             if DiscordRole.objects.filter(group=group).exists():

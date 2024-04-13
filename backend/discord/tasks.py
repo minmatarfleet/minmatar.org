@@ -95,6 +95,17 @@ def migrate_users():
                     group.name,
                 )
                 affiliation_type = AffiliationType.objects.get(group=group)
+                if UserAffiliation.objects.filter(
+                    user=user, affiliation=affiliation_type
+                ).exists():
+                    logger.info(
+                        "User %s already has affiliation %s",
+                        user.username,
+                        affiliation_type.name,
+                    )
+                    continue
+                elif UserAffiliation.objects.filter(user=user).exists():
+                    UserAffiliation.objects.filter(user=user).delete()
                 UserAffiliation.objects.create(
                     user=user,
                     affiliation=affiliation_type,
