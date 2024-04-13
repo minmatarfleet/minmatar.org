@@ -12,8 +12,12 @@ class Team(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
-    directors = models.ManyToManyField("auth.User", related_name="director_of")
-    members = models.ManyToManyField("auth.User", related_name="teams")
+    directors = models.ManyToManyField(
+        "auth.User", related_name="director_of", blank=True
+    )
+    members = models.ManyToManyField(
+        "auth.User", related_name="teams", blank=True
+    )
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -45,8 +49,12 @@ class Sig(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
-    officers = models.ManyToManyField("auth.User", related_name="officer_of")
-    members = models.ManyToManyField("auth.User", related_name="sigs")
+    officers = models.ManyToManyField(
+        "auth.User", related_name="officer_of", blank=True
+    )
+    members = models.ManyToManyField(
+        "auth.User", related_name="sigs", blank=True
+    )
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
 
     def __str__(self):
