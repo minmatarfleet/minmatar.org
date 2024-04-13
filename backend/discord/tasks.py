@@ -1,12 +1,15 @@
 import logging
+import time
 
 from django.contrib.auth.models import Group, User
-from .models import DiscordRole, DiscordUser
-from eveonline.models import EvePrimaryCharacter
-from groups.models import AffiliationType, UserAffiliation, Team, Sig
+from django.db.models import signals
 
 from app.celery import app
 from discord.client import DiscordClient
+from eveonline.models import EvePrimaryCharacter
+from groups.models import AffiliationType, Sig, Team, UserAffiliation
+
+from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -26,9 +29,15 @@ def import_external_roles():
 
 @app.task()
 def migrate_users():
+    # users already have these groups
+    signals.m2m_changed.disconnect(
+        sender=User.groups.through,
+        dispatch_uid="user_group_changed",
+    )
     skipped_users = []
     skipped_roles = []
     for user in User.objects.all():
+        time.sleep(1)
         if not DiscordUser.objects.filter(user_id=user.id).exists():
             logger.info(
                 "Skipping migration of user %s, missing primary character",
@@ -37,7 +46,9 @@ def migrate_users():
             skipped_users.append(user.username)
             continue
 
-        if not EvePrimaryCharacter.objects.filter(character__token__user__id=user.id).exists():
+        if not EvePrimaryCharacter.objects.filter(
+            character__token__user__id=user.id
+        ).exists():
             logger.info(
                 "Skipping migration of user %s, missing primary character",
                 user.id,
