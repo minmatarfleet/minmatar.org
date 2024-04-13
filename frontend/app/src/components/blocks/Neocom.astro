@@ -7,12 +7,14 @@ const translatePath = useTranslatedPath(lang);
 
 interface Props {
     user_is_officer:    boolean;
-    user_is_director:    boolean;
+    user_is_director:   boolean;
+    user_is_superadmin: boolean;
 }
 
 const {
     user_is_officer,
     user_is_director,
+    user_is_superadmin,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot')
@@ -69,6 +71,7 @@ const page = Astro.url.pathname
                     active={page.startsWith(translatePath('/ships/'))}
                     title='neocom.ships'
                     description='ships.description'
+                    tag="dev"
                     href={translatePath('/ships/')}
                 >
                     <ShipTreeEvEIcon />
@@ -79,6 +82,7 @@ const page = Astro.url.pathname
                     active={page.startsWith(translatePath('/fleets/'))}
                     title='neocom.fleets'
                     description='fleets.leading_text'
+                    tag="dev"
                     href={translatePath('/fleets/')}
                 >
                     <FleetEvEIcon />
@@ -89,19 +93,23 @@ const page = Astro.url.pathname
                     active={page.startsWith(translatePath('/market/'))}
                     title='neocom.market'
                     description='market.leading_text'
+                    tag="dev"
                     href={translatePath('/market/')}
                 >
                     <MarketEvEIcon />
                 </NeocomButton>
             }
-            <NeocomButton
-                active={page.startsWith(translatePath('/intel/'))}
-                title='neocom.intel'
-                description='intel.description'
-                href={translatePath('/intel/')}
-            >
-                <IntelEvEIcon />
-            </NeocomButton>
+            {!is_prod_mode() &&
+                <NeocomButton
+                    active={page.startsWith(translatePath('/intel/'))}
+                    title='neocom.intel'
+                    description='intel.description'
+                    tag="dev"
+                    href={translatePath('/intel/')}
+                >
+                    <IntelEvEIcon />
+                </NeocomButton>
+            }
             {primary_character &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/character/assets/user/'))}
@@ -112,14 +120,17 @@ const page = Astro.url.pathname
                     <AssetsEvEIcon />
                 </NeocomButton>
             }
-            <NeocomButton
-                title='neocom.zkillboard'
-                description='zkillboard_description'
-                href="https://zkillboard.com/alliance/99011978"
-                external={true}
-            >
-                <ZkillboardEvEIcon />
-            </NeocomButton>
+            {!is_prod_mode() &&
+                <NeocomButton
+                    title='neocom.zkillboard'
+                    description='zkillboard_description'
+                    tag="dev"
+                    href="https://zkillboard.com/alliance/99011978"
+                    external={true}
+                >
+                    <ZkillboardEvEIcon />
+                </NeocomButton>
+            }
         </Flexblock>
         <Flexblock
             class="[ neocom-buttom shrink ]"

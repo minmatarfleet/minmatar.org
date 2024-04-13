@@ -1,5 +1,13 @@
 [
     {
+        "slug": "index",
+        "path": "/",
+        "icon": "/images/fleet-logo-square.svg",
+        "publish": true,
+        "description": "page_finder.index.description",
+        "keywords": [ "home", "index", "welcome" ]
+    },
+    {
         "slug": "account",
         "path": "/account/",
         "publish": true,

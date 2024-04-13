@@ -30,7 +30,7 @@ import { get_all_groups_members } from '@helpers/fetching/groups'
 let groups_members:GroupMembersUI[] = []
 let get_groups_members_error:string | false = false
 try {
-    groups_members = await get_all_groups_members(auth_token, 'team')
+    groups_members = await get_all_groups_members(auth_token, 'team', is_superuser)
 } catch (error) {
     get_groups_members_error = is_prod_mode() ? t('get_groups_members_error') : error.message
 }

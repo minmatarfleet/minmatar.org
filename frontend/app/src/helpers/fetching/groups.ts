@@ -118,14 +118,14 @@ const add_status_to_group = async (
     return group
 }
 
-export async function get_all_groups_members(access_token:string, group_type:GroupItemType) {
+export async function get_all_groups_members(access_token:string, group_type:GroupItemType, superadmin?:boolean) {
     let groups:Group[]
     let groups_members:GroupMembersUI[]
 
     if(group_type === 'team')
-        groups = await get_current_teams(access_token)
+        groups = superadmin ? await get_teams() : await get_current_teams(access_token)
     else
-        groups = await get_current_sigs(access_token)
+        groups = superadmin ? await get_sigs() : await get_current_sigs(access_token)
 
     groups_members = await Promise.all(groups.map(async (group) => {
         let members:MemberUI[]

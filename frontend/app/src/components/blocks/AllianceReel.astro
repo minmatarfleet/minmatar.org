@@ -9,12 +9,14 @@ interface Props {
     can_view_applications?:   boolean;
     user_is_officer?:   boolean;
     user_is_director?:  boolean;
+    is_superuser?:  boolean;
 }
 
 const {
     can_view_applications = false,
     user_is_officer = false,
     user_is_director = false,
+    is_superuser = false,
 } = Astro.props
 
 import { marked } from 'marked';
@@ -99,7 +101,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                 {user_is_officer === null &&
                                     <Tag text={t('page_reload_error')} />
                                 }
-                                {user_is_officer &&
+                                {(user_is_officer || is_superuser) &&
                                     <Button size='sm' href={translatePath('/alliance/sigs/requests/')}>
                                         {t('group_requests')}
                                     </Button>
@@ -133,7 +135,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                 {user_is_director === null &&
                                     <Tag text={t('page_reload_error')} />
                                 }
-                                {user_is_director &&
+                                {(user_is_director || is_superuser) &&
                                     <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
                                         {t('team_requests')}
                                     </Button>

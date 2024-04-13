@@ -74,7 +74,7 @@ import Tag from './Tag.astro';
                                 character_name: member.character_name,
                                 group_id: group.id.toString(),
                                 group_name: group.name,
-                                group_image: group.image_url,
+                                group_image: JSON.stringify(group.image_url),
                                 group_description: group.description,
                                 corporation_id: member.corporation_id,
                                 corporation_name: member.corporation_name,

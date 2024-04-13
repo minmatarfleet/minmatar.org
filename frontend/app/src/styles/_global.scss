@@ -127,7 +127,7 @@ code {
     a[href]:not([class]) {
         color: inherit
     }
-
+    
     padding: var(--space-3xs) var(--space-2xs);
     border: solid 1px var(--border-color);
     background-color: var(--background);
@@ -154,4 +154,8 @@ code {
 .bump {
     position: relative;
     z-index: 1;
+}
+
+.shadow-text {
+    filter: drop-shadow(0px 1px 0px rgba(0, 0, 0, 0.3));
 }

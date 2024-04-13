@@ -1,105 +1,214 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-import data from '@json/page/index.json';
-
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+const CAMERA_ZOOM = 2.2
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Viewport from '@layouts/Viewport.astro';
-import Button from '@components/blocks/Button.astro';
-import FleetLogo from '@components/icons/FleetLogo.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import Countdown from '@components/blocks/Countdown.astro';
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+import Input from '@components/blocks/Input.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
 
 const page_title = t('index.page_title');
 ---
 
 <Viewport title={page_title}>
-	<video autoplay loop muted poster="/images/home-cover.jpg">
-        <source src="/videos/fortizar-loop.mp4" type="video/mp4" />
+    <PageLanding
+        cover={{
+            image: "/images/home-cover.jpg",
+            image_990: "/images/home-cover.jpg",
+            alt: t('index.cover_alt'),
+            animated: false,
+        }}
+        fullscreen={true}
+        wide={true}
+		x-data={`{
+            rotation_x: 4.3827,
+            rotation_y: 0.251,
+            camera: null,
+            update() {
+				if (!this.camera) return
 
-		<img loading="lazy" src="/images/home-cover.jpg" alt={t('index.cover_alt')} />
-    </video>
+                this.camera.rotationX = this.rotation_x
+                this.camera.rotationY = this.rotation_y
+            }
+        }`}
+        x-effect="update"
+    >
+        <canvas
+            slot="cover"
+            id="mainCanvas"
+            width="500"
+            height="500"
+            x-data={`{
+                init_ccpwgl() {
+                    let watermelon
+                    let canvas
+                    let scene
+            		const mat4 = ccpwgl_int.math.mat4
 
-	<main id="content">		
-		<Wrapper max_width="var(--max-col-width)" neocom={true}>
-			<Flexblock centered={true} gap='var(--space-m-l)'>
-				<h1><FleetLogo width='256' height='256' /></h1>
-				{!is_prod_mode() ?
-					<Flexblock gap="var(--space-3xs)" class="[ text-center ]">
-						<h4>{t('index.incoming_text')}</h4>
-						<Countdown date={data.countdown+' UTC'} />
-					</Flexblock>
-					<Button href={translatePath(data.countdown_href)}>
-						<MagnifierIcon slot="icon" />
-						{t('view_details')}
-					</Button>
-				:
-					<h2>Welcome to Minmatar.org</h2>
-					<Flexblock class="[ text-center ]">
+                    canvas = document.getElementById('mainCanvas');
+                    
+                    ccpwgl.initialize(canvas, fitting.options);
+                    ccpwgl_context = canvas.getContext("webgl");
+                    
+                    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+                    camera.rotationX = rotation_x
+                    camera.rotationY = rotation_y
+					camera.maxDistance = 9000000
+                    camera.shift = 100.81
+
+                    scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
+                    scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
+                    scene.setSunDirection([-0.7, -0.01, 0.7]);
+                    
+                    watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
+                        camera.focus(this, ${CAMERA_ZOOM})
+
+						setColor(200, 200, 200, 'Mtl1DiffuseColor')
+						setColor(159, 212, 15, 'Mtl2DiffuseColor')
+						setColor(224, 32, 109, 'Mtl3DiffuseColor')
+						setColor(224, 32, 109, 'Mtl4DiffuseColor')
+
+						setColor(94, 0, 60, 'Mtl1Gloss')
+						setColor(59, 59, 59, 'Mtl2Gloss')
+						setColor(54, 54, 54, 'Mtl3Gloss')
+						setColor(41, 41, 41, 'Mtl4Gloss')
+
+						setColor(87, 0, 52, 'Mtl1FresnelColor')
+						setColor(48, 56, 0, 'Mtl2FresnelColor')
+						setColor(37, 84, 5, 'Mtl3FresnelColor')
+						setColor(82, 6, 47, 'Mtl4FresnelColor')
+                    });
+
+					sugar = scene.loadShip('iam1_t1:orebase:minmatar', function() {
+						let rotationMatrix = mat4.fromYRotation(mat4.fromValues(
+							1, 0, 0, 0,
+							0, 1, 0, 0,
+							0, 0, 1, 0,
+							0, 0, 0, 1
+						), -0.7)
+
+						// Translation
+						rotationMatrix[12] = 600000
+						rotationMatrix[13] = -100000
+						rotationMatrix[14] = -900000
+						rotationMatrix[15] = 2
+						
+						this.setTransform(rotationMatrix);
+                    });
+
+                    if (fitting.options.postprocess)
+                        ccpwgl.enablePostprocessing(true);
+
+					function setColor(r, g, b, material) {
+						for (var i = 0; i < watermelon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+						{
+							for (var param in watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+								if (watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+
+									watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+								}
+							}
+
+						}
+					}
+                }
+            }`}
+            x-init="$nextTick(() => init_ccpwgl())"
+        />
+
+		<Flexblock class="[ station-info ][ hidden lg:block ]" gap='var(--space-2xs)'>
+			<FlexInline gap='var(--space-3xs)' class="[ items-end ]">
+				<h2>Sosala <span class="[ text-[var(--fleet-red)] ]">0.4</span></h2>
+				<FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+					<svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+					</svg>
+					<h3><small>Vaarma</small></h3>
+					<svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+					</svg>
+					<h3><small>The Bleak Lands</small></h3>
+				</FlexInline>
+			</FlexInline>
+			<h3>Sosala — WATERMELON</h3>
+			<span>Minmatar Fleet Alliance HQ</span>
+		</Flexblock>
+
+        <Wrapper
+			max_width="var(--max-landing-width)"
+			padding_inline="0"
+			padding_block="var(--space-xl)"
+			class="[ page-content ]"
+		>
+			<Flexblock gap='var(--space-3xl)'>
+				<Flexblock gap='var(--space-m)'>
+					<h1><FleetLogo width='256' height='256' /></h1>
+					
+					<h2 class="[ welcome-heading ]">Welcome to Minmatar.org</h2>
+					<Flexblock>
 						<p>Our platform is currently undergoing development, and new features will be rolled out gradually. New sections will be posted in the Neocom bar.</p>
 						<small>For starters, you may link your pilots to our platform through the user section in the Neocom bar.</small>
 					</Flexblock>
-				}
+
+					<!--<Flexblock>
+						<Flexblock gap='0'>
+							<label for="doctrine">{t('rotation_x')}</label>
+							<Input type="number" x-model="rotation_x" step="0.00001" />
+						</Flexblock>
+						<Flexblock gap='0'>
+							<label for="doctrine">{t('rotation_y')}</label>
+							<Input type="number" x-model="rotation_y" step="0.00001" />
+						</Flexblock>
+					</Flexblock>-->
+				</Flexblock>
+
+				<small>{t('ccp_disclaimer')}</small>
 			</Flexblock>
 		</Wrapper>
-	</main>
+    </PageLanding>
 </Viewport>
 
 <style lang="scss">
-    html,
-    body {
-        height: 100vh;
-        width: 100%;
-        padding: 0;
-        margin: 0;
-    }
+	.station-info {
+		position: fixed;
+		top: var(--space-l);
+		right: var(--space-xl);
+	}
 
-	h2 {
+	.welcome-heading {
 		font-size: var(--step-3);
 	}
 
-	h4 {
-		font-family: var(--heading-font);
-		text-transform: uppercase;
-		font-weight: 400;
-	}
-
-	small {
-		color: var(--highlight);
-	}
-
-	#content {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-		position: relative;
-		justify-content: center;
+    .left-panel {
+        position: absolute;
     }
 
-	h4 {
-		font-size: var(--step--1);
-		letter-spacing: 5px;
-		text-indent: 5px;
-	}
-
-	main {
+	.page-content {
 		position: relative;
+		z-index: 1;
+		display: flex;
+		min-height: 100vh;
+		align-items: center;
 	}
+</style>
 
-    video {
-        position: fixed;
-        top: 0;
-        right: 0;
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-		object-position: 86% 50%;
+<style is:global>
+
+    #mainCanvas {
+        border: none;
+        position:fixed;
+        width:100%;
+        height:100%;
+		/*z-index: -1;*/
     }
+
 </style>

@@ -6,7 +6,15 @@ const t = useTranslations(lang);
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-if (is_prod_mode())
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+if (is_prod_mode() && !user_is_superadmin)
     return HTTP_404_Not_Found()
 
 // TODO: Replace the static JSON below with the endpoint request using the id
@@ -36,6 +44,7 @@ const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
+
 const CAMERA_ZOOM = fitting_parsed?.subsystem_slots?.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
 import Viewport from '@layouts/Viewport.astro';

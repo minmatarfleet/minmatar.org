@@ -42,7 +42,7 @@ const DESCRIPTION_TEXT = {
 
 <FixedFluid
     width='64px'
-    class="[ group-item ]"
+    class="[ group-item ][ items-start ]"
     id={`group-item-${group.id}`}
     x-data={`{
         group_item_init() {
@@ -65,31 +65,27 @@ const DESCRIPTION_TEXT = {
             <img loading="lazy" src={group.image_url} width="64" height="64" alt={`${group.name} ${LOGO_TEXT[type]}`} />
         </picture>
     }
-    <FlexInline justification='space-between'>
-        <VerticalCenter>
-            <Flexblock gap='0' class="[ w-full ]">
-                <span class="text-[var(--highlight)]">
-                    {group.name}
-                </span>
-                <slot>
-                    {is_valid_http_url(group.description) ?
-                        <small>
-                            <a href={group.description} target="_blank">
-                                {DESCRIPTION_TEXT[type]}
-                            </a>
-                        </small>
-                        :
-                        <small>{group.description}</small>
-                    }
-                </slot>
-            </Flexblock>
-        </VerticalCenter>
-        <VerticalCenter>
-            <GroupStatus
-                group={group}
-                group_type={type}
-            />
-        </VerticalCenter>
+    <FlexInline justification='space-between' class="[ items-center ]">
+        <Flexblock gap='0' class="[ w-full basis-[335px] ]">
+            <span class="text-[var(--highlight)]">
+                {group.name}
+            </span>
+            <slot>
+                {is_valid_http_url(group.description) ?
+                    <small>
+                        <a href={group.description} target="_blank">
+                            {DESCRIPTION_TEXT[type]}
+                        </a>
+                    </small>
+                    :
+                    <small>{group.description}</small>
+                }
+            </slot>
+        </Flexblock>
+        <GroupStatus
+            group={group}
+            group_type={type}
+        />
     </FlexInline>
 </FixedFluid>
 
