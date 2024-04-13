@@ -188,6 +188,12 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/roles/{role_id}",
         )
 
+    def get_user(self, user_id):
+        """Get a user from a discord server"""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+        )
+
     def add_user_role(self, user_id, role_id):
         """Add a role to a user"""
         return self.put(
