@@ -86,7 +86,7 @@ def migrate_users():
                 affiliation_type = AffiliationType.objects.get(group=group)
                 UserAffiliation.objects.create(
                     user=user,
-                    affiliation_type=affiliation_type,
+                    affiliation=affiliation_type,
                 )
 
     logger.info("Skipped users: %s", skipped_users)
