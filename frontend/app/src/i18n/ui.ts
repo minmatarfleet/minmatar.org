@@ -25,7 +25,7 @@ export const ui = {
         'index.page_title': 'Minmatar Fleet',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of Watermelon Fortizar station with Sugar station in the background.',
-        'index.description': 'Outside view of Minmatar Fleet HQ — WATERMELON in Sosala system',
+        'index.description': 'Outer view of Minmatar Fleet HQ — WATERMELON in Sosala system',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
