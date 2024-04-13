@@ -58,7 +58,13 @@ def migrate_users():
 
         discord_user = DiscordUser.objects.get(user_id=user.id)
         discord_user_id = discord_user.id
-        discord_roles = discord.get_user(discord_user_id)["roles"]
+        try:
+            discord_roles = discord.get_user(discord_user_id)["roles"]
+        except Exception as e:
+            logger.error(
+                "Failed to get roles for user %s: %s", discord_user_id, e
+            )
+            continue
 
         for discord_role_id in discord_roles:
             if not DiscordRole.objects.filter(
