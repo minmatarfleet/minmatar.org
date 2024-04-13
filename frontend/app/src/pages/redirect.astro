@@ -1,0 +1,14 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+const route = Astro.params?.route ?? '/'
+
+const redirect = translatePath(route)
+---
+
+<script define:vars={{ redirect }}>
+    window.location.href = redirect
+</script>
