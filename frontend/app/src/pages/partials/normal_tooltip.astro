@@ -6,15 +6,24 @@ const t = useTranslations(lang);
 
 const title = Astro.url.searchParams.get('title')
 const description = Astro.url.searchParams.get('description')
+const tag = Astro.url.searchParams.get('tag')
 
 import { marked } from 'marked';
 
 import Context from '@components/layout/Context.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Tag from '@components/blocks/Tag.astro';
 ---
 
 <Context>
     {title &&
-        <h4>{t(title as any)}</h4>
+        <FlexInline justification='space-between'>
+            <h4>{t(title as any)}</h4>
+
+            {tag &&
+                <Tag text={t(tag as any)} />
+            }
+        </FlexInline>
     }
     {description &&
         <small set:html={marked.parseInline(t(description as any))} />

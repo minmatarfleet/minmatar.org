@@ -9,6 +9,7 @@ interface Props {
     active?:        boolean;
     title?:         string;
     description?:   string;
+    tag?:           string;
     href?:          string;
     external?:      boolean;
     overlay?:       boolean;
@@ -19,6 +20,7 @@ const {
     active = false,
     title,
     description,
+    tag,
     href,
     external = false,
     overlay = false,
@@ -44,7 +46,7 @@ import Tippy from '@components/blocks/Tippy.astro';
     {title &&
         <Tippy
             data-tippy-placement="right"
-            partial={`${translatePath('/partials/normal_tooltip')}?title=${title}${description ? `&description=${description}` : ''}`}
+            partial={`${translatePath('/partials/normal_tooltip')}?title=${title}${description ? `&description=${description}` : ''}${tag ? `&tag=${tag}` : ''}`}
             height='70px'
             width='340px'
             element='div'

@@ -633,5 +633,7 @@ export const ui = {
         'updating': 'Updating',
         'collapse_characters': 'Collapse characters',
         'collapse_stations': 'Collapse stations',
+        'superadmin': 'Superadmin',
+        'dev': 'Dev',
     },
 } as const;
