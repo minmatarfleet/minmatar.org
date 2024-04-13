@@ -18,7 +18,7 @@ const is_superuser = (user ? user?.is_superuser : false)
 const can_view_page = is_superuser || (user ? user.permissions.includes('auth.change_evecorporationapplication') : false)
 
 import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
-const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
+const corporation = JSON.parse(JSON.stringify(Astro.url.searchParams.get('corporation'))) as CorporationBasic
 
 const corporation_id = corporation?.id ?? 0
 const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')

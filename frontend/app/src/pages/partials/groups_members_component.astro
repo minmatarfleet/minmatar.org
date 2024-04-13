@@ -57,7 +57,7 @@ if (delete_member_error) {
     const character_name = Astro.url.searchParams.get('character_name')
     const group_id = parseInt(Astro.url.searchParams.get('group_id'))
     const group_name = Astro.url.searchParams.get('group_name')
-    const group_image = JSON.parse(Astro.url.searchParams.get('group_image'))
+    const group_image = JSON.parse(JSON.stringify(Astro.url.searchParams.get('group_image')))
     const group_description = Astro.url.searchParams.get('group_description')
     const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
     const corporation_name = Astro.url.searchParams.get('corporation_name')
@@ -77,7 +77,7 @@ if (delete_member_error) {
         character_name: character_name,
         group_id: group_id.toString(),
         group_name: group_name,
-        group_image: group_image,
+        group_image: JSON.stringify(group_image),
         group_description: group_description,
         corporation_id: corporation_id,
         corporation_name: corporation_name,
