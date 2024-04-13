@@ -102,7 +102,7 @@ def get_corporation_application_by_id(
     application = EveCorporationApplication.objects.get(
         corporation__corporation_id=corporation_id, id=application_id
     )
-    characters = EveCharacter.objects.filter(token__user=request.user)
+    characters = EveCharacter.objects.filter(token__user=application.user)
     character_list = []
     for character in characters:
         character_list.append(
