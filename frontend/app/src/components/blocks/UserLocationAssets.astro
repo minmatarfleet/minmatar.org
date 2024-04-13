@@ -22,17 +22,25 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import AssetsList from '@components/blocks/AssetsList.astro';
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
+import CollapsableButton from './CollapsableButton.astro';
 ---
 
 <Flexblock
     class="[ user-assets ]"
     gap='var(--space-xl)'
     x-data={`{
+        character_expanded: true,
         assets_locations: ${JSON.stringify(character_assets.locations)},
         assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
         assets_locations_filtered: ${JSON.stringify(character_assets.locations)},
         total_assets_count: ${total_assets_count},
         total_assets_count_unfiltered: ${total_assets_count},
+        collapse_character() {
+            this.character_expanded = false
+        },
+        global_character_collapse() {
+            global_players_collapse && this.collapse_character()
+        },
         filter() {
             if (asset_name === '' && asset_station === '-1') {
                 this.assets_locations_filtered = (assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
@@ -61,22 +69,36 @@ import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
         init() {
             $refs.server_side_render.remove()
         },
+        toggle_assets_collapse() {
+            this.character_expanded = !this.character_expanded
+            global_players_collapse = false
+        },
         character_id: ${character_assets.character_id},
         character_name: '${character_assets.character_name}',
     }`}
-    x-effect="filter()"
+    x-effect="filter(); global_character_collapse()"
 >
-    <PilotBadge
-        character_id={character_assets.character_id}
-        character_name={character_assets.character_name}
+    <CollapsableButton
+        x-on:click="toggle_assets_collapse()"
+        class="[ !max-w-[var(--max-text-width)] ]"
     >
-        <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory').toLowerCase()}\``}>
-            {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
-        </small>
-    </PilotBadge>
+        <PilotBadge
+            character_id={character_assets.character_id}
+            character_name={character_assets.character_name}
+        >
+            <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory').toLowerCase()}\``}>
+                {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}
+            </small>
+        </PilotBadge>
+    </CollapsableButton>
 
     <div x-ref="server_side_render">
         <AssetsList assets_locations={character_assets.locations} />
     </div>
-    <AssetsListAlpine />
+    <div
+        x-show="character_expanded"
+        x-collapse.duration.0ms
+    >
+        <AssetsListAlpine />
+    </div>
 </Flexblock>

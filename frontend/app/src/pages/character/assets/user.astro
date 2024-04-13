@@ -51,6 +51,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
 import Select from '@components/blocks/Select.astro';
+import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ListIcon from '@components/icons/buttons/ListIcon.astro';
@@ -76,6 +77,8 @@ const page_title = t('assets.user.page_title')
             overlay: true
         }}
         x-data={`{
+            global_collapse: false,
+            global_players_collapse: false,
             assets_style: 'list',
             asset_name: '',
             asset_region: '-1',
@@ -114,28 +117,48 @@ const page_title = t('assets.user.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
-            <RadioCheck data-tippy-content={t('list_view_mode')}>
-                <input
-                    type="radio"
-                    value="list"
-                    name="assets-style"
-                    x-model="assets_style"
-                    x-on:change="filter()"
-                    checked
-                />
-                <ListIcon />
-            </RadioCheck>
-            <RadioCheck data-tippy-content={t('icons_view_mode')}>
-                <input
-                    type="radio"
-                    value="icons"
-                    name="assets-style"
-                    x-model="assets_style"
-                    x-on:change="filter()"
-                />
-                <IconList />
-            </RadioChecktype>
+        <FlexInline
+            slot="subheader"
+            gap='var(--space-l)'
+            class="[ items-center ]"
+        >
+            <FlexInline>
+                <RadioCheck data-tippy-content={t('list_view_mode')}>
+                    <input
+                        type="radio"
+                        value="list"
+                        name="assets-style"
+                        x-model="assets_style"
+                        x-on:change="filter()"
+                        checked
+                    />
+                    <ListIcon />
+                </RadioCheck>
+                <RadioCheck data-tippy-content={t('icons_view_mode')}>
+                    <input
+                        type="radio"
+                        value="icons"
+                        name="assets-style"
+                        x-model="assets_style"
+                        x-on:change="filter()"
+                    />
+                    <IconList />
+                </RadioChecktype>
+            </FlexInline>
+            <FlexInline>
+                <Button
+                    size='sm'
+                    x-on:click='global_players_collapse = true'
+                >
+                    {t('collapse_characters')}
+                </Button>
+                <Button
+                    size='sm'
+                    x-on:click='global_collapse = true'
+                >
+                    {t('collapse_stations')}
+                </Button>
+            </FlexInline>
         </FlexInline>
 
         {get_character_assets_error ?
