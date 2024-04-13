@@ -275,49 +275,6 @@ def get_primary_character(request):
     }
 
 
-@router.get(
-    "/primary/add",
-    summary="Add primary character using EVE Online SSO",
-    deprecated=True,
-)
-def add_primary_character(request, redirect_url: str):
-    request.session["redirect_url"] = redirect_url
-    scopes = BASIC_SCOPES
-
-    @login_required()
-    @token_required(scopes=scopes, new=True)
-    def wrapped(request, token):
-        if EveCharacter.objects.filter(
-            character_id=token.character_id
-        ).exists():
-            character = EveCharacter.objects.get(
-                character_id=token.character_id
-            )
-            if character.token is None:
-                character.token = token
-                character.save()
-        else:
-            character = EveCharacter.objects.create(
-                character_id=token.character_id,
-                character_name=token.character_name,
-                token=token,
-            )
-
-        if EvePrimaryCharacter.objects.filter(
-            character__token__user=request.user
-        ).exists():
-            primary_character = EvePrimaryCharacter.objects.get(
-                character__token__user=request.user
-            )
-            primary_character.character = character
-            primary_character.save()
-        else:
-            EvePrimaryCharacter.objects.create(character=character)
-        return redirect(request.session["redirect_url"])
-
-    return wrapped(request)  # pylint: disable=no-value-for-parameter
-
-
 @router.get("/add", summary="Add character using EVE Online SSO")
 def add_character(request, redirect_url: str, token_type: TokenType):
     request.session["redirect_url"] = redirect_url
