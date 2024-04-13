@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Sig, Team, AffiliationType, UserAffiliation
+from .models import AffiliationType, Sig, Team, UserAffiliation
 
 # Register your models here.
 admin.site.register(AffiliationType)

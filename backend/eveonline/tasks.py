@@ -191,14 +191,17 @@ def update_corporation(corporation_id):
     corporation.ticker = esi_corporation["ticker"]
     corporation.member_count = esi_corporation["member_count"]
     # set ceo
-    logger.info(
-        "Setting CEO as %s for corporation %s",
-        esi_corporation["ceo_id"],
-        corporation.name,
-    )
-    corporation.ceo = EveCharacter.objects.get_or_create(
-        character_id=esi_corporation["ceo_id"]
-    )[0]
+    if esi_corporation["ceo_id"] > 90000000:
+        logger.info(
+            "Setting CEO as %s for corporation %s",
+            esi_corporation["ceo_id"],
+            corporation.name,
+        )
+        corporation.ceo = EveCharacter.objects.get_or_create(
+            character_id=esi_corporation["ceo_id"]
+        )[0]
+    else:
+        logger.info("Skipping CEO for corporation %s", corporation.name)
 
     # set alliance
     logger.info("Updating alliance for corporation %s", corporation.name)

@@ -94,8 +94,8 @@ class SigRequestSchema(BaseModel):
     id: int
     user: int
     sig_id: int
-    approved: Optional[bool]
-    approved_by: Optional[int]
+    approved: Optional[bool] = None
+    approved_by: Optional[int] = None
 
 
 @router.get(
