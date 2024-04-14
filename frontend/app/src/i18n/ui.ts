@@ -118,7 +118,7 @@ export const ui = {
         'groups.page_title': 'Special Groups of Interest',
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to expand and create ways to maintain a close-knit feel in a large organization.',
-        'groups.cover_alt': 'An Amarr hauler initiating warp drive.',
+        'groups.cover_alt': 'Close up into an Avatar Titan front hull',
         
         'groups.members.page_title': 'SIGs members',
         'groups.members.leading_text': 'Here a list of all members for your managed group(s). You may use the filters to look up for your members faster.',
@@ -133,7 +133,7 @@ export const ui = {
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but without them our alliance would cease to exist. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
-        'teams.cover_alt': 'An Amarr hauler initiating warp drive.',
+        'teams.cover_alt': 'EVE Gate wormhole.',
 
         'assets.user.page_title': 'My assets',
         
