@@ -3,6 +3,15 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { is_officer, is_director } from '@helpers/fetching/groups'
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
 const CAMERA_ZOOM = 2.2
 
 import Viewport from '@layouts/Viewport.astro';
@@ -162,16 +171,18 @@ const page_title = t('index.page_title');
 						<small>For starters, you may link your pilots to our platform through the user section in the Neocom bar.</small>
 					</Flexblock>
 
-					<!--<Flexblock>
-						<Flexblock gap='0'>
-							<label for="doctrine">{t('rotation_x')}</label>
-							<Input type="number" x-model="rotation_x" step="0.00001" />
+					{user_is_superadmin &&
+						<Flexblock class="[ camera-controls !hidden ]">
+							<Flexblock gap='0'>
+								<label for="doctrine">{t('rotation_x')}</label>
+								<Input type="number" x-model="rotation_x" step="0.00001" />
+							</Flexblock>
+							<Flexblock gap='0'>
+								<label for="doctrine">{t('rotation_y')}</label>
+								<Input type="number" x-model="rotation_y" step="0.00001" />
+							</Flexblock>
 						</Flexblock>
-						<Flexblock gap='0'>
-							<label for="doctrine">{t('rotation_y')}</label>
-							<Input type="number" x-model="rotation_y" step="0.00001" />
-						</Flexblock>
-					</Flexblock>-->
+					}
 				</Flexblock>
 
 				<small>{t('ccp_disclaimer')}</small>
@@ -181,6 +192,13 @@ const page_title = t('index.page_title');
 </Viewport>
 
 <style lang="scss">
+	.camera-controls {
+		position: fixed;
+		bottom: 60px;
+		right: 60px;
+		width: 250px;
+	}
+
 	.station-info {
 		position: fixed;
 		top: var(--space-l);
