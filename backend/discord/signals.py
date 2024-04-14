@@ -20,9 +20,9 @@ discord = DiscordClient()
 def resolve_existing_discord_role_from_server(
     sender, instance, *args, **kwargs
 ):
+    existing_role = False
     if not instance.role_id:  # skip when importing a role
         roles = discord.get_roles()
-        existing_role = False
         for role in roles:
             if role["name"] == instance.name:
                 logger.info("Found existing role with name %s", instance.name)
@@ -45,11 +45,7 @@ def group_post_save(
     sender, instance, created, **kwargs
 ):  # pylint: disable=unused-argument
     logger.info("Group saved, creating / updating role")
-    if DiscordRole.objects.filter(group=instance).exists():
-        role = DiscordRole.objects.get(group=instance)
-        role.name = instance.name
-        role.save()
-    else:
+    if not DiscordRole.objects.filter(group=instance).exists():
         DiscordRole.objects.create(
             name=instance.name,
             group=instance,
