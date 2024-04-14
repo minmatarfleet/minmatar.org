@@ -54,6 +54,9 @@ const page_title = t('index.page_title');
                     let scene
             		const mat4 = ccpwgl_int.math.mat4
 
+					if(window.matchMedia("(pointer: coarse)").matches)
+						return
+
                     canvas = document.getElementById('mainCanvas');
                     
                     ccpwgl.initialize(canvas, fitting.options);
@@ -125,7 +128,7 @@ const page_title = t('index.page_title');
             x-init="$nextTick(() => init_ccpwgl())"
         />
 
-		<Flexblock class="[ station-info ][ hidden lg:block ]" gap='var(--space-2xs)'>
+		<Flexblock class="[ station-info ][ !hidden xl:!block ]" gap='var(--space-2xs)'>
 			<FlexInline gap='var(--space-3xs)' class="[ items-end ]">
 				<h2>Sosala <span class="[ text-[var(--fleet-red)] ]">0.4</span></h2>
 				<FlexInline gap='var(--space-3xs)' class="[ items-center ]">
