@@ -4,7 +4,6 @@ from typing import List, Optional
 
 import pydantic
 from esi.clients import EsiClientProvider
-from esi.models import Token
 from eveuniverse.models import EveGroup, EveStation, EveType
 
 from eveonline.models import EveCharacter, EveCharacterAsset
@@ -34,10 +33,6 @@ def create_character_assets(character: EveCharacter):
     """Create assets for a character"""
     logger.info("Creating assets for character %s", character.character_id)
     EveCharacterAsset.objects.filter(character=character).delete()
-    required_scopes = [
-        "esi-assets.read_assets.v1",
-        "esi-universe.read_structures.v1",
-    ]
     logger.info("Loading assets for character %s", character.character_id)
     assets: List[EveAssetResponse] = json.loads(character.assets_json)
     for asset in assets:

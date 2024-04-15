@@ -4,8 +4,9 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveStructure
 from authentication import AuthBearer
+
+from .models import EveStructure
 
 router = Router(tags=["Structures"])
 

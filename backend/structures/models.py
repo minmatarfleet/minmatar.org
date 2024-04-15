@@ -1,5 +1,7 @@
 from django.db import models
+
 from eveonline.models import EveCorporation
+
 
 # Create your models here.
 class EveStructure(models.Model):

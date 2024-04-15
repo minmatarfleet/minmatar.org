@@ -30,8 +30,8 @@ from fittings.router import doctrines_router, fittings_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
-from users.router import router as users_router
 from structures.router import router as structures_router
+from users.router import router as users_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)

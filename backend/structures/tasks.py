@@ -1,18 +1,19 @@
-import json
 import logging
+
+from esi.clients import EsiClientProvider
+from esi.models import Token
+from eveuniverse.models import EveSolarSystem, EveType
 
 from app.celery import app
 from eveonline.models import EveCorporation
-from esi.clients import EsiClientProvider
-from esi.models import Token
-from .models import EveStructure
-from eveuniverse.models import EveSolarSystem, EveType
 
+from .models import EveStructure
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
 
+@app.task
 def update_structures():
     for corporation in EveCorporation.objects.all():
         logger.info("Checking corporation %s for structures", corporation)
