@@ -7,7 +7,7 @@ const translatePath = useTranslatedPath(lang);
 
 import { get_item_icon_by_name } from '@helpers/eve_image_server';
 
-import type { FitItem } from '@dtypes/layout_components';
+import type { FittingItem } from '@dtypes/layout_components';
 
 import Button from '@components/blocks/Button.astro';
 import ThumbCard from '@components/blocks/ThumbCard.astro';
@@ -15,43 +15,50 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import VerticalCenter from './VerticalCenter.astro';
 import TextGroup from './TextGroup.astro';
 
+import { get_item_icon } from '@helpers/eve_image_server'
+
 interface Props {
-    fit: FitItem;
+    fitting: FittingItem;
     [propName: string]: any;
 }
 
 const {
-    fit,
+    fitting,
     ...attributes
 } = Astro.props
 ---
 
 <div {...attributes}>
     <ThumbCard
-        thumb_image={get_item_icon_by_name(fit.ship_name, 256)}
-        thumb_image_small={fit.image}
-        thumb_image_alt={fit.ship_name}
+        thumb_image={get_item_icon(fitting.ship_id, 256)}
+        thumb_image_small={get_item_icon(fitting.ship_id)}
+        thumb_image_alt={fitting.ship_name}
     >
         <VerticalCenter>
             <TextGroup title={t('fitting_name')}>
-                {fit.fitting_name}
+                {fitting.fitting_name}
             </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>
             <TextGroup title={t('fitting_type')}>
-                {fit.fitting_type}
+                {fitting.fitting_type}
             </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>
             <TextGroup title={t('ship_type')}>
-                {fit.ship_type}
+                {fitting.ship_type}
             </TextGroup>
         </VerticalCenter>
 
         <VerticalCenter>
-            <Button href={translatePath(`/ships/fitting/redirect/${fit.id}`)}>
+            <Button class="[ !hidden 2xl:!block ]" href={translatePath(`/ships/fitting/redirect/${fitting.id}`)}>
+                <MagnifierIcon slot="icon" />
+                {t('view_details')}
+            </Button>
+
+            <Button class="[ 2xl:!hidden ]" href={translatePath(`/ships/fitting/list/${fitting.id}`)}>
                 <MagnifierIcon slot="icon" />
                 {t('view_details')}
             </Button>

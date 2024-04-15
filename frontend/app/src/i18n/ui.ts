@@ -635,5 +635,10 @@ export const ui = {
         'collapse_stations': 'Collapse stations',
         'superadmin': 'Superadmin',
         'dev': 'Dev',
+        'get_fittings_error': 'An error ocurred fetching fittings',
+        'get_fitting_error': 'An error ocurred fetching the fitting',
+        'error_ship_parsing': '[ Error parsing ship name ]',
+        'unknown': 'Unknown',
+        'fitting_type_error': '[ Fitting type parsing error ]',
     },
 } as const;

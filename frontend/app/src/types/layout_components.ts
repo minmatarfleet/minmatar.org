@@ -30,14 +30,13 @@ export interface FleetItem {
     href:                           string;
 }
 
-export interface FitItem {
-    image:        string;
-    fitting_name: string;
-    fitting_type: string;
-    ship_type:    string;
-    ship_name:    string;
-    href:         string;
-    id:           number;
+export interface FittingItem {
+    fitting_name:   string;
+    fitting_type:   string;
+    ship_type:      string;
+    ship_name:      string;
+    ship_id:        number;
+    id:             number;
 }
 
 export interface DoctrineItemObj {
@@ -366,7 +365,7 @@ export interface ErrorRefetchParams {
     partial:    string;
     message:    string;
     delay:      number;
-    target:     string,
+    target?:    string,
 }
 
 export interface CharacterBasic {

@@ -119,3 +119,15 @@ export interface CharacterAsset {
     location_id:    number;
     location_name:  string;
 }
+
+export interface Fitting {
+    id:             number;
+    name:           string;
+    ship_id:        number;
+    description:    string;
+    created_at:     Date;
+    updated_at:     Date;
+    tags:           string[];
+    eft_format:     string;
+    latest_version: string;
+}

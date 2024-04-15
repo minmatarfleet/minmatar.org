@@ -17,13 +17,21 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 if (is_prod_mode() && !user_is_superadmin)
     return HTTP_404_Not_Found()
 
-// TODO: Replace the static JSON below with the endpoint request using the id
-const { id } = Astro.params;
-console.log(`TODO: Fetch endpoint with id: ${id}`)
-// Replace me 👇
-import fit_details from '@json/page/fitting/list/adv-30-arazu.json';
-import { fitting } from '@/data/test_fitting';
+const { fitting_id } = Astro.params;
 
+import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fitting:Fitting
+let get_fitting_error:string | false = false
+
+try {
+    fitting = await get_fitting_by_id(parseInt(fitting_id))
+} catch (error) {
+    get_fitting_error = is_prod_mode() ? t('get_fitting_error') : error.message
+}
+
+import { marked } from 'marked';
 import { get_module_model } from '@helpers/sde/modules'
 import ccpwgl_turrets from '@/data/ccpwgl_turrets.json'
 import { get_item_id } from '@helpers/sde/items'
@@ -31,7 +39,7 @@ import { get_ship_dna } from '@helpers/ccpwgl'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { parse_eft } from '@helpers/fit_parser.ts';
 
-const fitting_parsed = await parse_eft(fitting)
+const fitting_parsed = await parse_eft(fitting.eft_format)
 let turrets:string[] = []
 
 await Promise.all(fitting_parsed?.high_slots.map(async (module, index) => {
@@ -44,6 +52,7 @@ const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
+console.log(ship_dna)
 
 const CAMERA_ZOOM = fitting_parsed?.subsystem_slots?.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
@@ -228,14 +237,14 @@ const page_title = fitting_parsed.name;
                         </ButtonStack>
                     </FlexInline>
                     
-                    <p>{fit_details.description}</p>
+                    <Flexblock set:html={marked.parse(fitting.description)} />
                 </Flexblock>
 
                 <Flexblock gap='var(--space-3xs)'>
                     <CollapsibleBlock>
                         <FitsEvEIcon slot="head" />
                         <h3 slot="head">{t('fitting')}</h3>
-                        <pre class="[ eve-html ]">{fitting}</pre>
+                        <pre class="[ eve-html ]" set:html={fitting.eft_format} />
                     </CollapsibleBlock>
 
                     {fitting_parsed?.drones?.length > 0 &&
