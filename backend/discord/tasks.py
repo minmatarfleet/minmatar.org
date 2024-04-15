@@ -56,7 +56,7 @@ def sync_discord_user_roles(discord_user_id: int):
     # addition hard check
     discord_roles = discord.get_user(discord_user_id)["roles"]
     for expected_discord_role in expected_discord_roles:
-        if expected_discord_role.role_id not in discord_roles:
+        if str(expected_discord_role.role_id) not in discord_roles:
             logger.info(
                 "User %s missing external role %s, adding",
                 user.username,
@@ -70,6 +70,7 @@ def sync_discord_user_roles(discord_user_id: int):
 
     # removal hard check
     for discord_role_id in discord_roles:
+        discord_role_id = int(discord_role_id)
         if not DiscordRole.objects.filter(role_id=discord_role_id).exists():
             continue
         discord_role = DiscordRole.objects.get(role_id=discord_role_id)
