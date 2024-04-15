@@ -64,7 +64,9 @@ def user_group_changed(
     if action == "pre_add":
         logger.info("User added to group, adding to discord role")
         for group in instance.groups.all():
+            logger.info("Checking group %s", group.name)
             if DiscordRole.objects.filter(group=group).exists():
+                logger.info("Group has discord role, adding user")
                 discord_user = instance.discord_user
                 # check if discord_user in role members
                 if discord_user in group.discord_group.members.all():
@@ -72,8 +74,15 @@ def user_group_changed(
                     continue
 
                 role = DiscordRole.objects.get(group=group)
+                logger.info(
+                    "Adding user %s to external discord role %s",
+                    discord_user,
+                    role,
+                )
                 discord.add_user_role(discord_user.id, role.role_id)
+                logger.info("User added to external discord role")
                 role.members.add(discord_user)
+                logger.info("User added to discord role members")
             else:
                 logger.info("No discord role for group %s", group.name)
     elif action == "pre_remove":
