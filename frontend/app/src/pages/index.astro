@@ -63,11 +63,8 @@ const page_title = t('index.page_title');
                     let scene
             		const mat4 = ccpwgl_int.math.mat4
 
-					if(window.matchMedia("(pointer: coarse)").matches)
-						return
-
                     canvas = document.getElementById('mainCanvas');
-                    
+					
                     ccpwgl.initialize(canvas, fitting.options);
                     ccpwgl_context = canvas.getContext("webgl");
                     
@@ -78,6 +75,7 @@ const page_title = t('index.page_title');
                     camera.shift = 100.81
 
                     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
+					console.log(scene)
                     scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
                     scene.setSunDirection([-0.7, -0.01, 0.7]);
                     
@@ -117,8 +115,7 @@ const page_title = t('index.page_title');
 						this.setTransform(rotationMatrix);
                     });
 
-                    if (fitting.options.postprocess)
-                        ccpwgl.enablePostprocessing(true);
+                    ccpwgl.enablePostprocessing(true);
 
 					function setColor(r, g, b, material) {
 						for (var i = 0; i < watermelon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
@@ -132,6 +129,27 @@ const page_title = t('index.page_title');
 
 						}
 					}
+
+					function resizeCanvasToDisplaySize(canvas) {
+						// Lookup the size the browser is displaying the canvas in CSS pixels.
+						const displayWidth  = canvas.clientWidth;
+						const displayHeight = canvas.clientHeight;
+						
+						// Check if the canvas is not the same size.
+						const needResize = canvas.width  !== displayWidth ||
+											canvas.height !== displayHeight;
+						
+						if (needResize) {
+							// Make the canvas the same size
+							canvas.width  = displayWidth;
+							canvas.height = displayHeight;
+						}
+						
+						return needResize;
+					}
+
+					resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+					ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
                 }
             }`}
             x-init="$nextTick(() => init_ccpwgl())"
