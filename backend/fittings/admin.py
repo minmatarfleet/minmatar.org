@@ -1,8 +1,7 @@
-from typing import Any
 from django.contrib import admin
 
-from .models import EveDoctrine, EveFitting, EveFittingTag, EveDoctrineFitting
 from .forms import EveDoctrineForm
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting, EveFittingTag
 
 admin.site.register(EveFitting)
 admin.site.register(EveFittingTag)
@@ -10,6 +9,10 @@ admin.site.register(EveFittingTag)
 
 @admin.register(EveDoctrine)
 class EveDoctrineAdmin(admin.ModelAdmin):
+    """
+    Custom admin to make editing doctrines easier
+    """
+
     form = EveDoctrineForm
     list_display = ("name", "type", "description")
     search_fields = ("name", "type", "description")

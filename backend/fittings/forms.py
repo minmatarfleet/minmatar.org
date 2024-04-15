@@ -1,9 +1,14 @@
 from django import forms
-from .models import EveFitting, EveDoctrineFitting, EveDoctrine
 from django.contrib.admin.widgets import FilteredSelectMultiple
+
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 
 class EveDoctrineForm(forms.ModelForm):
+    """
+    Custom override form for django admin
+    """
+
     name = forms.CharField(max_length=255)
     type = forms.ChoiceField(
         choices=(
@@ -51,15 +56,11 @@ class EveDoctrineForm(forms.ModelForm):
                     doctrine_id=doctrine_id, role="support"
                 )
             ]
-            self.fields["primary_fittings"].initial = (
-                primary_doctrine_fittings
-            )
+            self.fields["primary_fittings"].initial = primary_doctrine_fittings
             self.fields["secondary_fittings"].initial = (
                 secondary_doctrine_fittings
             )
-            self.fields["support_fittings"].initial = (
-                support_doctrine_fittings
-            )
+            self.fields["support_fittings"].initial = support_doctrine_fittings
 
     class Meta:
         model = EveDoctrine
