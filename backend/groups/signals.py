@@ -70,13 +70,15 @@ def team_directors_changed(
 ):
     group, _ = Group.objects.get_or_create(name="Alliance Officer")
     logger.info("Team directors changed, updating user groups")
-    if action == "post_add":
+    if action == "pre_add":
         for user_id in pk_set:
             user = model.objects.get(pk=user_id)
+            logger.info("Adding team director %s to group %s", user, group)
             user.groups.add(group)
-    elif action == "post_remove":
+    elif action == "pre_remove":
         for user_id in pk_set:
             user = model.objects.get(pk=user_id)
+            logger.info("Removing team director %s from group %s", user, group)
             user.groups.remove(group)
     else:
         pass
