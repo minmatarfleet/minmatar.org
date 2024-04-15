@@ -73,7 +73,7 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
             pagination_icons={pagination_icons}
         >
             {corporations.map((corporation, index) =>
-                <div class="swiper-slide" id={slugify(corporation.corporation_name)}>
+                <div class="swiper-slide" data-hash={slugify(corporation.corporation_name)}>
                     {corporation.corporation_name == 'Rattini Tribe' &&
                         <RattiniSlide
                             corporation={corporation}
@@ -105,7 +105,7 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                 </div>
             )}
             {corporations_with_no_slide.length > 0 &&
-                <div class="swiper-slide" id="minmatar-fleet-no-slide">
+                <div class="swiper-slide" data-hash="Minmatar_Fleet_New_Corporations">
                     <FleetCorporationsSlide
                         id="slideless-alliance-corps"
                         picture_placement={corporations.length%2 == 0 ? 'left' : 'right'}
@@ -114,7 +114,7 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     />
                 </div>
             }
-            <div class="swiper-slide" id="minmatar-fleet-associates">
+            <div class="swiper-slide" data-hash="Minmatar_Fleet_Associates">
                 <AssociatesSlide
                     id="associates-alliance"
                     picture_placement={(corporations.length + (corporations_with_no_slide.length > 0 ? 1 : 0))%2 == 0 ? 'left' : 'right'}
