@@ -1,14 +1,14 @@
-from app.celery import app
-from git import Repo
+import logging
 import os
 import shutil
-from .models import (
-    EveFitting,
-)
-from esi.clients import EsiClientProvider
-import logging
-from django.db.models import Q
 
+from django.db.models import Q
+from esi.clients import EsiClientProvider
+from git import Repo
+
+from app.celery import app
+
+from .models import EveFitting
 
 logger = logging.getLogger(__name__)
 
@@ -113,11 +113,7 @@ def update_fittings():  # noqa
                 pass
 
         if name and description and fitting:
-            ship_name = (
-                fitting.split("\n")[0]
-                .split(",")[0]
-                .replace("[", "")
-            )
+            ship_name = fitting.split("\n")[0].split(",")[0].replace("[", "")
             # resolve from ESI
             ship_id = None
             try:

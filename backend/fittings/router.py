@@ -1,9 +1,10 @@
+from datetime import datetime
+from typing import List
+
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveDoctrine, EveFitting, EveDoctrineFitting
-from typing import List
-from datetime import datetime
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 router = Router(tags=["Fittings"])
 
