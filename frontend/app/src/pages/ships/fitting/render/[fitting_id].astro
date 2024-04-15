@@ -162,8 +162,7 @@ const page_title = fitting_parsed.name;
                         fit_turret(ship, res, index + 1)
                     })
 
-                    if (fitting.options.postprocess)
-                        ccpwgl.enablePostprocessing(true);
+                    ccpwgl.enablePostprocessing(true);
 
                     document.addEventListener('astro:after-swap', () => {
                         clearTimeout(animation_timer)
@@ -179,6 +178,27 @@ const page_title = fitting_parsed.name;
                         event.preventDefault();
                     });
                     canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+
+                    function resizeCanvasToDisplaySize(canvas) {
+						// Lookup the size the browser is displaying the canvas in CSS pixels.
+						const displayWidth  = canvas.clientWidth;
+						const displayHeight = canvas.clientHeight;
+						
+						// Check if the canvas is not the same size.
+						const needResize = canvas.width  !== displayWidth ||
+											canvas.height !== displayHeight;
+						
+						if (needResize) {
+							// Make the canvas the same size
+							canvas.width  = displayWidth;
+							canvas.height = displayHeight;
+						}
+						
+						return needResize;
+					}
+
+					resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+					ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
                 }
             }`}
             x-init="$nextTick(() => init_ccpwgl())"
