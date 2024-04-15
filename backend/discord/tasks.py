@@ -119,3 +119,76 @@ def migrate_users():
 
     logger.info("Skipped users: %s", skipped_users)
     logger.info("Skipped roles: %s", skipped_roles)
+
+
+@app.task()
+def migrate_user(username: str):
+    # users already have these groups
+    signals.m2m_changed.disconnect(
+        sender=User.groups.through,
+        dispatch_uid="user_group_changed",
+    )
+    user = User.objects.get(username=username)
+    time.sleep(1)
+    if not DiscordUser.objects.filter(user_id=user.id).exists():
+        logger.info(
+            "Skipping migration of user %s, missing primary character",
+            user.id,
+        )
+        return
+    if not EvePrimaryCharacter.objects.filter(
+        character__token__user__id=user.id
+    ).exists():
+        logger.info(
+            "Skipping migration of user %s, missing primary character",
+            user.id,
+        )
+        return
+
+    discord_user = DiscordUser.objects.get(user_id=user.id)
+    discord_user_id = discord_user.id
+    discord_roles = discord.get_user(discord_user_id)["roles"]
+
+    for discord_role_id in discord_roles:
+        if not DiscordRole.objects.filter(role_id=discord_role_id).exists():
+            logger.info("Skipping migration of role %s", discord_role_id)
+            return
+
+        discord_role = DiscordRole.objects.get(role_id=discord_role_id)
+        group = discord_role.group
+
+        # check if team
+        if Team.objects.filter(group=group).exists():
+            logger.info("Adding user %s to team %s", user.username, group.name)
+            team = Team.objects.get(group=group)
+            team.members.add(user)
+
+        # check if sig
+        if Sig.objects.filter(group=group).exists():
+            logger.info("Adding user %s to sig %s", user.username, group.name)
+            sig = Sig.objects.get(group=group)
+            sig.members.add(user)
+
+        # check if affiliation
+        if AffiliationType.objects.filter(group=group).exists():
+            logger.info(
+                "Adding user %s to affiliation %s",
+                user.username,
+                group.name,
+            )
+            affiliation_type = AffiliationType.objects.get(group=group)
+            if UserAffiliation.objects.filter(
+                user=user, affiliation=affiliation_type
+            ).exists():
+                logger.info(
+                    "User %s already has affiliation %s",
+                    user.username,
+                    affiliation_type.name,
+                )
+                continue
+            elif UserAffiliation.objects.filter(user=user).exists():
+                UserAffiliation.objects.filter(user=user).delete()
+            UserAffiliation.objects.create(
+                user=user,
+                affiliation=affiliation_type,
+            )
