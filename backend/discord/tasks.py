@@ -68,6 +68,21 @@ def sync_discord_user_roles(discord_user_id: int):
             # update discord role members
             expected_discord_role.members.add(discord_user)
 
+    # removal hard check
+    for discord_role_id in discord_roles:
+        if not DiscordRole.objects.filter(role_id=discord_role_id).exists():
+            continue
+        discord_role = DiscordRole.objects.get(role_id=discord_role_id)
+        if discord_role in expected_discord_roles:
+            continue
+        logger.info(
+            "User %s has external role %s, removing",
+            user.username,
+            discord_role.name,
+        )
+        discord.remove_user_role(discord_user_id, discord_role_id)
+        discord_role.members.remove(discord_user)
+
 
 @app.task()
 def migrate_users():  # noqa
