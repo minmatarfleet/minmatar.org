@@ -28,7 +28,7 @@ def import_external_roles():
 
 
 @app.task()
-def migrate_users():
+def migrate_users():  # noqa
     # users already have these groups
     signals.m2m_changed.disconnect(
         sender=User.groups.through,

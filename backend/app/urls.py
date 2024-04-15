@@ -26,6 +26,7 @@ from applications.router import router as applications_router
 from authentication import UnauthorizedError
 from discord.views import discord_login
 from eveonline.routers import router
+from fittings.router import doctrines_router, fittings_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
@@ -37,6 +38,8 @@ api.add_router("eveonline/", router)
 api.add_router("teams/", teams_router)
 api.add_router("sigs/", sigs_router)
 api.add_router("applications/", applications_router)
+api.add_router("fittings/", fittings_router)
+api.add_router("doctrines/", doctrines_router)
 api.add_router("mumble/", mumble_router)
 
 

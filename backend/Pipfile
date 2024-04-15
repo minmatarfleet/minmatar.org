@@ -22,6 +22,7 @@ pyjwt = "*"
 whitenoise = "*"
 gunicorn = "*"
 sentry-sdk = {extras = ["django","celery"], version = "*"}
+gitpython = "*"
 
 [dev-packages]
 pylint = "*"
