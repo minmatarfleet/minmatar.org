@@ -138,6 +138,9 @@ def migrate_users():  # noqa
 
             # add to group
             if Group.objects.filter(name=group.name).exists():
+                if group.name == "Strategic FC" or group.name == "Skirmish FC":
+                    fc_default_group = Group.objects.get(name="FC")
+                    user.groups.add(fc_default_group)
                 group = Group.objects.get(name=group.name)
                 user.groups.add(group)
                 logger.info(
