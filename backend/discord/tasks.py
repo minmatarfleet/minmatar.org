@@ -35,6 +35,7 @@ def sync_discord_user_roles(discord_user_id: int):
         group__in=user.groups.all()
     )
 
+    # addition soft check
     for expected_discord_role in expected_discord_roles:
         logger.info(
             "Checking if user %s has external role %s",
@@ -42,9 +43,27 @@ def sync_discord_user_roles(discord_user_id: int):
             expected_discord_role.name,
         )
         if discord_user in expected_discord_role.members.all():
+            logger.info("User already has role, skipping")
             continue
+        logger.info(
+            "Adding user %s to external role %s",
+            user.username,
+            expected_discord_role.name,
+        )
         discord.add_user_role(discord_user_id, expected_discord_role.role_id)
         discord_user.members.add(expected_discord_role)
+
+    # addition hard check
+    discord_roles = discord.get_user(discord_user_id)["roles"]
+    for expected_discord_role in expected_discord_roles:
+        if expected_discord_role.role_id not in discord_roles:
+            logger.info(
+                "User %s missing external role %s, adding",
+                user.username,
+                expected_discord_role.name,
+            )
+            discord.add_user_role(discord_user_id, expected_discord_role.role_id)
+            discord_user.members.add(expected_discord_role)
 
 
 @app.task()
