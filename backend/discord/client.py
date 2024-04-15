@@ -21,7 +21,7 @@ class DiscordBaseClient:
         self.guild_id = GUILD_ID
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
         logger.info("POST %s", args)
@@ -35,7 +35,7 @@ class DiscordBaseClient:
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
         logger.info("PUT %s", args)
@@ -49,7 +49,7 @@ class DiscordBaseClient:
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
         logger.info("PATCH %s", args)
@@ -63,7 +63,7 @@ class DiscordBaseClient:
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
         logger.info("GET %s", args)
@@ -79,7 +79,7 @@ class DiscordBaseClient:
         return response.json()
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
         response = requests.delete(
