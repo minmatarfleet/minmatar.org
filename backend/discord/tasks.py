@@ -62,8 +62,11 @@ def sync_discord_user_roles(discord_user_id: int):
                 user.username,
                 expected_discord_role.name,
             )
-            discord.add_user_role(discord_user_id, expected_discord_role.role_id)
-            discord_user.members.add(expected_discord_role)
+            discord.add_user_role(
+                discord_user_id, expected_discord_role.role_id
+            )
+            # update discord role members
+            expected_discord_role.members.add(discord_user)
 
 
 @app.task()
