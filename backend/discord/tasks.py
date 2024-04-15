@@ -28,6 +28,26 @@ def import_external_roles():
 
 
 @app.task()
+def sync_discord_user_roles(discord_user_id: int):
+    discord_user = DiscordUser.objects.get(id=discord_user_id)
+    user = discord_user.user
+    expected_discord_roles = DiscordRole.objects.filter(
+        group__in=user.groups.all()
+    )
+
+    for expected_discord_role in expected_discord_roles:
+        logger.info(
+            "Checking if user %s has external role %s",
+            user.username,
+            expected_discord_role.name,
+        )
+        if discord_user in expected_discord_role.members.all():
+            continue
+        discord.add_user_role(discord_user_id, expected_discord_role.role_id)
+        discord_user.members.add(expected_discord_role)
+
+
+@app.task()
 def migrate_users():  # noqa
     # users already have these groups
     signals.m2m_changed.disconnect(
