@@ -6,7 +6,8 @@ from pydantic import BaseModel
 
 from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
-router = Router(tags=["Fittings"])
+doctrines_router = Router(tags=["Ships"])
+fittings_router = Router(tags=["Ships"])
 
 
 class FittingResponse(BaseModel):
@@ -33,7 +34,7 @@ class DoctrineResponse(BaseModel):
     support_fittings: List[FittingResponse]
 
 
-@router.get("/doctrines", response=List[DoctrineResponse])
+@doctrines_router.get("", response=List[DoctrineResponse])
 def get_doctrines(request):
     doctrines = EveDoctrine.objects.all()
     response = []
@@ -42,8 +43,8 @@ def get_doctrines(request):
         secondary_fittings = []
         support_fittings = []
         fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
-        for fitting in fittings:
-            fitting = fitting.fitting
+        for doctrine_fitting in fittings:
+            fitting = doctrine_fitting.fitting
             fitting_response = FittingResponse(
                 id=fitting.id,
                 name=fitting.name,
@@ -55,11 +56,11 @@ def get_doctrines(request):
                 eft_format=fitting.eft_format,
                 latest_version=fitting.latest_version,
             )
-            if fitting.role == "primary":
+            if doctrine_fitting.role == "primary":
                 primary_fittings.append(fitting_response)
-            elif fitting.role == "secondary":
+            elif doctrine_fitting.role == "secondary":
                 secondary_fittings.append(fitting_response)
-            elif fitting.role == "support":
+            elif doctrine_fitting.role == "support":
                 support_fittings.append(fitting_response)
         doctrine_response = DoctrineResponse(
             id=doctrine.id,
@@ -76,15 +77,15 @@ def get_doctrines(request):
     return response
 
 
-@router.get("/doctrines/{doctrine_id}", response=DoctrineResponse)
+@doctrines_router.get("/{doctrine_id}", response=DoctrineResponse)
 def get_doctrine(request, doctrine_id: int):
     doctrine = EveDoctrine.objects.get(id=doctrine_id)
     primary_fittings = []
     secondary_fittings = []
     support_fittings = []
     fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
-    for fitting in fittings:
-        fitting = fitting.fitting
+    for doctrine_fitting in fittings:
+        fitting = doctrine_fitting.fitting
         fitting_response = FittingResponse(
             id=fitting.id,
             name=fitting.name,
@@ -96,11 +97,11 @@ def get_doctrine(request, doctrine_id: int):
             eft_format=fitting.eft_format,
             latest_version=fitting.latest_version,
         )
-        if fitting.role == "primary":
+        if doctrine_fitting.role == "primary":
             primary_fittings.append(fitting_response)
-        elif fitting.role == "secondary":
+        elif doctrine_fitting.role == "secondary":
             secondary_fittings.append(fitting_response)
-        elif fitting.role == "support":
+        elif doctrine_fitting.role == "support":
             support_fittings.append(fitting_response)
     doctrine_response = DoctrineResponse(
         id=doctrine.id,
@@ -116,7 +117,7 @@ def get_doctrine(request, doctrine_id: int):
     return doctrine_response
 
 
-@router.get("/fittings", response=List[FittingResponse])
+@fittings_router.get("", response=List[FittingResponse])
 def get_fittings(request):
     fittings = EveFitting.objects.all()
     response = []
@@ -136,7 +137,7 @@ def get_fittings(request):
     return response
 
 
-@router.get("/fittings/{fitting_id}", response=FittingResponse)
+@fittings_router.get("/{fitting_id}", response=FittingResponse)
 def get_fitting(request, fitting_id: int):
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = FittingResponse(
