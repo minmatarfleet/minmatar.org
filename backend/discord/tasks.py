@@ -79,6 +79,14 @@ def migrate_users():  # noqa
 
             # check if team
             if Team.objects.filter(group=group).exists():
+                team = Team.objects.get(group=group)
+                if team.members.filter(username=user.username).exists():
+                    logger.info(
+                        "User %s already in team %s",
+                        user.username,
+                        group.name,
+                    )
+                    continue
                 logger.info(
                     "Adding user %s to team %s", user.username, group.name
                 )
@@ -88,6 +96,14 @@ def migrate_users():  # noqa
 
             # check if sig
             if Sig.objects.filter(group=group).exists():
+                sig = Sig.objects.get(group=group)
+                if sig.members.filter(username=user.username).exists():
+                    logger.info(
+                        "User %s already in sig %s",
+                        user.username,
+                        group.name,
+                    )
+                    continue
                 logger.info(
                     "Adding user %s to sig %s", user.username, group.name
                 )
@@ -128,9 +144,16 @@ def migrate_users():  # noqa
                     "Adding user %s to group %s", user.username, group.name
                 )
 
-            # sync discord role members
+        # sync discord role members
+        for discord_role_id in discord_roles:
+            if not DiscordRole.objects.filter(
+                role_id=discord_role_id
+            ).exists():
+                continue
+
+            discord_role = DiscordRole.objects.get(role_id=discord_role_id)
+            group = discord_role.group
             if group in user.groups.all():
-                discord_role = DiscordRole.objects.get(group=group)
                 discord_user = DiscordUser.objects.get(user_id=user.id)
                 if discord_user in discord_role.members.all():
                     logger.info("User already in role, skipping")
