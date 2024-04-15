@@ -84,6 +84,7 @@ def migrate_users():  # noqa
                 )
                 team = Team.objects.get(group=group)
                 team.members.add(user)
+                continue
 
             # check if sig
             if Sig.objects.filter(group=group).exists():
@@ -92,6 +93,7 @@ def migrate_users():  # noqa
                 )
                 sig = Sig.objects.get(group=group)
                 sig.members.add(user)
+                continue
 
             # check if affiliation
             if AffiliationType.objects.filter(group=group).exists():
@@ -116,6 +118,25 @@ def migrate_users():  # noqa
                     user=user,
                     affiliation=affiliation_type,
                 )
+                continue
+
+            # add to group
+            if Group.objects.filter(name=group.name).exists():
+                group = Group.objects.get(name=group.name)
+                user.groups.add(group)
+                logger.info(
+                    "Adding user %s to group %s", user.username, group.name
+                )
+
+            # sync discord role members
+            if group in user.groups.all():
+                discord_role = DiscordRole.objects.get(group=group)
+                discord_user = DiscordUser.objects.get(user_id=user.id)
+                if discord_user in discord_role.members.all():
+                    logger.info("User already in role, skipping")
+                    continue
+
+                discord_role.members.add(discord_user)
 
     logger.info("Skipped users: %s", skipped_users)
     logger.info("Skipped roles: %s", skipped_roles)

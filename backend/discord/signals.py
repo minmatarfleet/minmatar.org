@@ -73,6 +73,7 @@ def user_group_changed(
 
                 role = DiscordRole.objects.get(group=group)
                 discord.add_user_role(discord_user.id, role.role_id)
+                role.members.add(discord_user)
             else:
                 logger.info("No discord role for group %s", group.name)
     elif action == "pre_remove":
