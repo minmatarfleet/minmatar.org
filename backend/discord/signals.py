@@ -58,12 +58,13 @@ def group_post_save(
     dispatch_uid="user_group_changed",
 )
 def user_group_changed(
-    sender, instance, action, reverse, **kwargs
+    sender, instance, action, reverse, model, pk_set, **kwargs
 ):  # pylint: disable=unused-argument
     """Adds user to discord role when added to group"""
     if action == "pre_add":
         logger.info("User added to group, adding to discord role")
-        for group in instance.groups.all():
+        for group_id in pk_set:
+            group = model.objects.get(pk=group_id)
             logger.info("Checking group %s", group.name)
             if DiscordRole.objects.filter(group=group).exists():
                 logger.info("Group has discord role, adding user")
@@ -87,7 +88,8 @@ def user_group_changed(
                 logger.info("No discord role for group %s", group.name)
     elif action == "pre_remove":
         logger.info("User removed from group, removing from discord role")
-        for group in instance.groups.all():
+        for group_id in pk_set:
+            group = model.objects.get(pk=group_id)
             if DiscordRole.objects.filter(group=group).exists():
                 discord_user = instance.discord_user
                 role = DiscordRole.objects.get(group=group)
