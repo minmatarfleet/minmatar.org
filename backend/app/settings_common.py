@@ -5,7 +5,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
-CELERY_IMPORTS = ("eveonline.tasks",)
+CELERY_IMPORTS = (
+    "eveonline.tasks",
+    "structures.tasks",
+    "groups.tasks",
+    "fittings.tasks",
+    "discord.tasks",
+)
+
 
 # Crispy forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

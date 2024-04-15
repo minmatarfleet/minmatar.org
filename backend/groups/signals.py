@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.auth.models import Group
 from django.db.models import signals
 from django.dispatch import receiver
 
@@ -55,6 +56,28 @@ def sig_members_changed(
         for user_id in pk_set:
             user = model.objects.get(pk=user_id)
             user.groups.remove(instance.group)
+    else:
+        pass
+
+
+@receiver(
+    signals.m2m_changed,
+    sender=Team.directors.through,
+    dispatch_uid="team_directors_changed",
+)
+def team_directors_changed(
+    sender, instance, action, reverse, model, pk_set, **kwargs
+):
+    group, _ = Group.objects.get_or_create(name="Alliance Officer")
+    logger.info("Team directors changed, updating user groups")
+    if action == "post_add":
+        for user_id in pk_set:
+            user = model.objects.get(pk=user_id)
+            user.groups.add(group)
+    elif action == "post_remove":
+        for user_id in pk_set:
+            user = model.objects.get(pk=user_id)
+            user.groups.remove(group)
     else:
         pass
 
