@@ -31,7 +31,7 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
-        logger.info(response.json())
+        response.raise_for_status()
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
@@ -45,8 +45,7 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
-        if response.status_code != 204:
-            logger.info(response.json())
+        response.raise_for_status()
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
@@ -60,8 +59,7 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
-        if response.status_code != 204:
-            logger.info(response.json())
+        response.raise_for_status()
         return response
 
     @on_exception(expo, RateLimitException, max_tries=8)
@@ -77,8 +75,7 @@ class DiscordBaseClient:
         )
         logger.info(response.json())
         logger.info(response.status_code)
-        if response.status_code != 204:
-            logger.info(response.json())
+        response.raise_for_status()
         return response.json()
 
     @on_exception(expo, RateLimitException, max_tries=8)
@@ -91,8 +88,7 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
-        if response.status_code != 204:
-            logger.info(response.json())
+        response.raise_for_status()
         return response
 
 
