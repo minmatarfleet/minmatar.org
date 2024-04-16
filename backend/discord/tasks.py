@@ -31,21 +31,22 @@ def import_external_roles():
 @app.task()
 def sync_discord_users():
     for user in User.objects.all():
-        discord_user = get_discord_user_or_begin_offboarding(user)
-        if discord_user is None:
-            continue
-
-        sync_discord_user_roles(discord_user.id)
+        sync_discord_user(user.id)
 
 
 @app.task()
-def sync_discord_user_roles(discord_user_id: int):
-    discord_user = DiscordUser.objects.get(id=discord_user_id)
-    user = discord_user.user
+def sync_discord_user(user_id: int):
+    user = User.objects.get(id=user_id)
+    discord_user = DiscordUser.objects.filter(user_id=user.id).first()
+    if discord_user is None:
+        return
+    external_discord_user = get_discord_user_or_begin_offboarding(user)
+    if external_discord_user is None:
+        return
     expected_discord_roles = DiscordRole.objects.filter(
         group__in=user.groups.all()
     )
-    actual_discord_role_ids = discord_user["roles"]
+    actual_discord_role_ids = external_discord_user["roles"]
 
     # add missing tracked roles to the user
     for expected_discord_role in expected_discord_roles:
@@ -56,7 +57,7 @@ def sync_discord_user_roles(discord_user_id: int):
                 expected_discord_role.name,
             )
             discord.add_user_role(
-                discord_user_id, expected_discord_role.role_id
+                discord_user.id, expected_discord_role.role_id
             )
             expected_discord_role.members.add(discord_user)
 
@@ -73,7 +74,7 @@ def sync_discord_user_roles(discord_user_id: int):
             user.username,
             discord_role.name,
         )
-        discord.remove_user_role(discord_user_id, discord_role_id)
+        discord.remove_user_role(discord_user.id, discord_role_id)
         discord_role.members.remove(discord_user)
 
 
