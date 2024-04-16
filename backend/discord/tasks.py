@@ -85,7 +85,7 @@ def audit_discord_guild_users(discord_role_id: int = None):
             continue
 
         external_roles = external_discord_user["roles"]
-        if len(external_roles) > 1:
+        if len(external_roles) > 0:
             if discord_role_id and str(discord_role_id) not in external_roles:
                 continue
             if external_discord_user.get("nick"):
@@ -99,4 +99,12 @@ def audit_discord_guild_users(discord_role_id: int = None):
                     character = EveCharacter.objects.get(character_name=nick)
                     if character.corporation:
                         corporation_name = character.corporation.name
-                print(f"{nick},{corporation_name}")
+
+                roles = []
+                for role_id in external_roles:
+                    if DiscordRole.objects.filter(
+                        role_id=int(role_id)
+                    ).exists():
+                        role = DiscordRole.objects.get(role_id=int(role_id))
+                        roles.append(role.name)
+                print(f"{nick},{corporation_name},\"{','.join(roles)}\"")

@@ -47,6 +47,11 @@ class EveCharacter(models.Model):
     def __str__(self):
         return str(self.character_name)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["character_name"]),
+        ]
+
 
 class EveCharacterAsset(models.Model):
     """Character asset model"""
