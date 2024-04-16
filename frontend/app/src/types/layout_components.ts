@@ -30,14 +30,13 @@ export interface FleetItem {
     href:                           string;
 }
 
-export interface FitItem {
-    image:        string;
-    fitting_name: string;
-    fitting_type: string;
-    ship_type:    string;
-    ship_name:    string;
-    href:         string;
-    id:           number;
+export interface FittingItem {
+    fitting_name:   string;
+    fitting_type:   string;
+    ship_type:      string;
+    ship_name:      string;
+    ship_id:        number;
+    id:             number;
 }
 
 export interface DoctrineItemObj {
@@ -366,7 +365,7 @@ export interface ErrorRefetchParams {
     partial:    string;
     message:    string;
     delay:      number;
-    target:     string,
+    target?:    string,
 }
 
 export interface CharacterBasic {
@@ -594,4 +593,30 @@ export interface ShipDNA {
     model:  string;
     skin:   string;
     race:   string;
+}
+
+export interface Fitting {
+    id:             number;
+    name:           string;
+    ship_id:        number;
+    description:    string;
+    created_at:     Date;
+    updated_at:     Date;
+    tags:           string[];
+    eft_format:     string;
+    latest_version: string;
+}
+
+export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
+
+export interface DoctrineType {
+    id:                 number;
+    name:               string;
+    type:               DoctrineTypes;
+    created_at:         Date;
+    updated_at:         Date;
+    description:        string;
+    primary_fittings:   FittingItem[];
+    secondary_fittings: FittingItem[];
+    support_fittings:   FittingItem[];
 }

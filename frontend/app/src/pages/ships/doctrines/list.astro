@@ -1,25 +1,23 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
 
 import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import type { DoctrineType } from '@dtypes/layout_components'
+import { fetch_doctrines } from '@helpers/fetching/doctrines'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+let doctrines:DoctrineType[] = []
+let fetch_doctrines_error:string | false = false
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+try {
+    doctrines = await fetch_doctrines()
+} catch (error) {
+    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
+}
 
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
-
-import doctrines from '@json/page/doctrines/militia.json';
 import { marked } from 'marked';
 
 import Viewport from '@layouts/Viewport.astro';
@@ -33,12 +31,9 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
-import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
-import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
-
-const page_title = t('doctrines.militia.page_title');
+const page_title = t('doctrines.page_title');
 ---
 
 <Viewport title={page_title}>
@@ -61,17 +56,11 @@ const page_title = t('doctrines.militia.page_title');
                     <small>{doctrines.length} {t('doctrine').toLowerCase()}{doctrines.length != 1 ? 's' : ''}</small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
-                <Button color={'alliance-blue'} href={translatePath('/ships/doctrines/alliance')} class="[ !hidden md:!flex ]">
-                    <FleetIcon slot="icon" />
-                    {t('alliance_doctrines')}
-                </Button>
-            </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
-            <TextBox set:html={marked.parse(t('doctrines.militia.page_leading_text'))} />
-        
+            <TextBox set:html={marked.parse(t('doctrines.alliance.page_leading_text'))} />
+            
             <Flexblock role="list" gap='var(--space-3xs)'>
                 
                 {doctrines.map((doctrine) =>

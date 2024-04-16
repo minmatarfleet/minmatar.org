@@ -354,6 +354,33 @@ export const CharacterFinderXData = `
             body.addEventListener('click', listener);
         });
     },`
+
+export const FittingFinderXData = `
+    fittings_finder_open: false,
+    async show_fittings_finder() {
+        this.fittings_finder_open = true
+        document.querySelector('.fittings-finder input').focus()
+        
+        const result = await this.fittings_finder_accept()
+        this.fittings_finder_open = false
+        return result.action == 'accept' ? result.fitting_id : false
+    },
+    fittings_finder_accept() {
+        const body = document.querySelector("body");
+
+        return new Promise(function (resolve, reject) {
+            var listener = event => {
+                if (event.target.hasAttribute('fitting-finder-action')) {
+                    body.removeEventListener('click', listener)
+                    resolve({
+                        action: event.target.getAttribute('fitting-finder-action'),
+                        fitting_id: JSON.parse(event.target.getAttribute('fitting-finder-data'))
+                    });
+                }
+            };
+            body.addEventListener('click', listener);
+        });
+    },`
     
 export const MemberFinderXData = `
     members_finder_open: false,

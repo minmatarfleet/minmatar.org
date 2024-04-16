@@ -1,36 +1,17 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
-
-import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found  } from '@helpers/http_responses'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found();
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
-import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
-
-import ButtonCard from '@components/blocks/ButtonCard.astro';
-
-import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
-import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+import ShipsReel from '@components/blocks/ShipsReel.astro';
 
 const page_title = t('ships.page_title');
 const page_description = t('ships.leading_text');
@@ -44,22 +25,21 @@ const page_description = t('ships.leading_text');
             alt: t('ships.cover_alt'),
             overlay: true
         }}
+        wide={true}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <Flexblock>
-                <h1>{page_title}</h1>
-                <p>{page_description}</p>
-            </Flexblock>
+            <Wrapper
+                max_width="var(--max-landing-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+            </Wrapper>
 
-            <ButtonCardGrid>
-                <ButtonCard title={t('fittings')} href={translatePath('/ships/fitting/list')}>
-                    <FitsEvEIcon slot="icon" />
-                </ButtonCard>
-
-                <ButtonCard title={t('doctrines')} href={translatePath('/ships/doctrines/')}>
-                    <DoctrinesEvEIcon slot="icon" />
-                </ButtonCard>
-            </ButtonCardGrid>
+            <ShipsReel />
         </Flexblock>
     </PageLanding>
 </Viewport>

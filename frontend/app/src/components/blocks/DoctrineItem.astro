@@ -1,24 +1,31 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
-import { get_item_icon_by_name } from '@helpers/eve_image_server';
+import { get_item_icon } from '@helpers/eve_image_server';
 
-import type { DoctrineItemObj } from '@dtypes/layout_components';
+import type { DoctrineType } from '@dtypes/layout_components'
 
 import Grid from '@components/compositions/Grid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import VerticalCenter from './VerticalCenter.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
-import Tag from '@components/blocks/Tag.astro';
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import Picture64 from '@components/blocks/Picture64.astro';
 
+import ShieldArmorIcon from '@components/icons/ShieldArmorIcon.astro';
+import ShieldIcon from '@components/icons/ShieldIcon.astro';
+import ArmorIcon from '@components/icons/ArmorIcon.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import Badge from './Badge.astro';
+import Tippy from './Tippy.astro';
+import TippyBase from './TippyBase.astro';
+
 interface Props {
-    doctrine: DoctrineItemObj;
+    doctrine: DoctrineType;
     [propName: string]: any;
 }
 
@@ -28,40 +35,118 @@ const {
 } = Astro.props
 ---
 
-<Flexblock  {...attributes} class="[ w-full ]" gap='var(--space-m)'>
-    <h2>{doctrine.doctrine_name}</h2>
+<Flexblock 
+    {...attributes}
+    class="[ w-full ]"
+    gap='var(--space-m)'
+>
+    <h2>{doctrine.name}</h2>
     <Grid
         role="list"
-        class="[ w-full ]"
+        class="[ w-full grid-fill ]"
         min_item_width='270px'
         row_gap='var(--space-s-m)'
         column_gap='var(--space-s-m)'
     >
-        {doctrine.fits.map((fit) => 
-            <a role="listitem" href={fit.href}>
-                <Picture64 role="listitem" text={fit.name}>
-                    <img loading="lazy" class="[ w-full confetti-image ]" src={get_item_icon_by_name(fit.alt)} alt={fit.alt} height="64" width="64" />
-                </Picture64>
+        {doctrine.primary_fittings.map((fitting) => 
+            <a
+                class="[ items-center flex ]"
+                x-data={`{
+                    get_fitting_path(fitting_id) {
+                        if (window.innerWidth > 1535)
+                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
+                        else
+                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
+                    },
+                }`}
+                role="listitem"
+                x-bind:href={`get_fitting_path(${fitting.id})`}
+                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+            >
+                <Badge
+                    title={fitting.fitting_name}
+                    subtitle={t('primary')}
+                    image={get_item_icon(fitting.ship_id)}
+                    size={64}
+                    highlight={true}
+                />
+            </a>
+        )}
+        {doctrine.secondary_fittings.map((fitting) => 
+            <a
+                class="[ items-center flex ]"
+                x-data={`{
+                    get_fitting_path(fitting_id) {
+                        if (window.innerWidth > 1535)
+                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
+                        else
+                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
+                    },
+                }`}
+                role="listitem"
+                x-bind:href={`get_fitting_path(${fitting.id})`}
+                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+            >
+                <Badge
+                    title={fitting.fitting_name}
+                    subtitle={t('secondary')}
+                    image={get_item_icon(fitting.ship_id)}
+                    size={64}
+                    highlight={true}
+                />
+            </a>
+        )}
+        {doctrine.support_fittings.map((fitting) => 
+            <a
+                class="[ items-center flex ]"
+                x-data={`{
+                    get_fitting_path(fitting_id) {
+                        if (window.innerWidth > 1535)
+                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
+                        else
+                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
+                    },
+                }`}
+                role="listitem"
+                x-bind:href={`get_fitting_path(${fitting.id})`}
+                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+            >
+                <Badge
+                    title={fitting.fitting_name}
+                    subtitle={t('support')}
+                    image={get_item_icon(fitting.ship_id)}
+                    size={64}
+                    highlight={true}
+                />
             </a>
         )}
     </Grid>
-    <FlexInline class="[ w-full ]" gap='var(--space-m)' justification='space-between'>
-        <VerticalCenter>
-            <Flexblock gap="var(--space-3xs)">
-                <FlexInline role="list">
-                    {doctrine.tags.map((tag) => 
-                        <Tag role="listitem" title={tag.description} text={tag.name} color={tag.color} />
-                    )}
-                </FlexInline>
-            </Flexblock>
-        </VerticalCenter>
+    <FlexInline
+        class="[ w-full items-center ]"
+        gap='var(--space-m)'
+        justification='space-between'
+    >
+        <Flexblock gap="var(--space-3xs)">
+            <TippyBase
+                title={doctrine.type}
+                description={`${doctrine.type}.description`}
+            >
+                {doctrine.type === 'armor' &&
+                    <ArmorIcon />
+                }
+                {doctrine.type === 'shield' &&
+                    <ShieldIcon />
+                }
+                {doctrine.type === 'armorshield' &&
+                    <ShieldArmorIcon />
+                }
+            </TippyBase>
+        </Flexblock>
 
-        <VerticalCenter>
-            <Button href={doctrine.href}>
-                <MagnifierIcon slot="icon" />
-                {t('view_details')}
-            </Button>
-        </VerticalCenter>
+        <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
+            <MagnifierIcon slot="icon" />
+            {t('view_details')}
+        </Button>
     </FlexInline>
 </Flexblock>
 

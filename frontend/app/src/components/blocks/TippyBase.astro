@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+interface Props {
+    title?:         string;
+    description?:   string;
+    tag?:           string;
+    htmltag?:       string;
+    placement?:     string;
+    width?:         string;
+    height?:        string;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    description,
+    tag,
+    htmltag = 'div',
+    placement = 'top',
+    width = '340px',
+    height = '70px',
+} = Astro.props;
+
+import { query_string } from '@helpers/string';
+
+type TippyParams = {
+    title?:         string;
+    description?:   string;
+    tag?:           string;
+}
+
+let params:TippyParams = {}
+if (title) params.title = title
+if (description) params.description = description
+if (tag) params.tag = tag
+
+const query = query_string(params)
+
+import Tippy from '@components/blocks/Tippy.astro';
+---
+
+<Tippy
+    data-tippy-placement={placement}
+    partial={`${translatePath('/partials/normal_tooltip')}?${query}`}
+    height={width}
+    width={height}
+    element={htmltag}
+>
+    <slot />
+</Tippy>

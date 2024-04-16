@@ -42,6 +42,7 @@ import {
 	PersonaFinderXData,
 	PageFinderXData,
 	CharacterFinderXData,
+	FittingFinderXData,
 	MemberFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
@@ -71,6 +72,7 @@ components.modal = components.modal ?? true
 
 const CHARACTER_FINDER_PARTIAL_URL = translatePath('/partials/character_finder_component')
 const MEMBER_FINDER_PARTIAL_URL = translatePath('/partials/member_finder_component')
+const FITTING_FINDER_PARTIAL_URL = translatePath('/partials/fitting_finder_component')
 
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
@@ -123,6 +125,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${user ? CharacterFinderXData : ''}
 			${user_is_officer || user_is_director ? MemberFinderXData : ''}
             ${PageFinderXData}
+            ${FittingFinderXData}
             ${UtilitiesXData}
             ${RifterAnimationXData}
 		}`}
@@ -141,6 +144,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 					components?.alliance_finder ? 'alliances_finder_open' : false,
 					user ? 'characters_finder_open' : false,
 					user_is_officer || user_is_director ? 'members_finder_open' : false,
+					'fittings_finder_open',
 					'pages_finder_open',
 				].join(' || ')}
 			`}
@@ -197,6 +201,13 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 				hx-indicator=".loader"
 			/>
 		}
+
+		<div
+			transition:persist
+			hx-get={FITTING_FINDER_PARTIAL_URL}
+			hx-trigger="load"
+			hx-indicator=".loader"
+		/>
 
 		<PageFinder transition:persist />
 

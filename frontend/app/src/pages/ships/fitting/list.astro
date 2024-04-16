@@ -18,11 +18,21 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 if (is_prod_mode() && !user_is_superadmin)
     return HTTP_404_Not_Found()
 
-import fits from '@json/page/fitting/list.json';
+import type { FittingItem } from '@dtypes/layout_components'
+import { fetch_fittings } from '@helpers/fetching/ships'
+
+let fittings:FittingItem[] = []
+let get_fittings_error:string | false = false
+
+try {
+    fittings = await fetch_fittings()
+} catch (error) {
+    get_fittings_error = is_prod_mode() ? t('get_fittings_error') : error.message
+}
 
 let fitting_type = {};
 let ship_type = {};
-fits.forEach((fitting) => {
+fittings.forEach((fitting) => {
     fitting_type[fitting.fitting_type] = fitting.fitting_type;
     ship_type[fitting.ship_type] = fitting.ship_type;
 })
@@ -68,7 +78,7 @@ const page_title = t('fitting.list.page_title');
             fitting_name_filter: '',
             fitting_type_filter: '-1',
             ship_type_filter: '-1',
-            fits_count: '${fits.length}',
+            fits_count: '${fittings.length}',
             show_item(el) {
                 const content_to_filter = el.querySelectorAll('p')
                 const show_item =   (
@@ -88,7 +98,7 @@ const page_title = t('fitting.list.page_title');
                         {page_title}
                     </PageTitle>
                     <small x-text={'`'+t('showing')+' ${fits_count} '+t('fitting').toLowerCase()+'${fits_count != 1 ? `s` : ``}`'}>
-                        {t('showing')} {fits.length} {t('fitting').toLowerCase()}{fits.length != 1 ? 's' : ''}
+                        {t('showing')} {fittings.length} {t('fitting').toLowerCase()}{fittings.length != 1 ? 's' : ''}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -128,8 +138,13 @@ const page_title = t('fitting.list.page_title');
         </FlexInline>
 
         <Flexblock role="list" gap='0' class="[ filtered-list ]">
-            {fits.map((fit) =>
-                <FitItem role="listitem" class="[ fit-item ]" fit={fit} x-show="show_item($el)" />
+            {fittings.map((fitting) =>
+                <FitItem
+                    role="listitem"
+                    class="[ fit-item ]"
+                    fitting={fitting}
+                    x-show="show_item($el)"
+                />
             )}
             
             <p class="[ text-center ]">{t('no_results')}</p>
