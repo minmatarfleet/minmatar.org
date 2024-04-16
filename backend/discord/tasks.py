@@ -51,8 +51,7 @@ def sync_discord_user_roles(discord_user_id: int):
             expected_discord_role.name,
         )
         discord.add_user_role(discord_user_id, expected_discord_role.role_id)
-        discord_user.members.add(expected_discord_role)
-
+        expected_discord_role.members.add(discord_user)
     # addition hard check
     discord_roles = discord.get_user(discord_user_id)["roles"]
     for expected_discord_role in expected_discord_roles:

@@ -3,14 +3,26 @@
 import logging
 
 import requests
+from requests.adapters import HTTPAdapter
 from backoff import expo, on_exception
 from django.conf import settings
 from ratelimit import RateLimitException, limits
+from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
 
 GUILD_ID = 1041384161505722368
 BASE_URL = "https://discord.com/api/v9"
+
+
+retry_strategy = Retry(
+    total=5,
+    status_forcelist=[429, 500, 502, 503, 504],
+    backoff_factor=1,
+)
+
+s = requests.Session()
+s.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 
 
 class DiscordBaseClient:
@@ -19,13 +31,14 @@ class DiscordBaseClient:
     def __init__(self):
         self.access_token = settings.DISCORD_BOT_TOKEN
         self.guild_id = GUILD_ID
+        self.session = s
 
     @on_exception(expo, RateLimitException, max_tries=8)
     @limits(calls=5, period=1)
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
         logger.info("POST %s", args)
-        response = requests.post(
+        response = self.session.post(
             *args,
             **kwargs,
             headers={"Authorization": f"Bot {self.access_token}"},
@@ -39,7 +52,7 @@ class DiscordBaseClient:
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
         logger.info("PUT %s", args)
-        response = requests.put(
+        response = self.session.put(
             *args,
             **kwargs,
             headers={"Authorization": f"Bot {self.access_token}"},
@@ -53,7 +66,7 @@ class DiscordBaseClient:
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
         logger.info("PATCH %s", args)
-        response = requests.patch(
+        response = self.session.patch(
             *args,
             **kwargs,
             headers={"Authorization": f"Bot {self.access_token}"},
@@ -67,7 +80,7 @@ class DiscordBaseClient:
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
         logger.info("GET %s", args)
-        response = requests.get(
+        response = self.session.get(
             *args,
             **kwargs,
             headers={"Authorization": f"Bot {self.access_token}"},
