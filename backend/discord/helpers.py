@@ -1,9 +1,12 @@
 import logging
-from discord.client import DiscordClient
-from .models import DiscordUser
-from django.contrib.auth.models import User
-from eveonline.models import EvePrimaryCharacter, EveCharacter
+
 import requests
+from django.contrib.auth.models import User
+
+from discord.client import DiscordClient
+from eveonline.models import EveCharacter
+
+from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -48,3 +51,25 @@ def get_discord_user_or_begin_offboarding(user: User):
         raise e
 
     return external_discord_user
+
+
+def add_user_to_expected_discord_roles(user: User):
+    """
+    Adds the expected roles to a user
+    NOTE: This should not occur, any added roles are a warning / bug
+    """
+    discord_user = DiscordUser.objects.get(user_id=user.id)
+    expected_discord_roles = DiscordRole.objects.filter(
+        group__in=user.groups.all()
+    )
+    for expected_discord_role in expected_discord_roles:
+        if discord_user in expected_discord_role.members.all():
+            logger.info("User has expected role, skipping")
+            continue
+        logger.warning(
+            "User does not have expected role, adding user %s to external role %s",
+            user.username,
+            expected_discord_role.name,
+        )
+        discord.add_user_role(discord_user.id, expected_discord_role.role_id)
+        expected_discord_role.members.add(discord_user)

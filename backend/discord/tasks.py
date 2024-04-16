@@ -8,9 +8,8 @@ from app.celery import app
 from discord.client import DiscordClient
 from eveonline.models import EvePrimaryCharacter
 from groups.models import AffiliationType, Sig, Team, UserAffiliation
-from .helpers import get_discord_user_or_begin_offboarding
-import requests
 
+from .helpers import get_discord_user_or_begin_offboarding
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
@@ -36,6 +35,8 @@ def sync_discord_users():
         if discord_user is None:
             continue
 
+        sync_discord_user_roles(discord_user.id)
+
 
 @app.task()
 def sync_discord_user_roles(discord_user_id: int):
@@ -44,49 +45,31 @@ def sync_discord_user_roles(discord_user_id: int):
     expected_discord_roles = DiscordRole.objects.filter(
         group__in=user.groups.all()
     )
+    actual_discord_role_ids = discord_user["roles"]
 
-    # addition soft check
+    # add missing tracked roles to the user
     for expected_discord_role in expected_discord_roles:
-        logger.info(
-            "Checking if user %s has external role %s",
-            user.username,
-            expected_discord_role.name,
-        )
-        if discord_user in expected_discord_role.members.all():
-            logger.info("User already has role, skipping")
-            continue
-        logger.info(
-            "Adding user %s to external role %s",
-            user.username,
-            expected_discord_role.name,
-        )
-        discord.add_user_role(discord_user_id, expected_discord_role.role_id)
-        expected_discord_role.members.add(discord_user)
-    # addition hard check
-    discord_roles = discord.get_user(discord_user_id)["roles"]
-    for expected_discord_role in expected_discord_roles:
-        if str(expected_discord_role.role_id) not in discord_roles:
-            logger.info(
-                "User %s missing external role %s, adding",
+        if str(expected_discord_role.role_id) not in actual_discord_role_ids:
+            logger.warning(
+                "User %s missing external role %s that they should have, adding",
                 user.username,
                 expected_discord_role.name,
             )
             discord.add_user_role(
                 discord_user_id, expected_discord_role.role_id
             )
-            # update discord role members
             expected_discord_role.members.add(discord_user)
 
-    # removal hard check
-    for discord_role_id in discord_roles:
+    # remove excess tracked roles from the user
+    for discord_role_id in actual_discord_role_ids:
         discord_role_id = int(discord_role_id)
         if not DiscordRole.objects.filter(role_id=discord_role_id).exists():
             continue
         discord_role = DiscordRole.objects.get(role_id=discord_role_id)
         if discord_role in expected_discord_roles:
             continue
-        logger.info(
-            "User %s has external role %s, removing",
+        logger.warning(
+            "User %s has external role %s that they should not have, removing",
             user.username,
             discord_role.name,
         )
@@ -205,9 +188,6 @@ def migrate_users():  # noqa
 
             # add to group
             if Group.objects.filter(name=group.name).exists():
-                if group.name == "Strategic FC" or group.name == "Skirmish FC":
-                    fc_default_group = Group.objects.get(name="FC")
-                    user.groups.add(fc_default_group)
                 group = Group.objects.get(name=group.name)
                 user.groups.add(group)
                 logger.info(
