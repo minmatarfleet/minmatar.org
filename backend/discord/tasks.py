@@ -1,13 +1,11 @@
 import logging
-import time
+import re
 
 from django.contrib.auth.models import Group, User
-from django.db.models import signals
 
 from app.celery import app
 from discord.client import DiscordClient
-from eveonline.models import EvePrimaryCharacter
-from groups.models import AffiliationType, Sig, Team, UserAffiliation
+from eveonline.models import EveCharacter
 
 from .helpers import get_discord_user_or_begin_offboarding
 from .models import DiscordRole, DiscordUser
@@ -76,3 +74,29 @@ def sync_discord_user(user_id: int):
         )
         discord.remove_user_role(discord_user.id, discord_role_id)
         discord_role.members.remove(discord_user)
+
+
+@app.task()
+def audit_discord_guild_users(discord_role_id: int = None):
+    external_discord_users = discord.get_members()
+    for external_discord_user in external_discord_users:
+        discord_user_id = int(external_discord_user["user"]["id"])
+        if DiscordUser.objects.filter(id=discord_user_id).exists():
+            continue
+
+        external_roles = external_discord_user["roles"]
+        if len(external_roles) > 1:
+            if discord_role_id and str(discord_role_id) not in external_roles:
+                continue
+            if external_discord_user.get("nick"):
+                nick = external_discord_user["nick"]
+                # strip everything in brackets [TEST]
+                nick = re.sub(r"\[.*\]", "", nick)
+                nick = nick.strip()
+
+                corporation_name = None
+                if EveCharacter.objects.filter(character_name=nick).exists():
+                    character = EveCharacter.objects.get(character_name=nick)
+                    if character.corporation:
+                        corporation_name = character.corporation.name
+                print(f"{nick},{corporation_name}")

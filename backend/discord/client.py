@@ -173,6 +173,26 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/roles",
         )
 
+    def get_members(self):
+        """Get all members from a discord server"""
+        member_count = self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}?with_counts=true",
+        )["approximate_member_count"]
+
+        # query in limits of 1000 based on member count
+        members = []
+        highest_member_id = 0
+        for _ in range(0, member_count, 1000):
+            response = self.get(
+                f"{BASE_URL}/guilds/{self.guild_id}/members?limit=1000&after={highest_member_id}",
+            )
+            # sort by members[0]['user']['id']
+            response = sorted(response, key=lambda x: int(x["user"]["id"]))
+            highest_member_id = int(response[-1]["user"]["id"])
+            members.extend(response)
+
+        return members
+
     def create_role(self, name):
         """Create a role on a discord server"""
         return self.post(
