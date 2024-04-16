@@ -32,7 +32,7 @@ def get_discord_user_or_begin_offboarding(user: User):
         }:
             characters = ",".join(
                 [
-                    char.name
+                    char.character_name
                     for char in EveCharacter.objects.filter(
                         token__user__id=user.id
                     )
