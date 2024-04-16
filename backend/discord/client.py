@@ -3,10 +3,10 @@
 import logging
 
 import requests
-from requests.adapters import HTTPAdapter
 from backoff import expo, on_exception
 from django.conf import settings
 from ratelimit import RateLimitException, limits
+from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
