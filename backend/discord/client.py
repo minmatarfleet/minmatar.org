@@ -95,7 +95,7 @@ class DiscordBaseClient:
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
         self.check_ratelimit()
-        response = requests.delete(
+        response = self.session.delete(
             *args,
             **kwargs,
             headers={"Authorization": f"Bot {self.access_token}"},

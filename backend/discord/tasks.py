@@ -34,7 +34,7 @@ def sync_discord_users():
         sync_discord_user(user.id)
 
 
-@app.task()
+@app.task(rate_limit="1/s")
 def sync_discord_user(user_id: int):
     user = User.objects.get(id=user_id)
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
