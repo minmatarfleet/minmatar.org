@@ -55,31 +55,29 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                 </ComponentBlock>
             </div>
 
-            {!is_prod_mode() &&
-                <div class="[ swiper-slide ]">
-                    <ComponentBlock>
-                        <Flexblock>
-                            <FlexInline gap='var(--space-2xs)'>
-                                <DoctrinesEvEIcon />
-                                <h2>{t('doctrines.page_title')}</h2>
-                            </FlexInline>
-                            
-                            <Flexblock gap='var(--space-m)'>
-                                <p set:html={marked.parseInline(t('doctrines.leading_text'), { renderer })} />
+            <div class="[ swiper-slide ]">
+                <ComponentBlock>
+                    <Flexblock>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <DoctrinesEvEIcon />
+                            <h2>{t('doctrines.page_title')}</h2>
+                        </FlexInline>
+                        
+                        <Flexblock gap='var(--space-m)'>
+                            <p set:html={marked.parseInline(t('doctrines.leading_text'), { renderer })} />
 
-                                <FlexInline>
-                                    <Button
-                                        size='sm'
-                                        href={translatePath('/ships/doctrines/list/')}
-                                    >
-                                        {t('view_doctrines')}
-                                    </Button>
-                                </FlexInline>
-                            </Flexblock>
+                            <FlexInline>
+                                <Button
+                                    size='sm'
+                                    href={translatePath('/ships/doctrines/list/')}
+                                >
+                                    {t('view_doctrines')}
+                                </Button>
+                            </FlexInline>
                         </Flexblock>
-                    </ComponentBlock>
-                </div>
-            }
+                    </Flexblock>
+                </ComponentBlock>
+            </div>
         </AllianceSwiper>
     </div>
 
