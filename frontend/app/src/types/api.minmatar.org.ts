@@ -131,3 +131,17 @@ export interface Fitting {
     eft_format:     string;
     latest_version: string;
 }
+
+export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
+
+export interface Doctrine {
+    id:                 number;
+    name:               string;
+    type:               DoctrineTypes;
+    created_at:         Date;
+    updated_at:         Date;
+    description:        string;
+    primary_fittings:   Fitting[];
+    secondary_fittings: Fitting[];
+    support_fittings:   Fitting[];
+}

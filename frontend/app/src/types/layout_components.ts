@@ -594,3 +594,29 @@ export interface ShipDNA {
     skin:   string;
     race:   string;
 }
+
+export interface Fitting {
+    id:             number;
+    name:           string;
+    ship_id:        number;
+    description:    string;
+    created_at:     Date;
+    updated_at:     Date;
+    tags:           string[];
+    eft_format:     string;
+    latest_version: string;
+}
+
+export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
+
+export interface DoctrineType {
+    id:                 number;
+    name:               string;
+    type:               DoctrineTypes;
+    created_at:         Date;
+    updated_at:         Date;
+    description:        string;
+    primary_fittings:   FittingItem[];
+    secondary_fittings: FittingItem[];
+    support_fittings:   FittingItem[];
+}

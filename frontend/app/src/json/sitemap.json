@@ -142,6 +142,30 @@
         }
     },
     {
+        "slug": "ships",
+        "alt": "icon.ships.alt",
+        "path": "/ships/",
+        "publish": true,
+        "icon": "/images/icons/48px-Shiptree.png",
+        "description": "page_finder.ships.description"
+    },
+    {
+        "slug": "fitting.list",
+        "alt": "icon.fits.alt",
+        "path": "/ships/fitting/list",
+        "publish": true,
+        "icon": "/images/icons/48px-Fitting.png",
+        "description": "page_finder.ships.fitting.list.description"
+    },
+    {
+        "slug": "doctrines",
+        "alt": "icon.doctrines.alt",
+        "path": "/ships/doctrines/list",
+        "publish": true,
+        "icon": "/images/icons/48px-Shiphangar.png",
+        "description": "page_finder.ships.doctrines.description"
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

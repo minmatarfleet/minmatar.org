@@ -139,7 +139,12 @@ const page_title = t('fitting.list.page_title');
 
         <Flexblock role="list" gap='0' class="[ filtered-list ]">
             {fittings.map((fitting) =>
-                <FitItem role="listitem" class="[ fit-item ]" fitting={fitting} x-show="show_item($el)" />
+                <FitItem
+                    role="listitem"
+                    class="[ fit-item ]"
+                    fitting={fitting}
+                    x-show="show_item($el)"
+                />
             )}
             
             <p class="[ text-center ]">{t('no_results')}</p>

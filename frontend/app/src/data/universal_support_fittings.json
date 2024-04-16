@@ -1,0 +1,90 @@
+[
+    {
+        "id": 95,
+        "fitting_name": "[ADV-30] 0X Bifrost",
+        "ship_id": 37480,
+        "ship_name": "Bifrost",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer"
+    },
+    {
+        "id": 87,
+        "fitting_name": "[NVY-30] Griffin",
+        "ship_id": 584,
+        "ship_name": "Griffin",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate"
+    },
+    {
+        "id": 85,
+        "fitting_name": "[NVY-30] Crucifier",
+        "ship_id": 2161,
+        "ship_name": "Crucifier",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate"
+    },
+    {
+        "id": 84,
+        "fitting_name": "[NVY-30] Maulus",
+        "ship_id": 609,
+        "ship_name": "Maulus",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate"
+    },
+    {
+        "id": 86,
+        "fitting_name": "[NVY-30] Vigil",
+        "ship_id": 3766,
+        "ship_name": "Vigil",
+        "fitting_type": "NVY-30",
+        "ship_type": "Frigate"
+    },
+    {
+        "id": 94,
+        "fitting_name": "[ADV-30] 0X Magus",
+        "ship_id": 37483,
+        "ship_name": "Magus",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer"
+    },
+    {
+        "id": 22,
+        "fitting_name": "[ADV-30] Heretic",
+        "ship_id": 22452,
+        "ship_name": "Heretic",
+        "fitting_type": "ADV-30",
+        "ship_type": "Interdictor"
+    },
+    {
+        "id": 162,
+        "fitting_name": "[ADV-5] Stiletto",
+        "ship_id": 11198,
+        "ship_name": "Stiletto",
+        "fitting_type": "ADV-5",
+        "ship_type": "Interdictor"
+    },
+    {
+        "id": 20,
+        "fitting_name": "[ADV-30] Sabre",
+        "ship_id": 22456,
+        "ship_name": "Sabre",
+        "fitting_type": "ADV-30",
+        "ship_type": "Interdictor"
+    },
+    {
+        "id": 88,
+        "fitting_name": "[ADV-30] 0X Stork",
+        "ship_id": 37482,
+        "ship_name": "Stork",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer"
+    },
+    {
+        "id": 93,
+        "fitting_name": "[ADV-30] 0X Pontifex",
+        "ship_id": 37481,
+        "ship_name": "Pontifex",
+        "fitting_type": "ADV-30",
+        "ship_type": "Command Destroyer"
+    }
+]

@@ -13,17 +13,21 @@ export async function fetch_fittings() {
     api_fittings = await get_fittings()
 
     return await Promise.all(api_fittings.map(async (fitting) => {
-        const ship_info = await get_ship_info(fitting.ship_id)
-
-        return {
-            fitting_name: fitting.name,
-            fitting_type: parse_fitting_type(fitting.name),
-            id: fitting.id,
-            ship_id: fitting.ship_id,
-            ship_name: ship_info?.name ?? t('error_ship_parsing'),
-            ship_type: ship_info?.type ?? t('unknown'),
-        } as FittingItem
+        return await get_fitting_item(fitting)
     }))
+}
+
+export async function get_fitting_item(fitting:Fitting) {
+    const ship_info = await get_ship_info(fitting.ship_id)
+
+    return {
+        fitting_name: fitting.name,
+        fitting_type: parse_fitting_type(fitting.name),
+        id: fitting.id,
+        ship_id: fitting.ship_id,
+        ship_name: ship_info?.name ?? t('error_ship_parsing'),
+        ship_type: ship_info?.type ?? t('unknown'),
+    } as FittingItem
 }
 
 const parse_fitting_type = (fitting_name:string) => {

@@ -1,0 +1,246 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { FittingItem } from '@dtypes/layout_components'
+import { fetch_fittings } from '@helpers/fetching/ships'
+
+let fittings:FittingItem[] = []
+let get_fittings_error:string | false = false
+
+try {
+    fittings = await fetch_fittings()
+} catch (error) {
+    get_fittings_error = is_prod_mode() ? t('get_fittings_error') : error.message
+}
+
+interface Props {
+    [propName: string]: any;
+
+}
+import { get_item_icon } from '@helpers/eve_image_server';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Kbd from '@components/blocks/Kbd.astro';
+import Input from '@components/blocks/Input.astro';
+import Badge from '@components/blocks/Badge.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+---
+
+<div
+    class="[ fittings-finder ]"    
+    x-data={`{
+        search: '',
+        filtered_fittings: [ false ],
+        fittings: ${JSON.stringify(fittings)},
+        fitting_filter() {
+            if (this.search === '') {
+                this.filtered_fittings = [ false ]
+                return
+            }
+
+            const filtered_fittings = []
+
+            this.fittings.forEach( (fitting) => {
+                const search = fitting.fitting_name.toLowerCase()
+                
+                if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
+                    filtered_fittings.push(fitting.id)
+            })
+            
+            this.filtered_fittings = filtered_fittings
+        },
+        async ctrl_shift_g(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyG') {
+                e.preventDefault()
+                show_fittings_finder()
+            }
+        },
+        init() {
+            document.addEventListener('keydown', this.ctrl_shift_g, false);
+        }
+    }`}
+>
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        class="[ w-full max-w-[500px] ]"
+        x-data={`{
+            close_dialog() {
+                if (!fittings_finder_open)
+                    return
+
+                search = ''
+                filtered_fittings = [ false ]
+                
+                var clickEvent = new MouseEvent("click", {
+                    "view": window,
+                    "bubbles": true,
+                    "cancelable": false
+                });
+
+                document.querySelector('.fittings-finder-backdrop').dispatchEvent(clickEvent);
+            }
+        }`}
+        @keyup.escape.window="close_dialog()"
+        x-bind:class="(fittings_finder_open ? 'open' : '')"
+        x-bind:aria-hidden="fittings_finder_open == false"
+        thin={true}
+    >
+        <Flexblock gap="0">
+            <Input
+                placeholder={t('find_fitting_placeholder')}
+                x-model="search"
+                x-on:keyup="fitting_filter()"
+                class="[ relative z-10 ]"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+
+            <div class="[ relative ]">
+                <Flexblock gap='var(--space-3xs)'>
+                    <Flexblock
+                        class="[ fitting-finder-list ][ light-transparency w-full ]"
+                        gap='var(--space-3xs)'
+                        x-show="(search !== '')"
+                    >
+                        <div
+                            class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
+                            x-show="search !== '' && filtered_fittings.length === 0"
+                        >
+                            <span>{t('no_fittings')}</span>
+                        </div>
+                        {fittings.map((fitting) =>
+                            <a
+                                href={translatePath(`/ships/fitting/redirect/${fitting.id}`)}
+                                fitting-finder-action="accept"
+                                fitting-finder-data={fitting.id}
+                                x-show="show_item($el)"
+                                x-on:click="(search = '')"
+                                x-data={`{
+                                    show_item() {
+                                        return filtered_fittings.includes(${fitting.id})
+                                    }
+                                }`}
+                            >
+                                <Badge
+                                    title={fitting.fitting_name}
+                                    image={get_item_icon(fitting.ship_id)}
+                                    subtitle={fitting.ship_type}
+                                />
+                            </a>
+                        )}
+                    </Flexblock>
+
+                    <FlexInline justification='center'>
+                        <FlexInline gap="var(--space-3xs)">
+                            <span class="[ text-[var(--highlight)] ]">(</span>
+                            <Kbd>Shift</Kbd>
+                            <span class="[ text-[var(--highlight)] ]">+</span>
+                            <span class="[ text-[var(--highlight)] ]">)</span>
+                            <Kbd>Tab</Kbd>
+                            <small>to navigate</small>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Enter</Kbd>
+                            <small>to select</small>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-3xs)">
+                            <Kbd>Esc</Kbd>
+                            <small>to close</small>
+                        </FlexInline>
+                    </FlexInline>
+                </Flexblock>
+            </div>
+        </Flexblock>
+    </Dialog>
+
+    <div
+        class="fittings-finder-backdrop"
+        x-bind:class="(fittings_finder_open ? 'open' : '')"
+        fitting-finder-action="close"
+        x-on:click="(filter = '')"
+    />
+</div>
+
+<style lang="scss">
+    :global([fitting-finder-action] *) {
+        pointer-events: none !important;
+    }
+
+    picture {
+        aspect-ratio: 1/1;
+        width: 48px;
+    }
+
+    :global(.fitting-finder-list [style="display: none;"] ~ button) {
+        margin-block-start: 0 !important;
+    }
+
+    :global(.fitting-finder-list :not([style="display: none;"]) ~ button) {
+        margin-block-start: var(--space-3xs) !important;
+    }
+
+    .dialog {
+        top: 12%;
+    }
+    
+    .fitting-finder-list {
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+        height: calc(100% - 20px);
+    }
+
+    [fitting-finder-action="close"] {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+
+    [fitting-finder-action="accept"] {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+        
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>

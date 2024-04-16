@@ -1,0 +1,7 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<img loading="lazy" src="/images/icons/Icon_ISIS_defense_Shieldsarmor.png" width="30" height="30" alt={t('icon.shieldarmor.alt')} />
