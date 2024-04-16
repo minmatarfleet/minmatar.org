@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = 1098974756356771870
 
 
-def get_discord_profile(user: User):
+def get_discord_user_or_begin_offboarding(user: User):
     """
     Fetches a user based on their discord user
     If they don't exist, deletes their entire account
