@@ -8,6 +8,7 @@ from app.celery import app
 from discord.client import DiscordClient
 from eveonline.models import EvePrimaryCharacter
 from groups.models import AffiliationType, Sig, Team, UserAffiliation
+from .helpers import get_discord_user_or_begin_offboarding
 import requests
 
 from .models import DiscordRole, DiscordUser
@@ -29,32 +30,11 @@ def import_external_roles():
 
 
 @app.task()
-def remove_users():
-    users_to_delete = []
+def sync_discord_users():
     for user in User.objects.all():
-        if not DiscordUser.objects.filter(user_id=user.id).exists():
-            logger.error(
-                "Found a user without a DiscordUser connected: %s", user.id
-            )
+        discord_user = get_discord_user_or_begin_offboarding(user)
+        if discord_user is None:
             continue
-        discord_user = DiscordUser.objects.get(user_id=user.id)
-        if discord_user.id != 1225512056900550696:
-            continue
-
-        try:
-            discord.get_user(discord_user.id)
-        except requests.exceptions.HTTPError as e:
-            if not e.response.status_code == 404:
-                raise e
-            if not e.response.json() == {
-                "message": "Unknown Member",
-                "code": 10007,
-            }:
-                raise e
-
-            users_to_delete.append(user.username)
-
-    print(users_to_delete)
 
 
 @app.task()
