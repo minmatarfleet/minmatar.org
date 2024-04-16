@@ -34,9 +34,13 @@ class DiscordBaseClient:
         self.session = s
 
     @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=5, period=1)
+    @limits(calls=10, period=1)
+    def check_ratelimit(self):
+        pass
+
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
+        self.check_ratelimit()
         logger.info("POST %s", args)
         response = self.session.post(
             *args,
@@ -47,10 +51,9 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=5, period=1)
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
+        self.check_ratelimit()
         logger.info("PUT %s", args)
         response = self.session.put(
             *args,
@@ -61,10 +64,9 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=5, period=1)
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
+        self.check_ratelimit()
         logger.info("PATCH %s", args)
         response = self.session.patch(
             *args,
@@ -75,10 +77,9 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=5, period=1)
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
+        self.check_ratelimit()
         logger.info("GET %s", args)
         response = self.session.get(
             *args,
@@ -91,10 +92,9 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response.json()
 
-    @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=5, period=1)
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
+        self.check_ratelimit()
         response = requests.delete(
             *args,
             **kwargs,

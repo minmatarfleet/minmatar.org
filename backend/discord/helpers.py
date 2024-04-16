@@ -36,9 +36,9 @@ def get_discord_user_or_begin_offboarding(user: User):
                     for char in EveCharacter.objects.filter(user_id=user.id)
                 ]
             )
+
             message = "The following user needs to be offboarded,\n"
             message += f"Discord ID: {user.username}\n"
-            message += f"Primary Character: {EvePrimaryCharacter.objects.get(user_id=user.id).name}\n"
             message += f"Characters: {characters}\n"
             discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
             return None
