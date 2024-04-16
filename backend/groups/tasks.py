@@ -79,7 +79,7 @@ def update_affiliation(user_id: int):
                     user,
                     affiliation,
                 )
-                continue
+                return
 
             if UserAffiliation.objects.filter(user=user).exists():
                 logger.info(
@@ -94,6 +94,7 @@ def update_affiliation(user_id: int):
                 affiliation,
             )
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
+            return
         else:
             logger.info(
                 "User %s does not qualify for affiliation %s",
