@@ -167,7 +167,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                         width='280px'
                         x-on:change="filter()"
                     >
-                        <option selected value="-1">{t('stations')}</option>
+                        <option selected value="-1">{t('npc_stations')}</option>
                         <template x-for="location_name in locations_options">
                             <option x-text="location_name" />
                         </template>
