@@ -52,12 +52,12 @@ export const ui = {
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications',
 
         'ships.page_title': 'Ships',
-        'ships.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
+        'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
         'ships.description': 'Discover our alliance and militia doctrines and fittings. You may export them to use in EvE',
 
         'fitting.page_title': 'Fitting',
-        'fitting.leading_text': 'Many groups like to hold classes and courses, and we will certainly have a few, but you will learn the most by joining a small fleet of pilots and learning through shared experiences. Our curriculum tells you what to learn and what to ask, but you’ll need to be self-sufficient and seize your own knowledge.',
+        'fitting.leading_text': 'Fittings are the atom of fleet warfare, and typically will be combined to make up doctrines. However, you will find much more than doctrine fittings here- take a look at our solo and small gang fittings.',
         'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
         
         'fitting.render.cover_alt': 'Open space with a whitish nubula in the background',
@@ -65,7 +65,7 @@ export const ui = {
         'fitting.list.page_title': 'Fittings',
 
         'doctrines.page_title': 'Doctrines',
-        'doctrines.leading_text': 'You joined a high volume, fast moving PvP alliance. We undock ships. Actually, we undock lots of ships. We have many different kinds of ships because we have many different kinds of enemies. Often those enemies stop logging in because we shoot them too good, and that means we have to frequently change strategies.',
+        'doctrines.leading_text': 'Doctrines are recipes for content, and are the primary way that we organize our fleets. They are a set of ships, fits, and tactics that are designed to be flown by a group of pilots. All doctrines are public.',
         'doctrines.cover_alt': 'A fleet of Cyclone Fleet Issue ships engaged in battle, with the local star looming in the background.',
 
         'doctrines.alliance.page_title': 'Alliance Doctrines',
