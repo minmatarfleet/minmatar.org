@@ -12,7 +12,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-const CAMERA_ZOOM = 2.2
+const CAMERA_ZOOM = 0.32
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -82,6 +82,15 @@ const page_title = t('index.page_title');
                     watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
                         camera.focus(this, ${CAMERA_ZOOM})
 
+						let rotationMatrix = mat4.fromValues(
+							1, 0, 0, 0,
+							0, 1, 0, 0,
+							0, 0, 1, 0,
+							0, 0, 0, 7
+						)
+
+						this.setTransform(rotationMatrix)
+
 						setColor(200, 200, 200, 'Mtl1DiffuseColor')
 						setColor(61, 240, 25, 'Mtl2DiffuseColor')
 						setColor(224, 32, 109, 'Mtl3DiffuseColor')
@@ -112,7 +121,7 @@ const page_title = t('index.page_title');
 						rotationMatrix[14] = -900000
 						rotationMatrix[15] = 2
 						
-						this.setTransform(rotationMatrix);
+						this.setTransform(rotationMatrix)
                     });
 
                     ccpwgl.enablePostprocessing(true);
