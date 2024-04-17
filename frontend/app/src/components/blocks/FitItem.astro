@@ -53,12 +53,7 @@ const {
         </VerticalCenter>
 
         <VerticalCenter>
-            <Button class="[ !hidden 2xl:!block ]" href={translatePath(`/ships/fitting/redirect/${fitting.id}`)}>
-                <MagnifierIcon slot="icon" />
-                {t('view_details')}
-            </Button>
-
-            <Button class="[ 2xl:!hidden ]" href={translatePath(`/ships/fitting/list/${fitting.id}`)}>
+            <Button href={translatePath(`/ships/fitting/${fitting.id}`)}>
                 <MagnifierIcon slot="icon" />
                 {t('view_details')}
             </Button>

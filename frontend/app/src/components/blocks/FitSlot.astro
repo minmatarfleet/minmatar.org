@@ -1,12 +1,8 @@
 ---
-import type { Fittable } from '@dtypes/layout_components';
-
-import modules_icon_lookup from '@json/hosted/modules-icon-lookup.json';
-
-import FixedFluid from '@components/compositions/FixedFluid.astro';
+import type { CargoItem } from '@dtypes/layout_components';
 
 interface Props {
-    fittable:           Fittable;
+    fittable:           CargoItem;
     [propName: string]: any;
 }
 
@@ -14,11 +10,14 @@ const {
     fittable,
     ...attributes
 } = Astro.props
+
+import { get_item_icon } from '@helpers/eve_image_server';
+
+import Badge from '@components/blocks/Badge.astro';
 ---
 
-<FixedFluid width='64px' {...attributes}>
-    <picture>
-        <img loading="lazy" class="[ w-full ]" src={fittable.image ? fittable.image : `https://images.evetech.net/types/${modules_icon_lookup[fittable.name]}/icon?size=64`} alt={fittable.name} height="64" width="64" />
-    </picture>
-    <p class="[ flex items-center ]">{fittable.amount} x {fittable.name}</p>
-</FixedFluid>
+<Badge
+    title={`${fittable.amount} x ${fittable.name}`}
+    image={get_item_icon(fittable.id)}
+    highlight={false}
+/>

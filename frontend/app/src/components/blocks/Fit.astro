@@ -1,58 +1,33 @@
 ---
-import type { FittingGroups } from '@dtypes/layout_components';
-import { parse_eft } from '@helpers/eft-parser.ts';
+import type { FittingGroup } from '@dtypes/layout_components';
+
+interface Props {
+    fitting_groups: FittingGroup[];
+}
+
+const {
+    fitting_groups,
+} = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FitSlot from '@components/blocks/FitSlot.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-
-interface Props {
-    fitting: string;
-}
-
-const {
-    fitting,
-} = Astro.props
-
-const fitting_parsed = parse_eft(fitting)
-
-let fitting_groups:FittingGroups[] = [];
-const groups_order = [ 'High power', 'Medium power', 'Low power', 'Rig Slot' ]
-
-groups_order.forEach((group_title) => {
-    if (fitting_parsed[group_title]) {
-        fitting_groups.push({
-            name: group_title,
-            fittables: fitting_parsed[group_title]
-        })
-    }
-})
-
-for (let group_title in fitting_parsed) {
-    if (groups_order.includes(group_title)) continue
-
-    fitting_groups.push({
-        name: `${group_title}s`,
-        fittables: fitting_parsed[group_title]
-    })
-}
 ---
 
 <Flexblock gap='var(--space-3xs)'>
-    
-    {fitting_groups.map((fitting_group) =>
+    {fitting_groups.map( (group) =>
         <ComponentBlock width='narrow'>
             <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                <h2>{fitting_group.name}</h2>
+                <h2>{group.name}</h2>
+
                 <Flexblock role="list" gap="var(--space-3xs)">
-                    {fitting_group.fittables.map((fittable) =>
-                        <FitSlot role="listitem" fittable={fittable} />
+                    {group.modules.map( (module) =>
+                        <FitSlot role="listitem" fittable={module} />
                     )}
                 </Flexblock>
             </Flexblock>
         </ComponentBlock>
     )}
-
 </Flexblock>
 
 <style lang="scss">

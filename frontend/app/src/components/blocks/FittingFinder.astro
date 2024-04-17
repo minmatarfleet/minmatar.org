@@ -127,7 +127,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                         </div>
                         {fittings.map((fitting) =>
                             <a
-                                href={translatePath(`/ships/fitting/redirect/${fitting.id}`)}
+                                href={translatePath(`/ships/fitting/${fitting.id}`)}
                                 fitting-finder-action="accept"
                                 fitting-finder-data={fitting.id}
                                 x-show="show_item($el)"

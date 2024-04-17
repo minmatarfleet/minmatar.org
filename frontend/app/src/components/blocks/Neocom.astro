@@ -66,17 +66,14 @@ const page = Astro.url.pathname
             >
                 <AllianceEvEIcon />
             </NeocomButton>
-            {(!is_prod_mode() || user_is_superadmin) &&
-                <NeocomButton
-                    active={page.startsWith(translatePath('/ships/'))}
-                    title='neocom.ships'
-                    description='ships.description'
-                    tag="dev"
-                    href={translatePath('/ships/')}
-                >
-                    <ShipTreeEvEIcon />
-                </NeocomButton>
-            }
+            <NeocomButton
+                active={page.startsWith(translatePath('/ships/'))}
+                title='neocom.ships'
+                description='ships.description'
+                href={translatePath('/ships/')}
+            >
+                <ShipTreeEvEIcon />
+            </NeocomButton>
             {!is_prod_mode() &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/fleets/'))}
