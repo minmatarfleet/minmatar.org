@@ -131,7 +131,7 @@ export const ui = {
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
 
         'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
-        'assets.description': 'Locate your personal assets accross New Eden.',
+        'assets.description': 'Locate your personal assets accross New Eden. Minmatar Fleet only tracks assets in NPC and structures owned by our alliance. This is not a replacement for the in-game asset window.',
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but without them our alliance would cease to exist. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
@@ -665,5 +665,6 @@ export const ui = {
         'armor.description': 'Defensive system that utilizes low-level fitting slots and does not regenerate on its own',
         'armorshield.description': 'Equally capable at using either armor or shield defenses',
         'keep_browsing': 'Keep browsing',
+        'npc_stations': 'NPC stations',
     },
 } as const;
