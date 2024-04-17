@@ -82,14 +82,14 @@ const page_title = t('index.page_title');
                     watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
                         camera.focus(this, ${CAMERA_ZOOM})
 
-						let rotationMatrix = mat4.fromValues(
+						let matrix = mat4.fromValues(
 							1, 0, 0, 0,
 							0, 1, 0, 0,
 							0, 0, 1, 0,
 							0, 0, 0, 7
 						)
 
-						this.setTransform(rotationMatrix)
+						this.setTransform(matrix)
 
 						setColor(200, 200, 200, 'Mtl1DiffuseColor')
 						setColor(61, 240, 25, 'Mtl2DiffuseColor')
@@ -108,20 +108,23 @@ const page_title = t('index.page_title');
                     });
 
 					sugar = scene.loadShip('iam1_t1:orebase:minmatar', function() {
-						let rotationMatrix = mat4.fromYRotation(mat4.fromValues(
+						let matrix = mat4.fromValues(
 							1, 0, 0, 0,
 							0, 1, 0, 0,
 							0, 0, 1, 0,
 							0, 0, 0, 1
-						), -0.7)
+						)
+
+						let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
 
 						// Translation
-						rotationMatrix[12] = 600000
+						rotationMatrix[12] = 900000
 						rotationMatrix[13] = -100000
-						rotationMatrix[14] = -900000
-						rotationMatrix[15] = 2
+						rotationMatrix[14] = -1500000
+						rotationMatrix[15] = 5
 						
 						this.setTransform(rotationMatrix)
+						this.setTransform(matrix)
                     });
 
                     ccpwgl.enablePostprocessing(true);
