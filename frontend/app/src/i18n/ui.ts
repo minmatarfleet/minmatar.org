@@ -664,5 +664,6 @@ export const ui = {
         'shield.description': 'Defensive system that utilizes medium-level fitting slots and regenerates slowly on its own',
         'armor.description': 'Defensive system that utilizes low-level fitting slots and does not regenerate on its own',
         'armorshield.description': 'Equally capable at using either armor or shield defenses',
+        'keep_browsing': 'Keep browsing',
     },
 } as const;

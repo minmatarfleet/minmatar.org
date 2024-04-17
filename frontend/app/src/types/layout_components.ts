@@ -620,3 +620,8 @@ export interface DoctrineType {
     secondary_fittings: FittingItem[];
     support_fittings:   FittingItem[];
 }
+
+export interface FittingGroup {
+    name:       string;
+    modules:    CargoItem[];
+}

@@ -1,0 +1,154 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+const { fitting_id } = Astro.params;
+
+import type { FittingGroup, Module, CargoItem } from '@dtypes/layout_components';
+import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fitting:Fitting
+let get_fitting_error:string | false = false
+
+try {
+    fitting = await get_fitting_by_id(parseInt(fitting_id))
+} catch (error) {
+    get_fitting_error = is_prod_mode() ? t('get_fitting_error') : error.message
+}
+
+import { get_item_icon } from '@helpers/eve_image_server';
+import { parse_eft } from '@helpers/fit_parser.ts';
+import { get_item_id } from '@helpers/sde/items'
+
+const fitting_parsed = await parse_eft(fitting.eft_format)
+const ship_id = await get_item_id(fitting_parsed.ship_name)
+
+function transform_into_cargohold(input: Module[]): CargoItem[] {
+    const output: CargoItem[] = [];
+    
+    input.forEach(item => {
+        if (item === null) return
+
+        const existingItem = output.find(i => i.name === item.name);
+
+        if (existingItem) {
+            existingItem.amount++;
+        } else {
+            output.push({
+                id: item.id,
+                name: item.name,
+                amount: 1
+            });
+        }
+    });
+    
+    return output;
+}
+
+let fitting_groups:FittingGroup[] = []
+
+if (fitting_parsed?.high_slots?.length > 0) {
+    fitting_groups.push({
+        name: 'High Power',
+        modules: transform_into_cargohold(fitting_parsed.high_slots)
+    })
+}
+
+if (fitting_parsed?.med_slots?.length > 0) {
+    fitting_groups.push({
+        name: 'Medium Power',
+        modules: transform_into_cargohold(fitting_parsed.med_slots)
+    })
+}
+
+if (fitting_parsed?.low_slots?.length > 0) {
+    fitting_groups.push({
+        name: 'Low Power',
+        modules: transform_into_cargohold(fitting_parsed.low_slots)
+    })
+}
+
+if (fitting_parsed?.subsystem_slots?.length > 0) {
+    fitting_groups.push({
+        name: 'Subsystems',
+        modules: transform_into_cargohold(fitting_parsed.subsystem_slots)
+    })
+}
+
+if (fitting_parsed?.drones?.length > 0) {
+    fitting_groups.push({
+        name: 'Drones',
+        modules: fitting_parsed.drones
+    })
+}
+
+if (fitting_parsed?.cargohold?.length > 0) {
+    fitting_groups.push({
+        name: 'Cargo Hold',
+        modules: fitting_parsed.cargohold
+    })
+}
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Fit from '@components/blocks/Fit.astro';
+import Button from '@components/blocks/Button.astro';
+
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+
+const page_title = fitting.name
+---
+
+<Viewport title={page_title}>
+    <PageDefault
+        cover={{
+            image: "/images/fits-cover.jpg",
+            image_990: "/images/fits-cover-990.jpg",
+            alt: t('fitting.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between'>
+            <FlexInline>
+                <FlexInline>
+                    <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
+                    <PageTitle>{page_title}</PageTitle>
+                </FlexInline>
+            </FlexInline>
+            <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
+                <ClipboardIcon slot="icon" />
+                {t('copy_to_clipboard')}
+            </Button>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{fitting.description}</p>
+            </TextBox>
+            
+            <Fit fitting_groups={fitting_groups} />
+        </Flexblock>
+    </PageDefault>
+</Viewport>
+
+<textarea id="fit-clipboard" set:html={fitting.eft_format}></textarea>
+
+<style>
+    #fit-clipboard {
+        display: none;
+    }
+</style>
