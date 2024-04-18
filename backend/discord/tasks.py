@@ -7,7 +7,7 @@ from app.celery import app
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter
 
-from .helpers import get_discord_user
+from .helpers import get_discord_user, get_expected_nickname
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
@@ -38,12 +38,14 @@ def sync_discord_user_nicknames():
         discord_user = DiscordUser.objects.filter(user_id=user.id).first()
         if discord_user is None:
             continue
-        try:
-            external_discord_user = get_discord_user(user)
-        except Exception:
+
+        expected_nickname = get_expected_nickname(user)
+        if expected_nickname is None:
             continue
-        if not discord_user.nickname:
-            discord_user.nickname = external_discord_user.get("nick")
+
+        if discord_user.nickname != expected_nickname:
+            discord.update_user(discord_user.id, nickname=expected_nickname)
+            discord_user.nickname = expected_nickname
             discord_user.save()
 
 

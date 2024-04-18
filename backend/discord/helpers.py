@@ -1,16 +1,48 @@
 import logging
 
 import requests
+import upsidedown
 from django.contrib.auth.models import User
 
 from discord.client import DiscordClient
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePrimaryCharacter
 
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = 1098974756356771870
+
+
+def get_expected_nickname(user: User):
+    """
+    Hardcoded to particular groups for now,
+    more robust solution can come later
+    """
+    user = User.objects.get(id=user.id)
+    valid_user_group_names = ["Alliance", "Associate"]
+    user_group_names = [group.name for group in user.groups.all()]
+    is_valid_for_nickname = False
+    for group in user_group_names:
+        if group in valid_user_group_names:
+            is_valid_for_nickname = True
+    discord_user = DiscordUser.objects.get(user_id=user.id)
+    eve_primary_character = EvePrimaryCharacter.objects.filter(
+        character__token__user=user
+    ).first()
+
+    if not eve_primary_character or not is_valid_for_nickname:
+        print("No primary character found")
+        return None
+
+    character = eve_primary_character.character
+    corporation = character.corporation
+    nickname = f"[{corporation.ticker}] {character.character_name}"
+
+    if discord_user.is_down_under:
+        nickname = upsidedown.transform(nickname)
+
+    return nickname
 
 
 def get_discord_user(user: User, notify=False):

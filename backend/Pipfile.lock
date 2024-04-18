@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2bb007c27511b20bf9c3cf33d388fca44a2470ae7fc1962b77e6d7d8c2d2ca94"
+            "sha256": "f0a0255b36bd49b51f20ea8efc8deb44e490960f095fdfc1a915c689c0dfeaa4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -179,12 +179,12 @@
         },
         "celery": {
             "hashes": [
-                "sha256:870cc71d737c0200c397290d730344cc991d13a057534353d124c9380267aab9",
-                "sha256:9da4ea0118d232ce97dff5ed4974587fb1c0ff5c10042eb15278487cdd27d1af"
+                "sha256:369631eb580cf8c51a82721ec538684994f8277637edde2dfc0dacd73ed97f64",
+                "sha256:504a19140e8d3029d5acad88330c541d4c3f64c789d85f94756762d8bca7e706"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==5.3.6"
+            "version": "==5.4.0"
         },
         "celery-once": {
             "hashes": [
@@ -444,12 +444,12 @@
         },
         "gunicorn": {
             "hashes": [
-                "sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0",
-                "sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033"
+                "sha256:350679f91b24062c86e386e198a15438d53a7a8207235a78ba1b53df4c4378d9",
+                "sha256:4a0b436239ff76fb33f11c07a16482c521a7e09c1ce3cc293c2330afe01bec63"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.5'",
-            "version": "==21.2.0"
+            "markers": "python_version >= '3.7'",
+            "version": "==22.0.0"
         },
         "h11": {
             "hashes": [
@@ -1055,6 +1055,14 @@
             ],
             "markers": "python_version >= '2'",
             "version": "==2024.1"
+        },
+        "upsidedown": {
+            "hashes": [
+                "sha256:8e8187697e2f30db737067e063b3eb622986a233edb2b24ba57b072528914898",
+                "sha256:d6155d98ddbd14442cb29f3f04ea24e6aab6283f2919dd818bb1970759e37f4d"
+            ],
+            "index": "pypi",
+            "version": "==0.4"
         },
         "urllib3": {
             "hashes": [

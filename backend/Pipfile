@@ -23,6 +23,7 @@ whitenoise = "*"
 gunicorn = "*"
 sentry-sdk = {extras = ["django","celery"], version = "*"}
 gitpython = "*"
+upsidedown = "*"
 
 [dev-packages]
 pylint = "*"
