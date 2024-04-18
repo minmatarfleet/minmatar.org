@@ -38,7 +38,10 @@ def sync_discord_user_nicknames():
         discord_user = DiscordUser.objects.filter(user_id=user.id).first()
         if discord_user is None:
             continue
-        external_discord_user = get_discord_user(user)
+        try:
+            external_discord_user = get_discord_user(user)
+        except Exception:
+            continue
         if not discord_user.nickname:
             discord_user.nickname = external_discord_user.get("nick")
             discord_user.save()
