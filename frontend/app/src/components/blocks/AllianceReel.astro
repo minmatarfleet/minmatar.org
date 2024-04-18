@@ -6,16 +6,18 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 interface Props {
-    can_view_applications?:   boolean;
-    user_is_officer?:   boolean;
-    user_is_director?:  boolean;
-    is_superuser?:  boolean;
+    can_view_applications?: boolean;
+    user_is_officer?:       boolean;
+    user_is_director?:      boolean;
+    can_view_corp_members?: boolean;
+    is_superuser?:          boolean;
 }
 
 const {
     can_view_applications = false,
     user_is_officer = false,
     user_is_director = false,
+    can_view_corp_members = false,
     is_superuser = false,
 } = Astro.props
 
@@ -68,7 +70,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                                         {t('view_applications')}
                                     </Button>
                                 }
-                                {can_view_applications &&
+                                {can_view_corp_members &&
                                     <Button size='sm' href={translatePath('/alliance/corporations/members/')}>
                                         {t('view_members')}
                                     </Button>
