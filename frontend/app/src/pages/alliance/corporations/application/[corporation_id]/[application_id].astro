@@ -18,7 +18,7 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_page = is_superuser || user_permissions.includes('auth.change_evecorporationapplication')
+const can_view_page = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
 
 const corporation_id = parseInt(Astro.params?.corporation_id ?? '0')
 const application_id = parseInt(Astro.params?.application_id ?? '0')

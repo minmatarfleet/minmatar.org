@@ -19,7 +19,7 @@ import { is_officer, is_director } from '@helpers/fetching/groups'
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_applications = is_superuser || user_permissions.includes('auth.change_evecorporationapplication')
+const can_view_applications = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
 const can_view_corp_members = is_superuser || user_permissions.includes('eveonline.view_evecorporation')
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)

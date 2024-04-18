@@ -99,7 +99,7 @@
         "description": "page_finder.corporations.applications.description",
         "publish": true,
         "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
+            "user": [ "applications.change_evecorporationapplication" ]
         }
     },
     {
@@ -108,7 +108,7 @@
         "description": "page_finder.corporations.applications.records.description",
         "publish": true,
         "permissions" : {
-            "user": [ "auth.change_evecorporationapplication" ]
+            "user": [ "applications.change_evecorporationapplication" ]
         }
     },
     {
