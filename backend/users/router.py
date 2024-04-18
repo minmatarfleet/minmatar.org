@@ -97,8 +97,8 @@ def get_user_by_id(request, user_id: int):
     return get_user_profile(user_id)
 
 
-@router.search(
-    "/search",
+@router.get(
+    "",
     summary="Search for user profiles",
     description="This will search for users based on the query provided.",
     response={
@@ -106,7 +106,7 @@ def get_user_by_id(request, user_id: int):
         404: ErrorResponse,
     },
 )
-def search_users(request, username: str):
+def get_user_by_username(request, username: str):
     if not User.objects.filter(username=username).exists():
         return 404, {"detail": "User not found."}
     user = User.objects.get(username=username)
