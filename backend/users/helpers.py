@@ -2,22 +2,13 @@ from django.contrib.auth.models import User
 
 from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
-from django.contrib.auth.models import Permission
 from .schemas import UserProfileSchema
 
 
 def get_user_permissions(user_id: int) -> list[str]:
     user = User.objects.get(id=user_id)
-    permissions = user.user_permissions.all() | Permission.objects.filter(
-        group__user=user
-    )
-
-    permissions = [
-        f"{p._meta.app_label}.{p.codename}"  # pylint: disable=protected-access
-        for p in permissions
-    ]
-
-    return permissions
+    permissions = user.get_all_permissions()
+    return list(permissions)
 
 
 def get_user_profile(user_id: int) -> UserProfileSchema:
