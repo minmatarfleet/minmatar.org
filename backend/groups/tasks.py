@@ -26,6 +26,7 @@ def update_affiliation(user_id: int):
         character__token__user=user
     ).exists():
         logger.info("No primary character found for user %s", user)
+        UserAffiliation.objects.filter(user=user).delete()
         return
     primary_character = EvePrimaryCharacter.objects.get(
         character__token__user=user
