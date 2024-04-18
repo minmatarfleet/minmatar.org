@@ -1,13 +1,13 @@
 import logging
 
 import requests
-from django.contrib.auth.models import User, Group
+import upsidedown
+from django.contrib.auth.models import User
 
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 
 from .models import DiscordRole, DiscordUser
-import upsidedown
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -22,12 +22,10 @@ def get_expected_nickname(user: User):
     user = User.objects.get(id=user.id)
     valid_user_group_names = ["Alliance", "Associate"]
     user_group_names = [group.name for group in user.groups.all()]
-    is_valid_for_nickname = any(
-        [
-            group_name in user_group_names
-            for group_name in valid_user_group_names
-        ]
-    )
+    is_valid_for_nickname = False
+    for group in user_group_names:
+        if group in valid_user_group_names:
+            is_valid_for_nickname = True
     discord_user = DiscordUser.objects.get(user_id=user.id)
     eve_primary_character = EvePrimaryCharacter.objects.filter(
         character__token__user=user
