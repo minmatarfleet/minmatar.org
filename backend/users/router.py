@@ -63,14 +63,11 @@ def callback(request, code: str):
             avatar=user["avatar"],
         )
 
-    permissions = get_user_permissions(django_user.id)
-
     payload = {
         "user_id": django_user.id,
         "username": user["username"],
         "avatar": f"https://cdn.discordapp.com/avatars/{django_user.discord_user.id}/{django_user.discord_user.avatar}.png",
         "is_superuser": django_user.is_superuser,
-        "permissions": permissions,
     }
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
