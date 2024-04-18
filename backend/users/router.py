@@ -97,6 +97,22 @@ def get_user_by_id(request, user_id: int):
     return get_user_profile(user_id)
 
 
+@router.search(
+    "/search",
+    summary="Search for user profiles",
+    description="This will search for users based on the query provided.",
+    response={
+        200: UserProfileSchema,
+        404: ErrorResponse,
+    },
+)
+def search_users(request, username: str):
+    if not User.objects.filter(username=username).exists():
+        return 404, {"detail": "User not found."}
+    user = User.objects.get(username=username)
+    return get_user_profile(user.id)
+
+
 @router.delete(
     "/delete",
     summary="Delete account and all associated data",
