@@ -667,5 +667,6 @@ export const ui = {
         'keep_browsing': 'Keep browsing',
         'npc_stations': 'NPC stations',
         'view_associates': 'View associates corporations',
+        'get_user_by_name_error': 'An error ocurred fetching user profile',
     },
 } as const;

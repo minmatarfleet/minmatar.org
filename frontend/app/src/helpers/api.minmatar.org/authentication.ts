@@ -26,6 +26,30 @@ export async function get_user_by_id(user_id:number) {
     }
 }
 
+export async function get_user_by_name(user_name:string) {
+    const headers = {
+        'Content-Type': 'application/json'
+    }
+
+    console.log(`Requesting: ${API_ENDPOINT}?username=${user_name}`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}?username=${user_name}`, {
+            headers: headers
+        })
+        
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as UserProfile;
+    } catch (error) {
+        throw new Error(`Error fetching user profile: ${error.message}`);
+    }
+}
+
 export async function delete_account(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
