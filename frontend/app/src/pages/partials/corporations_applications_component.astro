@@ -17,7 +17,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_applications = user_permissions.includes('auth.change_evecorporationapplication')
+const can_view_applications = user_permissions.includes('applications.change_evecorporationapplication')
 
 if (!auth_token || !can_view_applications)
     return HTTP_404_Not_Found()

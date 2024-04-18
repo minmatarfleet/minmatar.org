@@ -1,4 +1,12 @@
 ---
+interface Props {
+    padding_inline?:    string;
+}
+
+const {
+    padding_inline = 'var(--space-3xs)'
+} = Astro.props
+
 import Wrapper from '@components/compositions/Wrapper.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -22,7 +30,7 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 
     <Wrapper
         padding_block='0'
-        padding_inline='var(--space-3xs)'
+        padding_inline={padding_inline}
     >
         <div
             x-show="expanded"
