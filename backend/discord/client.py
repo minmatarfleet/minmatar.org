@@ -223,6 +223,16 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
         )
 
+    def update_user(self, user_id, nickname: str):
+        """Update a user on a discord server"""
+        data = {
+            "nick": nickname,
+        }
+        return self.patch(
+            f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+            json=data,
+        )
+
     def add_user_role(self, user_id, role_id):
         """Add a role to a user"""
         return self.put(
