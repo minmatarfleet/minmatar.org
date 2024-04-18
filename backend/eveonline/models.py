@@ -125,8 +125,16 @@ class EveCorporation(models.Model):
         if not self.ceo.token:
             return False
 
+        # Grab CEO token for the character
+        token = Token.objects.filter(
+            character_id=self.ceo.character_id,
+            scopes__name="esi-corporations.read_corporation_membership.v1",
+        ).first()
+        if not token:
+            return False
+
+        # Check if the token has the required scopes
         required_scopes = set(CEO_SCOPES)
-        token = self.ceo.token
         required_scopes = Scope.objects.filter(
             name__in=required_scopes,
         )
