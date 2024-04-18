@@ -2,7 +2,7 @@ import logging
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from ninja import Router
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 
-from .helpers import get_user_profile
+from .helpers import get_user_profile, get_user_permissions
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)
@@ -63,15 +63,7 @@ def callback(request, code: str):
             avatar=user["avatar"],
         )
 
-    permissions = (
-        django_user.user_permissions.all()
-        | Permission.objects.filter(group__user=django_user)
-    )
-
-    permissions = [
-        f"{p._meta.app_label}.{p.codename}"  # pylint: disable=protected-access
-        for p in permissions
-    ]
+    permissions = get_user_permissions(django_user.id)
 
     payload = {
         "user_id": django_user.id,
