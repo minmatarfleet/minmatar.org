@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 
 from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
+
 from .schemas import UserProfileSchema
 
 
