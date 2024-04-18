@@ -26,5 +26,10 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
         .collapsed {
             transform: rotate(180deg);
         }
+
+        &:focus-visible {
+            outline-color: var(--highlight);
+            outline-style: double;
+        }
     }
 </style>

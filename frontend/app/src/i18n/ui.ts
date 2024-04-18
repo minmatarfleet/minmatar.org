@@ -666,5 +666,6 @@ export const ui = {
         'armorshield.description': 'Equally capable at using either armor or shield defenses',
         'keep_browsing': 'Keep browsing',
         'npc_stations': 'NPC stations',
+        'view_associates': 'View associates corporations',
     },
 } as const;

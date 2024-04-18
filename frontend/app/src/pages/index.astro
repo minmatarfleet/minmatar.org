@@ -12,7 +12,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-const CAMERA_ZOOM = 0.32
+const CAMERA_ZOOM = 0.315
 
 import Viewport from '@layouts/Viewport.astro';
 
