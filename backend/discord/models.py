@@ -21,6 +21,7 @@ class DiscordUser(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="discord_user"
     )
+    nickname = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return str(self.discord_tag)

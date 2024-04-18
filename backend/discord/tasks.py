@@ -7,7 +7,7 @@ from app.celery import app
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter
 
-from .helpers import get_discord_user_or_begin_offboarding
+from .helpers import get_discord_user
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
@@ -32,13 +32,25 @@ def sync_discord_users():
         sync_discord_user(user.id)
 
 
+@app.task()
+def sync_discord_user_nicknames():
+    for user in User.objects.all():
+        discord_user = DiscordUser.objects.filter(user_id=user.id).first()
+        if discord_user is None:
+            continue
+        external_discord_user = get_discord_user(user)
+        if not discord_user.nickname:
+            discord_user.nickname = external_discord_user.get("nick")
+            discord_user.save()
+
+
 @app.task(rate_limit="1/s")
 def sync_discord_user(user_id: int):
     user = User.objects.get(id=user_id)
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
     if discord_user is None:
         return
-    external_discord_user = get_discord_user_or_begin_offboarding(user)
+    external_discord_user = get_discord_user(user, notify=True)
     if external_discord_user is None:
         return
     expected_discord_roles = DiscordRole.objects.filter(

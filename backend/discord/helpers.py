@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = 1098974756356771870
 
 
-def get_discord_user_or_begin_offboarding(user: User):
+def get_discord_user(user: User, notify=False):
     """
     Fetches a user based on their discord user
-    If they don't exist, deletes their entire account
+    If they don't exist, notifies people team if notify=True
     """
     external_discord_user = None
     if not DiscordUser.objects.filter(user_id=user.id).exists():
@@ -29,24 +29,25 @@ def get_discord_user_or_begin_offboarding(user: User):
     try:
         external_discord_user = discord.get_user(discord_user.id)
     except requests.exceptions.HTTPError as e:
-        if e.response.json() == {
-            "message": "Unknown Member",
-            "code": 10007,
-        }:
-            characters = ",".join(
-                [
-                    char.character_name
-                    for char in EveCharacter.objects.filter(
-                        token__user__id=user.id
-                    )
-                ]
-            )
+        if notify:
+            if e.response.json() == {
+                "message": "Unknown Member",
+                "code": 10007,
+            }:
+                characters = ",".join(
+                    [
+                        char.character_name
+                        for char in EveCharacter.objects.filter(
+                            token__user__id=user.id
+                        )
+                    ]
+                )
 
-            message = "The following user needs to be offboarded,\n"
-            message += f"Discord ID: {user.username}\n"
-            message += f"Characters: {characters}\n"
-            discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
-            return None
+                message = "The following user needs to be offboarded,\n"
+                message += f"Discord ID: {user.username}\n"
+                message += f"Characters: {characters}\n"
+                discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
+                return None
 
         raise e
 
