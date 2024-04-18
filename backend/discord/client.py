@@ -33,11 +33,11 @@ class DiscordBaseClient:
         self.guild_id = GUILD_ID
         self.session = s
 
-    @on_exception(expo, RateLimitException, max_tries=8)
-    @limits(calls=10, period=1)
+    @limits(calls=5, period=1)
     def check_ratelimit(self):
         pass
 
+    @on_exception(expo, RateLimitException, max_tries=8)
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
         self.check_ratelimit()
@@ -48,9 +48,12 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
+        if response.status_code == 429:
+            raise RateLimitException
         response.raise_for_status()
         return response
 
+    @on_exception(expo, RateLimitException, max_tries=8)
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
         self.check_ratelimit()
@@ -61,9 +64,12 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
+        if response.status_code == 429:
+            raise RateLimitException
         response.raise_for_status()
         return response
 
+    @on_exception(expo, RateLimitException, max_tries=8)
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
         self.check_ratelimit()
@@ -74,9 +80,12 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
+        if response.status_code == 429:
+            raise RateLimitException
         response.raise_for_status()
         return response
 
+    @on_exception(expo, RateLimitException, max_tries=8)
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
         self.check_ratelimit()
@@ -87,11 +96,12 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
-        logger.info(response.json())
-        logger.info(response.status_code)
+        if response.status_code == 429:
+            raise RateLimitException
         response.raise_for_status()
         return response.json()
 
+    @on_exception(expo, RateLimitException, max_tries=8)
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
         self.check_ratelimit()
@@ -101,6 +111,8 @@ class DiscordBaseClient:
             headers={"Authorization": f"Bot {self.access_token}"},
             timeout=10,
         )
+        if response.status_code == 429:
+            raise RateLimitException
         response.raise_for_status()
         return response
 
