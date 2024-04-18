@@ -32,7 +32,6 @@ def get_expected_nickname(user: User):
     ).first()
 
     if not eve_primary_character or not is_valid_for_nickname:
-        print("No primary character found")
         return None
 
     character = eve_primary_character.character
