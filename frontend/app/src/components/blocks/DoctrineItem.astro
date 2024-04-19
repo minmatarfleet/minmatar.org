@@ -51,17 +51,8 @@ const {
         {doctrine.primary_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
-                x-data={`{
-                    get_fitting_path(fitting_id) {
-                        if (window.innerWidth > 1535)
-                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
-                        else
-                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
-                    },
-                }`}
                 role="listitem"
-                x-bind:href={`get_fitting_path(${fitting.id})`}
-                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+                href={translatePath(`/ships/fitting/${fitting.id}`)}
             >
                 <Badge
                     title={fitting.fitting_name}
@@ -75,17 +66,8 @@ const {
         {doctrine.secondary_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
-                x-data={`{
-                    get_fitting_path(fitting_id) {
-                        if (window.innerWidth > 1535)
-                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
-                        else
-                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
-                    },
-                }`}
                 role="listitem"
-                x-bind:href={`get_fitting_path(${fitting.id})`}
-                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+                href={translatePath(`/ships/fitting/${fitting.id}`)}
             >
                 <Badge
                     title={fitting.fitting_name}
@@ -99,17 +81,8 @@ const {
         {doctrine.support_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
-                x-data={`{
-                    get_fitting_path(fitting_id) {
-                        if (window.innerWidth > 1535)
-                            return \`${translatePath(`/ships/fitting/redirect/\${fitting_id}`)}\`
-                        else
-                            return \`${translatePath(`/ships/fitting/list/\${fitting_id}`)}\`
-                    },
-                }`}
                 role="listitem"
-                x-bind:href={`get_fitting_path(${fitting.id})`}
-                href={translatePath(`/ships/fitting/list/${fitting.id}`)}
+                href={translatePath(`/ships/fitting/${fitting.id}`)}
             >
                 <Badge
                     title={fitting.fitting_name}
