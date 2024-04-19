@@ -15,6 +15,7 @@ const alliance_id = parseInt(Astro.url.searchParams.get('alliance_id'))
 const alliance_name = Astro.url.searchParams.get('alliance_name')
 const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
 const status = Astro.url.searchParams.get('status') as GroupStatus
+const active = JSON.parse(Astro.url.searchParams.get('active'))
 const message = Astro.url.searchParams.get('message')
 
 const corporation:CorporationObject = {
@@ -23,11 +24,14 @@ const corporation:CorporationObject = {
     alliance_id: alliance_id,
     alliance_name: alliance_name,
     corporation_type: corporation_type,
+    active: active,
     status: null
 }
+
+import { marked } from 'marked';
 ---
 
 <Flexblock>
-    <p>{message}</p>
+    <Flexblock set:html={marked.parse(message)} />
     <CorporationItem corporation={corporation} />
 </Flexblock>

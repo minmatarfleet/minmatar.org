@@ -29,8 +29,10 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
-import ButtonAddPrimary from './ButtonAddPrimary.astro';
+import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
+import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
 ---
+
 <div
     id={`corporation-status-${corporation.corporation_id}`}
     x-data={`{
@@ -43,7 +45,16 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
         <div class="[ max-w-fit ]"><Tag color='green' text={t('joined')} /></div>
         :
         <ButtonStack>
-            {corporation?.status == 'available' && !primary_character_id &&
+            {(corporation?.status != null && !corporation.active) ?
+                <ButtonCeoToken
+                    corporation={corporation}
+                    size='sm'
+                    dialog_title={t('add_ceo_token_dialog_title')}
+                >
+                    {t('add_ceo_token')}
+                </ButtonCeoToken>
+            :
+            (corporation?.status == 'available' && !primary_character_id) ?
                 <ButtonAddPrimary
                     size='sm'
                     color='green'
@@ -51,8 +62,8 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
                 >
                     {t('enlist_today')}
                 </ButtonAddPrimary>
-            }
-            {corporation?.status == 'available' && primary_character_id &&
+            :
+            (corporation?.status == 'available' && primary_character_id) ?
                 <Button
                     type="button"
                     size='sm'
@@ -91,8 +102,8 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
                 >
                     {t('enlist_today')}
                 </Button>
-            }
-            {corporation?.status == 'unauth' &&
+            :
+            corporation?.status == 'unauth' ?
                 <ButtonAuth
                     size='sm'
                     color='green'
@@ -100,17 +111,17 @@ import ButtonAddPrimary from './ButtonAddPrimary.astro';
                 >
                     {t('enlist_today')}
                 </ButtonAuth>
-            }
-            {corporation?.status === 'accepted' &&
+            :
+            corporation?.status === 'accepted' ?
                 <Tag color='green' text={t('accepted')} />
-            }
-            {corporation?.status === 'rejected' &&
+            :
+            corporation?.status === 'rejected' ?
                 <Tag text={t('denied')} />
-            }
-            {corporation?.status == 'pending' &&
+            :
+            corporation?.status == 'pending' ?
                 <Tag color='alliance-blue' text={t('pending')} />
-            }
-            {corporation?.status == 'error' &&
+            :
+            corporation?.status == 'error' &&
                 <Tag text={t('error_status_corp')} />
             }
         </ButtonStack>

@@ -1,0 +1,69 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type {  ButtonSizes, ButtonColors, CorporationObject } from '@dtypes/layout_components';
+
+interface Props {
+    corporation:    CorporationObject;
+    color?:         ButtonColors;
+    size?:          ButtonSizes;
+    narrow?:        boolean;
+    dialog_title:   string;
+    redirect?:      string;
+}
+
+const {
+    corporation,
+    color = 'fleet-red',
+    size = 'lg',
+    narrow = false,
+    dialog_title,
+    redirect = Astro.url,
+} = Astro.props;
+
+import { query_string } from '@helpers/string';
+const ADD_CEO_TOKEN_INIT_PARTIAL_URL = `${translatePath('/redirects/add_ceo_token_init')}?redirect=${redirect}`
+
+interface Message {
+    message: string
+}
+
+type Params = CorporationObject & Message
+
+const params:Params = {
+    alliance_id: corporation.alliance_id,
+    corporation_id: corporation.corporation_id,
+    alliance_name: corporation.alliance_name,
+    corporation_name: corporation.corporation_name,
+    corporation_type: corporation.corporation_type,
+    active: corporation.active,
+    message: t('add_ceo_token_disclaimer'),
+}
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    type="button"
+    color={color}
+    size={size}
+    narrow={narrow}
+    x-data={`{
+        add_ceo_token(accepted) {
+            if (accepted) window.location.href = "${ADD_CEO_TOKEN_INIT_PARTIAL_URL}"
+        },
+        show_add_ceo_disclaimer() {
+            show_confirm_dialog({
+                title: '${dialog_title}',
+                partial: '${translatePath('/partials/dialog_with_corporation/')}?${query_string(params)}',
+            }).then( (accepted) => this.add_ceo_token(accepted) )
+        }
+    }`}
+    x-on:click="show_add_ceo_disclaimer"
+>
+    <slot />
+</Button>

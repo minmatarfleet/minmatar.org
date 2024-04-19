@@ -33,6 +33,7 @@ export async function get_corporations_list(corporation_type:CorporationType) {
             corporation_id: i.corporation_id,
             corporation_name: i.corporation_name,
             corporation_type: i.type,
+            active: i.active,
             status: 'unauth'
         }
     } )
@@ -57,6 +58,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         alliance_id: api_corporation.alliance_id,
         alliance_name: api_corporation.alliance_name,
         corporation_type: api_corporation.type,
+        active: api_corporation.active,
         status: 'available'
     }
 
