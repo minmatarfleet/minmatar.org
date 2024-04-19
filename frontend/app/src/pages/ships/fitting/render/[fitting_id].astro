@@ -230,22 +230,28 @@ const page_title = fitting_parsed.name;
 
                 <Flexblock gap='var(--space-3xs)'>
                     <CollapsibleBlock padding_inline='var(--space-xl)'>
-                        <FitsEvEIcon slot="head" />
-                        <h3 slot="head">{t('fitting')}</h3>
+                        <FlexInline slot="head" gap='var(--space-2xs)'>
+                            <FitsEvEIcon />
+                            <h3>{t('fitting')}</h3>
+                        </FlexInline>
                         <pre class="[ eve-html ]" set:html={fitting.eft_format} />
                     </CollapsibleBlock>
 
                     {fitting_parsed?.drones?.length > 0 &&
                         <Cargohold cargo={fitting_parsed.drones}>
-                            <DronesEvEIcon />
-                            <h3>{t('drone_bay')}</h3>
+                            <FlexInline gap='var(--space-2xs)'>
+                                <DronesEvEIcon />
+                                <h3>{t('drone_bay')}</h3>
+                            </FlexInline>
                         </Cargohold>
                     }
 
                     {fitting_parsed?.cargohold?.length > 0 &&
                         <Cargohold cargo={fitting_parsed.cargohold}>
-                            <CargoHoldEvEIcon />
-                            <h3>{t('cargo_hold')}</h3>
+                            <FlexInline gap='var(--space-2xs)'>
+                                <CargoHoldEvEIcon />
+                                <h3>{t('cargo_hold')}</h3>
+                            </FlexInline>
                         </Cargohold>
                     }
                 </Flexblock>
