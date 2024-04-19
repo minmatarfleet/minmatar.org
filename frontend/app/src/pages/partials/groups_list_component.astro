@@ -38,19 +38,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_groups_error ?
-    <GroupsList
-        groups={groups} 
-        groups_type={groups_type}
-    >
-        <ErrorRefetch
-            args={{
-                partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-                message: get_groups_error,
-                delay: delay,
-                target: '#groups-list',
-            }}
-        />
-    </GroupsList>
+    <ErrorRefetch
+        args={{
+            partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
+            message: get_groups_error,
+            delay: delay,
+        }}
+    />
     :
     <GroupsList
         groups={groups} 

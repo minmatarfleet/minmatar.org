@@ -109,20 +109,13 @@ const page_title = `${application.character_name} ${t('application').toLowerCase
             </TextBox>
 
             {get_corporation_application_error ?
-                <CorporationApplication
-                    application={null}
-                    corporation_id={null}
-                    corporation_name={null}
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: CORPORATION_APPLICATION_PARTIAL_URL,
-                            message: get_corporation_application_error,
-                            delay: 0,
-                            target: '#corporation-application',
-                        }}
-                    />
-                </CorporationApplication>
+                <ErrorRefetch
+                    args={{
+                        partial: CORPORATION_APPLICATION_PARTIAL_URL,
+                        message: get_corporation_application_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <ComponentBlock>
                     <CorporationApplication

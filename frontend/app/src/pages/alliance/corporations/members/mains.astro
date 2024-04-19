@@ -249,18 +249,13 @@ const page_title = t('corporations.members.mains.page_title')
             </TextBox>
 
             {get_all_mains_alts_error ?
-                <MainAltsList
-                    mains={[]}
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: MAINS_ALTS_PARTIAL_URL,
-                            message: get_all_mains_alts_error,
-                            delay: 0,
-                            target: '#mains-alts-list',
-                        }}
-                    />
-                </MainAltsList>
+                <ErrorRefetch
+                    args={{
+                        partial: MAINS_ALTS_PARTIAL_URL,
+                        message: get_all_mains_alts_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <MainAltsList mains={mains_alts} />
             }

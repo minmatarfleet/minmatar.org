@@ -96,19 +96,13 @@ const page_title = t('teams.requests.page_title');
                 <p>{t('teams.requests.leading_text')}</p>
             </TextBox>
             {get_all_teams_requests_error ?
-                <GroupRequestsList
-                    groups_requests={groups_requests}
-                    groups_type='team'
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=team`,
-                            message: get_all_teams_requests_error,
-                            delay: 0,
-                            target: '#group-request-list',
-                        }}
-                    />
-                </GroupRequestsList>
+                <ErrorRefetch
+                    args={{
+                        partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=team`,
+                        message: get_all_teams_requests_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <GroupRequestsList
                     groups_requests={groups_requests}

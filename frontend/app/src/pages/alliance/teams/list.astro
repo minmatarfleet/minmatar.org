@@ -81,19 +81,13 @@ const page_title = t('teams.list.page_title');
             </TextBox>
 
             {get_groups_error ?
-                <GroupsList
-                    groups={groups}
-                    groups_type='group'
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=team`,
-                            message: get_groups_error,
-                            delay: 0,
-                            target: '#groups-list',
-                        }}
-                    />
-                </GroupsList>
+                <ErrorRefetch
+                    args={{
+                        partial: `${GROUPS_LIST_PARTIAL_URL}?groups_type=team`,
+                        message: get_groups_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <GroupsList
                     groups={groups}

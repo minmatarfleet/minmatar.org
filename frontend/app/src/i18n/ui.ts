@@ -666,6 +666,7 @@ export const ui = {
         'armorshield.description': 'Equally capable at using either armor or shield defenses',
         'keep_browsing': 'Keep browsing',
         'npc_stations': 'NPC stations',
+        'accessible_stations': 'Accessible stations',
         'view_associates': 'View associates corporations',
         'get_user_by_name_error': 'An error ocurred fetching user profile',
     },

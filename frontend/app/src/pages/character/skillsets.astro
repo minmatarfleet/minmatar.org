@@ -105,22 +105,13 @@ const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets'
         </FlexInline>
 
         {get_character_skillsets_error ?
-            <SkillsetsList
-                skillsets={[]}
-                character={{
-                    character_id: character_id,
-                    character_name: '',
+            <ErrorRefetch
+                args={{
+                    partial: `${SKILLSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
+                    message: get_character_skillsets_error,
+                    delay: 0,
                 }}
-            >
-                <ErrorRefetch
-                    args={{
-                        partial: `${SKILLSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
-                        message: get_character_skillsets_error,
-                        delay: 0,
-                        target: '#skillset-list',
-                    }}
-                />
-            </SkillsetsList>
+            />
             :
             <SkillsetsList
                 skillsets={character_skillsets.skillsets}

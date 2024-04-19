@@ -43,19 +43,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_all_corporations_error ?
-    <GroupRequestsList
-        groups_requests={groups_requests}
-        groups_type={groups_type}
-    >
-        <ErrorRefetch
-            args={{
-                partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-                message: get_all_corporations_error,
-                delay: delay,
-                target: '#group-request-list',
-            }}
-        />
-    </GroupRequestsList>
+    <ErrorRefetch
+        args={{
+            partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
+            message: get_all_corporations_error,
+            delay: delay,
+        }}
+    />
     :
     <GroupRequestsList
         groups_requests={groups_requests}

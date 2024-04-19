@@ -168,19 +168,13 @@ const page_title = t('groups.members.page_title')
             </TextBox>
 
             {get_groups_members_error ?
-                <GroupsMembers
-                    groups={[]}
-                    type='group'
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=group`,
-                            message: get_groups_members_error,
-                            delay: 0,
-                            target: '#assets-list',
-                        }}
-                    />
-                </GroupsMembers>
+                <ErrorRefetch
+                    args={{
+                        partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=group`,
+                        message: get_groups_members_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <GroupsMembers
                     groups={groups_members}

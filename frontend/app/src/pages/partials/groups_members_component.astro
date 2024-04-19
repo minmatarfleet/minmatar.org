@@ -128,19 +128,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_groups_members_error ?
-    <GroupsMembers
-        groups={[]}
-        type={group_type}
-    >
-        <ErrorRefetch
-            args={{
-                partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=${group_type}`,
-                message: get_groups_members_error,
-                delay: delay,
-                target: '#groups-members-list',
-            }}
-        />
-    </GroupsMembers>
+    <ErrorRefetch
+        args={{
+            partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=${group_type}`,
+            message: get_groups_members_error,
+            delay: delay,
+        }}
+    />
     :
     <GroupsMembers
         groups={groups_members}

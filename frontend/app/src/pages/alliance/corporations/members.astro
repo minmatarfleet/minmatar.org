@@ -230,18 +230,13 @@ const page_title = t('corporations.members.page_title')
             </TextBox>
 
             {get_all_corporations_members_error ?
-                <CorporationMembersList
-                    corporations={[]}
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
-                            message: get_all_corporations_members_error,
-                            delay: 0,
-                            target: '#corporations-members-list',
-                        }}
-                    />
-                </CorporationMembersList>
+                <ErrorRefetch
+                    args={{
+                        partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
+                        message: get_all_corporations_members_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <CorporationMembersList corporations={corporations_members} />
             }
