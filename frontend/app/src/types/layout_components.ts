@@ -324,6 +324,7 @@ export interface CorporationObject {
     corporation_name:   string;
     alliance_id:        number;
     alliance_name:      string,
+    active:             boolean;
     corporation_type:   CorporationType;
     status?:            CorporationStatusType;
 }

@@ -669,5 +669,8 @@ export const ui = {
         'accessible_stations': 'Accessible stations',
         'view_associates': 'View associates corporations',
         'get_user_by_name_error': 'An error ocurred fetching user profile',
+        'add_ceo_token': 'Add CEO Token',
+        'add_ceo_token_dialog_title': 'Add CEO token',
+        'add_ceo_token_disclaimer': 'Corporation applications are currently not available until a CEO token is added. If you are not one of the CEOs of this corporation, you may close this dialog.\n\nWould you like to proceed with adding the CEO token?'
     },
 } as const;

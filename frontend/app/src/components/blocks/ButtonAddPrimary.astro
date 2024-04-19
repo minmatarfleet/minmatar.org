@@ -44,7 +44,7 @@ import Button from '@components/blocks/Button.astro';
                 partial: '${translatePath('/partials/add_primary_pilot_dialog_disclaimer/')}?${query_string({
                     is_main: JSON.stringify(true),
                 })}',
-            }).then( (accepted) => add_primary_pilot(accepted) )
+            }).then( (accepted) => this.add_primary_pilot(accepted) )
         }
     }`}
     x-on:click="show_add_pilot_disclaimer"
