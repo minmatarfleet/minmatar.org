@@ -41,7 +41,7 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
         }
     }`}
 >
-    {is_user_corporation ?
+    {(corporation?.status != null && is_user_corporation) ?
         <div class="[ max-w-fit ]"><Tag color='green' text={t('joined')} /></div>
         :
         <ButtonStack>
