@@ -7,10 +7,12 @@ import type { CargoItem } from '@dtypes/layout_components'
 
 interface Props {
     cargo:  CargoItem[];
+    gap?:   string;
 }
 
 const {
     cargo,
+    gap = 'var(--space-2xs)',
 } = Astro.props
 
 import Context from '@components/layout/Context.astro';
@@ -48,6 +50,7 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
         >
             {cargo.map( (item) =>
                 <Badge
+                    gap={gap}
                     size={32}
                     highlight={false}
                     title={`${item.amount} x ${item.name}`}

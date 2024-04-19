@@ -11,6 +11,7 @@ interface Props {
     size?:      number;
     border?:    boolean;
     highlight?: boolean;
+    gap?:       string;
 }
 
 const {
@@ -20,6 +21,7 @@ const {
     size = 64,
     border = false,
     highlight = true,
+    gap = 'var(--space-s)',
 } = Astro.props
 
 import FixedFluid from '@components/compositions/FixedFluid.astro'
@@ -28,6 +30,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 <FixedFluid
     width={`${size}px`}
     class="[ items-center ]"
+    gap={gap}
 >
     <slot name="picture">
         <picture class:list={{ border: border }}>
