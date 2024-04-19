@@ -108,7 +108,7 @@ const page_title = t('assets.user.page_title')
                         x-model="asset_station"
                         width='280px'
                     >
-                        <option selected value="-1">{t('npc_stations')}</option>
+                        <option selected value="-1">{t('accessible_stations')}</option>
                         <template x-for="location_name in locations_options">
                             <option x-text="location_name" />
                         </template>
@@ -162,16 +162,13 @@ const page_title = t('assets.user.page_title')
         </FlexInline>
 
         {get_character_assets_error ?
-            <UserAssets characters_assets={[]}>
-                <ErrorRefetch
-                    args={{
-                        partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
-                        message: get_character_assets_error,
-                        delay: 0,
-                        target: '#user-assets',
-                    }}
-                />
-            </UserAssets>
+            <ErrorRefetch
+                args={{
+                    partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
+                    message: get_character_assets_error,
+                    delay: 0,
+                }}
+            />
             :
             <UserAssets
                 characters_assets={characters_assets}

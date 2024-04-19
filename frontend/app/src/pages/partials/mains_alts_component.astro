@@ -114,18 +114,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_all_mains_alts_error ?
-    <MainAltsList
-        mains={[]}
-    >
-        <ErrorRefetch
-            args={{
-                partial: MAINS_ALTS_PARTIAL_URL,
-                message: get_all_mains_alts_error,
-                delay: delay,
-                target: '#mains-alts-list',
-            }}
-        />
-    </MainAltsList>
+    <ErrorRefetch
+        args={{
+            partial: MAINS_ALTS_PARTIAL_URL,
+            message: get_all_mains_alts_error,
+            delay: delay,
+        }}
+    />
     :
     <MainAltsList
         mains={mains_alts}

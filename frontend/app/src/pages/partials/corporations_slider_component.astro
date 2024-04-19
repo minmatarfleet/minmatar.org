@@ -40,16 +40,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_all_corporations_error ?
-    <CorporationsSlider corporations={[]}>
-        <ErrorRefetch
-            args={{
-                partial: CORPORATIONS_SLIDER_PARTIAL_URL,
-                message: get_all_corporations_error,
-                delay: delay,
-                target: '#corporations-list',
-            }}
-        />
-    </CorporationsSlider>
+    <ErrorRefetch
+        args={{
+            partial: CORPORATIONS_SLIDER_PARTIAL_URL,
+            message: get_all_corporations_error,
+            delay: delay,
+        }}
+    />
     :
     <CorporationsSlider
         corporations={corporations}

@@ -88,19 +88,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_all_corporations_members_error ?
-    <CorporationMembersList
-        corporations={[]}
-        type='corporation'
-    >
-        <ErrorRefetch
-            args={{
-                partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
-                message: get_all_corporations_members_error,
-                delay: delay,
-                target: '#corporations-members-list',
-            }}
-        />
-    </CorporationMembersList>
+    <ErrorRefetch
+        args={{
+            partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
+            message: get_all_corporations_members_error,
+            delay: delay,
+        }}
+    />
     :
     <CorporationMembersList
         corporations={corporations_members}

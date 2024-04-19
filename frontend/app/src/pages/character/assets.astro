@@ -92,6 +92,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             overlay: true
         }}
         x-data={`{
+            global_collapse: false,
             assets_style: 'list',
             assets_locations: ${JSON.stringify(character_assets.locations)},
             assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
@@ -167,7 +168,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                         width='280px'
                         x-on:change="filter()"
                     >
-                        <option selected value="-1">{t('npc_stations')}</option>
+                        <option selected value="-1">{t('accessible_stations')}</option>
                         <template x-for="location_name in locations_options">
                             <option x-text="location_name" />
                         </template>
@@ -206,16 +207,13 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             }
         </div>
         {get_character_assets_error ?
-            <AssetsListAlpine>
-                <ErrorRefetch
-                    args={{
-                        partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
-                        message: get_character_assets_error,
-                        delay: 0,
-                        target: '#assets-list',
-                    }}
-                />
-            </AssetsListAlpine>
+            <ErrorRefetch
+                args={{
+                    partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
+                    message: get_character_assets_error,
+                    delay: 0,
+                }}
+            />
             :
             <AssetsListAlpine />
         }

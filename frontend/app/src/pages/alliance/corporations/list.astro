@@ -69,16 +69,13 @@ const page_title = t('corporations.list.page_title');
     >
         <VerticalCenter class="[ min-h-[90vh] ]" gap="var(--space-xl)">
             {get_all_corporations_error ?
-                <CorporationsSlider corporations={[]}>
-                    <ErrorRefetch
-                        args={{
-                            partial: CORPORATIONS_SLIDER_PARTIAL_URL,
-                            message: get_all_corporations_error,
-                            delay: 0,
-                            target: '#corporations-list',
-                        }}
-                    />
-                </CorporationsSlider>
+                <ErrorRefetch
+                    args={{
+                        partial: CORPORATIONS_SLIDER_PARTIAL_URL,
+                        message: get_all_corporations_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <CorporationsSlider
                     corporations={corporations}

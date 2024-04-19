@@ -44,16 +44,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_character_assets_error ?
-    <UserAssets characters_assets={[]}>
-        <ErrorRefetch
-            args={{
-                partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
-                message: get_character_assets_error,
-                delay: delay,
-                target: '#user-assets',
-            }}
-        />
-    </UserAssets>
+    <ErrorRefetch
+        args={{
+            partial: `${USER_ASSETS_LIST_PARTIAL_URL}`,
+            message: get_character_assets_error,
+            delay: delay,
+        }}
+    />
     :
     <UserAssets
         characters_assets={characters_assets}

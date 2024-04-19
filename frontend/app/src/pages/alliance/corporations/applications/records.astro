@@ -179,18 +179,13 @@ const page_title = t('corporations.applications.records.page_title')
             </TextBox>
 
             {get_all_corporations_applications_error ?
-                <CorporationApplicationsList
-                    corporations={[]}
-                >
-                    <ErrorRefetch
-                        args={{
-                            partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
-                            message: get_all_corporations_applications_error,
-                            delay: 0,
-                            target: '#corporations-applications-list',
-                        }}
-                    />
-                </CorporationApplicationsList>
+                <ErrorRefetch
+                    args={{
+                        partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
+                        message: get_all_corporations_applications_error,
+                        delay: 0,
+                    }}
+                />
                 :
                 <CorporationApplicationsList corporations={corporations_applications} />
             }

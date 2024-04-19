@@ -60,16 +60,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {get_character_assets_error ?
-    <AssetsListAlpine>
-        <ErrorRefetch
-            args={{
-                partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
-                message: get_character_assets_error,
-                delay: delay,
-                target: '#assets-list',
-            }}
-        />
-    </AssetsListAlpine>
+    <ErrorRefetch
+        args={{
+            partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
+            message: get_character_assets_error,
+            delay: delay,
+        }}
+    />
     :
     <AssetsListAlpine
         x-data={`{
