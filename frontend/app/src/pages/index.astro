@@ -12,7 +12,8 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-const CAMERA_ZOOM = 0.315
+const CAMERA_ZOOM = 0.255
+const STATION_SHIFT = 100.92
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -71,8 +72,9 @@ const page_title = t('index.page_title');
                     camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
                     camera.rotationX = rotation_x
                     camera.rotationY = rotation_y
+                    camera.fov = 40
 					camera.maxDistance = 9000000
-                    camera.shift = 100.81
+                    camera.shift = ${STATION_SHIFT}
 
                     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
 					console.log(scene)
@@ -118,9 +120,9 @@ const page_title = t('index.page_title');
 						let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
 
 						// Translation
-						rotationMatrix[12] = 900000
-						rotationMatrix[13] = -100000
-						rotationMatrix[14] = -1500000
+						rotationMatrix[12] = 800000
+						rotationMatrix[13] = -80000
+						rotationMatrix[14] = -1100000
 						rotationMatrix[15] = 5
 						
 						this.setTransform(rotationMatrix)
