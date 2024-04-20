@@ -37,6 +37,7 @@ class EveStructure(models.Model):
     state_timer_start = models.DateTimeField(null=True)
     state_timer_end = models.DateTimeField(null=True)
     fitting = models.TextField(blank=True, null=True)
+    is_valid_staging = models.BooleanField(default=False)
 
     corporation = models.ForeignKey(
         EveCorporation,

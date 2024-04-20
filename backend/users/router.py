@@ -11,7 +11,7 @@ from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 
-from .helpers import get_user_permissions, get_user_profile
+from .helpers import get_user_profile
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)

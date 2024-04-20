@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "fittings.apps.FittingsConfig",
     "structures.apps.StructuresConfig",
+    "fleets.apps.FleetsConfig",
     # Mumble
     "mumble.apps.MumbleConfig",
     # 'eve_auth',

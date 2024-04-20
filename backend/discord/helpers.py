@@ -40,7 +40,7 @@ def get_expected_nickname(user: User):
 
     if discord_user.is_down_under:
         nickname = upsidedown.transform(nickname)
-    
+
     if discord_user.dress_wearer:
         nickname = f"[👗] {character.character_name}"
 
