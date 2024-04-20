@@ -3,9 +3,18 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
 import { is_prod_mode } from '@helpers/env'
 
 const { fitting_id } = Astro.params;
+const show_controls = Astro.url.searchParams.get('controls') ?? null
 
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
@@ -58,6 +67,7 @@ import Button from '@components/blocks/Button.astro';
 import Cargohold from '@components/blocks/CargoHold.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import Input from '@components/blocks/Input.astro';
 
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
@@ -77,12 +87,25 @@ const page_title = fitting_parsed.name;
         }}
         fullscreen={true}
         wide={true}
+        x-data={`{
+            rotation_x: -0.317,
+            rotation_y: 0.229,
+            ship_rotation: 0,
+            camera: null,
+            update() {
+                if (!this.camera) return
+
+                this.camera.rotationX = this.rotation_x
+                this.camera.rotationY = this.rotation_y
+            }
+        }`}
     >
         <canvas
             slot="cover"
             id="mainCanvas"
             width="500"
             height="500"
+            x-effect="update"
             x-data={`{
                 init_ccpwgl() {
                     if (${ship_dna === null})
@@ -90,10 +113,10 @@ const page_title = fitting_parsed.name;
 
                     let ship
                     let canvas
-                    let camera
                     let scene
                     let siege_state = ccpwgl.ShipSiegeState.SIEGE
                     let animation_timer
+            		const mat4 = ccpwgl_int.math.mat4
 
                     canvas = document.getElementById('mainCanvas');
                     
@@ -101,9 +124,9 @@ const page_title = fitting_parsed.name;
                     ccpwgl_context = canvas.getContext("webgl");
                     
                     camera = ccpwgl.createCamera(canvas, undefined, true);
-                    camera.rotationX = -0.552
-                    camera.rotationY = -0.196
-                    camera.shift = 100.75
+                    camera.rotationX = rotation_x
+                    camera.rotationY = rotation_y
+                    camera.shift = 0.25
 
                     scene = ccpwgl.loadScene('res:/dx9/scene/wormholes/wormhole_class_00.red');
                     scene.loadSun('res:/fisfx/lensflare/blue_small.red');
@@ -261,12 +284,32 @@ const page_title = fitting_parsed.name;
         <FittingCustom
             fitting={fitting_parsed}
         />
+
+        {(user_is_superadmin && show_controls) &&
+            <Flexblock class="[ camera-controls ]">
+                <Flexblock gap='0'>
+                    <label for="doctrine">{t('rotation_x')}</label>
+                    <Input type="number" x-model="rotation_x" step="0.001" />
+                </Flexblock>
+                <Flexblock gap='0'>
+                    <label for="doctrine">{t('rotation_y')}</label>
+                    <Input type="number" x-model="rotation_y" step="0.001" />
+                </Flexblock>
+            </Flexblock>
+        }
     </PageLanding>
 </Viewport>
 
 <textarea id="fit-clipboard" set:html={fitting.eft_format}></textarea>
 
 <style lang="scss">
+    .camera-controls {
+		position: fixed;
+		bottom: 60px;
+		right: 60px;
+		width: 250px;
+	}
+
     #fit-clipboard {
         display: none;
     }
