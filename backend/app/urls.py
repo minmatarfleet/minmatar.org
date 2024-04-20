@@ -27,6 +27,7 @@ from authentication import UnauthorizedError
 from discord.views import discord_login
 from eveonline.routers import router
 from fittings.router import doctrines_router, fittings_router
+from fleets.router import router as fleets_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
@@ -43,6 +44,7 @@ api.add_router("fittings/", fittings_router)
 api.add_router("doctrines/", doctrines_router)
 api.add_router("structures/", structures_router)
 api.add_router("mumble/", mumble_router)
+api.add_router("fleets", fleets_router)
 
 
 @api.exception_handler(UnauthorizedError)
