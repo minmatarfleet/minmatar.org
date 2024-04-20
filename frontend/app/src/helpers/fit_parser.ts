@@ -7,7 +7,7 @@ import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
 
 export async function parse_eft(fitting_eft: string) {
     type EFTSection = 'name' | 'low' | 'med' | 'high' | 'rigs' | 'subsystem' | 'skip-drones' | 'drones' | 'cargo'
-    let EFTSections:EFTSection[] = [ 'name', 'low', 'med', 'high', 'rigs', 'subsystem', 'skip-drones', 'drones', 'cargo' ]
+    let EFTSections:EFTSection[] = [ 'name', 'low', 'med', 'high', 'rigs', 'subsystem', 'drones', 'cargo' ]
     let has_subsystem = false
     let ship_fitting:ShipFitting
     let section:EFTSection
@@ -64,7 +64,7 @@ export async function parse_eft(fitting_eft: string) {
         }
 
         if (line === '') {
-            if (section !== 'cargo')
+            if (section !== 'cargo' && section !== 'drones')
                 section = EFTSections[EFTSections.indexOf(section) + 1]
             
             continue
