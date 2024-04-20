@@ -18,10 +18,6 @@ class UserRouterTestCase(TestCase):
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_public_data",
         )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_private_data",
-        )
 
         self.client = Client()
 

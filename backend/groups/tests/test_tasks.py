@@ -26,10 +26,6 @@ class UserAffiliationTestCase(TestCase):
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_public_data",
         )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_private_data",
-        )
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
