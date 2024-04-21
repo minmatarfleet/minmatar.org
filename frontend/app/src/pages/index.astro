@@ -9,7 +9,6 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
 const CAMERA_ZOOM = 0.255
