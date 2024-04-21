@@ -22,23 +22,34 @@ import StylessButton from './StylessButton.astro';
         gap='var(--space-2xs)'
     >
         <FlexInline gap='var(--space-3xs)' class="[ items-end !flex-nowrap ]">
-            <h2 class="[ whitespace-nowrap ]">Sosala <span class="[ text-[var(--security-status-point-4)] ]">0.4</span></h2>
+            <h2 class="[ whitespace-nowrap ]">Arzad <span class="[ text-[var(--security-status-point-2)] ]">0.2</span></h2>
             <FlexInline gap='var(--space-3xs)' class="[ items-center !flex-nowrap ]">
                 <svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
                 </svg>
-                <h3 class="[ whitespace-nowrap ]"><small>Vaarma</small></h3>
+                <h3 class="[ whitespace-nowrap ]"><small>Semou</small></h3>
                 <svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
                 </svg>
-                <h3 class="[ whitespace-nowrap ]"><small>The Bleak Lands</small></h3>
+                <h3 class="[ whitespace-nowrap ]"><small>Devoid</small></h3>
             </FlexInline>
         </FlexInline>
-        <h3>Sosala — WATERMELON</h3>
-        <small>{t('minmatar_fleet_hq')}</small>
+        <h3>Arzad — OURzad</h3>
+        <small class="[ whitespace-nowrap ]">{t('minmatar_ourzad_description')}</small>
     </Flexblock>
 
     <Flexblock gap='var(--space-3xs)'>
+        <StylessButton
+            href={translatePath('/redirects/set_staggering?tag=watermelon')}
+            class="[ min-w-[350px] ]"
+        >
+            <Badge
+                title="Sosala — WATERMELON"
+                subtitle={t('minmatar_fleet_hq')}
+                image={get_item_icon(35833)}
+            />
+        </StylessButton>
+
         <StylessButton
             href={translatePath('/redirects/set_staggering?tag=auga')}
             class="[ min-w-[350px] ]"
@@ -47,17 +58,6 @@ import StylessButton from './StylessButton.astro';
                 title="Auga — Minmatar Militia HQ"
                 subtitle={t('auga_hq_description')}
                 image={get_item_icon(35833)}
-            />
-        </StylessButton>
-        
-        <StylessButton
-            href={translatePath('/redirects/set_staggering?tag=ourzad')}
-            class="[ min-w-[350px] ]"
-        >
-            <Badge
-                title="Arzad — OURzad"
-                subtitle={t('minmatar_fleet_hq')}
-                image={get_item_icon(35832)}
             />
         </StylessButton>
     </Flexblock>

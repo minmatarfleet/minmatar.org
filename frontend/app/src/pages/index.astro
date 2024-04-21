@@ -20,6 +20,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
+import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
@@ -28,6 +29,8 @@ import {
 	WatermelonCameraXData,
 	AugaMilitiaHQCameraXData,
 	AugaMilitiaHQXData,
+	OurzadCameraXData,
+	OurzadXData,
 } from '@components/partials/HomepageRenders.astro';
 
 const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value : 'watermelon'
@@ -38,8 +41,12 @@ const page_title = t('index.page_title');
 <Viewport title={page_title}>
     <PageLanding
         cover={{
-            image: staggering === 'auga' ? '/images/home-auga-cover.jpg' : '/images/home-cover.jpg',
-            image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' : '/images/home-cover.jpg',
+            image: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
+			       staggering === 'ourzad' ?  '/images/home-arzad-cover.jpg' :
+					'/images/home-cover.jpg',
+            image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
+			           staggering === 'ourzad' ?  '/images/home-arzad-cover.jpg' :
+					   '/images/home-cover.jpg',
             alt: t('index.cover_alt'),
             animated: false,
         }}
@@ -48,6 +55,8 @@ const page_title = t('index.page_title');
 		x-data={`{
             ${staggering === 'auga' ?
 				AugaMilitiaHQCameraXData :
+				staggering === 'ourzad' ?
+				OurzadCameraXData :
 				WatermelonCameraXData
 			}
         }`}
@@ -61,6 +70,8 @@ const page_title = t('index.page_title');
             x-data={`{
 				${staggering === 'auga' ?
 					AugaMilitiaHQXData :
+					staggering === 'ourzad' ?
+					OurzadXData :
 					WatermelonXData
 				}
             }`}
@@ -69,6 +80,8 @@ const page_title = t('index.page_title');
 
 		{staggering === 'auga' ?
 			<AugaInfo /> :
+			staggering === 'ourzad' ?
+			<OurzadInfo /> :
 			<WatermelonInfo />
 		}
 
