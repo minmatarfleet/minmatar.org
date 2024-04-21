@@ -1,0 +1,16 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+const tag = Astro.url.searchParams.get('tag')
+Astro.cookies.set('staggering', tag, { path: '/' })
+
+const redirect = translatePath('/')
+---
+
+<script define:vars={{ redirect }}>
+    window.location.href = redirect
+</script>

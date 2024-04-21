@@ -1,0 +1,35 @@
+---
+import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
+---
+
+<div
+    {...Astro.props}
+    x-data={`{
+        id: $id('dropdown'),
+        expanded: false,
+        close() {
+            this.expanded = false
+        },
+        toggle() {
+            this.expanded = this.expanded ? this.close() : true
+        }
+    }`}
+    @keydown.escape.prevent.stop="close()"
+>
+    <CollapsableButton
+        @click="toggle()"
+        :id="id"
+    >
+        <slot name="button" />
+    </CollapsableButton>
+ 
+    <div
+        class="[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]"
+        x-show="expanded"
+        x-anchor.bottom-end.offset.20="document.getElementById(id)"
+        style="display: none"
+        @click.outside="close()"
+    >
+        <slot />
+    </div>
+</div>
