@@ -97,26 +97,3 @@ def sync_discord_user(user_id: int):
         )
         discord.remove_user_role(discord_user.id, discord_role_id)
         discord_role.members.remove(discord_user)
-
-
-@app.task()
-def audit_discord_guild_users():
-    external_discord_users = discord.get_members()
-    for external_discord_user in external_discord_users:
-        discord_user_id = int(external_discord_user["user"]["id"])
-        if DiscordUser.objects.filter(id=discord_user_id).exists():
-            continue
-
-        external_roles = external_discord_user["roles"]
-        if len(external_roles) > 0:
-            for role_id in external_roles:
-                try:
-                    discord.remove_user_role(discord_user_id, int(role_id))
-                except Exception as e:
-                    logger.error(
-                        "Error removing role %s from user %s: %s",
-                        role_id,
-                        discord_user_id,
-                        e,
-                    )
-                    print(external_discord_user)
