@@ -50,16 +50,16 @@ delete attributes.class
         position: absolute;
         top: 75px;
         left: 50%;
-        transform: translate(-50%) scale(0.7);
+        transform: translate(-50%) scale(0.97);
         border: solid 1px var(--border-color);
         opacity: 0;
         transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
         pointer-events: none;
-        box-shadow: 0 0 50px 0px black;
+        box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.75);
         z-index: var(--dialog-z-index);
 
         &.non-centered {
-            transform: translateX(-50%) scale(0.7);
+            transform: translateX(-50%) scale(0.97);
         }
 
         &.open {
