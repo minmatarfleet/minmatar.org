@@ -100,7 +100,7 @@ def sync_discord_user(user_id: int):
 
 
 @app.task()
-def audit_discord_guild_users(discord_role_id: int = None):
+def audit_discord_guild_users():
     external_discord_users = discord.get_members()
     for external_discord_user in external_discord_users:
         discord_user_id = int(external_discord_user["user"]["id"])
@@ -109,25 +109,5 @@ def audit_discord_guild_users(discord_role_id: int = None):
 
         external_roles = external_discord_user["roles"]
         if len(external_roles) > 0:
-            if discord_role_id and str(discord_role_id) not in external_roles:
-                continue
-            if external_discord_user.get("nick"):
-                nick = external_discord_user["nick"]
-                # strip everything in brackets [TEST]
-                nick = re.sub(r"\[.*\]", "", nick)
-                nick = nick.strip()
-
-                corporation_name = None
-                if EveCharacter.objects.filter(character_name=nick).exists():
-                    character = EveCharacter.objects.get(character_name=nick)
-                    if character.corporation:
-                        corporation_name = character.corporation.name
-
-                roles = []
-                for role_id in external_roles:
-                    if DiscordRole.objects.filter(
-                        role_id=int(role_id)
-                    ).exists():
-                        role = DiscordRole.objects.get(role_id=int(role_id))
-                        roles.append(role.name)
-                print(f"{nick},{corporation_name},\"{','.join(roles)}\"")
+            for role_id in external_roles:
+                discord.remove_user_role(discord_user_id, int(role_id))
