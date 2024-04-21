@@ -675,5 +675,6 @@ export const ui = {
         'new_corporations_slider_text': 'Salute to our newly joined corporations and bear with them here while we work on their cool slide.',
         'minmatar_fleet_hq': 'Minmatar Fleet Alliance HQ',
         'auga_hq_description': 'Minmatar Fleet Alliance former HQ',
+        'minmatar_ourzad_description': 'Starkman Offensive FOB',
     },
 } as const;
