@@ -119,3 +119,4 @@ def audit_discord_guild_users():
                         discord_user_id,
                         e,
                     )
+                    print(external_discord_user)
