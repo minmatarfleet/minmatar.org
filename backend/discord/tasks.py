@@ -110,4 +110,12 @@ def audit_discord_guild_users():
         external_roles = external_discord_user["roles"]
         if len(external_roles) > 0:
             for role_id in external_roles:
-                discord.remove_user_role(discord_user_id, int(role_id))
+                try:
+                    discord.remove_user_role(discord_user_id, int(role_id))
+                except Exception as e:
+                    logger.error(
+                        "Error removing role %s from user %s: %s",
+                        role_id,
+                        discord_user_id,
+                        e,
+                    )
