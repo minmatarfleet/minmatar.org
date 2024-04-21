@@ -1,0 +1,288 @@
+---
+export const WatermelonCameraXData = `
+    rotation_x: 4.3827,
+    rotation_y: 0.251,
+    camera: null,
+    update() {
+        if (!this.camera) return
+
+        this.camera.rotationX = this.rotation_x
+        this.camera.rotationY = this.rotation_y
+    }`
+
+export const WatermelonXData = `init_ccpwgl() {
+    let watermelon
+    let canvas
+    let scene
+    const mat4 = ccpwgl_int.math.mat4
+
+    canvas = document.getElementById('mainCanvas');
+    
+    ccpwgl.initialize(canvas, fitting.options);
+    ccpwgl_context = canvas.getContext("webgl");
+    
+    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+    camera.rotationX = rotation_x
+    camera.rotationY = rotation_y
+    camera.fov = 40
+    camera.maxDistance = 9000000
+    camera.shift = 100.92
+
+    scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
+    console.log(scene)
+    scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
+    scene.setSunDirection([-0.7, -0.01, 0.7]);
+    
+    watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
+        camera.focus(this, 0.255)
+
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 7
+        )
+
+        this.setTransform(matrix)
+
+        setColor(200, 200, 200, 'Mtl1DiffuseColor')
+        setColor(61, 240, 25, 'Mtl2DiffuseColor')
+        setColor(224, 32, 109, 'Mtl3DiffuseColor')
+        setColor(224, 32, 109, 'Mtl4DiffuseColor')
+
+        setColor(94, 0, 60, 'Mtl1Gloss')
+        setColor(59, 59, 59, 'Mtl2Gloss')
+        setColor(54, 54, 54, 'Mtl3Gloss')
+        setColor(41, 41, 41, 'Mtl4Gloss')
+
+        setColor(87, 0, 52, 'Mtl1FresnelColor')
+        setColor(48, 56, 0, 'Mtl2FresnelColor')
+        setColor(37, 84, 5, 'Mtl3FresnelColor')
+        setColor(82, 6, 47, 'Mtl4FresnelColor')
+    });
+
+    sugar = scene.loadShip('iam1_t1:orebase:minmatar', function() {
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+
+        // Translation
+        rotationMatrix[12] = 800000
+        rotationMatrix[13] = -80000
+        rotationMatrix[14] = -1100000
+        rotationMatrix[15] = 5
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+    });
+
+    ccpwgl.enablePostprocessing(true);
+
+    function setColor(r, g, b, material) {
+        for (var i = 0; i < watermelon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+        {
+            for (var param in watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+                if (watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+
+                    watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+                }
+            }
+
+        }
+    }
+
+    function resizeCanvasToDisplaySize(canvas) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+        }
+        
+        return needResize;
+    }
+
+    resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+}`
+
+
+export const AugaMilitiaHQCameraXData = `
+    rotation_x: 0.77,
+    rotation_y: 0.18,
+    camera: null,
+    update() {
+        if (!this.camera) return
+
+        this.camera.rotationX = this.rotation_x
+        this.camera.rotationY = this.rotation_y
+    }`
+
+export const AugaMilitiaHQXData = `init_ccpwgl() {
+    let minmatar_hq
+    let canvas
+    let scene
+    const mat4 = ccpwgl_int.math.mat4
+
+    canvas = document.getElementById('mainCanvas');
+    
+    ccpwgl.initialize(canvas, fitting.options);
+    ccpwgl_context = canvas.getContext("webgl");
+    
+    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+    camera.rotationX = rotation_x
+    camera.rotationY = rotation_y
+    camera.fov = 40
+    camera.maxDistance = 9000000
+    camera.shift = 100.92
+
+    scene = ccpwgl.loadScene('res:/dx9/scene/universe/m02_cube.red');
+    console.log(scene)
+    scene.loadSun('res:/fisfx/lensflare/orange_radiating.red');
+    scene.setSunDirection([-0.5, -0.01, 0.4]);
+
+    const moon = scene.loadPlanet(
+        40000004,
+        'res:/dx9/model/WorldObject/Planet/Template/Moon/p_moon_51.red',
+        undefined,
+        'res:/dx9/model/worldobject/planet/Moon/Moon01_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Moon/Moon03_H.dds.0.png',
+    );
+
+    var angle = 1.4;
+    moon.setTransform(mat4.fromValues(
+        8000, 0, 0, 0,
+        0, 8000, 0, 0,
+        0, 0, 8000, 0,
+        100000 * Math.cos(angle), 0, 100000 * Math.sin(angle), 1
+    ));
+
+    const planet = scene.loadPlanet(
+        40000123,
+        'res:/dx9/model/WorldObject/Planet/Template/Ice/P_Ice_61.red',
+        undefined,
+        'res:/dx9/model/worldobject/planet/Ice/Ice04_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Terrestrial/Terrestrial02_H.dds.0.png',
+    );
+
+    var angle = 2.4;
+    planet.setTransform(mat4.fromValues(
+        6000, 0, 0, 0,
+        0, 6000, 0, 0,
+        0, 0, 6000, 0,
+        100000 * Math.cos(angle), 3000, 100000 * Math.sin(angle), 1
+    ));
+
+    window.planets = [];
+    window.planets.push(planet);
+    
+    minmatar_hq = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
+        camera.focus(this, 0.255)
+
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        console.log(matrix)
+
+        let rotationMatrix = mat4.fromYRotation(matrix, 3.6)        
+        rotationMatrix[15] = 7
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+
+        setColor(217, 129, 91, 'Mtl1DiffuseColor')
+        setColor(255, 0, 0, 'Mtl2DiffuseColor')
+        setColor(133, 4, 4, 'Mtl3DiffuseColor')
+        setColor(240, 129, 39, 'Mtl4DiffuseColor')
+
+        setColor(255, 255, 255, 'Mtl1Gloss')
+        setColor(99, 64, 8, 'Mtl2Gloss')
+        setColor(255, 15, 15, 'Mtl3Gloss')
+        setColor(222, 147, 17, 'Mtl4Gloss')
+        
+        setColor(0, 0, 0, 'Mtl1FresnelColor')
+        setColor(31, 25, 0, 'Mtl2FresnelColor')
+        setColor(217, 129, 91, 'Mtl3FresnelColor')
+        setColor(18, 16, 11, 'Mtl4FresnelColor')
+    });
+
+    console.log('asd')
+    loadDna('ms3:minmatarbase:minmatar')
+
+    function loadDna(dna) {
+        ccpwgl.getSofHullConstructor(dna, function (constructor) {
+            if (constructor)
+            {
+                hull = scene[constructor](dna)
+                
+                let matrix = mat4.fromValues(
+                    0.2, 0, 0, 0,
+                    0, 0.2, 0, 0,
+                    0, 0, 0.2, 0,
+                    0, 0, 0, 1
+                )
+
+                // Translation
+                matrix[12] = 50000
+                matrix[13] = -10000
+                matrix[14] = 1000000
+                matrix[15] = 7
+                
+                hull.setTransform(matrix)
+            }
+        })
+    }
+
+    ccpwgl.enablePostprocessing(true);
+
+    function setColor(r, g, b, material) {
+        for (var i = 0; i < minmatar_hq.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+        {
+            for (var param in minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+                if (minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+
+                    minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+                }
+            }
+
+        }
+    }
+
+    function resizeCanvasToDisplaySize(canvas) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+        }
+        
+        return needResize;
+    }
+
+    resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+}`
+---

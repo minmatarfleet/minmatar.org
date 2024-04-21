@@ -11,19 +11,26 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-const CAMERA_ZOOM = 0.255
-const STATION_SHIFT = 100.92
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
+import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
+import AugaInfo from '@components/blocks/AugaInfo.astro';
 import Input from '@components/blocks/Input.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
+
+import {
+	WatermelonXData,
+	WatermelonCameraXData,
+	AugaMilitiaHQCameraXData,
+	AugaMilitiaHQXData,
+} from '@components/partials/HomepageRenders.astro';
+
+const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value : 'watermelon'
 
 const page_title = t('index.page_title');
 ---
@@ -31,23 +38,18 @@ const page_title = t('index.page_title');
 <Viewport title={page_title}>
     <PageLanding
         cover={{
-            image: "/images/home-cover.jpg",
-            image_990: "/images/home-cover.jpg",
+            image: staggering === 'auga' ? '/images/home-auga-cover.jpg' : '/images/home-cover.jpg',
+            image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' : '/images/home-cover.jpg',
             alt: t('index.cover_alt'),
             animated: false,
         }}
         fullscreen={true}
         wide={true}
 		x-data={`{
-            rotation_x: 4.3827,
-            rotation_y: 0.251,
-            camera: null,
-            update() {
-				if (!this.camera) return
-
-                this.camera.rotationX = this.rotation_x
-                this.camera.rotationY = this.rotation_y
-            }
+            ${staggering === 'auga' ?
+				AugaMilitiaHQCameraXData :
+				WatermelonCameraXData
+			}
         }`}
         x-effect="update"
     >
@@ -57,184 +59,65 @@ const page_title = t('index.page_title');
             width="500"
             height="500"
             x-data={`{
-                init_ccpwgl() {
-                    let watermelon
-                    let canvas
-                    let scene
-            		const mat4 = ccpwgl_int.math.mat4
-
-                    canvas = document.getElementById('mainCanvas');
-					
-                    ccpwgl.initialize(canvas, fitting.options);
-                    ccpwgl_context = canvas.getContext("webgl");
-                    
-                    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
-                    camera.rotationX = rotation_x
-                    camera.rotationY = rotation_y
-                    camera.fov = 40
-					camera.maxDistance = 9000000
-                    camera.shift = ${STATION_SHIFT}
-
-                    scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
-					console.log(scene)
-                    scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
-                    scene.setSunDirection([-0.7, -0.01, 0.7]);
-                    
-                    watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
-                        camera.focus(this, ${CAMERA_ZOOM})
-
-						let matrix = mat4.fromValues(
-							1, 0, 0, 0,
-							0, 1, 0, 0,
-							0, 0, 1, 0,
-							0, 0, 0, 7
-						)
-
-						this.setTransform(matrix)
-
-						setColor(200, 200, 200, 'Mtl1DiffuseColor')
-						setColor(61, 240, 25, 'Mtl2DiffuseColor')
-						setColor(224, 32, 109, 'Mtl3DiffuseColor')
-						setColor(224, 32, 109, 'Mtl4DiffuseColor')
-
-						setColor(94, 0, 60, 'Mtl1Gloss')
-						setColor(59, 59, 59, 'Mtl2Gloss')
-						setColor(54, 54, 54, 'Mtl3Gloss')
-						setColor(41, 41, 41, 'Mtl4Gloss')
-
-						setColor(87, 0, 52, 'Mtl1FresnelColor')
-						setColor(48, 56, 0, 'Mtl2FresnelColor')
-						setColor(37, 84, 5, 'Mtl3FresnelColor')
-						setColor(82, 6, 47, 'Mtl4FresnelColor')
-                    });
-
-					sugar = scene.loadShip('iam1_t1:orebase:minmatar', function() {
-						let matrix = mat4.fromValues(
-							1, 0, 0, 0,
-							0, 1, 0, 0,
-							0, 0, 1, 0,
-							0, 0, 0, 1
-						)
-
-						let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
-
-						// Translation
-						rotationMatrix[12] = 800000
-						rotationMatrix[13] = -80000
-						rotationMatrix[14] = -1100000
-						rotationMatrix[15] = 5
-						
-						this.setTransform(rotationMatrix)
-						this.setTransform(matrix)
-                    });
-
-                    ccpwgl.enablePostprocessing(true);
-
-					function setColor(r, g, b, material) {
-						for (var i = 0; i < watermelon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
-						{
-							for (var param in watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
-								if (watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
-
-									watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
-								}
-							}
-
-						}
-					}
-
-					function resizeCanvasToDisplaySize(canvas) {
-						// Lookup the size the browser is displaying the canvas in CSS pixels.
-						const displayWidth  = canvas.clientWidth;
-						const displayHeight = canvas.clientHeight;
-						
-						// Check if the canvas is not the same size.
-						const needResize = canvas.width  !== displayWidth ||
-											canvas.height !== displayHeight;
-						
-						if (needResize) {
-							// Make the canvas the same size
-							canvas.width  = displayWidth;
-							canvas.height = displayHeight;
-						}
-						
-						return needResize;
-					}
-
-					resizeCanvasToDisplaySize(ccpwgl_context.canvas)
-					ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
-                }
+				${staggering === 'auga' ?
+					AugaMilitiaHQXData :
+					WatermelonXData
+				}
             }`}
             x-init="$nextTick(() => init_ccpwgl())"
         />
 
-		<Flexblock class="[ station-info ][ !hidden xl:!block ]" gap='var(--space-2xs)'>
-			<FlexInline gap='var(--space-3xs)' class="[ items-end ]">
-				<h2>Sosala <span class="[ text-[var(--fleet-red)] ]">0.4</span></h2>
-				<FlexInline gap='var(--space-3xs)' class="[ items-center ]">
-					<svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
-					</svg>
-					<h3><small>Vaarma</small></h3>
-					<svg width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
-					</svg>
-					<h3><small>The Bleak Lands</small></h3>
-				</FlexInline>
-			</FlexInline>
-			<h3>Sosala — WATERMELON</h3>
-			<small>Minmatar Fleet Alliance HQ</small>
-		</Flexblock>
+		{staggering === 'auga' ?
+			<AugaInfo /> :
+			<WatermelonInfo />
+		}
 
         <Wrapper
-			max_width="var(--max-landing-width)"
-			padding_inline="0"
+			max_width='41rem'
+			padding_inline='0'
 			padding_block="var(--space-xl)"
-			class="[ page-content ]"
+			class="[ page-content ][ text-center ]"
 		>
 			<Flexblock gap='var(--space-3xl)'>
 				<Flexblock gap='var(--space-m)'>
-					<h1><FleetLogo width='256' height='256' /></h1>
+					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
 					
 					<h2 class="[ welcome-heading ]">Welcome to Minmatar.org</h2>
 					<Flexblock>
 						<p>Our platform is currently undergoing development, and new features will be rolled out gradually. New sections will be posted in the Neocom bar.</p>
-						<small>For starters, you may link your pilots to our platform through the user section in the Neocom bar.</small>
+						<small>You may link your pilots to our platform through the user section in the Neocom bar.</small>
 					</Flexblock>
 
 					{user_is_superadmin &&
 						<Flexblock class="[ camera-controls !hidden ]">
 							<Flexblock gap='0'>
 								<label for="doctrine">{t('rotation_x')}</label>
-								<Input type="number" x-model="rotation_x" step="0.00001" />
+								<Input type="number" x-model="rotation_x" step="0.01" />
 							</Flexblock>
 							<Flexblock gap='0'>
 								<label for="doctrine">{t('rotation_y')}</label>
-								<Input type="number" x-model="rotation_y" step="0.00001" />
+								<Input type="number" x-model="rotation_y" step="0.01" />
 							</Flexblock>
 						</Flexblock>
 					}
 				</Flexblock>
 
-				<small>{t('ccp_disclaimer')}</small>
+				<p class="[ ccp-disclaimer ]">{t('ccp_disclaimer')}</p>
 			</Flexblock>
 		</Wrapper>
     </PageLanding>
 </Viewport>
 
 <style lang="scss">
+	.ccp-disclaimer {
+		font-size: var(--step--2);
+	}
+
 	.camera-controls {
 		position: fixed;
 		bottom: 60px;
 		right: 60px;
 		width: 250px;
-	}
-
-	.station-info {
-		position: fixed;
-		top: var(--space-l);
-		right: var(--space-xl);
-		//color: rgb(61, 240, 25)
 	}
 
 	.welcome-heading {
