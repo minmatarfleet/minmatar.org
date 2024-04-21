@@ -120,10 +120,10 @@ const get_group_request_ui = async (group:Group, api_request:SigRequest | TeamRe
         approved: api_request.approved,
         group_id: group.id,
         group_name: group.name,
-        character_id: user_profile.eve_character_profile.character_id,
-        character_name: user_profile.eve_character_profile.character_name,
-        corporation_id: user_profile.eve_character_profile.corporation_id,
-        corporation_name: user_profile.eve_character_profile.corporation_name,
+        character_id: user_profile?.eve_character_profile?.character_id ?? 0,
+        character_name: user_profile?.eve_character_profile?.character_name ?? t('unknown_character'),
+        corporation_id: user_profile?.eve_character_profile?.corporation_id ?? 0,
+        corporation_name: user_profile?.eve_character_profile?.corporation_name ?? t('unknown_corporation'),
         group_image: group.image_url,
         description: group.description
     }
