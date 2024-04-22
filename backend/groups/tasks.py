@@ -145,6 +145,9 @@ def sync_eve_corporation_groups():
                 user.groups.remove(group)
                 continue
 
+            if not eve_primary_character:
+                continue
+
             if (
                 not eve_primary_character.character.corporation
                 == corporation_group.corporation
