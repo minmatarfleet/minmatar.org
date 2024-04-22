@@ -15,7 +15,12 @@ esi = EsiClientProvider()
 @app.task
 def update_affiliations():
     for user in User.objects.all():
-        update_affiliation(user.id)
+        try:
+            update_affiliation(user.id)
+        except Exception as e:
+            logger.error(
+                "Error updating affiliations for user %s: %s", user, e
+            )
 
 
 @app.task
