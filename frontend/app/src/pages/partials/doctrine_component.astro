@@ -1,0 +1,41 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { DoctrineType } from '@dtypes/layout_components'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+
+let doctrine:DoctrineType
+
+const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+let fetch_doctrines_error:string
+
+try {
+    doctrine = await fetch_doctrine_by_id(doctrine_id)
+} catch (error) {
+    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
+}
+
+const DOCTRINE_PARTIAL_URL = `${translatePath('/partials/doctrine_component')}?doctrine_id=${doctrine_id}`
+
+import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_doctrines_error ?
+    <ErrorRefetch
+        args={{
+            partial: DOCTRINE_PARTIAL_URL,
+            message: fetch_doctrines_error,
+            delay: delay,
+        }}
+    />
+    :
+    <DoctrineItem role="listitem" doctrine={doctrine} />
+}

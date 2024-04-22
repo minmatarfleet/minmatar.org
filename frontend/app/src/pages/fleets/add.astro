@@ -1,5 +1,4 @@
 ---
-
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
@@ -17,30 +16,72 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-if (is_prod_mode() && !user_is_superadmin)
+if (!user)
     return HTTP_404_Not_Found()
 
-if (Astro.request.method === "POST") {
-    // TODO: Call to add fleet endpoint here with data from "await Astro.request.formData()"
-    console.log(`TODO: Call to add fleet endpoint here with data from "await Astro.request.formData()"`)
+import { create_fleet } from '@helpers/api.minmatar.org/fleets'
+import { fleet_types, } from '@dtypes/api.minmatar.org'
+import type { FleetRequest, FleetTypes } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { DoctrineType, SelectOptions, Alert } from '@dtypes/layout_components'
 
-    return Astro.redirect(translatePath('/fleets/upcoming'))
+let create_fleet_error
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+        const fleet_data:FleetRequest = {
+            doctrine_id: parseInt(data.get('doctrine_id') as string),
+            description: data.get('description') as string,
+            location: data.get('description') as string,
+            start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
+            type: data.get('fleet_type') as FleetTypes,
+        }
+        
+        if (await create_fleet(auth_token as string, fleet_data))
+            return Astro.redirect(translatePath('/fleets/upcoming'))
+        else
+            create_fleet_error = t('create_fleet_error')
+    } catch (error) {
+        create_fleet_error = is_prod_mode() ? t('create_fleet_error') : error.message
+    }
+
+    alert = {
+        title: t('create_fleet_dialog_title'),
+        content: create_fleet_error,
+    }
+}
+
+import { get_user_character } from '@helpers/fetching/characters'
+import { fetch_doctrines } from '@helpers/fetching/doctrines'
+
+let doctrines:DoctrineType[] = []
+let fleet_commander:EveCharacterProfile
+let fetch_doctrines_error:string | false = false
+
+try {
+    fleet_commander = await get_user_character(user.user_id)
+    doctrines = await fetch_doctrines()
+} catch (error) {
+    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
 }
 
 import audiences from '@json/hosted/audience.select.options.json';
-import fleet_types from '@json/hosted/fleet_type.select.options.json';
-import doctrines from '@json/page/doctrines/alliance.json';
 
-import type { DoctrineItemObj } from '@dtypes/layout_components';
+const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )
+let FLEET_TYPES_LABELS = {}
+const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
+    FLEET_TYPES_LABELS[i] = t(i as any)
+    return {value: i, label: t(i as any)}
+} )
 
-const doctrines_select_options = doctrines.map( (item) => { return { name: item.doctrine_name, id: item.id } } )
-console.log(doctrines_select_options)
-const fleet_types_select_options = Array.from(Object.entries(fleet_types), ([key, value]) => { return {"id": key, "name": value} })
-const audiences_select_options = Array.from(Object.entries(audiences), ([key, value]) => { return {"id": key, "name": value} })
+const default_fleet_type = fleet_types_select_options[0].value
 const default_doctrine = doctrines_select_options[0].id
 
-const doctrine:DoctrineItemObj = doctrines.filter( (item) => item.id == default_doctrine )[0]
+const doctrine:DoctrineType = doctrines.filter( (item) => item.id == default_doctrine )[0]
 
+import { get_player_icon } from '@helpers/eve_image_server'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -80,17 +121,21 @@ const today = new Date().toISOString().split("T")[0]
             overlay: true
         }}
         x-data={`{
-            fleet_type: 'fun_fleet',
+            fleet_type: '${default_fleet_type}',
             audience: 'alliance',
             eve_date: '${today}',
             eve_time: '00:00:00',
             local_datetime: '',
             audiences: ${JSON.stringify(audiences)},
-            fleet_types: ${JSON.stringify(fleet_types)},
+            fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
-                let images = [];
+                let images = [{
+                    src: '${get_player_icon(fleet_commander.character_id)}',
+                    width: 64,
+                    height: 64,
+                }];
 
-                document.querySelectorAll('.confetti-image').forEach((img) => {
+                document.querySelectorAll('#doctrine-hx-target picture img').forEach((img) => {
                     images.push({
                         src: img.getAttribute('src'),
                         width: 64,
@@ -109,6 +154,9 @@ const today = new Date().toISOString().split("T")[0]
 
                 return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
             },
+            init() {
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
         }`}
     >
 
@@ -135,99 +183,96 @@ const today = new Date().toISOString().split("T")[0]
             x-data={`{
                 'submitted': false
             }`}
-            x-on:submit.prevent="launch_confetti(get_images()); submitted = true;"
+            x-on:submit="launch_confetti(get_images()); submitted = true;"
         >
             <Flexblock gap="var(--space-3xs)">
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
                     <Flexblock gap="var(--space-3xs)">
-                        <ComponentBlock>
+                        <ComponentBlock width='narrow'>
                             <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                                 <h2>{t('fleet_information')} (1/3)</h2>
 
                                 <p>{t('fleets.add.form_info')}</p>
 
                                 <Flexblock>
-                                    <VerticalCenter>
-                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                            <label for="doctrine">{t('doctrine')}</label>
-                                            <Select
-                                                id="doctrine"
-                                                name="doctrine_id"
-                                                hx-get={translatePath('/partials/doctrine')}
-                                                hx-target="#doctrine-hx-target"
-                                                hx-trigger="change"
-                                                hx-swap="innerHTML transition:true"
-                                                hx-indicator=".loader"
-                                            >
-                                                {doctrines_select_options.map((option) => 
-                                                    <option value={option.id}>{option.name}</option>
-                                                )}
-                                            </Select>
-                                        </FixedFluid>
-                                    </VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="doctrine">{t('doctrine')}</label>
+                                        <Select
+                                            id="doctrine"
+                                            name="doctrine_id"
+                                            hx-get={translatePath('/partials/doctrine_component')}
+                                            hx-target="#doctrine-hx-target"
+                                            hx-on::after-request="this.removeAttribute('disabled')"
+                                            hx-trigger="change"
+                                            hx-swap="innerHTML transition:true"
+                                            hx-indicator=".loader"
+                                        >
+                                            {doctrines_select_options.map((option) => 
+                                                <option value={option.id}>{option.name}</option>
+                                            )}
+                                        </Select>
+                                    </FixedFluid>
 
-                                    <VerticalCenter>
-                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                            <label for="fleet_date">{t('fleet_date')}</label>
-                                            <Input id="fleet_date" type="date" x-model="eve_date" required min={today} value={today} />
-                                        </FixedFluid>
-                                    </VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="fleet_date">{t('fleet_date')}</label>
+                                        <Input
+                                            id="fleet_date"
+                                            type="date"
+                                            x-model="eve_date"
+                                            name="eve_date"
+                                            required
+                                            min={today}
+                                            value={today}
+                                        />
+                                    </FixedFluid>
 
-                                    <VerticalCenter>
-                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                            <label for="fleet_time">{t('fleet_time')}</label>
-                                            <Input id="fleet_time" type="time" step="2" value="00:00:00" x-model="eve_time" required />
-                                        </FixedFluid>
-                                    </VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="fleet_time">{t('fleet_time')}</label>
+                                        <Input
+                                            id="fleet_time"
+                                            type="time"
+                                            step="2"
+                                            value="00:00:00"
+                                            x-model="eve_time"
+                                            name="eve_time"
+                                            required
+                                        />
+                                    </FixedFluid>
 
-                                    <VerticalCenter>
-                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                            <label for="type">{t('type')}</label>
-                                            <Select id="type" x-model="fleet_type">
-                                                {fleet_types_select_options.map((option) => 
-                                                    <option value={option.id}>{option.name}</option>
-                                                )}
-                                            </Select>
-                                        </FixedFluid>
-                                    </VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="type">{t('type')}</label>
+                                        <Select id="type" x-model="fleet_type" name="fleet_type">
+                                            {fleet_types_select_options.map((option) => 
+                                                <option value={option.value}>{option.label}</option>
+                                            )}
+                                        </Select>
+                                    </FixedFluid>
 
-                                    <VerticalCenter>
-                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                            <label for="audience">{t('audience')}</label>
-                                            <Select id="audience" x-model="audience">
-                                                {audiences_select_options.map((option) => 
-                                                    <option value={option.id}>{option.name}</option>
-                                                )}
-                                            </Select>
-                                        </FixedFluid>
-                                    </VerticalCenter>
-
-                                    <VerticalCenter>
-                                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                            <label for="description">{t('description')}</label>
-                                            <Textarea id="description" name="fitting" rows="5" />
-                                        </Flexblock>
-                                    </VerticalCenter>
+                                    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                        <label for="description">{t('description')}</label>
+                                        <Textarea id="description" name="description" rows="5" required />
+                                    </Flexblock>
                                 </Flexblock>
                             </Flexblock>
                         </ComponentBlock>
 
                         <Flexblock gap='2px'>
-                            <ComponentBlock>
+                            <ComponentBlock width='narrow'>
                                 <h2>{t('confirm')} (2/3)</h2>
                             </ComponentBlock>
 
                             <ThumbCard
-                                thumb_name="Beautiful Mim"
-                                thumb_image="https://images.evetech.net/characters/2121103796/portrait?size=512"
-                                thumb_image_small="https://images.evetech.net/characters/2121103796/portrait?size=512"
-                                thumb_image_alt="Beautiful Mim profile picture"
+                                thumb_name={fleet_commander.character_name}
+                                thumb_image={get_player_icon(fleet_commander.character_id, 512)}
+                                thumb_image_small={get_player_icon(fleet_commander.character_id, 512)}
+                                thumb_image_alt={fleet_commander.character_name}
                                 thumb_title={t('fleet_commander')}
+                                class="[ max-w-[var(--max-text-width)] ]"
                             >
                                 <VerticalCenter>
                                     <Flexblock gap="var(--space-s-m)">
                                         <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
-                                            {t('fun_fleet')}
+                                            {t(default_fleet_type as any)}
                                         </TextGroup>
                                         <TextGroup title={t('audience')} x-text="audiences[audience]">
                                             {t('alliance')}
@@ -255,12 +300,12 @@ const today = new Date().toISOString().split("T")[0]
                                 </VerticalCenter>
                             </ThumbCard>
 
-                            <ComponentBlock id="doctrine-hx-target">
-                                <!--<DoctrineItem role="listitem" doctrine={doctrine} /> -->
+                            <ComponentBlock id="doctrine-hx-target" width='narrow'>
+                                <DoctrineItem role="listitem" doctrine={doctrine} />
                             </ComponentBlock>
                         </Flexblock>
 
-                        <ComponentBlock>
+                        <ComponentBlock width='narrow'>
                             <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                                 <h2>{t('fleet_submit')} (3/3)</h2>
 

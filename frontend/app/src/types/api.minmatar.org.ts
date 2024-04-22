@@ -145,3 +145,24 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
 }
+
+export const fleet_types = ['stratop', 'non_strategic', 'casual', 'training'] as const
+export type FleetTypes = typeof fleet_types[number]
+
+export interface Fleet {
+    id:                 number;
+    type:               FleetTypes;
+    description:        string;
+    start_time:         Date;
+    fleet_commander:    number;
+    doctrine_id:        number;
+    location:           string;
+}
+
+export interface FleetRequest {
+    type:           FleetTypes;
+    description:    string;
+    start_time:     Date;
+    doctrine_id:    number;
+    location:       string;
+}

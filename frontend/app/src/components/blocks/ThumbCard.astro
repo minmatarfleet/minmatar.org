@@ -37,7 +37,13 @@ const optional_attributes = {
 }
 ---
 
-<FixedFluid class:list={['[ thumb-card component ][ light-transparency ]', Astro.props.class]} {...attributes} gap='0' breakpoint='60%' width='220px'>
+<FixedFluid
+    class:list={['[ thumb-card component ][ light-transparency ]', Astro.props.class]}
+    {...attributes}
+    gap='0'
+    breakpoint='60%'
+    width='220px'
+>
     <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small} />
 
     <Wrapper padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width='100%'>

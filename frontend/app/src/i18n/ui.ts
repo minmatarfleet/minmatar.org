@@ -676,5 +676,11 @@ export const ui = {
         'minmatar_fleet_hq': 'Minmatar Fleet Alliance HQ',
         'auga_hq_description': 'Minmatar Fleet Alliance former HQ',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
+        'stratop': 'Stratop',
+        'non_strategic': 'Non strategic',
+        'casual': 'Casual',
+        'training': 'Training',
+        'create_fleet_error': 'An error ocurred creating the fleet',
+        'create_fleet_dialog_title': 'Schedule fleet',
     },
 } as const;
