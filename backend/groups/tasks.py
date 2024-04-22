@@ -131,47 +131,56 @@ def update_affiliation(user_id: int):
 def sync_eve_corporation_groups():
     for corporation_group in EveCorporationGroup.objects.all():
         for user in User.objects.all():
-            group = corporation_group.group
-            eve_primary_character = EvePrimaryCharacter.objects.filter(
-                character__token__user=user
-            ).first()
+            try:
+                group = corporation_group.group
+                eve_primary_character = EvePrimaryCharacter.objects.filter(
+                    character__token__user=user
+                ).first()
 
-            if not eve_primary_character and group in user.groups.all():
-                logger.info(
-                    "User %s has no primary character, removing corporation group %s",
+                if not eve_primary_character and group in user.groups.all():
+                    logger.info(
+                        "User %s has no primary character, removing corporation group %s",
+                        user,
+                        group,
+                    )
+                    user.groups.remove(group)
+                    continue
+
+                if not eve_primary_character:
+                    continue
+
+                if (
+                    not eve_primary_character.character.corporation
+                    == corporation_group.corporation
+                    and group in user.groups.all()
+                ):
+                    logger.info(
+                        "User %s is not in corporation %s, removing corporation group %s",
+                        user,
+                        corporation_group.corporation,
+                        group,
+                    )
+                    user.groups.remove(group)
+                    continue
+
+                if (
+                    eve_primary_character.character.corporation.id
+                    == corporation_group.corporation.id
+                    and group not in user.groups.all()
+                ):
+                    logger.info(
+                        "User %s is in corporation %s, adding corporation group %s",
+                        user,
+                        corporation_group.corporation,
+                        group,
+                    )
+                    user.groups.add(group)
+                    continue
+            except Exception as e:
+                logger.error(
+                    "Error syncing corporation group %s for user %s: %s",
+                    corporation_group,
                     user,
-                    group,
+                    e,
                 )
-                user.groups.remove(group)
-                continue
-
-            if not eve_primary_character:
-                continue
-
-            if (
-                not eve_primary_character.character.corporation
-                == corporation_group.corporation
-                and group in user.groups.all()
-            ):
-                logger.info(
-                    "User %s is not in corporation %s, removing corporation group %s",
-                    user,
-                    corporation_group.corporation,
-                    group,
-                )
-                user.groups.remove(group)
-                continue
-
-            if (
-                eve_primary_character.character.corporation.id
-                == corporation_group.corporation.id
-                and group not in user.groups.all()
-            ):
-                logger.info(
-                    "User %s is in corporation %s, adding corporation group %s",
-                    user,
-                    corporation_group.corporation,
-                    group,
-                )
-                user.groups.add(group)
                 continue
