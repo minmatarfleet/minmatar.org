@@ -1,10 +1,17 @@
 from django.contrib import admin
 
-from .models import AffiliationType, Sig, Team, UserAffiliation
+from .models import (
+    AffiliationType,
+    EveCorporationGroup,
+    Sig,
+    Team,
+    UserAffiliation,
+)
 
 # Register your models here.
 admin.site.register(AffiliationType)
 admin.site.register(UserAffiliation)
+admin.site.register(EveCorporationGroup)
 
 
 @admin.register(Team)

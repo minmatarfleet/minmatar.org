@@ -6,7 +6,7 @@ from esi.clients import EsiClientProvider
 from app.celery import app
 from eveonline.models import EvePrimaryCharacter
 
-from .models import AffiliationType, UserAffiliation
+from .models import AffiliationType, EveCorporationGroup, UserAffiliation
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -124,4 +124,51 @@ def update_affiliation(user_id: int):
                     user,
                     affiliation,
                 )
+                continue
+
+
+@app.task
+def sync_eve_corporation_groups():
+    for corporation_group in EveCorporationGroup.objects.all():
+        for user in User.objects.all():
+            group = corporation_group.group
+            eve_primary_character = EvePrimaryCharacter.objects.filter(
+                character__token__user=user
+            ).first()
+
+            if not eve_primary_character and group in user.groups.all():
+                logger.info(
+                    "User %s has no primary character, removing corporation group %s",
+                    user,
+                    group,
+                )
+                user.groups.remove(group)
+                continue
+
+            if (
+                not eve_primary_character.character.corporation
+                == corporation_group.corporation
+                and group in user.groups.all()
+            ):
+                logger.info(
+                    "User %s is not in corporation %s, removing corporation group %s",
+                    user,
+                    corporation_group.corporation,
+                    group,
+                )
+                user.groups.remove(group)
+                continue
+
+            if (
+                eve_primary_character.character.corporation.id
+                == corporation_group.corporation.id
+                and group not in user.groups.all()
+            ):
+                logger.info(
+                    "User %s is in corporation %s, adding corporation group %s",
+                    user,
+                    corporation_group.corporation,
+                    group,
+                )
+                user.groups.add(group)
                 continue
