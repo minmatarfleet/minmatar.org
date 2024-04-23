@@ -676,5 +676,7 @@ export const ui = {
         'minmatar_fleet_hq': 'Minmatar Fleet Alliance HQ',
         'auga_hq_description': 'Minmatar Fleet Alliance former HQ',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
+        'station_assets': 'View station assets',
+        'fetching_assets': 'Fetching assets',
     },
 } as const;
