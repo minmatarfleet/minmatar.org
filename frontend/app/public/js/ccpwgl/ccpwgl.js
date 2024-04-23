@@ -1438,6 +1438,7 @@ var ccpwgl = (function(ccpwgl_int)
             var tr = this.wrappedObjects[0].highDetail;
             mat4.getTranslation(tr.translation, newTransform);
             mat4.getScaling(tr.scaling, newTransform);
+            mat4.getRotation(tr.rotation, newTransform);
             mat4.copy(tr.localTransform, newTransform);
         };
 
