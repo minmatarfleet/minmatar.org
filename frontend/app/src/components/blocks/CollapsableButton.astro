@@ -4,7 +4,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 ---
 
 <button {...Astro.props}>
-    <FluidFixed width="20px" gap="var(--space-s)" class="[ items-center ]">
+    <FluidFixed width="20px" gap="var(--space-l)" class="[ items-center ]">
         <slot />
         <CaretIcon :class="expanded ? '' : 'collapsed'" />
     </FluidFixed>

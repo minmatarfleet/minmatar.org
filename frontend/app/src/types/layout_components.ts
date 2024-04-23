@@ -626,3 +626,6 @@ export interface FittingGroup {
     name:       string;
     modules:    CargoItem[];
 }
+
+export const staggerings = ['auga', 'ourzad', 'watermelon'] as const
+export type StaggeringType = typeof staggerings[number]
