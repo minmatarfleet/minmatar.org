@@ -142,6 +142,8 @@ def request_to_join_team(request, team_id: int):
     )
     return TeamRequestSchema(
         id=team_request.id,
+        approved=False,
+        approved_by=None,
         user=team_request.user.id,
         team_id=team_request.team.id,
     )
