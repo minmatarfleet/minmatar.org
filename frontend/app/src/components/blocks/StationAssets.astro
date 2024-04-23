@@ -19,7 +19,7 @@ const {
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 
-const STATION_ASSETS_PARTIAL_URL = `${translatePath('/partials/station_assets_component')}?station=${station}`
+const STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
 
 import Center from '@components/compositions/Center.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
