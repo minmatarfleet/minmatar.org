@@ -2198,6 +2198,10 @@ var ccpwgl = (function(ccpwgl_int)
                 {
                     this.distance = this.minDistance;
                 }
+                if (this.distance > this.maxDistance)
+                {
+                    this.distance = this.maxDistance;
+                }
             }
             /** Prevent default actions caused by mouse wheel.
              * That might be ugly, but we handle scrolls somehow

@@ -21,11 +21,12 @@ export const WatermelonXData = `init_ccpwgl() {
     ccpwgl.initialize(canvas, fitting.options);
     ccpwgl_context = canvas.getContext("webgl");
     
-    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+    camera = ccpwgl.createCamera(canvas, undefined, true);
     camera.rotationX = rotation_x
     camera.rotationY = rotation_y
     camera.fov = 40
-    camera.maxDistance = 9000000
+    camera.minDistance = 2300
+    camera.maxDistance = 20000
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
@@ -142,11 +143,12 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
     ccpwgl.initialize(canvas, fitting.options);
     ccpwgl_context = canvas.getContext("webgl");
     
-    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+    camera = ccpwgl.createCamera(canvas, undefined, true);
     camera.rotationX = rotation_x
     camera.rotationY = rotation_y
     camera.fov = 40
-    camera.maxDistance = 9000000
+    camera.minDistance = 2300
+    camera.maxDistance = 20000
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/m02_cube.red');
@@ -332,11 +334,12 @@ export const OurzadXData = `init_ccpwgl() {
     ccpwgl.initialize(canvas, fitting.options);
     ccpwgl_context = canvas.getContext("webgl");
     
-    camera = ccpwgl.createCamera(canvas, { maxDistance: 9000000 }, true);
+    camera = ccpwgl.createCamera(canvas, undefined, true);
     camera.rotationX = rotation_x
     camera.rotationY = rotation_y
+    camera.minDistance = 2300
+    camera.maxDistance = 9000
     camera.fov = 40
-    camera.maxDistance = 9000000
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a05_cube.red');
@@ -451,7 +454,7 @@ export const OurzadXData = `init_ccpwgl() {
         )
 
         let out = mat4.create()
-        mat4.rotateY(model, model, rotation_angle += 0.00005);
+        mat4.rotateY(model, model, rotation_angle += 0.0001);
         planet.setTransform(model)  
     }, 50)
 
