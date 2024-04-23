@@ -29,7 +29,7 @@ export const WatermelonXData = `init_ccpwgl() {
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
-    console.log(scene)
+    
     scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
     scene.setSunDirection([-0.7, -0.01, 0.7]);
     
@@ -122,6 +122,8 @@ export const AugaMilitiaHQCameraXData = `
     rotation_x: 0.77,
     rotation_y: 0.18,
     camera: null,
+    moon_rotation_angle: 0,
+    planet_rotation_angle: 0,
     update() {
         if (!this.camera) return
 
@@ -148,7 +150,7 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/m02_cube.red');
-    console.log(scene)
+    
     scene.loadSun('res:/fisfx/lensflare/orange_radiating.red');
     scene.setSunDirection([-0.5, -0.01, 0.4]);
 
@@ -160,12 +162,12 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         'res:/dx9/model/worldobject/planet/Moon/Moon05_H.dds.0.png',
     );
 
-    var angle = 1.4;
+    let moon_angle = 1.4;
     moon.setTransform(mat4.fromValues(
         8000, 0, 0, 0,
         0, 8000, 0, 0,
         0, 0, 8000, 0,
-        100000 * Math.cos(angle), 0, 100000 * Math.sin(angle), 1
+        100000 * Math.cos(moon_angle), 0, 100000 * Math.sin(moon_angle), 1
     ));
 
     const planet = scene.loadPlanet(
@@ -176,16 +178,13 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         'res:/dx9/model/worldobject/planet/Terrestrial/Terrestrial02_H.dds.0.png',
     );
 
-    var angle = 2.4;
+    let planet_angle = 2.4;
     planet.setTransform(mat4.fromValues(
         6000, 0, 0, 0,
         0, 6000, 0, 0,
         0, 0, 6000, 0,
-        100000 * Math.cos(angle), 3000, 100000 * Math.sin(angle), 1
+        100000 * Math.cos(planet_angle), 3000, 100000 * Math.sin(planet_angle), 1
     ));
-
-    window.planets = [];
-    window.planets.push(planet);
     
     minmatar_hq = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
         camera.focus(this, 0.255)
@@ -219,7 +218,6 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         setColor(18, 16, 11, 'Mtl4FresnelColor')
     });
 
-    console.log('asd')
     loadDna('ms3:minmatarbase:minmatar')
 
     function loadDna(dna) {
@@ -281,12 +279,41 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
 
     resizeCanvasToDisplaySize(ccpwgl_context.canvas)
     ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+
+    const rotation_timer = setInterval(function () {
+        let model = mat4.fromValues(
+            8000, 0, 0, 0,
+            0, 8000, 0, 0,
+            0, 0, 8000, 0,
+            100000 * Math.cos(moon_angle), 0, 100000 * Math.sin(moon_angle), 1
+        );
+
+        let out = mat4.create()
+        out = mat4.rotateY(out, model, moon_rotation_angle += 0.0005);
+        moon.setTransform(out)
+
+        model = mat4.fromValues(
+            6000, 0, 0, 0,
+            0, 6000, 0, 0,
+            0, 0, 6000, 0,
+            100000 * Math.cos(planet_angle), 3000, 100000 * Math.sin(planet_angle), 1
+        );
+
+        out = mat4.create()
+        out = mat4.rotateY(out, model, planet_rotation_angle += 0.0003);
+        planet.setTransform(out)
+    }, 50)
+
+    document.addEventListener('astro:after-swap', () => {
+        clearTimeout(rotation_timer)
+    })
 }`
 
 export const OurzadCameraXData = `
     rotation_x: -1.22,
     rotation_y: 0.54,
     camera: null,
+    rotation_angle: 0,
     update() {
         if (!this.camera) return
 
@@ -313,7 +340,7 @@ export const OurzadXData = `init_ccpwgl() {
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a05_cube.red');
-    console.log(scene)
+    
     scene.loadSun('res:/fisfx/lensflare/orange_radiating.red');
     scene.setSunDirection([-0.1, -0.01, 0.4]);
 
@@ -356,7 +383,6 @@ export const OurzadXData = `init_ccpwgl() {
         setColor(56, 12, 102, 'Mtl4Gloss')
     });
 
-    console.log('asd')
     loadDna('as1:amarrnavy:amarr')
 
     function loadDna(dna) {
@@ -415,6 +441,23 @@ export const OurzadXData = `init_ccpwgl() {
         
         return needResize;
     }
+
+    const rotation_timer = setInterval(function () {
+        let model = mat4.fromValues(
+            50000, 0, 0, 0,
+            0, 50000, 0, 0,
+            0, 0, 50000, 0,
+            100000 * Math.cos(angle), 30000, 100000 * Math.sin(angle), 1
+        )
+
+        let out = mat4.create()
+        mat4.rotateY(model, model, rotation_angle += 0.00005);
+        planet.setTransform(model)  
+    }, 50)
+
+    document.addEventListener('astro:after-swap', () => {
+        clearTimeout(rotation_timer)
+    })
 
     resizeCanvasToDisplaySize(ccpwgl_context.canvas)
     ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
