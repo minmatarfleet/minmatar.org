@@ -32,7 +32,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
     </template>
 
     <template x-if="assets_style === 'icons'">
-        <Flexblock class="[ asset-icon ]" gap='var(--space-3xs)'>
+        <Flexblock class="[ asset-icon ]" centered={true} gap='var(--space-3xs)'>
             <picture>
                 <img loading="lazy" x-bind:src="get_item_icon(asset.id)" width="64" height="64" x-bind:alt={'`${asset.name} '+t('icon').toLowerCase()+'`'} />
             </picture>
