@@ -66,8 +66,12 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             {corporation.applications.map( (application) => 
                 <CorporationApplicationItem
                     application={application}
-                    corporation_id={corporation.corporation_id}
+                    corporation={{
+                        id: corporation.corporation_id,
+                        name: corporation.corporation_name,
+                    }}
                     x-data={`{
+                        id: $id('corporation-application-item'),
                         show_item() {
                             return ("${corporation.corporation_id}" in corporations_filtered) && corporations_filtered[${corporation.corporation_id}].includes(${application.id})
                         }

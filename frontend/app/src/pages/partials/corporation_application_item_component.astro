@@ -1,0 +1,150 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_page = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
+
+import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
+
+const corporation_id = corporation?.id ?? 0
+const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')
+
+const valid_request = (corporation_id > 0 && application_id > 0)
+
+if (!can_view_page || !valid_request)
+    return HTTP_404_Not_Found()
+
+import type { ApplicationDetail, Alert } from '@dtypes/layout_components'
+import { accept_corporation_applications, reject_corporation_applications } from '@helpers/api.minmatar.org/applications'
+
+let application:ApplicationDetail
+let get_corporation_application_error:string | false = false
+let application_action_error
+let action
+
+if (Astro.request.method === "POST") {
+    action = Astro.url.searchParams.get('action')
+
+    try {
+        if (action == 'accept') {
+            await accept_corporation_applications(auth_token as string, corporation_id, application_id)
+        } else {
+            await reject_corporation_applications(auth_token as string, corporation_id, application_id)
+        }
+    } catch (error) {
+        application_action_error = is_prod_mode() ? (action == 'accept' ? t('approve_application_error') : t('deny_application_error')) : error.message
+    }
+}
+
+import type { CorporationApplications, SelectOptions } from '@dtypes/layout_components'
+import { get_all_corporations_applications } from '@helpers/fetching/applications'
+
+let corporations_applications:CorporationApplications[] = []
+let get_all_corporations_applications_error:string | false = false
+
+try {
+    corporations_applications = await get_all_corporations_applications(auth_token as string)
+    corporations_applications.sort( (a, b) => {
+        return b.applications.length - a.applications.length
+    })
+} catch (error) {
+    get_all_corporations_applications_error = is_prod_mode() ? t('get_all_corporations_applications_error') : error.message
+}
+
+const CORPORATION_APPLICATION_ITEM_PARTIAL_URL = `${translatePath('/partials/corporation_application_item_component')}?${query_string({
+    corporation_id: corporation_id,
+    application_id: application.id,
+})}`
+
+let TOTAL_APPLICATIONS = 0
+const CORPORATIONS_UNFILTERED = {}
+corporations_applications.forEach( (corporation) => {
+    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.applications.map( (application) => application.id )
+    TOTAL_APPLICATIONS += corporation.applications.length
+})
+
+const CORPORATIONS_APPLICATIONS_COUNT = {}
+corporations_applications.forEach( (corporation) => {
+    CORPORATIONS_APPLICATIONS_COUNT[corporation.corporation_id] = corporation.applications.length
+})
+
+const corporations_options = corporations_applications.map( (corporation):SelectOptions => {
+    return {
+        value: corporation.corporation_id,
+        label: corporation.corporation_name,
+    }
+} )
+
+import { query_string } from '@helpers/string';
+
+let alert:Alert | false = false
+if (application_action_error) {
+    alert = {
+        title: (action === 'accept' ? t('accept_application_dialog_title') : t('deny_application_dialog_title')),
+        content: application_action_error,
+    }
+
+    if (corporation) {
+        const character:CharacterBasic = {
+            character_id: application.character_id,
+            character_name: application.character_name,
+        }
+
+        const params = {
+            character: JSON.stringify(character),
+            corporation: JSON.stringify(corporation),
+            application_id: application.id.toString(),
+            type: action,
+            message: application_action_error,
+        }
+
+        alert.partial = `${translatePath('/partials/dialog_with_application/')}?${query_string(params)}`
+    }
+}
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_all_corporations_applications_error ?
+    <ErrorRefetch
+        args={{
+            partial: CORPORATION_APPLICATION_ITEM_PARTIAL_URL,
+            message: get_all_corporations_applications_error,
+            delay: delay,
+        }}
+    />
+    :
+    <div
+        class="[ hidden ]"
+        x-data={`{
+            init() {
+                corporations_applications = ${JSON.stringify(corporations_applications)}
+                corporations_unfiltered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
+                corporations_filtered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
+                corporations_filtered_applications_count = ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)}
+                total_applications_filtered = ${TOTAL_APPLICATIONS}
+                total_applications_unfiltered = ${TOTAL_APPLICATIONS}
+                corporations_options = ${JSON.stringify(corporations_options)}
+            }
+        }`}
+    />
+}

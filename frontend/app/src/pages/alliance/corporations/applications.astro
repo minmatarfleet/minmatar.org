@@ -96,7 +96,7 @@ const page_title = t('corporations.applications.page_title')
             overlay: true
         }}
         x-data={`{
-            global_collapsed: [],
+            global_collapse: false,
             corporations_applications: ${JSON.stringify(corporations_applications)},
             corporations_unfiltered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
             corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
