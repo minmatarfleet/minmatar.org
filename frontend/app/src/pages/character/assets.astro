@@ -17,7 +17,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
-if (!user.is_superuser /*&& !user?.permissions?.includes('auth.change_group')*/)
+if (!user.is_superuser && !user?.permissions?.includes('eveonline.view_evecharacter'))
     return HTTP_404_Not_Found()
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id'))
