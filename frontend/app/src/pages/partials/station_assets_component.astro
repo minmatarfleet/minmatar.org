@@ -41,7 +41,10 @@ try {
     get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
 }
 
-const STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
+let  STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
+
+if (is_prod_mode())
+    STATION_ASSETS_PARTIAL_URL = STATION_ASSETS_PARTIAL_URL.replace('http', 'https')
 
 import Grid from '@components/compositions/Grid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
