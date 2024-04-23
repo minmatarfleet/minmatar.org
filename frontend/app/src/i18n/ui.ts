@@ -455,7 +455,7 @@ export const ui = {
         'corporation_logo': 'corporation logo',
         'alliance_logo': 'alliance logo',
         'retrying_in': 'Retrying in',
-        'retrying_now': 'Retrying now',
+        'retrying_now': 'Trying now',
         'seconds': 'seconds',
         'pending_requests': 'pending requests',
         'pending_request': 'pending request',

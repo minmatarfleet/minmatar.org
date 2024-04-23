@@ -60,7 +60,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
     @keydown.escape.prevent.stop="close()"
 >
     <a
-        class="[ block w-[32px] neocom-button ]"
+        class="[ block w-[32px] neocom-button cursor-pointer ]"
         data-tippy-content={t('station_assets')}
         @click.prevent="toggle()"
     >
@@ -104,7 +104,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 <MagnifierIcon slot="icon" />
             </Input>
 
-            <Wrapper id="station-assets-body">
+            <Wrapper
+                id="station-assets-body"
+                x-show="open"
+            >
                 <ErrorRefetch
                     args={{
                         partial: STATION_ASSETS_PARTIAL_URL,
