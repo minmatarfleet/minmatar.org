@@ -144,6 +144,8 @@ def request_to_join_sig(request, sig_id: int):
         id=sig_request.id,
         user=sig_request.user.id,
         sig_id=sig_request.sig.id,
+        approved=False,
+        approved_by=None,
     )
 
 
