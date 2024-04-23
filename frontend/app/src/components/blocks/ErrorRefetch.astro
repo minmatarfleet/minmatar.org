@@ -28,7 +28,9 @@ const target = args?.target
 ---
 
 <FlexInline
-    x-data={`{ target: ${target ? `'${target}'` : `$id('error-refetch')`} }`}
+    x-data={`{
+        id: $id('error-refetch'),
+    }`}
     x-bind:id="id"
 >
     <RifterIcon />
@@ -38,7 +40,7 @@ const target = args?.target
             class="[ loading ]"
             hx-get={`${url.toString()}`}
             hx-trigger={args.delay === 0 ? 'intersect once' : `load delay:${args.delay}s`}
-            x-bind:hx-target="target"
+            x-bind:hx-target={`${target ? `'${target}'` : '`#${id}`'}`}
             hx-indicator=".loader"
             hx-swap="outerHTML transition:true"
             x-data={`{
