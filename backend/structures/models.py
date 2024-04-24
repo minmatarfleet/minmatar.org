@@ -30,12 +30,12 @@ class EveStructure(models.Model):
     type_name = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     reinforce_hour = models.IntegerField()
-    fuel_expires = models.DateTimeField(null=True)
+    fuel_expires = models.DateTimeField(null=True, blank=True)
     state = models.CharField(
         max_length=255, choices=structure_states, default="unknown"
     )
-    state_timer_start = models.DateTimeField(null=True)
-    state_timer_end = models.DateTimeField(null=True)
+    state_timer_start = models.DateTimeField(null=True, blank=True)
+    state_timer_end = models.DateTimeField(null=True, blank=True)
     fitting = models.TextField(blank=True, null=True)
     is_valid_staging = models.BooleanField(default=False)
 
