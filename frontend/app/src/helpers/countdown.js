@@ -1,4 +1,4 @@
-export const countdown = (date) => {
+export const countdown = (date, expired_text) => {
     // Set the date we're counting down to
     var countDownDate = new Date(date).getTime();
 
@@ -17,7 +17,9 @@ export const countdown = (date) => {
     
     return {
         expired: (distance < 0),
-        text: pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
+        text: distance < 0 && expired_text ?
+            expired_text :
+            pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
     }
 }
 

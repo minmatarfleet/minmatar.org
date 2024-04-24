@@ -22,6 +22,8 @@ import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
+import FleetFeed from '@components/blocks/FleetFeed.astro';
+
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
 import {
@@ -118,6 +120,8 @@ const page_title = t('index.page_title');
 				<p class="[ ccp-disclaimer ]">{t('ccp_disclaimer')}</p>
 			</Flexblock>
 		</Wrapper>
+
+		<FleetFeed />
     </PageLanding>
 </Viewport>
 

@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetItem } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:  FleetItem;
+}
+
+const {
+    fleet,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
+---
+
+<ComponentBlock
+    padding_block='var(--space-xs)'
+    padding_inline='var(--space-xs)'
+>
+    <FlexInline>
+        <Flexblock class="[ basis-[200px] ]">
+            <Flexblock gap='var(--space-3xs)'>
+                <h4>{t('fleet_commander')}</h4>
+                <PilotBadge
+                    character_id={fleet.fleet_commander_id}
+                    character_name={fleet.fleet_commander_name}
+                    size={32}
+                />
+            </Flexblock>
+            <TextGroup title={t('type')} class="[ sentence-cap ]">
+                {t(fleet.type as any)}
+            </TextGroup>
+        </Flexblock>
+        <div class="[ grow ]">
+            <Countdown
+                date={countdown_time}
+                id={`countdown-fleet-${fleet.id}`}
+                expired_text={t('forming')}
+            />
+        </div>
+    </FlexInline>
+</ComponentBlock>

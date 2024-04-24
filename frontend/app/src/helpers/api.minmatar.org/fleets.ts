@@ -27,16 +27,41 @@ export async function get_types(access_token:string) {
     }
 }
 
-export async function get_fleets(access_token:string) {
+export async function get_locations(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}`)
+    console.log(`Requesting: ${API_ENDPOINT}/locations`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}`, {
+        const response = await fetch(`${API_ENDPOINT}/locations`, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as string[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet types: ${error.message}`);
+    }
+}
+
+export async function get_fleets(access_token:string, upcoming:boolean = true) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting: ${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`, {
             headers: headers
         })
 
@@ -112,7 +137,7 @@ export async function delete_fleet(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}`)
+    console.log(`Requesting DELETE: ${API_ENDPOINT}/${id}`)
 
     try {
         const response = await fetch(`${API_ENDPOINT}/${id}`, {
@@ -120,7 +145,7 @@ export async function delete_fleet(access_token:string, id:number) {
             method: 'DELETE'
         })
 
-        // console.log(response)
+        console.log(response)
 
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);

@@ -1,0 +1,59 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+if (is_prod_mode() && !user_is_superadmin)
+    return HTTP_404_Not_Found()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+
+let fetch_fleets_error:string | false = false
+let fleet:FleetUI
+
+const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
+
+try {
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+} catch (error) {
+    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+}
+
+const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetDetails from '@components/blocks/FleetDetails.astro';
+---
+
+{fetch_fleets_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_DETAIL_PARTIAL_URL,
+            message: fetch_fleets_error,
+            delay: delay,
+        }}
+    />
+    :
+    <FleetDetails fleet={fleet} history={!upcoming} />
+}

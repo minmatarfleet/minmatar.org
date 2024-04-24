@@ -56,7 +56,7 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
 }
 
 export async function get_ship_info(ship_id:number) {
-    console.log(`Requesting: db.get_ship_info(${ship_id})`)
+    // console.log(`Requesting: db.get_ship_info(${ship_id})`)
 
     const q = await db.select({
         groupName: schema.invGroups.groupName,

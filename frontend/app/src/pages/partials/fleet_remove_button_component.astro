@@ -1,0 +1,80 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import type { Alert } from '@dtypes/layout_components'
+import { delete_fleet } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string';
+
+let alert:Alert | false = false
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
+let redirect:string
+
+if (Astro.request.method === "DELETE") {
+    let delete_fleet_error:string | false = false
+
+    try {
+        const success = await delete_fleet(auth_token as string, fleet_id)
+        
+        if (success)
+            redirect = translatePath('/fleets/upcoming/')
+    } catch (error) {
+        delete_fleet_error = (is_prod_mode() ? t('delete_fleet_error') : error.message)
+    }
+    
+    if (delete_fleet_error) {
+        alert = {
+            title: t('remove_fleet_dialog_title'),
+            content: delete_fleet_error,
+        }
+    }
+}
+
+const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
+
+import Button from '@components/blocks/Button.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+---
+
+<Button
+    size='sm'
+    narrow={true}
+    x-data={`{
+        show_set_main_dialog() {
+            show_confirm_dialog({
+                title: '${t('remove_fleet_dialog_title')}',
+                content: '${t('remove_fleet_dialog_text')}',
+                hx: {
+                    method: 'delete',
+                    url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
+                        fleet_id: fleet_id,
+                    })}',
+                    swap: 'outerHTML transition:true'
+                }
+            })
+        },
+        init() {
+            ${redirect && `navigate('${redirect}')`}
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    x-on:click="show_set_main_dialog"
+>
+    <TrashIcon />
+</Button>

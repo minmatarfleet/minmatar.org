@@ -166,6 +166,36 @@
         "description": "page_finder.ships.doctrines.description"
     },
     {
+        "slug": "fleets.upcoming",
+        "alt": "icon.fleets.alt",
+        "path": "/fleets/upcoming/",
+        "publish": true,
+        "icon": "/images/icons/48px-Fleet.png",
+        "description": "page_finder.fleets.upcoming.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "fleets.history",
+        "path": "/fleets/history/",
+        "publish": true,
+        "description": "page_finder.fleets.history.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "fleets.add",
+        "path": "/fleets/add/",
+        "publish": true,
+        "description": "page_finder.fleets.add.description",
+        "keywords": [ "add", "create", "new" ],
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

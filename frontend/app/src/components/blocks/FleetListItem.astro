@@ -27,17 +27,19 @@ const {
     ...attributes
 } = Astro.props
 
-const eve_time = new Date(fleet.eve_time);
-const countdown_time = fleet.eve_time+' UTC';
+import { get_player_icon } from '@helpers/eve_image_server'
+
+const eve_time = new Date(fleet.start_time);
+const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
 
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
 <ThumbCard
     thumb_name={fleet.fleet_commander_name}
-    thumb_image={fleet.fleet_commander_portrait}
-    thumb_image_small={fleet.fleet_commander_portrait_small}
-    thumb_image_alt={`${fleet.fleet_commander_name} profile picture`}
+    thumb_image={get_player_icon(fleet.fleet_commander_id, 512)}
+    thumb_image_small={get_player_icon(fleet.fleet_commander_id, 512)}
+    thumb_image_alt={fleet.fleet_commander_name}
     thumb_title={t('fleet_commander')}
     x-data={`{
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
@@ -50,10 +52,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     <VerticalCenter>
         <Flexblock gap="var(--space-s-m)">
             <TextGroup title={t('type')}>
-                {fleet.type}
+                {t(fleet.type as any)}
             </TextGroup>
-            <TextGroup title={t('audience')}>
-                {fleet.audience}
+            <TextGroup title={t('location')}>
+                {fleet.location}
             </TextGroup>
         </Flexblock>
     </VerticalCenter>
@@ -76,7 +78,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }
 
     <VerticalCenter>
-        <Button href={translatePath(fleet.href)}>
+        <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
             <MagnifierIcon slot="icon" />
             {t('view_details')}
         </Button>

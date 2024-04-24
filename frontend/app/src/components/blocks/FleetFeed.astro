@@ -1,0 +1,54 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import { is_prod_mode } from '@helpers/env'
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets } from '@helpers/fetching/fleets'
+
+let fetch_fleets_error:string | false = false
+let fleets:FleetItem[]
+
+try {
+    fleets = await fetch_fleets(auth_token as string)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
+} catch (error) {
+    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+}
+
+import FeedSwiper from '@components/blocks/FeedSwiper.astro';
+import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
+---
+
+<div class="[ fleet-feed ]">
+    <FeedSwiper>
+        {fleets.map( (fleet) =>
+            <div class="swiper-slide">
+                <FleetFeedItem fleet={fleet} />
+            </div>
+        )}
+    </FeedSwiper>
+</div>
+
+<style lang="scss">
+    .fleet-feed {
+        max-width: 600px;
+        position: fixed;
+        bottom: var(--space-l);
+        right: var(--space-xl);
+    }
+</style>

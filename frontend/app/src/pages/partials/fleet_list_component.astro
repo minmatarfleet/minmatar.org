@@ -1,0 +1,60 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets } from '@helpers/fetching/fleets'
+
+let fetch_fleets_error:string | false = false
+let fleets:FleetItem[]
+
+const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
+
+try {
+    fleets = await fetch_fleets(auth_token as string, upcoming)
+} catch (error) {
+    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+}
+
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+import FleetList from '@components/blocks/FleetList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_fleets_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_LIST_PARTIAL_URL,
+            message: fetch_fleets_error,
+            delay: delay,
+        }}
+    />
+    :
+    <FleetList
+        fleets={fleets}
+        history={!upcoming}
+        x-data={`{
+            init() {
+                fleets_count = ${fleets.length}
+            }
+        }`}
+    />
+}

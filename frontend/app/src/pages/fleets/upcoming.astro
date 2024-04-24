@@ -14,12 +14,25 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
-if (is_prod_mode() && !user_is_superadmin)
+if (!user)
     return HTTP_404_Not_Found()
 
-import fleets from '@json/page/fleets/upcoming.json';
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets } from '@helpers/fetching/fleets'
+
+let fetch_fleets_error:string | false = false
+let fleets:FleetItem[]
+
+try {
+    fleets = await fetch_fleets(auth_token as string)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
+} catch (error) {
+    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+}
+
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -29,10 +42,11 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FleetItem from '@components/blocks/FleetItem.astro';
+import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
-import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 
@@ -49,6 +63,9 @@ const page_title = t('fleets.upcoming.page_title');
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            fleets_count: ${fleets.length}
+        }`}
     >
         <FlexInline slot="header" justification='space-between'>
             <FlexInline>
@@ -56,38 +73,46 @@ const page_title = t('fleets.upcoming.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small>{fleets.length} {t('schedule').toLowerCase()}{fleets.length != 1 ? 's' : ''}</small>
+                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('scheduled').toLowerCase()}\``}>
+                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('scheduled').toLowerCase()}
+                    </small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/history')}>
-                    <HistoryIcon slot="icon" />
-                    {t('fleet_history')}
-                </Button>
-                <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add')}>
+                <Button color={'green'} href={translatePath('/fleets/add')}>
                     <AddIcon slot="icon" />
                     {t('schedule_fleet')}
                 </Button>
             </FlexInline>
         </FlexInline>
 
-        <Flexblock role="list" gap='var(--space-3xs)'>
+        <FlexInline slot="subheader">
+            <Button
+                color='transparent'
+                href={translatePath('/fleets/upcoming')}
+                size='sm'
+            >
+                {t('upcoming')}
+            </Button>
 
-            {fleets.length == 0 &&
-                <Flexblock gap='var(--space-xl)' class="text-center">
-                    <p>{t('fleets.upcoming.empty_message')}</p>
-
-                    <Button color={'green'} href={translatePath('/fleets/add')} class="!justify-center">
-                        <AddIcon slot="icon" />
-                        {t('schedule_fleet')}
-                    </Button>
-                </Flexblock>
-            }
-            
-            {fleets.map((fleet) =>
-                <FleetItem role="listitem" fleet={fleet} />
-            )}
-
-        </Flexblock>
+            <Button
+                href={translatePath('/fleets/history')}
+                size='sm'
+            >
+                {t('history')}
+            </Button>
+        </FlexInline>
+        
+        {fetch_fleets_error ?
+            <ErrorRefetch
+                args={{
+                    partial: FLEET_LIST_PARTIAL_URL,
+                    message: fetch_fleets_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <FleetList fleets={fleets} />
+        }
 	</PageWide>
 </Viewport>

@@ -19,17 +19,6 @@ export function is_of_structure_slots_type(value: string): value is StructureSlo
     return [ 'High Power Slots', 'Medium Power Slots', 'Low Power Slots', 'Rig Slots', 'Service Slots', 'Charges' ].includes(value);
 }
 
-export interface FleetItem {
-    id:                             number;
-    fleet_commander_name:           string;
-    fleet_commander_portrait:       string;
-    fleet_commander_portrait_small: string;
-    type:                           string;
-    audience:                       string;
-    eve_time:                       string;
-    href:                           string;
-}
-
 export interface FittingItem {
     fitting_name:   string;
     fitting_type:   string;
@@ -625,4 +614,30 @@ export interface DoctrineType {
 export interface FittingGroup {
     name:       string;
     modules:    CargoItem[];
+}
+
+export const staggerings = ['auga', 'ourzad', 'watermelon'] as const
+export type StaggeringType = typeof staggerings[number]
+
+import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
+
+export interface FleetItem {
+    id:                     number;
+    type:                   FleetTypes;
+    description:            string;
+    start_time:             Date;
+    fleet_commander_id:     number;
+    fleet_commander_name:   string;
+    location:               string;
+}
+
+export interface FleetUI {
+    id:                     number;
+    type:                   FleetTypes;
+    description:            string;
+    start_time:             Date;
+    fleet_commander_id:     number;
+    fleet_commander_name:   string;
+    location:               string;
+    doctrine:               DoctrineType;
 }

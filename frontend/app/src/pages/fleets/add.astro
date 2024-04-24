@@ -19,7 +19,7 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 if (!user)
     return HTTP_404_Not_Found()
 
-import { create_fleet } from '@helpers/api.minmatar.org/fleets'
+import { create_fleet, get_locations } from '@helpers/api.minmatar.org/fleets'
 import { fleet_types, } from '@dtypes/api.minmatar.org'
 import type { FleetRequest, FleetTypes } from '@dtypes/api.minmatar.org'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
@@ -34,7 +34,7 @@ if (Astro.request.method === "POST") {
         const fleet_data:FleetRequest = {
             doctrine_id: parseInt(data.get('doctrine_id') as string),
             description: data.get('description') as string,
-            location: data.get('description') as string,
+            location: data.get('location') as string,
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
         }
@@ -59,24 +59,32 @@ import { fetch_doctrines } from '@helpers/fetching/doctrines'
 let doctrines:DoctrineType[] = []
 let fleet_commander:EveCharacterProfile
 let fetch_doctrines_error:string | false = false
+let locations:string[]
 
 try {
     fleet_commander = await get_user_character(user.user_id)
     doctrines = await fetch_doctrines()
+    locations = await get_locations(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
 }
 
-import audiences from '@json/hosted/audience.select.options.json';
-
 const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )
+
 let FLEET_TYPES_LABELS = {}
 const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
     FLEET_TYPES_LABELS[i] = t(i as any)
     return {value: i, label: t(i as any)}
 } )
 
+let FLEET_LOCATIONS = {}
+const locations_select_options = locations.map( (i):SelectOptions => {
+    FLEET_LOCATIONS[i] = i
+    return {value: i, label: i} 
+} )
+
 const default_fleet_type = fleet_types_select_options[0].value
+const default_location = locations_select_options[0].value
 const default_doctrine = doctrines_select_options[0].id
 
 const doctrine:DoctrineType = doctrines.filter( (item) => item.id == default_doctrine )[0]
@@ -87,6 +95,8 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+
+import Context from '@components/layout/Context.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -105,6 +115,7 @@ import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import Markdown from '@components/icons/buttons/Markdown.astro';
 
 const page_title = t('fleets.add.page_title');
 const today = new Date().toISOString().split("T")[0]
@@ -125,8 +136,9 @@ const today = new Date().toISOString().split("T")[0]
             audience: 'alliance',
             eve_date: '${today}',
             eve_time: '00:00:00',
+            location: '${default_location}',
             local_datetime: '',
-            audiences: ${JSON.stringify(audiences)},
+            locations: ${JSON.stringify(FLEET_LOCATIONS)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
                 let images = [{
@@ -248,10 +260,27 @@ const today = new Date().toISOString().split("T")[0]
                                         </Select>
                                     </FixedFluid>
 
-                                    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                        <label for="description">{t('description')}</label>
-                                        <Textarea id="description" name="description" rows="5" required />
-                                    </Flexblock>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="type">{t('location')}</label>
+                                        <Select id="type" x-model="location" name="location">
+                                            {locations_select_options.map((option) => 
+                                                <option value={option.value}>{option.label}</option>
+                                            )}
+                                        </Select>
+                                    </FixedFluid>
+
+                                    <Context>
+                                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                            <label for="description">{t('description')}</label>
+                                            <Textarea id="description" name="description" rows="5" required />
+                                        </Flexblock>
+                                        <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
+                                            <FlexInline gap='var(--space-3xs)'>
+                                                <Markdown />
+                                                <small>{t('markdown_support')}</small>
+                                            </FlexInline>
+                                        </a>
+                                    </Context>
                                 </Flexblock>
                             </Flexblock>
                         </ComponentBlock>
@@ -274,7 +303,7 @@ const today = new Date().toISOString().split("T")[0]
                                         <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
                                             {t(default_fleet_type as any)}
                                         </TextGroup>
-                                        <TextGroup title={t('audience')} x-text="audiences[audience]">
+                                        <TextGroup title={t('location')} x-text="locations[location]">
                                             {t('alliance')}
                                         </TextGroup>
                                     </Flexblock>
