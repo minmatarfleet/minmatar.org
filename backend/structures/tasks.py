@@ -53,23 +53,23 @@ def update_structures():
                         logger.info(
                             "Updating existing structure %s", structure["name"]
                         )
-                        structure = EveStructure.objects.get(
+                        eve_structure = EveStructure.objects.get(
                             id=structure["structure_id"]
                         )
-                        structure.state = structure["state"]
-                        structure.state_timer_start = structure[
+                        eve_structure.state = structure["state"]
+                        eve_structure.state_timer_start = structure[
                             "state_timer_start"
                         ]
-                        structure.state_timer_end = structure[
+                        eve_structure.state_timer_end = structure[
                             "state_timer_end"
                         ]
-                        structure.fuel_expires = structure["fuel_expires"]
-                        structure.save()
+                        eve_structure.fuel_expires = structure["fuel_expires"]
+                        eve_structure.save()
                     else:
                         logger.info(
                             "Creating new structure %s", structure["name"]
                         )
-                        structure = EveStructure.objects.create(
+                        eve_structure = EveStructure.objects.create(
                             id=structure["structure_id"],
                             system_id=structure["system_id"],
                             system_name=system.name,
@@ -83,7 +83,7 @@ def update_structures():
                             corporation=corporation,
                         )
 
-                    known_structure_ids.append(structure.id)
+                    known_structure_ids.append(eve_structure.id)
 
                 # delete structures that are no longer in the response
                 structures = EveStructure.objects.filter(
