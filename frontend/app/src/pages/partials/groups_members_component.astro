@@ -45,7 +45,7 @@ if (Astro.request.method === "DELETE") {
         else if (group_type == 'group')
             await remove_sig_member(auth_token, group_id, user_id)
     } catch (error) {
-        delete_member_error = (is_prod_mode() ? t('delete_member_error') : error.message)
+        delete_member_error = error.message //(is_prod_mode() ? t('delete_member_error') : error.message)
     }
 }
 
