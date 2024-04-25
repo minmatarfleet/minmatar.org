@@ -46,7 +46,7 @@ import { get_player_icon } from '@helpers/eve_image_server'
                 })
             }
         }`}
-        x-on:click.stop="show_character_modal()"
+        x-on:click.stop.prevent="show_character_modal()"
     />
 </picture>
 
