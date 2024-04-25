@@ -9,7 +9,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         swiper: null,
         init() {
             this.swiper = new Swiper('.swiper', {
-                slidesPerView: 1,
+                slidesPerView: 2,
+                direction: 'vertical',
+                spaceBetween: 2,
                 pagination: {
                     clickable: true,
                     el: ".swiper-pagination",
@@ -17,6 +19,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                 loop: true,
                 fadeEffect: {
                     crossFade: true
+                },
+                autoplay: {
+                    delay: 10000,
                 },
             });
         }
@@ -28,6 +33,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 <div class="swiper-pagination"></div>
 
 <style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
     .swiper-pagination {
         --swiper-pagination-color: var(--fleet-yellow);
         --swiper-pagination-bullet-inactive-color: var(--highlight);
@@ -37,5 +46,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     .swiper-wrapper {
         flex-wrap: nowrap;
         align-items: flex-start;
+        max-height: calc(2 * 64px);
     }
 </style>

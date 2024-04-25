@@ -15,35 +15,29 @@ const {
     fleet,
 } = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Countdown from '@components/blocks/Countdown.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import StylessButton from './StylessButton.astro';
 
 const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
 ---
 
-<ComponentBlock
-    padding_block='var(--space-xs)'
-    padding_inline='var(--space-xs)'
+<StylessButton
+    href={translatePath(`/fleets/upcoming/${fleet.id}`)}
 >
-    <FlexInline>
-        <Flexblock class="[ basis-[200px] ]">
-            <Flexblock gap='var(--space-3xs)'>
-                <h4>{t('fleet_commander')}</h4>
-                <PilotBadge
-                    character_id={fleet.fleet_commander_id}
-                    character_name={fleet.fleet_commander_name}
-                    size={32}
-                />
-            </Flexblock>
-            <TextGroup title={t('type')} class="[ sentence-cap ]">
-                {t(fleet.type as any)}
-            </TextGroup>
-        </Flexblock>
-        <div class="[ grow ]">
+    <FlexInline
+        justification='space-between'
+        gap='0'
+    >
+        <PilotBadge
+            class="[ basis-[250px] ]"
+            character_id={fleet.fleet_commander_id}
+            character_name={fleet.fleet_commander_name}
+        />
+        <small>{t(fleet.type as any)}</small>
+        <div class="[ text-center pr-[var(--space-s)] ]">
             <Countdown
                 date={countdown_time}
                 id={`countdown-fleet-${fleet.id}`}
@@ -51,4 +45,17 @@ const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
             />
         </div>
     </FlexInline>
-</ComponentBlock>
+</StylessButton>
+
+<style lang="scss">
+    a {
+        display: block;
+        color: var(--fleet-yellow);
+    }
+    
+    a:focus-visible {
+        outline-color: var(--highlight);
+        outline-style: double;
+        outline-offset: -1px;
+    }
+</style>

@@ -34,7 +34,7 @@ import FeedSwiper from '@components/blocks/FeedSwiper.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
-<div class="[ fleet-feed ]">
+<div class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in !hidden 2xl:!block ]">
     <FeedSwiper>
         {fleets.map( (fleet) =>
             <div class="swiper-slide">
@@ -46,9 +46,15 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 
 <style lang="scss">
     .fleet-feed {
-        max-width: 600px;
+        width: min(100%, 700px);
         position: fixed;
+        max-height: calc(2 * 64px);
         bottom: var(--space-l);
         right: var(--space-xl);
+    }
+
+    .swiper-slider {
+        max-height: 64px;
+        width: min(100%, 700px);
     }
 </style>
