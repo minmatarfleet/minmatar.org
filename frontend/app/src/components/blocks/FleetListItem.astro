@@ -30,8 +30,6 @@ const {
 import { get_player_icon } from '@helpers/eve_image_server'
 
 const eve_time = new Date(fleet.start_time);
-const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
-
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
@@ -73,7 +71,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     
     {!history &&
         <VerticalCenter>
-            <Countdown date={countdown_time} id={`countdown-fleet-${fleet.id}`} />
+            <Countdown
+                date={fleet.start_time}
+                id={`countdown-fleet-${fleet.id}`}
+                expired_text={t('forming')}
+            />
         </VerticalCenter>
     }
 

@@ -20,26 +20,24 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import StylessButton from './StylessButton.astro';
-
-const countdown_time = `${fleet.start_time} UTC`.replace('T', ' ');
 ---
 
 <StylessButton
-    href={translatePath(`/fleets/upcoming/${fleet.id}`)}
+    href={translatePath(`/fleets/upcoming/${fleet.id}/`)}
 >
     <FlexInline
         justification='space-between'
         gap='0'
     >
         <PilotBadge
-            class="[ basis-[250px] ]"
+            class="[ basis-[220px] ]"
             character_id={fleet.fleet_commander_id}
             character_name={fleet.fleet_commander_name}
         />
-        <small>{t(fleet.type as any)}</small>
+        <small>{t(fleet.type as any)} {t('fleet')}</small>
         <div class="[ text-center pr-[var(--space-s)] ]">
             <Countdown
-                date={countdown_time}
+                date={fleet.start_time}
                 id={`countdown-fleet-${fleet.id}`}
                 expired_text={t('forming')}
             />
