@@ -24,9 +24,9 @@ import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
     </CollapsableButton>
  
     <div
-        class="[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]"
+        class="[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]"
         x-show="expanded"
-        x-anchor.bottom-end.offset.20="document.getElementById(id)"
+        x-anchor.bottom-end="document.getElementById(id)"
         style="display: none"
         @click.outside="close()"
     >

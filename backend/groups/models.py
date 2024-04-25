@@ -108,3 +108,13 @@ class UserAffiliation(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.affiliation}"
+
+
+class EveCorporationGroup(models.Model):
+    """Model for a group of corporations"""
+
+    group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
+    corporation = models.ForeignKey(EveCorporation, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.group.name)

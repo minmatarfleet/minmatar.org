@@ -1,0 +1,92 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+import type { AssetsUI } from '@dtypes/layout_components'
+import { get_assets, get_user_character } from '@helpers/fetching/characters'
+import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+
+import type { StaggeringType } from '@dtypes/layout_components'
+
+let character_assets:AssetsUI
+let get_character_assets_error:string | false = false
+let user_character:EveCharacterProfile
+
+const station = Astro.url.searchParams.get('station')
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+let location_assets
+let station_assets
+
+try {
+    user_character = await get_user_character(user.user_id)
+    character_assets = await get_assets(auth_token, user_character.character_id)
+
+    location_assets = character_assets?.location_icons.filter( (i) => i.location_name === station )
+    station_assets = location_assets.length > 0 ? location_assets[0].assets : []
+    station_assets.sort( (a, b) => a.name.localeCompare(b.name))
+} catch (error) {
+    get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
+}
+
+let  STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
+
+if (is_prod_mode())
+    STATION_ASSETS_PARTIAL_URL = STATION_ASSETS_PARTIAL_URL.replace('http', 'https')
+
+import Grid from '@components/compositions/Grid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import AssetItemAlpine from '@components/blocks/AssetItemAlpine.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_character_assets_error ?
+    <Wrapper id="station-assets-body">
+        <ErrorRefetch
+            args={{
+                partial: STATION_ASSETS_PARTIAL_URL,
+                message: get_character_assets_error,
+                delay: delay,
+                target: '#station-assets-body'
+            }}
+        />
+    </Wrapper>
+    :
+    <Flexblock
+        class="[ max-h-full overflow-y-auto shrink ]"
+        x-data={`{
+            init () {
+                station_assets = ${JSON.stringify(station_assets)}
+                assets_filtered = ${JSON.stringify(station_assets)}
+            }
+        }`}
+    >
+        <Grid
+            row_gap='var(--space-3xs)'
+            column_gap='var(--space-2xs)'
+            min_item_width='64px'
+            class="[ grid-fill ]"
+        >
+            <template x-for="asset in assets_filtered">
+                <AssetItemAlpine />
+            </template>
+        </Grid>
+        <template x-if="assets_filtered.length === 0">
+            <small class="[ text-center ]">{t('empty_asset_location')}</small>
+        </template>
+    </Flexblock>
+}

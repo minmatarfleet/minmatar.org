@@ -14,10 +14,9 @@ import Badge from '@components/blocks/Badge.astro';
 import StylessButton from './StylessButton.astro';
 ---
 
-<Dropdown
-    class="[ station-info ][ !hidden xl:!block ]"
->
+<Dropdown>
     <Flexblock
+        class="[ py-[var(--space-2xs)] ]"
         slot="button"
         gap='var(--space-2xs)'
     >
@@ -62,11 +61,3 @@ import StylessButton from './StylessButton.astro';
         </StylessButton>
     </Flexblock>
 </Dropdown>
-
-<style lang="scss">
-	.station-info {
-		position: fixed;
-		top: var(--space-l);
-		right: var(--space-xl);
-	}
-</style>

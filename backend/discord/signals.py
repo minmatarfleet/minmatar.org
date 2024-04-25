@@ -94,6 +94,7 @@ def user_group_changed(
                 discord_user = instance.discord_user
                 role = DiscordRole.objects.get(group=group)
                 discord.remove_user_role(discord_user.id, role.role_id)
+                role.members.remove(discord_user)
             else:
                 logger.info("No discord role for group %s", group.name)
     elif action == "pre_clear":
@@ -103,3 +104,4 @@ def user_group_changed(
         discord_user = instance.discord_user
         for role in discord_user.groups.all():
             discord.remove_user_role(discord_user.id, role.role_id)
+            role.members.remove(discord_user)

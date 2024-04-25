@@ -28,12 +28,14 @@ import { get_character_by_id } from '@helpers/api.eveonline/characters'
 import { get_character_faction, get_race_cover_image, get_zkillboard_character_link, parse_eve_html } from '@helpers/eve'
 import { is_html } from '@helpers/string'
 import type { CharacterRaces } from '@dtypes/layout_components'
-import { get_app_url } from '@helpers/env'
 
 let character:CharacterEvE
 let get_character_error:string | false = false
 let race:CharacterRaces
 let cover:string
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 try {
     character = await get_character_by_id(character_id);
@@ -126,10 +128,10 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                                     }} />
                                 }
                                 <FlexInline gap='var(--space-3xs)'>
-                                    {user && user.is_superuser /*&& user?.permissions?.includes('auth.change_group')*/ &&
+                                    {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('skillsets')} href={translatePath(`/character/skillsets?character_id=${character_id}`)}><SkillsEvEIcon /></a>
                                     }
-                                    {user && user.is_superuser /*&& user?.permissions?.includes('auth.change_group')*/ &&
+                                    {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
                                         <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('assets')} href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
                                     }
                                     <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank" rel="nofollow noopener noreferrer"><ZkillboardEvEIcon /></a>

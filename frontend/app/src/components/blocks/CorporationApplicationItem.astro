@@ -6,19 +6,26 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { query_string } from '@helpers/string';
-import type { ApplicationBasic } from '@dtypes/layout_components'
+import type { ApplicationBasic, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
 
 interface Props {
     application:    ApplicationBasic,
-    corporation_id: number;
+    corporation:    CorporationBasic;
     [propName: string]: any;
 }
 
 const {
     application,
-    corporation_id,
+    corporation,
     ...attributes
 } = Astro.props
+
+const corporation_id = corporation.id
+
+const CORPORATION_APPLICATION_ITEM_PARTIAL_URL = `${translatePath('/partials/corporation_application_item_component')}?${query_string({
+    corporation_id: corporation_id,
+    application_id: application.id,
+})}`
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 
@@ -27,12 +34,13 @@ import Button from '@components/blocks/Button.astro';
 ---
 
 <FlexInline
+    x-bind:id="id"
     class="[ corporation-application-item ]"
     justification='space-between'
     {...attributes}
 >
     <PilotBadge
-        class="basis-[300px]"
+        class="[ basis-[300px] grow ]"
         character_id={application.character_id}
         character_name={application.character_name}
         corporation={{
@@ -48,6 +56,47 @@ import Button from '@components/blocks/Button.astro';
                 href={`${translatePath('/alliance/corporations/application/')}${corporation_id}/${application.id}`}
             >
                 {t('view_application')}
+            </Button>
+        }
+        {application.character_id === 0 &&
+            <Button
+                size='sm'
+                x-data={`{
+                    show_deny_application_dialog() {
+                        show_confirm_dialog({
+                            title: '${t('deny_application_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_with_application/')}?${query_string({
+                                character: JSON.stringify({
+                                    character_id: application.character_id,
+                                    character_name: application.character_name,
+                                } as CharacterBasic),
+                                corporation: JSON.stringify({
+                                    id: corporation_id,
+                                    name: corporation.name,
+                                } as CorporationBasic),
+                                application_id: application.id.toString(),
+                                type: 'deny',
+                                message: t('deny_application_dialog_text'),
+                            })}',
+                            hx: {
+                                method: 'post',
+                                url: '${CORPORATION_APPLICATION_ITEM_PARTIAL_URL}?${query_string({
+                                    corporation: JSON.stringify({
+                                        id: corporation_id,
+                                        name: corporation.name,
+                                    } as CorporationBasic),
+                                    application_id: application.id.toString(),
+                                    action: 'deny'
+                                })}',
+                                target: \`#\${id}\`,
+                                swap: 'outerHTML transition:true'
+                            }
+                        })
+                    }
+                }`}
+                x-on:click="show_deny_application_dialog()"
+            >
+                {t('deny')}
             </Button>
         }
     </FlexInline>

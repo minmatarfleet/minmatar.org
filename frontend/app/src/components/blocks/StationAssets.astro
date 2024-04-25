@@ -1,0 +1,178 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { CorporationBasic } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:    CorporationBasic;
+    station:        string;
+}
+
+const {
+    corporation,
+    station,
+} = Astro.props
+
+import { get_corporation_logo } from '@helpers/eve_image_server';
+
+let STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
+
+import { is_prod_mode } from '@helpers/env'
+if (is_prod_mode())
+    STATION_ASSETS_PARTIAL_URL = STATION_ASSETS_PARTIAL_URL.replace('http', 'https')
+
+import Center from '@components/compositions/Center.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Input from '@components/blocks/Input.astro';
+import ErrorRefetch from './ErrorRefetch.astro';
+
+import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+---
+
+<div
+    x-data={`{
+        open: false,
+        close() {
+            this.open = false
+        },
+        toggle() {
+            this.open = this.open ? this.close() : true
+            $refs.station_assets_filter.focus()
+        },
+        station_assets: [],
+        assets_filtered: [],
+        asset_name_filter: '',
+        assets_style: 'icons',
+        filter () {
+            console.log('filter')
+            if (this.asset_name_filter === '') {
+                this.assets_filtered = this.station_assets
+                return
+            }
+            
+            this.assets_filtered = this.station_assets.filter( (asset) => asset.name.toLowerCase().includes(this.asset_name_filter.toLowerCase()) )
+            console.log(this.assets_filtered)
+        }
+    }`}
+    @keydown.escape.prevent.stop="close()"
+>
+    <a
+        class="[ block w-[32px] neocom-button cursor-pointer ]"
+        data-tippy-content={t('station_assets')}
+        @click.prevent="toggle()"
+    >
+        <AssetsEvEIcon />
+    </a>
+
+    <Wrapper
+        x-bind:class="open && 'open'"
+        padding_block='var(--space-3xs)'
+        padding_inline='var(--space-3xs)'
+        class="[ station-assets ][ light-transparency  max-h-full ]"
+        @mousedown.outside="open && close()"
+        max_width='500px'
+    >
+        <button
+            class="[ station-assets-close ]"
+            @click.prevent="close()"
+        >
+            <TrashIcon />
+        </button>
+
+        <Flexblock
+            gap='var(--space-2xs)'
+            class="[ max-h-full ]"
+        >
+            <Center class="[ py-[var(--space-xl)] ]">
+                <Flexblock centered={true}>
+                    <picture>
+                        <img loading="lazy" src={get_corporation_logo(corporation.id, 64)} width='64' height='64' />
+                    </picture>
+                    <span class="[ text-[var(--highlight)] max-w-fit ]">{corporation.name}</span>
+                </Flexblock>
+            </Center>
+
+            <Input type="text"
+                placeholder={t('filter')}
+                x-model="asset_name_filter"
+                x-on:keyup="filter()"
+                x-ref="station_assets_filter"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+
+            <Wrapper
+                id="station-assets-body"
+                x-show="open"
+            >
+                <ErrorRefetch
+                    args={{
+                        partial: STATION_ASSETS_PARTIAL_URL,
+                        message: t('fetching_assets'),
+                        delay: 0,
+                        target: '#station-assets-body',
+                    }}
+                />
+            </Wrapper>
+        </Flexblock>
+    </Wrapper>
+</div>
+
+<style lang="scss" is:global>
+    .station-assets-close {
+        border: none;
+        position: absolute;
+        right: 10px;
+        top: 3px;
+        display: flex;
+        background-color: transparent;
+        color: var(--highlight);
+        z-index: var(--dialog-close-z-index);
+        cursor: pointer;
+        padding: 6px 4px 20px 27px;
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        svg {
+            transition: var(--fast-transition);
+            width: 12px;
+        }
+    }
+
+    .station-assets {
+        --pop-up--margin: 0;
+        
+        height: 90vh;
+        position: fixed;
+        right: var(--space-3xs);
+        top: var(--space-3xs);
+        transform: scale(0.97);
+        border: solid 1px var(--border-color);
+        opacity: 0;
+        transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
+        pointer-events: none;
+        box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.75);
+        z-index: var(--dialog-z-index);
+        width: 100%;
+        max-height: 900px;
+
+        &.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
+    }
+
+    .input-group {
+        margin-block-start: 0 !important;
+    }
+</style>

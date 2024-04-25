@@ -141,11 +141,14 @@ def update_fittings():  # noqa
                 current_fitting = EveFitting.objects.get(name=fitting_name)
                 if current_version != current_fitting.latest_version:
                     logger.info(
-                        "fitting out of date. updating fitting: %s",
+                        "updating fitting %s from %s to %s",
                         fitting_name,
+                        current_fitting.latest_version,
+                        current_version,
                     )
                     current_fitting.eft_format = fitting
                     current_fitting.latest_version = current_version
+                    current_fitting.save()
                 else:
                     logger.info(
                         "fitting up to date. skipping fitting: %s",
