@@ -16,6 +16,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                 spaceBetween: 20,
                 pagination: {
                     clickable: true,
+                    dynamicBullets: true,
                     el: ".swiper-pagination",
                 },
                 loop: false,
@@ -36,6 +37,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 <div class="swiper-pagination"></div>
 
 <style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
     .swiper-pagination {
         --swiper-pagination-color: var(--fleet-yellow);
         --swiper-pagination-bullet-inactive-color: var(--highlight);

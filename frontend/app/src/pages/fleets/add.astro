@@ -31,6 +31,7 @@ let alert:Alert | false = false
 if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
+        
         const fleet_data:FleetRequest = {
             doctrine_id: parseInt(data.get('doctrine_id') as string),
             description: data.get('description') as string,

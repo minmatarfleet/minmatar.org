@@ -152,7 +152,9 @@ const page_title = t('index.page_title');
 			</Flexblock>
 		</Wrapper>
 
-		<FleetFeed />
+		{user &&
+			<FleetFeed />
+		}
     </PageLanding>
 </Viewport>
 
