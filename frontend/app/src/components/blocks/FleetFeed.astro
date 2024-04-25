@@ -19,7 +19,7 @@ import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
-let fleets:FleetItem[]
+let fleets:FleetItem[] = []
 
 try {
     fleets = await fetch_fleets(auth_token as string)
@@ -30,11 +30,18 @@ try {
     fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
 }
 
+const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`
+
 import FeedSwiper from '@components/blocks/FeedSwiper.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
-<div class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in !hidden 2xl:!block ]">
+<div
+    class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in !hidden 2xl:!block ]"
+    hx-get={FLEET_FEED_PARTIAL_URL}
+    hx-trigger="load delay:3600s"
+    hx-swap="outerHTML transition:true"
+>
     <FeedSwiper>
         {fleets.map( (fleet) =>
             <div class="swiper-slide">
