@@ -69,10 +69,10 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         return corporation
     }
     
-    const user_application = user_id ? corporation_applications.filter( (application) => application.user_id == user_id ) : []
+    const user_application = user_id ? corporation_applications.find( (application) => application.user_id == user_id ) : undefined
 
-    if (user_application.length > 0)
-        corporation.status = user_application[0].status as CorporationStatusType
+    if (user_application !== undefined)
+        corporation.status = user_application.status as CorporationStatusType
 
     return corporation
 }
