@@ -37,5 +37,10 @@ class MumbleAccess(models.Model):
     )
     password = models.CharField(max_length=MUMBLE_ACCESS_PASSWORD_LENGTH)
 
+    def save(self, *args, **kwargs):
+        if not self.password:
+            self.password = User.objects.make_random_password(length=32)
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return str(self.user.username)

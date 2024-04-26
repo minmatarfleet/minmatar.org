@@ -1,4 +1,5 @@
 from django.contrib import admin
+from esi.models import CallbackRedirect, Scope, Token
 
 from .models import (
     EveAlliance,
@@ -7,7 +8,6 @@ from .models import (
     EvePrimaryCharacter,
     EveSkillset,
 )
-from esi.models import CallbackRedirect, Token, Scope
 
 # Register your models here.
 admin.site.register(EveCorporation)
@@ -23,6 +23,7 @@ class EveCharacterAdmin(admin.ModelAdmin):
     """
     Custom admin to make editing characters easier
     """
+
     list_display = (
         "character_name",
         "corporation",

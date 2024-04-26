@@ -24,18 +24,18 @@ class ErrorResponse(BaseModel):
     "/connection",
     summary="Get mumble connection information",
     auth=AuthBearer(),
-    response={200: MumbleConnectionInformationResponse, 404: ErrorResponse},
+    response={200: MumbleConnectionInformationResponse, 403: ErrorResponse},
 )
 def get_mumble_connection(request):
-    if not MumbleAccess.objects.filter(user=request.user).exists():
-        return 404, {"detail": "Mumble access not found."}
+    if not request.user.has_perm("mumble.view_mumbleaccess"):
+        return 403, {"detail": "You do not have permission to access mumble."}
 
     if not EvePrimaryCharacter.objects.filter(
         character__token__user=request.user
     ).exists():
         return 404, {"detail": "Primary character not found."}
 
-    mumble_access = MumbleAccess.objects.get(user=request.user)
+    mumble_access = MumbleAccess.get_or_create(user=request.user)
 
     primary_character = EvePrimaryCharacter.objects.get(
         character__token__user=request.user

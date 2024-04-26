@@ -1,43 +1,30 @@
-import sys, os, Ice, Murmur, mariadb
-import django 
-from eveonline.models import EveCharacter
-from mumble.models import MumbleAccess
+import os
+import sys
 
-db = None
+import django
+import Ice
+import Murmur
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 
 
-class Database:
-    def __init__(self):
-        self.connection = None
-        try:
-            self.connection = mariadb.connect(
-                user=os.environ["DB_USER"],
-                password=os.environ["DB_PASSWORD"],
-                host=os.environ["DB_HOST"],
-                port=int(os.environ["DB_PORT"]),
-                database=os.environ["DB_NAME"],
-            )
+def get_mumble_access_by_username(username):
+    from eveonline.models import (  # pylint: disable=import-outside-toplevel
+        EveCharacter,
+    )
+    from mumble.models import (  # pylint: disable=import-outside-toplevel
+        MumbleAccess,
+    )
 
-        except mariadb.Error as e:
-            print(f"Error connecting to database: {e}")
-            sys.exit(1)
-
-        self.cursor = self.connection.cursor()
-
-    def shutdown(self):
-        if self.connection:
-            self.connection.close()
-
-    def get_mumble_access_by_username(self, username):
-        eve_character = EveCharacter.objects.get(character_name=username)
-        if not eve_character:
-            return None
-        if not eve_character.token:
-            return None
-        user = eve_character.token.user
-        if not user:
-            return None
-        return MumbleAccess.objects.filter(user=user).first()
+    eve_character = EveCharacter.objects.get(character_name=username)
+    if not eve_character:
+        return None
+    if not eve_character.token:
+        return None
+    user = eve_character.token.user
+    if not user:
+        return None
+    return MumbleAccess.objects.filter(user=user).first()
 
 
 class MetaCallback(Murmur.MetaCallback):
@@ -52,6 +39,10 @@ class MetaCallback(Murmur.MetaCallback):
 
 
 class Authenticator(Murmur.ServerAuthenticator):
+    """
+    Custom ICE authenticator for Mumble
+    """
+
     def __init__(self):
         Murmur.ServerAuthenticator.__init__(self)
 
@@ -59,18 +50,19 @@ class Authenticator(Murmur.ServerAuthenticator):
         self, name, pw, certificates, certhash, certstrong, context=None
     ):
         try:
-            print("Authenticating user: {0}".format(name))
+            print(f"Authenticating: {name}")
 
-            mumble_access = db.get_mumble_access_by_username(name)
-            if mumble_access == None:
-                print("Failed authenticating: {0}".format(name))
+            mumble_access = get_mumble_access_by_username(name)
+            if mumble_access is None:
+                print(f"Failed authenticating: {name}")
                 return -1, None, None
 
             if mumble_access.password == pw:
                 return mumble_access.user.id, "[FL33T] " + name, None
 
         except Exception as e:
-            print("Error authenticating: {0}".format(e))
+            print(f"Error authenticating: {name}")
+            print(e)
             return -1, None, None
 
         return -1, None, None
@@ -89,11 +81,9 @@ class Authenticator(Murmur.ServerAuthenticator):
 
 
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
+
     django.setup()
     print("Starting authenticator...")
-
-    db = Database()
 
     ice = Ice.initialize(sys.argv)
     base = ice.stringToProxy("Meta:tcp -h murmur -p 6502")
