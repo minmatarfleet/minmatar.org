@@ -1,0 +1,51 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { Alert } from '@dtypes/layout_components'
+
+interface Props {
+    alert?:     Alert;
+}
+
+const {
+    alert = false
+} = Astro.props
+
+const MUMBLE_LAUNCH_BUTTON_PARTIAL_URL = translatePath('/partials/mumble_launch_button_component/')
+
+import Button from '@components/blocks/Button.astro';
+import Tippy from '@components/blocks/Tippy.astro';
+---
+
+<Tippy
+    id="mumble-connect-button"
+    data-tippy-placement="top"
+    partial={`${translatePath('/partials/normal_tooltip')}?description=mumble_connect_button_tooltip`}
+    height='70px'
+    width='340px'
+    element='div'
+    show_delay={2000}
+    x-data={`{
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+>
+    <Button
+        size='sm'
+        type="button"
+        hx-get={MUMBLE_LAUNCH_BUTTON_PARTIAL_URL}
+        hx-indicator=".loader"
+        hx-trigger="click"
+        hx-swap="outerHTML transition:true"
+        hx-on::before-request="this.setAttribute('disabled','');"
+        hx-on::after-request="this.removeAttribute('disabled')"
+        hx-target="#mumble-connect-button"
+    >
+        {t('connect_to_mumble')}
+    </Button>
+</Tippy>
