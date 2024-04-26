@@ -1,0 +1,83 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetItem } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:  FleetItem;
+}
+
+const {
+    fleet,
+} = Astro.props
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import StylessButton from './StylessButton.astro';
+---
+
+<StylessButton
+    href={translatePath(`/fleets/upcoming/${fleet.id}/`)}
+    x-data={`{
+        init() {
+            window.addEventListener('countdown', event => {
+                console.log(event)
+                console.log(event.detail.id)
+                if (event.detail.id !== ${fleet.id})
+                    return
+
+                const notification = new Notification(
+                    '${t('push_up_notification_title')}', {
+                    body: \`${fleet.description}\`,
+                    icon: '${get_player_icon(fleet.fleet_commander_id)}',
+                    requireInteraction: true,
+                })
+
+                notification.onclick = (e) => {
+                    navigate('${translatePath(`/fleets/upcoming/${fleet.id}`)}')
+                }
+            })
+        }
+    }`}
+>
+    <FlexInline
+        justification='space-between'
+        gap='0'
+    >
+        <PilotBadge
+            class="[ basis-[220px] ]"
+            character_id={fleet.fleet_commander_id}
+            character_name={fleet.fleet_commander_name}
+        />
+        <small>{t(fleet.type as any)} {t('fleet')}</small>
+        <div class="[ text-center pr-[var(--space-s)] ]">
+            <Countdown
+                date={fleet.start_time}
+                id={fleet.id}
+                tag="countdown-fleet"
+                expired_text={t('forming')}
+            />
+        </div>
+    </FlexInline>
+</StylessButton>
+
+<style lang="scss">
+    a {
+        display: block;
+        color: var(--fleet-yellow);
+    }
+    
+    a:focus-visible {
+        outline-color: var(--highlight);
+        outline-style: double;
+        outline-offset: -1px;
+    }
+</style>

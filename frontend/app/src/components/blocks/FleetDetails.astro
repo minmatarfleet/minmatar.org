@@ -1,0 +1,146 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetUI } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:      FleetUI;
+    history?:   boolean;
+}
+
+const {
+    fleet,
+    history = false,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
+import Button from '@components/blocks/Button.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+const eve_time = new Date(fleet.start_time);
+const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
+---
+
+<Flexblock
+    gap="var(--space-3xs)"
+    x-data={`{
+        local_time: new Date('${eve_time} UTC').toLocaleDateString(
+            '${lang}',
+            ${import.meta.env.DATETIME_FORMAT}
+        )
+    }`}
+>
+    <ComponentBlock>
+        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('fleet_information')}</h2>
+
+            <FlexInline>
+                <FlexInline class="[ grow ]" justification='space-between'>
+                    <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
+                        <h4>{t('fleet_commander')}</h4>
+                        <PilotBadge
+                            character_id={fleet.fleet_commander_id}
+                            character_name={fleet.fleet_commander_name}
+                            size={32}
+                        />
+                    </Flexblock>
+                    <div class="[ basis-[250px] ]">
+                        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                            {eve_time_text}
+                        </TextGroup>
+                    </div>
+                    <div class="[ basis-[250px] ]">
+                        <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                            <span class="[ loading ]">{t('calculating')}</span>
+                        </TextGroup>
+                    </div>
+                </FlexInline>
+                {!history &&
+                    <Button
+                        size='sm'
+                        narrow={true}
+                        x-data={`{
+                            show_set_main_dialog() {
+                                show_confirm_dialog({
+                                    title: '${t('remove_fleet_dialog_title')}',
+                                    content: '${t('remove_fleet_dialog_text')}',
+                                    hx: {
+                                        method: 'delete',
+                                        url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
+                                            fleet_id: fleet.id,
+                                        })}',
+                                        swap: 'outerHTML transition:true'
+                                    }
+                                })
+                            }
+                        }`}
+                        x-on:click="show_set_main_dialog"
+                    >
+                        {t('remove')}
+                    </Button>
+                }
+            </FlexInline>
+
+            <TextGroup
+                title={t('description')}
+                class="[ sentence-cap ]"
+            >
+                <TextBox max_width='40rem'>
+                    <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
+                </TextBox>
+            </TextGroup>
+
+            <!--<VerticalCenter>
+                <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
+                    {fleet.tracking}
+                </TextGroup>
+            </VerticalCenter> -->
+        </Flexblock>
+    </ComponentBlock>
+
+    {!history &&
+        <ComponentBlock>
+            <div class="[ grow text-center ]">
+                <Countdown
+                    date={fleet.start_time}
+                    id={fleet.id}
+                    tag='countdown-fleet'
+                    expired_text={t('forming')}
+                />
+            </div>
+        </ComponentBlock>
+    }
+
+    <ComponentBlock>
+        <DoctrineItem doctrine={fleet.doctrine} />
+    </ComponentBlock>
+
+    <!--<ComponentBlock
+        x-data={`{
+            global_collapse: false,
+        }`}
+    >
+        <FleetCompositionBlock composition={fleet.composition} fleet_id={fleet_id} />
+    </ComponentBlock>   -->
+</Flexblock>

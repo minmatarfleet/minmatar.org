@@ -3,29 +3,29 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FlexInline
-    class="[ swiper-wrapper ][ select-none ]"
+    class="[ swiper-wrapper ][ select-none w-full ]"
     gap='0'
     x-data={`{
         swiper: null,
-        corporation_pagination(index) {
-            return this.pagination_icons[index]
-        },
         init() {
             this.swiper = new Swiper('.swiper', {
-                slidesPerView: "auto",
-                spaceBetween: 20,
+                slidesPerView: 1,
+                direction: 'vertical',
+                spaceBetween: 4,
                 pagination: {
                     clickable: true,
                     dynamicBullets: true,
                     el: ".swiper-pagination",
                 },
+                mousewheel: {
+                    forceToAxis: true,
+                },
                 loop: false,
                 fadeEffect: {
                     crossFade: true
                 },
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
+                autoplay: {
+                    delay: 10000,
                 },
             });
         }
@@ -47,8 +47,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         --swiper-pagination-bullet-inactive-opacity: 1;
     }
 
-     .swiper-wrapper {
+    .swiper-wrapper {
         flex-wrap: nowrap;
         align-items: flex-start;
-     }
+        max-height: calc(64px);
+    }
 </style>

@@ -77,8 +77,9 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         filtered_pages: [ false ],
         pages: ${JSON.stringify(filter_pages)},
         page_filter() {
+            console.log('asd')
             if (this.search === '') {
-                this.filtered_pages = [ false ]
+                this.filtered_pages = ${JSON.stringify(filter_pages.map( (i) => i.slug ))}
                 return
             }
 
@@ -114,7 +115,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     return
 
                 search = ''
-                filtered_pages = [ false ]
                 
                 var clickEvent = new MouseEvent("click", {
                     "view": window,
@@ -145,11 +145,10 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     <Flexblock
                         class="[ page-finder-list ][ light-transparency w-full ]"
                         gap='var(--space-2xs)'
-                        x-show="(search !== '')"
                     >
                         <div
                             class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
-                            x-show="search !== '' && filtered_pages.length === 0"
+                            x-show="filtered_pages.length === 0"
                         >
                             <span>{t('no_pages')}</span>
                         </div>

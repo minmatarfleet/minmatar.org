@@ -2,39 +2,50 @@
 import { countdown } from '@helpers/countdown';
 
 interface Props {
-    id?: string;
-    date: string;
+    id:             number;
+    tag?:           string;
+    date:           Date;
+    expired_text?:  string;
     [propName: string]: any;
 }
 
 const {
-    id = 'countdown',
-    date
+    id,
+    tag = 'countdown',
+    date,
+    expired_text,
 } = Astro.props;
 
 const {
     text,
-    expired
-} = countdown(date)
+    expired,
+} = countdown(date, expired_text)
 ---
 
-<p class:list={[ 'countdown', { expired: expired } ]} id={id}>{text}</p>
+<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}`}>{text}</p>
 
-<script define:vars={{ id, date }}>
-    countdown(`#${id}`, date);
+<script define:vars={{ id, tag, date, expired_text }}>
+    countdown(`#${tag}-${id}`, id, date, expired_text);
 </script>
 
 <style lang="scss">
 	p {
         font-family: var(--countdown-font);
-		font-size: var(--step-4);
+		font-size: var(--step-2);
 		letter-spacing: 12px;
         text-indent: 12px;
 		line-height: 1;
         white-space: nowrap;
-
-        &.expired{
-            color: var(--fleet-red);
-        }
+        text-transform: uppercase;
 	}
+
+    .expired:not(.expired-text) {
+        color: var(--fleet-red);
+    }
+
+    .expired-text {
+        font-family: var(--heading-font) !important;
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
 </style>

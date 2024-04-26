@@ -9,12 +9,14 @@ interface Props {
     user_is_officer:    boolean;
     user_is_director:   boolean;
     user_is_superadmin: boolean;
+    authenticated:      boolean;
 }
 
 const {
     user_is_officer,
     user_is_director,
     user_is_superadmin,
+    authenticated,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot')
@@ -74,13 +76,12 @@ const page = Astro.url.pathname
             >
                 <ShipTreeEvEIcon />
             </NeocomButton>
-            {!is_prod_mode() &&
+            {authenticated &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/fleets/'))}
                     title='neocom.fleets'
-                    description='fleets.leading_text'
-                    tag="dev"
-                    href={translatePath('/fleets/')}
+                    description='fleets.description'
+                    href={translatePath('/fleets/upcoming/')}
                 >
                     <FleetEvEIcon />
                 </NeocomButton>

@@ -25,6 +25,8 @@ import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
+import FleetFeed from '@components/blocks/FleetFeed.astro';
+
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
 import {
@@ -62,6 +64,10 @@ const page_title = t('index.page_title');
 				staggering === 'ourzad' ?
 				OurzadCameraXData :
 				WatermelonCameraXData
+			},
+			init() {
+				if (Notification.permission === 'default')
+					Notification.requestPermission()
 			}
         }`}
         x-effect="update"
@@ -149,6 +155,10 @@ const page_title = t('index.page_title');
 				<p class="[ ccp-disclaimer ]">{t('ccp_disclaimer')}</p>
 			</Flexblock>
 		</Wrapper>
+
+		{user &&
+			<FleetFeed />
+		}
     </PageLanding>
 </Viewport>
 
@@ -157,6 +167,7 @@ const page_title = t('index.page_title');
 		position: fixed;
 		top: var(--space-l);
 		right: var(--space-xl);
+		z-index: 2;
 	}
 
 	.ccp-disclaimer {

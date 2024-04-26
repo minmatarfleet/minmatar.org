@@ -1,0 +1,48 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetItem } from '@dtypes/layout_components'
+
+interface Props {
+    fleets:     FleetItem[];
+    history?: boolean;
+}
+
+const {
+    fleets,
+    history = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import FleetListItem from '@components/blocks/FleetListItem.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+---
+
+<Flexblock role="list" gap='var(--space-3xs)' {...Astro.props}>
+
+    {fleets.length == 0 &&
+        <Flexblock gap='var(--space-xl)' centered={true}>
+            <p>{t('fleets.upcoming.empty_message')}</p>
+
+            <ButtonStack>
+                <Button color={'green'} href={translatePath('/fleets/add')} class="!justify-center">
+                    <AddIcon slot="icon" />
+                    {t('schedule_fleet')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    }
+    
+    {fleets.map((fleet) =>
+        <FleetListItem role="listitem" fleet={fleet} history={history} />
+    )}
+
+</Flexblock>
