@@ -34,8 +34,8 @@ try {
     user_character = await get_user_character(user.user_id)
     character_assets = await get_assets(auth_token, user_character.character_id)
 
-    location_assets = character_assets?.location_icons.filter( (i) => i.location_name === station )
-    station_assets = location_assets.length > 0 ? location_assets[0].assets : []
+    location_assets = character_assets?.location_icons.find( (i) => i.location_name === station )
+    station_assets = location_assets !== undefined ? location_assets.assets : []
     station_assets.sort( (a, b) => a.name.localeCompare(b.name))
 } catch (error) {
     get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message

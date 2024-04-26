@@ -71,7 +71,7 @@ try {
 }
 
 if (group_request_action_error) {
-    const group_request:GroupRequestUI = group_requests.requests.filter( (i) => i.request_id == request_id )[0]
+    const group_request:GroupRequestUI = group_requests.requests.find( (i) => i.request_id == request_id )
 
     alert = {
         title: (action == 'accept' ? t('accept_group_request_dialog_title') : t('deny_group_request_dialog_title')),
@@ -107,7 +107,7 @@ if (group_action_request?.approved_by) {
                 group_type === 'team' ? t('accept_team_request_dialog_title') : t('accept_group_request_dialog_title')
                 :
                 group_type === 'team' ? t('deny_team_request_dialog_title') : t('deny_group_request_dialog_title')
-                ),
+            ),
             content: (action == 'accept' ? t('approve_group_request_sucessfull_text') : t('deny_group_request_sucessfull_text')),
         }
 

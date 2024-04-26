@@ -58,13 +58,12 @@ export async function get_group_request_by_id(access_token:string, group_id:numb
     else
         group = await get_sig_by_id(group_id)
 
-
     if(group_type === 'team')
         api_requests = await get_teams_requests(access_token, group_id)
     else
         api_requests = await get_sigs_requests(access_token, group_id)
 
-    api_request = api_requests[0]
+    api_request = api_requests.find((i) => i.id === request_id)
 
     request = await get_group_request_ui(group, api_request, group_type)
 
