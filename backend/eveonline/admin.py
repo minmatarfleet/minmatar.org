@@ -1,9 +1,40 @@
 from django.contrib import admin
 
-from .models import EveAlliance, EveCharacter, EveCorporation, EveSkillset
+from .models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePrimaryCharacter,
+    EveSkillset,
+)
+from esi.models import CallbackRedirect, Token, Scope
 
 # Register your models here.
 admin.site.register(EveCorporation)
-admin.site.register(EveCharacter)
 admin.site.register(EveSkillset)
 admin.site.register(EveAlliance)
+admin.site.unregister(CallbackRedirect)
+admin.site.unregister(Token)
+admin.site.unregister(Scope)
+
+
+@admin.register(EveCharacter)
+class EveCharacterAdmin(admin.ModelAdmin):
+    """
+    Custom admin to make editing characters easier
+    """
+    list_display = (
+        "character_name",
+        "corporation",
+        "alliance",
+        "primary_eve_character",
+    )
+    search_fields = ("character_name", "corporation__name")
+    list_filter = ("corporation", "alliance")
+
+    def primary_eve_character(self, obj):
+        if obj.token:
+            user = obj.token.user
+            return EvePrimaryCharacter.objects.filter(
+                character__token__user=user
+            ).first()

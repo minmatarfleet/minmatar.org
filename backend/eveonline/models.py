@@ -16,6 +16,9 @@ class EvePrimaryCharacter(models.Model):
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
+    def __str__(self):
+        return str(self.character.character_name)
+
 
 class EveCharacter(models.Model):
     """Character model"""
