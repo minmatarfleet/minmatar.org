@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
     sender=SigRequest,
     dispatch_uid="sig_request_post_save",
 )
-def sig_request_post_save(sender, instance, created, **kwargs):
+def sig_request_post_save(sender, instance, **kwargs):
     logger.info("Sig request saved, updating user sigs")
     if instance.approved:
         instance.sig.members.add(instance.user)
@@ -31,7 +31,7 @@ def sig_request_post_save(sender, instance, created, **kwargs):
     sender=TeamRequest,
     dispatch_uid="team_request_post_save",
 )
-def team_request_post_save(sender, instance, created, **kwargs):
+def team_request_post_save(sender, instance, **kwargs):
     logger.info("Team request saved, updating user teams")
     if instance.approved:
         instance.team.members.add(instance.user)
