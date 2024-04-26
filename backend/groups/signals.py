@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 @receiver(
-    signals.post_save,
+    signals.pre_save,
     sender=SigRequest,
     dispatch_uid="sig_request_post_save",
 )
@@ -25,7 +25,7 @@ def sig_request_post_save(sender, instance, created, **kwargs):
 
 
 @receiver(
-    signals.post_save,
+    signals.pre_save,
     sender=TeamRequest,
     dispatch_uid="team_request_post_save",
 )
