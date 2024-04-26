@@ -1,4 +1,4 @@
-const countdown = (element, date, expired_text) => {
+const countdown = (element, id, date, expired_text) => {
     // Set the date we're counting down to
     const countDownDate = new Date(date).getTime();
     
@@ -25,8 +25,19 @@ const countdown = (element, date, expired_text) => {
             if (distance < 0)
                 document.querySelector(element).classList.add('expired');
 
-            if (distance < 0 && expired_text)
+            if (distance < 0 && expired_text) {
                 document.querySelector(element).classList.add('expired-text');
+                
+                const event = new CustomEvent('countdown', {
+                    detail: {
+                        id: id
+                    }
+                });
+                
+                window.dispatchEvent(event);
+
+                clearInterval(x);
+            }
         } else {
             clearInterval(x);
         }

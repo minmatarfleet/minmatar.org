@@ -64,6 +64,10 @@ const page_title = t('index.page_title');
 				staggering === 'ourzad' ?
 				OurzadCameraXData :
 				WatermelonCameraXData
+			},
+			init() {
+				if (Notification.permission === 'default')
+					Notification.requestPermission()
 			}
         }`}
         x-effect="update"

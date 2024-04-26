@@ -702,5 +702,6 @@ export const ui = {
         'remove': 'Remove',
         'upcoming': 'Upcoming',
         'history': 'History',
+        'push_up_notification_title': 'Incoming Forming Transmission',
     },
 } as const;

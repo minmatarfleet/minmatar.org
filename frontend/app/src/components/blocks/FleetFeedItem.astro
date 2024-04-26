@@ -15,6 +15,8 @@ const {
     fleet,
 } = Astro.props
 
+import { get_player_icon } from '@helpers/eve_image_server'
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Countdown from '@components/blocks/Countdown.astro';
@@ -24,6 +26,27 @@ import StylessButton from './StylessButton.astro';
 
 <StylessButton
     href={translatePath(`/fleets/upcoming/${fleet.id}/`)}
+    x-data={`{
+        init() {
+            window.addEventListener('countdown', event => {
+                console.log(event)
+                console.log(event.detail.id)
+                if (event.detail.id !== ${fleet.id})
+                    return
+
+                const notification = new Notification(
+                    '${t('push_up_notification_title')}', {
+                    body: \`${fleet.description}\`,
+                    icon: '${get_player_icon(fleet.fleet_commander_id)}',
+                    requireInteraction: true,
+                })
+
+                notification.onclick = (e) => {
+                    navigate('${translatePath(`/fleets/upcoming/${fleet.id}`)}')
+                }
+            })
+        }
+    }`}
 >
     <FlexInline
         justification='space-between'
@@ -38,7 +61,8 @@ import StylessButton from './StylessButton.astro';
         <div class="[ text-center pr-[var(--space-s)] ]">
             <Countdown
                 date={fleet.start_time}
-                id={`countdown-fleet-${fleet.id}`}
+                id={fleet.id}
+                tag="countdown-fleet"
                 expired_text={t('forming')}
             />
         </div>

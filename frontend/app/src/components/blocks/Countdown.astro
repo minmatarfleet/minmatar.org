@@ -2,14 +2,16 @@
 import { countdown } from '@helpers/countdown';
 
 interface Props {
-    id?:            string;
+    id:             number;
+    tag?:           string;
     date:           Date;
     expired_text?:  string;
     [propName: string]: any;
 }
 
 const {
-    id = 'countdown',
+    id,
+    tag = 'countdown',
     date,
     expired_text,
 } = Astro.props;
@@ -20,10 +22,10 @@ const {
 } = countdown(date, expired_text)
 ---
 
-<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={id}>{text}</p>
+<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}`}>{text}</p>
 
-<script define:vars={{ id, date, expired_text }}>
-    countdown(`#${id}`, date, expired_text);
+<script define:vars={{ id, tag, date, expired_text }}>
+    countdown(`#${tag}-${id}`, id, date, expired_text);
 </script>
 
 <style lang="scss">

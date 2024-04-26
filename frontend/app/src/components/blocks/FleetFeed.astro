@@ -23,9 +23,8 @@ let fleets:FleetItem[] = []
 
 try {
     fleets = await fetch_fleets(auth_token as string)
-    fleets.sort(function(a, b) {
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-    });
+    fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
+    fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 } catch (error) {
     fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
 }
@@ -37,7 +36,7 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
 <div
-    class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in !hidden 2xl:!block ]"
+    class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in-up !hidden 2xl:!block ]"
     hx-get={FLEET_FEED_PARTIAL_URL}
     hx-trigger="load delay:3600s"
     hx-swap="outerHTML transition:true"
