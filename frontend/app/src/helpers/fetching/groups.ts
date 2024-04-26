@@ -94,7 +94,6 @@ const add_status_to_group = async (
         status: 'available'
     }
 
-    console.log(group_type)
     try {
         group_requests = (group_type === 'team' ? await get_teams_requests(access_token, api_group.id) : await get_sigs_requests(access_token, api_group.id))
     } catch (error) {
