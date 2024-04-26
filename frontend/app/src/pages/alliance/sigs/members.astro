@@ -92,7 +92,7 @@ const page_title = t('groups.members.page_title')
             overlay: true
         }}
         x-data={`{
-            global_collapsed: [],
+            global_collapse: false,
             groups_members: ${JSON.stringify(groups_members)},
             groups_unfiltered: ${JSON.stringify(GROUPS_UNFILTERED)},
             groups_filtered: ${JSON.stringify(GROUPS_UNFILTERED)},
