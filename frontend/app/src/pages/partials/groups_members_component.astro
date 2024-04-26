@@ -13,6 +13,7 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
 
@@ -26,7 +27,7 @@ const user_is_officer = (
     false
 )
 
-if (!user_is_officer)
+if (!user_is_officer && !is_superuser)
     return HTTP_404_Not_Found()
 
 import type { GroupMembersUI, SelectOptions, GroupItemType, Alert } from '@dtypes/layout_components'
