@@ -680,9 +680,9 @@ export const ui = {
         'fetching_assets': 'Fetching assets',
         'connect_to_mumble': 'Connect to Mumble',
         'mumble_details': 'Download Mumble [here](https://www.mumble.info/downloads/)',
-        'mumble_connect_button_tooltip': 'Request Mumble credentials to joining Fleet Mumble Room. If successful this button will be replaced for the joining link',
+        'mumble_connect_button_tooltip': 'Launch Mumble and join Fleet Chat Room. Requieres Mumble installed in your device',
         'mumble_launch_button_tooltip': 'All is set and you are ready to launch Mumble clicking here',
-        'launch_mumble': 'Launch Mumble',
+        'launch_mumble': 'Re-launch Mumble',
         'get_mumble_connection_error': 'An error ocurred getting Mumble conneciton information',
     },
 } as const;
