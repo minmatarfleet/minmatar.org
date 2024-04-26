@@ -95,20 +95,21 @@ const add_status_to_group = async (
     }
 
     try {
-        group_requests = (group_type === 'team' ? await get_sigs_requests(access_token, api_group.id) : await get_teams_requests(access_token, api_group.id))
+        group_requests = (group_type === 'team' ? await get_teams_requests(access_token, api_group.id) : await get_sigs_requests(access_token, api_group.id))
     } catch (error) {
         group.status = 'error'
         return group
     }
     
-    const user_request = user_id ? group_requests.filter( (request) => request.user == user_id ) : []
+    const user_request = user_id ? group_requests.find( (request) => request.user == user_id ) : undefined
+    console.log(user_request)
 
-    if (user_request.length > 0) {
-        if (user_request[0].approved === null)
+    if (user_request !== undefined) {
+        if (user_request.approved === null)
             group.status = 'requested'
-        else if (user_request[0].approved === false)
+        else if (user_request.approved === false)
             group.status = 'denied'
-        else if (user_request[0].approved === true)
+        else if (user_request.approved === true)
             group.status = 'confirmed'
     }
 
@@ -180,7 +181,7 @@ export async function is_director(access_token:string, user_id:number) {
         return null
     }
     
-    return groups.filter( (group) => group.directors.includes(user_id) ).length > 0
+    return groups.find( (group) => group.directors.includes(user_id) ) !== undefined
 }
 
 export async function is_officer(access_token:string, user_id:number) {
@@ -192,7 +193,7 @@ export async function is_officer(access_token:string, user_id:number) {
         return null
     }
     
-    return groups.filter( (group) => group.officers.includes(user_id) ).length > 0
+    return groups.find( (group) => group.officers.includes(user_id) ) !== undefined
 }
 
 export async function get_all_members(access_token:string, user_id:number) {

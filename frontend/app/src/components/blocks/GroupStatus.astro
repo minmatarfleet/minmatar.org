@@ -41,6 +41,7 @@ const DIALOG_TEXT = {
     'group': t('group_join_request_dialog_text')
 }
 ---
+
 <div
     id={`corporation-status-${group.id}`}
     x-data={`{
@@ -113,6 +114,9 @@ const DIALOG_TEXT = {
         }
         {group?.status == 'requested' &&
             <Tag color='alliance-blue' text={t('pending')} />
+        }
+        {group?.status == 'denied' &&
+            <Tag text={t('denied')} />
         }
         {group?.status == 'error' &&
             <Tag text={t('error_status_corp')} />

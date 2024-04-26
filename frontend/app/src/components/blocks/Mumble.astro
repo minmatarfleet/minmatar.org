@@ -1,0 +1,32 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import MumbleIcon from '@components/icons/MumbleIcon.astro';
+import MumbleConnectButton from './MumbleConnectButton.astro';
+---
+
+<ComponentBlock
+    width='narrow'
+>
+    <FlexInline justification='space-between'>
+        <FlexInline class="[ grow items-center ]">
+            <a href="https://www.mumble.info/downloads/" target="_blank" rel="nofollow noopener noreferrer">
+                <MumbleIcon />
+            </a>
+            <p set:html={marked.parseInline(t('mumble_details'), { renderer })} />
+        </FlexInline>
+        
+        <MumbleConnectButton />
+    </FlexInline>
+</ComponentBlock>

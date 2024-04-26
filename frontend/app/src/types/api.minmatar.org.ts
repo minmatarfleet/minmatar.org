@@ -166,3 +166,9 @@ export interface FleetRequest {
     doctrine_id:    number;
     location:       string;
 }
+
+export interface MumbleInformation {
+    username:   string,
+    password:   string,
+    url:        string
+}

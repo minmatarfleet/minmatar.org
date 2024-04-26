@@ -10,30 +10,34 @@ logger = logging.getLogger(__name__)
 
 
 @receiver(
-    signals.post_save,
+    signals.pre_save,
     sender=SigRequest,
     dispatch_uid="sig_request_post_save",
 )
-def sig_request_post_save(sender, instance, created, **kwargs):
+def sig_request_post_save(sender, instance, **kwargs):
     logger.info("Sig request saved, updating user sigs")
     if instance.approved:
+        instance.sig.members.add(instance.user)
         instance.user.groups.add(instance.sig.group)
     elif instance.approved is False:
+        instance.sig.members.remove(instance.user)
         instance.user.groups.remove(instance.sig.group)
     else:
         pass
 
 
 @receiver(
-    signals.post_save,
+    signals.pre_save,
     sender=TeamRequest,
     dispatch_uid="team_request_post_save",
 )
-def team_request_post_save(sender, instance, created, **kwargs):
+def team_request_post_save(sender, instance, **kwargs):
     logger.info("Team request saved, updating user teams")
     if instance.approved:
+        instance.team.members.add(instance.user)
         instance.user.groups.add(instance.team.group)
     elif instance.approved is False:
+        instance.team.members.remove(instance.user)
         instance.user.groups.remove(instance.team.group)
     else:
         pass

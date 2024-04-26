@@ -48,6 +48,8 @@ services:
         depends_on:
             db:
                 condition: service_healthy
+        ports:
+            - "8000:8000"
 
     frontend:
         build:
@@ -61,6 +63,8 @@ services:
             local-network:
                 aliases:
                     - local.minmatar.org
+        ports:
+            - "4321:4321"
 
     proxy:
         image: nginx:stable
@@ -124,11 +128,12 @@ services:
 
     mumble_auth:
         build:
-            context: ./mumble/auth/
-            dockerfile: Dockerfile
+            context: ./backend/.
+            dockerfile: Dockerfile.mumble
         restart: on-failure
+        command: python3 mumble.py
         env_file:
-            - mumble/auth/.env
+            - .env
         networks:
             - local-network
         depends_on:

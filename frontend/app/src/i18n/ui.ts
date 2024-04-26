@@ -703,5 +703,11 @@ export const ui = {
         'upcoming': 'Upcoming',
         'history': 'History',
         'push_up_notification_title': 'Incoming Forming Transmission',
+        'connect_to_mumble': 'Connect to Mumble',
+        'mumble_details': 'Download Mumble [here](https://www.mumble.info/downloads/)',
+        'mumble_connect_button_tooltip': 'Launch Mumble and join Fleet Chat Room. Requieres Mumble installed in your device',
+        'mumble_launch_button_tooltip': 'All is set and you are ready to launch Mumble clicking here',
+        'launch_mumble': 'Re-launch Mumble',
+        'get_mumble_connection_error': 'An error ocurred getting Mumble conneciton information',
     },
 } as const;

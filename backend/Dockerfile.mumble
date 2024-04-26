@@ -1,0 +1,30 @@
+FROM python:3.10.12-slim-buster
+
+# install git for doctine pulling and various other dependencies
+RUN apt-get update && apt-get install -y git libmariadb-dev wget gcc g++ libssl-dev libbz2-dev unzip cmake
+
+WORKDIR /opt/mariadb
+RUN wget https://archive.mariadb.org/connector-c-3.3.1/mariadb-connector-c-3.3.1-src.zip
+RUN unzip mariadb-connector-c-3.3.1-src.zip 
+WORKDIR /opt/mariadb/mariadb-connector-c-3.3.1-src
+RUN cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+RUN make
+RUN make install
+RUN mv /usr/local/lib/mariadb/* /usr/local/lib/.
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+WORKDIR /opt/minmatar
+RUN pip3 install zeroc-ice mariadb
+RUN wget -O Murmur.ice "https://raw.githubusercontent.com/mumble-voip/mumble/1.4.x/src/murmur/Murmur.ice"
+RUN slice2py --checksum -I/usr/local/share/Ice -I/usr/share/Ice/slice -I/usr/share/ice/slice -I/usr/share/slice /opt/minmatar/Murmur.ice 
+COPY . /opt/minmatar/
+RUN adduser --disabled-password --gecos '' minmatar && \
+    cp /opt/minmatar/app/settings.py.example /opt/minmatar/app/settings.py && \
+    chmod +x app-start.sh && \
+    pip install pipenv && \
+    pipenv requirements > requirements.txt && \
+    pip3 install -r requirements.txt && \
+    python3 manage.py collectstatic --noinput
+
+# keep open for debugging
+CMD ["tail", "-f", "/dev/null"]

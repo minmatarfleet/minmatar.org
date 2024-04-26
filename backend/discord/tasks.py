@@ -1,11 +1,9 @@
 import logging
-import re
 
 from django.contrib.auth.models import Group, User
 
 from app.celery import app
 from discord.client import DiscordClient
-from eveonline.models import EveCharacter
 
 from .helpers import get_discord_user, get_expected_nickname
 from .models import DiscordRole, DiscordUser
