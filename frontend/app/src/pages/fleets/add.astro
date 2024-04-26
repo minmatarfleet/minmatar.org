@@ -88,7 +88,7 @@ const default_fleet_type = fleet_types_select_options[0].value
 const default_location = locations_select_options[0].value
 const default_doctrine = doctrines_select_options[0].id
 
-const doctrine:DoctrineType = doctrines.filter( (item) => item.id == default_doctrine )[0]
+const doctrine:DoctrineType = doctrines.find( (item) => item.id == default_doctrine )
 
 import { get_player_icon } from '@helpers/eve_image_server'
 
