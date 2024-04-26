@@ -124,7 +124,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <div class="[ grow text-center ]">
                 <Countdown
                     date={fleet.start_time}
-                    id={`countdown-fleet-${fleet.id}`}
+                    id={fleet.id}
+                    tag='countdown-fleet'
                     expired_text={t('forming')}
                 />
             </div>
