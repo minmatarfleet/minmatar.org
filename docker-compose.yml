@@ -124,11 +124,11 @@ services:
 
     mumble_auth:
         build:
-            context: ./mumble/auth/
-            dockerfile: Dockerfile
+            context: ./backend/.
+            dockerfile: Dockerfile.mumble
         restart: on-failure
         env_file:
-            - mumble/auth/.env
+            - .env
         networks:
             - local-network
         depends_on:
