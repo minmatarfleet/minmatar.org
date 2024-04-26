@@ -35,7 +35,7 @@ def get_mumble_connection(request):
     ).exists():
         return 404, {"detail": "Primary character not found."}
 
-    mumble_access = MumbleAccess.get_or_create(user=request.user)
+    mumble_access, _ = MumbleAccess.objects.get_or_create(user=request.user)
 
     primary_character = EvePrimaryCharacter.objects.get(
         character__token__user=request.user

@@ -151,7 +151,7 @@ def request_to_join_sig(request, sig_id: int):
 
 @router.post(
     "/{sig_id}/requests/{request_id}/approve",
-    response={200: SigRequestSchema, 404: ErrorResponse},
+    response={200: SigRequestSchema, 404: ErrorResponse, 403: ErrorResponse},
     auth=AuthBearer(),
     description="Approve a request to join a special interest group",
 )
@@ -183,7 +183,7 @@ def approve_sig_request(request, sig_id: int, request_id: int):
 
 @router.post(
     "/{sig_id}/requests/{request_id}/deny",
-    response={200: SigRequestSchema, 404: ErrorResponse},
+    response={200: SigRequestSchema, 404: ErrorResponse, 403: ErrorResponse},
     auth=AuthBearer(),
     description="Deny a request to join a special interest group",
 )
@@ -215,7 +215,7 @@ def deny_sig_request(request, sig_id: int, request_id: int):
 
 @router.delete(
     "/{sig_id}/members/{user_id}",
-    response={200: SigSchema, 404: ErrorResponse},
+    response={200: SigSchema, 404: ErrorResponse, 403: ErrorResponse},
     auth=AuthBearer(),
     description="Remove a user from a special interest group",
 )

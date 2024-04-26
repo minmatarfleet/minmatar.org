@@ -72,6 +72,7 @@ services:
             context: ./backend/.
             dockerfile: Dockerfile.mumble
         restart: on-failure
+        command: python3 mumble.py
         env_file:
             - .env
         depends_on:

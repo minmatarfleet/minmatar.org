@@ -151,7 +151,7 @@ def request_to_join_team(request, team_id: int):
 
 @router.post(
     "/{team_id}/requests/{request_id}/approve",
-    response={200: TeamRequestSchema, 404: ErrorResponse},
+    response={200: TeamRequestSchema, 404: ErrorResponse, 403: ErrorResponse},
     auth=AuthBearer(),
     description="Approve a request to join a special interest group",
 )
@@ -183,7 +183,7 @@ def approve_team_request(request, team_id: int, request_id: int):
 
 @router.post(
     "/{team_id}/requests/{request_id}/deny",
-    response={200: TeamRequestSchema, 404: ErrorResponse},
+    response={200: TeamRequestSchema, 404: ErrorResponse, 403: ErrorResponse},
     auth=AuthBearer(),
     description="Deny a request to join a special interest group",
 )

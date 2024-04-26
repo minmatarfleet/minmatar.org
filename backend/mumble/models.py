@@ -39,7 +39,7 @@ class MumbleAccess(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.password:
-            self.password = User.objects.make_random_password(length=32)
+            self.password = User.objects.make_random_password()
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
