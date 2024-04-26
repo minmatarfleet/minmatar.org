@@ -145,3 +145,9 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
 }
+
+export interface MumbleInformation {
+    username:   string,
+    password:   string,
+    url:        string
+}
