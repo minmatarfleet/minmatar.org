@@ -49,6 +49,11 @@ import Tippy from '@components/blocks/Tippy.astro';
         width='340px'
         element='div'
         show_delay={2000}
+        x-data={`{
+            init() {
+                window.open('${mumble_information.url}','_newtab');
+            }
+        }`}
     >
         <Button
             color='green'
