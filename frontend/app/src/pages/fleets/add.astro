@@ -237,8 +237,8 @@ const today = new Date().toISOString().split("T")[0]
                                             required
                                             value={today}
                                             options={{
-                                                minDate: "today"
-                                            }}
+                                                minDate: "today",
+                                            } as any}
                                         />
                                     </FixedFluid>
 
@@ -255,7 +255,7 @@ const today = new Date().toISOString().split("T")[0]
                                                 noCalendar: true,
                                                 dateFormat: "H:i",
                                                 time_24hr: true,
-                                            }}
+                                            } as any}
                                         />
                                     </FixedFluid>
 
