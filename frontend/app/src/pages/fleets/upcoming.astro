@@ -73,8 +73,8 @@ const page_title = t('fleets.upcoming.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('scheduled').toLowerCase()}\``}>
-                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('scheduled').toLowerCase()}
+                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('on_schedule').toLowerCase()}\``}>
+                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('on_schedule').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -88,18 +88,10 @@ const page_title = t('fleets.upcoming.page_title');
 
         <FlexInline slot="subheader">
             <Button
-                color='transparent'
-                href={translatePath('/fleets/upcoming')}
-                size='sm'
-            >
-                {t('upcoming')}
-            </Button>
-
-            <Button
                 href={translatePath('/fleets/history')}
                 size='sm'
             >
-                {t('history')}
+                {t('fleet_history')}
             </Button>
         </FlexInline>
         
