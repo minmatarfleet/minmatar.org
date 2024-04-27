@@ -113,6 +113,7 @@ import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
+import FlatPicker from '@components/blocks/FlatPicker.astro';
 
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
@@ -136,7 +137,7 @@ const today = new Date().toISOString().split("T")[0]
             fleet_type: '${default_fleet_type}',
             audience: 'alliance',
             eve_date: '${today}',
-            eve_time: '00:00:00',
+            eve_time: '00:00',
             location: '${default_location}',
             local_datetime: '',
             locations: ${JSON.stringify(FLEET_LOCATIONS)},
@@ -228,27 +229,33 @@ const today = new Date().toISOString().split("T")[0]
 
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                         <label for="fleet_date">{t('fleet_date')}</label>
-                                        <Input
+                                        <FlatPicker
                                             id="fleet_date"
                                             type="date"
                                             x-model="eve_date"
                                             name="eve_date"
                                             required
-                                            min={today}
                                             value={today}
+                                            options={{
+                                                minDate: "today"
+                                            }}
                                         />
                                     </FixedFluid>
 
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                         <label for="fleet_time">{t('fleet_time')}</label>
-                                        <Input
+                                        <FlatPicker
                                             id="fleet_time"
-                                            type="time"
-                                            step="2"
-                                            value="00:00:00"
                                             x-model="eve_time"
                                             name="eve_time"
+                                            value="00:00"
                                             required
+                                            options={{
+                                                enableTime: true,
+                                                noCalendar: true,
+                                                dateFormat: "H:i",
+                                                time_24hr: true,
+                                            }}
                                         />
                                     </FixedFluid>
 
