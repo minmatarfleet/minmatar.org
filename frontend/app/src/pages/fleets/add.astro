@@ -269,8 +269,8 @@ const today = new Date().toISOString().split("T")[0]
                                     </FixedFluid>
 
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="type">{t('location')}</label>
-                                        <Select id="type" x-model="location" name="location">
+                                        <label for="location">{t('location')}</label>
+                                        <Select id="location" x-model="location" name="location">
                                             {locations_select_options.map((option) => 
                                                 <option value={option.value}>{option.label}</option>
                                             )}
