@@ -709,5 +709,7 @@ export const ui = {
         'mumble_launch_button_tooltip': 'All is set and you are ready to launch Mumble clicking here',
         'launch_mumble': 'Re-launch Mumble',
         'get_mumble_connection_error': 'An error ocurred getting Mumble conneciton information',
+        'on_records': 'on records',
+        'on_schedule': 'on schedule',
     },
 } as const;
