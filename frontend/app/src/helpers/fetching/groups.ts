@@ -124,9 +124,9 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
     let groups_members:GroupMembersUI[]
 
     if(group_type === 'team')
-        groups = superadmin ? await get_teams() : await get_owned_teams(access_token, user_id)
+        groups = superadmin ? await get_teams() : await get_owned_teams(user_id)
     else
-        groups = superadmin ? await get_sigs() : await get_owned_sigs(access_token, user_id)
+        groups = superadmin ? await get_sigs() : await get_owned_sigs(user_id)
 
     groups_members = await Promise.all(groups.map(async (group) => {
         let members:MemberUI[]
@@ -250,14 +250,14 @@ export async function get_all_members(access_token:string, user_id:number, super
     return members
 }
 
-export async function get_owned_teams(access_token:string, user_id:number) {
-    const groups = await get_current_teams(access_token)
+export async function get_owned_teams(user_id:number) {
+    const groups = await get_teams()
 
     return groups.filter( (group) => group.directors.includes(user_id) )
 }
 
-export async function get_owned_sigs(access_token:string, user_id:number) {
-    const groups = await get_current_sigs(access_token)
+export async function get_owned_sigs(user_id:number) {
+    const groups = await get_sigs()
 
     return groups.filter( (group) => group.officers.includes(user_id) )
 }
