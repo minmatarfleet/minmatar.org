@@ -126,9 +126,8 @@ def get_fleet(request, fleet_id: int):
         is_authorized = True
     if request.user == fleet.created_by:
         is_authorized = True
-    for group in fleet.audience.all():
-        if group in request.user.groups.all():
-            is_authorized = True
+    if fleet.audience in request.user.groups.all():
+        is_authorized = True
 
     if not is_authorized:
         return 403, None

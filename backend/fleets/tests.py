@@ -6,7 +6,7 @@ from django.test import Client
 
 from app.test import TestCase
 from eveonline.models import EveCorporation
-from fleets.models import EveFleet
+from fleets.models import EveFleet, EveFleetNotificationChannel
 from structures.models import EveStructure
 
 BASE_URL = "/api/fleets"
@@ -101,11 +101,19 @@ class FleetRouterTestCase(TestCase):
         self.user.user_permissions.add(
             Permission.objects.get(codename="add_evefleet")
         )
+        # set up audience
+        group = Group.objects.create(name="Pingable Group")
+        EveFleetNotificationChannel.objects.create(
+            group=group,
+            discord_channel_name="pingable",
+            discord_channel_id=123456789,
+        )
         payload = {
             "type": "stratop",
             "description": "Test Fleet",
             "start_time": datetime.now().isoformat() + "Z",
             "location": "Test Structure",
+            "audience_id": group.id,
         }
         response = self.client.post(
             f"{BASE_URL}",
@@ -155,8 +163,8 @@ class FleetRouterTestCase(TestCase):
             type="stratop",
             start_time=start_time,
             created_by=User.objects.create_user(username="hausdfhiusaihu"),
+            audience=group,
         )
-        fleet.audience.add(group)
         response = self.client.get(
             f"{BASE_URL}/{fleet.id}", HTTP_AUTHORIZATION=f"Bearer {self.token}"
         )
