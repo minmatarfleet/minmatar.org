@@ -18,3 +18,14 @@ jobs:
           username: ${{ secrets.UBUNTU_USERNAME }}
           password: ${{ secrets.UBUNTU_PASSWORD }}
           script: cd /home/minmatar/minmatar.org; docker-compose -f docker-compose-prod.yml up -d --build
+  notify-discord:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: "Production has been successfully deployed! 🚀"
