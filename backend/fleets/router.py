@@ -78,10 +78,12 @@ def get_fleets(request, upcoming: bool = True):
 @router.get(
     "/{fleet_id}",
     auth=AuthBearer(),
-    response={200: EveFleetResponse, 403: None},
+    response={200: EveFleetResponse, 403: None, 404: None},
 )
 def get_fleet(request, fleet_id: int):
-    fleet = EveFleet.objects.get(id=fleet_id)
+    fleet = EveFleet.objects.first(id=fleet_id)
+    if not fleet:
+        return 404, None
     is_authorized = False
     if request.user.has_perm("fleets.view_evefleet"):
         is_authorized = True
