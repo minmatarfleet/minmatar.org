@@ -69,16 +69,24 @@ class Authenticator(Murmur.ServerAuthenticator):
 
         return -1, None, None
 
-    def getInfo(self, id, current=None):
+    def getInfo(
+        self, id, current=None
+    ):  # pylint: disable=invalid-name,redefined-builtin
         return False, None
 
-    def nameToId(self, name, current=None):
+    def nameToId(
+        self, name, current=None
+    ):  # pylint: disable=invalid-name,redefined-builtin
         return id
 
-    def idToName(self, id, current=None):
+    def idToName(
+        self, id, current=None
+    ):  # pylint: disable=invalid-name,redefined-builtin
         return None
 
-    def idToTexture(self, id, current=None):
+    def idToTexture(
+        self, id, current=None
+    ):  # pylint: disable=invalid-name,redefined-builtin
         return None
 
 
@@ -100,7 +108,7 @@ if __name__ == "__main__":
     adapter.activate()
 
     server = meta.getServer(1)
-    print("Binding to server: {0}".format(server.id()))
+    print(f"Binding to server: {server.id()}")
 
     meta_callback_bind = Murmur.MetaCallbackPrx.checkedCast(
         adapter.addWithUUID(MetaCallback())
@@ -114,4 +122,3 @@ if __name__ == "__main__":
 
     ice.waitForShutdown()
     ice.shutdown()
-    db.shutdown()
