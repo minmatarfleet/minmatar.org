@@ -54,8 +54,10 @@ def get_teams(request):
     auth=AuthBearer(),
     description="Get the special interest groups of the current user",
 )
-def get_current_teams(request):
+def get_current_teams(request, director: bool = False):
     teams = Team.objects.filter(members__id=request.user.id)
+    if director:
+        teams = Team.objects.filter(directors__id=request.user.id)
     response = []
     for team in teams:
         response.append(
