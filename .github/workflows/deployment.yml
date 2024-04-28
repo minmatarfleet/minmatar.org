@@ -17,4 +17,4 @@ jobs:
           host: ${{ secrets.UBUNTU_HOST }}
           username: ${{ secrets.UBUNTU_USERNAME }}
           password: ${{ secrets.UBUNTU_PASSWORD }}
-          script: whoami
+          script: cd /home/minmatar/minmatar.org; docker-compose -f docker-compose-prod.yml up -d --build
