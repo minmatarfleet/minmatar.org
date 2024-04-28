@@ -3,9 +3,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 jobs:
   build:
     name: Deploy to production
@@ -29,7 +26,7 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: "Production deployment has failed! 😢"
+          args: "New release has failed to deploy! 😢"
   notify-discord-success:
     name: Notify Discord Success
     runs-on: ubuntu-latest
@@ -41,4 +38,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: "Production has been successfully deployed! 🚀"
+          args: "New release has been successfully deployed! 🚀"
