@@ -19,13 +19,16 @@ import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
+import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
+import MediaFeed from '@components/blocks/MediaFeed.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
@@ -37,7 +40,6 @@ import {
 	OurzadCameraXData,
 	OurzadXData,
 } from '@components/partials/HomepageRenders.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
 
@@ -77,6 +79,8 @@ const page_title = t('index.page_title');
             id="mainCanvas"
             width="500"
             height="500"
+			x-on:scroll.stop
+			x-on:mousewheel.stop
             x-data={`{
 				${staggering === 'auga' ?
 					AugaMilitiaHQXData :
@@ -123,36 +127,45 @@ const page_title = t('index.page_title');
 		</Flexblock>
 
         <Wrapper
-			max_width='41rem'
+			max_width='48rem'
 			padding_inline='0'
 			padding_block="var(--space-xl)"
-			class="[ page-content ][ text-center ]"
+			class="[ page-content ]"
 		>
 			<Flexblock gap='var(--space-3xl)'>
-				<Flexblock gap='var(--space-m)'>
-					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
-					
-					<h2 class="[ welcome-heading ]">Welcome to Minmatar.org</h2>
-					<Flexblock>
-						<p>Our platform is currently undergoing development, and new features will be rolled out gradually. New sections will be posted in the Neocom bar.</p>
-						<small>You may link your pilots to our platform through the user section in the Neocom bar.</small>
+				<Flexblock gap='var(--space-2xl)'>
+					<Flexblock
+						gap='var(--space-m)'
+						class="[ text-center ]"
+					>
+						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+						
+						<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
+
+						<p>Faction warfare alliance with a strong industrial backbone. Primary source of public militia fleets and number one trade supplier of the Minmatar warzone.</p>
+
+						{user_is_superadmin &&
+							<Flexblock class="[ camera-controls !hidden ]">
+								<Flexblock gap='0'>
+									<label for="doctrine">{t('rotation_x')}</label>
+									<Input type="number" x-model="rotation_x" step="0.01" />
+								</Flexblock>
+								<Flexblock gap='0'>
+									<label for="doctrine">{t('rotation_y')}</label>
+									<Input type="number" x-model="rotation_y" step="0.01" />
+								</Flexblock>
+							</Flexblock>
+						}
 					</Flexblock>
 
-					{user_is_superadmin &&
-						<Flexblock class="[ camera-controls !hidden ]">
-							<Flexblock gap='0'>
-								<label for="doctrine">{t('rotation_x')}</label>
-								<Input type="number" x-model="rotation_x" step="0.01" />
-							</Flexblock>
-							<Flexblock gap='0'>
-								<label for="doctrine">{t('rotation_y')}</label>
-								<Input type="number" x-model="rotation_y" step="0.01" />
-							</Flexblock>
-						</Flexblock>
-					}
+					<Flexblock gap='var(--space-3xs)'>
+						<HomeCorporations />
+						
+						<MediaFeed />
+					</Flexblock>
 				</Flexblock>
 
-				<p class="[ ccp-disclaimer ]">{t('ccp_disclaimer')}</p>
+				<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
 			</Flexblock>
 		</Wrapper>
 

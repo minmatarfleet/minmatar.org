@@ -12,19 +12,21 @@ interface Props {
     videoid:        string;
     videotitle?:    string;
     credits?:       false | VideoWidgetCredits;
+    shadow?:        boolean;
 }
 
 const {
     videoid,
     videotitle = 'YouTube video player',
     credits = false,
+    shadow = false,
 } = Astro.props
 
 import Wrapper from "@components/compositions/Wrapper.astro";
 ---
 
 <Wrapper
-    class="[ shadow relative ]"
+    class:list={[ 'relative', {shadow:shadow} ]}
     max_width="var(--max-col-width)"
     padding_inline="0"
     padding_block="0"
