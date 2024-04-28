@@ -119,14 +119,14 @@ const add_status_to_group = async (
     return group
 }
 
-export async function get_all_groups_members(access_token:string, group_type:GroupItemType, superadmin?:boolean) {
+export async function get_all_groups_members(access_token:string, group_type:GroupItemType, user_id:number, superadmin?:boolean) {
     let groups:Group[]
     let groups_members:GroupMembersUI[]
 
     if(group_type === 'team')
-        groups = superadmin ? await get_teams() : await get_current_teams(access_token)
+        groups = superadmin ? await get_teams() : await get_owned_teams(access_token, user_id)
     else
-        groups = superadmin ? await get_sigs() : await get_current_sigs(access_token)
+        groups = superadmin ? await get_sigs() : await get_owned_sigs(access_token, user_id)
 
     groups_members = await Promise.all(groups.map(async (group) => {
         let members:MemberUI[]
@@ -196,7 +196,7 @@ export async function is_officer(access_token:string, user_id:number) {
     return groups.find( (group) => group.officers.includes(user_id) ) !== undefined
 }
 
-export async function get_all_members(access_token:string, user_id:number) {
+export async function get_all_members(access_token:string, user_id:number, superadmin?:boolean) {
     let groups_members:GroupMembersUI[] = []
     let team_members:GroupMembersUI[] = []
     let character_ids:number[] = []
@@ -206,10 +206,10 @@ export async function get_all_members(access_token:string, user_id:number) {
     const user_is_director = await is_director(access_token, user_id)
 
     if (user_is_officer)
-        groups_members = await get_all_groups_members(access_token, 'group')
+        groups_members = await get_all_groups_members(access_token, 'group', user_id, superadmin)
     
     if (user_is_director)
-        team_members = await get_all_groups_members(access_token, 'team')
+        team_members = await get_all_groups_members(access_token, 'team', user_id, superadmin)
 
     groups_members.forEach( (group) => {
         group.members.forEach( (member) => {
@@ -248,4 +248,16 @@ export async function get_all_members(access_token:string, user_id:number) {
     })
 
     return members
+}
+
+export async function get_owned_teams(access_token:string, user_id:number) {
+    const groups = await get_current_teams(access_token)
+
+    return groups.filter( (group) => group.directors.includes(user_id) )
+}
+
+export async function get_owned_sigs(access_token:string, user_id:number) {
+    const groups = await get_current_sigs(access_token)
+
+    return groups.filter( (group) => group.officers.includes(user_id) )
 }
