@@ -1,0 +1,20 @@
+name: deploy to production
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.UBUNTU_HOST }}
+          username: ${{ secrets.UBUNTU_USERNAME }}
+          password: ${{ secrets.UBUNTU_PASSWORD }}
+          script: whoami
