@@ -20,24 +20,48 @@ const {
 
 const GROUP_REQUEST_LIST_ITEM_PARTIAL_URL = translatePath('/partials/group_request_list_item')
 
+const USER_CHARACTERS_PARTIAL_URL = translatePath('/partials/user_characters_component')
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
+import StylessButton from './StylessButton.astro';
 ---
 <FlexInline
     class="[ group-request-item ]"
     justification='space-between'
 >
-    <PilotBadge
-        class="[ basis-[300px] grow ]"
-        character_id={group_request.character_id}
-        character_name={group_request.character_name}
-        corporation={{
-            id: group_request.corporation_id,
-            name: group_request.corporation_name,
-        }}
-    />
+    {group_type === 'team' ?
+        <PilotBadge
+            class="[ basis-[300px] grow ]"
+            character_id={group_request.character_id}
+            character_name={group_request.character_name}
+            corporation={{
+                id: group_request.corporation_id,
+                name: group_request.corporation_name,
+            }}
+        />
+        :
+        <PilotBadge
+            class="[ basis-[300px] grow ]"
+            character_id={group_request.character_id}
+            character_name={group_request.character_name}
+        >
+            <StylessButton
+                x-data={`{
+                    show_user_characters_modal() {
+                        show_modal({
+                            partial: '${USER_CHARACTERS_PARTIAL_URL}?character_id=${group_request.character_id}',
+                        })
+                    }
+                }`}
+                x-on:click="show_user_characters_modal()"
+            >
+                <small>{t('view_characters')}</small>
+            </StylessButton>
+        </PilotBadge>
+    }
     <FlexInline>
         {group_request.character_id > 0 &&
             <Button

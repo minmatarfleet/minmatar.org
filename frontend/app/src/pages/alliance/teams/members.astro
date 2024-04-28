@@ -41,6 +41,7 @@ let TOTAL_MEMBERS = 0
 const GROUPS_UNFILTERED = {}
 groups_members.forEach( (group) => {
     GROUPS_UNFILTERED[group.id] = group.members.map( (member) => member.character_id )
+    group.members.sort((a, b) => a.character_name.localeCompare(b.character_name))
     TOTAL_MEMBERS += group.members.length
 })
 
