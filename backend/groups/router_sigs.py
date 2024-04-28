@@ -54,8 +54,10 @@ def get_sigs(request):
     auth=AuthBearer(),
     description="Get the special interest groups of the current user",
 )
-def get_current_sigs(request):
+def get_current_sigs(request, officer: bool = False):
     sigs = Sig.objects.filter(members__id=request.user.id)
+    if officer:
+        sigs = Sig.objects.filter(officers__id=request.user.id)
     response = []
     for sig in sigs:
         response.append(
