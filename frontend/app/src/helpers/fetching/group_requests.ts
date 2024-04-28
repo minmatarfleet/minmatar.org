@@ -7,13 +7,11 @@ import type { Group, SigRequest, TeamRequest, UserProfile } from '@dtypes/api.mi
 import type { GroupRequestUI, GroupRequestListUI, GroupItemType } from '@dtypes/layout_components'
 import {
     get_groups as get_sigs,
-    get_current_groups as get_current_sigs,
     get_group_requests as get_sigs_requests,
     get_group_by_id as get_sig_by_id,
 } from '@helpers/api.minmatar.org/sigs'
 import {
     get_groups as get_teams,
-    get_current_groups as get_current_teams,
     get_group_requests as get_teams_requests,
     get_group_by_id as get_team_by_id,
 } from '@helpers/api.minmatar.org/teams'
@@ -25,9 +23,9 @@ export async function get_all_groups_requests(access_token:string, group_type:Gr
     let requests:GroupRequestListUI[]
 
     if(group_type === 'team')
-        groups = superuser ? await get_teams() : await get_owned_teams(access_token, user_id)
+        groups = superuser ? await get_teams() : await get_owned_teams(user_id)
     else
-        groups = superuser ? await get_sigs() : await get_owned_sigs(access_token, user_id)
+        groups = superuser ? await get_sigs() : await get_owned_sigs(user_id)
 
     requests = await Promise.all(groups.map(async (request) => get_group_request(access_token, request, group_type)));
 
