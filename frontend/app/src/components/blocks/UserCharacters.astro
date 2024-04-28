@@ -1,0 +1,75 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { MainCharacters } from '@dtypes/layout_components'
+import type { User } from '@dtypes/jwt'
+
+interface Props {
+    user:           User;
+    characters:     MainCharacters;
+}
+
+const {
+    user,
+    characters,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import CharacterLinksItem from './CharacterLinksItem.astro';
+---
+
+<Wrapper
+    class="[ user-characters ]"
+    padding_block='var(--component-padding-block)'
+    padding_inline='var(--space-l-xl)'
+>
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{characters.character_name} {t('characters').toLowerCase()}</h2>
+            <small class="!mt-[var(--space-3xs)]">
+                {characters.alts.length + 1} {characters.alts.length + 1 === 1 ? t('characters') : t('character')}
+            </small>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
+            <CharacterLinksItem
+                user={user}
+                character={{
+                    character_id: characters.character_id,
+                    character_name: characters.character_name,
+                    corporation: {
+                        id: characters.corporation_id,
+                        name: characters.corporation_name,
+                    }
+                }}
+                character_id={characters.character_id}
+            />
+            {characters.alts.map((alt) =>
+                <CharacterLinksItem
+                    user={user}
+                    character={{
+                        character_id: alt.character_id,
+                        character_name: alt.character_name,
+                        corporation: {
+                            id: alt.corporation_id,
+                            name: alt.corporation_name,
+                        }
+                    }}
+                    character_id={alt.character_id}
+                />
+            )}
+        </Flexblock>
+    </Flexblock>
+</Wrapper>
+
+<style>
+    .user-characters {
+        max-height: min(800px, 90vh);
+        overflow-y: auto;
+    }
+</style>

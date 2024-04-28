@@ -63,22 +63,22 @@ delete attributes.class
                 }`}
                 x-on:click.stop.prevent="show_character_modal()"
             />
-            {corporation ?
-                <FixedFluid
-                    width='24'
-                    class="[ items-center ]"
-                    gap='var(--space-3xs)'
-                >
-                    <picture>
-                        <img loading="lazy" src={get_corporation_logo(corporation.id, 32)} width="24" height="24" alt={`${t('profile_picture_of')} ${character_name}`} />
-                    </picture>
-                    <span class="[ truncate ]">
-                        <small>{corporation.name}</small>
-                    </span>
-                </FixedFluid>
-                :
-                <slot />
-            }
+            <slot>
+                {corporation &&
+                    <FixedFluid
+                        width='24'
+                        class="[ items-center ]"
+                        gap='var(--space-3xs)'
+                    >
+                        <picture>
+                            <img loading="lazy" src={get_corporation_logo(corporation.id, 32)} width="24" height="24" alt={`${t('profile_picture_of')} ${character_name}`} />
+                        </picture>
+                        <span class="[ truncate ]">
+                            <small>{corporation.name}</small>
+                        </span>
+                    </FixedFluid>
+                }
+            </slot>
         </Flexblock>
     </VerticalCenter>
 </FixedFluid>

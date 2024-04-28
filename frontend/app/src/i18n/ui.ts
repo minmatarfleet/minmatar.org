@@ -711,5 +711,8 @@ export const ui = {
         'get_mumble_connection_error': 'An error ocurred getting Mumble conneciton information',
         'on_records': 'on records',
         'on_schedule': 'on schedule',
+        'view_characters': 'View all characters',
+        'characters': 'Characters',
+        'character': 'Character',
     },
 } as const;

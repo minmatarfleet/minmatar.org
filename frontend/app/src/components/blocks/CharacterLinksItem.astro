@@ -1,0 +1,38 @@
+---
+import type { User } from '@dtypes/jwt'
+import type { CharacterBasic } from "@dtypes/layout_components";
+
+interface Porps {
+    user:           User;
+    character:      CharacterBasic;
+}
+
+const {
+    user,
+    character,
+} = Astro.props
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+import FlexInline from "@components/compositions/FlexInline.astro";
+import PilotBadge from "@components/blocks/PilotBadge.astro";
+import CharacterLinks from "@components/blocks/CharacterLinks.astro";
+---
+
+<FlexInline
+    justification='space-between'
+    class="[ items-center ]"
+>
+    <PilotBadge
+        character_id={character.character_id}
+        character_name={character.character_name}
+        corporation={character.corporation}
+        class="[ grow basis-[300px] ]"
+    />
+    <CharacterLinks
+        character_id={character.character_id}
+        user={user}
+        user_permissions={user_permissions}
+    />
+</FlexInline>

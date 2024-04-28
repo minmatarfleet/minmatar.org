@@ -1,0 +1,110 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_page = is_superuser || user_permissions.includes('eveonline.view_evecorporation')
+
+if (!can_view_page)
+    return HTTP_404_Not_Found()
+
+import type { CorporationMembers, MainCharacters, SelectOptions } from '@dtypes/layout_components'
+import { get_all_corporations_members } from '@helpers/fetching/corporations'
+
+let corporations_members:CorporationMembers[] = []
+let get_all_mains_alts_error:string | false = false
+let mains_alts:MainCharacters[] = []
+let UNREGISTERED_COUNT = 0
+let ALLIANCE_MEMBERS_COUNT = 0
+
+try {
+    corporations_members = await get_all_corporations_members(auth_token as string) 
+
+    corporations_members.sort( (a, b) => {
+        return b.members.length - a.members.length
+    })
+
+    corporations_members = corporations_members.map( (corporation) => {
+        ALLIANCE_MEMBERS_COUNT += corporation.members.length
+
+        corporation.members.filter( (member) => {
+            if (member.is_main) {
+                mains_alts.push({
+                    character_id: member.character_id,
+                    character_name: member.character_name,
+                    corporation_id: corporation.corporation_id,
+                    corporation_name: corporation.corporation_name,
+                    registered: member.registered,
+                    alts: [],
+                })
+            }
+
+            return member.is_main 
+        }).length
+
+        corporation.members.map( (member) => {
+            if (!member.is_main) {
+                mains_alts.map( (main) => {
+                    if (main.character_id === member?.main_character?.character_id) {
+                        member.corporation_id = corporation.corporation_id
+                        member.corporation_name = corporation.corporation_name
+                        main.alts.push(member)
+                    }
+
+                    return main
+                })
+            }
+
+            return member.is_main 
+        }).length
+
+        const unregistered_members = corporation.members.filter( (member) => !member.registered )
+        
+        UNREGISTERED_COUNT += unregistered_members.length
+
+        return corporation
+    })
+} catch (error) {
+    get_all_mains_alts_error = is_prod_mode() ? t('get_all_mains_alts_error') : error.message
+}
+
+const USER_CHARACTERS_PARTIAL_URL = translatePath('/partials/user_characters_component')
+
+const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+const main_alt = mains_alts.find( (main) => main.character_id === character_id )
+
+import UserCharacters from '@components/blocks/UserCharacters.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_all_mains_alts_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${USER_CHARACTERS_PARTIAL_URL}?character_id=${character_id}`,
+            message: get_all_mains_alts_error,
+            delay: delay,
+        }}
+    />
+    :
+    <UserCharacters
+        user={user as User}
+        characters={main_alt}
+    />
+}
