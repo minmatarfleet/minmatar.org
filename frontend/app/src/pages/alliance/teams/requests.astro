@@ -30,7 +30,7 @@ import { get_all_groups_requests } from '@helpers/fetching/group_requests'
 let groups_requests:GroupRequestListUI[] = []
 let get_all_teams_requests_error:string | false = false
 try {
-    groups_requests = await get_all_groups_requests(auth_token, 'team', is_superuser)
+    groups_requests = await get_all_groups_requests(auth_token, 'team', user.user_id, is_superuser)
     groups_requests.sort( (a, b) => {
         return b.requests.length - a.requests.length
     })
