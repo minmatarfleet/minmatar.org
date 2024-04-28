@@ -59,8 +59,17 @@ class ErrorResponse(BaseModel):
     auth=AuthBearer(),
     response=List[BasicCharacterResponse],
 )
-def get_characters(request):
-    characters = EveCharacter.objects.filter(token__user=request.user)
+def get_characters(request, primary_character_id: int = None):
+    if primary_character_id:
+        if not EveCharacter.objects.filter(
+            character_id=primary_character_id
+        ).exists():
+            return 404, {"detail": "Primary character not found."}
+        character = EveCharacter.objects.get(character_id=primary_character_id)
+        character_user = character.token.user
+        characters = EveCharacter.objects.filter(token__user=character_user)
+    else:
+        characters = EveCharacter.objects.filter(token__user=request.user)
     response = []
     for character in characters:
         response.append(
