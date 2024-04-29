@@ -24,8 +24,14 @@ const type = Astro.url.searchParams.get('type') as GroupItemType
 let alert:Alert | false = false
 
 import { get_group_by_id_auth } from '@helpers/fetching/groups'
-import { create_group_request as create_sig_request } from '@helpers/api.minmatar.org/sigs'
-import { create_group_request as create_team_request } from '@helpers/api.minmatar.org/teams'
+import {
+    create_group_request as create_sig_request,
+    remove_group_member as remove_sig_member,
+} from '@helpers/api.minmatar.org/sigs'
+import {
+    create_group_request as create_team_request,
+    remove_group_member as remove_team_member
+} from '@helpers/api.minmatar.org/teams'
 import { query_string } from '@helpers/string';
 
 let create_group_request_error:string | false = false
@@ -40,6 +46,18 @@ if (Astro.request.method === "POST" && auth_token) {
     }
 }
 
+let delete_member_error:string | false = false
+if (Astro.request.method === "DELETE" && auth_token) {
+    try {
+        if (type === 'team')
+            console.log(await remove_team_member(auth_token, group_id, user_id))
+        else
+            await remove_sig_member(auth_token, group_id, user_id)
+    } catch (error) {
+        delete_member_error = is_prod_mode() ? t('delete_member_error') : error.message
+    }
+}
+
 let group:GroupItemUI
 let get_group_request_error:string | false = false
 try {
@@ -48,14 +66,12 @@ try {
     get_group_request_error = is_prod_mode() ? t('get_group_request_error') : error.message
 }
 
-console.log(group)
-
-const ALERT_TITLE = {
-    'team': t('team_join_request_dialog_title'),
-    'group': t('group_join_request_dialog_title'),
-}
-
 if (create_group_request_error) {
+    const ALERT_TITLE = {
+        'team': t('team_join_request_dialog_title'),
+        'group': t('group_join_request_dialog_title'),
+    }
+
     alert = {
         title: ALERT_TITLE[type],
         content: create_group_request_error,
@@ -67,6 +83,32 @@ if (create_group_request_error) {
             description: group.description,
             image_url: JSON.stringify(group.image_url),
             message: create_group_request_error,
+            type: type,
+        })
+
+        alert.partial = `${translatePath('/partials/dialog_with_group/')}?${params}`
+    }
+}
+
+if (delete_member_error) {
+    const ALERT_TITLE = {
+        'team': t('team_leave_request_dialog_title'),
+        'group': t('group_leave_request_dialog_title'),
+    }
+
+    alert = {
+        title: ALERT_TITLE[type],
+        content: delete_member_error,
+    }
+
+    console.log(alert)
+
+    if (group) {
+        const params = query_string({
+            name: group.name,
+            description: group.description,
+            image_url: JSON.stringify(group.image_url),
+            message: delete_member_error,
             type: type,
         })
 
