@@ -226,8 +226,10 @@ def remove_team_member(request, team_id: int, user_id: int):
     if not team:
         return 404, {"detail": "Team does not exist."}
 
-    if request.user not in team.directors.all() and not request.user.has_perm(
-        "groups.change_team"
+    if (
+        request.user.id != user_id
+        and request.user not in team.directors.all()
+        and not request.user.has_perm("groups.change_team")
     ):
         return 403, {
             "detail": "You do not have permission to remove this member."

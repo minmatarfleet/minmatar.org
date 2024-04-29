@@ -226,8 +226,10 @@ def remove_sig_member(request, sig_id: int, user_id: int):
     if not sig:
         return 404, {"detail": "Sig does not exist."}
 
-    if request.user not in sig.officers.all() and not request.user.has_perm(
-        "groups.change_sig"
+    if (
+        request.user.id != user_id
+        and request.user not in sig.officers.all()
+        and not request.user.has_perm("groups.change_sig")
     ):
         return 403, {
             "detail": "You do not have permission to remove this user."
