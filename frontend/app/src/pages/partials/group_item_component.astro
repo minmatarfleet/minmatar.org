@@ -35,7 +35,7 @@ import {
 import { query_string } from '@helpers/string';
 
 let create_group_request_error:string | false = false
-if (Astro.request.method === "POST" && auth_token) {
+if (Astro.request.method === "POST") {
     try {
         if (type === 'team')
             await create_team_request(auth_token, group_id)
@@ -47,10 +47,10 @@ if (Astro.request.method === "POST" && auth_token) {
 }
 
 let delete_member_error:string | false = false
-if (Astro.request.method === "DELETE" && auth_token) {
+if (Astro.request.method === "DELETE") {
     try {
         if (type === 'team')
-            console.log(await remove_team_member(auth_token, group_id, user_id))
+            await remove_team_member(auth_token, group_id, user_id)
         else
             await remove_sig_member(auth_token, group_id, user_id)
     } catch (error) {
