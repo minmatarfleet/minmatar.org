@@ -34,6 +34,9 @@ class EveFleet(models.Model):
     )
     location = models.CharField(max_length=255, blank=True)
 
+    def __str__(self):
+        return f"{self.created_by} - {self.type} - {self.start_time}"
+
 
 class EveFleetInstance(models.Model):
     """
@@ -82,6 +85,9 @@ class EveFleetNotificationChannel(models.Model):
     discord_channel_id = models.BigIntegerField()
     discord_channel_name = models.CharField(max_length=255)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.group} - {self.discord_channel_name}"
 
 
 class EveFleetNotification(models.Model):
