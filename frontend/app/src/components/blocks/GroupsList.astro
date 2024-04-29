@@ -29,7 +29,11 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
     class="grid-fill"
 >
     {groups.map((group) =>
-        <ComponentBlock class="w-full" padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+        <ComponentBlock
+            class="[ w-full ]"
+            padding_inline='var(--space-s)'
+            padding_block='var(--space-s)'
+        >
             <GroupItem
                 group={group}
                 type={groups_type}
