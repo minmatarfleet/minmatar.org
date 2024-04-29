@@ -14,13 +14,15 @@ const subheader_content = await Astro.slots.render('subheader');
 ---
 
 <div class="[ post-header ]">
-    <Wrapper class="[ main-bar darker-transparency ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
-        <slot />
-    </Wrapper>
+    <div class="[ darker-transparency ]">
+        <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
+            <slot />
+        </Wrapper>
+    </div>
 
     {subheader_content !== '' &&
         <div class="[ subheader-bar ] [ dark-transparency ]">
-            <Wrapper max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
+            <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                     <slot name="subheader" />
                 </Wrapper>
