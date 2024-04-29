@@ -477,6 +477,24 @@ export const UtilitiesXData = `
         return 'https://images.evetech.net/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
     },`
 
+export const InitXData = `
+    init() {
+        document.addEventListener('wheel', event => {
+            const el = document.querySelector('.flatpickr-hour')
+
+            if (el && el.contains(event.target)) {
+                event.stopPropagation()
+                event.preventDefault()
+
+                if (event.deltaY < 0)
+                    el.stepUp();
+                else
+                    el.stepDown();
+            }
+        }, { passive: false })
+        
+    },`
+
 export const RifterAnimationXData = `
     rifter_animation: false,
     rifter_animation_init() {
