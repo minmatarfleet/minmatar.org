@@ -8,13 +8,15 @@ const translatePath = useTranslatedPath(lang);
 import type { FleetUI } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:      FleetUI;
-    history?:   boolean;
+    fleet:              FleetUI;
+    history?:           boolean;
+    can_remove_fleet:   boolean;
 }
 
 const {
     fleet,
     history = false,
+    can_remove_fleet = false,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -35,7 +37,6 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import TextBox from '@components/layout/TextBox.astro';
 
 const eve_time = new Date(fleet.start_time);
@@ -76,7 +77,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         </TextGroup>
                     </div>
                 </FlexInline>
-                {!history &&
+                {!history && can_remove_fleet &&
                     <Button
                         size='sm'
                         narrow={true}

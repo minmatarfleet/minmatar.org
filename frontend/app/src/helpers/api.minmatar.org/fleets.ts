@@ -1,4 +1,4 @@
-import type { FleetTypes, Fleet, FleetRequest } from '@dtypes/api.minmatar.org'
+import type { FleetTypes, Fleet, FleetRequest, Audience } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
@@ -47,6 +47,31 @@ export async function get_locations(access_token:string) {
         }
 
         return await response.json() as string[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet types: ${error.message}`);
+    }
+}
+
+export async function get_audiences(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    console.log(`Requesting: ${API_ENDPOINT}/audiences`)
+
+    try {
+        const response = await fetch(`${API_ENDPOINT}/audiences`, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json() as Audience[];
     } catch (error) {
         throw new Error(`Error fetching fleet types: ${error.message}`);
     }

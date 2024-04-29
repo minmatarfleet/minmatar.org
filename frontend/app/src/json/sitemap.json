@@ -192,7 +192,7 @@
         "description": "page_finder.fleets.add.description",
         "keywords": [ "add", "create", "new" ],
         "permissions" : {
-            "auth": true
+            "user": [ "fleets.add_evefleet" ]
         }
     },
     {
