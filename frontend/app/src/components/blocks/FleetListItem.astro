@@ -47,29 +47,37 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }`}
     {...attributes}
 >
-    <VerticalCenter>
-        <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('type')}>
-                {t(fleet.type as any)}
-            </TextGroup>
-            <TextGroup title={t('location')}>
-                {fleet.location}
-            </TextGroup>
-        </Flexblock>
-    </VerticalCenter>
-    
-    <VerticalCenter>
-        <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                {eve_time_text}
-            </TextGroup>
-            <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
-                <span class="[ loading ]">{t('calculating')}</span>
-            </TextGroup>
-        </Flexblock>
-    </VerticalCenter>
-    
-    {!history &&
+    {fleet.fleet_commander_id === 0 &&
+        <VerticalCenter class="[ grow justify-center ]">
+            {t('cant_view_fleet_details')}
+        </VerticalCenter>
+    }
+
+    {fleet.fleet_commander_id > 0 &&
+        <VerticalCenter>
+            <Flexblock gap="var(--space-s-m)">
+                <TextGroup title={t('type')}>
+                    {t(fleet.type as any)}
+                </TextGroup>
+                <TextGroup title={t('location')}>
+                    {fleet.location}
+                </TextGroup>
+            </Flexblock>
+        </VerticalCenter>
+        
+        <VerticalCenter>
+            <Flexblock gap="var(--space-s-m)">
+                <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                    {eve_time_text}
+                </TextGroup>
+                <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                    <span class="[ loading ]">{t('calculating')}</span>
+                </TextGroup>
+            </Flexblock>
+        </VerticalCenter>
+    }
+        
+    {fleet.fleet_commander_id > 0 && !history &&
         <VerticalCenter>
             <Countdown
                 date={fleet.start_time}
@@ -80,10 +88,12 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </VerticalCenter>
     }
 
-    <VerticalCenter>
-        <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
-            <MagnifierIcon slot="icon" />
-            {t('view_details')}
-        </Button>
-    </VerticalCenter>
+    {fleet.fleet_commander_id > 0 &&
+        <VerticalCenter>
+            <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
+                <MagnifierIcon slot="icon" />
+                {t('view_details')}
+            </Button>
+        </VerticalCenter>
+    }
 </ThumbCard>

@@ -714,5 +714,7 @@ export const ui = {
         'view_characters': 'View all characters',
         'characters': 'Characters',
         'character': 'Character',
+        'cant_view_fleet_details': 'You don’t have access to this fleets details',
+        'not_available': 'Not available',
     },
 } as const;

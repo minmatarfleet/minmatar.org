@@ -13,6 +13,12 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
 
 if (!user)
     return HTTP_404_Not_Found()
@@ -21,7 +27,7 @@ import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
-let fleets:FleetItem[]
+let fleets:FleetItem[] = []
 
 try {
     fleets = await fetch_fleets(auth_token as string, false)
@@ -43,7 +49,6 @@ import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
-import FleetIcon from '@components/icons/buttons/HistoryIcon.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 
@@ -76,10 +81,12 @@ const page_title = t('fleets.history.page_title');
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <Button color={'green'} href={translatePath('/fleets/add')}>
-                    <AddIcon slot="icon" />
-                    {t('schedule_fleet')}
-                </Button>
+                {can_add_fleets &&
+                    <Button color={'green'} href={translatePath('/fleets/add')}>
+                        <AddIcon slot="icon" />
+                        {t('schedule_fleet')}
+                    </Button>
+                }
             </FlexInline>
         </FlexInline>
 

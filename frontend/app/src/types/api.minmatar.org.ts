@@ -172,3 +172,9 @@ export interface MumbleInformation {
     password:   string,
     url:        string
 }
+
+export interface Audience {
+    id:                     number;
+    display_name:           string;
+    display_channel_name:   string;
+}
