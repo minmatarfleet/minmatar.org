@@ -1,4 +1,5 @@
 import type { Fitting } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fittings`
 
@@ -7,17 +8,22 @@ export async function get_fittings() {
         'Content-Type': 'application/json',
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/`)
+    const ENDPOINT = API_ENDPOINT
+
+    console.log(`Requesting: ${ENDPOINT}/`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Fitting[];
@@ -31,17 +37,22 @@ export async function get_fitting_by_id(id:number) {
         'Content-Type': 'application/json',
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Fitting;

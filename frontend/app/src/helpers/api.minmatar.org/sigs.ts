@@ -1,4 +1,5 @@
 import type { Group, SigRequest } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/sigs`
 
@@ -7,17 +8,22 @@ export async function get_groups() {
         'Content-Type': 'application/json',
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/`)
+    const ENDPOINT = API_ENDPOINT
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Group[];
@@ -32,17 +38,22 @@ export async function get_current_groups(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/current`)
+    const ENDPOINT = `${API_ENDPOINT}/current`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/current`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Group[];
@@ -56,17 +67,22 @@ export async function get_group_by_id(id:number) {
         'Content-Type': 'application/json',
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Group
@@ -81,17 +97,22 @@ export async function get_group_requests(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}/requests`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}/requests`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/requests`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as SigRequest[]
@@ -106,10 +127,12 @@ export async function create_group_request(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting POST: ${API_ENDPOINT}/${id}/requests`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}/requests`
+
+    console.log(`Requesting POST: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/requests`, {
+        const response = await fetch(ENDPOINT, {
             method: 'POST',
             headers: headers
         })
@@ -117,7 +140,10 @@ export async function create_group_request(access_token:string, id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as SigRequest
@@ -132,10 +158,12 @@ export async function approve_group_request(access_token:string, id:number, requ
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}/requests/${request_id}/approve`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}/requests/${request_id}/approve`
+
+    console.log(`Requesting: POST ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/requests/${request_id}/approve`, {
+        const response = await fetch(ENDPOINT, {
             method: 'POST',
             headers: headers
         })
@@ -143,7 +171,10 @@ export async function approve_group_request(access_token:string, id:number, requ
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as SigRequest
@@ -158,10 +189,12 @@ export async function deny_group_request(access_token:string, id:number, request
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}/requests/${request_id}/deny`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}/requests/${request_id}/deny`
+
+    console.log(`Requesting: POST ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/requests/${request_id}/deny`, {
+        const response = await fetch(ENDPOINT, {
             method: 'POST',
             headers: headers
         })
@@ -169,7 +202,10 @@ export async function deny_group_request(access_token:string, id:number, request
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as SigRequest
@@ -184,10 +220,12 @@ export async function remove_group_member(access_token:string, id:number, user_i
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting DELETE: ${API_ENDPOINT}/${id}/members/${user_id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}/members/${user_id}`
+
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}/members/${user_id}`, {
+        const response = await fetch(ENDPOINT, {
             method: 'DELETE',
             headers: headers
         })
@@ -195,7 +233,10 @@ export async function remove_group_member(access_token:string, id:number, user_i
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(await get_error_message(
+                response.status,
+                `DELETE ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Group

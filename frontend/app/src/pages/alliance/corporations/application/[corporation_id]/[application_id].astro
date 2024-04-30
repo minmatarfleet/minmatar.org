@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -41,7 +41,7 @@ try {
     application = await get_application_by_id(auth_token as string, corporation_id, application_id)
     corporation_eve = await get_corporation_by_id(corporation_id)
 } catch (error) {
-    get_corporation_application_error = is_prod_mode() ? t('get_corporation_application_error') : error.message
+    get_corporation_application_error = prod_error_messages() ? t('get_corporation_application_error') : error.message
 }
 
 import { query_string } from '@helpers/string';

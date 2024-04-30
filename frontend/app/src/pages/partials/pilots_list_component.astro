@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang)
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -37,7 +37,7 @@ if (Astro.request.method === "DELETE") {
     try {
         status = await delete_characters(auth_token, removed_character_id)
     } catch (error) {
-        delete_character_error = (is_prod_mode() ? t('delete_character_error') : error.message)
+        delete_character_error = (prod_error_messages() ? t('delete_character_error') : error.message)
     }
 
     if (status) {
@@ -50,7 +50,7 @@ if (Astro.request.method === "DELETE") {
             redirect = translatePath('/account')
         }
     } else {
-        const error_msg = (is_prod_mode() || !delete_character_error) ? t('delete_character_error') : delete_character_error
+        const error_msg = (prod_error_messages() || !delete_character_error) ? t('delete_character_error') : delete_character_error
 
         const params = query_string({
             id: removed_character_id.toString(),
@@ -72,7 +72,7 @@ let readonly = false
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
-    get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
+    get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
 }
 

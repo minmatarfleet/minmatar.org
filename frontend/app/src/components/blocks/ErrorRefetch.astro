@@ -13,6 +13,8 @@ const {
     args
 } = Astro.props
 
+import { marked } from 'marked';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -34,8 +36,8 @@ const target = args?.target
     x-bind:id="id"
 >
     <RifterIcon />
-    <Flexblock gap='var(--space-3xs)'>
-        <p class="[ text-[var(--highlight)] ]">{args.message}</p>
+    <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
+        <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)}>
         <div
             class="[ loading ]"
             hx-get={`${url.toString()}`}

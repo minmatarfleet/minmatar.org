@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -25,7 +25,7 @@ try {
     else
         groups = await get_groups('group')
 } catch (error) {
-    get_groups_error = is_prod_mode() ? t('get_groups_error') : error.message
+    get_groups_error = prod_error_messages() ? t('get_groups_error') : error.message
 }
 
 const GROUPS_LIST_PARTIAL_URL = translatePath('/partials/groups_list_component')

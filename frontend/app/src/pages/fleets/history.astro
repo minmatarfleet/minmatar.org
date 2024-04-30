@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -32,7 +32,7 @@ let fleets:FleetItem[] = []
 try {
     fleets = await fetch_fleets(auth_token as string, false)
 } catch (error) {
-    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+    fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}`)

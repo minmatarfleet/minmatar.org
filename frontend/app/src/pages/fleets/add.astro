@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -50,7 +50,7 @@ if (Astro.request.method === "POST") {
         else
             create_fleet_error = t('create_fleet_error')
     } catch (error) {
-        create_fleet_error = is_prod_mode() ? t('create_fleet_error') : error.message
+        create_fleet_error = prod_error_messages() ? t('create_fleet_error') : error.message
     }
 
     alert = {
@@ -74,7 +74,7 @@ try {
     locations = await get_locations(auth_token as string)
     audiences = await get_audiences(auth_token as string)
 } catch (error) {
-    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
 const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )

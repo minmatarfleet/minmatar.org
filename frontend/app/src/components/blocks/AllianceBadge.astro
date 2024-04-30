@@ -7,7 +7,7 @@ const t = useTranslations(lang);
 import type { AllianceBadgeProps } from '@dtypes/layout_components'
 import { get_alliance_by_id } from '@helpers/api.eveonline/alliances'
 import type { AllianceEvE } from '@dtypes/api.eveonline'
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 interface Props {
     alliance: AllianceBadgeProps;
@@ -23,7 +23,7 @@ if (!alliance?.name) {
     try {
         alliance_eve = await get_alliance_by_id(alliance.id)
     } catch (error) {
-        get_eve_alliance_error = (is_prod_mode() ? t('get_eve_alliance_error') : error.message)
+        get_eve_alliance_error = (prod_error_messages() ? t('get_eve_alliance_error') : error.message)
     }
 }
 
