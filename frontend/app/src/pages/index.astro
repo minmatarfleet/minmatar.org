@@ -20,6 +20,7 @@ import PageLanding from '@components/page/PageLanding.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
@@ -29,6 +30,13 @@ import Input from '@components/blocks/Input.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
+import WikiSmall from '@components/blocks/WikiSmall.astro';
+import Wiki from '@components/blocks/Wiki.astro';
+import Discord from '@components/blocks/Discord.astro';
+import DiscordSmall from '@components/blocks/DiscordSmall.astro';
+import RedditSmall from '@components/blocks/RedditSmall.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
@@ -89,6 +97,7 @@ const page_title = t('index.page_title');
 					WatermelonXData
 				}
             }`}
+			x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas)"
             x-init="$nextTick(() => init_ccpwgl())"
         />
 
@@ -129,43 +138,100 @@ const page_title = t('index.page_title');
         <Wrapper
 			max_width='48rem'
 			padding_inline='0'
-			padding_block="var(--space-xl)"
+			padding_block="0"
 			class="[ page-content ]"
 		>
-			<Flexblock gap='var(--space-3xl)'>
-				<Flexblock gap='var(--space-2xl)'>
-					<Flexblock
-						gap='var(--space-m)'
-						class="[ text-center ]"
-					>
-						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
-						
-						<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
+			<Flexblock gap='0'>
+				<Flexblock gap='var(--space-l)'>
+					<VerticalCenter class="[ min-h-[100vh] ]">
+						<Wrapper
+							class="[ w-full ]"
+							padding_inline='0'
+							padding_block="var(--space-l)"
+						>
+							<Flexblock
+								gap='var(--space-m)'
+								class="[ text-center ]"
+							>
+								<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+								
+								<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
 
-						<p>{t('index.leading_text')}</p>
+								<p>{t('index.leading_text')}</p>
 
-						{user_is_superadmin &&
-							<Flexblock class="[ camera-controls !hidden ]">
-								<Flexblock gap='0'>
-									<label for="doctrine">{t('rotation_x')}</label>
-									<Input type="number" x-model="rotation_x" step="0.01" />
-								</Flexblock>
-								<Flexblock gap='0'>
-									<label for="doctrine">{t('rotation_y')}</label>
-									<Input type="number" x-model="rotation_y" step="0.01" />
-								</Flexblock>
+								<FlexInline justification='center'>
+									<StylessButton href='#widgets' class="[ caret-down ]" />
+								</FlexInline>
+
+								{user_is_superadmin &&
+									<Flexblock class="[ camera-controls !hidden ]">
+										<Flexblock gap='0'>
+											<label for="doctrine">{t('rotation_x')}</label>
+											<Input type="number" x-model="rotation_x" step="0.01" />
+										</Flexblock>
+										<Flexblock gap='0'>
+											<label for="doctrine">{t('rotation_y')}</label>
+											<Input type="number" x-model="rotation_y" step="0.01" />
+										</Flexblock>
+									</Flexblock>
+								}
 							</Flexblock>
-						}
+						</Wrapper>
+					</VerticalCenter>
+
+					<Flexblock id="widgets" gap='var(--space-3xs)'>
+						<HomeCorporations />
+						<MediaFeed />
+						<WikiSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+							class="[ basis-[50%] shrink ]"
+						/>
+
+						<!-- <Grid
+							min_item_width="200px"
+							row_gap='var(--space-3xs)'
+							column_gap='var(--space-3xs)'
+						>
+							<Wiki						
+								padding_block='0'
+								padding_inline='var(--space-s)'
+								class="[ basis-[50%] shrink ]"
+							/>
+							<Discord						
+								padding_block='0'
+								padding_inline='var(--space-s)'
+								class="[ basis-[50%] shrink ]"
+							/>
+						</Grid> -->
 					</Flexblock>
 
-					<Flexblock gap='var(--space-3xs)'>
-						<HomeCorporations />
-						
-						<MediaFeed />
-					</Flexblock>
+					<Grid
+						min_item_width="200px"
+						row_gap='var(--space-3xs)'
+						column_gap='var(--space-3xs)'
+					>
+						<RedditSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+							class="[ basis-[50%] shrink ]"
+						/>
+						<DiscordSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+							class="[ basis-[50%] shrink ]"
+						/>
+					</Grid>
 				</Flexblock>
 
-				<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+				<Wrapper
+					padding_inline="0"
+					padding_block="var(--space-l)"
+					max_width='40rem'
+					centered={true}
+				>
+					<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+				</Wrapper>
 			</Flexblock>
 		</Wrapper>
 
@@ -208,6 +274,21 @@ const page_title = t('index.page_title');
 		display: flex;
 		min-height: 100vh;
 		align-items: center;
+	}
+
+	.caret-down {
+		transform: rotate(90deg);
+
+		&:before {
+			content: 'next';
+			color: var(--highlight);
+			font-family: swiper-icons;
+			font-size: var(--swiper-navigation-size);
+			text-transform: none !important;
+			letter-spacing: 0;
+			font-variant: initial;
+			line-height: 1;
+		}
 	}
 </style>
 

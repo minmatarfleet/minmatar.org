@@ -715,5 +715,6 @@ export const ui = {
         'view_characters': 'View all characters',
         'characters': 'Characters',
         'character': 'Character',
+        'visit': 'Visit',
     },
 } as const;

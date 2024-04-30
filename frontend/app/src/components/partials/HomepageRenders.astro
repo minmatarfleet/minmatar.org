@@ -3,6 +3,24 @@ export const WatermelonCameraXData = `
     rotation_x: 4.3827,
     rotation_y: 0.251,
     camera: null,
+    resize_canvas: null,
+    resizeCanvasToDisplaySize(canvas) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+        }
+        
+        return needResize;
+    },
     update() {
         if (!this.camera) return
 
@@ -97,7 +115,19 @@ export const WatermelonXData = `init_ccpwgl() {
         }
     }
 
-    function resizeCanvasToDisplaySize(canvas) {
+    resize_canvas = ccpwgl_context.canvas
+    resizeCanvasToDisplaySize(resize_canvas)
+    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+}`
+
+export const AugaMilitiaHQCameraXData = `
+    rotation_x: 0.77,
+    rotation_y: 0.18,
+    camera: null,
+    resize_canvas: null,
+    moon_rotation_angle: 0,
+    planet_rotation_angle: 0,
+    resizeCanvasToDisplaySize(canvas) {
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
         const displayHeight = canvas.clientHeight;
@@ -113,18 +143,7 @@ export const WatermelonXData = `init_ccpwgl() {
         }
         
         return needResize;
-    }
-
-    resizeCanvasToDisplaySize(ccpwgl_context.canvas)
-    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
-}`
-
-export const AugaMilitiaHQCameraXData = `
-    rotation_x: 0.77,
-    rotation_y: 0.18,
-    camera: null,
-    moon_rotation_angle: 0,
-    planet_rotation_angle: 0,
+    },
     update() {
         if (!this.camera) return
 
@@ -261,25 +280,8 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         }
     }
 
-    function resizeCanvasToDisplaySize(canvas) {
-        // Lookup the size the browser is displaying the canvas in CSS pixels.
-        const displayWidth  = canvas.clientWidth;
-        const displayHeight = canvas.clientHeight;
-        
-        // Check if the canvas is not the same size.
-        const needResize = canvas.width  !== displayWidth ||
-                            canvas.height !== displayHeight;
-        
-        if (needResize) {
-            // Make the canvas the same size
-            canvas.width  = displayWidth;
-            canvas.height = displayHeight;
-        }
-        
-        return needResize;
-    }
-
-    resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+    resize_canvas = ccpwgl_context.canvas
+    resizeCanvasToDisplaySize(resize_canvas)
     ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 
     const rotation_timer = setInterval(function () {
@@ -315,7 +317,25 @@ export const OurzadCameraXData = `
     rotation_x: -1.22,
     rotation_y: 0.54,
     camera: null,
+    resize_canvas: null,
     rotation_angle: 0,
+    resizeCanvasToDisplaySize(canvas) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+        }
+        
+        return needResize;
+    },
     update() {
         if (!this.camera) return
 
@@ -427,24 +447,6 @@ export const OurzadXData = `init_ccpwgl() {
         }
     }
 
-    function resizeCanvasToDisplaySize(canvas) {
-        // Lookup the size the browser is displaying the canvas in CSS pixels.
-        const displayWidth  = canvas.clientWidth;
-        const displayHeight = canvas.clientHeight;
-        
-        // Check if the canvas is not the same size.
-        const needResize = canvas.width  !== displayWidth ||
-                            canvas.height !== displayHeight;
-        
-        if (needResize) {
-            // Make the canvas the same size
-            canvas.width  = displayWidth;
-            canvas.height = displayHeight;
-        }
-        
-        return needResize;
-    }
-
     const rotation_timer = setInterval(function () {
         let model = mat4.fromValues(
             50000, 0, 0, 0,
@@ -462,7 +464,8 @@ export const OurzadXData = `init_ccpwgl() {
         clearTimeout(rotation_timer)
     })
 
-    resizeCanvasToDisplaySize(ccpwgl_context.canvas)
+    resize_canvas = ccpwgl_context.canvas
+    resizeCanvasToDisplaySize(resize_canvas)
     ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 }`
 ---

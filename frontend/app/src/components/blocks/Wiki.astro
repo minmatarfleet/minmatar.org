@@ -1,0 +1,38 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+---
+
+<ComponentBlock
+    {...Astro.props}
+>
+    <Wrapper
+        padding_inline='0'
+        padding_block='var(--space-s)'
+    >
+        <Flexblock centered={true}>
+            <picture>
+                <img src="/images/wikilogo.png" width="256" height="256" />
+            </picture>
+
+            <p class="[ text-center ]">Welcome to the new wiki!</p>
+            
+            <ButtonStack>
+                <Button size='sm' href='https://wiki.minmatar.org/'>
+                    {t('visit')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    </Wrapper>
+</ComponentBlock>

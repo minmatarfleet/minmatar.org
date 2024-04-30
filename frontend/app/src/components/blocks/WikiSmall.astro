@@ -18,35 +18,25 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
 ---
 
 <ComponentBlock
-    padding_block='0'
+    padding_block='var(--space-s)'
     padding_inline='var(--space-s)'
 >
     <FixedFluid
-        width='305px'
+        width='96px'
         breakpoint='40%'
         class="[ items-center ]"
     >
         <picture>
-            <img src="/images/ceos.png" width="305" height="228" />
+            <img src="/images/wikilogo.png" width="96" height="96" />
         </picture>
-        <Wrapper
-            padding_inline='0'
-            padding_block='var(--space-s)'
-        >
-            <Flexblock>
-                <FlexInline gap='var(--space-2xs)'>
-                    <CorporationEvEIcon />
-                    <h2>{t('corporations')}</h2>
-                </FlexInline>
-
-                <p>Meet the backbone of our alliance. We are recruiting</p>
-                
-                <ButtonStack>
-                    <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
-                        {t('view_corporations')}
-                    </Button>
-                </ButtonStack>
-            </Flexblock>
-        </Wrapper>
+        <FlexInline justification='space-between'>
+            <p class="[ basis-[300px] grow ]">Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community</p>
+            
+            <ButtonStack>
+                <Button size='sm' href='https://wiki.minmatar.org/'>
+                    {t('visit')}
+                </Button>
+            </ButtonStack>
+        </FlexInline>
     </FixedFluid>
 </ComponentBlock>

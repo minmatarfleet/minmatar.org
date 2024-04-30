@@ -1,0 +1,46 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+
+import DiscordIcon from '@components/icons/buttons/DiscordIcon.astro';
+---
+
+<ComponentBlock
+    {...Astro.props}
+>
+    <Wrapper
+        padding_inline='0'
+        padding_block='var(--space-s)'
+    >
+        <Flexblock centered={true}>
+            <picture>
+                <DiscordIcon />
+            </picture>
+
+            <p class="[ text-center ]">Check over our Discord</p>
+            
+            <ButtonStack>
+                <Button size='sm' href='https://discord.com/invite/3hZfahmkFx'>
+                    {t('visit')}
+                </Button>
+            </ButtonStack>
+        </Flexblock>
+    </Wrapper>
+</ComponentBlock>
+
+<style lang="scss">
+    picture {
+        color: var(--highlight);
+    }
+</style>
