@@ -1,4 +1,5 @@
 import type { UserProfile } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/users`
 
@@ -7,17 +8,22 @@ export async function get_user_by_id(user_id:number) {
         'Content-Type': 'application/json'
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${user_id}/profile`)
+    const ENDPOINT = `${API_ENDPOINT}/${user_id}/profile`
+    
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${user_id}/profile`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
         
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as UserProfile;
@@ -31,17 +37,22 @@ export async function get_user_by_name(user_name:string) {
         'Content-Type': 'application/json'
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}?username=${user_name}`)
+    const ENDPOINT = `${API_ENDPOINT}?username=${user_name}`
+    
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?username=${user_name}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
         
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as UserProfile;
@@ -56,10 +67,12 @@ export async function delete_account(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
+    const ENDPOINT = `${API_ENDPOINT}/delete`
+    
     console.log(`Requesting DELETE: ${API_ENDPOINT}/delete`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/delete`, {
+        const response = await fetch(ENDPOINT, {
             method: 'DELETE',
             headers: headers
         })
@@ -67,7 +80,10 @@ export async function delete_account(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `DELETE ${ENDPOINT}`
+            ))
         }
 
         return (response.status === 200);

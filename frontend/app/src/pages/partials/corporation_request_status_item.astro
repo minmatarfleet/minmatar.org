@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -38,7 +38,7 @@ if (Astro.request.method === "POST") {
         application = await create_corporation_application(auth_token, corporation.corporation_id, description)
         corporation.status = application.status as CorporationStatusType
     } catch (error) {
-        create_corporation_application_error = is_prod_mode() ? t('create_corporation_application_error') : error.message
+        create_corporation_application_error = prod_error_messages() ? t('create_corporation_application_error') : error.message
     }
 }
 

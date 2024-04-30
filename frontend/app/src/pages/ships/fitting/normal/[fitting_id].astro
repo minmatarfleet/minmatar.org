@@ -3,7 +3,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 const { fitting_id } = Astro.params;
 
@@ -17,7 +17,7 @@ let get_fitting_error:string | false = false
 try {
     fitting = await get_fitting_by_id(parseInt(fitting_id))
 } catch (error) {
-    get_fitting_error = is_prod_mode() ? t('get_fitting_error') : error.message
+    get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
 }
 
 import { get_item_icon } from '@helpers/eve_image_server';

@@ -1,4 +1,5 @@
 import type { Character, CharacterSkillset, CharacterAsset } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
 
@@ -8,17 +9,22 @@ export async function get_characters(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}`)
+    const ENDPOINT = API_ENDPOINT
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Character[];
@@ -33,17 +39,22 @@ export async function get_character_by_id(access_token:string, character_id:numb
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${character_id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${character_id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Character;
@@ -58,10 +69,12 @@ export async function delete_characters(access_token:string, character_id:number
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting DELETE: ${API_ENDPOINT}/${character_id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}`
+
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${character_id}`, {
+        const response = await fetch(ENDPOINT, {
             method: 'DELETE',
             headers: headers
         })
@@ -69,7 +82,10 @@ export async function delete_characters(access_token:string, character_id:number
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `DELETE ${ENDPOINT}`
+            ))
         }
 
         return (response.status === 200);
@@ -84,17 +100,22 @@ export async function get_primary_characters(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/primary`)
+    const ENDPOINT = `${API_ENDPOINT}/primary`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/primary`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (response.status != 200 && response.status != 404) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Character;
@@ -109,17 +130,22 @@ export async function get_character_skillsets(access_token:string, character_id:
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${character_id}/skillsets`)
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}/skillsets`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${character_id}/skillsets`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as CharacterSkillset[];
@@ -134,17 +160,22 @@ export async function get_character_assets(access_token:string, character_id:num
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${character_id}/assets`)
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}/assets`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${character_id}/assets`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as CharacterAsset[];
@@ -159,10 +190,12 @@ export async function set_primary_characters(access_token:string, character_id:n
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting PUT: ${API_ENDPOINT}/primary?character_id=${character_id}`)
+    const ENDPOINT = `${API_ENDPOINT}/primary?character_id=${character_id}`
+
+    console.log(`Requesting PUT: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/primary?character_id=${character_id}`, {
+        const response = await fetch(ENDPOINT, {
             method: 'PUT',
             headers: headers
         })
@@ -170,7 +203,10 @@ export async function set_primary_characters(access_token:string, character_id:n
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
         }
 
         return (response.status === 200);

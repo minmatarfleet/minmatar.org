@@ -1,4 +1,5 @@
 import type { Corporation, CorporationType } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
 
@@ -7,17 +8,22 @@ export async function get_all_corporations(corporation_type:CorporationType) {
         'Content-Type': 'application/json'
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`)
+    const ENDPOINT = `${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as Corporation[];
@@ -32,17 +38,22 @@ export async function get_corporation_by_id(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/corporations/${id}`)
+    const ENDPOINT = `${API_ENDPOINT}/corporations/${id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/corporations/${id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as Corporation;

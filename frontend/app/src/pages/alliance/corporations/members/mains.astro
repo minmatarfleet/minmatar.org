@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -80,7 +80,7 @@ try {
         return corporation
     })
 } catch (error) {
-    get_all_mains_alts_error = is_prod_mode() ? t('get_all_mains_alts_error') : error.message
+    get_all_mains_alts_error = prod_error_messages() ? t('get_all_mains_alts_error') : error.message
 }
 
 const MAINS_ALTS_PARTIAL_URL = `${translatePath('/partials/mains_alts_component')}`

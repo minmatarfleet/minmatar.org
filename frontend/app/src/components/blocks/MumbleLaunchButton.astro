@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -26,7 +26,7 @@ let get_mumble_connection_error:string | false = false
 try {
     mumble_information = await get_mumble_connection(auth_token)
 } catch (error) {
-    get_mumble_connection_error = is_prod_mode() ? t('get_mumble_connection_error') : error.message
+    get_mumble_connection_error = prod_error_messages() ? t('get_mumble_connection_error') : error.message
 }
 
 import MumbleConnectButton from '@components/blocks/MumbleConnectButton.astro';

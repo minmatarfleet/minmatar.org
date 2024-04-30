@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang)
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -34,7 +34,7 @@ if (Astro.request.method === "DELETE") {
         if (success)
             redirect = translatePath('/fleets/upcoming/')
     } catch (error) {
-        delete_fleet_error = (is_prod_mode() ? t('delete_fleet_error') : error.message)
+        delete_fleet_error = (prod_error_messages() ? t('delete_fleet_error') : error.message)
     }
     
     if (delete_fleet_error) {

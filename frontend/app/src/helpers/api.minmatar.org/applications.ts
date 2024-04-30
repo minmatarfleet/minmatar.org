@@ -1,4 +1,5 @@
 import type { CorporationApplication, CorporationApplicationDetails } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/applications/corporations`
 
@@ -8,17 +9,22 @@ export async function get_corporation_applications(access_token:string, corporat
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications`)
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as CorporationApplication[];
@@ -37,10 +43,12 @@ export async function create_corporation_application(access_token:string, corpor
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting POST: ${API_ENDPOINT}/${corporation_id}/applications`)
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications`
+    
+    console.log(`Requesting: POST ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
             body: data,
             method: 'POST'
@@ -49,7 +57,10 @@ export async function create_corporation_application(access_token:string, corpor
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `POST: ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as CorporationApplication;
@@ -64,17 +75,22 @@ export async function get_corporation_applications_by_id(access_token:string, co
         'Authorization': `Bearer ${access_token}`
     }
     
-    console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications/${application_id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as CorporationApplicationDetails;
@@ -89,10 +105,12 @@ export async function accept_corporation_applications(access_token:string, corpo
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`)
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`
+    
+    console.log(`Requesting: POST ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
             method: 'POST'
         })
@@ -100,7 +118,10 @@ export async function accept_corporation_applications(access_token:string, corpo
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as CorporationApplication[];
@@ -115,10 +136,12 @@ export async function reject_corporation_applications(access_token:string, corpo
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${corporation_id}/applications/${application_id}/reject`)
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/reject`
+    
+    console.log(`Requesting: POST ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/reject`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
             method: 'POST'
         })
@@ -126,7 +149,10 @@ export async function reject_corporation_applications(access_token:string, corpo
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as CorporationApplication[];
