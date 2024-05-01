@@ -1,0 +1,25 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import DiscordIcon from '@components/icons/buttons/DiscordIcon.astro';
+---
+
+<StylessButton
+    href='https://discord.com/invite/3hZfahmkFx'
+    target="_blank"
+    rel="nofollow noopener noreferrer"
+    {...Astro.props}
+>
+    <FlexInline
+        class="[ items-center text-[var(--highlight)] ]"
+    >
+        <DiscordIcon />
+        <p class="[ w-fit ]">Check over our Discord</p>
+    </FlexInline>
+</StylessButton>

@@ -1,0 +1,25 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import RedditIcon from '@components/icons/buttons/RedditIcon.astro';
+---
+
+<StylessButton
+    href='https://www.reddit.com/r/Eve/search/?q=minmatar+fleet+extra&type=link&cId=471ea816-df09-4bc7-b460-c612c6c6be8f&iId=04e7c533-bcd4-4f72-ad94-822fe985002d'
+    target="_blank"
+    rel="nofollow noopener noreferrer"
+    {...Astro.props}
+>
+    <FlexInline
+        class="[ items-center text-[var(--highlight)] shrink ]"
+    >
+        <RedditIcon />
+        <p class="[ w-fit ]">You can find us in Reddit</p>
+    </FlexInline>
+</StylessButton>

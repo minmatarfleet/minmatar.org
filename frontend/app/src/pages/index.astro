@@ -19,13 +19,22 @@ import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
+import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
+import MediaFeed from '@components/blocks/MediaFeed.astro';
+import WikiSmall from '@components/blocks/WikiSmall.astro';
+import DiscordSmall from '@components/blocks/DiscordSmall.astro';
+import RedditSmall from '@components/blocks/RedditSmall.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
@@ -37,7 +46,6 @@ import {
 	OurzadCameraXData,
 	OurzadXData,
 } from '@components/partials/HomepageRenders.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
 
@@ -59,6 +67,7 @@ const page_title = t('index.page_title');
         fullscreen={true}
         wide={true}
 		x-data={`{
+			show_fleet_feeds: true,
             ${staggering === 'auga' ?
 				AugaMilitiaHQCameraXData :
 				staggering === 'ourzad' ?
@@ -77,6 +86,8 @@ const page_title = t('index.page_title');
             id="mainCanvas"
             width="500"
             height="500"
+			x-on:scroll.stop
+			x-on:mousewheel.stop
             x-data={`{
 				${staggering === 'auga' ?
 					AugaMilitiaHQXData :
@@ -85,6 +96,7 @@ const page_title = t('index.page_title');
 					WatermelonXData
 				}
             }`}
+			x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas)"
             x-init="$nextTick(() => init_ccpwgl())"
         />
 
@@ -122,21 +134,27 @@ const page_title = t('index.page_title');
 			}
 		</Flexblock>
 
-        <Wrapper
-			max_width='41rem'
-			padding_inline='0'
-			padding_block="var(--space-xl)"
-			class="[ page-content ][ text-center ]"
+		<VerticalCenter
+			class="[ content-section ][ min-h-[100vh] max-w-[48rem] ]"
 		>
-			<Flexblock gap='var(--space-3xl)'>
-				<Flexblock gap='var(--space-m)'>
+			<Wrapper
+				max_width='48rem'
+				padding_inline='0'
+				padding_block="var(--space-l)"
+			>
+				<Flexblock
+					gap='var(--space-m)'
+					class="[ text-center ]"
+				>
 					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
 					
-					<h2 class="[ welcome-heading ]">Welcome to Minmatar.org</h2>
-					<Flexblock>
-						<p>Our platform is currently undergoing development, and new features will be rolled out gradually. New sections will be posted in the Neocom bar.</p>
-						<small>You may link your pilots to our platform through the user section in the Neocom bar.</small>
-					</Flexblock>
+					<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
+
+					<p>{t('index.leading_text')}</p>
+
+					<FlexInline justification='center'>
+						<StylessButton href='#widgets' class="[ caret-down ]" />
+					</FlexInline>
 
 					{user_is_superadmin &&
 						<Flexblock class="[ camera-controls !hidden ]">
@@ -151,8 +169,92 @@ const page_title = t('index.page_title');
 						</Flexblock>
 					}
 				</Flexblock>
+			</Wrapper>
+		</VerticalCenter>
 
-				<p class="[ ccp-disclaimer ]">{t('ccp_disclaimer')}</p>
+		<Wrapper
+			max_width='90rem'
+			padding_inline='0'
+			padding_block="0"
+			class="[ content-section mt-2 ]"
+		>
+			<Flexblock
+				id="widgets"
+				gap='var(--space-l)'
+				class="[ w-full ]"
+				x-intersect:enter="show_fleet_feeds = false"
+				x-intersect:leave="show_fleet_feeds = true"
+			>
+				<FluidFixed
+					width='656px'
+					gap='var(--space-3xs)'
+					breakpoint='49%'
+				>
+					<Wrapper
+						padding_block='0'
+						padding_inline='0'
+						class="[ relative ]"
+						max_width='656px'
+					>
+						<Flexblock gap='var(--space-3xs)'>
+							<HomeCorporations />
+							<WikiSmall						
+								padding_block='0'
+								padding_inline='var(--space-s)'
+								class="[ basis-[50%] shrink ]"
+							/>
+						</Flexblock>
+					</Wrapper>
+
+					<Wrapper
+						padding_block='0'
+						padding_inline='0'
+						max_width='656px'
+						class="[ relative z-10 ]"
+					>
+						<MediaFeed />
+					</Wrapper>
+				</FluidFixed>
+
+				<!-- <Grid
+					min_item_width="200px"
+					row_gap='var(--space-3xs)'
+					column_gap='var(--space-3xs)'
+				>
+					<Wiki						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+						class="[ basis-[50%] shrink ]"
+					/>
+					<Discord						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+						class="[ basis-[50%] shrink ]"
+					/>
+				</Grid> -->
+
+				<FlexInline
+					gap='var(--space-l)'
+					justification='center'
+				>
+					<RedditSmall						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+					/>
+					<DiscordSmall						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+					/>
+				</FlexInline>
+
+				<Wrapper
+					padding_inline="0"
+					padding_block="var(--space-l)"
+					max_width='40rem'
+					centered={true}
+				>
+					<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+				</Wrapper>
 			</Flexblock>
 		</Wrapper>
 
@@ -189,12 +291,25 @@ const page_title = t('index.page_title');
         position: absolute;
     }
 
-	.page-content {
+	.content-section {
 		position: relative;
 		z-index: 1;
-		display: flex;
-		min-height: 100vh;
 		align-items: center;
+	}
+
+	.caret-down {
+		transform: rotate(90deg);
+
+		&:before {
+			content: 'next';
+			color: var(--highlight);
+			font-family: swiper-icons;
+			font-size: var(--swiper-navigation-size);
+			text-transform: none !important;
+			letter-spacing: 0;
+			font-variant: initial;
+			line-height: 1;
+		}
 	}
 </style>
 

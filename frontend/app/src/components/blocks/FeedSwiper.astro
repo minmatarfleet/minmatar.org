@@ -8,14 +8,14 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     x-data={`{
         swiper: null,
         init() {
-            this.swiper = new Swiper('.swiper', {
+            this.swiper = new Swiper('.fleet-feed', {
                 slidesPerView: 1,
                 direction: 'vertical',
                 spaceBetween: 4,
                 pagination: {
                     clickable: true,
                     dynamicBullets: true,
-                    el: ".swiper-pagination",
+                    el: ".feed-swiper-pagination",
                 },
                 mousewheel: {
                     forceToAxis: true,
@@ -34,11 +34,15 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     <slot />
 </FlexInline>
 
-<div class="swiper-pagination"></div>
+<div class="feed-swiper-pagination swiper-pagination"></div>
 
 <style lang="scss">
     :global(.swiper-pagination-bullet) {
         --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .feed-swiper-pagination {
+        max-height: 64px;
     }
 
     .swiper-pagination {
@@ -50,6 +54,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     .swiper-wrapper {
         flex-wrap: nowrap;
         align-items: flex-start;
-        max-height: calc(64px);
+        max-height: 64px;
     }
 </style>

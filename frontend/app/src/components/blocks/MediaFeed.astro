@@ -1,0 +1,147 @@
+---
+const FEEDS = [
+    {
+        title: 'Hoist the Colours | EVE Online',
+        id: 'skUf1yUeV3o',
+    }, {
+        title: 'TYPHOONS | EVE ONLINE',
+        id: 'VbDzNRCEJlw',
+    }, {
+        title: 'Talwars - Eve Online Minmatar Faction Warfare',
+        id: 'M7VAjMgjBP4',
+    }, {
+        title: 'How to die in EVE Online | Minmatar Training Video',
+        id: 'sP-iIc6nn5k',
+    },
+]
+
+import VideoWidget from '@components/blocks/VideoWidget.astro';
+---
+
+<div class="[ swiper media-swiper ][ w-full ]">
+    <div
+        class="[ swiper-wrapper ][ select-none w-full ]"
+        x-data={`{
+            swiper: null,
+            corporation_pagination(index) {
+                return this.pagination_icons[index]
+            },
+            init() {
+                this.swiper = new Swiper('.media-swiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    pagination: {
+                        clickable: true,
+                        dynamicBullets: true,
+                        el: ".media-swiper-pagination",
+                    },
+                    loop: false,
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                });
+            }
+        }`}
+    >
+        {FEEDS.map((feed) =>
+            <div class="[ swiper-slide ]">
+                <VideoWidget
+                    videoid={feed.id}
+                    videotitle={feed.title}
+                />
+            </div>
+        )}
+    </div>
+</div>
+
+<div class="swiper-pagination media-swiper-pagination"></div>
+
+<div class="[ swiper-button-prev hidden lg:block ]"></div>
+<div class="[ swiper-button-next hidden lg:block ]"></div>
+
+<style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+
+    .alliance-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(0);
+    }
+
+    .swiper-button-next {
+        transform: translateY(0);
+    }
+
+    .media-swiper {
+        opacity: 0;
+        transition: var(--fast-transition);
+        //mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+
+        &.swiper-initialized {
+            opacity: 1;
+        }
+    }
+
+    .media-swiper {
+        max-width: 656px;
+        max-height: 369px;
+    }
+
+    .swiper-slide {
+        width: 100% !important;
+    }
+
+    .swiper-initialized + #alliance-reel-animation {
+        opacity: 0;
+    }
+
+    #alliance-reel-animation {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%, -50%);
+    }
+</style>
