@@ -23,6 +23,7 @@ try {
 import { get_item_icon } from '@helpers/eve_image_server';
 import { parse_eft } from '@helpers/fit_parser.ts';
 import { get_item_id } from '@helpers/sde/items'
+import { format_date_short } from '@helpers/date';
 
 const fitting_parsed = await parse_eft(fitting.eft_format)
 const ship_id = await get_item_id(fitting_parsed.ship_name)
@@ -126,7 +127,10 @@ const page_title = fitting.name
             <FlexInline>
                 <FlexInline>
                     <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
-                    <PageTitle>{page_title}</PageTitle>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <PageTitle>{page_title}</PageTitle>
+                        <small>Last updated {format_date_short(lang, fitting.updated_at)}</small>
+                    </Flexblock>
                 </FlexInline>
             </FlexInline>
             <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
