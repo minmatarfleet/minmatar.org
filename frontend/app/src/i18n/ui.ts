@@ -721,5 +721,6 @@ export const ui = {
         'cant_view_fleet_details': 'You don’t have access to this fleets details',
         'not_available': 'Not available',
         'leave': 'Leave',
+        'last_updated': 'Last updated',
     },
 } as const;
