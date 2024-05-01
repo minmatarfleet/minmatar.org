@@ -19,17 +19,23 @@ class EveFleet(models.Model):
     )
     description = models.TextField(blank=True)
     type = models.CharField(max_length=32, choices=fleet_types)
-    audience = models.ManyToManyField(Group, blank=True)
+
     start_time = models.DateTimeField()
 
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
 
+    audience = models.ForeignKey(
+        Group, on_delete=models.SET_NULL, null=True, blank=True
+    )
     doctrine = models.ForeignKey(
         EveDoctrine, on_delete=models.SET_NULL, null=True, blank=True
     )
     location = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.created_by} - {self.type} - {self.start_time}"
 
 
 class EveFleetInstance(models.Model):
@@ -78,6 +84,10 @@ class EveFleetNotificationChannel(models.Model):
 
     discord_channel_id = models.BigIntegerField()
     discord_channel_name = models.CharField(max_length=255)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.group} - {self.discord_channel_name}"
 
 
 class EveFleetNotification(models.Model):

@@ -41,7 +41,7 @@ const DESCRIPTION_TEXT = {
 
 <FixedFluid
     width='64px'
-    class="[ group-item ][ items-center ]"
+    class="[ group-item ][ items-center h-full ]"
     id={`group-item-${group.id}`}
     x-data={`{
         group_item_init() {
@@ -65,7 +65,7 @@ const DESCRIPTION_TEXT = {
         </picture>
     }
     <FlexInline justification='space-between' class="[ items-center ]">
-        <Flexblock gap='0' class="[ w-full basis-[335px] ]">
+        <Flexblock gap='0' class="[ w-full basis-[320px] ]">
             <span class="text-[var(--highlight)]">
                 {group.name}
             </span>

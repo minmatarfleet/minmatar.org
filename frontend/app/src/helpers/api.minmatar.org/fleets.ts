@@ -1,4 +1,5 @@
-import type { FleetTypes, Fleet, FleetRequest } from '@dtypes/api.minmatar.org'
+import type { FleetTypes, Fleet, FleetRequest, Audience } from '@dtypes/api.minmatar.org'
+import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
@@ -8,17 +9,22 @@ export async function get_types(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/types`)
+    const ENDPOINT = `${API_ENDPOINT}/types`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/types`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as string[];
@@ -33,20 +39,55 @@ export async function get_locations(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/locations`)
+    const ENDPOINT = `${API_ENDPOINT}/locations`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/locations`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as string[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet types: ${error.message}`);
+    }
+}
+
+export async function get_audiences(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/audiences`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
+        }
+
+        return await response.json() as Audience[];
     } catch (error) {
         throw new Error(`Error fetching fleet types: ${error.message}`);
     }
@@ -58,17 +99,22 @@ export async function get_fleets(access_token:string, upcoming:boolean = true) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`)
+    const ENDPOINT = `${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
         }
 
         return await response.json() as number[];
@@ -85,10 +131,12 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting POST: ${API_ENDPOINT}`)
+    const ENDPOINT = API_ENDPOINT
+
+    console.log(`Requesting POST: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
             body: data,
             method: 'POST'
@@ -97,7 +145,10 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as FleetRequest;
@@ -112,17 +163,22 @@ export async function get_fleet_by_id(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting: ${API_ENDPOINT}/${id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
         })
 
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
         }
 
         return await response.json() as Fleet;
@@ -137,10 +193,12 @@ export async function delete_fleet(access_token:string, id:number) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    console.log(`Requesting DELETE: ${API_ENDPOINT}/${id}`)
+    const ENDPOINT = `${API_ENDPOINT}/${id}`
+
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
 
     try {
-        const response = await fetch(`${API_ENDPOINT}/${id}`, {
+        const response = await fetch(ENDPOINT, {
             headers: headers,
             method: 'DELETE'
         })
@@ -148,7 +206,10 @@ export async function delete_fleet(access_token:string, id:number) {
         console.log(response)
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(await get_error_message(
+                response.status,
+                `DELETE ${ENDPOINT}`
+            ))
         }
 
         return (response.status === 200);

@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -35,7 +35,7 @@ try {
         return b.requests.length - a.requests.length
     })
 } catch (error) {
-    get_all_groups_requests_error = is_prod_mode() ? t('get_all_groups_requests_error') : error.message
+    get_all_groups_requests_error = prod_error_messages() ? t('get_all_groups_requests_error') : error.message
 }
 
 const GROUP_REQUESTS_LIST_PARTIAL_URL = translatePath('/partials/group_requests_list_component/')
@@ -78,7 +78,7 @@ const page_title = t('groups.requests.page_title');
             group_name: '',
         }`}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>
                 {page_title}
             </PageTitle>

@@ -11,7 +11,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 const { fitting_id } = Astro.params;
 const show_controls = Astro.url.searchParams.get('controls') ?? null
@@ -25,7 +25,7 @@ let get_fitting_error:string | false = false
 try {
     fitting = await get_fitting_by_id(parseInt(fitting_id))
 } catch (error) {
-    get_fitting_error = is_prod_mode() ? t('get_fitting_error') : error.message
+    get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
 }
 
 import { marked } from 'marked';
@@ -34,6 +34,7 @@ import ccpwgl_turrets from '@/data/ccpwgl_turrets.json'
 import { get_item_id } from '@helpers/sde/items'
 import { get_ship_dna } from '@helpers/ccpwgl'
 import { get_item_icon } from '@helpers/eve_image_server';
+import { format_date_short } from '@helpers/date';
 import { parse_eft } from '@helpers/fit_parser.ts';
 
 const fitting_parsed = await parse_eft(fitting.eft_format)
@@ -49,7 +50,6 @@ const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
-console.log(ship_dna)
 
 const CAMERA_ZOOM = fitting_parsed?.subsystem_slots?.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
@@ -236,7 +236,10 @@ const page_title = fitting_parsed.name;
                     <FlexInline justification='space-between'>
                         <FlexInline>
                             <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
-                            <PageTitle>{page_title}</PageTitle>
+                            <Flexblock gap='var(--space-3xs)'>
+                                <PageTitle>{page_title}</PageTitle>
+                                <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
+                            </Flexblock>
                         </FlexInline>
                         <ButtonStack>
                             <Button

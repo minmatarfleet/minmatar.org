@@ -40,6 +40,16 @@ const DIALOG_TEXT = {
     'team': t('team_join_request_dialog_text'),
     'group': t('group_join_request_dialog_text')
 }
+
+const LEAVE_DIALOG_TITLE = {
+    'team': t('team_leave_request_dialog_title'),
+    'group': t('group_leave_request_dialog_title')
+}
+
+const LEAVE_DIALOG_TEXT = {
+    'team': t('team_leave_request_dialog_text'),
+    'group': t('group_leave_request_dialog_text')
+}
 ---
 
 <div
@@ -110,7 +120,37 @@ const DIALOG_TEXT = {
             </ButtonAuth>
         }
         {group?.status == 'confirmed' &&
-            <Tag color='green' text={t('joined')} />
+            <Button
+                size='sm'
+                type="button"
+                x-data={`{
+                    show_leave_group_dialog() {
+                        show_confirm_dialog({
+                            title: '${LEAVE_DIALOG_TITLE[group_type]}',
+                            partial: '${translatePath('/partials/dialog_with_group/')}?${query_string({
+                                name: group.name,
+                                description: group.description,
+                                image_url: JSON.stringify(group.image_url),
+                                type: group_type,
+                                message: LEAVE_DIALOG_TEXT[group_type]
+                            })}',
+                            return_on_accept: ${group.id},
+                            hx: {
+                                method: 'delete',
+                                url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                    id: group.id.toString(),
+                                    type: group_type,
+                                })}',
+                                target: '#group-item-${group.id}',
+                                swap: 'outerHTML transition:true'
+                            }
+                        })
+                    }
+                }`}
+                x-on:click="show_leave_group_dialog()"
+            >
+                {t('leave')}
+            </Button>
         }
         {group?.status == 'requested' &&
             <Tag color='alliance-blue' text={t('pending')} />

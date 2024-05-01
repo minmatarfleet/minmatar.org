@@ -47,7 +47,8 @@ import {
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
-	RifterAnimationXData
+	RifterAnimationXData,
+	InitXData,
 } from '@components/partials/AlpineScripts.astro';
 
 import type { ViewportComponents } from '@dtypes/layout_components'
@@ -128,6 +129,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
             ${FittingFinderXData}
             ${UtilitiesXData}
             ${RifterAnimationXData}
+            ${InitXData}
 		}`}
 		x-init="rifter_animation_init"
 	>

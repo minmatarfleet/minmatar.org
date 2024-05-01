@@ -1,5 +1,5 @@
 import { useTranslations, useTranslatedPath } from '@i18n/utils'
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 
@@ -29,7 +29,7 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
                 cookies.set('primary_pilot', JSON.stringify(primary_pilot), { path: '/', expires: in_1_day })
             }
         } catch (error) {
-            get_primary_characters_error = (is_prod_mode() ? t('get_primary_characters_error') : error.message)
+            get_primary_characters_error = (prod_error_messages() ? t('get_primary_characters_error') : error.message)
             cookies.set('middleware_error', get_primary_characters_error, { path: '/' })
             console.log(get_primary_characters_error)
         }

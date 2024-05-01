@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
@@ -15,7 +15,7 @@ let get_fittings_error:string | false = false
 try {
     fittings = await fetch_fittings()
 } catch (error) {
-    get_fittings_error = is_prod_mode() ? t('get_fittings_error') : error.message
+    get_fittings_error = prod_error_messages() ? t('get_fittings_error') : error.message
 }
 
 let fitting_type = {};
@@ -79,7 +79,7 @@ const page_title = t('fitting.list.page_title');
             }
         }`}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>

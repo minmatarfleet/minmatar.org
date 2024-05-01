@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -40,7 +40,7 @@ let get_character_assets_error:string | false = false
 try {
     character_assets = await get_assets(auth_token, character_id)
 } catch (error) {
-    get_character_assets_error = is_prod_mode() ? t('get_character_assets_error') : error.message
+    get_character_assets_error = prod_error_messages() ? t('get_character_assets_error') : error.message
 }
 
 const ASSETS_LIST_PARTIAL_URL = translatePath('/partials/assets_list_component')
@@ -139,7 +139,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             character_name: '${character_info.character_name}',
         }`}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <CharacterPicture
                     character_id={character_info.character_id}

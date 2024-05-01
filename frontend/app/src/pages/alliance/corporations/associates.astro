@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -29,7 +29,7 @@ try {
     else
         corporations = await get_corporations_list('associate')
 } catch (error) {
-    get_all_corporations_error = is_prod_mode() ? t('get_all_corporations_error') : error.message
+    get_all_corporations_error = prod_error_messages() ? t('get_all_corporations_error') : error.message
 }
 
 const CORPORATIONS_LIST_PARTIAL_URL = `${translatePath('/partials/corporations_list_component')}?corporation_type=associate`
@@ -70,7 +70,7 @@ const page_title = t('corporations.associates.page_title');
             corporations_count: ${corporations.length}
         }`}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>

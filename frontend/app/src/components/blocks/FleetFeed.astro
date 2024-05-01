@@ -14,7 +14,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!user)
     return HTTP_404_Not_Found()
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets } from '@helpers/fetching/fleets'
 
@@ -26,7 +26,7 @@ try {
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 } catch (error) {
-    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+    fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
 const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`

@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -13,15 +13,19 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (!user)
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import { create_fleet, get_locations } from '@helpers/api.minmatar.org/fleets'
-import { fleet_types, } from '@dtypes/api.minmatar.org'
-import type { FleetRequest, FleetTypes } from '@dtypes/api.minmatar.org'
+import { create_fleet, get_locations, get_audiences } from '@helpers/api.minmatar.org/fleets'
+import { fleet_types } from '@dtypes/api.minmatar.org'
+import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, Alert } from '@dtypes/layout_components'
 
@@ -32,12 +36,13 @@ if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
         
-        const fleet_data:FleetRequest = {
+        const fleet_data = {
             doctrine_id: parseInt(data.get('doctrine_id') as string),
             description: data.get('description') as string,
             location: data.get('location') as string,
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
+            audience_id: data.get('audience_id'),
         }
         
         if (await create_fleet(auth_token as string, fleet_data))
@@ -45,7 +50,7 @@ if (Astro.request.method === "POST") {
         else
             create_fleet_error = t('create_fleet_error')
     } catch (error) {
-        create_fleet_error = is_prod_mode() ? t('create_fleet_error') : error.message
+        create_fleet_error = prod_error_messages() ? t('create_fleet_error') : error.message
     }
 
     alert = {
@@ -61,16 +66,19 @@ let doctrines:DoctrineType[] = []
 let fleet_commander:EveCharacterProfile
 let fetch_doctrines_error:string | false = false
 let locations:string[]
+let audiences:Audience[]
 
 try {
-    fleet_commander = await get_user_character(user.user_id)
+    fleet_commander = await get_user_character((user as User).user_id)
     doctrines = await fetch_doctrines()
     locations = await get_locations(auth_token as string)
+    audiences = await get_audiences(auth_token as string)
 } catch (error) {
-    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
 const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )
+const audiences_select_options = audiences.map( (i) => { return { name: i.display_name, id: i.id } } )
 
 let FLEET_TYPES_LABELS = {}
 const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
@@ -87,6 +95,7 @@ const locations_select_options = locations.map( (i):SelectOptions => {
 const default_fleet_type = fleet_types_select_options[0].value
 const default_location = locations_select_options[0].value
 const default_doctrine = doctrines_select_options[0].id
+const default_audience = audiences_select_options[0].id
 
 const doctrine:DoctrineType = doctrines.find( (item) => item.id == default_doctrine )
 
@@ -123,7 +132,12 @@ const page_title = t('fleets.add.page_title');
 const today = new Date().toISOString().split("T")[0]
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
     <PageDefault
         cover={{
             image: "/images/fleets-cover.jpg",
@@ -135,10 +149,10 @@ const today = new Date().toISOString().split("T")[0]
         }}
         x-data={`{
             fleet_type: '${default_fleet_type}',
-            audience: 'alliance',
             eve_date: '${today}',
             eve_time: '00:00',
             location: '${default_location}',
+            audience: '${default_audience}',
             local_datetime: '',
             locations: ${JSON.stringify(FLEET_LOCATIONS)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
@@ -174,7 +188,7 @@ const today = new Date().toISOString().split("T")[0]
         }`}
     >
 
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <PageTitle>
                     {page_title}
@@ -222,6 +236,19 @@ const today = new Date().toISOString().split("T")[0]
                                             hx-indicator=".loader"
                                         >
                                             {doctrines_select_options.map((option) => 
+                                                <option value={option.id}>{option.name}</option>
+                                            )}
+                                        </Select>
+                                    </FixedFluid>
+
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="audience">{t('audience')}</label>
+                                        <Select
+                                            id="audience"
+                                            name="audience_id"
+                                            x-model="audience"
+                                        >
+                                            {audiences_select_options.map((option) => 
                                                 <option value={option.id}>{option.name}</option>
                                             )}
                                         </Select>

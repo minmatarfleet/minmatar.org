@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
@@ -15,7 +15,7 @@ let fetch_doctrines_error:string | false = false
 try {
     doctrines = await fetch_doctrines()
 } catch (error) {
-    fetch_doctrines_error = is_prod_mode() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
 import { marked } from 'marked';
@@ -47,7 +47,7 @@ const page_title = t('doctrines.page_title');
             overlay: true
         }}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>

@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import universal_support_fittings from '@/data/universal_support_fittings.json'
 
@@ -20,7 +20,7 @@ let fetch_doctrine_error:string | false = false
 try {
     doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
 } catch (error) {
-    fetch_doctrine_error = is_prod_mode() ? t('fetch_doctrine_error') : error.message
+    fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
 }
 
 import Viewport from '@layouts/Viewport.astro';
@@ -52,7 +52,7 @@ const page_title = `${doctrine.name} ${t('doctrine')}`;
             overlay: true
         }}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <PageTitle>
                     {page_title}

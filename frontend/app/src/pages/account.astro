@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -34,7 +34,7 @@ let readonly = false
 try {
     pilots = await get_characters(auth_token);
 } catch (error) {
-    get_characters_error = (is_prod_mode() ? t('get_characters_error') : error.message)
+    get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
 }
 
@@ -87,7 +87,7 @@ const page_title = t('account.page_title');
             overlay: true
         }}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>
                 {page_title}
             </PageTitle>

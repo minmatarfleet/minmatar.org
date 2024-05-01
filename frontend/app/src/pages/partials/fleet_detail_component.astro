@@ -5,7 +5,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -13,10 +13,12 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (is_prod_mode() && !user_is_superadmin)
+if (!user)
     return HTTP_404_Not_Found()
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
@@ -25,22 +27,33 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import type { FleetUI } from '@dtypes/layout_components'
+import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { get_user_character } from '@helpers/fetching/characters'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI
+let user_character:EveCharacterProfile
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    user_character = await get_user_character(user.user_id)
 } catch (error) {
-    fetch_fleets_error = is_prod_mode() ? t('fetch_fleets_error') : error.message
+    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+        return HTTP_404_Not_Found()
+    
+    fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+const can_remove_fleet = is_superuser ||
+                         user_permissions.includes('fleets.delete_evefleet') ||
+                         user_character.character_id === fleet.fleet_commander_id
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetDetails from '@components/blocks/FleetDetails.astro';
@@ -53,7 +66,11 @@ import FleetDetails from '@components/blocks/FleetDetails.astro';
             message: fetch_fleets_error,
             delay: delay,
         }}
-    />
+/>
     :
-    <FleetDetails fleet={fleet} history={!upcoming} />
+    <FleetDetails
+        fleet={fleet}
+        history={!upcoming}
+        can_remove_fleet={can_remove_fleet}
+    />
 }

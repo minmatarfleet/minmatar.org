@@ -83,7 +83,7 @@ const page_title = t('intel.add_structure.page_title');
             }
         }`}
     >
-        <FlexInline slot="header" justification='space-between'>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <img loading="lazy" height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
                 <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />

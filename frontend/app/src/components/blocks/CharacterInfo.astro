@@ -21,7 +21,7 @@ const {
 
 
 import { get_player_icon } from '@helpers/eve_image_server';
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
 import { format_date_time, humanize_date_diff } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
@@ -43,7 +43,7 @@ try {
     race = get_character_faction(character.race_id)
     cover = get_race_cover_image(race)
 } catch (error) {
-    get_character_error = (is_prod_mode() ? t('get_eve_character_error') : error.message)
+    get_character_error = (prod_error_messages() ? t('get_eve_character_error') : error.message)
 }
 
 const CHARACTER_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
