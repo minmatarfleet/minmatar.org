@@ -20,7 +20,7 @@ import PageLanding from '@components/page/PageLanding.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Grid from '@components/compositions/Grid.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
@@ -31,8 +31,6 @@ import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
 import WikiSmall from '@components/blocks/WikiSmall.astro';
-import Wiki from '@components/blocks/Wiki.astro';
-import Discord from '@components/blocks/Discord.astro';
 import DiscordSmall from '@components/blocks/DiscordSmall.astro';
 import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
@@ -135,94 +133,112 @@ const page_title = t('index.page_title');
 			}
 		</Flexblock>
 
-        <Wrapper
-			max_width='48rem'
+		<VerticalCenter
+			class="[ content-section ][ min-h-[100vh] max-w-[48rem] ]"
+		>
+			<Wrapper
+				max_width='48rem'
+				padding_inline='0'
+				padding_block="var(--space-l)"
+			>
+				<Flexblock
+					gap='var(--space-m)'
+					class="[ text-center ]"
+				>
+					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+					
+					<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
+
+					<p>{t('index.leading_text')}</p>
+
+					<FlexInline justification='center'>
+						<StylessButton href='#widgets' class="[ caret-down ]" />
+					</FlexInline>
+
+					{user_is_superadmin &&
+						<Flexblock class="[ camera-controls !hidden ]">
+							<Flexblock gap='0'>
+								<label for="doctrine">{t('rotation_x')}</label>
+								<Input type="number" x-model="rotation_x" step="0.01" />
+							</Flexblock>
+							<Flexblock gap='0'>
+								<label for="doctrine">{t('rotation_y')}</label>
+								<Input type="number" x-model="rotation_y" step="0.01" />
+							</Flexblock>
+						</Flexblock>
+					}
+				</Flexblock>
+			</Wrapper>
+		</VerticalCenter>
+
+		<Wrapper
+			max_width='90rem'
 			padding_inline='0'
 			padding_block="0"
-			class="[ page-content ]"
+			class="[ content-section ]"
 		>
-			<Flexblock gap='0'>
-				<Flexblock gap='var(--space-l)'>
-					<VerticalCenter class="[ min-h-[100vh] ]">
-						<Wrapper
-							class="[ w-full ]"
-							padding_inline='0'
-							padding_block="var(--space-l)"
-						>
-							<Flexblock
-								gap='var(--space-m)'
-								class="[ text-center ]"
-							>
-								<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
-								
-								<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
-
-								<p>{t('index.leading_text')}</p>
-
-								<FlexInline justification='center'>
-									<StylessButton href='#widgets' class="[ caret-down ]" />
-								</FlexInline>
-
-								{user_is_superadmin &&
-									<Flexblock class="[ camera-controls !hidden ]">
-										<Flexblock gap='0'>
-											<label for="doctrine">{t('rotation_x')}</label>
-											<Input type="number" x-model="rotation_x" step="0.01" />
-										</Flexblock>
-										<Flexblock gap='0'>
-											<label for="doctrine">{t('rotation_y')}</label>
-											<Input type="number" x-model="rotation_y" step="0.01" />
-										</Flexblock>
-									</Flexblock>
-								}
-							</Flexblock>
-						</Wrapper>
-					</VerticalCenter>
-
-					<Flexblock id="widgets" gap='var(--space-3xs)'>
-						<HomeCorporations />
-						<MediaFeed />
-						<WikiSmall						
-							padding_block='0'
-							padding_inline='var(--space-s)'
-							class="[ basis-[50%] shrink ]"
-						/>
-
-						<!-- <Grid
-							min_item_width="200px"
-							row_gap='var(--space-3xs)'
-							column_gap='var(--space-3xs)'
-						>
-							<Wiki						
-								padding_block='0'
-								padding_inline='var(--space-s)'
-								class="[ basis-[50%] shrink ]"
-							/>
-							<Discord						
-								padding_block='0'
-								padding_inline='var(--space-s)'
-								class="[ basis-[50%] shrink ]"
-							/>
-						</Grid> -->
-					</Flexblock>
-
-					<Grid
-						min_item_width="200px"
-						row_gap='var(--space-3xs)'
-						column_gap='var(--space-3xs)'
+			<Flexblock  id="widgets" gap='var(--space-l)' clas="[ w-full ]">
+				<FluidFixed
+					width='656px'
+					gap='var(--space-3xs)'
+					breakpoint='49%'
+				>
+					<Wrapper
+						padding_block='0'
+						padding_inline='0'
+						class="[ relative ]"
+						max_width='780px'
 					>
-						<RedditSmall						
-							padding_block='0'
-							padding_inline='var(--space-s)'
-							class="[ basis-[50%] shrink ]"
-						/>
-						<DiscordSmall						
-							padding_block='0'
-							padding_inline='var(--space-s)'
-							class="[ basis-[50%] shrink ]"
-						/>
-					</Grid>
-				</Flexblock>
+						<Flexblock gap='var(--space-3xs)'>
+							<HomeCorporations />
+							<WikiSmall						
+								padding_block='0'
+								padding_inline='var(--space-s)'
+								class="[ basis-[50%] shrink ]"
+							/>
+						</Flexblock>
+					</Wrapper>
+
+					<Wrapper
+						padding_block='0'
+						padding_inline='0'
+						max_width='656px'
+						class="[ relative z-10 ]"
+					>
+						<MediaFeed />
+					</Wrapper>
+				</FluidFixed>
+
+				<!-- <Grid
+					min_item_width="200px"
+					row_gap='var(--space-3xs)'
+					column_gap='var(--space-3xs)'
+				>
+					<Wiki						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+						class="[ basis-[50%] shrink ]"
+					/>
+					<Discord						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+						class="[ basis-[50%] shrink ]"
+					/>
+				</Grid> -->
+
+				<FlexInline
+					gap='var(--space-l)'
+					justification='center'
+				>
+					<RedditSmall						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+					/>
+					<DiscordSmall						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+					/>
+				</FlexInline>
 
 				<Wrapper
 					padding_inline="0"
@@ -268,11 +284,9 @@ const page_title = t('index.page_title');
         position: absolute;
     }
 
-	.page-content {
+	.content-section {
 		position: relative;
 		z-index: 1;
-		display: flex;
-		min-height: 100vh;
 		align-items: center;
 	}
 

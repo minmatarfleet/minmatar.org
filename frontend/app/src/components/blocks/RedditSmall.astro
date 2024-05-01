@@ -4,30 +4,20 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
+import StylessButton from '@components/blocks/StylessButton.astro';
 import RedditIcon from '@components/icons/buttons/RedditIcon.astro';
-import StylessButton from './StylessButton.astro';
 ---
 
 <StylessButton
     href='https://discord.com/invite/3hZfahmkFx'
+    {...Astro.props}
 >
-    <FixedFluid
-        width='64px'
-        breakpoint='40%'
-        class="[ items-center text-[var(--highlight)] ]"
+    <FlexInline
+        class="[ items-center text-[var(--highlight)] shrink ]"
     >
         <RedditIcon />
-        <Wrapper
-            padding_inline='0'
-            padding_block='var(--space-s)'
-        >
-            <Flexblock>
-                <p>You can find us in Reddit</p>
-            </Flexblock>
-        </Wrapper>
-    </FixedFluid>
+        <p class="[ w-fit ]">You can find us in Reddit</p>
+    </FlexInline>
 </StylessButton>
