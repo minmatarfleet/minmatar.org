@@ -14,14 +14,12 @@
 
         .tippy-arrow {
             // color: var(--transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
         }
 
         .tippy-content {
             padding: var(--space-2xs);
             background-color: #212112;
             background-color: var(--tippy-background-color);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
         }
     }
 
