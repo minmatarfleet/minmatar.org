@@ -67,6 +67,7 @@ const page_title = t('index.page_title');
         fullscreen={true}
         wide={true}
 		x-data={`{
+			show_fleet_feeds: true,
             ${staggering === 'auga' ?
 				AugaMilitiaHQCameraXData :
 				staggering === 'ourzad' ?
@@ -175,9 +176,15 @@ const page_title = t('index.page_title');
 			max_width='90rem'
 			padding_inline='0'
 			padding_block="0"
-			class="[ content-section ]"
+			class="[ content-section mt-2 ]"
 		>
-			<Flexblock  id="widgets" gap='var(--space-l)' clas="[ w-full ]">
+			<Flexblock
+				id="widgets"
+				gap='var(--space-l)'
+				class="[ w-full ]"
+				x-intersect:enter="show_fleet_feeds = false"
+				x-intersect:leave="show_fleet_feeds = true"
+			>
 				<FluidFixed
 					width='656px'
 					gap='var(--space-3xs)'
