@@ -238,7 +238,7 @@ const page_title = fitting_parsed.name;
                             <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
                             <Flexblock gap='var(--space-3xs)'>
                                 <PageTitle>{page_title}</PageTitle>
-                                <small>Last updated {format_date_short(lang, fitting.updated_at)}</small>
+                                <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
                             </Flexblock>
                         </FlexInline>
                         <ButtonStack>
