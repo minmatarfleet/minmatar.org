@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
@@ -33,7 +33,8 @@ class BasicCharacterResponse(BaseModel):
 
 
 class CharacterResponse(BasicCharacterResponse):
-    skills: dict
+    primary_character_id: Optional[int]
+    primary_character_name: Optional[str]
 
 
 class CharacterSkillsetResponse(BaseModel):
@@ -93,17 +94,32 @@ def get_character_by_id(request, character_id: int):
 
     character = EveCharacter.objects.get(character_id=character_id)
 
+    payload = {
+        "character_id": character.character_id,
+        "character_name": character.character_name,
+    }
+
+    if character.token:
+        primary_character = EvePrimaryCharacter.objects.filter(
+            character__token__user=character.token.user
+        ).first()
+        if (
+            primary_character
+            and primary_character.character.character_id != character_id
+        ):
+            payload["primary_character_id"] = (
+                primary_character.character.character_id
+            )
+            payload["primary_character_name"] = (
+                primary_character.character.character_name
+            )
+
     if (
         request.user.has_perm("eveonline.view_evecharacter")
         or character.token
         and character.token.user == request.user
     ):
-        return {
-            "character_id": character.character_id,
-            "character_name": character.character_name,
-            "skills": json.loads(character.skills_json),
-        }
-
+        return payload
     return 403, {
         "detail": "You do not have permission to view this character."
     }
