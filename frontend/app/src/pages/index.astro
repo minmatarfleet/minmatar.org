@@ -178,9 +178,10 @@ const page_title = t('index.page_title');
 			padding_block="0"
 			class="[ content-section mt-2 ]"
 		>
+
 			<Flexblock
 				id="widgets"
-				gap='var(--space-l)'
+				gap='var(--space-3xs)'
 				class="[ w-full ]"
 				x-intersect:enter="show_fleet_feeds = false"
 				x-intersect:leave="show_fleet_feeds = true"
@@ -232,30 +233,39 @@ const page_title = t('index.page_title');
 						class="[ basis-[50%] shrink ]"
 					/>
 				</Grid> -->
-
-				<FlexInline
-					gap='var(--space-l)'
-					justification='center'
-				>
-					<RedditSmall						
-						padding_block='0'
-						padding_inline='var(--space-s)'
-					/>
-					<DiscordSmall						
-						padding_block='0'
-						padding_inline='var(--space-s)'
-					/>
-				</FlexInline>
-
-				<Wrapper
-					padding_inline="0"
-					padding_block="var(--space-l)"
-					max_width='40rem'
-					centered={true}
-				>
-					<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
-				</Wrapper>
 			</Flexblock>
+
+			<Wrapper
+				padding_inline="0"
+				padding_block="var(--space-3xl)"
+				max_width='100%'
+				centered={true}
+			>
+				<Flexblock>
+					<FlexInline
+						gap='var(--space-l)'
+						justification='center'
+					>
+						<RedditSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+						/>
+						<DiscordSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+						/>
+					</FlexInline>
+
+					<Wrapper
+						padding_inline="0"
+						padding_block="0"
+						max_width='40rem'
+						centered={true}
+					>
+						<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+					</Wrapper>
+				</Flexblock>
+			</Wrapper>
 		</Wrapper>
 
 		{user &&
