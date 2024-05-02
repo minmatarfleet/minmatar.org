@@ -2,8 +2,17 @@ from django.contrib.auth.models import User
 
 from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
+from django.db.models import signals
 
 from .schemas import UserProfileSchema
+
+
+def offboard_user(user_id: int):
+    signals.m2m_changed.disconnect(
+        sender=User.groups.through, dispatch_uid="user_group_changed"
+    )
+    user = User.objects.get(id=user_id)
+    user.delete()
 
 
 def get_user_permissions(user_id: int) -> list[str]:

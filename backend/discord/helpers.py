@@ -3,6 +3,7 @@ import logging
 import requests
 import upsidedown
 from django.contrib.auth.models import User
+from users.helpers import offboard_user
 
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
@@ -63,27 +64,14 @@ def get_discord_user(user: User, notify=False):
     try:
         external_discord_user = discord.get_user(discord_user.id)
     except requests.exceptions.HTTPError as e:
-        if notify:
-            if e.response.json() == {
-                "message": "Unknown Member",
-                "code": 10007,
-            }:
-                characters = ",".join(
-                    [
-                        char.character_name
-                        for char in EveCharacter.objects.filter(
-                            token__user__id=user.id
-                        )
-                    ]
-                )
-
-                message = "The following user needs to be offboarded,\n"
-                message += f"Discord ID: {user.username}\n"
-                message += f"Characters: {characters}\n"
-                discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
-                return None
-
-        raise e
+        if e.response.json() == {
+            "message": "Unknown Member",
+            "code": 10007,
+        }:
+            offboard_user(user.id)
+            message = f":white_check_mark: {user.username} was automatically offboarded"
+            discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
+            return None
 
     return external_discord_user
 
