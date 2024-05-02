@@ -33,8 +33,8 @@ class BasicCharacterResponse(BaseModel):
 
 
 class CharacterResponse(BasicCharacterResponse):
-    primary_character_id: Optional[int]
-    primary_character_name: Optional[str]
+    primary_character_id: Optional[int] = None
+    primary_character_name: Optional[str] = None
 
 
 class CharacterSkillsetResponse(BaseModel):
