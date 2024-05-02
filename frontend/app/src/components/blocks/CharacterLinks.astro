@@ -30,10 +30,32 @@ import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
 
 <FlexInline gap='var(--space-3xs)'>
     {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
-        <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('skillsets')} href={translatePath(`/character/skillsets?character_id=${character_id}`)}><SkillsEvEIcon /></a>
+        <a
+            class="[ w-[32px] neocom-button ]"
+            data-tippy-content={t('skillsets')}
+            href={translatePath(`/character/skillsets?character_id=${character_id}`)}
+            target="_blank"
+        >
+            <SkillsEvEIcon />
+        </a>
     }
     {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
-        <a class="[ w-[32px] neocom-button ]" data-tippy-content={t('assets')} href={translatePath(`/character/assets?character_id=${character_id}`)}><AssetsEvEIcon /></a>
+        <a
+            class="[ w-[32px] neocom-button ]"
+            data-tippy-content={t('assets')}
+            href={translatePath(`/character/assets?character_id=${character_id}`)}
+            target="_blank"
+        >
+            <AssetsEvEIcon />
+        </a>
     }
-    <a data-tippy-content={t('zkillboard')} class="[ w-[32px] neocom-button ]" href={get_zkillboard_character_link(character_id)} target="_blank" rel="nofollow noopener noreferrer"><ZkillboardEvEIcon /></a>
+    <a
+        data-tippy-content={t('zkillboard')}
+        class="[ w-[32px] neocom-button ]"
+        href={get_zkillboard_character_link(character_id)}
+        target="_blank"
+        rel="nofollow noopener noreferrer"
+    >
+        <ZkillboardEvEIcon />
+    </a>
 </FlexInline>
