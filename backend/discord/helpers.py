@@ -68,8 +68,17 @@ def get_discord_user(user: User, notify=False):
             "message": "Unknown Member",
             "code": 10007,
         }:
+            characters = ",".join(
+                [
+                    char.character_name
+                    for char in EveCharacter.objects.filter(
+                        token__user__id=user.id
+                    )
+                ]
+            )
             offboard_user(user.id)
-            message = f":white_check_mark: {user.username} was automatically offboarded"
+
+            message = f":white_check_mark: {user.username} ({characters}) was automatically offboarded"
             discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
             return None
 
