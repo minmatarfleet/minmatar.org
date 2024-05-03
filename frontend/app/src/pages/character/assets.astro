@@ -27,7 +27,7 @@ const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 
-import type { AssetsUI, CharacterBasic } from '@dtypes/layout_components'
+import type { AssetsUI, CharacterBasic, SelectOptions } from '@dtypes/layout_components'
 import { get_assets } from '@helpers/fetching/characters'
 
 let character_assets:AssetsUI = {
@@ -45,7 +45,18 @@ try {
 
 const ASSETS_LIST_PARTIAL_URL = translatePath('/partials/assets_list_component')
 
-const assets_stations:string[] = character_assets.locations.map( (location):string => location.location_name )
+// const assets_stations:string[] = character_assets.locations.map( (location):string => location.location_name )
+let assets_stations:string[] = []
+let location_options:SelectOptions[] = []
+
+character_assets.locations.map( (location) => {
+    if (!assets_stations.includes(location.location_name)) {
+        assets_stations.push(location.location_name)
+        location_options.push({
+            label: location.location_name,
+        })
+    }
+})
 
 let total_assets_count = 0
 character_assets.locations.forEach( (i) => total_assets_count += i.assets.reduce( (c, i) => c + i.count , 0) )
@@ -67,7 +78,7 @@ import AssetsList from '@components/blocks/AssetsList.astro';
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
-import Select from '@components/blocks/Select.astro';
+import SelectFinder from '@components/blocks/SelectFinder.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
@@ -106,7 +117,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             asset_station: '-1',
             total_assets_count: ${total_assets_count},
             total_assets_count_unfiltered: ${total_assets_count},
-            locations_options: ${JSON.stringify(assets_stations)},
+            locations_options: ${JSON.stringify(location_options)},
             filter() {
                 if (this.asset_name === '' && this.asset_station === '-1') {
                     this.assets_locations_filtered = (this.assets_style == 'list' ? this.assets_locations : this.assets_locations_icons)
@@ -138,6 +149,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             character_id: ${character_info.character_id},
             character_name: '${character_info.character_name}',
         }`}
+        x-effect="asset_station && filter()"
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
@@ -166,16 +178,12 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                 </Input>
                 
                 <div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="asset_station"
+                    <SelectFinder
+                        placeholder={t('accessible_stations')}
+                        options="locations_options"
+                        model="asset_station"
                         width='280px'
-                        x-on:change="filter()"
-                    >
-                        <option selected value="-1">{t('accessible_stations')}</option>
-                        <template x-for="location_name in locations_options">
-                            <option x-text="location_name" />
-                        </template>
-                    </Select>
+                    />
                 </div>
             </FlexInline>
         </FlexInline>

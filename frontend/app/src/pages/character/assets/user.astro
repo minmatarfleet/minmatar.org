@@ -17,7 +17,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
-import type { AssetsUI } from '@dtypes/layout_components'
+import type { AssetsUI, SelectOptions } from '@dtypes/layout_components'
 import { get_user_assets } from '@helpers/fetching/characters'
 
 let characters_assets:AssetsUI[] = []
@@ -31,10 +31,16 @@ try {
 const USER_ASSETS_LIST_PARTIAL_URL = translatePath('/partials/user_assets_list_component')
 
 let assets_stations:string[] = []
+let location_options:SelectOptions[] = []
+
 characters_assets.map( (character_assets) => {
     character_assets.locations.map( (location) => {
-        if (!assets_stations.includes(location.location_name))
+        if (!assets_stations.includes(location.location_name)) {
             assets_stations.push(location.location_name)
+            location_options.push({
+                label: location.location_name,
+            })
+        }
     })
 })
 
@@ -50,7 +56,7 @@ import UserAssets from '@components/blocks/UserAssets.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
-import Select from '@components/blocks/Select.astro';
+import SelectFinder from '@components/blocks/SelectFinder.astro';
 import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
@@ -84,7 +90,7 @@ const page_title = t('assets.user.page_title')
             asset_region: '-1',
             asset_system: '-1',
             asset_station: '-1',
-            locations_options: ${JSON.stringify(assets_stations)},
+            locations_options: ${JSON.stringify(location_options)},
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -104,15 +110,12 @@ const page_title = t('assets.user.page_title')
                 </Input>
                 
                 <div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="asset_station"
+                    <SelectFinder
+                        placeholder={t('accessible_stations')}
+                        options="locations_options"
+                        model="asset_station"
                         width='280px'
-                    >
-                        <option selected value="-1">{t('accessible_stations')}</option>
-                        <template x-for="location_name in locations_options">
-                            <option x-text="location_name" />
-                        </template>
-                    </Select>
+                    />
                 </div>
             </FlexInline>
         </FlexInline>
