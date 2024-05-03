@@ -507,6 +507,7 @@ export interface MemberUI {
 export interface SelectOptions {
     value?: string | number;
     label:  string;
+    image?: string;
 }
 
 export interface PageFinderUI {
