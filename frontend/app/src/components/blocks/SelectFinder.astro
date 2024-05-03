@@ -1,0 +1,303 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+interface Props {
+    model:              string;
+    placeholder:        string;
+    options:            string;
+    size?:              number;
+    value?:             string | number;
+    width?:             string;
+    [propName: string]: any;
+}
+
+const {
+    model,
+    placeholder,
+    options,
+    size = 64,
+    value = '-1',
+    width = '100%',
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import CaretIcon from '@components/icons/CaretIcon.astro';
+import BadgeAlpine from '@components/blocks/BadgeAlpine.astro';
+import Input from '@components/blocks/Input.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<div
+    x-data={`{
+        id: $id('finder-select'),
+        finder_id: $id('finder-filter'),
+        options_id: $id('finder-options'),
+        search: '',
+        filtered: [ false ],
+        options: ${JSON.stringify(options)},
+        open: false,
+        close() {
+            this.open = false
+        },
+        toggle() {
+            this.open = this.open ? this.close() : true
+            if (this.open)
+                setTimeout(() => { document.getElementById(this.finder_id).focus() }, 50)
+        },
+        filter() {
+            if (this.search === '') {
+                this.filtered = [ false ]
+                return
+            }
+
+            const filtered = []
+
+            ${options}.forEach( (option) => {
+                const search = option.label.toLowerCase()
+                
+                if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
+                    filtered.push(option?.value ?? option?.label)
+            })
+            
+            this.filtered = filtered
+        },
+    }`}
+    x-ref="finder"
+    class="[ select-finder ][ max-h-[66px] relative w-full ]"
+    @keydown.escape.prevent.stop="close()"
+    @mousedown.outside="open && close()"
+    @focusin.window="! $refs.finder.contains($event.target) && close()"
+>
+    <select
+        class="[ hidden ]"
+        x-bind:id="$id('select')"
+        x-model={model}
+        {...attributes}
+    >
+        <template x-for={`option in ${options}`}>
+            <option x-bind:value="option?.value ?? option?.label" x-text="option.label"  hidden/>
+        </template>
+    </select>
+
+    <StylessButton
+        x-ref={model}
+        x-model={model}
+        @click.prevent="toggle()"
+        class="[ select ]"
+        readonly
+        x-bind:aria-expanded="open"
+        x-bind:aria-controls="options_id"
+    >
+        <span
+            x-data={`{
+                get_text() {
+                    if (${model} === '-1')
+                        return '${placeholder}'
+
+                    return ${options}.find((i) => (i.value || i.label) === ${model}).label
+                }
+            }`}
+            class="[ block w-full truncate ]"
+            x-text="get_text()"
+        >
+            {placeholder}
+        </span>
+    </StylessButton>
+
+    <Flexblock
+        x-bind:id="options_id"
+        x-show="open"
+        x-anchor.bottom-start={`$refs.${model}`}
+        style="display: none"
+        class="[ options-wrapper ][ border ]"
+        gap='0'
+    >
+        <Wrapper
+            class="[ input-wrapper ]"
+            padding_block='var(--space-3xs)'
+            padding_inline='var(--space-3xs)'
+        >
+            <Input
+                placeholder={t('filter')}
+                x-model="search"
+                x-bind:id="finder_id"
+                x-on:keyup="filter()"
+                autocomplete="off"
+            />
+        </Wrapper>
+
+        <Flexblock
+            first_element_gap={true}
+            gap="var(--space-3xs)"
+            class="[ options ]"
+        >
+            <StylessButton
+                x-on:click={`${model} = '-1'; close()`}
+                x-bind:class={`{ 'selected': ${model} === '-1' }`}
+                x-show="show_item($el)"
+                x-data={`{
+                    show_item() {
+                        return JSON.stringify(filtered) === JSON.stringify([ false ])
+                    }
+                }`}
+            >
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='var(--space-s)'
+                >
+                    <span class="[ text-[var(--highlight)] min-w-[200px] ]">{placeholder}</span>
+                </Wrapper>
+            </StylessButton>
+            <template x-for={`option in ${options}`}>
+                <StylessButton
+                    x-on:click={`${model} = option?.value ?? option?.label; close(); search = ''; filter()`}
+                    x-bind:class={`{ 'selected': ${model} === (option?.value ?? option?.label) }`}
+                    x-show="show_item($el)"
+                    x-data={`{
+                        show_item() {
+                            return JSON.stringify(filtered) === JSON.stringify([ false ]) || filtered.includes(option?.value ?? option?.label)
+                        }
+                    }`}
+                >
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='var(--space-s)'
+                    >
+                        <template x-if="option?.image">
+                            <BadgeAlpine
+                                size={size}
+                                x-data={`{
+                                    image: option.image,
+                                    highlight: true,
+                                    title: option.label
+                                }`}
+                            />
+                        </template>
+                        <template x-if="!option?.image">
+                            <span
+                                class="[ text-[var(--highlight)] min-w-[200px] ]"
+                                x-text="option.label"
+                            />
+                        </template>
+                    </Wrapper>
+                </StylessButton>
+            </template>
+        </Flexblock>
+    </Flexblock>
+    
+    <CaretIcon />
+</div>
+
+<style lang="scss" define:vars={{ width }}>
+    .select {
+        width: var(--width);
+    }
+</style>
+
+<style lang="scss">
+    button {
+        &:hover,
+        &:focus-visible {
+            background-color: var(--component-background);
+            outline: none;
+        }
+        
+        &.selected {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    option  {
+        display: none;
+    }
+
+    input {
+        cursor: default;
+    }
+
+    .input-wrapper {
+        background-color: #171616;
+        z-index: 1;
+    }
+
+    .options-wrapper {
+        margin-top: 2px;
+        min-width: 360px;
+        background-color: #171616;
+    }
+
+    .options {
+        z-index: var(--tooltips-z-index);
+        height: fit-content;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 0;
+    }
+
+    :global(.options span) {
+        white-space: nowrap;
+    }
+
+    svg {
+        color: var(--highlight);
+        position: absolute;
+        right: var(--space-xs);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    [size="1"] + svg {
+        z-index: 10;
+    }
+
+    .select {
+        --background-color: var(--color_prop);
+        --flex-inline--gap: var(--space-xs);
+
+        padding: var(--space-s) var(--space-s-m);
+        padding-right: var(--space-m-l);
+        border: none;
+        color: var(--form-color);
+        background-color: transparent;
+        border: solid 1px var(--border-color);
+        background-color: rgba(85, 85, 85, 0.1);
+        transition: var(--fast-transition);
+        position: relative;
+        width: 100%;
+
+        -webkit-appearance: none;
+        appearance: none;
+
+        &:hover {
+            border-color: var(--border-color-hover);
+        }
+
+        
+        &[aria-expanded="true"] {
+            outline: none;
+            background-color: var(--component-background);
+        }
+    }
+
+    select[size] {
+        z-index: 10;
+    }
+
+    select[size="0"] {
+        z-index: 0;
+    }
+
+    :global(select option) {
+        padding: var(--space-3xs) var(--space-2xs);
+    }
+
+    :global(select option:focus),
+    :global(select option:hover) {
+        background-color: var(--fleet-red);
+    }
+</style>

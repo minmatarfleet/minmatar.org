@@ -71,10 +71,13 @@ corporations_members.forEach( (corporation) => {
     CORPORATIONS_MEMBERS_COUNT[corporation.corporation_id] = corporation.members.length
 })
 
+import { get_corporation_logo } from '@helpers/eve_image_server';
+
 const corporations_options = corporations_members.map( (corporation):SelectOptions => {
     return {
         value: corporation.corporation_id,
         label: corporation.corporation_name,
+        image: get_corporation_logo(corporation.corporation_id, 32),
     }
 } )
 
@@ -89,7 +92,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
 import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
-import Select from '@components/blocks/Select.astro';
+import SelectFinder from '@components/blocks/SelectFinder.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
@@ -159,6 +162,7 @@ const page_title = t('corporations.members.unregistered.page_title')
                 })
             },
         }`}
+        x-effect="corporation_filter && filter()"
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>
@@ -174,16 +178,13 @@ const page_title = t('corporations.members.unregistered.page_title')
                 </Input>
                 
                 <div class="[ hidden 2xl:block ]">
-                    <Select
-                        x-model="corporation_filter"
+                    <SelectFinder
+                        size={32}
+                        placeholder={t('corporations')}
+                        options="corporations_options"
+                        model="corporation_filter"
                         width='280px'
-                        x-on:change="filter()"
-                    >
-                        <option selected value="-1">{t('corporations')}</option>
-                        <template x-for="corporation in corporations_options">
-                            <option x-bind:value="corporation.value" x-text="corporation.label" />
-                        </template>
-                    </Select>
+                    />
                 </div>
             </FlexInline>
         </FlexInline>

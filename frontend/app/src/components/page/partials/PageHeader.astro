@@ -14,7 +14,7 @@ const subheader_content = await Astro.slots.render('subheader');
 ---
 
 <div class="[ post-header ]">
-    <div class="[ darker-transparency ]">
+    <div class="[ darker-transparency ][ relative z-10 ]">
         <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
             <slot />
         </Wrapper>
@@ -46,6 +46,8 @@ const subheader_content = await Astro.slots.render('subheader');
         }
 
         .main-bar {
+            position: relative;
+            z-index: 1;
             min-height: var(--space-xl-2xl);
             display: flex;
             width: 100%;
