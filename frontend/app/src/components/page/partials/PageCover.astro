@@ -39,9 +39,12 @@ const optional_attributes = {
         &.scrollable {
             position: absolute;
             transform: translateY(0);
-            animation: parallax linear;
-            animation-timeline: view();
-            animation-range: -45% 145%;
+
+            @media only screen and (min-device-width: 1366px) {
+                animation: parallax linear;
+                animation-timeline: view();
+                animation-range: -45% 145%;
+            }
         }
 
         &.overlay:after {
