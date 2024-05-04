@@ -207,7 +207,7 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         100000 * Math.cos(planet_angle), 3000, 100000 * Math.sin(planet_angle), 1
     ));
     
-    minmatar_hq = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
+    minmatar_hq = scene.loadShip('cl1_t1:angelbase:minmatar', function() {
         camera.focus(this, 0.255)
 
         let matrix = mat4.fromValues(
@@ -223,20 +223,20 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         this.setTransform(rotationMatrix)
         this.setTransform(matrix)
 
-        setColor(217, 129, 91, 'Mtl1DiffuseColor')
-        setColor(255, 0, 0, 'Mtl2DiffuseColor')
-        setColor(133, 4, 4, 'Mtl3DiffuseColor')
-        setColor(240, 129, 39, 'Mtl4DiffuseColor')
+        setColor(4, 3, 1, 'Mtl1DiffuseColor')
+        setColor(148, 76, 43, 'Mtl2DiffuseColor')
+        setColor(2, 1, 1, 'Mtl3DiffuseColor')
+        setColor(5, 6, 13, 'Mtl4DiffuseColor')
 
-        setColor(255, 255, 255, 'Mtl1Gloss')
-        setColor(99, 64, 8, 'Mtl2Gloss')
-        setColor(255, 15, 15, 'Mtl3Gloss')
-        setColor(222, 147, 17, 'Mtl4Gloss')
+        setColor(48, 48, 186, 'Mtl1Gloss')
+        setColor(129, 90, 214, 'Mtl2Gloss')
+        setColor(178, 85, 212, 'Mtl3Gloss')
+        setColor(1, 0, 54, 'Mtl4Gloss')
         
-        setColor(0, 0, 0, 'Mtl1FresnelColor')
-        setColor(31, 25, 0, 'Mtl2FresnelColor')
-        setColor(217, 129, 91, 'Mtl3FresnelColor')
-        setColor(18, 16, 11, 'Mtl4FresnelColor')
+        setColor(3, 2, 2, 'Mtl1FresnelColor')
+        setColor(0, 0, 0, 'Mtl2FresnelColor')
+        setColor(0, 0, 0, 'Mtl3FresnelColor')
+        setColor(5, 5, 5, 'Mtl4FresnelColor')
     });
 
     loadDna('ms3:minmatarbase:minmatar')
