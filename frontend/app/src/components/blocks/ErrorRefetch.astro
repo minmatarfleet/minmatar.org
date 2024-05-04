@@ -6,11 +6,13 @@ const t = useTranslations(lang);
 
 import type { ErrorRefetchParams } from '@dtypes/layout_components';
 interface Props {
-    args:    ErrorRefetchParams;
+    args:       ErrorRefetchParams;
+    animation?: boolean;
 }
 
 const {
-    args
+    args,
+    animation = true,
 } = Astro.props
 
 import { marked } from 'marked';
@@ -35,7 +37,8 @@ const target = args?.target
     }`}
     x-bind:id="id"
 >
-    <RifterIcon />
+    {animation && <RifterIcon />}
+        
     <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
         <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)}>
         <div
