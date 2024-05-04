@@ -35,6 +35,7 @@ import DiscordSmall from '@components/blocks/DiscordSmall.astro';
 import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
+import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 
@@ -215,6 +216,14 @@ const page_title = t('index.page_title');
 					>
 						<MediaFeed />
 					</Wrapper>
+				</FluidFixed>
+
+				<FluidFixed
+					width='656px'
+					gap='var(--space-3xs)'
+					breakpoint='49%'
+				>
+					<MetaGuideWidget />
 				</FluidFixed>
 
 				<!-- <Grid

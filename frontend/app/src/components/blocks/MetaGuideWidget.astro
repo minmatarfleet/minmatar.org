@@ -1,0 +1,80 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { query_string } from '@helpers/string';
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from './Button.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+---
+
+
+<ComponentBlock
+    padding_block='0'
+    padding_inline='0'
+    max_width='656px'
+>
+    <FixedFluid
+        width='216px'
+        gap='0'
+        breakpoint='57.35%'
+        class="[ items-center ]"
+    >
+        <picture>
+            <img loading="lazy" class="[ hidden sm:flex ]" src="/images/metaguide.jpg" width="216" height="305" />
+            <img loading="lazy" class="[ sm:hidden ]" src="/images/metaguide-wide.jpg" />
+        </picture>
+
+        <Wrapper
+            padding_block='var(--space-s)'
+            padding_inline='var(--space-s)'
+            max_width='656px'
+        >
+            <Flexblock>
+                <FlexInline>
+                    <h2>{t('destroyer_guide_title')}</h2>
+                </FlexInline>
+                <p>{t('destroyer_guide_description')}
+                    <span
+                        class="[ text-[var(--highlight)] cursor-pointer ]"
+                        x-data={`{
+                            show_character_modal() {
+                                show_modal({
+                                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                        character_id: '2120153200',
+                                    })}',
+                                })
+                            }
+                        }`}
+                        x-on:click="show_character_modal()"
+                    >Furl0w</span>
+                </p>
+                <FlexInline>
+                    <Button
+                        size='sm'
+                        href='https://www.reddit.com/r/Eve/comments/1c7x1ps/the_navy_destroyer_metagame_guide_2024_edition/'
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                    >
+                        {t('reddit_article')}
+                    </Button>
+                    <Button
+                        size='sm'
+                        href='https://drive.google.com/file/d/1Vr3T2Z0pPlDkj8sqsS0EBhDcUbLnol2p/view'
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                    >
+                        {t('guide_download')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </Wrapper>
+    </FixedFluid>
+</ComponentBlock>
