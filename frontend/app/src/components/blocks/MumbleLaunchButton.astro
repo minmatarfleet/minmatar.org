@@ -29,9 +29,12 @@ try {
     get_mumble_connection_error = prod_error_messages() ? t('get_mumble_connection_error') : error.message
 }
 
+import { query_string } from '@helpers/string';
+
 import MumbleConnectButton from '@components/blocks/MumbleConnectButton.astro';
 import Button from '@components/blocks/Button.astro';
 import Tippy from '@components/blocks/Tippy.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 {get_mumble_connection_error ?
@@ -42,28 +45,49 @@ import Tippy from '@components/blocks/Tippy.astro';
         }}
     />
     :
-    <Tippy
-        data-tippy-placement="top"
-        partial={`${translatePath('/partials/normal_tooltip')}?description=mumble_launch_button_tooltip`}
-        height='70px'
-        width='340px'
-        element='div'
-        show_delay={2000}
-        x-data={`{
-            init() {
-                window.open('${mumble_information.url}','_newtab');
-            }
-        }`}
-    >
+    <FlexInline>
         <Button
-            color='green'
             size='sm'
             type="button"
-            href={mumble_information.url}
-            target="_blank"
-            rel="nofollow noopener noreferrer"
+            x-data={`{
+                show_mumble_credentials_dialog() {
+                    show_alert_dialog({
+                        title: '${t('mumble_credentials_dialog_title')}',
+                        partial: '${translatePath('/partials/mumble_credentials_dialog/')}?${query_string({
+                            username: mumble_information.username,
+                            password: mumble_information.password,
+                        })}',
+                    })
+                }
+            }`}
+            x-on:click="show_mumble_credentials_dialog"
         >
-            {t('launch_mumble')}
+            {t('show_credentials')}
         </Button>
-    </Tippy>
+
+        <Tippy
+            data-tippy-placement="top"
+            partial={`${translatePath('/partials/normal_tooltip')}?description=mumble_launch_button_tooltip`}
+            height='70px'
+            width='340px'
+            element='div'
+            show_delay={2000}
+            x-data={`{
+                init() {
+                    window.open('${mumble_information.url}','_newtab');
+                }
+            }`}
+        >
+            <Button
+                color='green'
+                size='sm'
+                type="button"
+                href={mumble_information.url}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+            >
+                {t('launch_mumble')}
+            </Button>
+        </Tippy>
+    </FlexInline>
 }
