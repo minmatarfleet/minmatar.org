@@ -728,5 +728,10 @@ export const ui = {
         'destroyer_guide_description': 'In this guide you will find all the common archetypes for the navy destroyers with several fits. Written by ',
         'reddit_article': 'Read Reddit article',
         'guide_download': 'Guide link',
+        'show_credentials': 'Show credentials',
+        'username': 'Username',
+        'password': 'Password',
+        'mumble_credentials_dialog_title': 'Mumble credentials',
+        'mumble_credentials_dialog_text': 'Use the following username and password to keep Mumble authenticated:',
     },
 } as const;
