@@ -31,6 +31,7 @@ class CorporationMemberResponse(Schema):
     primary_character_id: Optional[int] = None
     primary_character_name: Optional[str] = None
     registered: bool = False
+    exempt: bool = False
 
 
 class CorporationResponse(Schema):
@@ -154,6 +155,8 @@ def get_corporation_by_id(request, corporation_id: int):
         }
         if character.token:
             payload["registered"] = True
+            if character.exempt:
+                payload["exempt"] = True
             primary_character = EvePrimaryCharacter.objects.filter(
                 character__token__user=character.token.user
             ).first()

@@ -38,6 +38,7 @@ class EveCharacter(models.Model):
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, null=True, blank=True
     )
+    exempt = models.BooleanField(default=False)
 
     # data
     skills_json = models.TextField(blank=True, default="{}")

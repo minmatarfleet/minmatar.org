@@ -49,7 +49,7 @@ def eve_corporation_application_post_save(
         instance.save()
 
     if instance.status == "accepted":
-        message = ":tada: Your application has been accepted!\n- Apply in-game \n- Follow these [onboarding steps](https://wiki.minmatar.org/en/alliance/Onboarding)\n- Familiarize yourself with our [guides, values, and more](https://wiki.minmatar.org/)"
+        message = ":tada: Your application has been accepted!\n-Read our [alliance values](https://wiki.minmatar.org/en/alliance/Minmatar_Fl33t_Tenets)\n- Apply in-game \n- Follow these [onboarding steps](https://wiki.minmatar.org/en/alliance/Onboarding)\n- Familiarize yourself with our [guides, values, and more](https://wiki.minmatar.org/)"
         discord.create_message(
             channel_id=instance.discord_thread_id, message=message
         )
