@@ -117,6 +117,7 @@ export async function get_all_corporation_members(access_token:string, corporati
             character_id: api_member.character_id,
             character_name: api_member.character_name,
             registered: api_member.registered,
+            exempt: api_member.exempt,
             is_main: !is_alt
         }
         

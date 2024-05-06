@@ -45,7 +45,7 @@ try {
         ALLIANCE_MEMBERS_COUNT += corporation.members.length
         MAIN_COUNT += corporation.members.filter( (member) => member.is_main ).length
 
-        const unregistered_members = corporation.members.filter( (member) => !member.registered )
+        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
 
         if (status === 'unregistered')
             corporation.members = unregistered_members

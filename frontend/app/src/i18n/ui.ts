@@ -733,5 +733,6 @@ export const ui = {
         'password': 'Password',
         'mumble_credentials_dialog_title': 'Mumble credentials',
         'mumble_credentials_dialog_text': 'Use the following username and password to keep Mumble authenticated:',
+        'exempt': 'Exempt',
     },
 } as const;

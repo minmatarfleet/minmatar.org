@@ -73,7 +73,7 @@ try {
             return member.is_main 
         }).length
 
-        const unregistered_members = corporation.members.filter( (member) => !member.registered )
+        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
         
         UNREGISTERED_COUNT += unregistered_members.length
 
