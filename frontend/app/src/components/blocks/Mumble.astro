@@ -14,6 +14,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 import MumbleIcon from '@components/icons/MumbleIcon.astro';
 import MumbleConnectButton from './MumbleConnectButton.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
 <ComponentBlock
@@ -24,7 +25,10 @@ import MumbleConnectButton from './MumbleConnectButton.astro';
             <a href="https://www.mumble.info/downloads/" target="_blank" rel="nofollow noopener noreferrer">
                 <MumbleIcon />
             </a>
-            <p set:html={marked.parseInline(t('mumble_details'), { renderer })} />
+            <Flexblock gap='0'>
+                <p set:html={marked.parseInline(t('mumble_details'), { renderer })} />
+                <small set:html={marked.parseInline(t('mumble_tutorial'), { renderer })} />
+            </Flexblock>
         </FlexInline>
         
         <MumbleConnectButton />
