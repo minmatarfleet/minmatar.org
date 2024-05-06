@@ -59,6 +59,7 @@ export interface CharacterCorp {
     primary_character_id:   number;
     primary_character_name: string;
     registered:             boolean;
+    exempt:                 boolean;
 }
 
 export interface CorporationApplication {

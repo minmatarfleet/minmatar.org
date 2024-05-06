@@ -43,7 +43,7 @@ try {
         ALLIANCE_MEMBERS_COUNT += corporation.members.length
         MAIN_COUNT += corporation.members.filter( (member) => member.is_main && member.registered ).length
 
-        const unregistered_members = corporation.members.filter( (member) => !member.registered )
+        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
         
         UNREGISTERED_COUNT += unregistered_members.length
 

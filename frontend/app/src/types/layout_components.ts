@@ -300,6 +300,7 @@ export interface CharacterKind {
     corporation_id?:    number;
     corporation_name?:  string;
     registered:         boolean;
+    exempt:             boolean;
     is_main:            boolean;
     main_character?:    CharacterBasic;
 }

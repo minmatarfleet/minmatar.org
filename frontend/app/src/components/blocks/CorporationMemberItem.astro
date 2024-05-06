@@ -41,7 +41,10 @@ import Tag from '@components/blocks/Tag.astro';
             <small class="truncate">{member.main_character.character_name} {t('alt_character').toLowerCase()}</small>
         }
     </PilotBadge>
-    {!member.registered &&
+    {!member.exempt && !member.registered &&
         <Tag text={t('unregistered')} />
+    }
+    {member.exempt &&
+        <Tag color='alliance-blue' text={t('exempt')} />
     }
 </FlexInline>
