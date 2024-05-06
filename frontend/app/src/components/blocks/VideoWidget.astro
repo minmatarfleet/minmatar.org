@@ -31,12 +31,26 @@ import Wrapper from "@components/compositions/Wrapper.astro";
     padding_inline="0"
     padding_block="0"
 >
-    <div class="[ video-frame w-full ]">
+    <div
+        class="[ video-frame w-full ]"
+        x-data={`{
+            id: $id('yt-player')
+        }`}
+    >
         <lite-youtube
             class="[ max-w-full h-full w-full ]"
+            x-bind:id="id"
             videoid={videoid}
             videotitle={videotitle}
             posterquality="maxresdefault"
+            x-data={`{
+                init() {
+                    $nextTick(() => {
+                        const frame = document.getElementById(this.id).shadowRoot.getElementById('frame')
+                        frame.innerHTML += '<style>#frame:before { display: none }</style>'
+                    })
+                }
+            }`}
         />
     </div>
     {credits !== false &&
