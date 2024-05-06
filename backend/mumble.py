@@ -27,6 +27,24 @@ def get_mumble_access_by_username(username):
     return MumbleAccess.objects.filter(user=user).first()
 
 
+def get_mumble_groups_by_username(username):
+    from eveonline.models import (  # pylint: disable=import-outside-toplevel
+        EveCharacter,
+    )
+    from mumble.models import (  # pylint: disable=import-outside-toplevel
+        MumbleAccess,
+    )
+
+    eve_character = EveCharacter.objects.get(character_name=username)
+    if not eve_character:
+        return None
+    if not eve_character.token:
+        return None
+    user = eve_character.token.user
+    groups = user.groups.all()
+    return [group.name for group in groups]
+
+
 class MetaCallback(Murmur.MetaCallback):
     def __init__(self):
         Murmur.MetaCallback()
@@ -59,8 +77,10 @@ class Authenticator(Murmur.ServerAuthenticator):
                 print(f"Failed authenticating: {name}")
                 return -1, None, None
 
+            groups = get_mumble_groups_by_username(name)
+
             if mumble_access.password == pw:
-                return mumble_access.user.id, "[FL33T] " + name, None
+                return mumble_access.user.id, "[FL33T] " + name, groups
 
         except Exception as e:
             print(f"Error authenticating: {name}")
