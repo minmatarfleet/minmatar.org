@@ -176,11 +176,11 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
     scene.setSunDirection([-0.5, -0.01, 0.4]);
 
     const moon = scene.loadPlanet(
-        40000004,
-        'res:/dx9/model/WorldObject/Planet/Template/Moon/p_moon_51.red',
+        40161790,
+        'res:/dx9/model/WorldObject/Planet/Template/Moon/p_moon_38.red',
         undefined,
-        'res:/dx9/model/worldobject/planet/Moon/Moon05_H.dds.0.png',
-        'res:/dx9/model/worldobject/planet/Moon/Moon05_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Moon/Moon01_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Moon/Moon04_H.dds.0.png',
     );
 
     let moon_angle = 1.4;
@@ -192,11 +192,11 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
     ));
 
     const planet = scene.loadPlanet(
-        40000123,
-        'res:/dx9/model/WorldObject/Planet/Template/Ice/P_Ice_61.red',
+        40161782,
+        'res:/dx9/model/WorldObject/Planet/Template/Ice/P_Ice_56.red',
         undefined,
-        'res:/dx9/model/worldobject/planet/Ice/Ice04_H.dds.0.png',
-        'res:/dx9/model/worldobject/planet/Terrestrial/Terrestrial02_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Ice/Ice02_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Ice/Ice02_H.dds.0.png',
     );
 
     let planet_angle = 2.4;
@@ -320,6 +320,7 @@ export const OurzadCameraXData = `
     resize_canvas: null,
     rotation_angle: 0,
     resizeCanvasToDisplaySize(canvas) {
+        console.log('recalculate')
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
         const displayHeight = canvas.clientHeight;
@@ -368,11 +369,12 @@ export const OurzadXData = `init_ccpwgl() {
     scene.setSunDirection([-0.1, -0.01, 0.4]);
 
     const planet = scene.loadPlanet(
-        40000123,
-        'res:/dx9/model/WorldObject/Planet/Template/Sandstorm/p_sandstorm_36.red',
+        40187894,
+        'res:/dx9/model/WorldObject/Planet/Template/SandStorm/p_sandstorm_06.red',
         undefined,
-        'res:/dx9/model/worldobject/planet/Sandstorm/dust01_m.dds.0.png',
-        'res:/dx9/model/worldobject/planet/Sandstorm/dust01_m.dds.0.png'
+        'res:/dx9/model/worldobject/planet/Terrestrial/terrestrial02_h.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Terrestrial/terrestrial02_h.dds.0.png'
+        
     );
 
     var angle = 2.8;
