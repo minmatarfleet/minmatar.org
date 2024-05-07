@@ -21,6 +21,7 @@ let members:CharacterBasic[] = []
 let get_groups_members_error:string | false = false
 try {
     members = (auth_token && user ? await get_all_members(auth_token, user.user_id, user_is_superadmin) : [])
+    members.sort((a, b) => a.character_name.localeCompare(b.character_name))
 } catch (error) {
     get_groups_members_error = prod_error_messages() ? t('get_groups_members_error') : error.message
 }
