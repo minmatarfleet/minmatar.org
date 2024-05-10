@@ -80,34 +80,6 @@ export const WatermelonXData = `init_ccpwgl() {
         setColor(82, 6, 47, 'Mtl4FresnelColor')
     });
 
-    loadDna('iam1_t1_wreck:orebase:minmatar')
-
-    function loadDna(dna) {
-        ccpwgl.getSofHullConstructor(dna, function (constructor) {
-            if (constructor)
-            {
-                hull = scene[constructor](dna)
-                
-                let matrix = mat4.fromValues(
-                    1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1
-                )
-
-                let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
-
-                // Translation
-                rotationMatrix[12] = 800000
-                rotationMatrix[13] = -80000
-                rotationMatrix[14] = -1100000
-                rotationMatrix[15] = 5
-                
-                hull.setTransform(rotationMatrix)
-            }
-        })
-    }
-
     ccpwgl.enablePostprocessing(true);
 
     function setColor(r, g, b, material) {
