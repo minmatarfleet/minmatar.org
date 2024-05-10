@@ -80,25 +80,33 @@ export const WatermelonXData = `init_ccpwgl() {
         setColor(82, 6, 47, 'Mtl4FresnelColor')
     });
 
-    sugar = scene.loadShip('iam1_t1:orebase:minmatar', function() {
-        let matrix = mat4.fromValues(
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        )
+    loadDna('iam1_t1_wreck:orebase:minmatar')
 
-        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+    function loadDna(dna) {
+        ccpwgl.getSofHullConstructor(dna, function (constructor) {
+            if (constructor)
+            {
+                hull = scene[constructor](dna)
+                
+                let matrix = mat4.fromValues(
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                )
 
-        // Translation
-        rotationMatrix[12] = 800000
-        rotationMatrix[13] = -80000
-        rotationMatrix[14] = -1100000
-        rotationMatrix[15] = 5
-        
-        this.setTransform(rotationMatrix)
-        this.setTransform(matrix)
-    });
+                let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+
+                // Translation
+                rotationMatrix[12] = 800000
+                rotationMatrix[13] = -80000
+                rotationMatrix[14] = -1100000
+                rotationMatrix[15] = 5
+                
+                hull.setTransform(rotationMatrix)
+            }
+        })
+    }
 
     ccpwgl.enablePostprocessing(true);
 
@@ -207,7 +215,7 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
         100000 * Math.cos(planet_angle), 3000, 100000 * Math.sin(planet_angle), 1
     ));
     
-    minmatar_hq = scene.loadShip('cl1_t1:angelbase:minmatar', function() {
+    minmatar_hq = scene.loadShip('cl1_t1:minmatarbase:minmatar', function() {
         camera.focus(this, 0.255)
 
         let matrix = mat4.fromValues(
