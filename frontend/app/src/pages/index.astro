@@ -25,7 +25,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermelonInfo from '@components/blocks/WatermelonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
-import OurzadInfo from '@components/blocks/OurzadInfo.astro';
 import Input from '@components/blocks/Input.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
@@ -44,8 +43,6 @@ import {
 	WatermelonCameraXData,
 	AugaMilitiaHQCameraXData,
 	AugaMilitiaHQXData,
-	OurzadCameraXData,
-	OurzadXData,
 } from '@components/partials/HomepageRenders.astro';
 
 const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
@@ -57,10 +54,8 @@ const page_title = t('index.page_title');
     <PageLanding
         cover={{
             image: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
-			       staggering === 'ourzad' ?  '/images/home-arzad-cover.jpg' :
 					'/images/home-cover.jpg',
             image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
-			           staggering === 'ourzad' ?  '/images/home-arzad-cover.jpg' :
 					   '/images/home-cover.jpg',
             alt: t('index.cover_alt'),
             animated: false,
@@ -71,8 +66,6 @@ const page_title = t('index.page_title');
 			show_fleet_feeds: true,
             ${staggering === 'auga' ?
 				AugaMilitiaHQCameraXData :
-				staggering === 'ourzad' ?
-				OurzadCameraXData :
 				WatermelonCameraXData
 			},
 			init() {
@@ -92,8 +85,6 @@ const page_title = t('index.page_title');
             x-data={`{
 				${staggering === 'auga' ?
 					AugaMilitiaHQXData :
-					staggering === 'ourzad' ?
-					OurzadXData :
 					WatermelonXData
 				}
             }`}
@@ -107,8 +98,6 @@ const page_title = t('index.page_title');
 		>
 			{staggering === 'auga' ?
 				<AugaInfo /> :
-				staggering === 'ourzad' ?
-				<OurzadInfo /> :
 				<WatermelonInfo />
 			}
 			{user &&
@@ -126,7 +115,6 @@ const page_title = t('index.page_title');
 						}
 						station={
 							staggering === 'auga' ? 'Auga - Minmatar Militia HQ' :
-							staggering === 'ourzad' ? 'Arzad - OURzad' :
 							'Sosala - WATERMELLON'
 						}
 					/>
