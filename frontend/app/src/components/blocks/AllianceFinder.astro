@@ -38,6 +38,8 @@ interface Props {
         x-bind:aria-hidden="alliances_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
+        x-trap="alliances_finder_open"
+        x-bind:inert="!alliances_finder_open"
     >
         <Input placeholder={t('find_alliance_placeholder')} x-model="filter" />
 

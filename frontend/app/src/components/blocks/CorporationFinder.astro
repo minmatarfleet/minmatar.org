@@ -38,6 +38,8 @@ interface Props {
         x-bind:aria-hidden="corporations_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
+        x-trap="corporations_finder_open"
+        x-bind:inert="!corporations_finder_open"
     >
         <Input placeholder={t('find_corporation_placeholder')} x-model="filter" />
 

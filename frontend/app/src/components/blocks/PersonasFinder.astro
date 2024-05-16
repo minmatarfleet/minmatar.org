@@ -47,6 +47,8 @@ const translations = {
         x-bind:aria-hidden="personas_finder_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] ]"
+        x-trap="personas_finder_open"
+        x-bind:inert="!personas_finder_open"
     >
         <Input placeholder={t('find_persona_placeholder')} x-model="filter" />
 

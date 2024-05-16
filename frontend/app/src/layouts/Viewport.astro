@@ -133,24 +133,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		}`}
 		x-init="rifter_animation_init"
 	>
-		<div
-			class="[ viewport-layout-inner ]"
-			x-bind:inert={`
-				${[
-					components?.alert_dialog ? 'alert_dialog_open' : false,
-					components?.confirm_dialog ? 'confirm_dialog_open' : false,
-					components?.modal ? 'modal_open' : false,
-					'persistent_modal_open',
-					components?.personas_finder ? 'personas_finder_open' : false,
-					components?.corporation_finder ? 'corporations_finder_open' : false,
-					components?.alliance_finder ? 'alliances_finder_open' : false,
-					user ? 'characters_finder_open' : false,
-					user_is_officer || user_is_director ? 'members_finder_open' : false,
-					'fittings_finder_open',
-					'pages_finder_open',
-				].join(' || ')}
-			`}
-		>
+		<div class="[ viewport-layout-inner ]">
 			<SkipToContent />
 
 			{neocom &&

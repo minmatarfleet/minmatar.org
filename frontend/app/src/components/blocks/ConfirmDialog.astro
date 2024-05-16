@@ -35,11 +35,12 @@ interface Props {
         @keyup.escape.window="close_dialog()"
         x-bind:class="(confirm_dialog_open ? 'open' : '')"
         x-bind:aria-hidden="confirm_dialog_open == false"
-        x-bind:inert="confirm_dialog_open == false"
         breakout={true}
         class="[ w-full max-w-[500px] max-h-[80vh] overflow-y-auto ]"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
+        x-trap="confirm_dialog_open"
+        x-bind:inert="!confirm_dialog_open"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
