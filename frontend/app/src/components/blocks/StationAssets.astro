@@ -45,7 +45,7 @@ import StylessButton from './StylessButton.astro';
         },
         toggle() {
             this.open = this.open ? this.close() : true
-            $refs.station_assets_filter.focus()
+            $focus.focus($refs.station_assets_filter)
         },
         station_assets: [],
         assets_filtered: [],
