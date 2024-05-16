@@ -34,6 +34,7 @@ import ErrorRefetch from './ErrorRefetch.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import StylessButton from './StylessButton.astro';
 ---
 
 <div
@@ -63,13 +64,13 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
     }`}
     @keydown.escape.prevent.stop="close()"
 >
-    <a
+    <StylessButton
         class="[ block w-[32px] neocom-button cursor-pointer ]"
         data-tippy-content={t('station_assets')}
         @click.prevent="toggle()"
     >
         <AssetsEvEIcon />
-    </a>
+    </StylessButton>
 
     <Wrapper
         x-bind:class="open && 'open'"
@@ -78,6 +79,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
         class="[ station-assets ][ light-transparency  max-h-full ]"
         @mousedown.outside="open && close()"
         max_width='500px'
+        x-bind:inert="!open"
     >
         <button
             class="[ station-assets-close ]"
