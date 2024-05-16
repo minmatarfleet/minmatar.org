@@ -37,6 +37,8 @@ interface Props {
         aria-describedby="persistent-modal-description"
         class="[ w-full max-w-[770px] ]"
         thin={true}
+        x-trap="persistent_modal_open"
+        x-bind:inert="!persistent_modal_open"
     >
         <div
             id="persistent-modal-description"

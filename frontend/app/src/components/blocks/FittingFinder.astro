@@ -101,6 +101,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         x-bind:class="(fittings_finder_open ? 'open' : '')"
         x-bind:aria-hidden="fittings_finder_open == false"
         thin={true}
+        x-trap="fittings_finder_open"
+        x-bind:inert="!fittings_finder_open"
     >
         <Flexblock gap="0">
             <Input
