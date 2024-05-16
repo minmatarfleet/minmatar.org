@@ -734,6 +734,7 @@ export const ui = {
         'mumble_credentials_dialog_title': 'Mumble credentials',
         'mumble_credentials_dialog_text': 'Use the following username and password to keep Mumble authenticated:',
         'exempt': 'Exempt',
-        'mumble_tutorial': 'More info setting up Mumble on this [article](https://wiki.minmatar.org/en/guides/Mumble-Setup)'
+        'mumble_tutorial': 'More info setting up Mumble on this [article](https://wiki.minmatar.org/en/guides/Mumble-Setup)',
+        'loading_assets': 'Loading assets',
     },
 } as const;

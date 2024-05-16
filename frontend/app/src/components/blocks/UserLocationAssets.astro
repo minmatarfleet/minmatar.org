@@ -20,7 +20,7 @@ character_assets.locations.forEach( (i) => total_assets_count += i.assets.reduce
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
-import AssetsList from '@components/blocks/AssetsList.astro';
+import LoadingBlock from '@components/blocks/LoadingBlock.astro';
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 import CollapsableButton from './CollapsableButton.astro';
 ---
@@ -93,7 +93,7 @@ import CollapsableButton from './CollapsableButton.astro';
     </CollapsableButton>
 
     <div x-ref="server_side_render">
-        <AssetsList assets_locations={character_assets.locations} />
+        <LoadingBlock message={t('loading_assets')} />
     </div>
     <div
         x-show="character_expanded"

@@ -74,13 +74,13 @@ import PageTitle from '@components/page/PageTitle.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import AssetsList from '@components/blocks/AssetsList.astro';
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 import Input from '@components/blocks/Input.astro';
 import RadioCheck from '@components/blocks/RadioCheck.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import LoadingBlock from '@components/blocks/LoadingBlock.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import ListIcon from '@components/icons/buttons/ListIcon.astro';
@@ -107,7 +107,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
         }}
         x-data={`{
             global_collapse: false,
-            assets_style: 'list',
+            assets_style: $persist('list'),
             assets_locations: ${JSON.stringify(character_assets.locations)},
             assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
             assets_locations_filtered: ${JSON.stringify(character_assets.locations)},
@@ -214,7 +214,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
 
         <div x-ref="server_side_render">
             {!get_character_assets_error &&
-                <AssetsList assets_locations={character_assets.locations} />
+                <LoadingBlock message={t('loading_assets')} />
             }
         </div>
         {get_character_assets_error ?

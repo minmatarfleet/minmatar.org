@@ -1,0 +1,30 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+interface Props {
+    message?:   string;
+    animation?: boolean;
+}
+
+const {
+    message = t('loading'),
+    animation = true,
+} = Astro.props
+
+import { marked } from 'marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import RifterIcon from '@components/icons/RifterIcon.astro';
+---
+
+<FlexInline>
+    {animation && <RifterIcon />}
+        
+    <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
+        <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(message)}>
+    </Flexblock>
+</FlexInline>
