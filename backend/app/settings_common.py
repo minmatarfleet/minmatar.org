@@ -11,6 +11,7 @@ CELERY_IMPORTS = (
     "groups.tasks",
     "fittings.tasks",
     "discord.tasks",
+    "fleets.tasks",
 )
 
 
