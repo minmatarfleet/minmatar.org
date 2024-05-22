@@ -75,6 +75,7 @@ class CreateEveFleetRequest(BaseModel):
     doctrine_id: Optional[int] = None
     audience_id: int
     location: str
+    location_id: Optional[int] = None
 
 
 @router.get(
