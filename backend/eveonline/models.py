@@ -57,6 +57,17 @@ class EveCharacter(models.Model):
         ]
 
 
+class EveCharacterSkill(models.Model):
+    """Character skill model"""
+
+    skill_id = models.IntegerField()
+    skill_name = models.CharField(max_length=255)
+    skill_points = models.IntegerField()
+    skill_level = models.IntegerField()
+
+    character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+
+
 class EveCharacterAsset(models.Model):
     """Character asset model"""
 
@@ -87,6 +98,64 @@ class EveSkillset(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    @staticmethod
+    def roman_number_to_int(s):
+        """
+        :type s: str
+        :rtype: int
+        """
+        roman = {
+            "I": 1,
+            "V": 5,
+            "X": 10,
+            "L": 50,
+            "C": 100,
+            "D": 500,
+            "M": 1000,
+            "IV": 4,
+            "IX": 9,
+            "XL": 40,
+            "XC": 90,
+            "CD": 400,
+            "CM": 900,
+        }
+        i = 0
+        num = 0
+        while i < len(s):
+            if i + 1 < len(s) and s[i : i + 2] in roman:
+                num += roman[s[i : i + 2]]
+                i += 2
+            else:
+                # print(i)
+                num += roman[s[i]]
+                i += 1
+        return num
+
+    # parse skills and get last element, convert to int if necessary
+    # skill line example: "My Skill V"
+    # use roman_number_to_int
+    def save(self, *args, **kwargs):
+        if self.skills:
+            logger.info("Parsing skills for %s", self.name)
+            parsed_skills = []
+            skills = self.skills.split("\n")
+            for skill in skills:
+                skill = skill.strip()
+                if not skill:
+                    continue
+                skill_parts = skill.split(" ")
+                skill_name = " ".join(skill_parts[:-1])
+                skill_level = skill_parts[-1]
+                if skill_level.isnumeric():
+                    parsed_skills.append(f"{skill_name} {skill_level}")
+                else:
+                    parsed_skills.append(
+                        f"{skill_name} {self.roman_number_to_int(skill_level)}"
+                    )
+
+            self.skills = "\n".join(parsed_skills)
+        super().save(*args, **kwargs)
 
 
 class EveCorporation(models.Model):

@@ -4,23 +4,71 @@ from typing import List
 
 import pydantic
 from eveuniverse.models import EveType
+from esi.clients import EsiClientProvider
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterSkillset,
+    EveSkillset,
+    EveCharacterSkill,
+)
 
-from eveonline.models import EveCharacter, EveCharacterSkillset, EveSkillset
-
+esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
 
 class EveCharacterSkillResponse(pydantic.BaseModel):
     skill_id: int
+    skill_name: str
     skillpoints_in_skill: int
     trained_skill_level: int
 
 
-def compare_skills_to_skillset(character: EveCharacter, skillset: EveSkillset):
+def upsert_character_skills(character_id: int):
+    """
+    populate skills from eve and save them to the character
+
+    """
+    logger.info("Upserting skills for character %s", character_id)
+    character = EveCharacter.objects.get(character_id=character_id)
+    required_scopes = ["esi-skills.read_skills.v1"]
+    token = character.tokens.filter(scopes__name__in=required_scopes).first()
+    if token is None:
+        logger.info(
+            "Skipping skills update for character %s", character.character_id
+        )
+        return
+
+    esi_skills = esi.client.Skills.get_characters_character_id_skills(
+        character_id=character.character_id, token=token.valid_access_token()
+    ).results()["skills"]
+
+    for skill in esi_skills:
+        skill_type, _ = EveType.objects.get_or_create_esi(id=skill["skill_id"])
+        EveCharacterSkill.objects.update_or_create(
+            character=character,
+            skill_id=skill["skill_id"],
+            defaults={
+                "skill_name": skill_type.name,
+                "skill_points": skill["skillpoints_in_skill"],
+                "skill_level": skill["trained_skill_level"],
+            },
+        )
+
+
+def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
     """Compare a character's skills to a skillset"""
-    skills: List[EveCharacterSkillResponse] = json.loads(
-        character.skills_json
-    )["skills"]
+    character = EveCharacter.objects.get(character_id=character_id)
+    character_skills = EveCharacterSkill.objects.filter(character=character)
+    skills: List[EveCharacterSkillResponse] = []
+    for skill in character_skills:
+        skills.append(
+            EveCharacterSkillResponse(
+                skill_id=skill.skill_id,
+                skill_name=skill.skill_name,
+                skillpoints_in_skill=skill.skill_points,
+                trained_skill_level=skill.skill_level,
+            )
+        )
 
     # create a lookup hashmap from skillset
     skillset_lookup = {}
@@ -31,9 +79,7 @@ def compare_skills_to_skillset(character: EveCharacter, skillset: EveSkillset):
     # populate skills from eve universe data
     hydrated_skills = {}
     for skill in skills:
-        esi_skill, _ = EveType.objects.get_or_create_esi(id=skill["skill_id"])
-        skill_name = esi_skill.name
-        hydrated_skills[skill_name] = skill
+        hydrated_skills[skill.skill_name] = skill.model_dump()
 
     # build progress of skillset
     missing_skills = []
@@ -69,20 +115,21 @@ def compare_skills_to_skillset(character: EveCharacter, skillset: EveSkillset):
     return missing_skills, int(progress)
 
 
-def create_eve_character_skillset(
-    character: EveCharacter, skillset: EveSkillset
-):
+def create_eve_character_skillset(character_id: int, skillset: EveSkillset):
     """Create a skillset for a character"""
     # delete existing
     logger.info(
         "Creating skillset for character %s and skillset %s",
-        character.character_id,
+        character_id,
         skillset.name,
     )
+    character = EveCharacter.objects.get(character_id=character_id)
     EveCharacterSkillset.objects.filter(
         character=character, eve_skillset=skillset
     ).delete()
-    missing_skills, progress = compare_skills_to_skillset(character, skillset)
+    missing_skills, progress = compare_skills_to_skillset(
+        character_id, skillset
+    )
     logger.info(
         "Character %s has %s missing skills for skillset %s",
         character.character_id,
