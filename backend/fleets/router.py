@@ -267,6 +267,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         start_time=payload.start_time,
         created_by=request.user,
         location=payload.location,
+        location_id=payload.location_id,
         audience=audience,
     )
 
@@ -282,6 +283,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
         "location": fleet.location,
+        "location_id": fleet.location_id,
     }
 
     if fleet.doctrine:
