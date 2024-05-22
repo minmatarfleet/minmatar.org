@@ -31,9 +31,6 @@ def get_mumble_groups_by_username(username):
     from eveonline.models import (  # pylint: disable=import-outside-toplevel
         EveCharacter,
     )
-    from mumble.models import (  # pylint: disable=import-outside-toplevel
-        MumbleAccess,
-    )
 
     eve_character = EveCharacter.objects.get(character_name=username)
     if not eve_character:

@@ -3,10 +3,10 @@ import logging
 import requests
 import upsidedown
 from django.contrib.auth.models import User
-from users.helpers import offboard_user
 
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
+from users.helpers import offboard_user
 
 from .models import DiscordRole, DiscordUser
 

@@ -11,7 +11,12 @@ from authentication import AuthBearer
 from fittings.models import EveDoctrine
 from structures.models import EveStructure
 
-from .models import EveFleet, EveFleetNotificationChannel
+from .models import (
+    EveFleet,
+    EveFleetInstance,
+    EveFleetInstanceMember,
+    EveFleetNotificationChannel,
+)
 
 router = Router(tags=["Fleets"])
 
@@ -29,6 +34,14 @@ class EveFleetChannelResponse(BaseModel):
     display_channel_name: str
 
 
+class EveFleetTrackingResponse(BaseModel):
+    id: int
+    is_registered: bool
+
+    class Config:
+        from_attributes = True
+
+
 class EveFleetResponse(BaseModel):
     id: int
     type: EveFleetType
@@ -37,6 +50,22 @@ class EveFleetResponse(BaseModel):
     fleet_commander: int
     doctrine_id: Optional[int] = None
     location: str
+
+    tracking: Optional[EveFleetTrackingResponse] = None
+
+
+class EveFleetMemberResponse(BaseModel):
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_type_name: str
+    solar_system_id: int
+    solar_system_name: str
+
+
+class EveFleetLocationResponse(BaseModel):
+    location_id: int
+    location_name: str
 
 
 class CreateEveFleetRequest(BaseModel):
@@ -77,6 +106,25 @@ def get_fleet_locations(request):
             "name", flat=True
         )
     )
+
+
+@router.get(
+    "/v2/locations",
+    auth=AuthBearer(),
+    response={200: List[EveFleetLocationResponse], 403: ErrorResponse},
+)
+def get_v2_fleet_locations(request):
+    if not request.user.has_perm("fleets.add_evefleet"):
+        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+    response = []
+    locations = EveStructure.objects.filter(is_valid_staging=True).values_list(
+        "name", flat=True
+    )
+    for location in locations:
+        response.append(
+            {"location_id": location.id, "location_name": location.name}
+        )
+    return response
 
 
 @router.get(
@@ -132,6 +180,12 @@ def get_fleet(request, fleet_id: int):
     if not is_authorized:
         return 403, None
 
+    tracking = None
+    if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
+        tracking = EveFleetTrackingResponse.model_validate(
+            EveFleetInstance.objects.get(eve_fleet=fleet)
+        )
+
     payload = {
         "id": fleet.id,
         "type": fleet.type,
@@ -139,11 +193,51 @@ def get_fleet(request, fleet_id: int):
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
         "location": fleet.location,
+        "tracking": tracking,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetResponse(**payload)
+
+
+@router.get(
+    "/{fleet_id}/members",
+    auth=AuthBearer(),
+    response={200: List[EveFleetMemberResponse], 403: None, 404: None},
+    description="Get fleet members, must be the owner, in the audience, or have fleets.view_evefleet permission",
+)
+def get_fleet_members(request, fleet_id: int):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, None
+    is_authorized = False
+    if request.user.has_perm("fleets.view_evefleet"):
+        is_authorized = True
+    if request.user == fleet.created_by:
+        is_authorized = True
+    if fleet.audience in request.user.groups.all():
+        is_authorized = True
+
+    if not is_authorized:
+        return 403, None
+
+    response = []
+    for member in EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance__eve_fleet=fleet
+    ):
+        response.append(
+            {
+                "character_id": member.character_id,
+                "character_name": member.character_name,
+                "ship_type_id": member.ship_type_id,
+                "ship_type_name": member.ship_name,
+                "solar_system_id": member.solar_system_id,
+                "solar_system_name": member.solar_system_name,
+            }
+        )
+
+    return response
 
 
 @router.post(
@@ -193,6 +287,26 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetResponse(**payload)
+
+
+@router.post(
+    "/{fleet_id}/tracking",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse},
+    description="Start a fleet and send a discord ping, must be the owner of the fleet",
+)
+def start_fleet(request, fleet_id: int):
+    fleet = EveFleet.objects.get(id=fleet_id)
+    if request.user != fleet.created_by:
+        return 403, {
+            "detail": "User does not have permission to start tracking this fleet"
+        }
+    try:
+        fleet.start()
+    except Exception as e:
+        return 400, {"detail": str(e)}
+
+    return 200, None
 
 
 @router.delete(
