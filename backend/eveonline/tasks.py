@@ -8,7 +8,10 @@ from eveuniverse.models import EveFaction
 from app.celery import app
 
 from .helpers.assets import create_character_assets
-from .helpers.skills import create_eve_character_skillset
+from .helpers.skills import (
+    create_eve_character_skillset,
+    upsert_character_skills,
+)
 from .models import EveAlliance, EveCharacter, EveCorporation, EveSkillset
 
 esi = EsiClientProvider()
@@ -131,24 +134,10 @@ def update_characters():
 @app.task
 def update_character_skills(eve_character_id):
     logger.info("Updating skills for character %s", eve_character_id)
-    required_scopes = ["esi-skills.read_skills.v1"]
-    token = Token.objects.filter(
-        character_id=eve_character_id, scopes__name__in=required_scopes
-    ).first()
-    if token is None:
-        logger.info(
-            "Skipping skills update for character %s", eve_character_id
-        )
-        return
-    esi_skills = esi.client.Skills.get_characters_character_id_skills(
-        character_id=eve_character_id, token=token.valid_access_token()
-    ).results()
-    character = EveCharacter.objects.get(character_id=eve_character_id)
-    character.skills_json = json.dumps(esi_skills)
-    character.save()
+    upsert_character_skills(eve_character_id)
     # update skillsets
     for skillset in EveSkillset.objects.all():
-        create_eve_character_skillset(character, skillset)
+        create_eve_character_skillset(eve_character_id, skillset)
 
 
 @app.task
