@@ -51,6 +51,10 @@ class EveDoctrine(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
 
+    @property
+    def doctrine_link(self):
+        return f"https://my.minmatar.org/ships/doctrines/list/{self.id}"
+
     def __str__(self):
         return str(self.name)
 

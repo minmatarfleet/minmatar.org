@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
+from django.db.models import signals
 
 from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
-from django.db.models import signals
 
 from .schemas import UserProfileSchema
 
