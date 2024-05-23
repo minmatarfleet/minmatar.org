@@ -17,6 +17,8 @@ const {
     history = false,
 } = Astro.props
 
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
@@ -24,9 +26,22 @@ import Button from '@components/blocks/Button.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
+
+const hx_attrs = {
+    ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
+    ...(!history && { 'hx-trigger': 'load delay:300s' }),
+    ...(!history && { 'hx-swap': 'outerHTML transition:true' }),
+    ...(!history && { 'hx-swap': 'outerHTML transition:true' }),
+    ...(!history && { 'hx-indicator': '.loader' }),
+}
 ---
 
-<Flexblock role="list" gap='var(--space-3xs)' {...Astro.props}>
+<Flexblock
+    role="list"
+    gap='var(--space-3xs)'
+    {...Astro.props}
+    {...hx_attrs}
+>
 
     {fleets.length == 0 &&
         <Flexblock gap='var(--space-xl)' centered={true}>

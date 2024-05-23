@@ -5,18 +5,24 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { FleetUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:              FleetUI;
-    history?:           boolean;
-    can_remove_fleet:   boolean;
+    fleet:                  FleetUI;
+    history?:               boolean;
+    can_remove_fleet:       boolean;
+    is_fleet_commander?:    boolean;
+    fleet_composition?:     FleetCompositionUI[];
+    fleet_radar?:           FleetRadarUI[];
 }
 
 const {
     fleet,
     history = false,
     can_remove_fleet = false,
+    is_fleet_commander = false,
+    fleet_composition,
+    fleet_radar,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -26,18 +32,18 @@ const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_bu
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
+import TextBox from '@components/layout/TextBox.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 import Button from '@components/blocks/Button.astro';
-import Countdown from '@components/blocks/Countdown.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-
-import TextBox from '@components/layout/TextBox.astro';
+import FleetStatus from '@components/blocks/FleetStatus.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -56,27 +62,35 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
             <h2>{t('fleet_information')}</h2>
 
-            <FlexInline>
-                <FlexInline class="[ grow ]" justification='space-between'>
-                    <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
-                        <h4>{t('fleet_commander')}</h4>
-                        <PilotBadge
-                            character_id={fleet.fleet_commander_id}
-                            character_name={fleet.fleet_commander_name}
-                            size={32}
-                        />
-                    </Flexblock>
-                    <div class="[ basis-[250px] ]">
+            <FlexInline class="[ grow items-start ]" justification='space-between'>
+                <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
+                    <h4>{t('fleet_commander')}</h4>
+                    <PilotBadge
+                        character_id={fleet.fleet_commander_id}
+                        character_name={fleet.fleet_commander_name}
+                        size={32}
+                    />
+                </Flexblock>
+                <div class="[ basis-[250px] ]">
+                    <Flexblock class="[ basis-[250px] ]">
                         <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
                             {eve_time_text}
                         </TextGroup>
-                    </div>
-                    <div class="[ basis-[250px] ]">
                         <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
                             <span class="[ loading ]">{t('calculating')}</span>
                         </TextGroup>
-                    </div>
-                </FlexInline>
+                    </Flexblock>
+                </div>
+                <div class="[ basis-[250px] ]">
+                    <Flexblock class="[ basis-[250px] ]">
+                        <TextGroup title={t('location')} class="[ sentence-cap ]">
+                            {fleet.location}
+                        </TextGroup>
+                        <TextGroup title={t('type')} class="[ sentence-cap ]">
+                            {fleet.type}
+                        </TextGroup>
+                    </Flexblock>
+                </div>
                 {!history && can_remove_fleet &&
                     <Button
                         size='sm'
@@ -120,28 +134,23 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </Flexblock>
     </ComponentBlock>
 
-    {!history &&
-        <ComponentBlock>
-            <div class="[ grow text-center ]">
-                <Countdown
-                    date={fleet.start_time}
-                    id={fleet.id}
-                    tag='countdown-fleet'
-                    expired_text={t('forming')}
-                />
-            </div>
+    <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} />
+
+    {is_fleet_commander &&
+        <ComponentBlock
+            x-data={`{
+                global_collapse: false,
+            }`}
+        >
+            <FleetCompositionBlock
+                composition={fleet_composition}
+                fleet_radar={fleet_radar}
+                fleet_id={fleet.id}
+            />
         </ComponentBlock>
     }
 
     <ComponentBlock>
         <DoctrineItem doctrine={fleet.doctrine} />
     </ComponentBlock>
-
-    <!--<ComponentBlock
-        x-data={`{
-            global_collapse: false,
-        }`}
-    >
-        <FleetCompositionBlock composition={fleet.composition} fleet_id={fleet_id} />
-    </ComponentBlock>   -->
 </Flexblock>

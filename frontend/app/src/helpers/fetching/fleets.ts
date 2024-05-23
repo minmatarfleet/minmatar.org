@@ -1,11 +1,13 @@
 import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
-import type { FleetUI, FleetItem, DoctrineType } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet } from '@dtypes/api.minmatar.org'
-import { get_fleets, get_fleet_by_id } from '@helpers/api.minmatar.org/fleets'
+import type { FleetUI, FleetItem, DoctrineType, FleetCompositionUI, FleetRadarUI, CharacterBasic } from '@dtypes/layout_components'
+import type { EveCharacterProfile, Fleet, FleetMember } from '@dtypes/api.minmatar.org'
+import { get_fleets, get_fleet_by_id, get_fleet_members } from '@helpers/api.minmatar.org/fleets'
+import { get_route } from '@helpers/api.eveonline/routes'
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import { get_system_sun_type_id } from '@helpers/sde/map'
 
 export async function fetch_fleets(access_token:string, upcoming:boolean = true) {
     let api_fleets_id:number[]
@@ -28,7 +30,8 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
             location: '',
             type: 'casual',
             description: '',
-            start_time: new Date('2100-01-01')
+            start_time: new Date('2100-01-01'),
+            tracking: null
         }
     }
         
@@ -44,6 +47,7 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
         location: fleet.location,
         start_time: fleet.start_time,
         type: fleet.type,
+        tracking: fleet.tracking,
     } as FleetItem
 }
 
@@ -67,5 +71,49 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         start_time: fleet.start_time,
         type: fleet.type,
         doctrine: doctrine,
+        tracking: fleet.tracking,
     } as FleetUI
+}
+
+export function group_members_by_ship(members:FleetMember[]):FleetCompositionUI[] {
+    const ship_type_ids = [...new Set(members.map(member => member.ship_type_id))];
+
+    return ship_type_ids.map((ship_type_id) => {
+        const filtered_members = members.filter((member) => member.ship_type_id === ship_type_id)
+
+        return {
+            ship_type_id: ship_type_id,
+            ship_type_name: filtered_members[0].ship_type_name,
+            members: filtered_members.map((member):CharacterBasic => {
+                return {
+                    character_id: member.character_id,
+                    character_name: member.character_name
+                }
+            })
+        } as FleetCompositionUI
+    })
+}
+
+export async function group_members_by_location(members:FleetMember[]) {
+    const solar_system_ids = [...new Set(members.map(member => member.solar_system_id))];
+
+    return await Promise.all(solar_system_ids.map(async (solar_system_id) => {
+        const filtered_members = members.filter((member) => member.solar_system_id === solar_system_id)
+        console.log(solar_system_id)
+        const route = await get_route(solar_system_id, 30003070)
+        console.log(route)
+
+        return {
+            solar_system_id: solar_system_id,
+            solar_system_name: filtered_members[0].solar_system_name,
+            start_type_id: await get_system_sun_type_id(solar_system_id),
+            jumps: route.length - 1,
+            members: filtered_members.map((member):CharacterBasic => {
+                return {
+                    character_id: member.character_id,
+                    character_name: member.character_name
+                }
+            })
+        } as FleetRadarUI
+    })) as FleetRadarUI[]
 }

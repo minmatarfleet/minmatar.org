@@ -1,0 +1,120 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { FleetUI, Alert } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:              FleetUI;
+    is_fleet_commander: boolean;
+    alert?:             false | Alert,
+}
+
+const {
+    fleet,
+    is_fleet_commander,
+    alert = false,
+} = Astro.props
+
+import { minutes_to } from '@helpers/date';
+
+const diff_time = minutes_to(fleet.start_time)
+const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
+const is_fleet_time = minutes_to_fleet < 30
+
+const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet.id}`
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StartFleetButton from '@components/blocks/StartFleetButton.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+const hx_attrs = {
+    ...(!fleet?.tracking?.end_time && { 'hx-get': FLEET_STATUS_PARTIAL_URL }),
+    ...(!fleet?.tracking?.end_time && { 'hx-trigger': 'load delay:60s' }),
+    ...(!fleet?.tracking?.end_time && { 'hx-swap': 'outerHTML transition:true' }),
+    ...(!fleet?.tracking?.end_time && { 'hx-indicator': '.loader' }),
+}
+---
+
+<ComponentBlock
+    id="fleet-status"
+    x-data={`{
+        is_fleet_time: ${JSON.stringify(is_fleet_time)},
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    {...hx_attrs}
+>
+    <Flexblock class="[ grow text-center ]" centered={true}>
+        {fleet?.tracking === null &&
+            <Countdown
+                date={fleet.start_time}
+                id={fleet.id}
+                tag='countdown-fleet'
+                x-data={`{
+                    init() {
+                        window.addEventListener('countdown', event => {
+                            is_fleet_time =  true
+                        })
+                    }
+                }`}
+            />
+        }
+
+        {fleet?.tracking && !fleet?.tracking?.end_time &&
+            <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
+        }
+
+        {fleet?.tracking && fleet?.tracking?.end_time &&
+            <p class="[ fleet-status-text ]">{t('completed')}</p>
+        }
+
+        {is_fleet_commander && is_fleet_time && !fleet?.tracking &&
+            <StartFleetButton id={fleet.id} />
+        }
+
+        {is_fleet_commander && !is_fleet_time && !fleet?.tracking &&
+            <template
+                x-if="is_fleet_time"
+                x-data={`{
+                    init() {
+                        if (is_fleet_time) return
+
+                        const timer = setInterval(function () {
+                            const countDownDate = new Date('${fleet.start_time}').getTime();
+                            const now = new Date().getTime();
+                            const distance = countDownDate - now;
+                            const minutes = Math.ceil((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+                            if (minutes <= 30) {
+                                is_fleet_time = true
+                                clearInterval(timer)
+                            }
+                        }, 1000)
+                    }
+                }`}
+            >
+                <StartFleetButton id={fleet.id} />
+            </template>
+        }
+    </Flexblock>
+</ComponentBlock>
+
+<style>
+    .fleet-status-text {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+		letter-spacing: 12px;
+        text-indent: 12px;
+		line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
+    }
+</style>

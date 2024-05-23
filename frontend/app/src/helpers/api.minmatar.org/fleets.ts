@@ -1,4 +1,4 @@
-import type { FleetTypes, Fleet, FleetRequest, Audience } from '@dtypes/api.minmatar.org'
+import type { FleetMember, Fleet, FleetRequest, Audience } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
@@ -215,5 +215,69 @@ export async function delete_fleet(access_token:string, id:number) {
         return (response.status === 200);
     } catch (error) {
         throw new Error(`Error deleting fleet: ${error.message}`);
+    }
+}
+
+export async function start_fleet(access_token:string, fleet_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/tracking`
+
+    console.log(`Requesting POST: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            method: 'POST'
+        })
+
+        console.log(response)
+
+        if (!response.ok) {
+            const error = await response.json()
+            console.log(error)
+
+            throw new Error(await get_error_message(
+                error?.detail ? error?.detail : response.status,
+                `POST ${ENDPOINT}`
+            ))
+        }
+        
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error fetching creating fleet: ${error.message}`);
+    }
+}
+
+export async function get_fleet_members(access_token:string, id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${id}/members`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(await get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as FleetMember[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet: ${error.message}`);
     }
 }

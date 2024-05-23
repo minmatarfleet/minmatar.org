@@ -5,27 +5,32 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import type { FleetCompositionObj } from '@dtypes/layout_components'
+import type { FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 interface Props {
     fleet_id:           number;
-    composition:        FleetCompositionObj[];
+    composition:        FleetCompositionUI[];
+    fleet_radar:        FleetRadarUI[];
 }
 
 const {
     fleet_id,
     composition,
+    fleet_radar,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetComposition from '@components/blocks/FleetComposition.astro';
+import FleetRadar from '@components/blocks/FleetRadar.astro';
 import Button from '@components/blocks/Button.astro';
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
+const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet_id}`
+
 const members = composition.reduce(
-    (accumulator, currentValue) => accumulator + currentValue.pilots.length,
+    (accumulator, currentValue) => accumulator + currentValue.members.length,
     0,
 );
 ---
@@ -34,13 +39,14 @@ const members = composition.reduce(
     id="fleet-composition-component"
     gap="var(--space-l)"
     x-data={`{
-        DSCAN_DURATION_MS: 500,
+        DSCAN_DURATION_MS: 1500,
         remove_dscan_class_timer: null,
         dscan_active: false,
         start_dscan_animation() {
             this.dscan_active = true
 
             document.getElementById('fleet-composition-dscan').classList.add('fade')
+            document.getElementById('fleet-radar-dscan').classList.add('fade')
 
             if (this.remove_dscan_class_timer) clearTimeout(this.remove_dscan_class_timer)
 
@@ -56,7 +62,7 @@ const members = composition.reduce(
         gap="var(--space-s)"
     >
         <Flexblock gap="var(--space-3xs)">
-            <h2>{t('members')}</h2>
+            <h2>{t('fleet_composition')}</h2>
             {members != 0 &&
                 <small class="!mt-[var(--space-3xs)]">{members} {members != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}</small>
             }
@@ -65,7 +71,7 @@ const members = composition.reduce(
         {composition.length > 0 && <FlexInline class="[ items-center ]" gap="var(--space-s)">
             <Button
                 size='sm'
-                hx-post={translatePath(`/partials/fleet_composition?id=${fleet_id}`)}
+                hx-get={translatePath(FLEET_COMPOSITION_PARTIAL_URL)}
                 hx-target="#fleet-composition-component"
                 hx-swap="outerHTML transition:true"
                 hx-indicator=".loader"
@@ -93,18 +99,42 @@ const members = composition.reduce(
             <FleetComposition composition={composition} />
         }
     </div>
+
+    <FlexInline
+        justification='space-between'
+        gap="var(--space-s)"
+    >
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('members_location')}</h2>
+            {fleet_radar.length != 0 &&
+                <small class="!mt-[var(--space-3xs)]">{fleet_radar.length} {fleet_radar.length != 1 ? t('systems').toLowerCase() : t('system').toLowerCase()}</small>
+            }
+        </Flexblock>
+    </FlexInline>
+
+    <div
+        id="fleet-radar-dscan"
+        x-bind:class="{ dscan: dscan_active }"
+    >
+        {fleet_radar.length > 0 &&
+            <FleetRadar fleet_radar={fleet_radar} />
+        }
+    </div>
 </Flexblock>
 
 <style lang="scss">
+    :global(#fleet-radar-dscan > div),
     :global(#fleet-composition-dscan > div) {
         opacity: 1;
         transition: var(--slow-transition);
     }
 
+    :global(#fleet-radar-dscan.fade > div),
     :global(#fleet-composition-dscan.fade > div) {
         opacity: 0.25
     }
 
+    #fleet-radar-dscan,
     #fleet-composition-dscan {
         position: relative;
     }
