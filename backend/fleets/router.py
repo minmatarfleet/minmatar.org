@@ -16,7 +16,9 @@ from .models import (
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetNotificationChannel,
+    EveStandingFleet,
 )
+from eveonline.models import EvePrimaryCharacter
 
 router = Router(tags=["Fleets"])
 
@@ -52,6 +54,14 @@ class EveFleetResponse(BaseModel):
     location: str
 
     tracking: Optional[EveFleetTrackingResponse] = None
+
+
+class EveStandingFleetResponse(BaseModel):
+    id: int
+    character_id: int
+    character_name: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
 
 
 class EveFleetMemberResponse(BaseModel):
@@ -158,6 +168,72 @@ def get_fleets(request, upcoming: bool = True):
     else:
         fleets = EveFleet.objects.all()
     return [fleet.id for fleet in fleets]
+
+
+@router.get("/standingfleets", response={200: List[EveStandingFleetResponse]})
+def get_standing_fleets(request, active: bool = True):
+    standing_fleets = EveStandingFleet.objects.filter(end_time=None)
+    if active:
+        standing_fleets = standing_fleets.filter(end_time=None)
+    response = []
+    for standing_fleet in standing_fleets:
+        response.append(
+            {
+                "id": standing_fleet.id,
+                "character_id": standing_fleet.active_fleet_commander_character_id,
+                "character_name": standing_fleet.active_fleet_commander_character_name,
+                "start_time": standing_fleet.start_time,
+                "end_time": standing_fleet.end_time,
+            }
+        )
+    return response
+
+
+@router.post(
+    "/standing",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse, 400: ErrorResponse},
+    description="Create a standing fleet, must have fleets.add_evestandingfleet permission",
+)
+def create_standing_fleet(request):
+    if not request.user.has_perm("fleets.add_evestandingfleet"):
+        return 403, {
+            "detail": "User missing permission fleets.add_evestandingfleet"
+        }
+
+    eve_primary_character = EvePrimaryCharacter.objects.get(
+        character__token__user=request.user
+    )
+    try:
+        EveStandingFleet.start(eve_primary_character.character.character_id)
+    except Exception as e:
+        return 400, {
+            "detail": f"Error starting fleet for {eve_primary_character.character}: {e}"
+        }
+
+    return 200, None
+
+
+@router.post(
+    "/standing/{fleet_id}/claim",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse, 400: ErrorResponse},
+    description="End a standing fleet, must have fleets.end_evestandingfleet permission",
+)
+def claim_standing_fleet(request, fleet_id: int):
+    if not request.user.has_perm("fleets.end_evestandingfleet"):
+        return 403, {
+            "detail": "User missing permission fleets.end_evestandingfleet"
+        }
+
+    standing_fleet = EveStandingFleet.objects.get(id=fleet_id)
+    eve_primary_character = EvePrimaryCharacter.objects.get(
+        character__token__user=request.user
+    )
+
+    standing_fleet.claim(eve_primary_character.character.character_id)
+
+    return 200, None
 
 
 @router.get(
