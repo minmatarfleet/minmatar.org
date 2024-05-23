@@ -5,10 +5,11 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from esi.clients import EsiClientProvider
 
-from eveonline.models import EvePrimaryCharacter
+from eveonline.models import EvePrimaryCharacter, EveCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
+from django.utils import timezone
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -292,21 +293,170 @@ class EveFleetNotificationChannel(models.Model):
         return f"{self.group} - {self.discord_channel_name}"
 
 
-class EveFleetNotification(models.Model):
-    """
-    Model for storing fleet notifications
-    """
+class EveStandingFleet(models.Model):
+    start_time = models.DateTimeField(auto_now=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    last_commander_change = models.DateTimeField(auto_now=True)
+    external_fleet_id = models.BigIntegerField()
 
-    fleet_notification_types = (
-        ("preping", "Preping"),
-        ("ping", "Ping"),
+    active_fleet_commander_character_id = models.BigIntegerField()
+    active_fleet_commander_character_name = models.CharField(max_length=255)
+
+    @property
+    def fleet_commander(self):
+        return EveCharacter.objects.get(
+            character_id=self.active_fleet_commander_character_id
+        )
+
+    @staticmethod
+    def start(fleet_commander_character_id: int):
+        """
+        Start a standing fleet
+        """
+        eve_character = EveCharacter.objects.get(
+            character_id=fleet_commander_character_id
+        )
+        token = eve_character.token.valid_access_token()
+
+        response = esi.client.Fleets.get_characters_character_id_fleet(
+            character_id=eve_character.character_id,
+            token=token,
+        ).results()
+
+        if EveStandingFleet.objects.filter(
+            external_fleet_id=response["fleet_id"]
+        ).exists():
+            existing_fleet = EveStandingFleet.objects.get(
+                external_fleet_id=response["fleet_id"]
+            )
+            existing_fleet.active_fleet_commander_character_id = (
+                fleet_commander_character_id
+            )
+            existing_fleet.active_fleet_commander_character_name = (
+                eve_character.character_name
+            )
+            existing_fleet.end_time = None
+            existing_fleet.save()
+        else:
+            return EveStandingFleet.objects.create(
+                external_fleet_id=response["fleet_id"],
+                active_fleet_commander_character_id=fleet_commander_character_id,
+                active_fleet_commander_character_name=eve_character.character_name,
+            )
+
+    def claim(self, character_id):
+        """
+        Claim the standing fleet
+        """
+        # attempt to get fleet members
+        # if fails, they are not valid to claim
+        token = EveCharacter.objects.get(
+            character_id=character_id
+        ).token.valid_access_token()
+        new_fleet_commander = EveCharacter.objects.get(
+            character_id=character_id
+        )
+        old_fleet_commander = self.fleet_commander
+        try:
+            esi.client.Fleets.get_fleets_fleet_id_members(
+                fleet_id=self.external_fleet_id,
+                token=token,
+            ).results()
+
+            EveStandingFleetCommanderLog.objects.create(
+                eve_standing_fleet=self,
+                character_id=old_fleet_commander.character_id,
+                character_name=old_fleet_commander.character_name,
+                start_time=self.last_commander_change,
+                leave_time=timezone.now(),
+            )
+            self.active_fleet_commander_character_id = (
+                new_fleet_commander.character_id
+            )
+            self.active_fleet_commander_character_name = (
+                new_fleet_commander.character_name
+            )
+            self.end_time = None
+            self.last_commander_change = timezone.now()
+            self.save()
+            return True
+        except Exception:
+            return False
+
+    def update_members(self):
+        """
+        Update the members of the standing fleet
+        - Add new standing fleet members
+        - Delete old standing fleet members and create a log record
+        """
+        token = self.fleet_commander.token.valid_access_token()
+        response = esi.client.Fleets.get_fleets_fleet_id_members(
+            fleet_id=self.external_fleet_id,
+            token=token,
+        ).results()
+
+        ids_to_resolve = set()
+        for esi_fleet_member in response:
+            ids_to_resolve.add(esi_fleet_member["character_id"])
+        ids_to_resolve = list(ids_to_resolve)
+        resolved_ids = esi.client.Universe.post_universe_names(
+            ids=ids_to_resolve
+        ).results()
+        resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
+
+        for esi_fleet_member in response:
+            if not EveStandingFleetMember.objects.filter(
+                eve_standing_fleet=self,
+                character_id=esi_fleet_member["character_id"],
+            ).exists():
+                EveStandingFleetMember.objects.create(
+                    eve_standing_fleet=self,
+                    character_id=esi_fleet_member["character_id"],
+                    character_name=resolved_ids[
+                        esi_fleet_member["character_id"]
+                    ],
+                )
+
+        for fleet_member in EveStandingFleetMember.objects.filter(
+            eve_standing_fleet=self
+        ):
+            if not any(
+                x["character_id"] == fleet_member.character_id
+                for x in response
+            ):
+                EveStandingFleetMemberLog.objects.create(
+                    eve_standing_fleet=self,
+                    character_id=fleet_member.character_id,
+                    character_name=fleet_member.character_name,
+                    leave_time=timezone.now(),
+                )
+                fleet_member.delete()
+
+
+class EveStandingFleetCommanderLog(models.Model):
+    character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
+    join_time = models.DateTimeField(auto_now_add=True)
+    leave_time = models.DateTimeField(null=True, blank=True)
+    eve_standing_fleet = models.ForeignKey(
+        EveStandingFleet, on_delete=models.CASCADE
     )
 
-    type = models.CharField(max_length=10, choices=fleet_notification_types)
-    fleet = models.ForeignKey(EveFleet, on_delete=models.CASCADE)
-    channel = models.ForeignKey(
-        EveFleetNotificationChannel, on_delete=models.CASCADE
+
+class EveStandingFleetMember(models.Model):
+
+    character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
+    eve_standing_fleet = models.ForeignKey(
+        EveStandingFleet, on_delete=models.CASCADE
     )
 
-    class Meta:
-        unique_together = ("type", "fleet")
+
+class EveStandingFleetMemberLog(models.Model):
+    character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
+    join_time = models.DateTimeField(auto_now_add=True)
+    leave_time = models.DateTimeField(null=True, blank=True)
+    eve_standing_fleet = models.ForeignKey(
+        EveStandingFleet, on_delete=models.CASCADE
+    )
