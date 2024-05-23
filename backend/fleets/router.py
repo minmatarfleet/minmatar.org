@@ -38,6 +38,8 @@ class EveFleetChannelResponse(BaseModel):
 
 class EveFleetTrackingResponse(BaseModel):
     id: int
+    start_time: datetime
+    end_time: Optional[datetime] = None
     is_registered: bool
 
     class Config:
