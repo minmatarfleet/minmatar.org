@@ -16,16 +16,18 @@ const {
     expired_text,
 } = Astro.props;
 
+const timestamp = new Date().getTime()
+
 const {
     text,
     expired,
 } = countdown(date, expired_text)
 ---
 
-<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}`}>{text}</p>
+<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}-${timestamp}`}>{text}</p>
 
-<script define:vars={{ id, tag, date, expired_text }}>
-    countdown(`#${tag}-${id}`, id, date, expired_text);
+<script define:vars={{ id, tag, date, expired_text, timestamp }}>
+    countdown(`#${tag}-${id}-${timestamp}`, id, date, expired_text);
 </script>
 
 <style lang="scss">
