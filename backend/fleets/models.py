@@ -79,7 +79,7 @@ class EveFleet(models.Model):
 
         logger.info(response)
 
-        fleet_instance, _ = EveFleetInstance.objects.create(
+        fleet_instance = EveFleetInstance.objects.create(
             id=response["fleet_id"],
             eve_fleet=self,
         )
