@@ -12,6 +12,7 @@ CELERY_IMPORTS = (
     "fittings.tasks",
     "discord.tasks",
     "fleets.tasks",
+    "reminders.tasks",
 )
 
 
@@ -47,6 +48,8 @@ INSTALLED_APPS = [
     "fleets.apps.FleetsConfig",
     # Mumble
     "mumble.apps.MumbleConfig",
+    # Reminders
+    "reminders.apps.RemindersConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',
