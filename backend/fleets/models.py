@@ -79,10 +79,17 @@ class EveFleet(models.Model):
 
         logger.info(response)
 
-        fleet_instance = EveFleetInstance.objects.create(
-            id=response["fleet_id"],
-            eve_fleet=self,
-        )
+        if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
+            fleet_instance = EveFleetInstance.objects.get(
+                id=response["fleet_id"]
+            )
+            fleet_instance.eve_fleet = self
+            fleet_instance.save()
+        else:
+            fleet_instance = EveFleetInstance.objects.create(
+                id=response["fleet_id"],
+                eve_fleet=self,
+            )
 
         fleet_instance.update_motd()
         fleet_instance.update_free_move()
