@@ -373,7 +373,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
 @router.post(
     "/{fleet_id}/tracking",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse},
+    response={200: None, 403: ErrorResponse, 400: ErrorResponse},
     description="Start a fleet and send a discord ping, must be the owner of the fleet",
 )
 def start_fleet(request, fleet_id: int):
