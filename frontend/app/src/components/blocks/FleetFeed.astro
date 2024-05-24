@@ -39,7 +39,7 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
     x-show="show_fleet_feeds"
 >
     <div
-        class="[ fleet-feed swiper ][ pr-[var(--space-s)] animate-fade-in-up !hidden 2xl:!block ]"
+        class="[ fleet-feed swiper ][ animate-fade-in-up !hidden 2xl:!block ]"
         hx-get={FLEET_FEED_PARTIAL_URL}
         hx-trigger="load delay:3600s"
         hx-swap="outerHTML transition:true"
@@ -62,8 +62,6 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
         bottom: var(--space-l);
         right: var(--space-xl);
         display: none;
-
-        
     }
 
     .swiper-slider {
