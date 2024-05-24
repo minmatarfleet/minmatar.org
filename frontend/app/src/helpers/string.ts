@@ -38,6 +38,6 @@ export async function parse_markdown(text:string) {
     return await marked.parseInline(text)
 }
 
-export async function get_error_message(status:number, endpoint:string) {
+export function get_error_message(status:number, endpoint:string) {
     return `HTTP error! Status — ${status}<br><pre style="width: fit-content"><code>${endpoint}</code></pre>`
 }

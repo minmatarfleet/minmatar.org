@@ -20,7 +20,7 @@ export async function get_user_by_id(user_id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ))
@@ -49,7 +49,7 @@ export async function get_user_by_name(user_name:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ))
@@ -80,7 +80,7 @@ export async function delete_account(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
             ))
