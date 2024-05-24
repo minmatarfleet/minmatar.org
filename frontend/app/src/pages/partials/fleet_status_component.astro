@@ -13,10 +13,6 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 if (!user)
     return HTTP_404_Not_Found()
@@ -26,25 +22,34 @@ const fleet_id = parseInt(Astro.url.searchParams.get('id'))
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
+import type { FleetUI, Alert } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
-import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
+import { start_fleet } from '@helpers/api.minmatar.org/fleets'
 
 let fetch_fleets_error:string | false = false
+let start_fleet_error:string | false = false
 let fleet:FleetUI
 let user_character:EveCharacterProfile
-let fleet_composition:FleetCompositionUI[]
-let fleet_radar:FleetRadarUI[]
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        await start_fleet(auth_token as string, fleet_id)
+    } catch (error) {
+        start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+
+        alert = {
+            title: t('start_tracking'),
+            content: start_fleet_error as string,
+        }
+    }
+}
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-
-    const members = await get_fleet_members(auth_token as string, fleet_id)
-    fleet_composition = await group_members_by_ship(members)
-    fleet_radar = await group_members_by_location(members)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_404_Not_Found()
@@ -54,29 +59,27 @@ try {
 
 const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
 
-if (!is_fleet_commander)
-    return HTTP_404_Not_Found()
+const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet_id}`
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet_id}`
-
-import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
+import FleetStatus from '@components/blocks/FleetStatus.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
 {fetch_fleets_error ?
     <ErrorRefetch
         args={{
-            partial: FLEET_COMPOSITION_PARTIAL_URL,
+            partial: FLEET_STATUS_PARTIAL_URL,
             message: fetch_fleets_error,
             delay: delay,
         }}
     />
     :
-    <FleetCompositionBlock
-        composition={fleet_composition}
-        fleet_radar={fleet_radar}
-        fleet_id={fleet.id}
+    <FleetStatus
+        fleet={fleet}
+        is_fleet_commander={is_fleet_commander}
+        alert={alert}
+        start_tracking={Astro.request.method === 'POST' && !start_fleet_error}
     />
 }

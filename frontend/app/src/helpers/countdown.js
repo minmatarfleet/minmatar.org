@@ -1,4 +1,4 @@
-export const countdown = (date, expired_text) => {
+export const countdown = (date, expired_text = '') => {
     // Set the date we're counting down to
     var countDownDate = new Date(date).getTime();
 

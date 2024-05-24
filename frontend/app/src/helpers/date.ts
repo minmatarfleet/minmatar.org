@@ -46,6 +46,12 @@ export const humanize_date_diff = (locale:Locales, from:Date, to:Date):string =>
     return semantic_list(locale, durations)
 }
 
+export const minutes_to = (datetime:Date):number => {
+    var from_moment = moment(new Date(datetime))
+    var to_moment = moment(new Date())
+    return Math.ceil(moment.duration(to_moment.diff(from_moment)).asMinutes())
+}
+
 export const days_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))

@@ -631,6 +631,7 @@ export interface FleetItem {
     fleet_commander_id:     number;
     fleet_commander_name:   string;
     location:               string;
+    tracking:               Tracking;
 }
 
 export interface FleetUI {
@@ -642,4 +643,26 @@ export interface FleetUI {
     fleet_commander_name:   string;
     location:               string;
     doctrine:               DoctrineType;
+    tracking:               Tracking;
+}
+
+export interface Tracking {
+    id:             number;
+    start_time:     Date;
+    end_time:       Date;
+    is_registered:  boolean;
+}
+
+export interface FleetCompositionUI {
+    ship_type_id:   number;
+    ship_type_name: string;
+    members:        CharacterBasic[]
+}
+
+export interface FleetRadarUI {
+    solar_system_id:    number;
+    solar_system_name:  string;
+    start_type_id:      number;
+    jumps:              number;
+    members:            CharacterBasic[]
 }

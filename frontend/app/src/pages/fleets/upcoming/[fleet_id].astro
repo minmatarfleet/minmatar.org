@@ -26,24 +26,34 @@ const fleet_id = parseInt(Astro.params.fleet_id)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
+import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI
 let user_character:EveCharacterProfile
+let fleet_composition:FleetCompositionUI[]
+let fleet_radar:FleetRadarUI[]
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
+
+    const members = await get_fleet_members(auth_token as string, fleet_id)
+    fleet_composition = await group_members_by_ship(members)
+    fleet_radar = await group_members_by_location(members)
 } catch (error) {
+    console.log(error)
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_404_Not_Found()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
+
+const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
 
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
@@ -115,6 +125,9 @@ const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
             <FleetDetails
                 fleet={fleet}
                 can_remove_fleet={can_remove_fleet}
+                is_fleet_commander={is_fleet_commander}
+                fleet_composition={fleet_composition}
+                fleet_radar={fleet_radar}
             />
         }
     </PageDefault>

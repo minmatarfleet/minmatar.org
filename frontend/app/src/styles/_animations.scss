@@ -63,7 +63,7 @@
         content: '';
         z-index: 1;
         opacity: 0;
-        animation: dscan 0.5s;
+        animation: dscan 1.5s;
         animation-iteration-count: 1;
         inset: calc(var(--space-2xs) * -1) calc(var(--space-s-l) * -1);
         position: absolute;

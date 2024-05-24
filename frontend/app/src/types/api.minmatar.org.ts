@@ -158,6 +158,14 @@ export interface Fleet {
     fleet_commander:    number;
     doctrine_id:        number;
     location:           string;
+    tracking:           Tracking;
+}
+
+export interface Tracking {
+    id:             number;
+    start_time:     Date;
+    end_time:       Date;
+    is_registered:  boolean;
 }
 
 export interface FleetRequest {
@@ -178,4 +186,13 @@ export interface Audience {
     id:                     number;
     display_name:           string;
     display_channel_name:   string;
+}
+
+export interface FleetMember {
+    character_id: number,
+    character_name: string,
+    ship_type_id: number,
+    ship_type_name: string,
+    solar_system_id: number,
+    solar_system_name: string,
 }
