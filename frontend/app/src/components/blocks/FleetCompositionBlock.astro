@@ -68,7 +68,7 @@ const members = composition.reduce(
             }
         </Flexblock>
 
-        {composition.length > 0 && <FlexInline class="[ items-center ]" gap="var(--space-s)">
+        <FlexInline class="[ items-center ]" gap="var(--space-s)">
             <Button
                 size='sm'
                 hx-get={translatePath(FLEET_COMPOSITION_PARTIAL_URL)}
@@ -86,14 +86,14 @@ const members = composition.reduce(
             <Button size='sm' @click="global_collapse = true" class="[ hidden sm:block ]">
                 {t('collapse_all')}
             </Button>
-        </FlexInline>}
+        </FlexInline>
     </FlexInline>
 
     <div
         id="fleet-composition-dscan"
         x-bind:class="{ dscan: dscan_active }"
     >
-        {composition.length == 0 && <p>{t('members_visibility_hint')}</p>}
+        {composition.length == 0 && <p>{t('no_members')}</p>}
 
         {composition.length > 0 &&
             <FleetComposition composition={composition} />
@@ -116,6 +116,8 @@ const members = composition.reduce(
         id="fleet-radar-dscan"
         x-bind:class="{ dscan: dscan_active }"
     >
+        {fleet_radar.length == 0 && <p>{t('no_members')}</p>}
+
         {fleet_radar.length > 0 &&
             <FleetRadar fleet_radar={fleet_radar} />
         }

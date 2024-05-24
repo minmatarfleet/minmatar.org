@@ -28,6 +28,7 @@ const {
 import { query_string } from '@helpers/string';
 
 const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
+const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
@@ -52,6 +53,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 <Flexblock
     gap="var(--space-3xs)"
     x-data={`{
+        tracking_started: false,
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
             '${lang}',
             ${import.meta.env.DATETIME_FORMAT}
@@ -136,7 +138,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
     <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} />
 
-    {is_fleet_commander &&
+    {is_fleet_commander && fleet?.tracking &&
         <ComponentBlock
             x-data={`{
                 global_collapse: false,
@@ -148,6 +150,31 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 fleet_id={fleet.id}
             />
         </ComponentBlock>
+    }
+    
+    {is_fleet_commander && !fleet?.tracking &&
+        <template
+            x-data={`{
+                initialized: false,
+            }`}
+            x-if="tracking_started || initialized"
+        >
+            <ComponentBlock
+                x-data={`{
+                    global_collapse: false,
+                    init() {
+                        initialized = true
+                        htmx.process($el)
+                    }
+                }`}
+                hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                hx-trigger="load delay:30s once"
+                hx-indicator=".loader"
+                hx-swap="innerHTML transition:true"
+            >
+                <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+            </ComponentBlock>
+        </template>
     }
 
     <ComponentBlock>

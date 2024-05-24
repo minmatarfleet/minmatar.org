@@ -80,5 +80,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         fleet={fleet}
         is_fleet_commander={is_fleet_commander}
         alert={alert}
+        start_tracking={Astro.request.method === 'POST' && !start_fleet_error}
     />
 }

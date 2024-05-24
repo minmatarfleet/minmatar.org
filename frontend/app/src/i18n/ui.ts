@@ -746,5 +746,6 @@ export const ui = {
         'systems': 'Systems',
         'members_location': 'Members location',
         'fleet_composition': 'Fleet composition',
+        'loading_fleet_composition': 'Loading fleet composition in the next 30 seconds',
     },
 } as const;

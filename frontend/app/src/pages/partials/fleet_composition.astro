@@ -46,7 +46,6 @@ try {
     fleet_composition = await group_members_by_ship(members)
     fleet_radar = await group_members_by_location(members)
 } catch (error) {
-    console.log(error)
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_404_Not_Found()
     

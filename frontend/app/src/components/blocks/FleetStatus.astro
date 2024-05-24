@@ -10,13 +10,15 @@ import type { FleetUI, Alert } from '@dtypes/layout_components'
 interface Props {
     fleet:              FleetUI;
     is_fleet_commander: boolean;
-    alert?:             false | Alert,
+    alert?:             false | Alert;
+    start_tracking?:    boolean;
 }
 
 const {
     fleet,
     is_fleet_commander,
     alert = false,
+    start_tracking = false,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
@@ -47,6 +49,7 @@ const hx_attrs = {
         is_fleet_time: ${JSON.stringify(is_fleet_time)},
         init() {
             ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            tracking_started = ${start_tracking}
         }
     }`}
     {...hx_attrs}
