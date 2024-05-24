@@ -29,6 +29,8 @@ const is_fleet_time = minutes_to_fleet < 30
 
 const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet.id}`
 
+import TextBox from '@components/layout/TextBox.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
@@ -105,6 +107,12 @@ const hx_attrs = {
             >
                 <StartFleetButton id={fleet.id} />
             </template>
+        }
+
+        {fleet?.tracking && !fleet?.tracking?.is_registered &&
+            <TextBox max_width='40rem'>
+                <p>{t('missing_advert')}</p>
+            </TextBox>
         }
     </Flexblock>
 </ComponentBlock>
