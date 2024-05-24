@@ -20,7 +20,7 @@ export async function get_doctrines() {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -49,7 +49,7 @@ export async function get_doctrine_by_id(id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));

@@ -21,7 +21,7 @@ export async function get_mumble_connection(access_token:string) {
         console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ))

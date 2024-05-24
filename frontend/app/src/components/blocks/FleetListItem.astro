@@ -8,12 +8,14 @@ const translatePath = useTranslatedPath(lang);
 import type { FleetItem } from '@dtypes/layout_components';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+
 import Button from '@components/blocks/Button.astro';
 import ThumbCard from '@components/blocks/ThumbCard.astro';
-import Countdown from './Countdown.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import VerticalCenter from './VerticalCenter.astro';
-import TextGroup from './TextGroup.astro';
 
 interface Props {
     fleet: FleetItem;
@@ -93,7 +95,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         date={fleet.start_time}
                         id={fleet.id}
                         tag='countdown-fleet'
-                        expired_text={t('forming')}
                     />
                 }
             </Flexblock>

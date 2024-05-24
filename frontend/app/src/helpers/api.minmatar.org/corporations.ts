@@ -20,7 +20,7 @@ export async function get_all_corporations(corporation_type:CorporationType) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -50,7 +50,7 @@ export async function get_corporation_by_id(access_token:string, id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));

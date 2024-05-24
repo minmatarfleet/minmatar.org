@@ -21,7 +21,7 @@ export async function get_corporation_applications(access_token:string, corporat
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -57,7 +57,7 @@ export async function create_corporation_application(access_token:string, corpor
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `POST: ${ENDPOINT}`
             ));
@@ -87,7 +87,7 @@ export async function get_corporation_applications_by_id(access_token:string, co
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -118,7 +118,7 @@ export async function accept_corporation_applications(access_token:string, corpo
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
             ));
@@ -149,7 +149,7 @@ export async function reject_corporation_applications(access_token:string, corpo
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
             ));
