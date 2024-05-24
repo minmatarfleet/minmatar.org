@@ -59,12 +59,31 @@ import StylessButton from './StylessButton.astro';
         />
         <small>{t(fleet.type as any)} {t('fleet')}</small>
         <div class="[ text-center pr-[var(--space-l)] ]">
-            <Countdown
-                date={fleet.start_time}
-                id={fleet.id}
-                tag="countdown-fleet"
-                expired_text={t('forming')}
-            />
+            {fleet?.tracking && !fleet?.tracking?.end_time &&
+                <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
+            }
+
+            {fleet?.tracking && fleet?.tracking?.end_time &&
+                <p class="[ fleet-status-text ]">{t('completed')}</p>
+            }
+
+            {!fleet?.tracking ?
+                <Countdown
+                    date={fleet.start_time}
+                    id={fleet.id}
+                    tag="countdown-fleet"
+                    expired_text={t('forming')}
+                />
+                :
+                <div class="[ hidden ]">
+                    <Countdown
+                        date={fleet.start_time}
+                        id={fleet.id}
+                        tag="countdown-fleet"
+                        expired_text={t('forming')}
+                    />
+                </div>
+            }
         </div>
     </FlexInline>
 </StylessButton>
@@ -79,5 +98,16 @@ import StylessButton from './StylessButton.astro';
         outline-color: var(--highlight);
         outline-style: double;
         outline-offset: -1px;
+    }
+    
+    .fleet-status-text {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+		letter-spacing: 12px;
+        text-indent: 12px;
+		line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
     }
 </style>

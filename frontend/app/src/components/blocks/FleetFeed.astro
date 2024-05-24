@@ -41,7 +41,7 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
     <div
         class="[ fleet-feed swiper ][ animate-fade-in-up !hidden 2xl:!block ]"
         hx-get={FLEET_FEED_PARTIAL_URL}
-        hx-trigger="load delay:3600s"
+        hx-trigger="load delay:300s"
         hx-swap="outerHTML transition:true"
     >
         <FeedSwiper>
