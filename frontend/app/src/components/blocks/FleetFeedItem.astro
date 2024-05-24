@@ -58,7 +58,7 @@ import StylessButton from './StylessButton.astro';
             character_name={fleet.fleet_commander_name}
         />
         <small>{t(fleet.type as any)} {t('fleet')}</small>
-        <div class="[ text-center pr-[var(--space-s)] ]">
+        <div class="[ text-center pr-[var(--space-l)] ]">
             <Countdown
                 date={fleet.start_time}
                 id={fleet.id}
