@@ -27,6 +27,9 @@ const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
 
 try {
     fleets = await fetch_fleets(auth_token as string, upcoming)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
