@@ -164,8 +164,10 @@ def get_fleet_audiences(request):
 
 
 @router.get("", response={200: List[int]})
-def get_fleets(request, upcoming: bool = True):
-    if upcoming:
+def get_fleets(request, upcoming: bool = True, active: bool = False):
+    if active:
+        fleets = EveFleet.objects.filter(evefleetinstance__end_time=None)
+    elif upcoming:
         fleets = EveFleet.objects.filter(start_time__gte=datetime.now())
     else:
         fleets = EveFleet.objects.all()
