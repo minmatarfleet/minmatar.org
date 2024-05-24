@@ -31,6 +31,7 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
+import { get_system_id } from '@helpers/sde/map'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI
@@ -42,9 +43,12 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
 
+    const staggering_solar_system = fleet.location.split(' - ')[0]
+    const staggering_solar_system_id = await get_system_id(staggering_solar_system)
+
     const members = await get_fleet_members(auth_token as string, fleet_id)
     fleet_composition = await group_members_by_ship(members)
-    fleet_radar = await group_members_by_location(members)
+    fleet_radar = await group_members_by_location(members, staggering_solar_system_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_404_Not_Found()
