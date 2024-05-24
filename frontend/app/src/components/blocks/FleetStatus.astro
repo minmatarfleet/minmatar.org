@@ -51,12 +51,15 @@ const hx_attrs = {
         is_fleet_time: ${JSON.stringify(is_fleet_time)},
         init() {
             ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
-            tracking_started = ${start_tracking}
+            ${JSON.stringify(start_tracking)} && $dispatch('tracking_started')
         }
     }`}
     {...hx_attrs}
 >
-    <Flexblock class="[ grow text-center ]" centered={true}>
+    <Flexblock
+        class="[ grow text-center ]"
+        centered={true}
+    >
         {fleet?.tracking === null &&
             <Countdown
                 date={fleet.start_time}
@@ -111,7 +114,10 @@ const hx_attrs = {
 
         {fleet?.tracking && !fleet?.tracking?.is_registered &&
             <TextBox max_width='40rem'>
-                <p>{t('missing_advert')}</p>
+                <Flexblock gap='var(--space-xs)' class="[ text-left ]">
+                    <p>{t('missing_advert')}</p>
+                    <small>{t('missing_advert_subtext')}</small>
+                </Flexblock>
             </TextBox>
         }
     </Flexblock>
