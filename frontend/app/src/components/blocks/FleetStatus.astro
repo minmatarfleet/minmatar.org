@@ -112,7 +112,7 @@ const hx_attrs = {
             </template>
         }
 
-        {fleet?.tracking && !fleet?.tracking?.is_registered &&
+        {fleet?.tracking && !fleet?.tracking?.is_registered && !fleet?.tracking?.end_time &&
             <TextBox max_width='40rem'>
                 <Flexblock gap='var(--space-xs)' class="[ text-left ]">
                     <p>{t('missing_advert')}</p>
