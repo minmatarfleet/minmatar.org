@@ -21,7 +21,7 @@ export async function get_types(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -51,7 +51,7 @@ export async function get_locations(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -81,7 +81,7 @@ export async function get_audiences(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -111,7 +111,7 @@ export async function get_fleets(access_token:string, upcoming:boolean = true) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ));
@@ -145,7 +145,7 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
             ))
@@ -175,7 +175,7 @@ export async function get_fleet_by_id(access_token:string, id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ))
@@ -206,7 +206,7 @@ export async function delete_fleet(access_token:string, id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
             ))
@@ -237,18 +237,16 @@ export async function start_fleet(access_token:string, fleet_id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            const error = await response.json()
-            console.log(error)
+            let error = await response.json()
+            const error_msg = parse_error_message(error.detail)
+            error = error_msg ? error_msg : error?.detail
 
-            throw new Error(await get_error_message(
-                error?.detail ? error?.detail : response.status,
-                `POST ${ENDPOINT}`
-            ))
+            throw new Error(error ? error : get_error_message(response.status, `POST ${ENDPOINT}`))
         }
         
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error fetching creating fleet: ${error.message}`);
+        throw new Error(`Error starting the fleet: ${error.message}`);
     }
 }
 
@@ -270,7 +268,7 @@ export async function get_fleet_members(access_token:string, id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(await get_error_message(
+            throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
             ))
@@ -278,6 +276,18 @@ export async function get_fleet_members(access_token:string, id:number) {
 
         return await response.json() as FleetMember[];
     } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`);
+        throw new Error(`Error fetching fleet members: ${error.message}`);
+    }
+}
+
+const parse_error_message = (error_details:string) => {
+    // Regular expression to match the error message inside the single quotes after "error": 
+    const regex = /'error': '([^']+)'/;
+    const match = error_details.match(regex);
+    
+    if (match && match[1]) {
+        return match[1];
+    } else {
+        return null; // or handle the case when the pattern doesn't match
     }
 }

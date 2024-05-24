@@ -46,7 +46,7 @@ const {
                 <FlexInline class="[ items-center ]" gap="var(--space-s)">
                     <img loading="lazy" width="64" height="64" src={get_item_icon(group.start_type_id, 64)} alt={group.solar_system_name} class="[ hidden sm:flex ]" />
                     <Flexblock gap="var(--space-3xs)">
-                        <h4>{group.solar_system_name} — {group.jumps} {group.jumps != 1 ? t('jumps').toLowerCase() : t('jump').toLowerCase()}</h4>
+                        <h4>{group.solar_system_name} — {group.jumps !== -1 ? `${group.jumps} ${group.jumps != 1 ? t('jumps').toLowerCase() : t('jump').toLowerCase()}` : t('no_route')}</h4>
                         <small>{group.members.length} {group.members.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}</small>
                     </Flexblock>
                 </FlexInline>

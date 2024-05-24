@@ -14,12 +14,12 @@ export async function get_route(origin:number, destination:number) {
 
         if (!response.ok) {
             if (response.status === 404)
-                return [ destination ]
+                return [ ]
 
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        return await response.json() as number[];
+        return await response.json() as number[]
     } catch (error) {
         throw new Error(`Error fetching alliance: ${error.message}`);
     }
