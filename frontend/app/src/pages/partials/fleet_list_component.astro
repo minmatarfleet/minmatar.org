@@ -57,6 +57,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         x-data={`{
             init() {
                 fleets_count = ${fleets.length}
+                tippy('[data-tippy-content]', tippy_options)
             }
         }`}
     />
