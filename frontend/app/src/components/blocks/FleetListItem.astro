@@ -57,7 +57,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         class="[ absolute top-0 left-0 ]"
         data-tippy-content={
             fleet.type === 'stratop' ?
-            t('startop_fleet') :
+            t('stratop_fleet') :
             fleet.type === 'non_strategic' ?
             t('non_strategic_fleet') :
             fleet.type === 'training' ?
