@@ -139,39 +139,42 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
     <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} />
 
-    {is_fleet_commander && fleet?.tracking &&
-        <ComponentBlock
+    {is_fleet_commander &&
+        <div
             x-data={`{
-                global_collapse: false,
+                global_collapse: $persist(false),
             }`}
         >
-            <FleetCompositionBlock
-                composition={fleet_composition}
-                fleet_radar={fleet_radar}
-                fleet_id={fleet.id}
-            />
-        </ComponentBlock>
-    }
+            {fleet?.tracking &&
+                <ComponentBlock>
+                    <FleetCompositionBlock
+                        composition={fleet_composition}
+                        fleet_radar={fleet_radar}
+                        fleet_id={fleet.id}
+                    />
+                </ComponentBlock>
+            }
 
-    {is_fleet_commander && !fleet?.tracking &&
-        <template
-            x-if="tracking_started"
-        >
-            <ComponentBlock
-                x-data={`{
-                    global_collapse: false,
-                    init() {
-                        htmx.process($el)
-                    }
-                }`}
-                hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                hx-trigger="load delay:30s once"
-                hx-indicator=".loader"
-                hx-swap="innerHTML transition:true"
-            >
-                <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-            </ComponentBlock>
-        </template>
+            {!fleet?.tracking &&
+                <template
+                    x-if="tracking_started"
+                >
+                    <ComponentBlock
+                        x-data={`{
+                            init() {
+                                htmx.process($el)
+                            }
+                        }`}
+                        hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                        hx-trigger="load delay:30s once"
+                        hx-indicator=".loader"
+                        hx-swap="innerHTML transition:true"
+                    >
+                        <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                    </ComponentBlock>
+                </template>
+            }
+        </div>
     }
 
     <ComponentBlock>
