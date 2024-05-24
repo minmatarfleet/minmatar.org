@@ -99,7 +99,7 @@ export async function get_fleets(access_token:string, upcoming:boolean = true) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}`
+    const ENDPOINT = `${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}&active=${JSON.stringify(upcoming)}`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
