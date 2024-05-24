@@ -30,11 +30,10 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import StaropIcon from '@components/icons/StaropIcon.astro';
+import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import CasualIcon from '@components/icons/CasualIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
-import Tippy from './Tippy.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -67,7 +66,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         }
     >
         {fleet.type === 'stratop' ?
-            <StaropIcon /> :
+            <StratopIcon /> :
             fleet.type === 'non_strategic' ?
             <NonStrategicIcon /> :
             fleet.type === 'training' ?
