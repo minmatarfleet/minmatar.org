@@ -33,10 +33,11 @@ let start_fleet_error:string | false = false
 let fleet:FleetUI
 let user_character:EveCharacterProfile
 let alert:Alert | false = false
+let start_tracking = false
 
 if (Astro.request.method === "POST") {
     try {
-        await start_fleet(auth_token as string, fleet_id)
+        start_tracking = await start_fleet(auth_token as string, fleet_id)
     } catch (error) {
         start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
 
@@ -80,6 +81,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         fleet={fleet}
         is_fleet_commander={is_fleet_commander}
         alert={alert}
-        start_tracking={Astro.request.method === 'POST' && !start_fleet_error}
+        start_tracking={start_tracking === true}
     />
 }

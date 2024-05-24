@@ -203,7 +203,7 @@ export async function delete_fleet(access_token:string, id:number) {
             method: 'DELETE'
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             throw new Error(await get_error_message(
@@ -234,7 +234,7 @@ export async function start_fleet(access_token:string, fleet_id:number) {
             method: 'POST'
         })
 
-        console.log(response)
+        // console.log(response)
 
         if (!response.ok) {
             const error = await response.json()

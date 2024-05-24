@@ -59,6 +59,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             ${import.meta.env.DATETIME_FORMAT}
         )
     }`}
+    @tracking_started="tracking_started = true"
 >
     <ComponentBlock>
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
@@ -154,16 +155,12 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
     {is_fleet_commander && !fleet?.tracking &&
         <template
-            x-data={`{
-                initialized: false,
-            }`}
-            x-if="tracking_started || initialized"
+            x-if="tracking_started"
         >
             <ComponentBlock
                 x-data={`{
                     global_collapse: false,
                     init() {
-                        initialized = true
                         htmx.process($el)
                     }
                 }`}
