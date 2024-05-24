@@ -7,16 +7,6 @@ const translatePath = useTranslatedPath(lang);
 
 import type { FleetItem } from '@dtypes/layout_components';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-
-import Button from '@components/blocks/Button.astro';
-import ThumbCard from '@components/blocks/ThumbCard.astro';
-import Countdown from '@components/blocks/Countdown.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-
 interface Props {
     fleet: FleetItem;
     history?: boolean;
@@ -30,6 +20,21 @@ const {
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ThumbCard from '@components/blocks/ThumbCard.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import StaropIcon from '@components/icons/StaropIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import CasualIcon from '@components/icons/CasualIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
+import Tippy from './Tippy.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -49,6 +54,28 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }`}
     {...attributes}
 >
+    <div
+        class="[ absolute top-0 left-0 ]"
+        data-tippy-content={
+            fleet.type === 'stratop' ?
+            t('startop_fleet') :
+            fleet.type === 'non_strategic' ?
+            t('non_strategic_fleet') :
+            fleet.type === 'training' ?
+            t('training_fleet') :
+            t('casual_fleet')
+        }
+    >
+        {fleet.type === 'stratop' ?
+            <StaropIcon /> :
+            fleet.type === 'non_strategic' ?
+            <NonStrategicIcon /> :
+            fleet.type === 'training' ?
+            <TrainingIcon /> :
+            <CasualIcon />
+        }
+    </div>
+
     {fleet.fleet_commander_id === 0 &&
         <VerticalCenter class="[ grow justify-center ]">
             {t('cant_view_fleet_details')}
