@@ -9,6 +9,9 @@ import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import { get_system_sun_type_id } from '@helpers/sde/map'
 
+const SOSALA_SYSTEM_ID = 30003070
+const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
+
 export async function fetch_fleets(access_token:string, upcoming:boolean = true) {
     let api_fleets_id:number[]
 
@@ -94,14 +97,12 @@ export function group_members_by_ship(members:FleetMember[]):FleetCompositionUI[
     })
 }
 
-export async function group_members_by_location(members:FleetMember[]) {
+export async function group_members_by_location(members:FleetMember[], staggering_solar_system_id:number = DEFAULT_STAGGERING_SYSTEM) {
     const solar_system_ids = [...new Set(members.map(member => member.solar_system_id))];
 
     return await Promise.all(solar_system_ids.map(async (solar_system_id) => {
         const filtered_members = members.filter((member) => member.solar_system_id === solar_system_id)
-        console.log(solar_system_id)
-        const route = await get_route(solar_system_id, 30003070)
-        console.log(route)
+        const route = await get_route(solar_system_id, staggering_solar_system_id)
 
         return {
             solar_system_id: solar_system_id,
