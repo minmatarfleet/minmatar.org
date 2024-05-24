@@ -64,7 +64,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
             <h2>{t('fleet_information')}</h2>
 
-            <FlexInline class="[ grow items-start ]" justification='space-between'>
+            <FlexInline class="[ grow !items-start ]" justification='space-between'>
                 <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
                     <h4>{t('fleet_commander')}</h4>
                     <PilotBadge
@@ -151,7 +151,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             />
         </ComponentBlock>
     }
-    
+
     {is_fleet_commander && !fleet?.tracking &&
         <template
             x-data={`{

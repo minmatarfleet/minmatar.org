@@ -93,9 +93,9 @@ const hx_attrs = {
                             const countDownDate = new Date('${fleet.start_time}').getTime();
                             const now = new Date().getTime();
                             const distance = countDownDate - now;
-                            const minutes = Math.ceil((distance % (1000 * 60 * 60)) / (1000 * 60));
+                            const DISTANCE_30_MINUTES = 30*60*1000
 
-                            if (minutes <= 30) {
+                            if (distance <= DISTANCE_30_MINUTES) {
                                 is_fleet_time = true
                                 clearInterval(timer)
                             }
