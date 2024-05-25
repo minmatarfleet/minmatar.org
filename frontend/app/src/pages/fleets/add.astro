@@ -118,12 +118,15 @@ import ThumbCard from '@components/blocks/ThumbCard.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
 
+import StratopIcon from '@components/icons/StratopIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import CasualIcon from '@components/icons/CasualIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 import Markdown from '@components/icons/buttons/Markdown.astro';
@@ -333,6 +336,32 @@ const today = new Date().toISOString().split("T")[0]
                                 thumb_title={t('fleet_commander')}
                                 class="[ max-w-[var(--max-text-width)] ]"
                             >
+                                <div
+                                    class="[ absolute top-0 left-0 ]"
+                                    x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
+                                >
+                                    <template x-if="fleet_type === 'stratop'">
+                                        <div data-fleet-tip data-tippy-content={t('stratop_fleet')}>
+                                            <StratopIcon />
+                                        </div>
+                                    </template>
+                                    <template x-if="fleet_type === 'non_strategic'">
+                                        <div data-fleet-tip data-tippy-content={t('non_strategic_fleet')}>
+                                            <NonStrategicIcon />
+                                        </div>
+                                    </template>
+                                    <template x-if="fleet_type === 'training'">
+                                        <div data-fleet-tip data-tippy-content={t('training_fleet')}>
+                                            <TrainingIcon />
+                                        </div>
+                                    </template>
+                                    <template x-if="fleet_type === 'casual'">
+                                        <div data-fleet-tip data-tippy-content={t('casual_fleet')}>
+                                            <CasualIcon />
+                                        </div>
+                                    </template>
+                                </div>
+
                                 <VerticalCenter>
                                     <Flexblock gap="var(--space-s-m)">
                                         <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
