@@ -161,7 +161,7 @@ class EveSkillset(models.Model):
 class EveCorporation(models.Model):
     """Corporation model"""
 
-    corporation_id = models.IntegerField()
+    corporation_id = models.IntegerField(unique=True)
     introduction = models.TextField(blank=True)
     biography = models.TextField(blank=True)
     timezones = models.TextField(blank=True)
