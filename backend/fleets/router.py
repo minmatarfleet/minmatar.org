@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from eveonline.models import EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from structures.models import EveStructure
 
@@ -18,7 +19,6 @@ from .models import (
     EveFleetNotificationChannel,
     EveStandingFleet,
 )
-from eveonline.models import EvePrimaryCharacter
 
 router = Router(tags=["Fleets"])
 

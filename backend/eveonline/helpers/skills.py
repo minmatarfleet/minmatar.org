@@ -3,13 +3,14 @@ import logging
 from typing import List
 
 import pydantic
-from eveuniverse.models import EveType
 from esi.clients import EsiClientProvider
+from eveuniverse.models import EveType
+
 from eveonline.models import (
     EveCharacter,
+    EveCharacterSkill,
     EveCharacterSkillset,
     EveSkillset,
-    EveCharacterSkill,
 )
 
 esi = EsiClientProvider()

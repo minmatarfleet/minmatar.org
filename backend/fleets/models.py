@@ -3,13 +3,13 @@ import logging
 import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
+from django.utils import timezone
 from esi.clients import EsiClientProvider
 
-from eveonline.models import EvePrimaryCharacter, EveCharacter
+from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-from django.utils import timezone
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
