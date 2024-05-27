@@ -88,17 +88,6 @@ def token_post_save(
     character.token = instance
     character.save()
 
-
-@receiver(
-    signals.post_save,
-    sender=EveCorporation,
-    dispatch_uid="eve_corporation_post_save",
-)
-def eve_corporation_post_save(sender, instance, created, **kwargs):
-    if created:
-        update_corporation(instance.corporation_id)
-
-
 @receiver(
     signals.post_save,
     sender=EveAlliance,
