@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 from enum import Enum
 from typing import List, Optional
 
@@ -151,9 +152,11 @@ def get_fleet_audiences(request):
 @router.get("", response={200: List[int]})
 def get_fleets(request, upcoming: bool = True, active: bool = False):
     if active:
-        fleets = EveFleet.objects.filter(evefleetinstance__end_time=None)
+        fleets = EveFleet.objects.filter(
+            evefleetinstance__end_time=None
+        ).filter(start_time__gte=timezone.now() - timedelta(hours=1))
     elif upcoming:
-        fleets = EveFleet.objects.filter(start_time__gte=datetime.now())
+        fleets = EveFleet.objects.filter(start_time__gte=timezone.now())
     else:
         fleets = EveFleet.objects.all()
     return [fleet.id for fleet in fleets]
@@ -346,7 +349,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.location.location_name
+        "location": fleet.location.location_name,
     }
 
     if fleet.doctrine:
