@@ -160,13 +160,32 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
-    def create_message(self, channel_id, message):
-        """Create a message in a discord channel"""
+    def create_message(self, channel_id, message=None, payload=None):
+        """Create a message in a discord channel
+        Must have payload or message specified
+        """
+        if not message and not payload:
+            raise ValueError("Must have message or payload specified")
+        if not payload:
+            payload = {"content": message}
         return self.post(
             f"{BASE_URL}/channels/{channel_id}/messages",
-            json={
-                "content": message,
-            },
+            json=payload,
+        )
+
+    def update_message(
+        self, channel_id, message_id, message=None, payload=None
+    ):
+        """Update a message in a discord channel
+        Must have payload or message specified
+        """
+        if not message and not payload:
+            raise ValueError("Must have message or payload specified")
+        if not payload:
+            payload = {"content": message}
+        return self.patch(
+            f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
+            json=payload,
         )
 
     def close_thread(self, channel_id):

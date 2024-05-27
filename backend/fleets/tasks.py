@@ -3,9 +3,14 @@ import logging
 from django.utils import timezone
 
 from app.celery import app
-from fleets.models import EveFleetInstance, EveStandingFleet
+from fleets.models import EveFleetInstance, EveStandingFleet, EveFleet
+from discord.client import DiscordClient
 
+discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
+
+FLEET_SCHEDULE_CHANNEL_ID = 1174169403873558658
+FLEET_SCHEDULE_MESSAGE_ID = 1244656126302224466
 
 
 @app.task()
@@ -44,3 +49,47 @@ def update_standing_fleet_instances():
             logger.info("Assuming fleet is closed")
             standing_fleet.end_time = timezone.now()
             standing_fleet.save()
+
+
+@app.task()
+def update_fleet_schedule():
+    """
+    Updates fleet schedule message to display all upcoming fleets
+    Message format: <fleet type> | <eve time> | <local discord timestamp> | <fleet commander>
+    """
+    fleets = EveFleet.objects.filter(start_time__gte=timezone.now()).order_by(
+        "start_time"
+    )
+    message = "## Fleet Schedule\n"
+    for fleet in fleets:
+        message += f"- {fleet.get_type_display()} | {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet.start_time.timestamp())}> LOCAL | <@{fleet.fleet_commander.token.user.discord_user.id}>\n"
+
+    if not fleets:
+        message += "- No upcoming fleets, go touch grass you nerd"
+    payload = {
+        "content": message,
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {
+                        "style": 5,
+                        "label": "View Fleet Board",
+                        "url": "https://my.minmatar.org/fleets/upcoming/",
+                        "disabled": False,
+                        "type": 2,
+                    },
+                    {
+                        "style": 5,
+                        "label": "New Player Instructions",
+                        "url": "https://minmatar.org/guides/new-player-fleet-guide/",
+                        "disabled": False,
+                        "type": 2,
+                    },
+                ],
+            }
+        ],
+    }
+    discord_client.update_message(
+        FLEET_SCHEDULE_CHANNEL_ID, FLEET_SCHEDULE_MESSAGE_ID, payload=payload
+    )

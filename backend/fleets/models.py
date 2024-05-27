@@ -42,7 +42,11 @@ class EveFleet(models.Model):
         EveDoctrine, on_delete=models.SET_NULL, null=True, blank=True
     )
     location = models.ForeignKey(
-        "EveFleetLocation", on_delete=models.SET_NULL, null=True, blank=True
+        "EveFleetLocation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
     )
 
     @property
@@ -281,10 +285,10 @@ class EveFleetInstanceMember(models.Model):
     ship_name = models.CharField(max_length=255)
     solar_system_id = models.BigIntegerField()
     solar_system_name = models.CharField(max_length=255)
-    squad_id = models.IntegerField()
+    squad_id = models.BigIntegerField()
     station_id = models.BigIntegerField(null=True, blank=True)
     takes_fleet_warp = models.BooleanField(default=False)
-    wing_id = models.IntegerField()
+    wing_id = models.BigIntegerField()
 
 
 class EveFleetNotificationChannel(models.Model):
