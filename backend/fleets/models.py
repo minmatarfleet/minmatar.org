@@ -308,6 +308,8 @@ class EveFleetNotificationChannel(models.Model):
 class EveFleetLocation(models.Model):
     location_id = models.BigIntegerField(primary_key=True)
     location_name = models.CharField(max_length=255)
+    solar_system_id = models.BigIntegerField()
+    solar_system_name = models.CharField(max_length=255)
 
 
 class EveStandingFleet(models.Model):

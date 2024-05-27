@@ -89,6 +89,8 @@ class EveFleetMemberResponse(BaseModel):
 class EveFleetLocationResponse(BaseModel):
     location_id: int
     location_name: str
+    solar_system_id: int
+    solar_system_name: str
 
 
 class CreateEveFleetRequest(BaseModel):
@@ -131,6 +133,8 @@ def get_v2_fleet_locations(request):
             {
                 "location_id": location.location_id,
                 "location_name": location.location_name,
+                "solar_system_id": location.solar_system_id,
+                "solar_system_name": location.solar_system_name,
             }
         )
     return response
