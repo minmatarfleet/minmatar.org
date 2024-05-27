@@ -26,7 +26,7 @@ if (!can_view_page)
 import { create_fleet, get_locations, get_audiences } from '@helpers/api.minmatar.org/fleets'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
-import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, Alert } from '@dtypes/layout_components'
 
 let create_fleet_error
@@ -35,15 +35,17 @@ let alert:Alert | false = false
 if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
-        
+
         const fleet_data = {
             doctrine_id: parseInt(data.get('doctrine_id') as string),
             description: data.get('description') as string,
-            location: data.get('location') as string,
+            location_id: parseInt(data.get('location') as string),
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
-            audience_id: data.get('audience_id'),
-        }
+            audience_id: parseInt(data.get('audience_id') as string),
+        } as FleetRequest
+
+        console.log(fleet_data)
         
         if (await create_fleet(auth_token as string, fleet_data))
             return Astro.redirect(translatePath('/fleets/upcoming'))
@@ -65,7 +67,7 @@ import { fetch_doctrines } from '@helpers/fetching/doctrines'
 let doctrines:DoctrineType[] = []
 let fleet_commander:EveCharacterProfile
 let fetch_doctrines_error:string | false = false
-let locations:string[]
+let locations:Location[]
 let audiences:Audience[]
 
 try {
@@ -78,7 +80,6 @@ try {
 }
 
 const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )
-const audiences_select_options = audiences.map( (i) => { return { name: i.display_name, id: i.id } } )
 
 let FLEET_TYPES_LABELS = {}
 const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
@@ -88,14 +89,20 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
 
 let FLEET_LOCATIONS = {}
 const locations_select_options = locations.map( (i):SelectOptions => {
-    FLEET_LOCATIONS[i] = i
-    return {value: i, label: i} 
+    FLEET_LOCATIONS[i.location_id] = i.location_name
+    return {value: i.location_id, label: i.location_name} 
+} )
+
+let AUDIENCES = {}
+const audiences_select_options = audiences.map( (i):SelectOptions => {
+    AUDIENCES[i.id] = i.display_name
+    return { label: i.display_name, value: i.id }
 } )
 
 const default_fleet_type = fleet_types_select_options[0].value
 const default_location = locations_select_options[0].value
 const default_doctrine = doctrines_select_options[0].id
-const default_audience = audiences_select_options[0].id
+const default_audience = audiences_select_options[0].value
 
 const doctrine:DoctrineType = doctrines.find( (item) => item.id == default_doctrine )
 
@@ -158,6 +165,7 @@ const today = new Date().toISOString().split("T")[0]
             audience: '${default_audience}',
             local_datetime: '',
             locations: ${JSON.stringify(FLEET_LOCATIONS)},
+            audiences: ${JSON.stringify(AUDIENCES)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
                 let images = [{
@@ -251,7 +259,7 @@ const today = new Date().toISOString().split("T")[0]
                                         x-model="audience"
                                     >
                                         {audiences_select_options.map((option) => 
-                                            <option value={option.id}>{option.name}</option>
+                                            <option value={option.value}>{option.label}</option>
                                         )}
                                     </Select>
                                 </FixedFluid>
@@ -339,8 +347,8 @@ const today = new Date().toISOString().split("T")[0]
                                 class="[ absolute top-0 left-0 ]"
                                 x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
                             >
-                                <template x-if="fleet_type === 'stratop'">
-                                    <div data-fleet-tip data-tippy-content={t('stratop_fleet')}>
+                                <template x-if="fleet_type === 'strategic'">
+                                    <div data-fleet-tip data-tippy-content={t('strategic_fleet')}>
                                         <StratopIcon />
                                     </div>
                                 </template>
@@ -354,17 +362,12 @@ const today = new Date().toISOString().split("T")[0]
                                         <TrainingIcon />
                                     </div>
                                 </template>
-                                <template x-if="fleet_type === 'casual'">
-                                    <div data-fleet-tip data-tippy-content={t('casual_fleet')}>
-                                        <CasualIcon />
-                                    </div>
-                                </template>
                             </div>
 
                             <VerticalCenter>
                                 <Flexblock gap="var(--space-s-m)">
-                                    <TextGroup title={t('type')} x-text="fleet_types[fleet_type]">
-                                        {t(default_fleet_type as any)}
+                                    <TextGroup title={t('audience')} x-text="audiences[audience]">
+                                        {AUDIENCES[default_audience]}
                                     </TextGroup>
                                     <TextGroup title={t('location')} x-text="locations[location]">
                                         {t('alliance')}

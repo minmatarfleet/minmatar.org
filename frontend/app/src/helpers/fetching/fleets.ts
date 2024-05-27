@@ -29,9 +29,10 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
         fleet = {
             id: fleet_id,
             doctrine_id: 0,
+            audience: null,
             fleet_commander: null,
             location: '',
-            type: 'casual',
+            type: 'non_strategic',
             description: '',
             start_time: new Date('2100-01-01'),
             tracking: null
@@ -45,6 +46,7 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
     return {
         id: fleet.id,
         description: fleet.description,
+        audience: fleet.audience,
         fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('not_available'),
         location: fleet.location,

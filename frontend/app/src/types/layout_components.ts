@@ -626,6 +626,7 @@ import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
 export interface FleetItem {
     id:                     number;
     type:                   FleetTypes;
+    audience:               string;
     description:            string;
     start_time:             Date;
     fleet_commander_id:     number;

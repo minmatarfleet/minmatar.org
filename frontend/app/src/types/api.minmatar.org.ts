@@ -147,12 +147,13 @@ export interface Doctrine {
     support_fittings:   Fitting[];
 }
 
-export const fleet_types = ['stratop', 'non_strategic', 'casual', 'training'] as const
+export const fleet_types = ['strategic', 'non_strategic', 'training'] as const
 export type FleetTypes = typeof fleet_types[number]
 
 export interface Fleet {
     id:                 number;
     type:               FleetTypes;
+    audience:           string;
     description:        string;
     start_time:         Date;
     fleet_commander:    number;
@@ -173,7 +174,8 @@ export interface FleetRequest {
     description:    string;
     start_time:     Date;
     doctrine_id:    number;
-    location:       string;
+    location_id:    number;
+    audience_id:    number;
 }
 
 export interface MumbleInformation {
@@ -195,4 +197,11 @@ export interface FleetMember {
     ship_type_name: string,
     solar_system_id: number,
     solar_system_name: string,
+}
+
+export interface Location {
+    location_id:        number;
+    location_name:      string;
+    solar_system_id:    number;
+    solar_system_name:  string;
 }
