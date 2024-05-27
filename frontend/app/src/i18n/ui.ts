@@ -60,7 +60,7 @@ export const ui = {
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Fittings are the atom of fleet warfare, and typically will be combined to make up doctrines. However, you will find much more than doctrine fittings here- take a look at our solo and small gang fittings.',
         'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
-        
+
         'fitting.render.cover_alt': 'Open space with a whitish nubula in the background',
 
         'fitting.list.page_title': 'Fittings',
@@ -73,9 +73,9 @@ export const ui = {
         'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available on [alliance contracts](/contracts/).',
         'doctrines.militia.page_title': 'Militia Doctrines',
         'doctrines.militia.page_leading_text': 'Doctrines that are flown in militia by Minmatar Fleet Alliance fleet commanders and are available on [public contracts](/contracts/).',
-        
+
         'doctrine.support_fittings.description': 'These fittings are not part of the doctrine, but are universally (all doctrines) acceptable for new players and alts.',
-        
+
         'fleets.page_title': 'Fleets',
         'fleets.leading_text': 'Minmatar Fleet Academy [L3ARN] is an in-game corporation focused on accelerated teaching through the lens of faction warfare. We have essentially digested decades of veteran player experience into a six month program where we give you a fishing pole and point you at the best fishing spots.',
         'fleets.cover_alt': 'A Minmatar fleet, consisting of Cyclone Fleet Issues, attacking a CVA Astra in the background.',
@@ -95,7 +95,7 @@ export const ui = {
         'fleets.history.page_title': 'Fleet history',
         'fleets.history.empty_message': 'There are no fleet records.',
         'page_finder.fleets.history.description': 'History of fleets',
-        
+
         'intel.page_title': 'Intel',
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
@@ -108,28 +108,28 @@ export const ui = {
         'intel.structures.empty_message': 'There are no structures available. Be the one adding the first one.',
 
         'intel.add_structure.page_title': 'Add structure',
-        
+
         'market.page_title': 'Market',
         'market.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
         'market.cover_alt': 'Interior of Jita 4.4 station',
-        
+
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
         'contracts.cover_alt': 'Interior of Jita 4.4 station',
-        
+
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
         'freight.cover_alt': 'An Amarr hauler initiating warp drive.',
-        
+
         'freight.summary.page_title': '30 Days Summary',
         'freight.summary.historical_header': 'Historical Summary',
         'freight.summary.current_title': 'Current Summary',
-        
+
         'groups.page_title': 'Special Groups of Interest',
         'groups.leading_text_p1': 'SIG stands for [special interest group](https://en.wikipedia.org/wiki/Special_interest_group) and it’s a real-world term used to describe subcommunities with a shared interest.',
         'groups.leading_text_p2': 'The purpose of SIGs is to maintain closeness in a massive sea of pilots, as described in [Town Hall #6](https://docs.google.com/presentation/d/12W-SQUbKAVssdTkM9ixTm_uTkJiDKCXdF6SA2O0B1PQ/edit?usp=sharing). Ultimately, we need to expand and create ways to maintain a close-knit feel in a large organization.',
         'groups.cover_alt': 'Close up into an Avatar Titan front hull',
-        
+
         'groups.members.page_title': 'SIGs members',
         'groups.members.leading_text': 'Here a list of all members for your managed group(s). You may use the filters to look up for your members faster.',
 
@@ -146,36 +146,36 @@ export const ui = {
         'teams.cover_alt': 'EVE Gate wormhole.',
 
         'assets.user.page_title': 'My assets',
-        
+
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
         'account.description': 'Register you pilots and manage your account',
-        
+
         'groups.add.page_title': 'Add group',
-        
+
         'groups.list.page_title': 'Special Interest Groups',
         'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
-        
+
         'teams.list.page_title': 'Teams',
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
-        
+
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
 
         'teams.requests.page_title': 'Team requests',
         'teams.requests.leading_text': 'Here a list of all the joining requests for your managed team(s).',
-        
+
         'groups.management.page_title': 'Goups management',
 
         'teams.management.page_title': 'Teams management',
-        
+
         'corporations.page_title': 'Corporations',
         'corporations.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.cover_alt': 'Outspace starry sky',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
-        
+
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
 
         'corporations.applications.page_title': 'Corporations applications',
@@ -205,7 +205,7 @@ export const ui = {
         'freight.standard.faq_2_text': 'Collateral is a payment you receive if the contract fails to deliver. It prevents scamming, and covers you if the freighter pilot dies in transit. Is equivalent to the cost of your items.',
         'freight.standard.faq_3_title': 'How do sign up to haul?',
         'freight.standard.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics. Contact BearThatCares.',
-        
+
         'freight.wormhole.page_title': 'Wormhole Freight',
         'freight.wormhole.calculator_title': 'Freight calculator',
         'freight.wormhole.faq_title': 'FAQ',
@@ -217,7 +217,7 @@ export const ui = {
         'freight.wormhole.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics. Contact BearThatCares.',
 
         'freight.contract.page_title': 'Freight contract',
-        
+
         'freight.contract.instruction_paragraph': 'Start creating a contract by selecting your items from your Inventory or Personal Assets, at the station specified below, right click and create contract.',
         'freight.contract.step_1_title': 'Create Contract (1/4)',
         'freight.contract.step_2_title': 'Pick items from (2/4)',
@@ -715,7 +715,7 @@ export const ui = {
         'mumble_launch_button_tooltip': 'Re-launch Mumble and join Minmatar Fleet channel. Requieres Mumble installed in your device',
         'launch_mumble': 'Re-launch Mumble',
         'get_mumble_connection_error': 'An error ocurred getting Mumble conneciton information',
-        'on_records': 'on records',
+        'in_past_30_days': 'in the past 30 days',
         'on_schedule': 'on schedule',
         'view_characters': 'View all characters',
         'characters': 'Characters',
