@@ -10,7 +10,9 @@ from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
+from discord.client import DiscordClient
 
+discord = DiscordClient()
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ class EveFleet(models.Model):
     )
 
     audience = models.ForeignKey(
-        Group, on_delete=models.SET_NULL, null=True, blank=True
+        "EveFleetAudience", on_delete=models.SET_NULL, null=True, blank=True
     )
     doctrine = models.ForeignKey(
         EveDoctrine, on_delete=models.SET_NULL, null=True, blank=True
@@ -61,10 +63,6 @@ class EveFleet(models.Model):
         return EvePrimaryCharacter.objects.get(
             character__token__user=self.created_by
         ).character
-
-    @property
-    def notification_channels(self):
-        return EveFleetNotificationChannel.objects.filter(group=self.audience)
 
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
@@ -99,18 +97,18 @@ class EveFleet(models.Model):
         fleet_instance.update_motd()
         fleet_instance.update_free_move()
 
-        for channel in self.notification_channels:
-            requests.post(
-                channel.webhook_url,
-                json=get_fleet_discord_notification(
-                    self.id,
-                    self.get_type_display(),
-                    self.fleet_commander.character_name,
-                    self.fleet_commander.character_id,
-                    self.description,
-                ),
-                timeout=5,
-            )
+        discord.create_message(
+            self.audience.discord_channel_id,
+            payload=get_fleet_discord_notification(
+                fleet_id=self.id,
+                fleet_type=self.get_type_display(),
+                fleet_location=self.location.location_name,
+                fleet_audience=self.audience.name,
+                fleet_commander_name=self.fleet_commander.character_name,
+                fleet_commander_id=self.fleet_commander.character_id,
+                fleet_description=self.description,
+            ),
+        )
 
 
 class EveFleetInstance(models.Model):
@@ -310,6 +308,18 @@ class EveFleetLocation(models.Model):
     location_name = models.CharField(max_length=255)
     solar_system_id = models.BigIntegerField()
     solar_system_name = models.CharField(max_length=255)
+
+
+class EveFleetAudience(models.Model):
+    name = models.CharField(max_length=255)
+    groups = models.ManyToManyField(Group, blank=True)
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    discord_channel_name = models.CharField(
+        max_length=255, null=True, blank=True
+    )
+
+    def __str__(self):
+        return str(self.name)
 
 
 class EveStandingFleet(models.Model):

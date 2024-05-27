@@ -1,10 +1,18 @@
 def get_fleet_discord_notification(
     fleet_id,
     fleet_type,
+    fleet_location,
+    fleet_audience,
     fleet_commander_name,
     fleet_commander_id,
     fleet_description,
 ):
+    description = ""
+    description += f"**TYPE**: {fleet_type.upper()}\n"
+    description += f"**LOCATION**: {fleet_location.upper()}\n"
+    description += f"**AUDIENCE**: {fleet_audience.upper()}\n"
+    description += f"\n**OBJECTIVE**: {fleet_description}\n"
+
     payload = {
         "content": "@everyone",
         "components": [
@@ -32,7 +40,7 @@ def get_fleet_discord_notification(
             {
                 "type": "rich",
                 "title": "INCOMING PING TRANSMISSION...",
-                "description": f"TYPE: {fleet_type}\n TIME: NOW\n\n {fleet_description}",
+                "description": description,
                 "color": 0x18ED09,
                 "author": {
                     "name": f"{fleet_commander_name}",
