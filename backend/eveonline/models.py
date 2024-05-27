@@ -162,6 +162,10 @@ class EveCorporation(models.Model):
     """Corporation model"""
 
     corporation_id = models.IntegerField()
+    introduction = models.TextField(blank=True)
+    biography = models.TextField(blank=True)
+    timezones = models.TextField(blank=True)
+    requirements = models.TextField(blank=True)
 
     # autopopulated
     name = models.CharField(max_length=255, blank=True)
