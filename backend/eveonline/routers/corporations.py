@@ -42,6 +42,10 @@ class CorporationResponse(Schema):
     faction_id: Optional[int] = None
     faction_name: Optional[str] = None
     type: CorporationType
+    introduction: Optional[str] = None
+    biography: Optional[str] = None
+    timezones: Optional[List[str]] = None
+    requirements: Optional[List[str]] = None
     members: List[CorporationMemberResponse] = []
     active: bool
 
@@ -102,6 +106,11 @@ def get_corporations(
             payload["faction_id"] = corporation.faction.id
             payload["faction_name"] = corporation.faction.name
 
+        payload["introduction"] = corporation.introduction
+        payload["biography"] = corporation.biography
+        payload["timezones"] = corporation.timezones.strip().split(",") if corporation.timezones else []
+        payload["requirements"] = corporation.requirements.strip().split("\n") if corporation.requirements else []
+
         response.append(payload)
     logger.info("Finished processing corporations")
     return response
@@ -118,6 +127,10 @@ def get_corporation_by_id(request, corporation_id: int):
     response = {
         "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
+        "introduction": corporation.introduction,
+        "biography": corporation.biography,
+        "timezones": corporation.timezones.strip().split(",") if corporation.timezones else [],
+        "requirements": corporation.requirements.strip().split("\n") if corporation.requirements else [],
         "type": corporation.type,
         "active": corporation.active,
         "members": [],
