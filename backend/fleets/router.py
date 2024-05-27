@@ -47,6 +47,11 @@ class EveFleetTrackingResponse(BaseModel):
         from_attributes = True
 
 
+class EveFleetListResponse(BaseModel):
+    id: int
+    type: EveFleetType
+
+
 class EveFleetResponse(BaseModel):
     id: int
     type: EveFleetType
@@ -162,6 +167,22 @@ def get_fleets(request, upcoming: bool = True, active: bool = False):
     return [fleet.id for fleet in fleets]
 
 
+@router.get("/v2", response={200: List[EveFleetListResponse]})
+def get_fleets_v2(request, upcoming: bool = True, active: bool = False):
+    if active:
+        fleets = EveFleet.objects.filter(
+            evefleetinstance__end_time=None
+        ).filter(start_time__gte=timezone.now() - timedelta(hours=1))
+    elif upcoming:
+        fleets = EveFleet.objects.filter(start_time__gte=timezone.now())
+    else:
+        fleets = EveFleet.objects.all()
+    response = []
+    for fleet in fleets:
+        response.append({"id": fleet.id, "type": fleet.type})
+    return response
+
+
 @router.get("/standingfleets", response={200: List[EveStandingFleetResponse]})
 def get_standing_fleets(request, active: bool = True):
     standing_fleets = EveStandingFleet.objects.filter(end_time=None)
@@ -261,7 +282,9 @@ def get_fleet(request, fleet_id: int):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.location.location_name if fleet.location else "Ask FC",
+        "location": (
+            fleet.location.location_name if fleet.location else "Ask FC"
+        ),
         "tracking": tracking,
     }
     if fleet.doctrine:
