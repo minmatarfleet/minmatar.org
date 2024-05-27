@@ -261,7 +261,7 @@ def get_fleet(request, fleet_id: int):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.location.location_name,
+        "location": fleet.location.location_name if fleet.location else "Ask FC",
         "tracking": tracking,
     }
     if fleet.doctrine:
