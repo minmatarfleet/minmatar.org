@@ -253,8 +253,8 @@ export const ui = {
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
-        'upcoming_fleets': 'Upcoming fleets',
-        'fleet_history': 'Fleet history',
+        'upcoming_fleets': 'View upcoming fleets',
+        'fleet_history': 'View Fleet history',
         'fleet_create': 'Fleet create',
         'how_to_scan': 'How to scan structures',
         'view_structures': 'View Structures',
