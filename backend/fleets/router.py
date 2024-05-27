@@ -31,6 +31,11 @@ class EveFleetType(str, Enum):
     TRAINING = "training"
 
 
+class EveFleetAudience(str, Enum):
+    MILITIA = "militia"
+    ALLIANCE = "alliance"
+
+
 class EveFleetChannelResponse(BaseModel):
     id: int
     display_name: str
@@ -49,7 +54,7 @@ class EveFleetTrackingResponse(BaseModel):
 
 class EveFleetListResponse(BaseModel):
     id: int
-    type: EveFleetType
+    audience: EveFleetAudience
 
 
 class EveFleetResponse(BaseModel):
@@ -168,7 +173,7 @@ def get_fleets(request, upcoming: bool = True, active: bool = False):
 
 
 @router.get("/v2", response={200: List[EveFleetListResponse]})
-def get_fleets_v2(request, upcoming: bool = True, active: bool = False):
+def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
     if active:
         fleets = EveFleet.objects.filter(
             evefleetinstance__end_time=None
@@ -179,7 +184,15 @@ def get_fleets_v2(request, upcoming: bool = True, active: bool = False):
         fleets = EveFleet.objects.all()
     response = []
     for fleet in fleets:
-        response.append({"id": fleet.id, "type": fleet.type})
+        audience = EveFleetAudience.ALLIANCE
+        if fleet.audience.name == "Militia":
+            audience = EveFleetAudience.MILITIA
+        response.append(
+            {
+                "id": fleet.id,
+                "audience": audience,
+            }
+        )
     return response
 
 
