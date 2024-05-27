@@ -22,7 +22,7 @@ class EveFleet(models.Model):
     """
 
     fleet_types = (
-        ("stratop", "Strategic Operation"),
+        ("strategic", "Strategic Operation"),
         ("non_strategic", "Non Strategic Operation"),
         ("training", "Training Operation"),
     )

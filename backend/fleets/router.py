@@ -25,9 +25,8 @@ router = Router(tags=["Fleets"])
 
 
 class EveFleetType(str, Enum):
-    STRATOP = "stratop"
+    STRATEGIC = "strategic"
     NON_STRATEGIC = "non_strategic"
-    CASUAL = "casual"
     TRAINING = "training"
 
 
