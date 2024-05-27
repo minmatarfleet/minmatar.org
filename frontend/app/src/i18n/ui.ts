@@ -739,7 +739,7 @@ export const ui = {
         'loading_assets': 'Loading assets',
         'start_tracking': 'Start tracking',
         'start_tracking_dialog_title': 'Start fleet',
-        'start_tracking_dialog_text': 'Start tracking fleet and create pin on Discord? Requieres fleet previously created in game',
+        'start_tracking_dialog_text': 'Start tracking fleet and create ping on Discord? Requieres fleet previously created in game',
         'active': 'Active',
         'jumps': 'Jumps',
         'jump': 'Jump',
