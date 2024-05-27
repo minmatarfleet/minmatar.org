@@ -17,6 +17,7 @@ from .models import (
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetLocation,
+    EveFleetAudience,
     EveFleetNotificationChannel,
     EveStandingFleet,
 )
@@ -28,11 +29,6 @@ class EveFleetType(str, Enum):
     STRATEGIC = "strategic"
     NON_STRATEGIC = "non_strategic"
     TRAINING = "training"
-
-
-class EveFleetAudience(str, Enum):
-    ALLIANCE = "alliance"
-    MILITIA = "militia"
 
 
 class EveFleetChannelResponse(BaseModel):
@@ -53,13 +49,13 @@ class EveFleetTrackingResponse(BaseModel):
 
 class EveFleetListResponse(BaseModel):
     id: int
-    audience: EveFleetAudience
+    audience: str
 
 
 class EveFleetResponse(BaseModel):
     id: int
     type: EveFleetType
-    audience: EveFleetAudience
+    audience: str
     description: str
     start_time: datetime
     fleet_commander: int
@@ -148,16 +144,14 @@ def get_v2_fleet_locations(request):
 def get_fleet_audiences(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
-    available_channels = EveFleetNotificationChannel.objects.filter(
-        group__in=request.user.groups.all()
-    )
+    audiences = EveFleetAudience.objects.all()
     response = []
-    for channel in available_channels:
+    for audience in audiences:
         response.append(
             {
-                "id": channel.group.id,
-                "display_name": channel.group.name,
-                "display_channel_name": channel.discord_channel_name,
+                "id": audience.id,
+                "display_name": audience.name,
+                "display_channel_name": audience.discord_channel_name,
             }
         )
     return response
@@ -188,13 +182,10 @@ def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
         fleets = EveFleet.objects.all()
     response = []
     for fleet in fleets:
-        audience = EveFleetAudience.ALLIANCE.value
-        if fleet.audience.name == "Militia":
-            audience = EveFleetAudience.MILITIA.value
         response.append(
             {
                 "id": fleet.id,
-                "audience": audience,
+                "audience": fleet.audience.name,
             }
         )
     return response
@@ -281,8 +272,9 @@ def get_fleet(request, fleet_id: int):
         is_authorized = True
     if request.user == fleet.created_by:
         is_authorized = True
-    if fleet.audience in request.user.groups.all():
-        is_authorized = True
+    for group in fleet.audience.groups.all():
+        if group in request.user.groups.all():
+            is_authorized = True
 
     if not is_authorized:
         return 403, None
@@ -293,10 +285,6 @@ def get_fleet(request, fleet_id: int):
             EveFleetInstance.objects.get(eve_fleet=fleet)
         )
 
-    audience = EveFleetAudience.ALLIANCE.value
-    if fleet.audience.name == "Militia":
-        audience = EveFleetAudience.MILITIA.value
-
     payload = {
         "id": fleet.id,
         "type": fleet.type,
@@ -306,7 +294,7 @@ def get_fleet(request, fleet_id: int):
         "location": (
             fleet.location.location_name if fleet.location else "Ask FC"
         ),
-        "audience": audience,
+        "audience": fleet.audience.name,
         "tracking": tracking,
     }
     if fleet.doctrine:
@@ -364,16 +352,13 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
 
-    if not Group.objects.filter(id=payload.audience_id).exists():
-        return 400, {"detail": "Group does not exist for audience"}
+    if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
+        return 400, {"detail": "Audience does not exist"}
+    
+    if not EveFleetLocation.objects.filter(location_id=payload.location_id).exists():
+        return 400, {"detail": "Location does not exist"}
 
-    if not EveFleetNotificationChannel.objects.filter(
-        group_id=payload.audience_id
-    ).exists():
-        return 400, {"detail": "Group does not have a notification channel"}
-
-    audience = Group.objects.get(id=payload.audience_id)
-
+    audience = EveFleetAudience.objects.get(id=payload.audience_id)
     fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
@@ -395,6 +380,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
         "location": fleet.location.location_name,
+        "audience": fleet.audience.name,
     }
 
     if fleet.doctrine:
