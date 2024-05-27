@@ -56,22 +56,18 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     <div
         class="[ absolute top-0 left-0 ]"
         data-tippy-content={
-            fleet.type === 'stratop' ?
-            t('stratop_fleet') :
-            fleet.type === 'non_strategic' ?
-            t('non_strategic_fleet') :
+            fleet.type === 'strategic' ?
+            t('strategic_fleet') :
             fleet.type === 'training' ?
             t('training_fleet') :
-            t('casual_fleet')
+            t('non_strategic_fleet')
         }
     >
-        {fleet.type === 'stratop' ?
+        {fleet.type === 'strategic' ?
             <StratopIcon /> :
-            fleet.type === 'non_strategic' ?
-            <NonStrategicIcon /> :
             fleet.type === 'training' ?
             <TrainingIcon /> :
-            <CasualIcon />
+            <NonStrategicIcon />
         }
     </div>
 
@@ -84,8 +80,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     {fleet.fleet_commander_id > 0 &&
         <VerticalCenter>
             <Flexblock gap="var(--space-s-m)">
-                <TextGroup title={t('type')}>
-                    {t(fleet.type as any)}
+                <TextGroup title={t('audience')}>
+                    {fleet.audience}
                 </TextGroup>
                 <TextGroup title={t('location')}>
                     {fleet.location}

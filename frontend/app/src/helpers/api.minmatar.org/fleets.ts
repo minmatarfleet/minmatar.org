@@ -1,4 +1,4 @@
-import type { FleetMember, Fleet, FleetRequest, Audience } from '@dtypes/api.minmatar.org'
+import type { FleetMember, Fleet, FleetRequest, Audience, Location } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
@@ -39,7 +39,7 @@ export async function get_locations(access_token:string) {
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/locations`
+    const ENDPOINT = `${API_ENDPOINT}/v2/locations`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
@@ -57,7 +57,7 @@ export async function get_locations(access_token:string) {
             ));
         }
 
-        return await response.json() as string[];
+        return await response.json() as Location[];
     } catch (error) {
         throw new Error(`Error fetching fleet types: ${error.message}`);
     }
