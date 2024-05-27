@@ -41,8 +41,9 @@ class EveFleet(models.Model):
     doctrine = models.ForeignKey(
         EveDoctrine, on_delete=models.SET_NULL, null=True, blank=True
     )
-    location = models.CharField(max_length=255, blank=True)
-    location_id = models.BigIntegerField(null=True, blank=True)
+    location = models.ForeignKey(
+        "EveFleetLocation", on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     @property
     def token(self):
@@ -298,7 +299,8 @@ class EveFleetNotificationChannel(models.Model):
 
     def __str__(self):
         return f"{self.group} - {self.discord_channel_name}"
-    
+
+
 class EveFleetLocation(models.Model):
     location_id = models.BigIntegerField(primary_key=True)
     location_name = models.CharField(max_length=255)
