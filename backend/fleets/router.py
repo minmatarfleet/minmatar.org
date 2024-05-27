@@ -10,12 +10,12 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EvePrimaryCharacter
 from fittings.models import EveDoctrine
-from structures.models import EveStructure
 
 from .models import (
     EveFleet,
     EveFleetInstance,
     EveFleetInstanceMember,
+    EveFleetLocation,
     EveFleetNotificationChannel,
     EveStandingFleet,
 )
@@ -86,8 +86,7 @@ class CreateEveFleetRequest(BaseModel):
     start_time: datetime
     doctrine_id: Optional[int] = None
     audience_id: int
-    location: str
-    location_id: Optional[int] = None
+    location_id: int
 
 
 @router.get(
@@ -107,21 +106,6 @@ def get_fleet_types(request):
 
 
 @router.get(
-    "/locations",
-    auth=AuthBearer(),
-    response={200: List[str], 403: ErrorResponse},
-)
-def get_fleet_locations(request):
-    if not request.user.has_perm("fleets.add_evefleet"):
-        return 403, {"detail": "User missing permission fleets.add_evefleet"}
-    return list(
-        EveStructure.objects.filter(is_valid_staging=True).values_list(
-            "name", flat=True
-        )
-    )
-
-
-@router.get(
     "/v2/locations",
     auth=AuthBearer(),
     response={200: List[EveFleetLocationResponse], 403: ErrorResponse},
@@ -130,12 +114,13 @@ def get_v2_fleet_locations(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
     response = []
-    locations = EveStructure.objects.filter(is_valid_staging=True).values_list(
-        "name", flat=True
-    )
+    locations = EveFleetLocation.objects.all()
     for location in locations:
         response.append(
-            {"location_id": location.id, "location_name": location.name}
+            {
+                "location_id": location.location_id,
+                "location_name": location.location_name,
+            }
         )
     return response
 
@@ -273,7 +258,7 @@ def get_fleet(request, fleet_id: int):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.location,
+        "location": fleet.location.location_name,
         "tracking": tracking,
     }
     if fleet.doctrine:
@@ -346,8 +331,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         description=payload.description,
         start_time=payload.start_time,
         created_by=request.user,
-        location=payload.location,
-        location_id=payload.location_id,
+        location=EveFleetLocation.objects.get(location_id=payload.location_id),
         audience=audience,
     )
 
@@ -362,8 +346,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.location,
-        "location_id": fleet.location_id,
+        "location": fleet.location.location_name
     }
 
     if fleet.doctrine:

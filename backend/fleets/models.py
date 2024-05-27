@@ -298,6 +298,10 @@ class EveFleetNotificationChannel(models.Model):
 
     def __str__(self):
         return f"{self.group} - {self.discord_channel_name}"
+    
+class EveFleetLocation(models.Model):
+    location_id = models.BigIntegerField(primary_key=True)
+    location_name = models.CharField(max_length=255)
 
 
 class EveStandingFleet(models.Model):
