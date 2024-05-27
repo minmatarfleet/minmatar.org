@@ -3,7 +3,6 @@ from django.utils import timezone
 from enum import Enum
 from typing import List, Optional
 
-from django.contrib.auth.models import Group
 from ninja import Router
 from pydantic import BaseModel
 
@@ -18,7 +17,6 @@ from .models import (
     EveFleetInstanceMember,
     EveFleetLocation,
     EveFleetAudience,
-    EveFleetNotificationChannel,
     EveStandingFleet,
 )
 
@@ -160,26 +158,40 @@ def get_fleet_audiences(request):
 @router.get("", response={200: List[int]})
 def get_fleets(request, upcoming: bool = True, active: bool = False):
     if active:
-        fleets = EveFleet.objects.filter(
-            evefleetinstance__end_time=None
-        ).filter(start_time__gte=timezone.now() - timedelta(hours=1))
+        fleets = (
+            EveFleet.objects.filter(evefleetinstance__end_time=None)
+            .filter(start_time__gte=timezone.now() - timedelta(hours=1))
+            .order_by("-start_time")
+        )
     elif upcoming:
-        fleets = EveFleet.objects.filter(start_time__gte=timezone.now())
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now()
+        ).order_by("-start_time")
     else:
-        fleets = EveFleet.objects.all()
+        # get fleets from past 30 days
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now() - timedelta(days=30)
+        ).order_by("-start_time")
     return [fleet.id for fleet in fleets]
 
 
 @router.get("/v2", response={200: List[EveFleetListResponse]})
 def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
     if active:
-        fleets = EveFleet.objects.filter(
-            evefleetinstance__end_time=None
-        ).filter(start_time__gte=timezone.now() - timedelta(hours=1))
+        fleets = (
+            EveFleet.objects.filter(evefleetinstance__end_time=None)
+            .filter(start_time__gte=timezone.now() - timedelta(hours=1))
+            .order_by("-start_time")
+        )
     elif upcoming:
-        fleets = EveFleet.objects.filter(start_time__gte=timezone.now())
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now()
+        ).order_by("-start_time")
     else:
-        fleets = EveFleet.objects.all()
+        # get fleets from past 30 days
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now() - timedelta(days=30)
+        ).order_by("-start_time")
     response = []
     for fleet in fleets:
         response.append(
@@ -354,8 +366,10 @@ def create_fleet(request, payload: CreateEveFleetRequest):
 
     if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
         return 400, {"detail": "Audience does not exist"}
-    
-    if not EveFleetLocation.objects.filter(location_id=payload.location_id).exists():
+
+    if not EveFleetLocation.objects.filter(
+        location_id=payload.location_id
+    ).exists():
         return 400, {"detail": "Location does not exist"}
 
     audience = EveFleetAudience.objects.get(id=payload.audience_id)
