@@ -75,8 +75,8 @@ const page_title = t('fleets.history.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('on_records').toLowerCase()}\``}>
-                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('on_records').toLowerCase()}
+                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('in_past_30_days').toLowerCase()}\``}>
+                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('in_past_30_days').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>
