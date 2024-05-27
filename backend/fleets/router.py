@@ -32,8 +32,8 @@ class EveFleetType(str, Enum):
 
 
 class EveFleetAudience(str, Enum):
-    MILITIA = "militia"
     ALLIANCE = "alliance"
+    MILITIA = "militia"
 
 
 class EveFleetChannelResponse(BaseModel):
@@ -60,6 +60,7 @@ class EveFleetListResponse(BaseModel):
 class EveFleetResponse(BaseModel):
     id: int
     type: EveFleetType
+    audience: EveFleetAudience
     description: str
     start_time: datetime
     fleet_commander: int
@@ -188,9 +189,9 @@ def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
         fleets = EveFleet.objects.all()
     response = []
     for fleet in fleets:
-        audience = EveFleetAudience.ALLIANCE
+        audience = EveFleetAudience.ALLIANCE.value
         if fleet.audience.name == "Militia":
-            audience = EveFleetAudience.MILITIA
+            audience = EveFleetAudience.MILITIA.value
         response.append(
             {
                 "id": fleet.id,
@@ -293,6 +294,10 @@ def get_fleet(request, fleet_id: int):
             EveFleetInstance.objects.get(eve_fleet=fleet)
         )
 
+    audience = EveFleetAudience.ALLIANCE.value
+    if fleet.audience.name == "Militia":
+        audience = EveFleetAudience.MILITIA.value
+
     payload = {
         "id": fleet.id,
         "type": fleet.type,
@@ -302,6 +307,7 @@ def get_fleet(request, fleet_id: int):
         "location": (
             fleet.location.location_name if fleet.location else "Ask FC"
         ),
+        "audience": audience,
         "tracking": tracking,
     }
     if fleet.doctrine:
