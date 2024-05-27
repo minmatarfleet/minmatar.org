@@ -222,6 +222,69 @@ class EveCorporation(models.Model):
 
         return True
 
+    def save(self, *args, **kwargs):
+        logger.info(
+            "Fetching external corporation details for %s", self.corporation_id
+        )
+        esi_corporation = (
+            esi.client.Corporation.get_corporations_corporation_id(
+                corporation_id=self.corporation_id
+            ).results()
+        )
+        logger.info("ESI corporation data: %s", esi_corporation)
+        self.name = esi_corporation["name"]
+        self.ticker = esi_corporation["ticker"]
+        self.member_count = esi_corporation["member_count"]
+        # set ceo
+        if esi_corporation["ceo_id"] > 90000000:
+            logger.info(
+                "Setting CEO as %s for corporation %s",
+                esi_corporation["ceo_id"],
+                self.name,
+            )
+            self.ceo = EveCharacter.objects.get_or_create(
+                character_id=esi_corporation["ceo_id"]
+            )[0]
+        elif esi_corporation["ceo_id"] == 1:
+            if self.id is not None:
+                logger.info("Deleting corporation %s", self.name)
+                self.delete()
+                return
+        else:
+            logger.info("Skipping CEO for corporation %s", self.name)
+
+        # set alliance
+        logger.info("Updating alliance for corporation %s", self.name)
+        if (
+            "alliance_id" in esi_corporation
+            and esi_corporation["alliance_id"] is not None
+        ):
+            logger.info("Setting alliance for corporation %s", self.name)
+            alliance = EveAlliance.objects.get_or_create(
+                alliance_id=esi_corporation["alliance_id"]
+            )[0]
+            logger.info(
+                "Alliance for corporation %s is %s", self.name, alliance
+            )
+            self.alliance = alliance
+        else:
+            self.alliance = None
+            logger.info("Corporation %s has no alliance", self.name)
+        # set faction
+        logger.info("Updating faction for corporation %s", self.name)
+        if (
+            "faction_id" in esi_corporation
+            and esi_corporation["faction_id"] is not None
+        ):
+            logger.info("Setting faction for corporation %s", self.name)
+            self.faction = EveFaction.objects.get_or_create_esi(
+                id=esi_corporation["faction_id"]
+            )[0]
+        else:
+            self.faction = None
+            logger.info("Corporation %s has no faction", self.name)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return str(self.name)
 
