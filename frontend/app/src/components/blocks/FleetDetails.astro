@@ -94,7 +94,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         </TextGroup>
                     </Flexblock>
                 </div>
-                {!history && can_remove_fleet &&
+                {!history && can_remove_fleet && fleet.tracking === null &&
                     <Button
                         size='sm'
                         narrow={true}
