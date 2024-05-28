@@ -36,17 +36,10 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
         logger.debug(
             "Setting corporation to %s", esi_character["corporation_id"]
         )
-        if EveCorporation.objects.filter(
+        corporation, _ = EveCorporation.objects.get_or_create(
             corporation_id=esi_character["corporation_id"]
-        ).exists():
-            instance.corporation = EveCorporation.objects.get(
-                corporation_id=esi_character["corporation_id"]
-            )
-        else:
-            corporation = EveCorporation.objects.create(
-                corporation_id=esi_character["corporation_id"]
-            )
-            instance.corporation = corporation
+        )
+        instance.corporation = corporation
         instance.save()
 
 

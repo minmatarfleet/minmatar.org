@@ -222,7 +222,7 @@ class EveCorporation(models.Model):
 
         return True
 
-    def save(self, *args, **kwargs):
+    def populate(self):
         logger.info(
             "Fetching external corporation details for %s", self.corporation_id
         )
@@ -283,7 +283,7 @@ class EveCorporation(models.Model):
         else:
             self.faction = None
             logger.info("Corporation %s has no faction", self.name)
-        super().save(*args, **kwargs)
+        self.save()
 
     def __str__(self):
         return str(self.name)
