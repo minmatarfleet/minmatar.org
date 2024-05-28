@@ -288,20 +288,6 @@ class EveFleetInstanceMember(models.Model):
     wing_id = models.BigIntegerField()
 
 
-class EveFleetNotificationChannel(models.Model):
-    """
-    Model for storing channels for fleet notifications
-    """
-
-    discord_channel_id = models.BigIntegerField()
-    discord_channel_name = models.CharField(max_length=255)
-    webhook_url = models.CharField(max_length=255)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.group} - {self.discord_channel_name}"
-
-
 class EveFleetLocation(models.Model):
     location_id = models.BigIntegerField(primary_key=True)
     location_name = models.CharField(max_length=255)
