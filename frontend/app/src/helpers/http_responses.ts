@@ -9,21 +9,24 @@ export const HTTP_404_Not_Found = (body = null):Response => {
     });
 }
 
-import Page_403 from '@/pages/403.astro'
-import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+/*import Page_403 from '@/pages/403.astro'
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';*/
 
 export const HTTP_403_Forbidden = async () => {
-    const container = await AstroContainer.create();
+    /*const container = await AstroContainer.create();
 
     return new Response(
-        await container.renderToString(Page_403, {
-            routeType: 'page'
-        }), {
+        await container.renderToString(Page_403), {
             status: 403,
             headers: { 'Content-type': 'text/html' },
             statusText: 'Forbidden',
         }
-    ) as Response;
+    ) as Response;*/
+
+    return new Response(null, {
+        status: 403,
+        statusText: 'Forbidden'
+    });
 }
 
 export const HTTP_200_Success = (body = null):Response => {
