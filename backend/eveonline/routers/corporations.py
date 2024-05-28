@@ -35,6 +35,10 @@ class CorporationMemberResponse(Schema):
 
 
 class CorporationResponse(Schema):
+    """
+    Response for a corporation
+    """
+
     corporation_id: int
     corporation_name: str
     alliance_id: Optional[int] = None
@@ -108,8 +112,16 @@ def get_corporations(
 
         payload["introduction"] = corporation.introduction
         payload["biography"] = corporation.biography
-        payload["timezones"] = corporation.timezones.strip().split(",") if corporation.timezones else []
-        payload["requirements"] = corporation.requirements.strip().split("\n") if corporation.requirements else []
+        payload["timezones"] = (
+            corporation.timezones.strip().split(",")
+            if corporation.timezones
+            else []
+        )
+        payload["requirements"] = (
+            corporation.requirements.strip().split("\n")
+            if corporation.requirements
+            else []
+        )
 
         response.append(payload)
     logger.info("Finished processing corporations")
@@ -129,8 +141,16 @@ def get_corporation_by_id(request, corporation_id: int):
         "corporation_name": corporation.name,
         "introduction": corporation.introduction,
         "biography": corporation.biography,
-        "timezones": corporation.timezones.strip().split(",") if corporation.timezones else [],
-        "requirements": corporation.requirements.strip().split("\n") if corporation.requirements else [],
+        "timezones": (
+            corporation.timezones.strip().split(",")
+            if corporation.timezones
+            else []
+        ),
+        "requirements": (
+            corporation.requirements.strip().split("\n")
+            if corporation.requirements
+            else []
+        ),
         "type": corporation.type,
         "active": corporation.active,
         "members": [],

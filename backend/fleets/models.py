@@ -1,16 +1,15 @@
 import logging
 
-import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 from esi.clients import EsiClientProvider
 
+from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-from discord.client import DiscordClient
 
 discord = DiscordClient()
 esi = EsiClientProvider()
@@ -323,6 +322,11 @@ class EveFleetAudience(models.Model):
 
 
 class EveStandingFleet(models.Model):
+    """
+    Representation of a standing fleet, a type of fleet that
+    should always be available
+    """
+
     start_time = models.DateTimeField(auto_now=True)
     end_time = models.DateTimeField(null=True, blank=True)
     last_commander_change = models.DateTimeField(auto_now=True)
