@@ -1,15 +1,16 @@
-from eveonline.models import EveCharacter
 from django.contrib.auth.models import Group
-from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+
+from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine
-from fleets.legacy_data_migration.fleets import fleets as fleet_data
 from fleets.legacy_data_migration.doctrines import doctrines as doctrine_data
-from fleets.legacy_data_migration.esi_fleets import (
-    esi_fleets as esi_fleet_data,
-)
 from fleets.legacy_data_migration.esi_fleet_members import (
     esi_fleet_members as esi_fleet_member_data,
 )
+from fleets.legacy_data_migration.esi_fleets import (
+    esi_fleets as esi_fleet_data,
+)
+from fleets.legacy_data_migration.fleets import fleets as fleet_data
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 doctrine_lookup = {}
 fleet_instance_lookup = {}

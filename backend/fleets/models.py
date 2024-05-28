@@ -6,11 +6,11 @@ from django.db import models
 from django.utils import timezone
 from esi.clients import EsiClientProvider
 
+from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-from discord.client import DiscordClient
 
 discord = DiscordClient()
 esi = EsiClientProvider()

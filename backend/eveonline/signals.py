@@ -10,7 +10,6 @@ from discord.client import DiscordClient
 from eveonline.tasks import (
     update_character_assets,
     update_character_skills,
-    update_corporation,
 )
 
 from .models import EveAlliance, EveCharacter, EveCorporation
@@ -80,6 +79,7 @@ def token_post_save(
     )
     character.token = instance
     character.save()
+
 
 @receiver(
     signals.post_save,

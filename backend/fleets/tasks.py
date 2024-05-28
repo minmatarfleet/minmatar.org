@@ -3,8 +3,8 @@ import logging
 from django.utils import timezone
 
 from app.celery import app
-from fleets.models import EveFleetInstance, EveStandingFleet, EveFleet
 from discord.client import DiscordClient
+from fleets.models import EveFleet, EveFleetInstance, EveStandingFleet
 
 discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
