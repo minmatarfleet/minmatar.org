@@ -54,6 +54,7 @@ class EveFleetResponse(BaseModel):
     """
     Response model for fleet objects
     """
+
     id: int
     type: EveFleetType
     audience: str
