@@ -1,6 +1,5 @@
 import logging
 
-import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
@@ -323,6 +322,10 @@ class EveFleetAudience(models.Model):
 
 
 class EveStandingFleet(models.Model):
+    """
+    Representation of a standing fleet, a type of fleet that
+    should always be available
+    """
     start_time = models.DateTimeField(auto_now=True)
     end_time = models.DateTimeField(null=True, blank=True)
     last_commander_change = models.DateTimeField(auto_now=True)

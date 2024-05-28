@@ -35,6 +35,9 @@ class CorporationMemberResponse(Schema):
 
 
 class CorporationResponse(Schema):
+    """
+    Response for a corporation
+    """
     corporation_id: int
     corporation_name: str
     alliance_id: Optional[int] = None
