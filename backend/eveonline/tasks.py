@@ -172,7 +172,7 @@ def update_corporations():
 def update_corporation(corporation_id):
     logger.info("Updating corporation %s", corporation_id)
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
-    corporation.save()
+    corporation.populate()
     if not corporation:
         return
     # fetch and set members if active

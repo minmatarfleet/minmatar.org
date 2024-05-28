@@ -6,8 +6,18 @@ from esi.clients import EsiClientProvider
 from app.celery import app
 from eveonline.models import EvePrimaryCharacter
 
-from .models import AffiliationType, EveCorporationGroup, UserAffiliation
+from .models import (
+    AffiliationType,
+    EveCorporationGroup,
+    UserAffiliation,
+    TeamRequest,
+    SigRequest,
+    Team,
+    Sig,
+)
+from discord.client import DiscordClient
 
+discord = DiscordClient()
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
@@ -184,3 +194,55 @@ def sync_eve_corporation_groups():
                     e,
                 )
                 continue
+
+
+def create_team_request_reminders():
+    for team in Team.objects.all():
+        if not team.discord_channel_id:
+            logger.info("Team %s has no discord channel", team)
+            continue
+
+        if not TeamRequest.objects.filter(approved=None, team=team).exists():
+            logger.info("Team %s has no pending requests", team)
+            continue
+
+        message = "**Pending Request Notifications**\n"
+        for team_request in TeamRequest.objects.filter(
+            approved=None, team=team
+        ):
+            message += f"- <@{team_request.user.discord_user.id}>\n"
+
+        message += "Please review and approve or deny these requests [here](https://my.minmatar.org/alliance/teams/requests/).\n"
+
+        director_mentions = ""
+        for user in team.directors.all():
+            director_mentions += f"<@{user.discord_user.id}> "
+        if director_mentions:
+            message += f"{director_mentions}\n"
+
+        discord.create_message(team.discord_channel_id, message)
+
+
+def create_sig_request_reminders():
+    for sig in Sig.objects.all():
+        if not sig.discord_channel_id:
+            logger.info("Sig %s has no discord channel", sig)
+            continue
+
+        if not SigRequest.objects.filter(approved=None, sig=sig).exists():
+            logger.info("Sig %s has no pending requests", sig)
+            continue
+
+        message = "**Pending Request Notifications**\n"
+        for sig_request in SigRequest.objects.filter(approved=None, sig=sig):
+            message += f"- <@{sig_request.user.discord_user.id}>\n"
+
+        message += "Please review and approve or deny these requests [here](https://my.minmatar.org/alliance/sigs/requests/).\n"
+
+        officer_mentions = ""
+        for user in sig.officers.all():
+            officer_mentions += f"<@{user.discord_user.id}> "
+        if officer_mentions:
+            message += f"{officer_mentions}\n"
+
+        discord.create_message(sig.discord_channel_id, message)

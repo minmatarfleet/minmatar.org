@@ -12,6 +12,7 @@ class Team(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
     directors = models.ManyToManyField(
         "auth.User", related_name="director_of", blank=True
     )
@@ -49,6 +50,7 @@ class Sig(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
     officers = models.ManyToManyField(
         "auth.User", related_name="officer_of", blank=True
     )

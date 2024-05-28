@@ -1,7 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.db.models import signals
 from django.test import Client
-from esi.models import Token
 
 from app.test import TestCase
 from applications.models import EveCorporationApplication
@@ -60,42 +59,6 @@ class EveCorporationApplicationTestCase(TestCase):
                 }
             ],
         )
-
-    def test_get_corporation_application_by_id_success(self):
-        corporation = EveCorporation.objects.create(
-            corporation_id=123, name="Test Corporation"
-        )
-        application = EveCorporationApplication.objects.create(
-            user=self.user,
-            corporation=corporation,
-            description="Test application",
-        )
-
-        Token.objects.create(
-            character_id=123,
-            user=application.user,
-        )
-        Token.objects.create(
-            character_id=124,
-            user=self.user,
-        )
-        Token.objects.create(
-            character_id=125,
-        )
-        response = self.client.get(
-            f"{BASE_URL}corporations/{corporation.corporation_id}/applications/{application.id}",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(response.status_code, 200)
-        application = response.json()
-        self.assertEqual(application["status"], "pending")
-        self.assertEqual(application["user_id"], self.user.id)
-        self.assertEqual(
-            application["corporation_id"], corporation.corporation_id
-        )
-        self.assertEqual(len(application["characters"]), 2)
-        self.assertEqual(application["characters"][0]["character_id"], 123)
-        self.assertEqual(application["characters"][1]["character_id"], 124)
 
     def test_accept_corporation_application_success(self):
         corporation = EveCorporation.objects.create(

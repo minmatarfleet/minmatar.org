@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from django.utils import timezone
 from enum import Enum
 from typing import List, Optional
 
+from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
@@ -13,10 +13,10 @@ from fittings.models import EveDoctrine
 
 from .models import (
     EveFleet,
+    EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetLocation,
-    EveFleetAudience,
     EveStandingFleet,
 )
 
@@ -51,6 +51,10 @@ class EveFleetListResponse(BaseModel):
 
 
 class EveFleetResponse(BaseModel):
+    """
+    Response model for fleet objects
+    """
+
     id: int
     type: EveFleetType
     audience: str

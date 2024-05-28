@@ -1,16 +1,15 @@
 import logging
 
-import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 from esi.clients import EsiClientProvider
 
+from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-from discord.client import DiscordClient
 
 discord = DiscordClient()
 esi = EsiClientProvider()
@@ -289,20 +288,6 @@ class EveFleetInstanceMember(models.Model):
     wing_id = models.BigIntegerField()
 
 
-class EveFleetNotificationChannel(models.Model):
-    """
-    Model for storing channels for fleet notifications
-    """
-
-    discord_channel_id = models.BigIntegerField()
-    discord_channel_name = models.CharField(max_length=255)
-    webhook_url = models.CharField(max_length=255)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.group} - {self.discord_channel_name}"
-
-
 class EveFleetLocation(models.Model):
     location_id = models.BigIntegerField(primary_key=True)
     location_name = models.CharField(max_length=255)
@@ -323,6 +308,11 @@ class EveFleetAudience(models.Model):
 
 
 class EveStandingFleet(models.Model):
+    """
+    Representation of a standing fleet, a type of fleet that
+    should always be available
+    """
+
     start_time = models.DateTimeField(auto_now=True)
     end_time = models.DateTimeField(null=True, blank=True)
     last_commander_change = models.DateTimeField(auto_now=True)

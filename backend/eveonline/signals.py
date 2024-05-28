@@ -7,11 +7,7 @@ from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
-from eveonline.tasks import (
-    update_character_assets,
-    update_character_skills,
-    update_corporation,
-)
+from eveonline.tasks import update_character_assets, update_character_skills
 
 from .models import EveAlliance, EveCharacter, EveCorporation
 
@@ -36,17 +32,10 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
         logger.debug(
             "Setting corporation to %s", esi_character["corporation_id"]
         )
-        if EveCorporation.objects.filter(
+        corporation, _ = EveCorporation.objects.get_or_create(
             corporation_id=esi_character["corporation_id"]
-        ).exists():
-            instance.corporation = EveCorporation.objects.get(
-                corporation_id=esi_character["corporation_id"]
-            )
-        else:
-            corporation = EveCorporation.objects.create(
-                corporation_id=esi_character["corporation_id"]
-            )
-            instance.corporation = corporation
+        )
+        instance.corporation = corporation
         instance.save()
 
 
@@ -87,6 +76,7 @@ def token_post_save(
     )
     character.token = instance
     character.save()
+
 
 @receiver(
     signals.post_save,
