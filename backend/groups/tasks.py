@@ -196,6 +196,7 @@ def sync_eve_corporation_groups():
                 continue
 
 
+@app.task()
 def create_team_request_reminders():
     for team in Team.objects.all():
         if not team.discord_channel_id:
@@ -223,6 +224,7 @@ def create_team_request_reminders():
         discord.create_message(team.discord_channel_id, message)
 
 
+@app.task()
 def create_sig_request_reminders():
     for sig in Sig.objects.all():
         if not sig.discord_channel_id:
