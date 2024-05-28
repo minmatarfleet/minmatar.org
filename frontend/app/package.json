@@ -25,7 +25,7 @@
     "@sentry/astro": "^7.110.0",
     "@types/alpinejs": "^3.13.5",
     "@types/marked": "^6.0.0",
-    "astro": "4.5.1",
+    "astro": "latest",
     "astro-tooltips": "^0.6.2",
     "better-sqlite3": "^9.4.3",
     "cheerio": "^1.0.0-rc.12",

@@ -67,7 +67,7 @@ interface Props {
                     x-bind:hx-patch="confirm_dialog_hx?.method == 'patch' ? (confirm_dialog_hx?.url ?? false) : false"
                     x-bind:hx-delete="confirm_dialog_hx?.method == 'delete' ? (confirm_dialog_hx?.url ?? false) : false"
                     x-bind:hx-target="confirm_dialog_hx?.target ?? false"
-                    x-bind:hx-swap="confirm_dialog_hx?.swap ?? false"
+                    x-bind:hx-swap="confirm_dialog_hx?.swap ?? 'none'"
                     x-bind:hx-vals="confirm_dialog_hx?.vals ? JSON.stringify({ data: JSON.stringify(confirm_dialog_hx?.vals) }) : false"
                     hx-indicator=".loader"
                     x-bind:disabled="confirm_dialog_accept_disabled"

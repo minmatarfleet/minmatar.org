@@ -67,7 +67,7 @@ interface Props {
                     x-bind:hx-patch="alert_dialog_hx?.method == 'patch' ? (alert_dialog_hx?.url ?? false) : false"
                     x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false"
                     x-bind:hx-target="alert_dialog_hx?.target ?? false"
-                    x-bind:hx-swap="alert_dialog_hx?.swap ?? false"
+                    x-bind:hx-swap="alert_dialog_hx?.swap ?? 'none'"
                     hx-indicator=".loader"
                 >
                     {t('ok')}
