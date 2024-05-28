@@ -19,9 +19,10 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
+const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
 if (!user)
-    return HTTP_404_Not_Found()
+    return Astro.redirect(AUTH_REDIRECT_URL)
 
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets } from '@helpers/fetching/fleets'
