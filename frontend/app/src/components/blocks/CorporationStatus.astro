@@ -42,7 +42,13 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
     }`}
 >
     {(corporation.active && is_user_corporation) ?
-        <div class="[ max-w-fit ]"><Tag color='green' text={t('joined')} /></div>
+        <div class="[ max-w-fit ]">
+            <Tag color='green'
+                data-tippy-content={t('joined_corporation_tooltip')}
+                x-init="tippy('this, tippy_options)"
+                text={t('joined')}
+            />
+        </div>
         :
         <ButtonStack>
             {(corporation?.status != null && !corporation.active) ?
@@ -113,16 +119,33 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                 </ButtonAuth>
             :
             corporation?.status === 'accepted' ?
-                <Tag color='green' text={t('accepted')} />
+                <Tag
+                    data-tippy-content={t('application_accepted_tooltip')}
+                    x-init="tippy('this, tippy_options)"
+                    color='green'
+                    text={t('accepted')}
+                />
             :
             corporation?.status === 'rejected' ?
-                <Tag text={t('denied')} />
+                <Tag
+                    data-tippy-content={t('application_denied_tooltip')}
+                    x-init="tippy('this, tippy_options)"
+                    text={t('denied')}
+                />
             :
             corporation?.status == 'pending' ?
-                <Tag color='alliance-blue' text={t('pending')} />
+                <Tag
+                    data-tippy-content={t('pending_application_tooltip')}
+                    x-init="tippy('this, tippy_options)"
+                    color='alliance-blue' text={t('pending')}
+                />
             :
             corporation?.status == 'error' &&
-                <Tag text={t('error_status_corp')} />
+                <Tag
+                    data-tippy-content={t('error_reload')}
+                    x-init="tippy('this, tippy_options)"
+                    text={t('error_status_corp')}
+                />
             }
         </ButtonStack>
     }

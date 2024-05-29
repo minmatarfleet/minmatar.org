@@ -153,13 +153,26 @@ const LEAVE_DIALOG_TEXT = {
             </Button>
         }
         {group?.status == 'requested' &&
-            <Tag color='alliance-blue' text={t('pending')} />
+            <Tag
+                data-tippy-content={group_type === 'team' ? t('pending_team_request_tooltip') : t('pending_group_request_tooltip')}
+                x-init="tippy('this, tippy_options)"
+                color='alliance-blue'
+                text={t('pending')} 
+            />
         }
         {group?.status == 'denied' &&
-            <Tag text={t('denied')} />
+            <Tag
+                data-tippy-content={t('request_denied_tooltip')}
+                x-init="tippy('this, tippy_options)"
+                text={t('denied')} 
+            />
         }
         {group?.status == 'error' &&
-            <Tag text={t('error_status_corp')} />
+            <Tag
+                data-tippy-content={t('error_reload')}
+                x-init="tippy('this, tippy_options)"
+                text={t('error_status_corp')} 
+            />
         }
     </ButtonStack>
 </div>
