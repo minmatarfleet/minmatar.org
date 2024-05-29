@@ -90,6 +90,26 @@ def update_fleet_schedule():
             }
         ],
     }
+
+    if (
+        discord_client.get_message(
+            FLEET_SCHEDULE_CHANNEL_ID, FLEET_SCHEDULE_MESSAGE_ID
+        )["content"]
+        == message
+    ):
+        logger.info("Fleet schedule message is up to date, skipping update")
+        return
+
     discord_client.update_message(
         FLEET_SCHEDULE_CHANNEL_ID, FLEET_SCHEDULE_MESSAGE_ID, payload=payload
+    )
+
+    # Create reminder message and delete it
+    updated_notification = discord_client.create_message(
+        FLEET_SCHEDULE_CHANNEL_ID,
+        payload="A new / updated fleet schedule has been posted",
+    )
+
+    discord_client.delete_message(
+        FLEET_SCHEDULE_CHANNEL_ID, updated_notification["id"]
     )

@@ -160,6 +160,12 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
+    def get_message(self, channel_id, message_id):
+        """Get a message from a discord channel"""
+        return self.get(
+            f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
+        )
+
     def create_message(self, channel_id, message=None, payload=None):
         """Create a message in a discord channel
         Must have payload or message specified
@@ -186,6 +192,12 @@ class DiscordClient(DiscordBaseClient):
         return self.patch(
             f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
             json=payload,
+        )
+
+    def delete_message(self, channel_id, message_id):
+        """Delete a message from a discord channel"""
+        return self.delete(
+            f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
         )
 
     def close_thread(self, channel_id):
