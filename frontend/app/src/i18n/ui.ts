@@ -386,7 +386,7 @@ export const ui = {
         'auto_accept_alliance_switch': 'Auto-accept pilots within the following alliance into this group',
         'auto_accept_skills_switch': 'Auto-accept pilots with the following skills into this group',
         'enable_danger_zone_switch_title': 'Unlock Doomsday',
-        'enable_danger_zone_switch_description': 'Unleash havoc and destruction with just a touch of your finger.',
+        'enable_danger_zone_switch_description': 'Unleash havoc and destruction with just a touch of your finger',
         'unregister_account': 'Unregister this account',
         'unregister': 'Unregister',
         'unregister_account_description': 'Once you unregister, there is no going back. Please be certain.',
@@ -761,5 +761,8 @@ export const ui = {
         'application_denied_tooltip': 'Your application has been denied. Please contact the Technology Team or open a ticket to re-apply',
         'pending_application_tooltip': 'Your application has been submitted and will be processed by the corporation CEO within the next days',
         'joined_corporation_tooltip': 'You are a member of this corporation',
+        'start_fleet_tracking': 'Start fleet tracking',
+        'start_fleet_tracking_description': 'Requieres fleet previously created in game',
+        'fleet_starting_soon': 'It seems you are creating a last minute fleet. Would you like to start tracking on creation?',
     },
 } as const;

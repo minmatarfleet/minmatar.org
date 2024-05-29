@@ -151,7 +151,7 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
             ))
         }
 
-        return await response.json() as FleetRequest;
+        return await response.json() as Fleet;
     } catch (error) {
         throw new Error(`Error fetching creating fleet: ${error.message}`);
     }

@@ -23,7 +23,7 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import { create_fleet, get_locations, get_audiences } from '@helpers/api.minmatar.org/fleets'
+import { create_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { EveCharacterProfile, Location } from '@dtypes/api.minmatar.org'
@@ -44,13 +44,22 @@ if (Astro.request.method === "POST") {
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
         } as FleetRequest
-
-        console.log(fleet_data)
         
-        if (await create_fleet(auth_token as string, fleet_data))
-            return Astro.redirect(translatePath('/fleets/upcoming'))
-        else
+        const new_fleet = await create_fleet(auth_token as string, fleet_data)
+
+        if (!new_fleet?.id)
             create_fleet_error = t('create_fleet_error')
+        else {
+            try {
+                if (data.get('start_tracking' as string) === 'on')
+                    await start_fleet(auth_token as string, new_fleet?.id)
+            } catch (error) {
+                const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+                Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
+            }
+
+            return Astro.redirect(translatePath(`/fleets/upcoming/${new_fleet?.id}`))
+        }
     } catch (error) {
         create_fleet_error = prod_error_messages() ? t('create_fleet_error') : error.message
     }
@@ -129,10 +138,10 @@ import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
-import CasualIcon from '@components/icons/CasualIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
@@ -404,6 +413,31 @@ const today = new Date().toISOString().split("T")[0]
                         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                             <h2>{t('fleet_submit')} (3/3)</h2>
 
+                            <Flexblock
+                                x-show="show"
+                                x-data={`{
+                                    show: false,
+                                    is_last_minute_fleet() {
+                                        const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
+                                        const now = new Date().getTime();
+                                        const distance = fleet_time - now;
+                                        const DISTANCE_15_MINUTES = 15*60*1000
+
+                                        this.show = (distance <= DISTANCE_15_MINUTES && distance > 0)
+                                    }
+                                }`}
+                                x-effect="eve_date && eve_time && is_last_minute_fleet()"
+                                style="display: none"
+                            >
+                                <p>{t('fleet_starting_soon')}</p>
+                                <SwitchSquare
+                                    class="[ w-full ]"
+                                    name="start_tracking"
+                                    label={t('start_tracking')}
+                                    description={t('start_fleet_tracking_description')}
+                                />
+                            </Flexblock>
+                            
                             <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
                         </Flexblock>
                     </ComponentBlock>

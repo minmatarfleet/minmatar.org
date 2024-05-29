@@ -20,12 +20,11 @@ const {
     {title &&
         <h4>{title}</h4>
     }
-    <p {...attributes}><slot /></p>
+    <small {...attributes}><slot /></small>
 </Flexblock>
 
 <style lang="scss">
-    p {
-        font-size: var(--step--1);
+    small {
         font-weight: 400;
     }
 </style>
