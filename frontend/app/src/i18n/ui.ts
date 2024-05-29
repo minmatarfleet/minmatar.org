@@ -753,5 +753,13 @@ export const ui = {
         'strategic_fleet': 'Strategic fleet',
         'non_strategic_fleet': 'Non strategic fleet',
         'training_fleet': 'Training fleet',
+        'pending_group_request_tooltip': 'Your request has been submitted and will be processed by an officer within the next day',
+        'pending_team_request_tooltip': 'Your request has been submitted and will be processed by a director within the next days',
+        'request_denied_tooltip': 'Your request has been denied. Please contact the Technology Team or open a ticket to re-apply',
+        'error_reload': 'An error occurred while fetching the data. Please reload the page to resolve the issue',
+        'application_accepted_tooltip': 'Your application has been accepted',
+        'application_denied_tooltip': 'Your application has been denied. Please contact the Technology Team or open a ticket to re-apply',
+        'pending_application_tooltip': 'Your application has been submitted and will be processed by the corporation CEO within the next days',
+        'joined_corporation_tooltip': 'You are a member of this corporation',
     },
 } as const;
