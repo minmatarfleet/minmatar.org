@@ -107,7 +107,7 @@ def update_fleet_schedule():
     # Create reminder message and delete it
     updated_notification_id = discord_client.create_message(
         FLEET_SCHEDULE_CHANNEL_ID,
-        message="A new / updated fleet schedule has been posted",
+        message="Fleet has been posted, or fleet details have changed",
     ).json()["id"]
 
     discord_client.delete_message(
