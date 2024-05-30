@@ -39,7 +39,6 @@ const {
             const countDownDate = new Date(date).getTime()
             
             var x = setInterval(() => {
-                console.log('tick')
                 const now = new Date().getTime()
                 
                 const distance = countDownDate - now
@@ -71,6 +70,7 @@ const {
                 
                 if (!document.getElementById('${`${tag}-${id}-${timestamp}`}')) {
                     clearInterval(x)
+                    console.log('clear')
                 }
             }, 1000);
         },
