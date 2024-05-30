@@ -26,25 +26,22 @@ import StylessButton from './StylessButton.astro';
 
 <StylessButton
     href={translatePath(`/fleets/upcoming/${fleet.id}/`)}
+    @countdown="notify($event.detail.id)"
     x-data={`{
-        init() {
-            window.addEventListener('countdown', event => {
-                console.log(event)
-                console.log(event.detail.id)
-                if (event.detail.id !== ${fleet.id})
-                    return
+        notify(fleet_id) {
+            if (fleet_id !== ${fleet.id})
+                return
 
-                const notification = new Notification(
-                    '${t('push_up_notification_title')}', {
-                    body: \`${fleet.description}\`,
-                    icon: '${get_player_icon(fleet.fleet_commander_id)}',
-                    requireInteraction: true,
-                })
-
-                notification.onclick = (e) => {
-                    navigate('${translatePath(`/fleets/upcoming/${fleet.id}`)}')
-                }
+            const notification = new Notification(
+                '${t('push_up_notification_title')}', {
+                body: \`${fleet.description}\`,
+                icon: '${get_player_icon(fleet.fleet_commander_id)}',
+                requireInteraction: true,
             })
+
+            notification.onclick = (e) => {
+                navigate('${translatePath(`/fleets/upcoming/${fleet.id}`)}')
+            }
         }
     }`}
 >

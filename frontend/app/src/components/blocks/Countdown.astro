@@ -24,11 +24,65 @@ const {
 } = countdown(date, expired_text)
 ---
 
-<p class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}-${timestamp}`}>{text}</p>
+<p
+    x-data={`{
+        countdown_text: '${text}',
+        pad(num) {
+            if (num < 10)
+                return \`0\${num}\`;
+            
+            return num;
+        },
+        init() {
+            const date = '${date}'
+            const expired_text = '${expired_text}'
+            const countDownDate = new Date(date).getTime()
+            
+            var x = setInterval(() => {
+                const now = new Date().getTime()
+                
+                const distance = countDownDate - now
 
-<script define:vars={{ id, tag, date, expired_text, timestamp }}>
-    countdown(`#${tag}-${id}-${timestamp}`, id, date, expired_text);
-</script>
+                let days = distance / (1000 * 60 * 60 * 24)
+                days = (days > 0 ? Math.floor(days) : Math.ceil(days))
+                let hours = (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+                hours = (hours > 0 ? Math.floor(hours) : Math.ceil(hours))
+                let minutes = (distance % (1000 * 60 * 60)) / (1000 * 60)
+                minutes = (minutes > 0 ? Math.floor(minutes) : Math.ceil(minutes))
+                let seconds = (distance % (1000 * 60)) / 1000
+                seconds = (seconds > 0 ? Math.floor(seconds) : Math.ceil(seconds))
+
+                this.update_countdown_text(distance < 0 && expired_text ?
+                    expired_text :
+                    pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
+                )
+                
+                if (distance < 0)
+                    this.classList.add('expired')
+
+                if (distance < 0 && expired_text) {
+                    this.classList.add('expired-text')
+                    
+                    $dispatch('countdown', { id: ${id} })
+
+                    clearInterval(x)
+                }
+                
+                if (!document.getElementById('${`${tag}-${id}-${timestamp}`}')) {
+                    clearInterval(x)
+                    console.log('clear')
+                }
+            }, 1000);
+        },
+        update_countdown_text(new_text) {
+            this.countdown_text = new_text
+        }
+    }`}
+    class:list={[ 'countdown', { expired: expired, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}-${timestamp}`}
+    x-text="countdown_text"
+>
+    {text}
+</p>
 
 <style lang="scss">
 	p {
