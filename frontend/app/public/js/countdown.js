@@ -20,6 +20,8 @@ const countdown = (element, id, date, expired_text) => {
         let seconds = (distance % (1000 * 60)) / 1000
         seconds = (seconds > 0 ? Math.floor(seconds) : Math.ceil(seconds))
         
+        console.log(element)
+
         if (document.querySelector(element)) {
             document.querySelector(element).innerHTML = distance < 0 && expired_text ?
                 expired_text :
@@ -42,6 +44,7 @@ const countdown = (element, id, date, expired_text) => {
                 clearInterval(x);
             }
         } else {
+            console.log('cleared')
             clearInterval(x);
         }
     }, 1000);
