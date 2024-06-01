@@ -1,7 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -74,8 +76,15 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 
+const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
+
 const page_title = fitting_parsed.name;
 ---
+
+<script define:vars={{ normal_view }}>
+    if (window.innerWidth < 1820)
+        window.location.href = normal_view
+</script>
 
 <Viewport title={page_title}>
     <PageLanding
