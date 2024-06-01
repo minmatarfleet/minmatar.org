@@ -1,7 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -109,8 +111,15 @@ import Button from '@components/blocks/Button.astro';
 
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 
+const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
+
 const page_title = fitting.name
 ---
+
+<script define:vars={{ render_view }}>
+    if (window.innerWidth > 1820)
+        window.location.href = render_view
+</script>
 
 <Viewport title={page_title}>
     <PageDefault
