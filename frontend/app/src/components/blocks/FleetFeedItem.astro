@@ -55,7 +55,7 @@ import StylessButton from './StylessButton.astro';
             character_name={fleet.fleet_commander_name}
         />
         <small>{t(fleet.type as any)} {t('fleet')}</small>
-        <div class="[ text-center pr-[var(--space-l)] ]">
+        <div class="[ text-center pr-[var(--space-l)] basis-[340px] ]">
             {fleet?.tracking && !fleet?.tracking?.end_time &&
                 <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
             }
