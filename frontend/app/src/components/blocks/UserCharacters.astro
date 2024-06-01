@@ -4,16 +4,18 @@ import { getLangFromUrl, useTranslations } from '@i18n/utils';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
-import type { MainCharacters } from '@dtypes/layout_components'
+import type { Character } from '@dtypes/api.minmatar.org'
 import type { User } from '@dtypes/jwt'
 
 interface Props {
     user:           User;
-    characters:     MainCharacters;
+    character_name: string;
+    characters:     Character[];
 }
 
 const {
     user,
+    character_name,
     characters,
 } = Astro.props
 
@@ -30,37 +32,21 @@ import CharacterLinksItem from './CharacterLinksItem.astro';
 >
     <Flexblock>
         <Flexblock gap="var(--space-3xs)">
-            <h2>{characters.character_name} {t('characters').toLowerCase()}</h2>
+            <h2>{character_name} {t('characters').toLowerCase()}</h2>
             <small class="!mt-[var(--space-3xs)]">
-                {characters.alts.length + 1} {characters.alts.length + 1 === 1 ? t('characters') : t('character')}
+                {characters.length} {characters.length === 1 ? t('character') : t('characters')}
             </small>
         </Flexblock>
 
         <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
-            <CharacterLinksItem
-                user={user}
-                character={{
-                    character_id: characters.character_id,
-                    character_name: characters.character_name,
-                    corporation: {
-                        id: characters.corporation_id,
-                        name: characters.corporation_name,
-                    }
-                }}
-                character_id={characters.character_id}
-            />
-            {characters.alts.map((alt) =>
+            {characters.map((character) =>
                 <CharacterLinksItem
                     user={user}
                     character={{
-                        character_id: alt.character_id,
-                        character_name: alt.character_name,
-                        corporation: {
-                            id: alt.corporation_id,
-                            name: alt.corporation_name,
-                        }
+                        character_id: character.character_id,
+                        character_name: character.character_name,
                     }}
-                    character_id={alt.character_id}
+                    character_id={character.character_id}
                 />
             )}
         </Flexblock>

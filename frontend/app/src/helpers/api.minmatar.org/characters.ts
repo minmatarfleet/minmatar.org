@@ -3,13 +3,13 @@ import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
 
-export async function get_characters(access_token:string) {
+export async function get_characters(access_token:string, primary_character_id:number = null) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = API_ENDPOINT
+    const ENDPOINT = `${API_ENDPOINT}${primary_character_id ? `?primary_character_id=${primary_character_id}` : ''}`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
