@@ -1,5 +1,14 @@
 import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { SkillsetsUI, Skillset, MissingSkill, AssetsUI, AssetsLocation, Asset, AssetsLocationIcons, AssetGroup } from '@dtypes/layout_components'
+import type {
+    SkillsetsUI,
+    Skillset,
+    MissingSkill,
+    AssetsUI,
+    AssetsLocation,
+    Asset,
+    AssetsLocationIcons,
+    AssetGroup,
+} from '@dtypes/layout_components'
 import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
 

@@ -6,6 +6,7 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { query_string } from '@helpers/string';
+import type { Character } from '@dtypes/api.minmatar.org'
 import type { GroupRequestUI, GroupItemType } from '@dtypes/layout_components'
 
 interface Props {
@@ -20,7 +21,11 @@ const {
 
 const GROUP_REQUEST_LIST_ITEM_PARTIAL_URL = translatePath('/partials/group_request_list_item')
 
-const USER_CHARACTERS_PARTIAL_URL = translatePath('/partials/user_characters_component')
+const params = query_string({
+    character_id: group_request.character_id,
+    character_name: group_request.character_name,
+} as Character)
+const USER_CHARACTERS_PARTIAL_URL = `${translatePath('/partials/user_characters_component')}?${params}`
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 
@@ -52,7 +57,7 @@ import StylessButton from './StylessButton.astro';
                 x-data={`{
                     show_user_characters_modal() {
                         show_modal({
-                            partial: '${USER_CHARACTERS_PARTIAL_URL}?character_id=${group_request.character_id}',
+                            partial: '${USER_CHARACTERS_PARTIAL_URL}',
                         })
                     }
                 }`}
