@@ -69,7 +69,6 @@ import StylessButton from './StylessButton.astro';
                     date={fleet.start_time}
                     id={fleet.id}
                     tag="countdown-fleet"
-                    expired_text={t('forming')}
                 />
                 :
                 <div class="[ hidden ]">
@@ -77,7 +76,6 @@ import StylessButton from './StylessButton.astro';
                         date={fleet.start_time}
                         id={fleet.id}
                         tag="countdown-fleet"
-                        expired_text={t('forming')}
                     />
                 </div>
             }
