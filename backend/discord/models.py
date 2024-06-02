@@ -42,6 +42,10 @@ class DiscordRole(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
+    def delete(self, *args, **kwargs):
+        discord.delete_role(self.role_id)
+        super().delete(*args, **kwargs)
+
     class Meta:
         indexes = [
             models.Index(fields=["role_id"]),

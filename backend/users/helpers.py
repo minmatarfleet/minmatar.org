@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db.models import signals
 
 from discord.models import DiscordUser
@@ -13,6 +13,14 @@ def offboard_user(user_id: int):
     )
     user = User.objects.get(id=user_id)
     user.delete()
+
+
+def offboard_group(group_id: int):
+    signals.m2m_changed.disconnect(
+        sender=User.groups.through, dispatch_uid="user_group_changed"
+    )
+    group = Group.objects.get(id=group_id)
+    group.delete()
 
 
 def get_user_permissions(user_id: int) -> list[str]:
