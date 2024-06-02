@@ -44,6 +44,7 @@
     "typescript": "^5.3.2"
   },
   "devDependencies": {
+    "@types/gtag.js": "^0.0.20",
     "drizzle-kit": "^0.20.14",
     "sass": "^1.69.5"
   }
