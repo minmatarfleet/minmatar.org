@@ -764,5 +764,9 @@ export const ui = {
         'start_fleet_tracking': 'Start fleet tracking',
         'start_fleet_tracking_description': 'Requieres fleet previously created in game',
         'fleet_starting_soon': 'It seems you are creating a last minute fleet. Would you like to start tracking on creation?',
+        'rendering_issues_message': 'Having FPS issues with the ship renders?',
+        'disable_rendering': 'Disable ship rendering',
+        'dont_show_anymore': 'Don’t show this anymore',
+        'enable_rendering': 'Enable ship rendering',
     },
 } as const;

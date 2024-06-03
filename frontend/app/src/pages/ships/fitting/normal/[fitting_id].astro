@@ -117,7 +117,9 @@ const page_title = fitting.name
 ---
 
 <script define:vars={{ render_view }}>
-    if (window.innerWidth > 1820)
+    const render_enabled = localStorage.getItem('_x_render_enabled')
+
+    if (window.innerWidth > 1820 && render_enabled === true)
         window.location.href = render_view
 </script>
 
@@ -131,6 +133,10 @@ const page_title = fitting.name
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            render_enabled: $persist(true),
+            show_rendering_options: $persist(true),
+        }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
@@ -142,10 +148,23 @@ const page_title = fitting.name
                     </Flexblock>
                 </FlexInline>
             </FlexInline>
-            <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
-                <ClipboardIcon slot="icon" />
-                {t('copy_to_clipboard')}
-            </Button>
+            <FlexInline>
+                <div 
+                    x-show="window.innerWidth > 1820"
+                    style="display: none"
+                >
+                    <Button
+                        class="[ animate-fade-in ]"
+                        x-on:click=`render_enabled = true; show_rendering_options = true; window.location.href = '${render_view}'`
+                    >
+                        {t('enable_rendering')}
+                    </Button>
+                </div>
+                <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
+                    <ClipboardIcon slot="icon" />
+                    {t('copy_to_clipboard')}
+                </Button>
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
