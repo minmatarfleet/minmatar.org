@@ -82,7 +82,9 @@ const page_title = fitting_parsed.name;
 ---
 
 <script define:vars={{ normal_view }}>
-    if (window.innerWidth < 1820)
+    const render_enabled = localStorage.getItem('_x_render_enabled')
+
+    if (window.innerWidth < 1820 || render_enabled === false)
         window.location.href = normal_view
 </script>
 
@@ -97,6 +99,8 @@ const page_title = fitting_parsed.name;
         fullscreen={true}
         wide={true}
         x-data={`{
+            render_enabled: $persist(true),
+            show_rendering_options: $persist(true),
             rotation_x: -0.317,
             rotation_y: 0.229,
             ship_rotation: 0,
@@ -290,6 +294,29 @@ const page_title = fitting_parsed.name;
                             </FlexInline>
                         </Cargohold>
                     }
+                </Flexblock>
+
+                <Flexblock
+                    class="[ animate-fade-in-up ]"
+                    x-show="show_rendering_options"
+                    style="display: none"
+                >
+                    <small>{t('rendering_issues_message')}</small>
+                    <FlexInline>
+                        <Button
+                            size='sm'
+                            x-on:click=`render_enabled = false; navigate('${normal_view}')`
+                        >
+                            {t('disable_rendering')}
+                        </Button>
+
+                        <Button
+                            size='sm'
+                            x-on:click="show_rendering_options = false"
+                        >
+                            {t('dont_show_anymore')}
+                        </Button>
+                    </FlexInline>
                 </Flexblock>
             </Flexblock>
         </Wrapper>
