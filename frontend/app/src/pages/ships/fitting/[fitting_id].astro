@@ -11,7 +11,7 @@ const normal_view = translatePath(`/ships/fitting/normal/${id}`)
 ---
 
 <script define:vars={{ render_view, normal_view }}>
-    const render_enabled = localStorage.getItem('_x_render_enabled')
+    const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled'))
 
     if (window.innerWidth > 1820 && render_enabled === true)
         window.location.href = render_view

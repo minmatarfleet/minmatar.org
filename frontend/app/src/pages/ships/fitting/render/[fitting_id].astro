@@ -82,7 +82,7 @@ const page_title = fitting_parsed.name;
 ---
 
 <script define:vars={{ normal_view }}>
-    const render_enabled = localStorage.getItem('_x_render_enabled')
+    const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled'))
 
     if (window.innerWidth < 1820 || render_enabled === false)
         window.location.href = normal_view
