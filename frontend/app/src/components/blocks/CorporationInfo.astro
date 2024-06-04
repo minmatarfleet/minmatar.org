@@ -5,17 +5,6 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-if (!user)
-    return HTTP_404_Not_Found()
-
 interface Props {
     corporation_id:   number;
 }
@@ -27,24 +16,25 @@ const {
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 import { prod_error_messages } from '@helpers/env'
-import type { Corporation } from '@dtypes/api.minmatar.org'
-import { get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import { get_corporation_info } from '@helpers/api.minmatar.org/corporations'
 import { parse_eve_html } from '@helpers/eve'
 import { is_html } from '@helpers/string'
 
-let corporation:Corporation
-let get_character_error:string | false = false
+let corporation:CorporationInfo
+let get_corporation_info_error:string | false = false
 
 try {
-    corporation = await get_corporation_by_id(auth_token as string, corporation_id)
+    corporation = await get_corporation_info(corporation_id)
+    console.log(corporation)
 } catch (error) {
-    get_character_error = (prod_error_messages() ? t('get_eve_character_error') : error.message)
+    get_corporation_info_error = (prod_error_messages() ? t('get_corporation_info_error') : error.message)
 }
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
-const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
+const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/corporation_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import Wrapper from '@components/compositions/Wrapper.astro'
@@ -81,11 +71,11 @@ const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].sp
     }`}
     x-init="init_js()"
 >
-    {get_character_error ?
+    {get_corporation_info_error ?
         <ErrorRefetch
             args={{
                 partial: `${CORPORATION_MODAL_PARTIAL_URL}?corporation_id=${corporation_id}`,
-                message: get_character_error,
+                message: get_corporation_info_error,
                 delay: delay,
                 target: '#corporation-info',
             }}

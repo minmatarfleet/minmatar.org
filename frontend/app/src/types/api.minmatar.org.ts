@@ -57,6 +57,21 @@ export interface Corporation {
     active:             boolean;
 }
 
+export interface CorporationInfo {
+    corporation_id:     number;
+    corporation_name:   string;
+    alliance_id:        number;
+    alliance_name:      string;
+    faction_id:         number;
+    faction_name:       string;
+    type:               CorporationType;
+    introduction:       string;
+    biography:          string;
+    timezones:          string[];
+    requirements:       string[];
+    active:             boolean;
+}
+
 export interface CharacterCorp {
     character_id:           number;
     character_name:         string;
