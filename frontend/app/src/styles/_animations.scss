@@ -100,3 +100,42 @@
         left: 75%;
     }
 }
+
+@keyframes float {
+	0% {
+		transform: translatey(0px);
+	}
+	50% {
+		transform: translatey(-10px);
+	}
+	100% {
+		transform: translatey(0px);
+	}
+}
+
+@keyframes float_up {
+	0% {
+		transform: translatey(0px);
+	}
+	50% {
+		transform: translatey(10px);
+	}
+	100% {
+		transform: translatey(0px);
+	}
+}
+
+@keyframes float_up_down {
+	0% {
+		transform: translatey(0px);
+	}
+	25% {
+		transform: translatey(5px);
+	}
+	75% {
+		transform: translatey(-5px);
+	}
+	100% {
+		transform: translatey(0px);
+	}
+}
