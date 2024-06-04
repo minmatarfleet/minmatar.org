@@ -1,4 +1,9 @@
 ---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
@@ -29,7 +34,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     <img slot="ships" class="[ vindicator ]" src="/images/corporations/omega/vindicator.png" />
 
     <Flexblock>
-        <p>Jump first, ask questions later. A formidable capital force and a passion for Vindicators define the Black Omega lifestyle. We have been leading the universe since the dawn of the capsuleer era and now we're enjoying mimosas on the beach, basking in the chaos we seeded long ago.</p>
+        <p>{corporation.introduction ? corporation.introduction : t('black_omega_description_fallback') }</p>
     </Flexblock>
 </CorporationSlide>
 

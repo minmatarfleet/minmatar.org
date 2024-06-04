@@ -317,6 +317,10 @@ export interface CorporationObject {
     active:             boolean;
     corporation_type:   CorporationType;
     status?:            CorporationStatusType;
+    introduction:       string;
+    biography:          string;
+    timezones:          string[];
+    requirements:       string[];
 }
 
 export interface CorporationBasic {

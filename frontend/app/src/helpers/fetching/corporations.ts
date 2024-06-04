@@ -34,6 +34,10 @@ export async function get_corporations_list(corporation_type:CorporationType) {
             corporation_name: i.corporation_name,
             corporation_type: i.type,
             active: i.active,
+            biography: i.biography,
+            introduction: i.introduction,
+            requirements: i.requirements,
+            timezones: i.timezones,
             status: 'unauth'
         }
     } )
@@ -59,7 +63,11 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         alliance_name: api_corporation.alliance_name,
         corporation_type: api_corporation.type,
         active: api_corporation.active,
-        status: 'available'
+        status: 'available',
+        biography: api_corporation.biography,
+        introduction: api_corporation.introduction,
+        requirements: api_corporation.requirements,
+        timezones: api_corporation.timezones,
     }
 
     try {

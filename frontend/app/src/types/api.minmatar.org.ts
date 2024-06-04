@@ -49,6 +49,10 @@ export interface Corporation {
     faction_id:         number;
     faction_name:       string;
     type:               CorporationType;
+    introduction:       string;
+    biography:          string;
+    timezones:          string[];
+    requirements:       string[];
     members:            CharacterCorp[];
     active:             boolean;
 }

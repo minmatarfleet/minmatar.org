@@ -10,6 +10,7 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
+    
 }
 
 const {
@@ -19,22 +20,21 @@ const {
 } = Astro.props
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
 <CorporationSlide
-    id="vindicta-slide"
-    ceo_image='/images/corporations/vindicta/ceo.png'
-    ceo_character_id={2120708580}
+    id="rattini-slide"
+    ceo_image='/images/corporations/l34rn/ceo.png'
+    ceo_character_id={94395490}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ firetail ]" src="/images/corporations/vindicta/firetail.png" />
-    <img slot="ships" class="[ thrasher ]" src="/images/corporations/vindicta/thrasher.png" />
-    <img slot="ships" class="[ cyclone ]" src="/images/corporations/vindicta/cyclone.png" />
+    <img slot="ships" class="[ vigil ]" src="/images/corporations/l34rn/vigil.png" />
+    <img slot="ships" class="[ burst ]" src="/images/corporations/l34rn/burst.png" />
+    <img slot="ships" class="[ talwar ]" src="/images/corporations/l34rn/talwar.png" />
 
-    <p>{corporation.introduction ? corporation.introduction : t('vindicta_expeditionary_description_fallback') }</p>
+    <p>{corporation.introduction ? corporation.introduction : t('l34rn_description_fallback') }</p>
 </CorporationSlide>
 
 <style lang="scss">
@@ -42,103 +42,103 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         image-rendering: pixelated;
     }
 
-    .firetail {
+    .vigil {
         position: absolute;
-        top: 22%;
-        right: 27%;
+        top: 40%;
+        left: 5%;
         height: auto;
-        width: 32%;
+        width: 18%;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    .burst {
+        position: absolute;
+        top: 34%;
+        left: -40%;
+        width: 60%;
+        height: auto;
         z-index: 2;
         transform: scale(0);
     }
 
-    .thrasher {
+    .talwar {
         position: absolute;
-        top: 22%;
-        right: 29%;
-        width: 53%;
+        left: -45%;
+        top: 49%;
+        width: 69%;
         height: auto;
         z-index: 1;
         transform: scale(0);
     }
 
-    .cyclone {
-        position: absolute;
-        right: 24%;
-        top: 30%;
-        width: 50%;
-        height: auto;
-        z-index: 0;
-        transform: scale(0);
-    }
-
-    @keyframes firetail {
+    @keyframes vigil {
         from {
             transform: scale(0);
-            top: 22%;
-            right: 27%;
+            top: 20%;
+            left: 5%;
         }
 
         to {
             transform: scale(1);
-            top: 12%;
-            right: 43%;
+            top: 4%;
+            left: 56%;
         }
     }
 
-    @keyframes thrasher {
+    @keyframes burst {
         from {
             transform: scale(0);
-            top: 22%;
-            right: 29%;
+            top: 34%;
+            left: -40%;
         }
 
         to {
             transform: scale(1);
-            top: 29%;
-            right: 49%;
+            top: 44%;
+            left: 42%;
         }
     }
 
-    @keyframes cyclone {
+    @keyframes talwar {
         from {
             transform: scale(0);
-            top: 30%;
-            right: 24%;
+            left: -45%;
+            top: 49%;
         }
 
         to {
             transform: scale(1);
-            top: 43%;
-            right: 46%;
+            top: 52%;
+            left: 26%;
         }
     }
 </style>
 
 <style lang="scss" is:global>
-    #vindicta-slide .ceo {
-        right: 7%;
+    #rattini-slide .ceo {
+        left: 0%;
     }
 
     .swiper-slide-active {
-        .firetail {
-            animation: firetail ease-out 0.25s;
+        .vigil {
+            animation: vigil ease-out 0.25s;
             animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .thrasher {
-            animation: thrasher ease-out 0.25s;
+        .burst {
+            animation: burst ease-out 0.25s;
             animation-delay: 2.2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .cyclone {
-            animation: cyclone ease-out 0.25s;
+        .talwar {
+            animation: talwar ease-out 0.25s;
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;

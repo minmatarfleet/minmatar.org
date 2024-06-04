@@ -1,4 +1,9 @@
 ---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
@@ -29,7 +34,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />
     <img slot="ships" class="[ sleipnir ]" src="/images/corporations/rattini/sleipnir.png" />
 
-    <p>A cult of Minmatar pilots who worship a fictional deity, the Rat, who they believe is the source of their strength. Minmatar scientists speculate that a decade of failed mind state record scans in the heat of wormhole combat have altered their capsuleer memory banks permanantly.</p>
+    <p>{corporation.introduction ? corporation.introduction : t('rattini_description_fallback') }</p>
 </CorporationSlide>
 
 <style lang="scss">

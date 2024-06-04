@@ -31,7 +31,7 @@ import Flexblock from "@components/compositions/Flexblock.astro";
 import TextBox from '@components/layout/TextBox.astro';
 
 import VerticalCenter from "@components/blocks/VerticalCenter.astro";
-import CorporationStatus from "@components/blocks/CorporationStatus.astro";
+import CorporationSlideStatus from "@components/blocks/CorporationSlideStatus.astro";
 import StylessButton from '@components/blocks/StylessButton.astro';
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
@@ -61,7 +61,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
             <TextBox>
                 <slot />
             </TextBox>
-            <CorporationStatus
+            <CorporationSlideStatus
                 corporation={corporation}
                 is_user_corporation={is_user_corporation}
             />
@@ -128,7 +128,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
     }
 
     .ceo {
-        z-index: 3;
+        z-index: 10;
         position: relative;
         cursor: pointer;
         transform: scale(0.5);

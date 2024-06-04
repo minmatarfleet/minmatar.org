@@ -53,8 +53,6 @@ import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 
-import Context from '@components/layout/Context.astro';
-
 import CorporationHistory from '@components/blocks/CorporationHistory.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import AllianceBadge from '@components/blocks/AllianceBadge.astro'
@@ -134,7 +132,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                     <VerticalCenter>
                         <picture>
                             {race === 'amarr' &&
-                                    <AmarrLogo />
+                                <AmarrLogo />
                             }
                             {race === 'minmatar' &&
                                 <MinmatarLogo />

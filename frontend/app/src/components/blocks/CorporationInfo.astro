@@ -1,0 +1,173 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+interface Props {
+    corporation_id:   number;
+}
+
+const {
+    corporation_id,
+} = Astro.props
+
+
+import { get_corporation_logo } from '@helpers/eve_image_server';
+import { prod_error_messages } from '@helpers/env'
+import type { Corporation } from '@dtypes/api.minmatar.org'
+import { get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
+import { parse_eve_html } from '@helpers/eve'
+import { is_html } from '@helpers/string'
+
+let corporation:Corporation
+let get_character_error:string | false = false
+
+try {
+    corporation = await get_corporation_by_id(auth_token as string, corporation_id)
+} catch (error) {
+    get_character_error = (prod_error_messages() ? t('get_eve_character_error') : error.message)
+}
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+
+import AllianceBadge from '@components/blocks/AllianceBadge.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import SectionH4 from '@components/blocks/SectionH4.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import AmarrLogo from '@components/logos/AmarrLogo.astro';
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
+import CaldariLogo from '@components/logos/CaldariLogo.astro';
+import GallenteLogo from '@components/logos/GallenteLogo.astro'
+
+const timezones = corporation.timezones[0].split('\n')
+---
+
+<Wrapper
+    id="corporation-info"
+    class="corporation-info overflow-y-auto"
+    padding_inline='var(--space-s)'
+    padding_block='var(--space-s)'
+    x-data={`{
+        tippy_options: {
+            delay: [ 100, 200 ],
+            arrow: true,
+        },
+        init_js() {
+            tippy('[data-tippy-content]', this.tippy_options)
+        }
+    }`}
+    x-init="init_js()"
+>
+    {get_character_error ?
+        <ErrorRefetch
+            args={{
+                partial: `${CORPORATION_MODAL_PARTIAL_URL}?corporation_id=${corporation_id}`,
+                message: get_character_error,
+                delay: delay,
+                target: '#corporation-info',
+            }}
+        />
+        :        
+        <Flexblock gap='var(--space-s)'>
+            <FixedFluid
+                width='96px'
+                class="[ items-center ]"
+            >
+                <picture>
+                    <img loading="lazy" width="96" height="96" src={get_corporation_logo(corporation_id, 128)} />
+                </picture>
+                <div class="[ fluid-fixed-l ]" class="[ w-full ]" style='--fluid-fixed--width: 32px'>
+                    <VerticalCenter>
+                        <Flexblock gap='0' class="[ w-full ]">
+                            <span class="[ text-[var(--highlight)] ]">{corporation.corporation_name}</span>
+                            {corporation.alliance_id &&
+                                <AllianceBadge alliance={{
+                                    id: corporation.alliance_id
+                                }} />
+                            }
+                        </Flexblock>
+                    </VerticalCenter>
+                    <VerticalCenter>
+                        <picture>
+                            {corporation.faction_name === 'Amarr Empire' &&
+                                <AmarrLogo />
+                            }
+                            {corporation.faction_name === 'Minmatar Republic' &&
+                                <MinmatarLogo />
+                            }
+                            {corporation.faction_name === 'Caldari State' &&
+                                <CaldariLogo />
+                            }
+                            {corporation.faction_name === 'Gallente Federation' &&
+                                <GallenteLogo />
+                            }
+                        </picture>
+                    </VerticalCenter>
+                </div>
+            </FixedFluid>
+            
+            {corporation.biography !== '' &&
+                <ComponentBlock>
+                    <SectionH4 heading_text={t('description')}>
+                        <div class:list={{ 'eve-html': is_html(corporation.biography) }} set:html={parse_eve_html(corporation.biography)} />
+                    </SectionH4>
+                </ComponentBlock>
+            }
+            {corporation?.timezones.length > 0 &&
+                <ComponentBlock>
+                    <SectionH4 heading_text={t('timezones')}>
+                        <Flexblock set:html={marked.parse(`- ${timezones.join('- ')}`, { renderer })} />
+                    </SectionH4>
+                </ComponentBlock>
+            }
+            {corporation?.requirements.length > 0 &&
+                <ComponentBlock>
+                    <SectionH4 heading_text={t('requirements')}>
+                        <div set:html={marked.parse(corporation.requirements.join(''), { renderer })} />
+                    </SectionH4>
+                </ComponentBlock>
+            }
+        </Flexblock>
+    }
+</Wrapper>
+
+<style lang="scss">
+    .corporation-info {
+        width: 100%;
+        max-width: 60rem;
+        max-height: min(750px, 88vh);
+        height: 100%;
+        position: relative;
+        background-position: top left;
+        background-repeat: no-repeat;
+        background-color: var(--background);
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+    }
+</style>

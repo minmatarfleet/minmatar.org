@@ -1,0 +1,167 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { Alert, CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    alert?:                 Alert | false;
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    alert = false,
+} = Astro.props
+
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+
+import { query_string } from '@helpers/string';
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_request_status_item/')
+
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import Button from '@components/blocks/Button.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import Tag from '@components/blocks/Tag.astro';
+import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
+import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    gap='var(--space-xl)'
+    id={`corporation-status-${corporation.corporation_id}`}
+    x-data={`{
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+>
+    <FlexInline>
+        {(corporation?.status != null && !corporation.active) ?
+            <ButtonCeoToken
+                corporation={corporation}
+                size='sm'
+                dialog_title={t('add_ceo_token_dialog_title')}
+            >
+                {t('add_ceo_token')}
+            </ButtonCeoToken>
+        :
+        (corporation?.status == 'available' && !primary_character_id) ?
+            <ButtonAddPrimary
+                size='sm'
+                color='green'
+                dialog_title={t('corporation_join_request_dialog_title')}
+            >
+                {t('enlist_today')}
+            </ButtonAddPrimary>
+        :
+        (!is_user_corporation && corporation?.status == 'available' && primary_character_id) ?
+            <Button
+                type="button"
+                size='sm'
+                color='green'
+                x-bind:disabled="disabled"
+                x-data={`{
+                    disabled: false,
+                    show_join_request_dialog() {
+                        this.disabled = true
+                        
+                        show_confirm_dialog({
+                            title: '${t('corporation_join_request_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_apply_corporation/')}?${query_string({
+                                corporation_id: corporation.corporation_id,
+                                corporation_name: corporation.corporation_name,
+                                alliance_id: corporation.alliance_id,
+                                alliance_name: corporation.alliance_name,
+                                corporation_type: corporation.corporation_type,
+                                status: corporation.status,
+                                message: t('corporation_join_request_dialog_text')
+                            })}',
+                            return_on_accept: ${corporation.corporation_id},
+                            hx: {
+                                method: 'post',
+                                url: '${CORPORATION_REQUEST_STATUS_PARTIAL_URL}?${query_string({
+                                    corporation: JSON.stringify(corporation),
+                                })}',
+                                target: '${`#corporation-status-${corporation.corporation_id}`}',
+                                swap: 'outerHTML transition:true'
+                            }
+                        }).then( (corporation_id) => { this.disabled = !!corporation_id } )
+                    }
+                }`}
+                x-on:click="show_join_request_dialog()"
+                type="button"
+            >
+                {t('enlist_today')}
+            </Button>
+        :
+        corporation?.status == 'unauth' ?
+            <ButtonAuth
+                size='sm'
+                color='green'
+                dialog_title={t('corporation_join_request_dialog_title')}
+            >
+                {t('enlist_today')}
+            </ButtonAuth>
+            :
+            ''
+        }
+        {corporation?.status !== 'unauth' ?
+            <Button
+                size='sm'
+                x-data={`{
+                show_corporation_modal() {
+                        show_modal({
+                            partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.corporation_id}',
+                        })
+                    }
+                }`}
+                x-on:click.stop.prevent="show_corporation_modal()"
+            >
+                {t('learn_more')}
+            </Button>
+            :
+            <ButtonAuth
+                size='sm'
+                dialog_title={t('learn_more_dialog_title')}
+            >
+                {t('learn_more')}
+            </ButtonAuth>
+        }
+    </FlexInline>
+
+    {is_user_corporation?
+        <small class="[ status-text ]">{t('joined_corporation_tooltip')}</small>
+        :
+        corporation?.status === 'accepted' ?
+            <small class="[ status-text ]">{t('application_accepted_tooltip')}</small>
+        :
+        corporation?.status === 'rejected' ?
+            <small class="[ status-text ]">{t('application_denied_tooltip')}</small>
+        :
+        corporation?.status == 'pending' ?
+            <small class="[ status-text ]">{t('pending_application_tooltip')}</small>
+        :
+        corporation?.status == 'error' &&
+            <Tag
+                data-tippy-content={t('error_reload')}
+                x-init="tippy('this, tippy_options)"
+                text={t('error_status_corp')}
+            />
+    }
+</Flexblock>
+
+<style lang="scss">
+     .status-text {
+        color: var(--highlight);
+        text-wrap: balance;
+     }
+</style>
