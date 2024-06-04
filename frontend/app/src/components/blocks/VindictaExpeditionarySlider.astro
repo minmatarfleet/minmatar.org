@@ -1,4 +1,9 @@
 ---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
@@ -29,9 +34,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     <img slot="ships" class="[ thrasher ]" src="/images/corporations/vindicta/thrasher.png" />
     <img slot="ships" class="[ cyclone ]" src="/images/corporations/vindicta/cyclone.png" />
 
-    <Flexblock>
-        <p>Our focus is clear - the crucible of battle is our home. Engage in Faction Warfare, roam the warzones, and partake in epic clashes where victory is forged by the fires of combat.</p>
-    </Flexblock>
+    <p>{corporation.introduction ? corporation.introduction : t('vindicta_expeditionary_description_fallback') }</p>
 </CorporationSlide>
 
 <style lang="scss">

@@ -168,3 +168,8 @@ a:focus-visible {
 .highlight {
     color: var(--highlight);
 }
+
+ul {
+    list-style: square;
+    padding-inline-start: 17px;
+}

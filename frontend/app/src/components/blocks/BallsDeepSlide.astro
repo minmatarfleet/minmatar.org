@@ -1,4 +1,9 @@
 ---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
 import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
@@ -29,7 +34,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     <img slot="ships" class="[ tengu ]" src="/images/corporations/ballsdeep/tengu.png" />
     <img slot="ships" class="[ orthrus ]" src="/images/corporations/ballsdeep/orthrus.png" />
 
-    <p>You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.</p>
+    <p>{corporation.introduction ? corporation.introduction : t('balls_deep_expeditionary_description_fallback') }</p>
 </CorporationSlide>
 
 <style lang="scss">

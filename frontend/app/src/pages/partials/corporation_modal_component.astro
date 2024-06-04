@@ -1,0 +1,12 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
+
+import CorporationInfo from '@components/blocks/CorporationInfo.astro'
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
+---
+
+<CorporationInfo corporation_id={corporation_id} />
