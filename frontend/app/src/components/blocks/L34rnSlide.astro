@@ -1,0 +1,148 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="rattini-slide"
+    ceo_image='/images/corporations/l34rn/ceo.png'
+    ceo_character_id={94395490}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ vigil ]" src="/images/corporations/l34rn/vigil.png" />
+    <img slot="ships" class="[ burst ]" src="/images/corporations/l34rn/burst.png" />
+    <img slot="ships" class="[ talwar ]" src="/images/corporations/l34rn/talwar.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('l34rn_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .vigil {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 18%;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    .burst {
+        position: absolute;
+        top: 34%;
+        left: -40%;
+        width: 60%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .talwar {
+        position: absolute;
+        left: -45%;
+        top: 49%;
+        width: 69%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes vigil {
+        from {
+            transform: scale(0);
+            top: 20%;
+            left: 5%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 4%;
+            left: 56%;
+        }
+    }
+
+    @keyframes burst {
+        from {
+            transform: scale(0);
+            top: 34%;
+            left: -40%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 44%;
+            left: 42%;
+        }
+    }
+
+    @keyframes talwar {
+        from {
+            transform: scale(0);
+            left: -45%;
+            top: 49%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 52%;
+            left: 26%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #rattini-slide .ceo {
+        left: 0%;
+    }
+
+    .swiper-slide-active {
+        .vigil {
+            animation: vigil ease-out 0.25s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .burst {
+            animation: burst ease-out 0.25s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .talwar {
+            animation: talwar ease-out 0.25s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
