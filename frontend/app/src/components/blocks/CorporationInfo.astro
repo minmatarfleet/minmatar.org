@@ -62,7 +62,7 @@ import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
 import CaldariLogo from '@components/logos/CaldariLogo.astro';
 import GallenteLogo from '@components/logos/GallenteLogo.astro'
 
-const timezones = corporation.timezones[0].split('\n')
+const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].split('\n') : null
 ---
 
 <Wrapper
