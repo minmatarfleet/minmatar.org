@@ -777,5 +777,6 @@ export const ui = {
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',
+        'get_corporation_info_error': 'An error occurred while fetching the corporation info.',
     },
 } as const;

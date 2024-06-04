@@ -114,28 +114,19 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             :
             ''
         }
-        {corporation?.status !== 'unauth' ?
-            <Button
-                size='sm'
-                x-data={`{
-                show_corporation_modal() {
-                        show_modal({
-                            partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.corporation_id}',
-                        })
-                    }
-                }`}
-                x-on:click.stop.prevent="show_corporation_modal()"
-            >
-                {t('learn_more')}
-            </Button>
-            :
-            <ButtonAuth
-                size='sm'
-                dialog_title={t('learn_more_dialog_title')}
-            >
-                {t('learn_more')}
-            </ButtonAuth>
-        }
+        <Button
+            size='sm'
+            x-data={`{
+            show_corporation_modal() {
+                    show_modal({
+                        partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.corporation_id}',
+                    })
+                }
+            }`}
+            x-on:click.stop.prevent="show_corporation_modal()"
+        >
+            {t('learn_more')}
+        </Button>
     </FlexInline>
 
     {is_user_corporation?
