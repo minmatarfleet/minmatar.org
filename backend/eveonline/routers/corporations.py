@@ -54,6 +54,25 @@ class CorporationResponse(Schema):
     active: bool
 
 
+class CorporationInfoResponse(Schema):
+    """
+    Response for a corporation's info
+    """
+
+    corporation_id: int
+    corporation_name: str
+    alliance_id: Optional[int] = None
+    alliance_name: Optional[str] = None
+    faction_id: Optional[int] = None
+    faction_name: Optional[str] = None
+    type: CorporationType
+    introduction: Optional[str] = None
+    biography: Optional[str] = None
+    timezones: Optional[List[str]] = None
+    requirements: Optional[List[str]] = None
+    active: bool
+
+
 class CorporationApplicationResponse(Schema):
     status: str
     description: str
@@ -205,4 +224,54 @@ def get_corporation_by_id(request, corporation_id: int):
                     primary_character.character.character_name
                 )
         response["members"].append(payload)
+    return response
+
+
+@router.get(
+    "/corporations/{corporation_id}/info",
+    response=CorporationInfoResponse,
+    summary="Get a corporation's info",
+)
+def get_corporation_info(request, corporation_id: int):
+    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
+    response = {
+        "corporation_id": corporation.corporation_id,
+        "corporation_name": corporation.name,
+        "introduction": corporation.introduction,
+        "biography": corporation.biography,
+        "timezones": (
+            corporation.timezones.strip().split(",")
+            if corporation.timezones
+            else []
+        ),
+        "requirements": (
+            corporation.requirements.strip().split("\n")
+            if corporation.requirements
+            else []
+        ),
+        "type": corporation.type,
+        "active": corporation.active,
+        "members": [],
+    }
+    # populate alliance details
+    if (
+        corporation.alliance
+        and EveAlliance.objects.filter(
+            alliance_id=corporation.alliance.alliance_id
+        ).exists()
+    ):
+        alliance = EveAlliance.objects.get(
+            alliance_id=corporation.alliance.alliance_id
+        )
+        response["alliance_id"] = alliance.alliance_id
+        response["alliance_name"] = alliance.name
+
+    # populate faction details
+    if (
+        corporation.faction
+        and EveFaction.objects.filter(id=corporation.faction_id).exists()
+    ):
+        faction = EveFaction.objects.get(id=corporation.faction_id)
+        response["faction_id"] = faction.id
+        response["faction_name"] = faction.name
     return response
