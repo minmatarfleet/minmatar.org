@@ -1,5 +1,6 @@
 import type { Locales, CharacterRaces } from '@dtypes/layout_components'
 import * as cheerio from 'cheerio';
+import { decode_unicode_escapes } from '@helpers/string'
 
 export const get_zkillboard_character_link = (character_id):string => {
     return `https://zkillboard.com/character/${character_id}/`
@@ -28,7 +29,11 @@ export const get_race_cover_image = (race:CharacterRaces):string => {
 }
 
 export const parse_eve_html = (html:string):string => {
-    const $ = cheerio.load(html)
+    let stripped_html = html
+    if (html.length >= 3)
+        stripped_html = html.slice(2, -1);
+
+    const $ = cheerio.load(decode_unicode_escapes(stripped_html))
     const prop_equivalent = {
         size: 'font-size',
         face: 'font-family',
