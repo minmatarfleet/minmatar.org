@@ -91,11 +91,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <FlexInline justification='space-between'>
                 <Flexblock gap='0'>
                     <p class="[ text-[var(--highlight)] ]">{t('cant_view_fleet_details')}</p>
-
-                    {fleet.audience === 'Alliance' &&
+                    
+                    {user && fleet.audience === 'Alliance' &&
                         <small set:html={APPLY_HINT_TEXT} />
                     }
-                    {fleet.audience === 'Militia' &&
+                    {user && fleet.audience === 'Militia' &&
                         <small>{t('enlist_fw_hint')}</small>
                     }
                 </Flexblock>

@@ -39,6 +39,12 @@ const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upc
 
 const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
+import { marked } from 'marked';
+const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) as string)
+    .replace(
+        'AUTH_LINK', AUTH_REDIRECT_URL
+    )
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -118,15 +124,10 @@ const page_title = t('fleets.upcoming.page_title');
             <Flexblock gap='var(--space-xl)'>
                 {!user &&
                     <FlexInline justification='space-between'>
-                        <p>{t('authenticate_fleet_hint')}</p>
-                        <ButtonStack>
-                            <Button
-                                href={AUTH_REDIRECT_URL}
-                                size='sm'
-                            >
-                                {t('authenticate')}
-                            </Button>
-                        </ButtonStack>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <p>{t('authenticate_fleet_hint')}</p>
+                            <small set:html={AUTH_FLEET_SUBHINT} />
+                        </Flexblock>
                     </FlexInline>
                 }
 
