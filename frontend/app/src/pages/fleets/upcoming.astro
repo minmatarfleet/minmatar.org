@@ -37,6 +37,8 @@ try {
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
 
+import { get_auth_url } from '@helpers/env'
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -48,12 +50,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
-
 
 const page_title = t('fleets.upcoming.page_title');
 ---
@@ -121,12 +120,12 @@ const page_title = t('fleets.upcoming.page_title');
                     <FlexInline justification='space-between'>
                         <p>{t('authenticate_fleet_hint')}</p>
                         <ButtonStack>
-                            <ButtonAuth
+                            <Button
+                                href={get_auth_url()}
                                 size='sm'
-                                dialog_title={t('upcoming_fleets_dialog_title')}
                             >
                                 {t('authenticate')}
-                            </ButtonAuth>
+                            </Button>
                         </ButtonStack>
                     </FlexInline>
                 }
