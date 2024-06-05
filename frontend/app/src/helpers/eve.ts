@@ -30,7 +30,8 @@ export const get_race_cover_image = (race:CharacterRaces):string => {
 
 export const parse_eve_html = (html:string):string => {
     let stripped_html = html
-    if (html.length >= 3)
+    
+    if (html.length >= 3 && (html.startsWith("u'") && html.endsWith("'")))
         stripped_html = html.slice(2, -1);
 
     const $ = cheerio.load(decode_unicode_escapes(stripped_html))
