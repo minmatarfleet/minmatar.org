@@ -18,7 +18,7 @@ if (!user)
     return HTTP_404_Not_Found()
 
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[]
@@ -26,7 +26,7 @@ let fleets:FleetItem[]
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
 
 try {
-    fleets = await fetch_fleets(auth_token as string, upcoming)
+    fleets = auth_token ? await fetch_fleets_auth(auth_token as string, upcoming) : await fetch_fleets(upcoming)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });

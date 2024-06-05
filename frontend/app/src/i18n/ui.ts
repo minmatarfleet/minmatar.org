@@ -720,7 +720,7 @@ export const ui = {
         'view_characters': 'View all characters',
         'characters': 'Characters',
         'character': 'Character',
-        'cant_view_fleet_details': 'You don’t have access to this fleets details',
+        'cant_view_fleet_details': 'You don’t have access to this fleet details',
         'not_available': 'Not available',
         'leave': 'Leave',
         'last_updated': 'Last updated',
@@ -778,5 +778,8 @@ export const ui = {
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',
         'get_corporation_info_error': 'An error occurred while fetching the corporation info.',
+        'authenticate': 'Authenticate',
+        'authenticate_fleet_hint': 'Authenticate to see fleet details',
+        'upcoming_fleets_dialog_title': 'Upcoming fleets',
     },
 } as const;

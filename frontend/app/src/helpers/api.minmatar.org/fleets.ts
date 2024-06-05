@@ -93,10 +93,9 @@ export async function get_audiences(access_token:string) {
     }
 }
 
-export async function get_fleets(access_token:string, upcoming:boolean = true) {
+export async function get_fleets(upcoming:boolean = true) {
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
     }
 
     const ENDPOINT = `${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}&active=${JSON.stringify(upcoming)}`

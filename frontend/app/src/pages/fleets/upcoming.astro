@@ -19,19 +19,15 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
-
-if (!user)
-    return Astro.redirect(AUTH_REDIRECT_URL)
 
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
 
 try {
-    fleets = await fetch_fleets(auth_token as string)
+    fleets = auth_token ? await fetch_fleets_auth(auth_token as string) : await fetch_fleets()
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
@@ -52,6 +48,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
@@ -59,7 +58,12 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 const page_title = t('fleets.upcoming.page_title');
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        confirm_dialog: true
+    }}
+>
     <PageWide
         cover={{
             image: "/images/fleets-cover.jpg",
@@ -112,7 +116,23 @@ const page_title = t('fleets.upcoming.page_title');
                 }}
             />
             :
-            <FleetList fleets={fleets} />
+            <Flexblock gap='var(--space-xl)'>
+                {!user &&
+                    <FlexInline justification='space-between'>
+                        <p>{t('authenticate_fleet_hint')}</p>
+                        <ButtonStack>
+                            <ButtonAuth
+                                size='sm'
+                                dialog_title={t('upcoming_fleets_dialog_title')}
+                            >
+                                {t('authenticate')}
+                            </ButtonAuth>
+                        </ButtonStack>
+                    </FlexInline>
+                }
+
+                <FleetList fleets={fleets} />
+            </Flexblock>
         }
 	</PageWide>
 </Viewport>
