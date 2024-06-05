@@ -1,4 +1,4 @@
-import type { FleetMember, Fleet, FleetRequest, Audience, Location } from '@dtypes/api.minmatar.org'
+import type { FleetMember, Fleet, FleetRequest, Audience, Location, FleetBasic } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
@@ -117,6 +117,35 @@ export async function get_fleets(upcoming:boolean = true) {
         }
 
         return await response.json() as number[];
+    } catch (error) {
+        throw new Error(`Error fetching fleets: ${error.message}`);
+    }
+}
+
+export async function get_fleets_v2(upcoming:boolean = true) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/v2?upcoming=${JSON.stringify(upcoming)}&active=${JSON.stringify(upcoming)}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
+        }
+
+        return await response.json() as FleetBasic[];
     } catch (error) {
         throw new Error(`Error fetching fleets: ${error.message}`);
     }
