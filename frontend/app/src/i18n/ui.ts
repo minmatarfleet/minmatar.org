@@ -540,7 +540,7 @@ export const ui = {
         'get_character_assets_error': 'An error occurred while fetching the character assets.',
         'minmatar_fleet_associates': 'Minmatar Fleet Associates',
         'minmatar_fleet_new': 'Minmatar Fleet New members',
-        'view_corporations': 'View',
+        'view_corporations': 'View corporations',
         'error_status_corp': 'Error retrieving status',
         'authentication_missing_dialog': 'The following action require you to be authenticated. Proceed with authentication?',
         'add_primary_pilot_dialog_required_text': 'The action requested requires you to have a primary character added. If you select yes to add one, you will undergo the main pilot setting process outside of our site. Once it is successfully completed, we will return you to our platform. The following scopes will be requested:',
@@ -781,5 +781,9 @@ export const ui = {
         'authenticate': 'Authenticate',
         'authenticate_fleet_hint': 'Authenticate to see fleet details',
         'upcoming_fleets_dialog_title': 'Upcoming fleets',
+        'enlist_fw_hint': 'Enlist Minmatar Faction Warfare in-game for details',
+        'apply_hint': 'Apply and join [Minmatar Fleet Alliance [FLEET]](FLEET_PAGE_LINK) for details [here](CORPORATIONS_PAGE_LINK)',
+        'view': 'View',
+        'apply': 'Apply here',
     },
 } as const;

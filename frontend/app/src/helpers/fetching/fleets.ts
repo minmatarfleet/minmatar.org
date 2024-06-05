@@ -2,8 +2,8 @@ import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
 import type { FleetUI, FleetItem, DoctrineType, FleetCompositionUI, FleetRadarUI, CharacterBasic } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember } from '@dtypes/api.minmatar.org'
-import { get_fleets, get_fleet_by_id, get_fleet_members } from '@helpers/api.minmatar.org/fleets'
+import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic } from '@dtypes/api.minmatar.org'
+import { get_fleets, get_fleets_v2, get_fleet_by_id, get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_route } from '@helpers/api.eveonline/routes'
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
@@ -21,15 +21,15 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
 }
 
 export async function fetch_fleets(upcoming:boolean = true) {
-    let api_fleets_id:number[]
+    let api_fleets_id:FleetBasic[]
 
-    api_fleets_id = await get_fleets(upcoming)
+    api_fleets_id = await get_fleets_v2(upcoming)
 
-    return api_fleets_id.map((fleet_id) => {
+    return api_fleets_id.map((api_fleet) => {
         return {
-            id: fleet_id,
+            id: api_fleet.id,
             description: null,
-            audience: null,
+            audience: api_fleet.audience,
             fleet_commander_id: 0,
             fleet_commander_name: t('not_available'),
             location: null,

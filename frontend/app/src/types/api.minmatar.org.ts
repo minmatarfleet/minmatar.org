@@ -181,6 +181,11 @@ export interface Fleet {
     tracking:           Tracking;
 }
 
+export interface FleetBasic {
+    id:                 number;
+    audience:           string;
+}
+
 export interface Tracking {
     id:             number;
     start_time:     Date;

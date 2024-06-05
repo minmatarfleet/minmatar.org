@@ -5,6 +5,12 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
 import type { FleetItem } from '@dtypes/layout_components';
 
 interface Props {
@@ -20,6 +26,13 @@ const {
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
+import { marked } from 'marked';
+const APPLY_HINT_TEXT = (marked.parseInline(t('apply_hint')) as string)
+    .replace(
+        'FLEET_PAGE_LINK', translatePath('/alliance/')
+    ).replace(
+        'CORPORATIONS_PAGE_LINK', translatePath('/alliance/corporations/list/')
+    )
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
@@ -34,6 +47,7 @@ import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import CasualIcon from '@components/icons/CasualIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -74,9 +88,18 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
     {fleet.fleet_commander_id === 0 &&
         <VerticalCenter class="[ grow ]">
-            <Flexblock>
-                {t('cant_view_fleet_details')}
-            </Flexblock>
+            <FlexInline justification='space-between'>
+                <Flexblock gap='0'>
+                    <p class="[ text-[var(--highlight)] ]">{t('cant_view_fleet_details')}</p>
+
+                    {fleet.audience === 'Alliance' &&
+                        <small set:html={APPLY_HINT_TEXT} />
+                    }
+                    {fleet.audience === 'Militia' &&
+                        <small>{t('enlist_fw_hint')}</small>
+                    }
+                </Flexblock>
+            </FlexInline>
         </VerticalCenter>
     }
 
