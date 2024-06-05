@@ -41,3 +41,7 @@ export async function parse_markdown(text:string) {
 export function get_error_message(status:number, endpoint:string) {
     return `HTTP error! Status — ${status}<br><pre style="width: fit-content"><code>${endpoint}</code></pre>`
 }
+
+export function decode_unicode_escapes(text) {
+    return text.replace(/\\u([0-9A-Fa-f]{4})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
+}
