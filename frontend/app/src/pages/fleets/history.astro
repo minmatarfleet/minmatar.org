@@ -34,7 +34,7 @@ try {
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}`)
 
-import { get_auth_url } from '@helpers/env'
+const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -114,7 +114,7 @@ const page_title = t('fleets.history.page_title');
                         <p>{t('authenticate_fleet_hint')}</p>
                         <ButtonStack>
                             <Button
-                                href={get_auth_url()}
+                                href={AUTH_REDIRECT_URL}
                                 size='sm'
                             >
                                 {t('authenticate')}
