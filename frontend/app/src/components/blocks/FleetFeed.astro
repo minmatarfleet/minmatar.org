@@ -18,13 +18,13 @@ if (!user)
 
 import { prod_error_messages } from '@helpers/env'
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
 
 try {
-    fleets = await fetch_fleets(auth_token as string)
+    fleets = await fetch_fleets_auth(auth_token as string)
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 } catch (error) {

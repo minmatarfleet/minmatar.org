@@ -12,12 +12,32 @@ import { get_system_sun_type_id } from '@helpers/sde/map'
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
 
-export async function fetch_fleets(access_token:string, upcoming:boolean = true) {
+export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true) {
     let api_fleets_id:number[]
 
-    api_fleets_id = await get_fleets(access_token, upcoming)
+    api_fleets_id = await get_fleets(upcoming)
 
     return await Promise.all(api_fleets_id.map(async (fleet_id) => await add_fleet_info(access_token, fleet_id) ))
+}
+
+export async function fetch_fleets(upcoming:boolean = true) {
+    let api_fleets_id:number[]
+
+    api_fleets_id = await get_fleets(upcoming)
+
+    return api_fleets_id.map((fleet_id) => {
+        return {
+            id: fleet_id,
+            description: null,
+            audience: null,
+            fleet_commander_id: 0,
+            fleet_commander_name: t('not_available'),
+            location: null,
+            start_time: new Date('2100-01-01'),
+            type: null,
+            tracking: null,
+        } as FleetItem
+    } )
 }
 
 export async function add_fleet_info(access_token:string, fleet_id:number) {
@@ -36,7 +56,7 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
             description: '',
             start_time: new Date('2100-01-01'),
             tracking: null
-        }
+        } as Fleet
     }
         
     let character_profile:EveCharacterProfile

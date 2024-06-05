@@ -67,13 +67,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <StratopIcon /> :
             fleet.type === 'training' ?
             <TrainingIcon /> :
+            fleet.type === 'non_strategic' &&
             <NonStrategicIcon />
         }
     </div>
 
     {fleet.fleet_commander_id === 0 &&
-        <VerticalCenter class="[ grow justify-center ]">
-            {t('cant_view_fleet_details')}
+        <VerticalCenter class="[ grow ]">
+            <Flexblock>
+                {t('cant_view_fleet_details')}
+            </Flexblock>
         </VerticalCenter>
     }
 

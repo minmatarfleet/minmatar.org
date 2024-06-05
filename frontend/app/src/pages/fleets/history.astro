@@ -20,17 +20,14 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
 
-if (!user)
-    return HTTP_404_Not_Found()
-
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
 
 try {
-    fleets = await fetch_fleets(auth_token as string, false)
+    fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -48,6 +45,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import ButtonStack from '@components/blocks/ButtonStack.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
@@ -108,7 +108,23 @@ const page_title = t('fleets.history.page_title');
                 }}
             />
             :
-            <FleetList fleets={fleets} history={true} />
+            <Flexblock gap='var(--space-xl)'>
+                {!user &&
+                    <FlexInline justification='space-between'>
+                        <p>{t('authenticate_fleet_hint')}</p>
+                        <ButtonStack>
+                            <ButtonAuth
+                                size='sm'
+                                dialog_title={t('upcoming_fleets_dialog_title')}
+                            >
+                                {t('authenticate')}
+                            </ButtonAuth>
+                        </ButtonStack>
+                    </FlexInline>
+                }
+
+                <FleetList fleets={fleets} history={true} />
+            </Flexblock>
         }
 	</PageWide>
 </Viewport>
