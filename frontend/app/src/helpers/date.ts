@@ -27,6 +27,10 @@ export const days_diff_text = (locale:Locales = 'en', from:Date, to:Date):string
     return `${diff_days} ${diff_days != 1 ? t('days') : t('day')}`
 }
 
+export const from_now_diff = (locale:Locales, to:Date):string => {
+    return moment(to).fromNow()
+}
+
 export const humanize_date_diff = (locale:Locales, from:Date, to:Date):string => {
     const t = useTranslations(locale)
     var from_moment = moment(new Date(from))

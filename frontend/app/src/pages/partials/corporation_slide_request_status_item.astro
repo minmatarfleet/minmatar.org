@@ -1,0 +1,87 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import type { CorporationObject, Alert, CorporationStatusType } from '@dtypes/layout_components'
+import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
+import type { CorporationApplication } from '@dtypes/api.minmatar.org'
+
+let corporation:CorporationObject
+let create_corporation_application_error:string | false = false
+let application:CorporationApplication 
+
+if (Astro.request.method === "POST") {
+    try {
+        corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
+        const application_text = await Astro.request.formData()
+        const description = JSON.parse(JSON.parse( application_text.get("data").valueOf() as string ))
+
+        if (!description)
+            throw new Error(t('invalid_description'));
+
+        application = await create_corporation_application(auth_token, corporation.corporation_id, description)
+        console.log(application)
+        corporation.status = application.status as CorporationStatusType
+        console.log(corporation.status)
+    } catch (error) {
+        create_corporation_application_error = prod_error_messages() ? t('create_corporation_application_error') : error.message
+    }
+}
+
+import { query_string } from '@helpers/string';
+let alert:Alert | false = false
+if (create_corporation_application_error) {
+    alert = {
+        title: t('corporation_join_request_dialog_title'),
+        content: create_corporation_application_error,
+    }
+
+    if (corporation) {
+        interface Message {
+            message: string
+        }
+
+        type Params = CorporationObject & Message
+
+        const params:Params = {
+            alliance_id: corporation.alliance_id,
+            corporation_id: corporation.corporation_id,
+            alliance_name: corporation.alliance_name,
+            corporation_name: corporation.corporation_name,
+            corporation_type: corporation.corporation_type,
+            active: corporation.active,
+            biography: corporation.biography,
+            introduction: corporation.introduction,
+            requirements: corporation.requirements,
+            timezones: corporation.timezones,
+            message: create_corporation_application_error,
+        }
+
+        alert.partial = `${translatePath('/partials/dialog_with_corporation/')}?${query_string(params)}`
+    }
+}
+
+import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.astro';
+---
+
+<CorporationSlideStatus
+    corporation={corporation}
+    is_user_corporation={false}
+    alert={alert}
+/>
