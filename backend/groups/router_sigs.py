@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 
+from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
@@ -98,6 +99,7 @@ class SigRequestSchema(BaseModel):
     sig_id: int
     approved: Optional[bool] = None
     approved_by: Optional[int] = None
+    approved_at: Optional[timezone.datetime] = None
 
 
 @router.get(
@@ -121,6 +123,7 @@ def get_sig_requests(request, sig_id: int):
                     if sig_request.approved_by
                     else None
                 ),
+                approved_at=sig_request.approved_at,
             )
         )
     return response
@@ -205,6 +208,7 @@ def deny_sig_request(request, sig_id: int, request_id: int):
         return 404, {"detail": "Request does not exist."}
     sig_request.approved = False
     sig_request.approved_by = request.user
+    sig_request.approved_at = timezone.now()
     sig_request.save()
     return SigRequestSchema(
         id=sig_request.id,

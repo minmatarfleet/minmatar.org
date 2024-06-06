@@ -10,12 +10,22 @@ from .models import (
 )
 
 # Register your models here.
-admin.site.register(EveCorporation)
 admin.site.register(EveSkillset)
 admin.site.register(EveAlliance)
 admin.site.unregister(CallbackRedirect)
 admin.site.unregister(Token)
 admin.site.unregister(Scope)
+
+
+@admin.register(EveCorporation)
+class EveCorporationAdmin(admin.ModelAdmin):
+    """
+    Custom admin to make editing corporations easier
+    """
+
+    list_display = ("name", "ticker", "alliance")
+    search_fields = ("name", "ticker")
+    list_filter = ("alliance",)
 
 
 @admin.register(EveCharacter)

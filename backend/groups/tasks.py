@@ -4,18 +4,18 @@ from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
 
 from app.celery import app
+from discord.client import DiscordClient
 from eveonline.models import EvePrimaryCharacter
 
 from .models import (
     AffiliationType,
     EveCorporationGroup,
-    UserAffiliation,
-    TeamRequest,
+    Sig,
     SigRequest,
     Team,
-    Sig,
+    TeamRequest,
+    UserAffiliation,
 )
-from discord.client import DiscordClient
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)

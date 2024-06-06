@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 
+from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
@@ -98,6 +99,7 @@ class TeamRequestSchema(BaseModel):
     team_id: int
     approved: Optional[bool]
     approved_by: Optional[int]
+    approved_at: Optional[timezone.datetime] = None
 
 
 @router.get(
@@ -121,6 +123,7 @@ def get_team_requests(request, team_id: int):
                     if team_request.approved_by
                     else None
                 ),
+                approved_at=team_request.approved_at,
             )
         )
     return response
@@ -205,6 +208,7 @@ def deny_team_request(request, team_id: int, request_id: int):
         return 404, {"detail": "Request does not exist."}
     team_request.approved = False
     team_request.approved_by = request.user
+    team_request.approved_at = timezone.now()
     team_request.save()
     return TeamRequestSchema(
         id=team_request.id,
