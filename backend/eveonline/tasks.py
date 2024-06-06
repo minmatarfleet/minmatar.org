@@ -104,12 +104,20 @@ def update_character_affilliations():
                 )
                 updated = True
 
+            if not alliance_id and character.alliance:
+                character.alliance = None
+                updated = True
+
             if (
                 (faction_id and not character.faction)
                 or faction_id
                 and (faction_id != character.faction.id)
             ):
                 character.faction = EveFaction.objects.get(id=faction_id)
+                updated = True
+
+            if not faction_id and character.faction:
+                character.faction = None
                 updated = True
 
             if updated:
