@@ -23,9 +23,19 @@ const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
 
 import { query_string } from '@helpers/string';
-const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_request_status_item/')
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_slide_request_status_item/')
 
-import ButtonStack from '@components/blocks/ButtonStack.astro';
+import { days_diff, from_now_diff } from '@helpers/date'
+const days_since_last_app = days_diff(corporation.application_updated, new Date())
+const REAPPLY_PERIOD_DAYS = 3
+const is_re_applicable = (days_since_last_app > REAPPLY_PERIOD_DAYS)
+let reapplication_date = new Date(corporation.application_updated)
+reapplication_date.setDate(reapplication_date.getDate() + REAPPLY_PERIOD_DAYS);
+const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
+const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
+
+import { marked } from 'marked';
+
 import Button from '@components/blocks/Button.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
@@ -63,7 +73,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                 {t('enlist_today')}
             </ButtonAddPrimary>
         :
-        (!is_user_corporation && corporation?.status == 'available' && primary_character_id) ?
+        (!is_user_corporation && corporation?.status == 'available' && primary_character_id) ||
+        (is_re_applicable && corporation?.status == 'rejected') ?
             <Button
                 type="button"
                 size='sm'
@@ -135,8 +146,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         corporation?.status === 'accepted' ?
             <small class="[ status-text ]">{t('application_accepted_tooltip')}</small>
         :
-        corporation?.status === 'rejected' ?
-            <small class="[ status-text ]">{t('application_denied_tooltip')}</small>
+        corporation?.status === 'rejected' && !is_re_applicable ?
+            <small class="[ status-text ]" set:html={marked.parseInline(APPLICATION_DENIED_TOOLTIP)} />
         :
         corporation?.status == 'pending' ?
             <small class="[ status-text ]">{t('pending_application_tooltip')}</small>
@@ -153,6 +164,5 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 <style lang="scss">
      .status-text {
         color: var(--highlight);
-        text-wrap: balance;
      }
 </style>

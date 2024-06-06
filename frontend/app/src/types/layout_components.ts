@@ -310,17 +310,18 @@ export type CorporationStatusType = 'available' | 'pending' | 'accepted' | 'reje
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export interface CorporationObject {
-    corporation_id:     number;
-    corporation_name:   string;
-    alliance_id:        number;
-    alliance_name:      string,
-    active:             boolean;
-    corporation_type:   CorporationType;
-    status?:            CorporationStatusType;
-    introduction:       string;
-    biography:          string;
-    timezones:          string[];
-    requirements:       string[];
+    corporation_id:         number;
+    corporation_name:       string;
+    alliance_id:            number;
+    alliance_name:          string,
+    active:                 boolean;
+    corporation_type:       CorporationType;
+    status?:                CorporationStatusType;
+    application_updated?:   Date;
+    introduction:           string;
+    biography:              string;
+    timezones:              string[];
+    requirements:           string[];
 }
 
 export interface CorporationBasic {

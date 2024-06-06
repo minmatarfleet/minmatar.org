@@ -4,10 +4,10 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 
 const t = useTranslations('en');
 
-import type { Corporation, CorporationApplication, CorporationType, CharacterCorp } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationApplication, CorporationType, CorporationApplicationDetails } from '@dtypes/api.minmatar.org'
 import type { CorporationObject, CorporationStatusType, CorporationMembers, CharacterKind, CharacterBasic } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
-import { get_corporation_applications } from '@helpers/api.minmatar.org/applications'
+import { get_corporation_applications, get_corporation_applications_by_id } from '@helpers/api.minmatar.org/applications'
 
 export async function get_corporations_list_auth(access_token:string, user_id: number, corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
@@ -55,7 +55,7 @@ export async function get_corporation_list_by_id_auth(access_token:string, corpo
 
 const add_status_to_corporation = async (access_token:string, api_corporation:Corporation, user_id:number) => {
     let corporation_applications:CorporationApplication[]
-
+    
     const corporation:CorporationObject = {
         corporation_id: api_corporation.corporation_id,
         corporation_name: api_corporation.corporation_name,
@@ -77,10 +77,23 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         return corporation
     }
     
-    const user_application = user_id ? corporation_applications.find( (application) => application.user_id == user_id ) : undefined
+    const user_application = user_id ? corporation_applications.findLast( (application) => application.user_id == user_id ) : undefined
+    
+    let application_detail:CorporationApplicationDetails
+    try {
+        if (user_application)
+            application_detail = await get_corporation_applications_by_id(access_token, api_corporation.corporation_id, user_application.application_id)
+        else
+            corporation.application_updated = new Date()
+    } catch (error) {
+        corporation.application_updated = new Date()
+    }
 
     if (user_application !== undefined)
         corporation.status = user_application.status as CorporationStatusType
+
+    if (application_detail?.updated_at)
+        corporation.application_updated = application_detail.updated_at
 
     return corporation
 }
