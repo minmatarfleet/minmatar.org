@@ -99,6 +99,7 @@ class TeamRequestSchema(BaseModel):
     team_id: int
     approved: Optional[bool]
     approved_by: Optional[int]
+    approved_at: Optional[timezone.datetime] = None
 
 
 @router.get(
@@ -122,6 +123,7 @@ def get_team_requests(request, team_id: int):
                     if team_request.approved_by
                     else None
                 ),
+                approved_at=team_request.approved_at,
             )
         )
     return response

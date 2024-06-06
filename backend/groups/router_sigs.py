@@ -99,6 +99,7 @@ class SigRequestSchema(BaseModel):
     sig_id: int
     approved: Optional[bool] = None
     approved_by: Optional[int] = None
+    approved_at: Optional[timezone.datetime] = None
 
 
 @router.get(
@@ -122,6 +123,7 @@ def get_sig_requests(request, sig_id: int):
                     if sig_request.approved_by
                     else None
                 ),
+                approved_at=sig_request.approved_at,
             )
         )
     return response
