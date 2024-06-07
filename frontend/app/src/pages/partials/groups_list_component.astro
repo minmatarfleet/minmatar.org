@@ -17,13 +17,15 @@ const user_id = !user ? false : user.user_id
 import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
 import { get_groups_auth, get_groups } from '@helpers/fetching/groups'
 
+const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
+
 let groups:GroupItemUI[] = []
 let get_groups_error:string
 try {
     if (auth_token && user_id)
-        groups = await get_groups_auth(auth_token, user_id, 'team')
+        groups = await get_groups_auth(auth_token, user_id, groups_type)
     else
-        groups = await get_groups('group')
+        groups = await get_groups(groups_type)
 } catch (error) {
     get_groups_error = prod_error_messages() ? t('get_groups_error') : error.message
 }
@@ -31,7 +33,6 @@ try {
 const GROUPS_LIST_PARTIAL_URL = translatePath('/partials/groups_list_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
-const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 
 import GroupsList from '@components/blocks/GroupsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';

@@ -29,6 +29,7 @@ export interface SigRequest {
     sig_id:         number;
     approved:       boolean | null;
     approved_by:    number | null;
+    approved_at:    Date;
 }
 
 export interface TeamRequest {
@@ -37,6 +38,7 @@ export interface TeamRequest {
     team_id:        number;
     approved:       boolean | null;
     approved_by:    number | null;
+    approved_at:    Date;
 }
 
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'

@@ -408,6 +408,7 @@ export interface GroupItemUI {
     description:    string | null;
     image_url:      string | null;
     status?:        GroupStatus;
+    last_update?:    Date;
 }
 
 export interface SkillsetUI {

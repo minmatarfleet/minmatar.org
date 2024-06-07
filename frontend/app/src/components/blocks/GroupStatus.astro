@@ -50,6 +50,18 @@ const LEAVE_DIALOG_TEXT = {
     'team': t('team_leave_request_dialog_text'),
     'group': t('group_leave_request_dialog_text')
 }
+
+import { days_diff, from_now_diff } from '@helpers/date'
+const days_since_last_app = days_diff(group.last_update, new Date())
+const REAPPLY_PERIOD_DAYS = 3
+const is_re_applicable = group.last_update === null || (days_since_last_app > REAPPLY_PERIOD_DAYS)
+console.log(days_since_last_app)
+console.log(group.last_update)
+console.log(is_re_applicable)
+let reapplication_date = new Date(group.last_update)
+reapplication_date.setDate(reapplication_date.getDate() + REAPPLY_PERIOD_DAYS);
+const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
+const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
 ---
 
 <div
@@ -61,7 +73,7 @@ const LEAVE_DIALOG_TEXT = {
     }`}
 >
     <ButtonStack>
-        {group?.status == 'available' && !primary_character_id &&
+        {(group?.status == 'available' && !primary_character_id) &&
             <ButtonAddPrimary
                 color='green'
                 size='sm'
@@ -70,7 +82,7 @@ const LEAVE_DIALOG_TEXT = {
                 {t('join')}
             </ButtonAddPrimary>
         }
-        {group?.status == 'available' && primary_character_id &&
+        {((group?.status == 'available' && primary_character_id) || (group?.status == 'denied' && is_re_applicable && primary_character_id)) &&
             <Button
                 type="button"
                 size='sm'
@@ -160,9 +172,9 @@ const LEAVE_DIALOG_TEXT = {
                 text={t('pending')} 
             />
         }
-        {group?.status == 'denied' &&
+        {group?.status == 'denied' && !is_re_applicable &&
             <Tag
-                data-tippy-content={t('request_denied_tooltip')}
+                data-tippy-content={REQUEST_DENIED_TOOLTIP}
                 x-init="tippy('this, tippy_options)"
                 text={t('denied')} 
             />
