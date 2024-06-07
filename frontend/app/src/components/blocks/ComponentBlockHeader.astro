@@ -41,7 +41,8 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         x-data={`{
             top: 0,
             set_top() {
-                this.top = document.querySelector('.post-header').offsetHeight
+                const VARIABLE_HEADER_CORRECTION = 5
+                this.top = document.querySelector('.post-header').offsetHeight - VARIABLE_HEADER_CORRECTION
             }
         }`}
         x-bind:style="`top: ${top}px;`"
