@@ -52,21 +52,12 @@ const {
                 let seconds = (distance % (1000 * 60)) / 1000
                 seconds = (seconds > 0 ? Math.floor(seconds) : Math.ceil(seconds))
 
-                this.update_countdown_text(distance < 0 && expired_text ?
-                    expired_text :
+                this.update_countdown_text(
                     pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
                 )
                 
                 if (distance < 0)
                     this.classList.add('expired')
-
-                if (distance < 0 && expired_text) {
-                    this.classList.add('expired-text')
-                    
-                    $dispatch('countdown', { id: ${id} })
-
-                    clearInterval(x)
-                }
                 
                 if (!document.getElementById('${`${tag}-${id}-${timestamp}`}')) {
                     clearInterval(x)
