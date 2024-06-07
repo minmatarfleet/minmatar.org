@@ -13,15 +13,28 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 const subheader_content = await Astro.slots.render('subheader');
 ---
 
-<div class="[ post-header ]">
-    <div class="[ darker-transparency ][ relative z-10 ]">
+<div
+    class="[ post-header ][ mt-[var(--space-xl)] ]"
+    x-data={`{
+        sticky: false,
+    }`}
+>
+    <div
+        class="[ relative z-10 ]"
+        x-bind:class="sticky ? 'sticky' : ''"
+        x-intersect:leave.full="sticky = true"
+        x-intersect.enter.full="sticky = false"
+    >
         <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
             <slot />
         </Wrapper>
     </div>
 
     {subheader_content !== '' &&
-        <div class="[ subheader-bar ] [ dark-transparency ]">
+        <div
+            class="[ subheader-bar ]"
+            x-bind:class="sticky ? 'dark-transparency' : ''"
+        >
             <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                     <slot name="subheader" />
@@ -31,14 +44,20 @@ const subheader_content = await Astro.slots.render('subheader');
     }
 </div>
 
-<style lang="scss">    
+<style lang="scss">
+    .sticky {
+        background-color: var(--dark-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    }
+
     :global(.post-header > .wrapper > .flex-inline) {
         width: 100%;
     }
     
     .post-header {
+        transition: var(--fast-transition);
         position: sticky;
-        top: 0;
+        top: -2px;
         z-index: var(--header-z-index);
 
         .subheader-bar {
