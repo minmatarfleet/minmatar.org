@@ -18,10 +18,10 @@ const subheader_content = await Astro.slots.render('subheader');
     x-data={`{
         sticky: false,
     }`}
+    x-bind:class="sticky ? 'sticky' : ''"
 >
     <div
         class="[ relative z-10 ]"
-        x-bind:class="sticky ? 'sticky' : ''"
         x-intersect:leave.full="sticky = true"
         x-intersect.enter.full="sticky = false"
     >
@@ -33,7 +33,6 @@ const subheader_content = await Astro.slots.render('subheader');
     {subheader_content !== '' &&
         <div
             class="[ subheader-bar ]"
-            x-bind:class="sticky ? 'dark-transparency' : ''"
         >
             <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
@@ -60,8 +59,16 @@ const subheader_content = await Astro.slots.render('subheader');
         top: -2px;
         z-index: var(--header-z-index);
 
+        &.sticky {
+            box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+
+            .subheader-bar {
+                border-top: solid 1px var(--border-color);
+            }
+        }
+
         .subheader-bar {
-            //margin-top: -1px;
+            border-top: solid 1px transparent;
         }
 
         .main-bar {
