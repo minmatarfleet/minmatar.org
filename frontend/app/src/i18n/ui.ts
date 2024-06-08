@@ -25,8 +25,8 @@ export const ui = {
         'index.page_title': 'Minmatar Fleet',
         'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
         'index.incoming_text': 'Next Minmatar fleet in',
-        'index.cover_alt': 'View of Watermelon Fortizar station with Sugar station in the background.',
-        'index.description': 'Outer view of Minmatar Fleet HQ — WATERMELON in Sosala system',
+        'index.cover_alt': 'View of an space structure.',
+        'index.description': 'Outer view of your favorite Minmatar Fleet structure',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
