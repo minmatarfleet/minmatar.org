@@ -150,7 +150,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }
 
     {fleet.fleet_commander_id > 0 &&
-        <VerticalCenter>
+        <VerticalCenter slot="actions">
             <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
                 <MagnifierIcon slot="icon" />
                 {t('view_details')}
