@@ -95,7 +95,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         location: fleet.location,
         start_time: fleet.start_time,
         type: fleet.type,
-        doctrine: doctrine,
+        doctrine: fleet?.doctrine_id ? doctrine : null,
         tracking: fleet.tracking,
     } as FleetUI
 }

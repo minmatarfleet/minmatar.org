@@ -177,7 +177,9 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </div>
     }
 
-    <ComponentBlock>
-        <DoctrineItem doctrine={fleet.doctrine} />
-    </ComponentBlock>
+    {fleet.doctrine !== null &&
+        <ComponentBlock>
+            <DoctrineItem doctrine={fleet.doctrine} />
+        </ComponentBlock>
+    }
 </Flexblock>

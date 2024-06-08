@@ -786,5 +786,6 @@ export const ui = {
         'apply_hint': '[Apply](CORPORATIONS_PAGE_LINK) and join [Minmatar Fleet Alliance [FLEET]](FLEET_PAGE_LINK) for details',
         'view': 'View',
         'apply': 'Apply here',
+        'no_doctrine': 'No doctrine',
     },
 } as const;
