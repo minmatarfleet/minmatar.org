@@ -75,6 +75,7 @@ import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 
@@ -246,14 +247,12 @@ const page_title = fitting_parsed.name;
         >
             <Flexblock gap='var(--space-3xl)'>
                 <Flexblock gap='var(--space-xl)'>
-                    <FlexInline justification='space-between'>
-                        <FlexInline>
+                    <Flexblock class="[ page-header ]">
+                        <Flexblock gap='var(--space-3xs)'>
                             <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
-                            <Flexblock gap='var(--space-3xs)'>
-                                <PageTitle>{page_title}</PageTitle>
-                                <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
-                            </Flexblock>
-                        </FlexInline>
+                            <PageTitle>{page_title}</PageTitle>
+                            <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
+                        </Flexblock>
                         <ButtonStack>
                             <Button
                                 onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')"
@@ -263,7 +262,7 @@ const page_title = fitting_parsed.name;
                                 {t('copy')}
                             </Button>
                         </ButtonStack>
-                    </FlexInline>
+                    </Flexblock>
                     
                     <Flexblock set:html={marked.parse(fitting.description)} />
                 </Flexblock>
@@ -343,6 +342,10 @@ const page_title = fitting_parsed.name;
 <textarea id="fit-clipboard" set:html={fitting.eft_format}></textarea>
 
 <style lang="scss">
+    :global(.page-header h1) {
+        font-size: var(--step-4) !important;
+    }
+
     .camera-controls {
 		position: fixed;
 		bottom: 60px;
