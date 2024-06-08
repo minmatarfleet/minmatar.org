@@ -251,8 +251,8 @@ const page_title = fitting_parsed.name;
                         <Flexblock gap='var(--space-3xs)'>
                             <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
                             <PageTitle>{page_title}</PageTitle>
-                            <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
                         </Flexblock>
+                        <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
                         <ButtonStack>
                             <Button
                                 onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')"
