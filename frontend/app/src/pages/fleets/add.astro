@@ -35,9 +35,11 @@ let alert:Alert | false = false
 if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
+        const doctrine = data.get('doctrine_id') as string
+        const doctrine_id = doctrine !== '-1' ? parseInt(doctrine) : null
 
         const fleet_data = {
-            doctrine_id: parseInt(data.get('doctrine_id') as string),
+            doctrine_id: doctrine_id,
             description: data.get('description') as string,
             location_id: parseInt(data.get('location') as string),
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
@@ -88,7 +90,14 @@ try {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const doctrines_select_options = doctrines.map( (i) => { return { name: i.name, id: i.id } } )
+const no_doctrine_option = {
+    label: t('no_doctrine'),
+    value: '-1'
+} as SelectOptions
+
+const doctrines_select_options = [  no_doctrine_option  ].concat(
+    doctrines.map( (i):SelectOptions => { return { label: i.name, value: i.id } } )
+)
 
 let FLEET_TYPES_LABELS = {}
 const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
@@ -110,8 +119,10 @@ const audiences_select_options = audiences.map( (i):SelectOptions => {
 
 const default_fleet_type = fleet_types_select_options[0].value
 const default_location = locations_select_options[0].value
-const default_doctrine = doctrines_select_options[0].id
+const default_doctrine = doctrines_select_options[0].value
 const default_audience = audiences_select_options[0].value
+
+console.log(default_doctrine)
 
 const doctrine:DoctrineType = doctrines.find( (item) => item.id == default_doctrine )
 
@@ -146,6 +157,7 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 import Markdown from '@components/icons/buttons/Markdown.astro';
+import RifterIcon from '@components/icons/RifterIcon.astro';
 
 const page_title = t('fleets.add.page_title');
 const today = new Date().toISOString().split("T")[0]
@@ -172,6 +184,7 @@ const today = new Date().toISOString().split("T")[0]
             eve_time: '00:00',
             location: '${default_location}',
             audience: '${default_audience}',
+            doctrine_id: '${default_doctrine}',
             local_datetime: '',
             locations: ${JSON.stringify(FLEET_LOCATIONS)},
             audiences: ${JSON.stringify(AUDIENCES)},
@@ -247,6 +260,8 @@ const today = new Date().toISOString().split("T")[0]
                                     <Select
                                         id="doctrine"
                                         name="doctrine_id"
+                                        x-model="doctrine_id"
+                                        hx-validate="true"
                                         hx-get={translatePath('/partials/doctrine_component')}
                                         hx-target="#doctrine-hx-target"
                                         hx-on::after-request="this.removeAttribute('disabled')"
@@ -255,7 +270,7 @@ const today = new Date().toISOString().split("T")[0]
                                         hx-indicator=".loader"
                                     >
                                         {doctrines_select_options.map((option) => 
-                                            <option value={option.id}>{option.name}</option>
+                                            <option value={option.value}>{option.label}</option>
                                         )}
                                     </Select>
                                 </FixedFluid>
@@ -404,9 +419,14 @@ const today = new Date().toISOString().split("T")[0]
                             </VerticalCenter>
                         </ThumbCard>
 
-                        <ComponentBlock id="doctrine-hx-target" width='narrow'>
-                            <DoctrineItem role="listitem" doctrine={doctrine} />
-                        </ComponentBlock>
+                        <template x-if="doctrine_id !== '-1'">
+                            <ComponentBlock id="doctrine-hx-target" width='narrow'>
+                                <FlexInline class="[ items-center ]">
+                                    <RifterIcon/>
+                                    <p class="[ loading ]">{t('updating')}</p>
+                                </FlexInline>
+                            </ComponentBlock>
+                        </template>
                     </Flexblock>
 
                     <ComponentBlock width='narrow'>
