@@ -52,6 +52,14 @@ const subheader_content = await Astro.slots.render('subheader');
     :global(.post-header > .wrapper > .flex-inline) {
         width: 100%;
     }
+
+    :global(.post-header h1) {
+        font-size: var(--step-4) !important;
+    }
+
+    :global(.post-header.sticky h1) {
+        font-size: var(--step-1) !important;
+    }
     
     .post-header {
         transition: var(--fast-transition);
