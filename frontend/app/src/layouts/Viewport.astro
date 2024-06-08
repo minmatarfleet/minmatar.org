@@ -141,7 +141,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
             ${RifterAnimationXData}
             ${InitXData}
 		}`}
-		x-on:scroll.window.throttle.1000ms="post_header_height = document.querySelector('.post-header').offsetHeight"
+		x-on:scroll.window.throttle.750ms="setTimeout(() => post_header_height = document.querySelector('.post-header').offsetHeight, 250)"
 		x-init="rifter_animation_init"
 	>
 		<div class="[ viewport-layout-inner ]">
