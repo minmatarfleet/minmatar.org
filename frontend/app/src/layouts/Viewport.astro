@@ -125,6 +125,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 	<body
 		class="[ viewport-layout ]"
 		x-data={`{
+			post_header_height: null,
 			${components?.alert_dialog ? AlertDialogXData : ''}
 			${components?.confirm_dialog ? ConfirmDialogXData : ''}
 			${components?.modal ? ModalXData : ''}
@@ -140,6 +141,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
             ${RifterAnimationXData}
             ${InitXData}
 		}`}
+		x-on:scroll.window.throttle.1000ms="post_header_height = document.querySelector('.post-header').offsetHeight"
 		x-init="rifter_animation_init"
 	>
 		<div class="[ viewport-layout-inner ]">

@@ -38,16 +38,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 >
     <div
         class="[ sticky-header ]"
-        x-data={`{
-            top: 0,
-            set_top() {
-                const VARIABLE_HEADER_CORRECTION = 5
-                this.top = document.querySelector('.post-header').offsetHeight - VARIABLE_HEADER_CORRECTION
-            }
-        }`}
-        x-bind:style="`top: ${top}px;`"
-        x-init="set_top"
-        @resize.window.throttle.750ms="set_top"
+        x-bind:style="`top: ${post_header_height - 2}px;`"
     >
         <ComponentBlock
             width='narrow'
