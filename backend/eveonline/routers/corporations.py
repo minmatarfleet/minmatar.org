@@ -205,10 +205,10 @@ def get_corporation_by_id(request, corporation_id: int):
             "character_id": character.character_id,
             "character_name": character.character_name,
         }
+        if character.exempt:
+            payload["exempt"] = True
         if character.token:
             payload["registered"] = True
-            if character.exempt:
-                payload["exempt"] = True
             primary_character = EvePrimaryCharacter.objects.filter(
                 character__token__user=character.token.user
             ).first()
