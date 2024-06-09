@@ -264,7 +264,7 @@ export const ui = {
         '30_day_summary': '30 day summary',
         'list_fits_button': 'List all fits',
         'fleet_notification_title': 'Next incoming fleet',
-        'skip_to_content': 'Skip Neocom',
+        'skip_to_content': 'Skip Neocom bar',
         'view_details': 'View details',
         'fleet_commander': 'Fleet Commander',
         'type': 'Type',

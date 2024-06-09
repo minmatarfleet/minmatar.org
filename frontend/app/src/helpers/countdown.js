@@ -9,17 +9,18 @@ export const countdown = (date, expired_text = '') => {
     var distance = countDownDate - now;
         
     // Time calculations for days, hours, minutes and seconds
-    var days = distance / (1000 * 60 * 60 * 24);
-    days = (days > 0 ? Math.floor(days) : Math.ceil(days));
-    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    let days = distance / (1000 * 60 * 60 * 24)
+    days = (days > 0 ? Math.floor(days) : Math.ceil(days))
+    let hours = (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    hours = (hours > 0 ? Math.floor(hours) : Math.ceil(hours))
+    let minutes = (distance % (1000 * 60 * 60)) / (1000 * 60)
+    minutes = (minutes > 0 ? Math.floor(minutes) : Math.ceil(minutes))
+    let seconds = (distance % (1000 * 60)) / 1000
+    seconds = (seconds > 0 ? Math.floor(seconds) : Math.ceil(seconds))
     
     return {
         expired: (distance < 0),
-        text: distance < 0 && expired_text ?
-            expired_text :
-            pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
+        text: pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
     }
 }
 
