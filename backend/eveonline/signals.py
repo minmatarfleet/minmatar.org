@@ -7,9 +7,16 @@ from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
+from discord.helpers import DISCORD_PEOPLE_TEAM_CHANNEL_ID
 from eveonline.tasks import update_character_assets, update_character_skills
 
-from .models import EveAlliance, EveCharacter, EveCorporation
+from .models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EveCharacterLog,
+    EvePrimaryCharacterChangeLog,
+)
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -67,7 +74,7 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
 
 @receiver(signals.post_save, sender=Token)
 def token_post_save(
-    sender, instance, created, **kwargs
+    sender, instance: Token, created, **kwargs
 ):  # pylint: disable=unused-argument
     """Create / update a character when a token is created"""
     logger.info("Token saved, creating / updating character")
@@ -76,6 +83,11 @@ def token_post_save(
     )
     character.token = instance
     character.save()
+
+    EveCharacterLog.objects.create(
+        username=instance.user.username,
+        character_name=character.character_name,
+    )
 
 
 @receiver(
@@ -104,3 +116,18 @@ def eve_alliance_post_save(sender, instance, created, **kwargs):
                 id=esi_alliance["faction_id"],
             )[0]
         instance.save()
+
+
+@receiver(
+    signals.post_save,
+    sender=EvePrimaryCharacterChangeLog,
+    dispatch_uid="notify_people_team_of_primary_character_change",
+)
+def notify_people_team_of_primary_character_change(
+    sender, instance, created, **kwargs
+):
+    if created:
+        discord.create_message(
+            DISCORD_PEOPLE_TEAM_CHANNEL_ID,
+            f"Primary character changed for {instance.user.username} to {instance.character.character_name}",
+        )

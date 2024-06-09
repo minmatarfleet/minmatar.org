@@ -20,6 +20,15 @@ class EvePrimaryCharacter(models.Model):
         return str(self.character.character_name)
 
 
+class EvePrimaryCharacterChangeLog(models.Model):
+    """Primary character change log model"""
+
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    previous_character_name = models.CharField(max_length=255)
+    new_character_name = models.CharField(max_length=255)
+
+
 class EveCharacter(models.Model):
     """Character model"""
 
@@ -55,6 +64,11 @@ class EveCharacter(models.Model):
         indexes = [
             models.Index(fields=["character_name"]),
         ]
+
+
+class EveCharacterLog(models.Model):
+    username = models.CharField(max_length=255)
+    character_name = models.CharField(max_length=255)
 
 
 class EveCharacterSkill(models.Model):

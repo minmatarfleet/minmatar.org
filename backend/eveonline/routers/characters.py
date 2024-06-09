@@ -15,6 +15,7 @@ from eveonline.models import (
     EveCharacterAsset,
     EveCharacterSkillset,
     EvePrimaryCharacter,
+    EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
 
@@ -271,6 +272,11 @@ def set_primary_character(request, character_id: int):
     ).exists():
         primary_character = EvePrimaryCharacter.objects.get(
             character__token__user=request.user
+        )
+        EvePrimaryCharacterChangeLog.objects.create(
+            user=request.user,
+            previous_character_name=primary_character.character.character_name,
+            new_character_name=character.character_name,
         )
         primary_character.character = character
         primary_character.save()
