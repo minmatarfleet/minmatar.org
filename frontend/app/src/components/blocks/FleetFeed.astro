@@ -26,6 +26,7 @@ let fleets:FleetItem[] = []
 try {
     fleets = await fetch_fleets_auth(auth_token as string)
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
+    fleets = fleets.filter((i) => (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
