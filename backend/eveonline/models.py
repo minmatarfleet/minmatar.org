@@ -23,7 +23,7 @@ class EvePrimaryCharacter(models.Model):
 class EvePrimaryCharacterChangeLog(models.Model):
     """Primary character change log model"""
 
-    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+    username = models.CharField(max_length=255)
     date = models.DateTimeField(auto_now_add=True)
     previous_character_name = models.CharField(max_length=255)
     new_character_name = models.CharField(max_length=255)

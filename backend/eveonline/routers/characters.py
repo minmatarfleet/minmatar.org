@@ -274,7 +274,7 @@ def set_primary_character(request, character_id: int):
             character__token__user=request.user
         )
         EvePrimaryCharacterChangeLog.objects.create(
-            user=request.user,
+            username=request.user.username,
             previous_character_name=primary_character.character.character_name,
             new_character_name=character.character_name,
         )

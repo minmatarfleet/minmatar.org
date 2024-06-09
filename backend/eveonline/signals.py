@@ -13,8 +13,8 @@ from eveonline.tasks import update_character_assets, update_character_skills
 from .models import (
     EveAlliance,
     EveCharacter,
-    EveCorporation,
     EveCharacterLog,
+    EveCorporation,
     EvePrimaryCharacterChangeLog,
 )
 
@@ -129,5 +129,5 @@ def notify_people_team_of_primary_character_change(
     if created:
         discord.create_message(
             DISCORD_PEOPLE_TEAM_CHANNEL_ID,
-            f"Primary character changed for {instance.user.username} to {instance.character.character_name}",
+            f"Primary character change for {instance.user.username} from {instance.previous_character_name} to {instance.new_character_name}",
         )
