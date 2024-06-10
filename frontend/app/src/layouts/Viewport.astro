@@ -142,10 +142,10 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
             ${InitXData}
 		}`}
 		x-on:scroll.window.throttle.750ms={`
-			setTimeout(() => 
+			setTimeout(() => {
 				post_header = document.querySelector('.post-header')
 				post_header_height = post_header ? post_header.offsetHeight : 0
-			, 250)
+			}, 250)
 		`}
 		x-init="rifter_animation_init"
 	>

@@ -30,8 +30,8 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
     ...(!history && { 'hx-trigger': 'load delay:300s' }),
-    ...(!history && { 'hx-swap': 'outerHTML transition:true' }),
-    ...(!history && { 'hx-swap': 'outerHTML transition:true' }),
+    ...(!history && { 'hx-swap': 'innerHTML transition:true' }),
+    ...(!history && { 'hx-target': '.fleet-list-container' }),
     ...(!history && { 'hx-indicator': '.loader' }),
 }
 ---
@@ -39,7 +39,6 @@ const hx_attrs = {
 <Flexblock
     role="list"
     gap='var(--space-3xs)'
-    {...Astro.props}
     {...hx_attrs}
 >
 
