@@ -131,7 +131,9 @@ const page_title = t('fleets.upcoming.page_title');
                     </FlexInline>
                 }
 
-                <FleetList fleets={fleets} />
+                <div class="[ fleet-list-container ]">
+                    <FleetList fleets={fleets} />
+                </div>
             </Flexblock>
         }
 	</PageWide>
