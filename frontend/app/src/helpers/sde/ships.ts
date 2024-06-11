@@ -1,13 +1,13 @@
-import { db } from '@helpers/db';
+import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql } from 'drizzle-orm';
-import * as schema from '@/models/schema.ts';
+import * as schema from '@/models/sde/schema.ts';
 
 import type { ShipFittingCapabilities, ShipInfo, ShipDNA } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
-    console.log(`Requesting: db.get_ship_fitting_capabilities(${ship_name})`)
+    console.log(`Requesting: sde_db.get_ship_fitting_capabilities(${ship_name})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         attributeName: schema.dgmAttributeTypes.attributeName,
         value: schema.dgmTypeAttributes.valueFloat,
     })
@@ -56,9 +56,9 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
 }
 
 export async function get_ship_info(ship_id:number) {
-    // console.log(`Requesting: db.get_ship_info(${ship_id})`)
+    // console.log(`Requesting: sde_db.get_ship_info(${ship_id})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         groupName: schema.invGroups.groupName,
         typeName: schema.invTypes.typeName,
         raceName: schema.chrRaces.raceName,
@@ -102,9 +102,9 @@ export async function get_ship_info(ship_id:number) {
 }
 
 export async function get_ship_graphics(ship_id:number) {
-    console.log(`Requesting: db.get_ship_dna(${ship_id})`)
+    console.log(`Requesting: sde_db.get_ship_dna(${ship_id})`)
     
-    const q = await db.select({
+    const q = await sde_db.select({
         sofFactionName: schema.eveGraphics.sofFactionName,
         sofRaceName: schema.eveGraphics.sofRaceName,
         sofHullName: schema.eveGraphics.sofHullName,

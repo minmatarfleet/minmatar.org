@@ -27,6 +27,7 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { start_fleet } from '@helpers/api.minmatar.org/fleets'
+import { send_active_fleet_notification } from '@helpers/notifications'
 
 let fetch_fleets_error:string | false = false
 let start_fleet_error:string | false = false
@@ -38,6 +39,7 @@ let start_tracking = false
 if (Astro.request.method === "POST") {
     try {
         start_tracking = await start_fleet(auth_token as string, fleet_id)
+        if (start_tracking) send_active_fleet_notification(auth_token as string, fleet_id)
     } catch (error) {
         start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
 

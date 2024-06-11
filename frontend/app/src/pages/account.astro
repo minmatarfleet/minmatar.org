@@ -59,6 +59,7 @@ import Tippy from '@components/blocks/Tippy.astro';
 import PilotsList from '@components/blocks/PilotsList.astro';
 import Mumble from '@components/blocks/Mumble.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import PushNotifications from '@components/blocks/PushNotifications.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
@@ -86,6 +87,27 @@ const page_title = t('account.page_title');
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            getDeviceInfo() {
+                const ua = navigator.userAgent
+                const platform = navigator.platform
+                const vendor = navigator.vendor
+                const browser = (() => {
+                    if (ua.indexOf("Chrome") > -1) return "Chrome"
+                    if (ua.indexOf("Safari") > -1) return "Safari"
+                    if (ua.indexOf("Firefox") > -1) return "Firefox"
+                    if (ua.indexOf("MSIE") > -1 || !!document.documentMode) return "IE" // MSIE or IE
+                    return "Unknown"
+                })()
+                return {
+                    userAgent: ua,
+                    platform: platform,
+                    vendor: vendor,
+                    browser: browser,
+                }
+            },
+        }`}
+        x-init="console.log(getDeviceInfo())"
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>
@@ -186,6 +208,12 @@ const page_title = t('account.page_title');
                         readonly={readonly}
                     />
                 }
+            </ComponentBlock>
+
+            <ComponentBlock
+                width='narrow'
+            >
+                <PushNotifications />
             </ComponentBlock>
 
             <Context>

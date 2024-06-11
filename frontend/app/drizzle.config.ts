@@ -3,10 +3,8 @@ import 'dotenv/config';
 import type { Config } from 'drizzle-kit';
 
 export default {
-    schema: './src/models/schema.ts',
-    out: './src/models/',
+    dialect: "sqlite",
+    schema: "./src/models/main/schema.ts",
+    out: './src/models/migrations/',
     driver: 'better-sqlite',
-    dbCredentials: {
-        url: './src/data/sqlite-latest.sqlite'
-    }
 } as Config;

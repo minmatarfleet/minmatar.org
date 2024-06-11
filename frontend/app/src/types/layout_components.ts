@@ -673,3 +673,8 @@ export interface FleetRadarUI {
     jumps:              number;
     members:            CharacterBasic[]
 }
+
+export interface NotificationSubscription {
+    id:             number;
+    subscription:   string;
+}
