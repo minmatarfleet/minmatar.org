@@ -13,6 +13,6 @@ const message = Astro.url.searchParams.get('message')
 ---
 
 <Flexblock>
-    <p>{message}</p>
+    <p set:html={message} />
     <PilotBadge character_id={character_id} character_name={character_name} />
 </Flexblock>
