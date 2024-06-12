@@ -24,7 +24,7 @@ const group:GroupItemUI = {
 ---
 
 <Flexblock>
-    <p>{message}</p>
+    <p set:html={message} />
     <GroupItem
         group={group}
         type={type}
