@@ -272,27 +272,7 @@ const today = new Date().toISOString().split("T")[0]
 
                                 <Flexblock>
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="doctrine">{t('doctrine')}</label>
-                                        <Select
-                                            id="doctrine"
-                                            name="doctrine_id"
-                                            x-model="doctrine_id"
-                                            hx-validate="true"
-                                            hx-get={translatePath('/partials/doctrine_component')}
-                                            hx-target="#doctrine-hx-target"
-                                            hx-on::after-request="this.removeAttribute('disabled')"
-                                            hx-trigger="change"
-                                            hx-swap="innerHTML transition:true"
-                                            hx-indicator=".loader"
-                                        >
-                                            {doctrines_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="audience">{t('audience')}</label>
+                                        <label for="audience">{t('select_audience')}</label>
                                         <FlexInline>
                                             {audiences.map((option) => 
                                                 <StylessButton
@@ -304,6 +284,7 @@ const today = new Date().toISOString().split("T")[0]
                                                         class="[ desatured ]"
                                                         x-bind:class={`audience === ${option.id} ? 'satured' : ''`}
                                                         src={AUDIENCE_ICONS[option.id]}
+                                                        height="128"
                                                     />
                                                 </StylessButton>
                                             )}
@@ -321,6 +302,26 @@ const today = new Date().toISOString().split("T")[0]
                                                 </Select>
                                             </div>
                                         </FlexInline>
+                                    </FixedFluid>
+
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="doctrine">{t('doctrine')}</label>
+                                        <Select
+                                            id="doctrine"
+                                            name="doctrine_id"
+                                            x-model="doctrine_id"
+                                            hx-validate="true"
+                                            hx-get={translatePath('/partials/doctrine_component')}
+                                            hx-target="#doctrine-hx-target"
+                                            hx-on::after-request="this.removeAttribute('disabled')"
+                                            hx-trigger="change"
+                                            hx-swap="innerHTML transition:true"
+                                            hx-indicator=".loader"
+                                        >
+                                            {doctrines_select_options.map((option) => 
+                                                <option value={option.value}>{option.label}</option>
+                                            )}
+                                        </Select>
                                     </FixedFluid>
 
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
