@@ -34,7 +34,9 @@ const image_alt = {
             <Flexblock gap={(thumb_title ? 'var(--space-3xs)' : '0')}>
                 <h4>{thumb_title}</h4>
                 <FixedFluid width={(logo ? '32px' : '0')} gap={(logo ? 'var(--space-3xs)' : '0')} class="[ items-center ]">
-                    <img loading="lazy" src={logo} width="32" height="32" />
+                    {logo &&
+                        <img loading="lazy" src={logo} width="32" height="32" />
+                    }
                     <p>{thumb_name}</p>
                 </FixedFluid>
             </Flexblock>
