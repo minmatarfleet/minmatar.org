@@ -173,3 +173,11 @@ ul {
     list-style: square;
     padding-inline-start: 17px;
 }
+
+.satured {
+    filter: saturate(1) !important;
+}
+
+.desatured {
+    filter: saturate(0);
+}

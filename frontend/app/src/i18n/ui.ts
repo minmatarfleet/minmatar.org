@@ -84,6 +84,7 @@ export const ui = {
 
         'fleets.add.page_title': 'Schedule fleet',
         'fleets.add.form_info': 'All time is in EVE time unless otherwise specified.',
+        'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
         'fleets.description': 'Schedule and inspect fleets',
@@ -787,5 +788,7 @@ export const ui = {
         'view': 'View',
         'apply': 'Apply here',
         'no_doctrine': 'No doctrine',
+        'fleet_date_and_time': 'Fleet date and time',
+        'select_audience': 'Select audience',
     },
 } as const;
