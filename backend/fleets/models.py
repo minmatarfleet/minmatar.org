@@ -108,6 +108,7 @@ class EveFleet(models.Model):
                 fleet_description=self.description,
             ),
         )
+        self.save()
 
 
 class EveFleetInstance(models.Model):
