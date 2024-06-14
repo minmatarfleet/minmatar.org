@@ -125,8 +125,8 @@ const audiences_select_options = [  no_audience_option  ].concat(
 )
 
 const AUDIENCE_ICONS = {
-    1: '/images/minmatar-fleet-logo.png',
-    2: '/images/minmatar_republic.png',
+    1: '/images/fleet-logo.svg',
+    2: '/images/minmatar-logo.svg',
 }
 
 const default_fleet_type = fleet_types_select_options[0].value
@@ -273,7 +273,7 @@ const today = new Date().toISOString().split("T")[0]
                                 <Flexblock>
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                         <label for="audience">{t('select_audience')}</label>
-                                        <FlexInline>
+                                        <FlexInline class="[ audiences ]">
                                             {audiences.map((option) => 
                                                 <StylessButton
                                                     x-on:click={`audience = ${option.id}`}
@@ -281,8 +281,7 @@ const today = new Date().toISOString().split("T")[0]
                                                     data-tippy-content={option.display_name}
                                                 >
                                                     <img
-                                                        class="[ desatured ]"
-                                                        x-bind:class={`audience === ${option.id} ? 'satured' : ''`}
+                                                        x-bind:class={`audience === ${option.id} ? 'selected' : ''`}
                                                         src={AUDIENCE_ICONS[option.id]}
                                                         height="128"
                                                         width="128"
@@ -502,3 +501,21 @@ const today = new Date().toISOString().split("T")[0]
         </Flexblock>
 	</PageDefault>
 </Viewport>
+
+<style lang="scss">
+    .audiences img {
+        filter: saturate(0);
+        transform: scale(0.6);
+        transition: var(--fast-transition);
+
+        &:hover {
+            transform: scale(0.8);
+            filter: saturate(0.5);
+        }
+
+        &.selected {
+            filter: saturate(1);
+            transform: scale(1);
+        }
+    }
+</style>
