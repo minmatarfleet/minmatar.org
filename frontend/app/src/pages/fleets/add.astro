@@ -272,7 +272,7 @@ const today = new Date().toISOString().split("T")[0]
 
                                 <Flexblock>
                                     <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="audience">{t('select_audience')}</label>
+                                        <label>{t('select_audience')}</label>
                                         <FlexInline class="[ audiences ]">
                                             {audiences.map((option) => 
                                                 <StylessButton
@@ -503,19 +503,29 @@ const today = new Date().toISOString().split("T")[0]
 </Viewport>
 
 <style lang="scss">
-    .audiences img {
-        filter: saturate(0);
-        transform: scale(0.6);
-        transition: var(--fast-transition);
-
-        &:hover {
-            transform: scale(0.8);
-            filter: saturate(0.5);
+    .audiences{
+        button:focus-visible {
+            outline: none;
+            img {
+                transform: scale(0.8);
+                filter: saturate(0.5);
+            }
         }
 
-        &.selected {
-            filter: saturate(1);
-            transform: scale(1);
+        img {
+            filter: saturate(0);
+            transform: scale(0.6);
+            transition: var(--fast-transition);
+
+            &:hover {
+                transform: scale(0.8);
+                filter: saturate(0.5);
+            }
+
+            &.selected {
+                filter: saturate(1) !important;
+                transform: scale(1) !important;
+            }
         }
     }
 </style>
