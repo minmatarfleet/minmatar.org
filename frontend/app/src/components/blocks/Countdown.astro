@@ -37,6 +37,7 @@ const {
             const date = '${date}'
             const expired_text = '${expired_text}'
             const countDownDate = new Date(date).getTime()
+            const el = $el
             
             var x = setInterval(() => {
                 const now = new Date().getTime()
@@ -57,7 +58,7 @@ const {
                 )
                 
                 if (distance < 0)
-                    this.classList.add('expired')
+                    el.classList.add('expired')
                 
                 if (!document.getElementById('${`${tag}-${id}-${timestamp}`}')) {
                     clearInterval(x)
