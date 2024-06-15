@@ -7,7 +7,7 @@
     "studio": "drizzle-kit studio",
     "introspect": "drizzle-kit introspect:sqlite",
     "start": "astro dev",
-    "build": "export $(cat .env.BUILDONLY) && astro check && astro build",
+    "build": "drizzle-kit generate --config=drizzle.config.ts && export $(cat .env.BUILDONLY) && astro check && astro build",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "preview": "astro preview",
     "astro": "astro"

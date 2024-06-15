@@ -1,11 +1,13 @@
 
 import { useTranslations, useTranslatedPath } from '@i18n/utils';
 
+import { get_error_message } from '@helpers/string'
+
 const t = useTranslations('en')
 const translatePath = useTranslatedPath('en')
 
 import { get_player_icon } from '@helpers/eve_image_server';
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
 
 import { get_all_subscriptions, remove_subscription } from '@helpers/db/notification_subscriptions'
 import { unique } from '@helpers/array'
@@ -27,7 +29,9 @@ export async function send_active_fleet_notification(auth_token:string, fleet_id
     const subscriptions = await get_all_subscriptions()
     const users = unique(subscriptions, 'user_id')
 
-    const recipients = users // Get notification recipeints endpoint
+    const fleet_users = await fetch_fleet_users(fleet_id)
+
+    const recipients = users.filter((user_id) => fleet_users.includes(user_id))
 
     const fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
 
