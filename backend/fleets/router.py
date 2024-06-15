@@ -326,7 +326,6 @@ def get_fleet(request, fleet_id: int):
 
 @router.get(
     "/{fleet_id}/users",
-    auth=AuthBearer(),
     response={200: List[EveFleetUsersResponse], 403: None, 404: None},
     description="Get users for a given fleet, no permissions required",
 )
