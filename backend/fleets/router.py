@@ -91,6 +91,11 @@ class EveFleetLocationResponse(BaseModel):
     solar_system_name: str
 
 
+class EveFleetUsersResponse(BaseModel):
+    fleet_id: int
+    user_ids: List[int]
+
+
 class CreateEveFleetRequest(BaseModel):
     type: EveFleetType
     description: str
@@ -317,6 +322,29 @@ def get_fleet(request, fleet_id: int):
         payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetResponse(**payload)
+
+
+@router.get(
+    "/{fleet_id}/users",
+    auth=AuthBearer(),
+    response={200: List[EveFleetUsersResponse], 403: None, 404: None},
+    description="Get users for a given fleet, no permissions required",
+)
+def get_fleet_users(request, fleet_id: int):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, None
+
+    audience = fleet.audience
+    groups = audience.groups.all()
+
+    # get all users with a group in the audience
+    users = set()
+    for group in groups:
+        for user in group.user_set.all():
+            users.add(user.id)
+
+    return [{"fleet_id": fleet_id, "user_ids": list(users)}]
 
 
 @router.get(
