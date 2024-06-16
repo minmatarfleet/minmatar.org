@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
 
+from django.db.models import Count
 from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
@@ -130,7 +131,11 @@ def get_v2_fleet_locations(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
     response = []
-    locations = EveFleetLocation.objects.all()
+    locations = (
+        EveFleetLocation.objects.all()
+        .annotate(count=Count("evefleet__id"))
+        .order_by("-count")[0]
+    )
     for location in locations:
         response.append(
             {
