@@ -48,9 +48,18 @@ def sync_discord_user_nicknames():
                 user.username,
                 expected_nickname,
             )
-            discord.update_user(discord_user.id, nickname=expected_nickname)
-            discord_user.nickname = expected_nickname
-            discord_user.save()
+            try:
+                discord.update_user(
+                    discord_user.id, nickname=expected_nickname
+                )
+                discord_user.nickname = expected_nickname
+                discord_user.save()
+            except Exception as e:
+                logger.error(
+                    "Failed to update nickname for user %s: %s",
+                    user.username,
+                    e,
+                )
 
 
 @app.task(rate_limit="1/s")
