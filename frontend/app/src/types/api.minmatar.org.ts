@@ -231,3 +231,8 @@ export interface Location {
     solar_system_id:    number;
     solar_system_name:  string;
 }
+
+export interface FleetUsers {
+    fleet_id:   number;
+    user_ids: number[];
+}

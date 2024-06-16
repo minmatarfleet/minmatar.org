@@ -7,7 +7,8 @@
     "studio": "drizzle-kit studio",
     "introspect": "drizzle-kit introspect:sqlite",
     "start": "astro dev",
-    "build": "export $(cat .env.BUILDONLY) && astro check && astro build",
+    "build": "drizzle-kit generate --config=drizzle.config.ts && export $(cat .env.BUILDONLY) && astro check && astro build",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -31,7 +32,7 @@
     "cheerio": "^1.0.0-rc.12",
     "countdown": "^2.6.0",
     "dotenv": "^16.3.1",
-    "drizzle-orm": "^0.30.6",
+    "drizzle-orm": "0.30.6",
     "flatpickr": "^4.6.13",
     "highlight.js": "^11.9.0",
     "jose": "^5.2.0",
@@ -45,7 +46,8 @@
   },
   "devDependencies": {
     "@types/gtag.js": "^0.0.20",
-    "drizzle-kit": "^0.20.14",
-    "sass": "^1.69.5"
+    "drizzle-kit": "0.21",
+    "sass": "^1.69.5",
+    "web-push": "^3.6.7"
   }
 }

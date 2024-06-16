@@ -24,27 +24,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import StylessButton from './StylessButton.astro';
 ---
 
-<StylessButton
-    href={translatePath(`/fleets/upcoming/${fleet.id}/`)}
-    @countdown="notify($event.detail.id)"
-    x-data={`{
-        notify(fleet_id) {
-            if (fleet_id !== ${fleet.id})
-                return
-
-            const notification = new Notification(
-                '${t('push_up_notification_title')}', {
-                body: \`${fleet.description}\`,
-                icon: '${get_player_icon(fleet.fleet_commander_id)}',
-                requireInteraction: true,
-            })
-
-            notification.onclick = (e) => {
-                navigate('${translatePath(`/fleets/upcoming/${fleet.id}`)}')
-            }
-        }
-    }`}
->
+<StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
     <FlexInline
         justification='space-between'
         gap='0'
@@ -98,6 +78,8 @@ import StylessButton from './StylessButton.astro';
     .fleet-status-text {
         font-family: var(--heading-font);
         font-size: var(--step-0);
+        margin-left: -10px;
+        margin-right: -10px;
         color: var(--highlight);
 		letter-spacing: 12px;
         text-indent: 12px;

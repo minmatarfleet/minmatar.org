@@ -1,13 +1,13 @@
-import { db } from '@helpers/db';
+import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql } from 'drizzle-orm';
-import * as schema from '@/models/schema.ts';
+import * as schema from '@/models/sde/schema.ts';
 
 import type { Module } from '@dtypes/layout_components'
 
 export async function get_module_props(module_name:string) {
-    console.log(`Requesting: db.get_module_props(${module_name})`)
+    console.log(`Requesting: sde_db.get_module_props(${module_name})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         typeId: schema.invTypes.typeId,
         moduleName: schema.invTypes.typeName,
         groupName: schema.invGroups.groupName,
@@ -63,7 +63,7 @@ export async function get_module_props(module_name:string) {
 }
 
 export async function get_weapon_charges_type(weapon_id:number) {
-    const q = await db.select({
+    const q = await sde_db.select({
         typeId: schema.dgmTypeAttributes.valueFloat,
     })
     .from(schema.invTypes)
@@ -84,7 +84,7 @@ export async function get_weapon_charges_type(weapon_id:number) {
 }
 
 export async function get_module_model(module_id:number) {
-    const q = await db.select({
+    const q = await sde_db.select({
         graphicFile: schema.eveGraphics.graphicFile,
     })
     .from(schema.invTypes)

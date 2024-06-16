@@ -1,0 +1,106 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { get_app_url } from '@helpers/env'
+const SUBSCRIPTION_URL = `${get_app_url()}/api/notifications`
+
+const subscription_id = Astro.cookies.has('subscription_id') ? parseInt(Astro.cookies.get('subscription_id').value) : null
+
+import FlexInline from "@components/compositions/FlexInline.astro";
+import Flexblock from "@components/compositions/Flexblock.astro";
+
+import Button from '@components/blocks/Button.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+
+import RifterIcon from '@components/icons/RifterIcon.astro';
+---
+
+<Flexblock
+    x-data={`{
+        notifications_support: null,
+        fleet_notifications: ${JSON.stringify(subscription_id > 0)},
+        notifications_permission: null,
+        check_notification_support() {
+            this.notifications_support = ('serviceWorker' in navigator) && ('Notification' in window)
+        },
+        async register_sw() {
+            const registration = await navigator.serviceWorker.register('/js/notifications_sw.js?endpoint=${SUBSCRIPTION_URL}')
+            console.log(registration)
+        },
+        async unregister_sw() {
+            const response = await fetch(
+                '${SUBSCRIPTION_URL}', {
+                    method: 'DELETE'
+                }
+            )
+
+            if (!response.ok) {
+                this.fleet_notifications = true
+                return
+            }
+
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (const registration of registrations) {
+                    registration.unregister()
+                } 
+            })
+        },
+        async toogle_subscription() {
+            this.fleet_notifications ? await this.register_sw() : await this.unregister_sw()
+        },
+        async request_notification_permission() {
+            this.notifications_permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
+        },
+        async init() {
+            $refs.notifications_loading.remove()
+            this.check_notification_support()
+            this.notifications_permission = Notification.permission
+        },
+    }`}
+    gap='var(--space-l)'
+>
+    <h2>{t('push_notifications')}</h2>
+    <FlexInline x-ref="notifications_loading" class="[ items-center py-[var(--space-s)] ]">
+        <RifterIcon/>
+        <p class="[ loading ]">{t('loading')}</p>
+    </FlexInline>
+    
+
+    <template x-if="notifications_support">
+        <div class="[ w-full ]">
+            <template x-if="notifications_permission === 'granted'">
+                <SwitchSquare
+                    x-on:change="toogle_subscription()"
+                    class="[ w-full ]"
+                    x-model="fleet_notifications"
+                    label={t('fleet_notifications')}
+                    description={t('fleet_notifications_description')}
+                />
+            </template>
+            <template x-if="notifications_permission === 'default'">
+                <Flexblock>
+                    <p>{t('allow_notification_hint')}</p>
+
+                    <Button
+                        class="[ w-fit ]"
+                        size='sm'
+                        x-on:click="await request_notification_permission()"
+                    >
+                        {t('grant_permission')}
+                    </Button>
+                </Flexblock>
+            </template>
+            <template x-if="notifications_permission === 'denied'">
+                <p>{t('notifications_denied_hint')}</p>
+            </template>
+        </div>
+    </template>
+
+    <template x-if="!notifications_support">
+        <p>{t('push_notifications_not_supported')}</p>
+    </template>
+</Flexblock>

@@ -1,4 +1,4 @@
-import type { FleetMember, Fleet, FleetRequest, Audience, Location, FleetBasic } from '@dtypes/api.minmatar.org'
+import type { FleetMember, Fleet, FleetRequest, Audience, Location, FleetBasic, FleetUsers } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
@@ -317,5 +317,34 @@ const parse_error_message = (error_details:string) => {
         return match[1];
     } else {
         return null; // or handle the case when the pattern doesn't match
+    }
+}
+
+export async function get_fleet_users(fleet_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/users`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as FleetUsers[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet: ${error.message}`);
     }
 }

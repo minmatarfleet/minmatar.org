@@ -42,3 +42,10 @@ export const HTTP_400_Bad_Request = (body = null):Response => {
         statusText: 'Bad Request'
     });
 }
+
+export const HTTP_500_Server_Error = (body = null):Response => {
+    return new Response(body, {
+        status: 500,
+        statusText: 'Server Error'
+    });
+}

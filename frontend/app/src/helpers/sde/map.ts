@@ -1,11 +1,11 @@
-import { db } from '@helpers/db';
+import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql } from 'drizzle-orm';
-import * as schema from '@/models/schema.ts';
+import * as schema from '@/models/sde/schema.ts';
 
 export async function get_system_id(solar_system:string) {
-    console.log(`Requesting: db.get_system_id(${solar_system})`)
+    console.log(`Requesting: sde_db.get_system_id(${solar_system})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         solarSystemId: schema.mapSolarSystems.solarSystemId,
     })
     .from(schema.mapSolarSystems)
@@ -22,9 +22,9 @@ export async function get_system_id(solar_system:string) {
 }
 
 export async function get_system_sun_type_id(solar_system_id:number) {
-    console.log(`Requesting: db.get_system_sun_type(${solar_system_id})`)
+    console.log(`Requesting: sde_db.get_system_sun_type(${solar_system_id})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         sunTypeId: schema.mapSolarSystems.sunTypeId,
     })
     .from(schema.mapSolarSystems)

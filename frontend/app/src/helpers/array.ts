@@ -32,6 +32,10 @@ export const group_by = (list:any[], key:any) => {
     return result
 }
 
+export const unique = (list:any[], key:any) => {
+    return [...new Set(list.map(item => item[key]))]
+}
+
 export const semantic_list = (locale = 'en-US', list:string[]):string => {
     return new Intl.ListFormat(locale, {
         style: 'long',

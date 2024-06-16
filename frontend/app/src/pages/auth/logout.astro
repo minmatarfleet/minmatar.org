@@ -10,6 +10,13 @@ Astro.cookies.delete('primary_pilot', { path: '/' })
 
 const redirect = translatePath('/')
 ---
+
 <script define:vars={{ redirect }}>
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+            registration.unregister()
+        } 
+    })
+
     window.location.href = redirect
 </script>

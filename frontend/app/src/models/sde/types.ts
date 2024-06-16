@@ -91,7 +91,7 @@ import {
     ramActivities,
     agtAgents,
     invGroups
-} from './sde/schema.ts';
+} from './schema.ts';
 
 export type crpNpcCorporations = InferSelectModel<typeof crpNpcCorporations>
 export type staOperations = InferSelectModel<typeof staOperations>

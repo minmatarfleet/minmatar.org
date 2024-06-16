@@ -2,12 +2,13 @@ import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
 import type { FleetUI, FleetItem, DoctrineType, FleetCompositionUI, FleetRadarUI, CharacterBasic } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic, FleetUsers } from '@dtypes/api.minmatar.org'
 import { get_fleets, get_fleets_v2, get_fleet_by_id, get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_route } from '@helpers/api.eveonline/routes'
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import { get_system_sun_type_id } from '@helpers/sde/map'
+import { get_fleet_users } from '@helpers/api.minmatar.org/fleets'
 
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
@@ -139,4 +140,14 @@ export async function group_members_by_location(members:FleetMember[], staggerin
             })
         } as FleetRadarUI
     })) as FleetRadarUI[]
+}
+
+export async function fetch_fleet_users(fleet_id:number) {
+    const fleet_users = await get_fleet_users(fleet_id)
+        
+    if (fleet_users?.length > 0) {
+        return fleet_users.find(() => true).user_ids
+    }
+
+    return []
 }

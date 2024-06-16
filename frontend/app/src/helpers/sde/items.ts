@@ -1,11 +1,11 @@
-import { db } from '@helpers/db';
+import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql } from 'drizzle-orm';
-import * as schema from '@/models/schema.ts';
+import * as schema from '@/models/sde/schema.ts';
 
 export async function get_item_id(item_name:string) {
-    console.log(`Requesting: db.get_item_id(${item_name})`)
+    console.log(`Requesting: sde_db.get_item_id(${item_name})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         typeId: schema.invTypes.typeId,
     })
     .from(schema.invTypes)
@@ -22,9 +22,9 @@ export async function get_item_id(item_name:string) {
 }
 
 export async function get_item_category(item_id:number) {
-    console.log(`Requesting: db.get_item_category(${item_id})`)
+    console.log(`Requesting: sde_db.get_item_category(${item_id})`)
 
-    const q = await db.select({
+    const q = await sde_db.select({
         categoryName: schema.invCategories.categoryName
     })
     .from(schema.invTypes)

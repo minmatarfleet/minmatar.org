@@ -2,6 +2,7 @@ import { useTranslations, useTranslatedPath } from '@i18n/utils'
 import { prod_error_messages } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import { remove_subscription } from '@helpers/db/notification_subscriptions'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
@@ -32,6 +33,19 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
             get_primary_characters_error = (prod_error_messages() ? t('get_primary_characters_error') : error.message)
             cookies.set('middleware_error', get_primary_characters_error, { path: '/' })
             console.log(get_primary_characters_error)
+        }
+    }
+
+    if (!cookies.has('auth_token')) {
+        const subscription_id = cookies.has('subscription_id') ? parseInt(cookies.get('subscription_id').value) : null
+        
+        try {
+            const deleted_id = subscription_id > 0 ? await remove_subscription(subscription_id) : null
+        
+            if (deleted_id > 0)
+                cookies.delete('subscription_id', { path: '/' })
+        } catch (error) {
+            console.log(error.message)
         }
     }
 
