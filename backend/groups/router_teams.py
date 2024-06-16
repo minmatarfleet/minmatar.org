@@ -139,7 +139,9 @@ def request_to_join_team(request, team_id: int):
     team = Team.objects.filter(id=team_id).first()
     if not team:
         return 404, {"detail": "Team does not exist."}
-    if TeamRequest.objects.filter(user=request.user, team=team).exists():
+    if TeamRequest.objects.filter(
+        user=request.user, team=team, approved=None
+    ).exists():
         return 404, {"detail": "Request already exists."}
 
     team_request = TeamRequest.objects.create(

@@ -139,7 +139,9 @@ def request_to_join_sig(request, sig_id: int):
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
-    if SigRequest.objects.filter(user=request.user, sig=sig).exists():
+    if SigRequest.objects.filter(
+        user=request.user, sig=sig, approved=None
+    ).exists():
         return 404, {"detail": "Request already exists."}
 
     sig_request = SigRequest.objects.create(
