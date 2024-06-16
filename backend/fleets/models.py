@@ -108,6 +108,7 @@ class EveFleet(models.Model):
                 fleet_description=self.description,
             ),
         )
+        self.save()
 
 
 class EveFleetInstance(models.Model):
@@ -135,8 +136,8 @@ class EveFleetInstance(models.Model):
         motd = get_motd(
             self.eve_fleet.fleet_commander.character_id,
             self.eve_fleet.fleet_commander.character_name,
-            self.eve_fleet.location_id,
-            self.eve_fleet.location,
+            self.eve_fleet.location.location_id,
+            self.eve_fleet.location.location_name,
             "https://discord.gg/minmatar",
             "Minmatar Fleet Discord",
             (

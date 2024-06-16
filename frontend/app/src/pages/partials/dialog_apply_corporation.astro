@@ -47,7 +47,7 @@ import Markdown from '@components/icons/buttons/Markdown.astro';
     x-init="update_status"
     x-effect="update_status"
 >
-    <p>{message}</p>
+    <p set:html={message} />
     <CorporationItem corporation={corporation} />
     <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
         <label for="description">{t('application_text')}</label>

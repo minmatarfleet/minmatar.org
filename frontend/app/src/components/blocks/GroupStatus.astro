@@ -54,10 +54,7 @@ const LEAVE_DIALOG_TEXT = {
 import { days_diff, from_now_diff } from '@helpers/date'
 const days_since_last_app = days_diff(group.last_update, new Date())
 const REAPPLY_PERIOD_DAYS = 3
-const is_re_applicable = group.last_update === null || (days_since_last_app > REAPPLY_PERIOD_DAYS)
-console.log(days_since_last_app)
-console.log(group.last_update)
-console.log(is_re_applicable)
+const is_re_applicable = group.last_update === null || (days_since_last_app >= REAPPLY_PERIOD_DAYS)
 let reapplication_date = new Date(group.last_update)
 reapplication_date.setDate(reapplication_date.getDate() + REAPPLY_PERIOD_DAYS);
 const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)

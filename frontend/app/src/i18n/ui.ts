@@ -84,6 +84,7 @@ export const ui = {
 
         'fleets.add.page_title': 'Schedule fleet',
         'fleets.add.form_info': 'All time is in EVE time unless otherwise specified.',
+        'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
         'fleets.description': 'Schedule and inspect fleets',
@@ -795,5 +796,7 @@ export const ui = {
         'notifications_denied_hint': 'Change notifications permission on your browser to receive notifications',
         'grant_permission': 'Grant notifications permission',
         'create_subscription_error': 'An error occurred while creating the subscription',
+        'fleet_date_and_time': 'Fleet date and time',
+        'select_audience': 'Select audience',
     },
 } as const;

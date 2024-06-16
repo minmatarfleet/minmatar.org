@@ -37,6 +37,8 @@ import { renderer } from '@helpers/marked';
 const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/corporation_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+import { get_zkillboard_corporation_link } from '@helpers/eve'
+
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
@@ -51,6 +53,8 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro';
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
 import CaldariLogo from '@components/logos/CaldariLogo.astro';
 import GallenteLogo from '@components/logos/GallenteLogo.astro'
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
 const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].split('\n') : null
 ---
@@ -91,13 +95,24 @@ const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].sp
                 </picture>
                 <div class="[ fluid-fixed-l ]" class="[ w-full ]" style='--fluid-fixed--width: 32px'>
                     <VerticalCenter>
-                        <Flexblock gap='0' class="[ w-full ]">
-                            <span class="[ text-[var(--highlight)] ]">{corporation.corporation_name}</span>
-                            {corporation.alliance_id &&
-                                <AllianceBadge alliance={{
-                                    id: corporation.alliance_id
-                                }} />
-                            }
+                        <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <Flexblock gap='0' class="[ w-full ]">
+                                <span class="[ text-[var(--highlight)] ]">{corporation.corporation_name}</span>
+                                {corporation.alliance_id &&
+                                    <AllianceBadge alliance={{
+                                        id: corporation.alliance_id
+                                    }} />
+                                }
+                            </Flexblock>
+                            <a
+                                data-tippy-content={t('zkillboard')}
+                                class="[ w-[32px] neocom-button ]"
+                                href={get_zkillboard_corporation_link(corporation_id)}
+                                target="_blank"
+                                rel="nofollow noopener noreferrer"
+                            >
+                                <ZkillboardEvEIcon />
+                            </a>
                         </Flexblock>
                     </VerticalCenter>
                     <VerticalCenter>
