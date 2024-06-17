@@ -7,8 +7,14 @@ import { loadEnv } from "vite";
 const env = loadEnv(import.meta.env.MODE, process.cwd(), "");
 
 const SENTRY_AUTH_TOKEN = env.SENTRY_AUTH_TOKEN ?? false
-const SENTRY_DSN = env.SENTRY_DSN ?? 'https://2b2a3278ee0475acd93320373b7c31d6@o4507073814528000.ingest.us.sentry.io/4507074455601152'
-const SENTRY_PROJECT = env.SENTRY_PROJECT ?? 'my_minmatar_org'
+const SENTRY_DSN = env.SENTRY_DSN
+const SENTRY_PROJECT = env.SENTRY_PROJECT
+
+if (SENTRY_DSN === undefined)
+    throw new Error(`Please define enviroment variable SENTRY_DSN`)
+
+if (SENTRY_PROJECT === undefined)
+    throw new Error(`Please define enviroment variable SENTRY_PROJECT`)
 
 // https://astro.build/config
 export default defineConfig({
