@@ -1,12 +1,12 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
-import * as schema from '@/models/main/schema.ts';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { config } from 'dotenv';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
 
-const sqlite = new Database(
-    './src/data/sqlite-main.sqlite'
-);
+config({ path: '.env' })
 
-export const db = drizzle(sqlite, { schema });
+const client = createClient({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN!,
+})
 
-// migrate(db, { migrationsFolder: './src/models/migrations/' });
+export const db = drizzle(client)
