@@ -11,12 +11,14 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     alert?:                 Alert | false;
+    disable_applications?:  boolean;
 }
 
 const {
     corporation,
     is_user_corporation = false,
     alert = false,
+    disable_applications = false
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
@@ -50,8 +52,8 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
             />
         </div>
         :
-        <ButtonStack>
-            {(corporation?.status != null && !corporation.active) ?
+        (corporation?.status != null && !corporation.active) ?
+            <ButtonStack>
                 <ButtonCeoToken
                     corporation={corporation}
                     size='sm'
@@ -59,94 +61,106 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                 >
                     {t('add_ceo_token')}
                 </ButtonCeoToken>
-            :
-            (corporation?.status == 'available' && !primary_character_id) ?
-                <ButtonAddPrimary
-                    size='sm'
-                    color='green'
-                    dialog_title={t('corporation_join_request_dialog_title')}
-                >
-                    {t('enlist_today')}
-                </ButtonAddPrimary>
-            :
-            (corporation?.status == 'available' && primary_character_id) ?
-                <Button
-                    type="button"
-                    size='sm'
-                    color='green'
-                    x-bind:disabled="disabled"
-                    x-data={`{
-                        disabled: false,
-                        show_join_request_dialog() {
-                            this.disabled = true
-                            
-                            show_confirm_dialog({
-                                title: '${t('corporation_join_request_dialog_title')}',
-                                partial: '${translatePath('/partials/dialog_apply_corporation/')}?${query_string({
-                                    corporation_id: corporation.corporation_id,
-                                    corporation_name: corporation.corporation_name,
-                                    alliance_id: corporation.alliance_id,
-                                    alliance_name: corporation.alliance_name,
-                                    corporation_type: corporation.corporation_type,
-                                    status: corporation.status,
-                                    message: t('corporation_join_request_dialog_text')
-                                })}',
-                                return_on_accept: ${corporation.corporation_id},
-                                hx: {
-                                    method: 'post',
-                                    url: '${CORPORATION_REQUEST_STATUS_PARTIAL_URL}?${query_string({
-                                        corporation: JSON.stringify(corporation),
+            </ButtonStack>
+        :
+        !disable_applications &&
+            <ButtonStack>
+                {(corporation?.status != null && !corporation.active) ?
+                    <ButtonCeoToken
+                        corporation={corporation}
+                        size='sm'
+                        dialog_title={t('add_ceo_token_dialog_title')}
+                    >
+                        {t('add_ceo_token')}
+                    </ButtonCeoToken>
+                :
+                (corporation?.status == 'available' && !primary_character_id) ?
+                    <ButtonAddPrimary
+                        size='sm'
+                        color='green'
+                        dialog_title={t('corporation_join_request_dialog_title')}
+                    >
+                        {t('enlist_today')}
+                    </ButtonAddPrimary>
+                :
+                (corporation?.status == 'available' && primary_character_id) ?
+                    <Button
+                        type="button"
+                        size='sm'
+                        color='green'
+                        x-bind:disabled="disabled"
+                        x-data={`{
+                            disabled: false,
+                            show_join_request_dialog() {
+                                this.disabled = true
+                                
+                                show_confirm_dialog({
+                                    title: '${t('corporation_join_request_dialog_title')}',
+                                    partial: '${translatePath('/partials/dialog_apply_corporation/')}?${query_string({
+                                        corporation_id: corporation.corporation_id,
+                                        corporation_name: corporation.corporation_name,
+                                        alliance_id: corporation.alliance_id,
+                                        alliance_name: corporation.alliance_name,
+                                        corporation_type: corporation.corporation_type,
+                                        status: corporation.status,
+                                        message: t('corporation_join_request_dialog_text')
                                     })}',
-                                    target: '${`#corporation-status-${corporation.corporation_id}`}',
-                                    swap: 'outerHTML transition:true'
-                                }
-                            }).then( (corporation_id) => { this.disabled = !!corporation_id } )
-                        }
-                    }`}
-                    x-on:click="show_join_request_dialog()"
-                    type="button"
-                >
-                    {t('enlist_today')}
-                </Button>
-            :
-            corporation?.status == 'unauth' ?
-                <ButtonAuth
-                    size='sm'
-                    color='green'
-                    dialog_title={t('corporation_join_request_dialog_title')}
-                >
-                    {t('enlist_today')}
-                </ButtonAuth>
-            :
-            corporation?.status === 'accepted' ?
-                <Tag
-                    data-tippy-content={t('application_accepted_tooltip')}
-                    x-init="tippy('this, tippy_options)"
-                    color='green'
-                    text={t('accepted')}
-                />
-            :
-            corporation?.status === 'rejected' ?
-                <Tag
-                    data-tippy-content={t('application_denied_tooltip')}
-                    x-init="tippy('this, tippy_options)"
-                    text={t('denied')}
-                />
-            :
-            corporation?.status == 'pending' ?
-                <Tag
-                    data-tippy-content={t('pending_application_tooltip')}
-                    x-init="tippy('this, tippy_options)"
-                    color='alliance-blue' text={t('pending')}
-                />
-            :
-            corporation?.status == 'error' &&
-                <Tag
-                    data-tippy-content={t('error_reload')}
-                    x-init="tippy('this, tippy_options)"
-                    text={t('error_status_corp')}
-                />
-            }
-        </ButtonStack>
+                                    return_on_accept: ${corporation.corporation_id},
+                                    hx: {
+                                        method: 'post',
+                                        url: '${CORPORATION_REQUEST_STATUS_PARTIAL_URL}?${query_string({
+                                            corporation: JSON.stringify(corporation),
+                                        })}',
+                                        target: '${`#corporation-status-${corporation.corporation_id}`}',
+                                        swap: 'outerHTML transition:true'
+                                    }
+                                }).then( (corporation_id) => { this.disabled = !!corporation_id } )
+                            }
+                        }`}
+                        x-on:click="show_join_request_dialog()"
+                        type="button"
+                    >
+                        {t('enlist_today')}
+                    </Button>
+                :
+                corporation?.status == 'unauth' ?
+                    <ButtonAuth
+                        size='sm'
+                        color='green'
+                        dialog_title={t('corporation_join_request_dialog_title')}
+                    >
+                        {t('enlist_today')}
+                    </ButtonAuth>
+                :
+                corporation?.status === 'accepted' ?
+                    <Tag
+                        data-tippy-content={t('application_accepted_tooltip')}
+                        x-init="tippy('this, tippy_options)"
+                        color='green'
+                        text={t('accepted')}
+                    />
+                :
+                corporation?.status === 'rejected' ?
+                    <Tag
+                        data-tippy-content={t('application_denied_tooltip')}
+                        x-init="tippy('this, tippy_options)"
+                        text={t('denied')}
+                    />
+                :
+                corporation?.status == 'pending' ?
+                    <Tag
+                        data-tippy-content={t('pending_application_tooltip')}
+                        x-init="tippy('this, tippy_options)"
+                        color='alliance-blue' text={t('pending')}
+                    />
+                :
+                corporation?.status == 'error' &&
+                    <Tag
+                        data-tippy-content={t('error_reload')}
+                        x-init="tippy('this, tippy_options)"
+                        text={t('error_status_corp')}
+                    />
+                }
+            </ButtonStack>
     }
 </div>
