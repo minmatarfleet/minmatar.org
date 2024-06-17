@@ -50,6 +50,8 @@ class DiscordBaseClient:
         )
         if response.status_code == 429:
             raise RateLimitException
+        if response.status_code == 400:
+            logger.error(response.json())
         response.raise_for_status()
         return response
 

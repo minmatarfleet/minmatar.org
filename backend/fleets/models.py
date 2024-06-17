@@ -10,6 +10,7 @@ from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
+import requests
 
 discord = DiscordClient()
 esi = EsiClientProvider()
@@ -96,6 +97,11 @@ class EveFleet(models.Model):
         fleet_instance.update_motd()
         fleet_instance.update_free_move()
 
+        if self.type != "strategic":
+            doctrine = self.doctrine
+        else:
+            doctrine = None
+
         discord.create_message(
             self.audience.discord_channel_id,
             payload=get_fleet_discord_notification(
@@ -106,8 +112,32 @@ class EveFleet(models.Model):
                 fleet_commander_name=self.fleet_commander.character_name,
                 fleet_commander_id=self.fleet_commander.character_id,
                 fleet_description=self.description,
+                fleet_voice_channel=self.audience.discord_voice_channel_name,
+                fleet_voice_channel_link=self.audience.discord_voice_channel,
+                fleet_doctrine=doctrine,
             ),
         )
+
+        if len(self.audience.evefleetaudiencewebhook_set.all()) > 0:
+            for (
+                audience_webhook
+            ) in self.audience.evefleetaudiencewebhook_set.all():
+                requests.post(
+                    audience_webhook.webhook_url,
+                    json=get_fleet_discord_notification(
+                        fleet_id=self.id,
+                        fleet_type=self.get_type_display(),
+                        fleet_location=self.location.location_name,
+                        fleet_audience=self.audience.name,
+                        fleet_commander_name=self.fleet_commander.character_name,
+                        fleet_commander_id=self.fleet_commander.character_id,
+                        fleet_description=self.description,
+                        fleet_voice_channel=self.audience.discord_voice_channel_name,
+                        fleet_voice_channel_link=self.audience.discord_voice_channel,
+                        fleet_doctrine=doctrine,
+                    ),
+                    timeout=2,
+                )
         self.save()
 
 
@@ -303,9 +333,23 @@ class EveFleetAudience(models.Model):
     discord_channel_name = models.CharField(
         max_length=255, null=True, blank=True
     )
+    discord_voice_channel_name = models.CharField(
+        max_length=255, null=True, blank=True
+    )
+    discord_voice_channel = models.CharField(
+        max_length=255, null=True, blank=True
+    )
 
     def __str__(self):
         return str(self.name)
+
+
+class EveFleetAudienceWebhook(models.Model):
+    webhook_url = models.CharField(max_length=255)
+    audience = models.ForeignKey(EveFleetAudience, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.webhook_url)
 
 
 class EveStandingFleet(models.Model):
