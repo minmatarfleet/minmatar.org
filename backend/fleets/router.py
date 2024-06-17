@@ -134,7 +134,7 @@ def get_v2_fleet_locations(request):
     locations = (
         EveFleetLocation.objects.all()
         .annotate(count=Count("evefleet__id"))
-        .order_by("-count")[0]
+        .order_by("-count")
     )
     for location in locations:
         response.append(
