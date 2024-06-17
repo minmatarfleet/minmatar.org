@@ -6,6 +6,7 @@ from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
 from eveonline.models import EvePrimaryCharacter
+from groups.models import EveCorporationGroup
 
 from .models import EveCorporationApplication
 
@@ -32,6 +33,15 @@ def eve_corporation_application_post_save(
         )
         message = ""
         message += f"<@{user.discord_user.id}>"
+        if EveCorporationGroup.objects.filter(
+            corporation=instance.corporation,
+        ).exists():
+            group = EveCorporationGroup.objects.get(
+                corporation=instance.corporation
+            )
+            discord_group = group.group.discord_group
+            discord_group_id = discord_group.discord_group_id
+            message += f"<@&{discord_group_id}>"
         message += "\n\n"
         message += (
             f"Main Character: {primary_character.character.character_name}\n"

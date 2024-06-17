@@ -1,5 +1,6 @@
 import logging
 
+import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
@@ -10,7 +11,6 @@ from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-import requests
 
 discord = DiscordClient()
 esi = EsiClientProvider()
@@ -327,6 +327,9 @@ class EveFleetLocation(models.Model):
 
 
 class EveFleetAudience(models.Model):
+    """
+    Used to scope fleets to a specific audience
+    """
     name = models.CharField(max_length=255)
     groups = models.ManyToManyField(Group, blank=True)
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
