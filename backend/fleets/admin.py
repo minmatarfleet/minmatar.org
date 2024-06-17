@@ -3,8 +3,8 @@ from django.contrib import admin
 from .models import (
     EveFleet,
     EveFleetAudience,
-    EveFleetLocation,
     EveFleetAudienceWebhook,
+    EveFleetLocation,
 )
 
 # Register your models here.
