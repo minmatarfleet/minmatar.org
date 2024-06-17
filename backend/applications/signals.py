@@ -40,7 +40,7 @@ def eve_corporation_application_post_save(
                 corporation=instance.corporation
             )
             discord_group = group.group.discord_group
-            discord_group_id = discord_group.discord_group_id
+            discord_group_id = discord_group.role_id
             message += f"<@&{discord_group_id}>"
         message += "\n\n"
         message += (
