@@ -9,12 +9,14 @@ import type { CorporationObject } from '@dtypes/layout_components'
 interface Props {
     corporations?:          CorporationObject[];
     user_corporation_id?:   number;
+    disable_applications?:  boolean;
     [propName: string]:     any;
 }
 
 const {
     corporations = [],
     user_corporation_id = 0,
+    disable_applications = false,
     ...atributes
 } = Astro.props
 
@@ -36,6 +38,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
             <CorporationItem
                 corporation={corporation}
                 is_user_corporation={corporation.corporation_id === user_corporation_id}
+                disable_applications={disable_applications}
             />
         </ComponentBlock>
     )}

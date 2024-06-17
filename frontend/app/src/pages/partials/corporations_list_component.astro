@@ -54,6 +54,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <CorporationsList
         corporations={corporations}
         user_corporation_id={user_corporation_id}
+        disable_applications={corporation_type === 'associate'}
         x-data={`{
             init() {
                 corporations_count = ${corporations.length}
