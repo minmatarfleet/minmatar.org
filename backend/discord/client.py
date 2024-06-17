@@ -289,3 +289,12 @@ class DiscordClient(DiscordBaseClient):
         return self.delete(
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}/roles/{role_id}",
         )
+
+    def create_guild_webhook(self, channel_id: int, name: str):
+        """Create a guild webhook"""
+        return self.post(
+            f"{BASE_URL}/channels/{channel_id}/webhooks",
+            json={
+                "name": name,
+            },
+        ).json()
