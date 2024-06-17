@@ -6,9 +6,17 @@ def get_fleet_discord_notification(
     fleet_commander_name,
     fleet_commander_id,
     fleet_description,
+    fleet_voice_channel,
+    fleet_voice_channel_link,
+    fleet_doctrine=None,
 ):
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
+    if fleet_doctrine:
+        description += f"**DOCTRINE**: {fleet_doctrine.upper()}\n"
+    description += (
+        f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
+    )
     description += f"**LOCATION**: {fleet_location.upper()}\n"
     description += f"**AUDIENCE**: {fleet_audience.upper()}\n"
     description += f"\n**OBJECTIVE**: {fleet_description}\n"
@@ -19,6 +27,13 @@ def get_fleet_discord_notification(
             {
                 "type": 1,
                 "components": [
+                    {
+                        "style": 5,
+                        "label": "Join Voice Channel",
+                        "url": fleet_voice_channel_link,
+                        "disabled": False,
+                        "type": 2,
+                    },
                     {
                         "style": 5,
                         "label": "View Fleet Information",
