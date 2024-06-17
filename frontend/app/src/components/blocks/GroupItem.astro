@@ -28,6 +28,9 @@ import GroupStatus from '@components/blocks/GroupStatus.astro';
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
 
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
 const LOGO_TEXT = {
     'team': t('team_logo'),
     'group': t('group_logo'),
@@ -77,7 +80,7 @@ const DESCRIPTION_TEXT = {
                         </a>
                     </small>
                     :
-                    <small>{group.description}</small>
+                    <small set:html={marked.parseInline(group.description, { renderer })} />
                 }
             </slot>
         </Flexblock>
