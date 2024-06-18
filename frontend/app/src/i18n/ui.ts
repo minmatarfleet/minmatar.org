@@ -798,5 +798,6 @@ export const ui = {
         'create_subscription_error': 'An error occurred while creating the subscription',
         'fleet_date_and_time': 'Fleet date and time',
         'select_audience': 'Select audience',
+        'no_audience_selected': 'No audience selected',
     },
 } as const;

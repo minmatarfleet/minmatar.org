@@ -106,6 +106,7 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
 } )
 
 let FLEET_LOCATIONS = {}
+console.log(locations)
 const locations_select_options = locations.map( (i):SelectOptions => {
     FLEET_LOCATIONS[i.location_id] = i.location_name
     return {value: i.location_id, label: i.location_name} 
@@ -425,8 +426,8 @@ const today = new Date().toISOString().split("T")[0]
 
                                 <VerticalCenter>
                                     <Flexblock gap="var(--space-s-m)">
-                                        <TextGroup title={t('audience')} x-text="audiences[audience]">
-                                            {AUDIENCES[default_audience]}
+                                        <TextGroup x-bind:class="!audience && 'text-red'" title={t('audience')} x-text={`audience ? audiences[audience] : '${t('no_audience_selected')}'`}>
+                                            {default_audience ? AUDIENCES[default_audience] : t('no_audience_selected')}
                                         </TextGroup>
                                         <TextGroup title={t('location')} x-text="locations[location]">
                                             {t('alliance')}
