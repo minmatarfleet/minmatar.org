@@ -11,6 +11,9 @@ import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
+const user_agent = Astro.request.headers.get('user-agent')
+const is_discord_bot = user_agent.includes('Discordbot')
+
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
@@ -19,9 +22,10 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+const HOME_REDIRECT_URL = `${translatePath('/')}`
 
 if (!user)
-    return Astro.redirect(AUTH_REDIRECT_URL)
+    return Astro.redirect(!is_discord_bot ? AUTH_REDIRECT_URL : HOME_REDIRECT_URL)
 
 const fleet_id = parseInt(Astro.params.fleet_id)
 
