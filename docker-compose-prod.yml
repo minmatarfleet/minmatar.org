@@ -12,6 +12,15 @@ services:
         ports:
             - "8020:8000"
 
+    bot:
+        build:
+            context: ./bot/.
+            dockerfile: Dockerfile
+        working_dir: /opt/bot
+        command: python3 main.py
+        env_file:
+            - bot/.env
+
     beat:
         build:
             context: ./backend/.

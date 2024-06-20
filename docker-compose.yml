@@ -51,6 +51,21 @@ services:
         ports:
             - "8000:8000"
 
+    bot:
+        build:
+            context: ./bot/
+            dockerfile: Dockerfile
+        working_dir: /opt/bot
+        command: python3 main.py
+        env_file:
+            - bot/.env
+        networks:
+            - local-network
+        depends_on:
+            db:
+                condition: service_healthy
+
+
     frontend:
         build:
             context: ./frontend/
