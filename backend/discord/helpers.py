@@ -13,6 +13,7 @@ from .models import DiscordRole, DiscordUser
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = 1098974756356771870
+DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = 1174095095537078312
 
 
 def get_expected_nickname(user: User):
@@ -105,3 +106,10 @@ def add_user_to_expected_discord_roles(user: User):
         )
         discord.add_user_role(discord_user.id, expected_discord_role.role_id)
         expected_discord_role.members.add(discord_user)
+
+
+def notify_technology_team(location: str):
+    discord.create_message(
+        DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
+        message=f"Encountered error in {location}",
+    )

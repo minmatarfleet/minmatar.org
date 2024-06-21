@@ -5,7 +5,11 @@ from django.contrib.auth.models import Group, User
 from app.celery import app
 from discord.client import DiscordClient
 
-from .helpers import get_discord_user, get_expected_nickname
+from .helpers import (
+    get_discord_user,
+    get_expected_nickname,
+    notify_technology_team,
+)
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
@@ -27,7 +31,13 @@ def import_external_roles():
 @app.task()
 def sync_discord_users():
     for user in User.objects.all():
-        sync_discord_user(user.id)
+        try:
+            sync_discord_user(user.id)
+        except Exception as e:
+            notify_technology_team("sync_discord_users")
+            logger.error(
+                "Failed to sync discord user %s: %s", user.username, e
+            )
 
 
 @app.task()
