@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from enum import Enum
 from app.settings import settings
 
-API_URL = "https://api.minmatar.org"
+API_URL = "https://api.minmatar.org/api"
 TIMERS_URL = f"{API_URL}/timers"
 
 
