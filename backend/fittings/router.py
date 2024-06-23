@@ -32,6 +32,7 @@ class DoctrineResponse(BaseModel):
     primary_fittings: List[FittingResponse]
     secondary_fittings: List[FittingResponse]
     support_fittings: List[FittingResponse]
+    sig_ids: List[int]
 
 
 @doctrines_router.get("", response=List[DoctrineResponse])
@@ -72,6 +73,7 @@ def get_doctrines(request):
             primary_fittings=primary_fittings,
             secondary_fittings=secondary_fittings,
             support_fittings=support_fittings,
+            sig_ids=[sig.id for sig in doctrine.sigs.all()],
         )
         response.append(doctrine_response)
     return response
@@ -113,6 +115,7 @@ def get_doctrine(request, doctrine_id: int):
         primary_fittings=primary_fittings,
         secondary_fittings=secondary_fittings,
         support_fittings=support_fittings,
+        sig_ids=[sig.id for sig in doctrine.sigs.all()],
     )
     return doctrine_response
 
