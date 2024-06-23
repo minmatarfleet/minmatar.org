@@ -330,6 +330,7 @@ class EveFleetAudience(models.Model):
     """
     Used to scope fleets to a specific audience
     """
+
     name = models.CharField(max_length=255)
     groups = models.ManyToManyField(Group, blank=True)
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
