@@ -107,6 +107,7 @@ const {
                         title={sig.name}
                         image={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
                         size={sig?.image_url ? 64 : 48}
+                        highlight={false}
                     >
                     </Badge>
                 </TippyBase>
@@ -117,6 +118,7 @@ const {
                     <Badge
                         title={t('alliance_doctrine')}
                         size={48}
+                        highlight={false}
                     >
                         <FleetLogo
                             slot="picture"
