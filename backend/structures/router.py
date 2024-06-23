@@ -60,7 +60,7 @@ class EveStructureTimerResponse(BaseModel):
     type: str
     timer: datetime
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None = None
     created_by: int
     updated_by: int | None = None
     system_name: str
@@ -179,7 +179,6 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
         "type": timer.type,
         "timer": timer.timer,
         "created_at": timer.created_at,
-        "updated_at": timer.updated_at,
         "created_by": timer.created_by.id,
         "system_name": timer.system_name,
         "corporation_name": timer.corporation_name,
