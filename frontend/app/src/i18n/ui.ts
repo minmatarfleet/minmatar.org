@@ -799,5 +799,11 @@ export const ui = {
         'fleet_date_and_time': 'Fleet date and time',
         'select_audience': 'Select audience',
         'no_audience_selected': 'No audience selected',
+        'unknown_sig': 'Unknown SIG',
+        'alliance_doctrine': 'Alliance doctrine',
+        'alliance_doctrine_description': 'Doctrine broadly used by the Alliance',
+        'doctrine_flayable_description': 'Doctrine flied by this group',
+        'show_sigs_doctrines': 'Show SIGs doctrines',
+        'hide_sigs_doctrines': 'Hide SIGs doctrines',
     },
 } as const;
