@@ -62,18 +62,24 @@ def get_timers():
         timeout=5,
     )
     response.raise_for_status()
-    return [StructureResponse(**item) for item in response.json()]
+    return [EveStructureTimerResponse(**timer) for timer in response.json()]
 
 
 def submit_timer(timer: EveStructureTimerRequest):
     """
     Create a timer
     """
+    body = {
+        "state": timer.state.value,
+        "type": timer.type.value,
+        "selected_item_window": timer.selected_item_window,
+        "corporation_name": timer.corporation_name,
+    }
     response = requests.post(
         TIMERS_URL,
         headers={"Authorization": f"Bearer {settings.MINMATAR_API_TOKEN}"},
-        json=timer.dict(),
+        json=body,
         timeout=5,
     )
     response.raise_for_status()
-    return StructureResponse(**response.json())
+    return response.json()
