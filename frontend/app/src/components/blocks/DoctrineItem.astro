@@ -20,6 +20,7 @@ import ShieldArmorIcon from '@components/icons/ShieldArmorIcon.astro';
 import ShieldIcon from '@components/icons/ShieldIcon.astro';
 import ArmorIcon from '@components/icons/ArmorIcon.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
 
 interface Props {
     doctrine: DoctrineType;
@@ -96,7 +97,35 @@ const {
         gap='var(--space-m)'
         justification='space-between'
     >
-        <Flexblock gap="var(--space-3xs)">
+        <FlexInline>
+            {doctrine.sigs.map((sig) =>
+                <TippyBase
+                    title={sig.name}
+                    description="doctrine_flayable_description"
+                >
+                    <Badge
+                        title={sig.name}
+                        image={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
+                        size={sig?.image_url ? 64 : 48}
+                    >
+                    </Badge>
+                </TippyBase>
+            )}
+
+            {doctrine.sigs.length === 0 &&
+                <TippyBase description="alliance_doctrine_description">
+                    <Badge
+                        title={t('alliance_doctrine')}
+                        size={48}
+                    >
+                        <FleetLogo
+                            slot="picture"
+                            height="48"
+                        />
+                    </Badge>
+                </TippyBase>
+            }
+
             <TippyBase
                 title={doctrine.type}
                 description={`${doctrine.type}.description`}
@@ -111,7 +140,7 @@ const {
                     <ShieldArmorIcon />
                 }
             </TippyBase>
-        </Flexblock>
+        </FlexInline>
 
         <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
             <MagnifierIcon slot="icon" />

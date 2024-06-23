@@ -605,6 +605,13 @@ export interface Fitting {
     latest_version: string;
 }
 
+export interface GroupBasic {
+    id:             number;
+    name:           string;
+    image_url:      string;
+    description:    string;
+}
+
 export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
 
 export interface DoctrineType {
@@ -617,6 +624,7 @@ export interface DoctrineType {
     primary_fittings:   FittingItem[];
     secondary_fittings: FittingItem[];
     support_fittings:   FittingItem[];
+    sigs:               GroupBasic[];
 }
 
 export interface FittingGroup {

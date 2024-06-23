@@ -18,6 +18,8 @@ try {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
+const are_sigs_doctrines = doctrines.find((doctrine) => doctrine.sigs.length > 0)
+
 import { marked } from 'marked';
 
 import Viewport from '@layouts/Viewport.astro';
@@ -30,6 +32,7 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import Button from '@components/blocks/Button.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
@@ -46,6 +49,9 @@ const page_title = t('doctrines.page_title');
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            show_all: $persist(false),
+        }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
@@ -58,13 +64,26 @@ const page_title = t('doctrines.page_title');
             </FlexInline>
         </FlexInline>
 
+        {are_sigs_doctrines &&
+            <FlexInline slot="subheader">
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="show_all = !show_all"
+                    x-text={`show_all ? '${t('hide_sigs_doctrines')}' : '${t('show_sigs_doctrines')}'`}
+                >
+                    {t('show_sigs_doctrines')}
+                </Button>
+            </FlexInline>
+        }
+
         <Flexblock gap="var(--space-xl)">
             <TextBox set:html={marked.parse(t('doctrines.alliance.page_leading_text'))} />
             
             <Flexblock role="list" gap='var(--space-3xs)'>
                 
                 {doctrines.map((doctrine) =>
-                    <ComponentBlock>
+                    <ComponentBlock x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
                         <DoctrineItem role="listitem" doctrine={doctrine} />
                     </ComponentBlock>
                 )}

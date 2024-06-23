@@ -166,6 +166,7 @@ export interface Doctrine {
     primary_fittings:   Fitting[];
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
+    sig_ids:            number[];
 }
 
 export const fleet_types = ['strategic', 'non_strategic', 'training'] as const
