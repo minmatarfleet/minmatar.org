@@ -5,7 +5,7 @@ from enum import Enum
 from app.settings import settings
 
 API_URL = "https://api.minmatar.org/api"
-TIMERS_URL = f"{API_URL}/timers"
+TIMERS_URL = f"{API_URL}/structures/timers"
 
 
 class EveStructureState(Enum):
