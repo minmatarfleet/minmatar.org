@@ -1,5 +1,11 @@
 import discord
 from discord import app_commands
+from app.api import (
+    get_timers,
+    submit_timer,
+    EveStructureTimerRequest,
+    EveStructureTimerResponse,
+)
 
 import traceback
 
@@ -48,16 +54,81 @@ class TimerForm(discord.ui.Modal, title="Timer"):
         max_length=300,
     )
 
-    affiliated_group = discord.ui.TextInput(
+    corporation_name = discord.ui.TextInput(
         label="Affiliated group",
-        style=discord.TextStyle.long,
-        placeholder="Corporation, alliance, or ticker",
+        style=discord.TextStyle.short,
+        placeholder="corporation that owns structure",
         required=False,
-        max_length=300,
+        max_length=64,
+    )
+
+    structure_type = discord.ui.TextInput(
+        label="Structure type",
+        style=discord.TextStyle.short,
+        placeholder="Keepstar, Raitaru, Azbel, etc.",
+        required=True,
+        max_length=32,
+    )
+
+    structure_state = discord.ui.TextInput(
+        label="Structure state",
+        style=discord.TextStyle.short,
+        placeholder="anchor, armor, hull, unanchor",
+        required=True,
+        max_length=32,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        print(self.timer)
+        # lazy matching for structure state
+        structure_state = self.structure_state.value.lower()
+        if "anchor" in structure_state:
+            structure_state = "anchoring"
+        elif "armor" in structure_state:
+            structure_state = "armor"
+        elif "hull" in structure_state:
+            structure_state = "hull"
+        elif "unanchor" in structure_state:
+            structure_state = "unanchoring"
+        else:
+            await interaction.response.send_message("Invalid state provided")
+            return
+
+        # lazy matching for structure type
+        structure_type = self.structure_type.value.lower()
+        if "keep" in structure_type:
+            structure_type = "keepstar"
+        elif "fort" in structure_type:
+            structure_type = "fortizar"
+        elif "astra" in structure_type:
+            structure_type = "astrahus"
+        elif "rait" in structure_type:
+            structure_type = "raitaru"
+        elif "azbel" in structure_type:
+            structure_type = "azbel"
+        elif "sot" in structure_type:
+            structure_type = "sotiyo"
+        elif "ath" in structure_type:
+            structure_type = "athanor"
+        elif "tat" in structure_type:
+            structure_type = "tatara"
+        elif "jam" in structure_type:
+            structure_type = "tenebrex_cyno_jammer"
+        elif "cyno" in structure_type or "beacon" in structure_type:
+            structure_type = "pharolux_cyno_beacon"
+        elif "gate" in structure_type or "jb" in structure_type:
+            structure_type = "ansiblex_jump_gate"
+        else:
+            await interaction.response.send_message("Invalid type provided")
+            return
+
+        submit_timer(
+            EveStructureTimerRequest(
+                selected_item_window=self.timer.value,
+                corporation_name=self.corporation_name.value,
+                state=structure_state,
+                type=structure_type,
+            )
+        )
         await interaction.response.send_message("Timer submitted!")
 
     async def on_error(
