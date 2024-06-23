@@ -1,4 +1,5 @@
 from django.db import models
+from groups.models import Sig
 
 # Create your models here.
 
@@ -50,6 +51,7 @@ class EveDoctrine(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
+    sigs = models.ManyToManyField(Sig, blank=True)
 
     @property
     def doctrine_link(self):
