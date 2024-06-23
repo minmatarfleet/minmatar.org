@@ -22,6 +22,16 @@ const {
 
 const MODULE_TIPPY_PARTIAL_URL = translatePath('/partials/module_tooltip_component')
 
+const stroke = ship_slot?.meta_name == 'Tech I' ? 'var(--tech-i)' :
+                ship_slot?.meta_name == 'Tech II' ? 'var(--tech-ii)' :
+                ship_slot?.meta_name == 'Tech III' ? 'var(--tech-iii)' :
+                ship_slot?.meta_name == 'Storyline' ? 'var(--storyline)' :
+                ship_slot?.meta_name == 'Faction' ? 'var(--faction)' :
+                ship_slot?.meta_name == 'Officer' ? 'var(--officer)' :
+                ship_slot?.meta_name == 'Deadspace' ? 'var(--deadspace)' :
+                ship_slot?.meta_name == 'Abyssal' ? 'var(--abyssal)' :
+                '#666'
+
 import Tippy from '@components/blocks/Tippy.astro';
 import LowSlotEvEIcon from '@components/icons/LowSlotEvEIcon.astro';
 import MediumSlotEvEIcon from '@components/icons/MediumSlotEvEIcon.astro';
@@ -29,6 +39,11 @@ import HighSlotEvEIcon from '@components/icons/HighSlotEvEIcon.astro';
 import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
 ---
 <div class="[ box-shadow ]">
+    <svg class="[ absolute ]" width="64px" height="64px" viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M56.4055 0.477051H8.54768L0.476562 8.54816V56.4059L8.54768 64.4771H56.4055L64.4766 56.4059V8.54816Z"
+            stroke={stroke}
+        />
+    </svg>
     <div
         class:list={[
             'fitting-slot',
@@ -90,64 +105,55 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             align-items: center;
 
             &:before {
-                box-shadow: inset 0 0 8px 2px #666;
-                border: solid 2px #666;
+                box-shadow: inset 0 0 13px 2px #666;
             }
         }
 
         &.tech-1 {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--tech-i);
-                border: solid 2px var(--tech-i);
+                box-shadow: inset 0 0 13px 2px var(--tech-i);
             }
         }
 
         &.tech-2 {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--tech-ii);
-                border: solid 2px var(--tech-ii);
+                box-shadow: inset 0 0 13px 2px var(--tech-ii);
             }
         }
 
         &.tech-3 {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--tech-iii);
-                border: solid 2px var(--tech-iii);
+                box-shadow: inset 0 0 13px 2px var(--tech-iii);
             }
         }
 
         &.storyline {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--storyline);
-                border: solid 2px var(--storyline);
+                box-shadow: inset 0 0 13px 2px var(--storyline);
             }
         }
 
         &.faction {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--faction);
-                border: solid 2px var(--faction);
+                box-shadow: inset 0 0 13px 2px var(--faction);
             }
         }
 
         &.officer {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--officer);
-                border: solid 2px var(--officer);
+                box-shadow: inset 0 0 13px 2px var(--officer);
             }
         }
 
         &.deadspace {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--deadspace);
-                border: solid 2px var(--deadspace);
+                box-shadow: inset 0 0 13px 2px var(--deadspace);
             }
         }
 
         &.abyssal {
             &:before {
-                box-shadow: inset 0 0 8px 2px var(--abyssal);
-                border: solid 2px var(--abyssal);
+                box-shadow: inset 0 0 13px 2px var(--abyssal);
             }
         }
 
@@ -158,7 +164,6 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             width: 100%;
             top: 0;
             left: 0;
-            border-radius: 15px;
         }
 
         picture {
@@ -170,6 +175,7 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 0 8px 2px black;
             background-image: linear-gradient(
                 145deg,
                 hsl(0, 0%, 0%) 0%,
