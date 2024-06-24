@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from .models import EveDoctrine, EveDoctrineFitting, EveFitting
+from groups.models import Sig
 
 
 class EveDoctrineForm(forms.ModelForm):
@@ -31,6 +32,11 @@ class EveDoctrineForm(forms.ModelForm):
     support_fittings = forms.ModelMultipleChoiceField(
         queryset=EveFitting.objects.all(),
         widget=FilteredSelectMultiple("Support Fittings", is_stacked=False),
+        required=False,
+    )
+    sigs = forms.ModelMultipleChoiceField(
+        queryset=Sig.objects.all(),
+        widget=FilteredSelectMultiple("Sigs", is_stacked=False),
         required=False,
     )
 
