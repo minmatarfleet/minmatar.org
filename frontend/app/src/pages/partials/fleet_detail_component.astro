@@ -62,6 +62,8 @@ try {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
+const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
