@@ -38,16 +38,14 @@ let fleet:FleetUI
 let user_character:EveCharacterProfile
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
-let is_fleet_commander = false
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
-    
-    if (is_fleet_commander && upcoming) {
+
+    if (upcoming) {
         const staggering_solar_system = fleet.location.split(' - ')[0]
         const staggering_solar_system_id = await get_system_id(staggering_solar_system)
 
