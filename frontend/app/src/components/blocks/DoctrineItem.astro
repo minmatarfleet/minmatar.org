@@ -98,7 +98,7 @@ const {
         justification='space-between'
     >
         <FlexInline>
-            {doctrine.sigs.map((sig) =>
+            {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
                 <TippyBase
                     title={sig.name}
                     description="doctrine_flayable_description"
@@ -113,7 +113,7 @@ const {
                 </TippyBase>
             )}
 
-            {doctrine.sigs.length === 0 &&
+            {!doctrine?.sigs?.length &&
                 <TippyBase description="alliance_doctrine_description">
                     <Badge
                         title={t('alliance_doctrine')}
