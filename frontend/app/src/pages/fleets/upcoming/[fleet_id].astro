@@ -42,23 +42,19 @@ import { get_system_id } from '@helpers/sde/map'
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI
 let user_character:EveCharacterProfile
-let fleet_composition:FleetCompositionUI[] = []
-let fleet_radar:FleetRadarUI[] = []
-let is_fleet_commander = false
+let fleet_composition:FleetCompositionUI[]
+let fleet_radar:FleetRadarUI[]
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
-    
-    if (is_fleet_commander) {
-        const staggering_solar_system = fleet.location.split(' - ')[0]
-        const staggering_solar_system_id = await get_system_id(staggering_solar_system)
 
-        const members = await get_fleet_members(auth_token as string, fleet_id)
-        fleet_composition = await group_members_by_ship(members)
-        fleet_radar = await group_members_by_location(members, staggering_solar_system_id)
-    }
+    const staggering_solar_system = fleet.location.split(' - ')[0]
+    const staggering_solar_system_id = await get_system_id(staggering_solar_system)
+
+    const members = await get_fleet_members(auth_token as string, fleet_id)
+    fleet_composition = await group_members_by_ship(members)
+    fleet_radar = await group_members_by_location(members, staggering_solar_system_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return Astro.redirect(translatePath('/403'))
@@ -66,6 +62,8 @@ try {
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
+
+const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
 
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
