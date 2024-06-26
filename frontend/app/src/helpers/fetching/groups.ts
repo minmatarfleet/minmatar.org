@@ -103,15 +103,12 @@ const add_status_to_group = async (
     }
     
     const user_request = user_id ? group_requests.findLast( (request) => request.user == user_id ) : undefined
-    console.log(user_request)
 
     if (user_request !== undefined) {
         if (user_request.approved === null)
             group.status = 'requested'
         else if (user_request.approved === false)
             group.status = 'denied'
-        else if (user_request.approved === true)
-            group.status = 'confirmed'
 
         group.last_update = user_request.approved_at
     }
