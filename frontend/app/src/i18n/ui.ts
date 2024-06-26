@@ -155,10 +155,10 @@ export const ui = {
         'groups.add.page_title': 'Add group',
 
         'groups.list.page_title': 'Special Interest Groups',
-        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by any of the group officers and they will reach you later on Discord for further details.',
 
         'teams.list.page_title': 'Teams',
-        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by the team manager, and you will receive a notification in-game regarding the status of your request, whether it has been accepted or declined.',
+        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by any of the team directors and they will reach you later on Discord for further details.',
 
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
