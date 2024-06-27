@@ -237,3 +237,49 @@ export interface FleetUsers {
     fleet_id:   number;
     user_ids: number[];
 }
+
+export interface StructureTimer {
+    id:                 number;
+    name:               string;
+    state:              string;
+    type:               string;
+    timer:              Date;
+    created_at:         Date;
+    updated_at:         Date;
+    created_by:         number;
+    updated_by:         number;
+    system_name:        string;
+    corporation_name:   string;
+    alliance_name:      string;
+    structure_id:       number;
+}
+
+export const structure_states = [ 'anchoring', 'armor', 'hull', 'unanchoring' ] as const
+export type StructureState = typeof structure_states[number]
+
+export const structure_types = [
+    'astrahus',
+    'fortizar',
+    'keepstar',
+    'raitaru',
+    'azbel',
+    'sotiyo',
+    'athanor',
+    'tatara',
+    'tenebrex_cyno_jammer',
+    'pharolux_cyno_beacon',
+    'ansiblex_jump_gate',
+] as const
+export type StructureType = typeof structure_types[number]
+
+export interface StructureTimerRequest {
+    selected_item_window:   string;
+    corporation_name:       string;
+    state:                  StructureState;
+    type:                   StructureType;
+}
+
+export interface VerifyStructureTimerRequest {
+    corporation_name:   string;
+    alliance_name:      string;
+}

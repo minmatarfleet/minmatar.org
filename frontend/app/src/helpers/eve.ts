@@ -63,3 +63,21 @@ export const parse_eve_html = (html:string):string => {
 
     return $.html()
 }
+
+export const get_structure_id = (structure_type:string):number => {
+    const STRUCTURE_TYPE_BY_ID = {
+        'astrahus': 35832,
+        'fortizar': 35833,
+        'keepstar': 35834,
+        'raitaru': 35825,
+        'azbel': 35826,
+        'sotiyo': 35827,
+        'athanor': 35835,
+        'tatara': 35836,
+        'tenebrex_cyno_jammer': 37534,
+        'pharolux_cyno_beacon': 35840,
+        'ansiblex_jump_gate': 35841,
+    }
+
+    return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
+}

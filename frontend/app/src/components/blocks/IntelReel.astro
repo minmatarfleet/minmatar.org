@@ -1,0 +1,163 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { is_prod_mode } from '@helpers/env'
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
+import RifterIcon from '@components/icons/RifterIcon.astro';
+import StructureEVEIcon from '@components/icons/StructureEVEIcon.astro';
+---
+
+<Wrapper
+    class="[ intel-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <div
+        class="[ swiper ][ w-full pb-10 ]"
+        id="intel-list"
+    >
+        <LandingSwiper>
+
+            <!--<div class="[ swiper-slide ]">
+                <ComponentBlock>
+                    <Flexblock>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <StructureEVEIcon />
+                            <h2>{t('structures')}</h2>
+                        </FlexInline>
+                        
+                        <Flexblock gap='var(--space-m)'>
+                            <p set:html={marked.parseInline(t('intel.structures.leading_text'), { renderer })} />
+
+                            <FlexInline>
+                                <Button
+                                    size='sm'
+                                    href={translatePath('/intel/structures/')}
+                                >
+                                    {t('view_doctrines')}
+                                </Button>
+                                <Button
+                                    size='sm'
+                                    href={translatePath('/intel/structures/add_structure/')}
+                                >
+                                    {t('add_structure')}
+                                </Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </Flexblock>
+                </ComponentBlock>
+            </div> -->
+
+            <div class="[ swiper-slide ]">
+                <ComponentBlock>
+                    <Flexblock>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <CalendarEVEIcon />
+                            <h2>{t('structure_timers')}</h2>
+                        </FlexInline>
+                        
+                        <Flexblock gap='var(--space-m)'>
+                            <p>{t('intel.timers.leading_text')}</p>
+
+                            <FlexInline>
+                                <Button size='sm' href={translatePath('/intel/timers/active/')}>
+                                    {t('view')}
+                                </Button>
+                                <Button size='sm' href={translatePath('/intel/timers/add/')}>
+                                    {t('add_timer')}
+                                </Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </Flexblock>
+                </ComponentBlock>
+            </div>
+        </LandingSwiper>
+    </div>
+
+    <div class="intel-reel-animation-wrapper">
+        <RifterIcon id="intel-reel-animation" />
+    </div>
+
+    <div class="[ swiper-button-prev hidden lg:block ]"></div>
+    <div class="[ swiper-button-next hidden lg:block ]"></div>
+</Wrapper>
+
+<style lang="scss">
+    .intel-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper {
+        opacity: 0;
+        transition: var(--fast-transition);
+        //mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+
+        &.swiper-initialized {
+            opacity: 1;
+        }
+    }
+
+    .swiper-slide {
+        width: min(100%, 700px);
+    }
+
+    .swiper-initialized + .intel-reel-animation-wrapper {
+        opacity: 0;
+    }
+
+    .intel-reel-animation-wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%, -50%);
+    }
+</style>

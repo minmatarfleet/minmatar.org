@@ -45,13 +45,6 @@ const hx_attrs = {
     {fleets.length == 0 &&
         <Flexblock gap='var(--space-xl)' centered={true}>
             <p>{t('fleets.upcoming.empty_message')}</p>
-
-            <ButtonStack>
-                <Button color={'green'} href={translatePath('/fleets/add')} class="!justify-center">
-                    <AddIcon slot="icon" />
-                    {t('schedule_fleet')}
-                </Button>
-            </ButtonStack>
         </Flexblock>
     }
     

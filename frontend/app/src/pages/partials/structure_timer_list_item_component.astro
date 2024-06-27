@@ -1,0 +1,81 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
+
+import type { StructureTimerUI, Alert } from '@dtypes/layout_components'
+import { verify_structure_timer } from '@helpers/api.minmatar.org/structures'
+import { fetch_structure_timer_by_id } from '@helpers/fetching/structures'
+import type { VerifyStructureTimerRequest } from '@dtypes/api.minmatar.org'
+
+let verify_structure_timer_error:string | false = false
+
+const timer_id = parseInt(Astro.url.searchParams.get('timer_id'))
+
+const data = await Astro.request.formData()
+const verify_request = JSON.parse( data.get("data").valueOf() as string ) as VerifyStructureTimerRequest
+
+if (Astro.request.method === "POST") {
+    try {        
+        if (can_verify_timer)
+            await verify_structure_timer(auth_token as string, timer_id, verify_request)
+    } catch (error) {
+        verify_structure_timer_error = prod_error_messages() ? t('verify_structure_timer_error') : error.message
+    }
+}
+
+const structure_timer = await fetch_structure_timer_by_id(auth_token as string, timer_id, true)
+
+import { query_string } from '@helpers/string';
+let alert:Alert | false = false
+if (verify_structure_timer_error) {
+    alert = {
+        title: t('structure_timer_verify_dialog_title'),
+        content: verify_structure_timer_error,
+    }
+
+    if (structure_timer) {
+        const eve_time = new Date(structure_timer.timer);
+        const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
+
+        const params = {
+            location: `${structure_timer.system_name} — ${structure_timer.name}`,
+            alliance_id: structure_timer.alliance_id,
+            alliance_name: structure_timer.alliance_name ?? t('unknown_alliance'),
+            structure_type: structure_timer.structure_type,
+            timer: eve_time_text,
+            message: verify_structure_timer_error
+        }
+
+        alert.partial = `${translatePath('/partials/dialog_verify_structure_timer/')}?${query_string(params)}`
+    }
+}
+
+import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
+---
+
+<StructureTimerListItem
+    role="listitem"
+    structure_timer={structure_timer}
+    can_verify_timer={can_verify_timer}
+    x-init={`${alert !== false && `show_alert_dialog(${JSON.stringify(alert)})`}`}
+/>
