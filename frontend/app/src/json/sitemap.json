@@ -200,15 +200,50 @@
         "alt": "icon.intel.alt",
         "path": "/intel/",
         "publish": true,
-        "icon": "/images/icons/48px-Structurebrowser.png",
-        "description": "page_finder.intel.description"
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.intel.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "intel.timers",
+        "alt": "icon.timers.alt",
+        "path": "/intel/timers/active",
+        "publish": true,
+        "icon": "/images/icons/48px-Calendaricon.png",
+        "description": "page_finder.intel.timers.active.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "intel.timers.history",
+        "path": "/intel/timers/history",
+        "publish": true,
+        "description": "page_finder.intel.timers.history.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "intel.timers.add",
+        "path": "/intel/timers/add",
+        "publish": true,
+        "description": "page_finder.intel.timers.add.description",
+        "permissions" : {
+            "auth": true
+        }
     },
     {
         "slug": "intel.tutrial",
         "path": "/intel/tutorial/",
-        "publish": true,
+        "publish": false,
         "keywords": [ "tutorial" ],
-        "description": "page_finder.intel.tutorial.description"
+        "description": "page_finder.intel.tutorial.description",
+        "permissions" : {
+            "auth": true
+        }
     },
     {
         "slug": "assets.user",

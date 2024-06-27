@@ -44,7 +44,9 @@ const optional_attributes = {
     breakpoint='60%'
     width='220px'
 >
-    <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small} />
+    <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small}>
+        <slot name="absolute" slot="absolute" />
+    </FullBodyCard>
 
     <Wrapper padding_block='var(--space-l)' padding_inline='var(--space-l-xl)' max_width='100%'>
         <FluidFixed width='250px' class="[ w-full items-center ]">

@@ -25,9 +25,11 @@ const image_alt = {
 }
 ---
 
-<picture class="[ fullbody-card ]">
+<picture class="[ fullbody-card relative ]">
     <source srcset={thumb_image_small} media="(max-width: 686px)">
     <img loading="lazy" height="1" width="1" src={thumb_image} {...image_alt} />
+    
+    <slot name="absolute" />
     
     {thumb_name &&
         <figcaption class="[ transparency ]">

@@ -28,7 +28,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-import AllianceSwiper from '@components/blocks/AllianceSwiper.astro';
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Tag from '@components/blocks/Tag.astro';
@@ -49,7 +49,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         class="[ swiper ][ w-full pb-10 ]"
         id="corporations-list"
     >
-        <AllianceSwiper>
+        <LandingSwiper>
             <div class="[ swiper-slide ]">
                 <ComponentBlock>
                     <Flexblock>
@@ -148,10 +148,12 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                     </Flexblock>
                 </ComponentBlock>
             </div>
-        </AllianceSwiper>
+        </LandingSwiper>
     </div>
 
-    <RifterIcon id="alliance-reel-animation" />
+    <div class="intel-reel-animation-wrapper">
+        <RifterIcon id="intel-reel-animation" />
+    </div>
 
     <div class="[ swiper-button-prev hidden lg:block ]"></div>
     <div class="[ swiper-button-next hidden lg:block ]"></div>
@@ -208,11 +210,11 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         width: min(100%, 700px);
     }
 
-    .swiper-initialized + #alliance-reel-animation {
+    .swiper-initialized + .intel-reel-animation-wrapper {
         opacity: 0;
     }
 
-    #alliance-reel-animation {
+    .intel-reel-animation-wrapper {
         position: absolute;
         top: 50%;
         left: 50%;

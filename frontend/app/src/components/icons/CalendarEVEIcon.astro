@@ -1,0 +1,7 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+<img loading="lazy" src="/images/icons/48px-Calendaricon.png" width="48" height="48" alt={t('icon.calendar.alt')} />

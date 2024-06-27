@@ -1,0 +1,43 @@
+---
+import { getLangFromUrl, useTranslations } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+import type { StructureTimerUI } from '@dtypes/layout_components'
+
+interface Props {
+    structure_timers:   StructureTimerUI[];
+    can_verify_timer?:  boolean;
+}
+
+const {
+    structure_timers,
+    can_verify_timer = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
+---
+
+<Flexblock
+    role="list"
+    gap='var(--space-3xs)'
+>
+
+    {structure_timers.length == 0 &&
+        <Flexblock gap='var(--space-xl)' centered={true}>
+            <p>{t('no_structure_timers')}</p>
+        </Flexblock>
+    }
+    
+    {structure_timers.map((structure_timer) =>
+        <StructureTimerListItem
+            role="listitem"
+            structure_timer={structure_timer}
+            can_verify_timer={can_verify_timer}
+        />
+    )}
+
+</Flexblock>

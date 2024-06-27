@@ -1,0 +1,260 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
+
+import { create_structure_timer, verify_structure_timer } from '@helpers/api.minmatar.org/structures'
+import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
+import type { StructureTimerRequest } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+
+let create_structure_timer_error
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+
+        const timer_data = {
+            corporation_name: data.get('corporation_name') as string,
+            state: data.get('state') as string,
+            selected_item_window: data.get('selected_item_window') as string,
+            type: data.get('structure_type') as string,
+        } as StructureTimerRequest
+
+        const new_timer = await create_structure_timer(auth_token as string, timer_data)
+
+        if (!new_timer?.id)
+            create_structure_timer_error = t('create_structure_timer_error')
+        else {
+            try {
+                if (can_verify_timer && data.get('verify_timer' as string) === 'on') {
+                    await verify_structure_timer(
+                        auth_token as string,
+                        new_timer.id, {
+                            alliance_name: new_timer.alliance_name,
+                            corporation_name: new_timer.corporation_name,
+                        }
+                    )
+                }
+            } catch (error) {
+                const verify_timer_error = prod_error_messages() ? t('verify_timer_error') : error.message
+                Astro.cookies.set('verify_timer_error', verify_timer_error, { path: '/' })
+            }
+
+            return Astro.redirect(translatePath('/intel/timers/active'))
+        }
+    } catch (error) {
+        create_structure_timer_error = prod_error_messages() ? t('create_structure_timer_error') : error.message
+    }
+
+    alert = {
+        title: t('submit_structure_timer_dialog_title'),
+        content: create_structure_timer_error,
+    }
+}
+
+import { marked } from 'marked';
+
+import { get_item_icon } from '@helpers/eve_image_server';
+import { get_structure_id } from '@helpers/eve';
+
+const STRUCTURE_ICONS = {}
+structure_types.forEach((type) => STRUCTURE_ICONS[type] = get_item_icon(get_structure_id(type)))
+
+const DEFAULT_STRUCTURE_TYPE = structure_types.find((i) => true)
+
+const SELECTER_ITEM_PLACEHOLDER = `Sosala - code minmatar at markeedragon
+48 km
+Reinforced until 2024.06.30 00:04:16`
+
+import PageDefault from '@components/page/PageDefault.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Viewport from '@layouts/Viewport.astro';
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+import PageTitle from '@components/page/PageTitle.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Input from '@components/blocks/Input.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import Select from '@components/blocks/Select.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+
+const page_title = t('intel.timers.add.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            structure_type: 'astrahus',
+            get_structure_icon(name) {
+                const structure_ids = ${JSON.stringify(STRUCTURE_ICONS)}
+
+                return structure_ids[name]
+            },
+            parse_timer_string() {
+                const chunks = this.timer_string.split(' ')
+
+                if (!chunks[0]) return
+
+                this.system_name = chunks[0]
+
+                if (chunks[1] !== '-') return
+
+                if (!chunks[2]) return
+
+                this.structure_name = chunks[1]
+            },
+            init() {
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/timers/active')}>
+                    <MagnifierIcon slot="icon" />
+                    {t('view_structure_timers')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <form
+            method="POST"
+            x-data={`{
+                'submitted': false
+            }`}
+            x-on:submit="submitted = true;"
+        >
+            <Flexblock>
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('timer_information')} (1/2)</h2>
+
+                        <Flexblock>
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="structure_type">{t('structure_type')}</label>
+                                <FixedFluid
+                                    class="[ w-full items-center ]"
+                                    gap="0"
+                                    width="64px"
+                                    breakpoint="60%"
+                                >
+                                    <img loading="lazy" height="64" width="64" src={STRUCTURE_ICONS[DEFAULT_STRUCTURE_TYPE]} x-bind:src={`get_structure_icon(structure_type)`} alt={DEFAULT_STRUCTURE_TYPE} />
+                                    <Select id="structure_type" x-model="structure_type" name="structure_type" required>
+                                        {structure_types.map(type =>
+                                            <option value={type}>{t(type)}</option>    
+                                        )}
+                                    </Select>
+                                </FixedFluid>
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="corporation_name">{t('corporation_name')}</label>
+                                <Input id="corporation_name" name="corporation_name" type="text" required />
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="state">{t('state')}</label>
+                                <Select id="state" name="state" required>
+                                    {structure_states.map(state =>
+                                        <option value={state}>{t(state)}</option>    
+                                    )}
+                                </Select>
+                            </FixedFluid>
+
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label for="timer_string">{t('selected_item_window')}</label>
+                                <Textarea
+                                    id="selected_item_window"
+                                    name="selected_item_window"
+                                    type="text"
+                                    placeholder={SELECTER_ITEM_PLACEHOLDER}
+                                    rows="3"
+                                    required
+                                ></Textarea>
+                            </Flexblock>
+
+                            <CollapsibleBlock padding_inline='0'>
+                                <FlexInline slot="head">
+                                    <TutorialIcon />
+                                    <p set:html={marked.parseInline(t('paster_timer_string'))} />
+                                </FlexInline>
+
+                                <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
+                                    <source src="/videos/structure-timers-tutorial.mp4" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </CollapsibleBlock>
+                        </Flexblock>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('structure_timer_submit')} (2/2)</h2>
+
+                        {can_verify_timer &&
+                            <SwitchSquare
+                                class="[ w-full ]"
+                                name="verify_timer"
+                                label={t('verify_timer')}
+                                description={t('verify_timer_description')}
+                            />
+                        }
+                        <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('submit_timer')}</Button>
+                    </Flexblock>
+                </ComponentBlock>
+            </Flexblock>
+        </form>
+    </PageDefault>
+</Viewport>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

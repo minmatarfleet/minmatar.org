@@ -1,0 +1,125 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_add_timers = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+import type { StructureTimerUI } from '@dtypes/layout_components'
+import { fetch_structure_timers } from '@helpers/fetching/structures'
+
+let structure_timers_error:string | false = false
+let structure_timers:StructureTimerUI[] = []
+
+try {
+    structure_timers = await fetch_structure_timers(auth_token as string, false)
+    structure_timers.sort(function(a, b) {
+        return new Date(a.timer).getTime() - new Date(b.timer).getTime();
+    });
+} catch (error) {
+    structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
+}
+
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(false)}`)
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import StructureTimerList from '@components/blocks/StructureTimerList.astro';
+import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+
+const page_title = t('intel.timers.history.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        confirm_dialog: true
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            structure_timers_count: ${structure_timers.length}
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text={`\`\${structure_timers_count} \${structure_timers_count != 1 ? '${t('structure_timers').toLowerCase()}' : '${t('structure_timer').toLowerCase()}'}\``}>
+                        {structure_timers.length} {structure_timers.length != 1 ? t('structure_timers').toLowerCase() : t('structure_timer').toLowerCase()}
+                    </small>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                {can_add_timers &&
+                    <Button color={'green'} href={translatePath('/intel/timers/add')}>
+                        <AddIcon slot="icon" />
+                        {t('add_structure_timer')}
+                    </Button>
+                }
+            </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader">
+            <Button
+                href={translatePath('/intel/timers/active')}
+                size='sm'
+            >
+                {t('active_timers')}
+            </Button>
+        </FlexInline>
+        
+        {structure_timers_error ?
+            <ErrorRefetch
+                args={{
+                    partial: STRUCTURE_TIMERS_LIST_PARTIAL_URL,
+                    message: structure_timers_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <Flexblock gap='var(--space-xl)'>
+                <div class="[ structure-timers-list-container ]">
+                    <StructureTimerList structure_timers={structure_timers} />
+                </div>
+            </Flexblock>
+        }
+	</PageWide>
+</Viewport>

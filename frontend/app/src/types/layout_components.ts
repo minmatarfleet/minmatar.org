@@ -686,3 +686,18 @@ export interface NotificationSubscription {
     id:             number;
     subscription:   string;
 }
+
+export interface StructureTimerUI {
+    id:                 number;
+    name:               string;
+    state:              string;
+    timer:              Date;
+    system_name:        string;
+    alliance_id:        number;
+    alliance_name:      string;
+    corporation_name:   string;
+    structure_id:       number;
+    structure_type:     string;
+    structure_type_id:  number;
+    verified:           boolean;
+}

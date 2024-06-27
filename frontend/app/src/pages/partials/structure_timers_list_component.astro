@@ -1,0 +1,70 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
+
+import type { StructureTimerUI } from '@dtypes/layout_components'
+import { fetch_structure_timers } from '@helpers/fetching/structures'
+
+const active = JSON.parse(Astro.url.searchParams.get('active')) as boolean
+
+let structure_timers_error:string | false = false
+let structure_timers:StructureTimerUI[] = []
+
+try {
+    structure_timers = await fetch_structure_timers(auth_token as string, active)
+    structure_timers.sort(function(a, b) {
+        return new Date(a.timer).getTime() - new Date(b.timer).getTime();
+    });
+} catch (error) {
+    structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
+}
+
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay'))
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StructureTimerList from '@components/blocks/StructureTimerList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{structure_timers_error ?
+    <ErrorRefetch
+        args={{
+            partial: STRUCTURE_TIMERS_LIST_PARTIAL_URL,
+            message: structure_timers_error,
+            delay: delay,
+        }}
+    />
+    :
+    <Flexblock gap='var(--space-xl)'>
+        <div class="[ structure-timers-list-container ]">
+            <StructureTimerList
+                structure_timers={structure_timers}
+                can_verify_timer={can_verify_timer}
+            />
+        </div>
+    </Flexblock>
+}

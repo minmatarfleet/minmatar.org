@@ -1,0 +1,168 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import type { StructureTimerUI } from '@dtypes/layout_components'
+import type { VerifyStructureTimerRequest } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    structure_timer:    StructureTimerUI;
+    can_verify_timer:   boolean;
+    [propName: string]: any;
+}
+
+const {
+    structure_timer,
+    can_verify_timer = false,
+    ...attributes
+} = Astro.props
+
+import { get_item_icon, get_alliance_logo } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import ThumbCard from '@components/blocks/ThumbCard.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import Button from '@components/blocks/Button.astro';
+
+import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
+
+const ITEM_ID = `structure-timer-${structure_timer.id}`
+
+import { query_string } from '@helpers/string';
+import Tag from './Tag.astro';
+const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
+
+const eve_time = new Date(structure_timer.timer);
+const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
+---
+
+<ThumbCard
+    id={ITEM_ID}
+    thumb_image={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
+    thumb_image_small={get_item_icon(structure_timer.structure_type_id, 512)}
+    thumb_image_alt={t(structure_timer.structure_type as any) ?? structure_timer.structure_type}
+    items_width='200px'
+    x-data={`{
+        local_time: new Date('${eve_time} UTC').toLocaleDateString(
+            '${lang}',
+            ${import.meta.env.DATETIME_FORMAT}
+        )
+    }`}
+    {...attributes}
+>
+    <a
+        slot="absolute"
+        class="[ absolute top-[var(--space-3xs)] right-[var(--space-3xs)] w-[32px] neocom-button ]"
+        data-tippy-content={t('view_on_dotlan')}
+        href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
+        target="_blank"
+        rel="nofollow noopener noreferrer"
+    >
+        <MapEvEIcon />
+    </a>
+    
+    <VerticalCenter>
+        <Flexblock gap="var(--space-s-m)">
+            <TextGroup title={t('location')}>
+                <span>{structure_timer.system_name} — {structure_timer.name}</span>
+            </TextGroup>
+            <TextGroup title={t('state')}>
+                {t(structure_timer.state as any) ?? structure_timer.state}
+            </TextGroup>
+        </Flexblock>
+    </VerticalCenter>
+    
+    <VerticalCenter>
+        <Flexblock gap="var(--space-s-m)">
+            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                {eve_time_text}
+            </TextGroup>
+            <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                <span class="[ loading ]">{t('calculating')}</span>
+            </TextGroup>
+        </Flexblock>
+    </VerticalCenter>
+    
+    {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
+        <VerticalCenter>
+            <Countdown
+                date={structure_timer.timer}
+                id={structure_timer.id}
+                tag='countdown-structure'
+            />
+        </VerticalCenter>
+        :
+        <VerticalCenter>
+            <p class="[ timer-status-text ]">Expired</p>
+        </VerticalCenter>
+    }
+
+    <VerticalCenter slot="actions" class="[ justify-end ]">
+        {can_verify_timer && !structure_timer.verified &&
+            <Button
+                type="button"
+                x-bind:disabled="disabled"
+                x-data={`{
+                    disabled: false,
+                    show_verify_dialog() {
+                        this.disabled = true
+                        
+                        show_confirm_dialog({
+                            title: '${t('structure_timer_verify_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_verify_structure_timer/')}?${query_string({
+                                location: `${structure_timer.system_name} — ${structure_timer.name}`,
+                                alliance_id: structure_timer.alliance_id,
+                                alliance_name: structure_timer.alliance_name ?? t('unknown_alliance'),
+                                timer: eve_time_text,
+                                structure_type: structure_timer.structure_type,
+                                message: t('verify_structure_timer_dialog_text')
+                            })}',
+                            return_on_accept: true,
+                            hx: {
+                                method: 'post',
+                                url: '${STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL}?${query_string({
+                                    timer_id: structure_timer.id
+                                })}',
+                                vals: ${JSON.stringify({
+                                        alliance_name: structure_timer.alliance_name,
+                                        corporation_name: structure_timer.corporation_name,
+                                    } as VerifyStructureTimerRequest)
+                                },
+                                target: '#${ITEM_ID}',
+                                swap: 'outerHTML transition:true'
+                            }
+                        }).then( (accepted) => { this.disabled = !!accepted } )
+                    }
+                }`}
+                x-on:click="show_verify_dialog()"
+                type="button"
+            >
+                {t('verify_timer')}
+            </Button>
+        }
+        {structure_timer.verified &&
+            <Tag color='green' text={t('verified')} />
+        }
+    </VerticalCenter>
+</ThumbCard>
+
+<style lang="scss">
+    .timer-status-text {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        margin-left: -10px;
+        margin-right: -10px;
+        color: var(--highlight);
+		letter-spacing: 12px;
+        text-indent: 12px;
+		line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
+    }
+</style>
