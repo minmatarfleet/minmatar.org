@@ -1,5 +1,6 @@
 ---
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -70,7 +71,7 @@ if (verify_structure_timer_error) {
     }
 }
 
-import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
+
 ---
 
 <StructureTimerListItem
