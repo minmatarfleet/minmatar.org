@@ -80,6 +80,46 @@ export const WatermelonXData = `init_ccpwgl() {
         setColor(82, 6, 47, 'Mtl4FresnelColor')
     });
 
+    const SEEEDS = scene.loadShip('iam1_t1:orebase:minmatar', function() {
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+
+        // Translation
+        rotationMatrix[12] = 1200000
+        rotationMatrix[13] = 110000
+        rotationMatrix[14] = -900000
+        rotationMatrix[15] = 5
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+    });
+
+    const RIND = scene.loadShip('iam1_t1:orebase:minmatar', function() {
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+
+        // Translation
+        rotationMatrix[12] = 2300000
+        rotationMatrix[13] = 240000
+        rotationMatrix[14] = -1700000
+        rotationMatrix[15] = 5
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+    });
+
     ccpwgl.enablePostprocessing(true);
 
     function setColor(r, g, b, material) {

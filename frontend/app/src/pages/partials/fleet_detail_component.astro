@@ -26,20 +26,35 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
+import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
+import { get_system_id } from '@helpers/sde/map'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI
 let user_character:EveCharacterProfile
+let fleet_composition:FleetCompositionUI[] = []
+let fleet_radar:FleetRadarUI[] = []
+let is_fleet_commander = false
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
+    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+
+    if (is_fleet_commander && upcoming) {
+        const staggering_solar_system = fleet.location.split(' - ')[0]
+        const staggering_solar_system_id = await get_system_id(staggering_solar_system)
+
+        const members = await get_fleet_members(auth_token as string, fleet_id)
+        fleet_composition = await group_members_by_ship(members)
+        fleet_radar = await group_members_by_location(members, staggering_solar_system_id)
+    }
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_404_Not_Found()
@@ -70,7 +85,10 @@ import FleetDetails from '@components/blocks/FleetDetails.astro';
     :
     <FleetDetails
         fleet={fleet}
-        history={!upcoming}
         can_remove_fleet={can_remove_fleet}
+        is_fleet_commander={is_fleet_commander}
+        fleet_composition={fleet_composition}
+        fleet_radar={fleet_radar}
+        history={!upcoming}
     />
 }
