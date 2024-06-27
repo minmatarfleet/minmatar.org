@@ -100,7 +100,7 @@ const page = Astro.url.pathname
                     <MarketEvEIcon />
                 </NeocomButton>
             }
-            {!is_prod_mode() && authenticated &&
+            {authenticated &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/intel/'))}
                     title='neocom.intel'
