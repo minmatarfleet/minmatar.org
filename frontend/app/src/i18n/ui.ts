@@ -845,7 +845,6 @@ export const ui = {
         'inactive_timers': 'Inactive timers',
         'timers_history': 'Timers history',
         'view_structure_timers': 'View structure timers',
-        'owing_alliance_name': 'Owing alliance name',
         'anchoring': 'Anchoring',
         'unanchoring': 'Unanchoring',
         'timer_type': 'Timer type',
