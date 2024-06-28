@@ -203,7 +203,7 @@
         "icon": "/images/icons/48px-Satellite.png",
         "description": "page_finder.intel.description",
         "permissions" : {
-            "user": [ "structures.view_evestructure" ]
+            "user": [ "structures.view_evestructuretimer" ]
         }
     },
     {
@@ -214,7 +214,7 @@
         "icon": "/images/icons/48px-Calendaricon.png",
         "description": "page_finder.intel.timers.active.description",
         "permissions" : {
-            "user": [ "structures.view_evestructure" ]
+            "user": [ "structures.view_evestructuretimer" ]
         }
     },
     {
@@ -223,7 +223,7 @@
         "publish": true,
         "description": "page_finder.intel.timers.history.description",
         "permissions" : {
-            "user": [ "structures.view_evestructure" ]
+            "user": [ "structures.view_evestructuretimer" ]
         }
     },
     {

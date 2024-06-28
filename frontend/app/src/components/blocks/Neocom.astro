@@ -102,7 +102,7 @@ const page = Astro.url.pathname
                     <MarketEvEIcon />
                 </NeocomButton>
             }
-            {(user_is_superadmin || user_permissions.includes('structures.view_evestructure')) &&
+            {(user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')) &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/intel/'))}
                     title='neocom.intel'
