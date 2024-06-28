@@ -10,6 +10,7 @@ interface Props {
     user_is_director:   boolean;
     user_is_superadmin: boolean;
     authenticated:      boolean;
+    user_permissions:        string[];
 }
 
 const {
@@ -17,6 +18,7 @@ const {
     user_is_director,
     user_is_superadmin,
     authenticated,
+    user_permissions,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot')
@@ -100,7 +102,7 @@ const page = Astro.url.pathname
                     <MarketEvEIcon />
                 </NeocomButton>
             }
-            {authenticated &&
+            {(user_is_superadmin || user_permissions.includes('structures.view_evestructure')) &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/intel/'))}
                     title='neocom.intel'

@@ -19,6 +19,9 @@ const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
 import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 
@@ -156,6 +159,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 					user_is_director={user_is_director}
 					user_is_superadmin={user_is_superadmin}
 					authenticated={user !== false}
+					user_permissions={user_permissions}
 				/>
 			}
 			<slot />
