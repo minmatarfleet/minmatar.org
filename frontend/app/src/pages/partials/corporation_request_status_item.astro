@@ -1,5 +1,6 @@
 ---
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import CorporationStatus from '@components/blocks/CorporationStatus.astro';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -75,7 +76,7 @@ if (create_corporation_application_error) {
     }
 }
 
-import CorporationStatus from '@components/blocks/CorporationStatus.astro';
+
 ---
 
 <CorporationStatus
