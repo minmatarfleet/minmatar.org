@@ -63,7 +63,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
             '${lang}',
             ${import.meta.env.DATETIME_FORMAT}
-        )
+        ),
+        tippy_options: {
+            delay: [ 100, 200 ],
+            arrow: true,
+        },
     }`}
     {...attributes}
 >
@@ -76,6 +80,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             t('training_fleet') :
             t('non_strategic_fleet')
         }
+        x-init="tippy($el, tippy_options)"
     >
         {fleet.type === 'strategic' ?
             <StratopIcon /> :
