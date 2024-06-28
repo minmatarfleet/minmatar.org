@@ -15,11 +15,11 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-if (!user)
-    return HTTP_404_Not_Found()
-
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!is_superuser && !user_permissions.includes('structures.view_evestructure'))
+    return HTTP_404_Not_Found()
 
 const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
 
