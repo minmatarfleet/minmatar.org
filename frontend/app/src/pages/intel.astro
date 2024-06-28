@@ -18,7 +18,7 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (!is_superuser && !user_permissions.includes('structures.view_evestructure'))
+if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
     return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';
