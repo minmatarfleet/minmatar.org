@@ -49,7 +49,7 @@ class TimerForm(discord.ui.Modal, title="Timer"):
     timer = discord.ui.TextInput(
         label="Paste the timer from the selected item window",
         style=discord.TextStyle.long,
-        placeholder="Sosala - WATERMELLON\0\Reinforced until forever",
+        placeholder="Sosala - WATERMELLON\n0\nReinforced until forever",
         required=True,
         max_length=300,
     )
