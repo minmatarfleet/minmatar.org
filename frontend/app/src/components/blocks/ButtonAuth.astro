@@ -23,6 +23,9 @@ const {
 
 const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
 import Button from '@components/blocks/Button.astro';
 ---
 
@@ -38,7 +41,7 @@ import Button from '@components/blocks/Button.astro';
             
             show_confirm_dialog({
                 title: '${dialog_title}',
-                content: '<p>${t('authentication_missing_dialog')}</p>',
+                content: '<p>${marked.parseInline(t('authentication_missing_dialog'), { renderer })}</p>',
             }).then( (accepted) => {
                 if (accepted)
                     window.location.href = '${AUTH_REDIRECT_URL}'

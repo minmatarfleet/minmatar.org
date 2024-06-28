@@ -22,10 +22,6 @@ const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upc
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
-import Button from '@components/blocks/Button.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
-
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
