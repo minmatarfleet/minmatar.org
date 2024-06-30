@@ -49,7 +49,14 @@ export const WatermelonXData = `init_ccpwgl() {
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
     
-    scene.loadSun('res:/fisfx/lensflare/pink_hazy.red');
+    scene.loadSun('res:/fisfx/lensflare/pink_hazy.red', function () {
+        scene.wrappedScene.lensflares.forEach(lensflare=> {
+            lensflare.mesh.additiveAreas
+            .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
+            .forEach(meshArea => meshArea.display = false);
+        })
+    });
+
     scene.setSunDirection([-0.7, -0.01, 0.7]);
     
     watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
@@ -192,7 +199,13 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/m02_cube.red');
     
-    scene.loadSun('res:/fisfx/lensflare/orange_radiating.red');
+    scene.loadSun('res:/fisfx/lensflare/orange_radiating.red', function () {
+        scene.wrappedScene.lensflares.forEach(lensflare=> {
+            lensflare.mesh.additiveAreas
+            .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
+            .forEach(meshArea => meshArea.display = false);
+        })
+    });
     scene.setSunDirection([-0.5, -0.01, 0.4]);
 
     const moon = scene.loadPlanet(
