@@ -106,12 +106,33 @@ const page_title = fitting_parsed.name;
             rotation_y: 0.229,
             ship_rotation: 0,
             camera: null,
+            resize_canvas: null,
+            ccpwgl_context: null,
             update() {
                 if (!this.camera) return
 
                 this.camera.rotationX = this.rotation_x
                 this.camera.rotationY = this.rotation_y
-            }
+            },
+            resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
+                // Lookup the size the browser is displaying the canvas in CSS pixels.
+                const displayWidth  = canvas.clientWidth;
+                const displayHeight = canvas.clientHeight;
+                
+                // Check if the canvas is not the same size.
+                const needResize = canvas.width  !== displayWidth ||
+                                    canvas.height !== displayHeight;
+                
+                if (needResize) {
+                    // Make the canvas the same size
+                    canvas.width  = displayWidth;
+                    canvas.height = displayHeight;
+
+                    ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
+                }
+                
+                return needResize;
+            },
         }`}
     >
         <canvas
@@ -221,28 +242,12 @@ const page_title = fitting_parsed.name;
                     });
                     canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
 
-                    function resizeCanvasToDisplaySize(canvas) {
-						// Lookup the size the browser is displaying the canvas in CSS pixels.
-						const displayWidth  = canvas.clientWidth;
-						const displayHeight = canvas.clientHeight;
-						
-						// Check if the canvas is not the same size.
-						const needResize = canvas.width  !== displayWidth ||
-											canvas.height !== displayHeight;
-						
-						if (needResize) {
-							// Make the canvas the same size
-							canvas.width  = displayWidth;
-							canvas.height = displayHeight;
-						}
-						
-						return needResize;
-					}
-
-					resizeCanvasToDisplaySize(ccpwgl_context.canvas)
-					ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+                    resize_canvas = ccpwgl_context.canvas
+					resizeCanvasToDisplaySize(ccpwgl_context.canvas, ccpwgl_context)
+					// ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
                 }
             }`}
+            x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
             x-init="$nextTick(() => init_ccpwgl())"
         />
 
