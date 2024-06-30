@@ -4,7 +4,8 @@ export const WatermelonCameraXData = `
     rotation_y: 0.251,
     camera: null,
     resize_canvas: null,
-    resizeCanvasToDisplaySize(canvas) {
+    ccpwgl_context: null,
+    resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
         const displayHeight = canvas.clientHeight;
@@ -17,6 +18,8 @@ export const WatermelonCameraXData = `
             // Make the canvas the same size
             canvas.width  = displayWidth;
             canvas.height = displayHeight;
+
+            ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
         }
         
         return needResize;
@@ -143,8 +146,8 @@ export const WatermelonXData = `init_ccpwgl() {
     }
 
     resize_canvas = ccpwgl_context.canvas
-    resizeCanvasToDisplaySize(resize_canvas)
-    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+    resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)
+    // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 }`
 
 export const AugaMilitiaHQCameraXData = `
@@ -154,7 +157,7 @@ export const AugaMilitiaHQCameraXData = `
     resize_canvas: null,
     moon_rotation_angle: 0,
     planet_rotation_angle: 0,
-    resizeCanvasToDisplaySize(canvas) {
+    resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
         const displayHeight = canvas.clientHeight;
@@ -167,6 +170,8 @@ export const AugaMilitiaHQCameraXData = `
             // Make the canvas the same size
             canvas.width  = displayWidth;
             canvas.height = displayHeight;
+
+            ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
         }
         
         return needResize;
@@ -315,7 +320,7 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
 
     resize_canvas = ccpwgl_context.canvas
     resizeCanvasToDisplaySize(resize_canvas)
-    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+    // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 
     const rotation_timer = setInterval(function () {
         let model = mat4.fromValues(
@@ -352,7 +357,7 @@ export const OurzadCameraXData = `
     camera: null,
     resize_canvas: null,
     rotation_angle: 0,
-    resizeCanvasToDisplaySize(canvas) {
+    resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
         console.log('recalculate')
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
@@ -366,6 +371,8 @@ export const OurzadCameraXData = `
             // Make the canvas the same size
             canvas.width  = displayWidth;
             canvas.height = displayHeight;
+
+            ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
         }
         
         return needResize;
@@ -500,6 +507,6 @@ export const OurzadXData = `init_ccpwgl() {
 
     resize_canvas = ccpwgl_context.canvas
     resizeCanvasToDisplaySize(resize_canvas)
-    ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+    // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 }`
 ---
