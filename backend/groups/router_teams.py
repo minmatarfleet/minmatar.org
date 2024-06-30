@@ -137,6 +137,10 @@ def get_team_requests(request, team_id: int):
 )
 def request_to_join_team(request, team_id: int):
     team = Team.objects.filter(id=team_id).first()
+    if not request.user.has_perm("groups.add_teamrequest"):
+        return 403, {
+            "detail": "You do not have permission to request to join a team."
+        }
     if not team:
         return 404, {"detail": "Team does not exist."}
     if TeamRequest.objects.filter(
