@@ -136,6 +136,8 @@ def get_sig_requests(request, sig_id: int):
     description="Request to join a special interest group",
 )
 def request_to_join_sig(request, sig_id: int):
+    if not request.user.has_perm("groups.add_sigrequest"):
+        return 403, {"detail": "You do not have permission to join this group."}
     sig = Sig.objects.filter(id=sig_id).first()
     if not sig:
         return 404, {"detail": "Sig does not exist."}
