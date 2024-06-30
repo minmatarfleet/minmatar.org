@@ -255,7 +255,7 @@ def remove_sigs():
     Remove all sigs for users that don't have the required permissions to request sigs
     """
     for sig in Sig.objects.all():
-        for user in sig.users.all():
+        for user in sig.members.all():
             if not user.has_perm("groups.request_sig"):
                 # sig.users.remove(user)
                 logger.info("Removing user %s from sig %s", user, sig)
@@ -266,7 +266,7 @@ def remove_teams():
     Remove all teams for users that don't have the required permissions to request teams
     """
     for team in Team.objects.all():
-        for user in team.users.all():
+        for user in team.members.all():
             if not user.has_perm("groups.request_team"):
                 # team.users.remove(user)
                 logger.info("Removing user %s from team %s", user, team)
