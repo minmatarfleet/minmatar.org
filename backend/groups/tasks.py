@@ -256,7 +256,7 @@ def remove_sigs():
     """
     for sig in Sig.objects.all():
         for user in sig.members.all():
-            if not user.has_perm("groups.request_sig"):
+            if not user.has_perm("groups.add_sigrequest"):
                 # sig.users.remove(user)
                 logger.info("Removing user %s from sig %s", user, sig)
 
@@ -267,6 +267,6 @@ def remove_teams():
     """
     for team in Team.objects.all():
         for user in team.members.all():
-            if not user.has_perm("groups.request_team"):
+            if not user.has_perm("groups.add_teamrequest"):
                 # team.users.remove(user)
                 logger.info("Removing user %s from team %s", user, team)
