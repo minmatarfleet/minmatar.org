@@ -249,6 +249,7 @@ def create_sig_request_reminders():
 
         discord.create_message(sig.discord_channel_id, message)
 
+
 @app.task()
 def remove_sigs():
     """
@@ -257,8 +258,9 @@ def remove_sigs():
     for sig in Sig.objects.all():
         for user in sig.members.all():
             if not user.has_perm("groups.add_sigrequest"):
-                # sig.users.remove(user)
+                sig.members.remove(user)
                 logger.info("Removing user %s from sig %s", user, sig)
+
 
 @app.task()
 def remove_teams():
@@ -268,5 +270,5 @@ def remove_teams():
     for team in Team.objects.all():
         for user in team.members.all():
             if not user.has_perm("groups.add_teamrequest"):
-                # team.users.remove(user)
+                team.members.remove(user)
                 logger.info("Removing user %s from team %s", user, team)
