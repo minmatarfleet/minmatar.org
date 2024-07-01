@@ -34,13 +34,13 @@
     ],
     "screenshots": [
         {
-            "src": "/images/screenshot-540x720.png",
-            "type": "image/png",
+            "src": "/images/screenshot-540x720.jpg",
+            "type": "image/jpg",
             "sizes": "540x720",
             "form_factor": "narrow"
         },
         {
-            "src": "/images/screenshot-720x540.png",
+            "src": "/images/screenshot-720x540.jpg",
             "type": "image/jpg",
             "sizes": "720x540",
             "form_factor": "wide"

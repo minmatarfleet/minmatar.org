@@ -49,19 +49,31 @@ export const WatermelonXData = `init_ccpwgl() {
     camera.minDistance = 2300
     camera.maxDistance = 20000
     camera.nearPlane = 1000
+    camera.farPlane = 5000000
     camera.shift = 100.92
 
     scene = ccpwgl.loadScene('res:/dx9/scene/universe/a04_cube.red');
     
     scene.loadSun('res:/fisfx/lensflare/pink_hazy.red', function () {
         scene.wrappedScene.lensflares.forEach(lensflare=> {
+            console.log(lensflare)
+            lensflare._transform = mat4.fromValues(
+                100, 0, 0, 0,
+                0, 100, 0, 0,
+                0, 0, 100, 0,
+                0, 0, 0, 100
+            )
             lensflare.mesh.additiveAreas
             .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
             .forEach(meshArea => meshArea.display = false);
+
+            lensflare.mesh.additiveAreas
+            .filter(meshArea => meshArea.name.toLowerCase() === "backr")
+            .forEach(meshArea => meshArea.effect.parameters.Size.value = [5.5, 6, 0, 0]);
         })
     });
 
-    scene.setSunDirection([-0.7, -0.01, 0.7]);
+    scene.setSunDirection([-0.90, 0.1, 0.7]);
     
     watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
         camera.focus(this, 1.9)
@@ -99,13 +111,15 @@ export const WatermelonXData = `init_ccpwgl() {
             0, 0, 0, 1
         )
 
-        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+        let rotationMatrix = mat4.fromYRotation(matrix, -1)
+
+        const SEEDS_STATION_ANGLE = -0.56
 
         // Translation
-        rotationMatrix[12] = 1200000
-        rotationMatrix[13] = 110000
-        rotationMatrix[14] = -900000
-        rotationMatrix[15] = 5
+        matrix[12] = 1200000 * Math.cos(SEEDS_STATION_ANGLE)
+        matrix[13] = 11000
+        matrix[14] = 1200000 * Math.sin(SEEDS_STATION_ANGLE)
+        rotationMatrix[15] = 1
         
         this.setTransform(rotationMatrix)
         this.setTransform(matrix)
@@ -119,13 +133,15 @@ export const WatermelonXData = `init_ccpwgl() {
             0, 0, 0, 1
         )
 
-        let rotationMatrix = mat4.fromYRotation(matrix, -0.7)
+        let rotationMatrix = mat4.fromYRotation(matrix, -1)
+
+        const RIND_STATION_ANGLE = -0.55
 
         // Translation
-        rotationMatrix[12] = 2300000
-        rotationMatrix[13] = 190000
-        rotationMatrix[14] = -1700000
-        rotationMatrix[15] = 5
+        matrix[12] = 2400000 * Math.cos(RIND_STATION_ANGLE)
+        matrix[13] = 41000
+        matrix[14] = 2400000 * Math.sin(RIND_STATION_ANGLE)
+        rotationMatrix[15] = 1
         
         this.setTransform(rotationMatrix)
         this.setTransform(matrix)
