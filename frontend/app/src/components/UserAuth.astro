@@ -22,7 +22,7 @@ const href = is_auth ? translatePath('/account/') : get_auth_url()
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
 const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.character_id) : null
 const primary_pilot_name = primary_pilot ? primary_pilot.character_name : null
-const portrait = primary_pilot_avatar ?? (Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : "https://images.evetech.net/characters/1/portrait?size=64")
+const portrait = primary_pilot_avatar ?? (Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : null)
 
 const title = is_auth ? 'account.page_title' : 'authentication'
 const description = is_auth ? 'account.description' : 'authentication_description'
@@ -40,7 +40,7 @@ import Tippy from '@components/blocks/Tippy.astro';
     >
         <img loading="lazy"
             class="confetti-image"
-            src={portrait}
+            src={is_auth && portrait ? portrait : "https://images.evetech.net/characters/1/portrait?size=64"}
             width="48"
             height="48"
             alt={primary_pilot_name ? primary_pilot_name : t('unknown_pilot')}
