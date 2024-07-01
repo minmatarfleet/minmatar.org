@@ -56,42 +56,49 @@ let fitting_groups:FittingGroup[] = []
 
 if (fitting_parsed?.high_slots?.length > 0) {
     fitting_groups.push({
-        name: 'High Power',
+        name: t('high_power'),
         modules: transform_into_cargohold(fitting_parsed.high_slots)
     })
 }
 
 if (fitting_parsed?.med_slots?.length > 0) {
     fitting_groups.push({
-        name: 'Medium Power',
+        name: t('medium_power'),
         modules: transform_into_cargohold(fitting_parsed.med_slots)
     })
 }
 
 if (fitting_parsed?.low_slots?.length > 0) {
     fitting_groups.push({
-        name: 'Low Power',
+        name: t('low_power'),
         modules: transform_into_cargohold(fitting_parsed.low_slots)
+    })
+}
+
+if (fitting_parsed?.rig_slots?.length > 0) {
+    fitting_groups.push({
+        name: t('rig_slot'),
+        modules: transform_into_cargohold(fitting_parsed.rig_slots)
     })
 }
 
 if (fitting_parsed?.subsystem_slots?.length > 0) {
     fitting_groups.push({
-        name: 'Subsystems',
+        name: t('subsystems'),
         modules: transform_into_cargohold(fitting_parsed.subsystem_slots)
     })
 }
 
 if (fitting_parsed?.drones?.length > 0) {
     fitting_groups.push({
-        name: 'Drones',
+        name: t('drones'),
         modules: fitting_parsed.drones
     })
 }
 
 if (fitting_parsed?.cargohold?.length > 0) {
     fitting_groups.push({
-        name: 'Cargo Hold',
+        name: t('cargo_hold'),
         modules: fitting_parsed.cargohold
     })
 }

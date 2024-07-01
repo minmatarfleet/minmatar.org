@@ -865,5 +865,11 @@ export const ui = {
         'timer_information': 'Timer information',
         'add_timer': 'Add timer',
         'structures': 'Structures',
+        'high_power': 'High Power',
+        'medium_power': 'Medium Power',
+        'low_power': 'Low Power',
+        'rig_slot': 'Rig Slot',
+        'subsystems': 'Subsystems',
+        'drones': 'Drones',
     },
 } as const;
