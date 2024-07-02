@@ -257,9 +257,13 @@ def remove_sigs():
     """
     for sig in Sig.objects.all():
         for user in sig.members.all():
-            if not user.has_perm("groups.add_sigrequest"):
-                sig.members.remove(user)
-                logger.info("Removing user %s from sig %s", user, sig)
+            try:
+                if not user.has_perm("groups.add_sigrequest"):
+                    sig.members.remove(user)
+                    logger.info("Removing user %s from sig %s", user, sig)
+            except Exception as e:
+                logger.error("Error removing user %s from sig %s: %s", user, sig, e)
+                continue
 
 
 @app.task()
@@ -269,6 +273,12 @@ def remove_teams():
     """
     for team in Team.objects.all():
         for user in team.members.all():
-            if not user.has_perm("groups.add_teamrequest"):
-                team.members.remove(user)
-                logger.info("Removing user %s from team %s", user, team)
+            try:
+                if not user.has_perm("groups.add_teamrequest"):
+                    team.members.remove(user)
+                    logger.info("Removing user %s from team %s", user, team)
+            except Exception as e:
+                logger.error(
+                    "Error removing user %s from team %s: %s", user, team, e
+                )
+                continue
