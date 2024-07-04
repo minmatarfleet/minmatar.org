@@ -26,6 +26,7 @@ import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 
 import SkipToContent from '@components/blocks/SkipToContent.astro';
+import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
 import HeadScripts from '@components/partials/HeadScripts.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
@@ -111,6 +112,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<link rel="preload" href="/fonts/norwester-webfont.woff2" as="font" type="font/woff" crossorigin>
 
 		<HeadScripts />
+		<CoverImagesPreload />
 
 		<link rel="manifest" href="/site.webmanifest">
 	</head>
