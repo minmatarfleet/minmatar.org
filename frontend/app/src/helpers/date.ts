@@ -62,6 +62,12 @@ export const days_diff = (from:Date, to:Date):number => {
     return Math.floor(moment.duration(to_moment.diff(from_moment)).asDays())
 }
 
+export const hours_diff = (from:Date, to:Date):number => {
+    var from_moment = moment(new Date(from))
+    var to_moment = moment(new Date(to))
+    return Math.floor(moment.duration(to_moment.diff(from_moment)).asHours())
+}
+
 export const month_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
