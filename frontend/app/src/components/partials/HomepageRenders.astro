@@ -125,6 +125,28 @@ export const WatermelonXData = `init_ccpwgl() {
         this.setTransform(matrix)
     });
 
+    const JUICES = scene.loadShip('iam1_t1:orebase:minmatar', function() {
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, -1)
+
+        const JUICES_STATION_ANGLE = -0.55
+
+        // Translation
+        matrix[12] = 2400000 * Math.cos(JUICES_STATION_ANGLE)
+        matrix[13] = 41000
+        matrix[14] = 2400000 * Math.sin(JUICES_STATION_ANGLE)
+        rotationMatrix[15] = 1
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+    });
+
     const RIND = scene.loadShip('iam1_t1:orebase:minmatar', function() {
         let matrix = mat4.fromValues(
             1, 0, 0, 0,
@@ -135,12 +157,12 @@ export const WatermelonXData = `init_ccpwgl() {
 
         let rotationMatrix = mat4.fromYRotation(matrix, -1)
 
-        const RIND_STATION_ANGLE = -0.55
+        const RIND_STATION_ANGLE = -0.543
 
         // Translation
-        matrix[12] = 2400000 * Math.cos(RIND_STATION_ANGLE)
-        matrix[13] = 41000
-        matrix[14] = 2400000 * Math.sin(RIND_STATION_ANGLE)
+        matrix[12] = 3400000 * Math.cos(RIND_STATION_ANGLE)
+        matrix[13] = 61000
+        matrix[14] = 3400000 * Math.sin(RIND_STATION_ANGLE)
         rotationMatrix[15] = 1
         
         this.setTransform(rotationMatrix)
