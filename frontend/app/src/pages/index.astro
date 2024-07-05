@@ -67,10 +67,6 @@ const page_title = t('index.page_title');
             ${staggering === 'auga' ?
 				AugaMilitiaHQCameraXData :
 				WatermelonCameraXData
-			},
-			init() {
-				if (Notification.permission === 'default')
-					Notification.requestPermission()
 			}
         }`}
         x-effect="update"
