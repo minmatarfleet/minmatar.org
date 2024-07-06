@@ -82,7 +82,7 @@ export async function get_all_corporations_applications(access_token:string, rec
                 applied_corporation: application.corporation_id, // django corporation id
                 character_id: character?.character_id ?? 0,
                 character_name: character?.character_name ?? t('unknown_character'),
-                corporation_id: character?.character_id ?? 0,
+                corporation_id: character?.corporation_id ?? 0,
                 corporation_name: character_error ?? character?.corporation_name ?? t('unknown_corporation'),
                 status: application.status,
             } as ApplicationBasic
