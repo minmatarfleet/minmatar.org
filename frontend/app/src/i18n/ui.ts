@@ -871,5 +871,7 @@ export const ui = {
         'rig_slot': 'Rig Slot',
         'subsystems': 'Subsystems',
         'drones': 'Drones',
+        'find_us_in_reddit': 'Find us in Reddit',
+        'check_our_discord': 'Check our Discord',
     },
 } as const;
