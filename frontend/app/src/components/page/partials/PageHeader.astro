@@ -21,7 +21,7 @@ const subheader_content = await Astro.slots.render('subheader');
     x-bind:class="sticky ? 'sticky' : ''"
 >
     <div
-        class="[ relative z-10 ]"
+        class="[ relative z-10 pt-[3px] ]"
         x-intersect:leave.full="sticky = true"
         x-intersect.enter.full="sticky = false"
     >
@@ -64,7 +64,7 @@ const subheader_content = await Astro.slots.render('subheader');
     .post-header {
         transition: var(--fast-transition);
         position: sticky;
-        top: -2px;
+        top: -3px;
         z-index: var(--header-z-index);
 
         &.sticky {
