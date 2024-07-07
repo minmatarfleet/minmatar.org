@@ -219,10 +219,17 @@ const page_title = t('intel.timers.add.page_title');
                             </Flexblock>
 
                             <CollapsibleBlock padding_inline='0'>
-                                <FlexInline slot="head">
-                                    <TutorialIcon />
+                                <FixedFluid
+                                    width='48'
+                                    breakpoint='70%'
+                                    slot="head"
+                                    class="[ w-full items-center ]"
+                                >
+                                    <picture class="[ hidden sm:block ]">
+                                        <TutorialIcon />
+                                    </picture>
                                     <p set:html={marked.parseInline(t('paster_timer_string'))} />
-                                </FlexInline>
+                                </FixedFluid>
 
                                 <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
                                     <source src="/videos/structure-timers-tutorial.mp4" type="video/mp4">
