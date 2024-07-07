@@ -70,9 +70,9 @@ export const ui = {
         'doctrines.cover_alt': 'A fleet of Cyclone Fleet Issue ships engaged in battle, with the local star looming in the background.',
 
         'doctrines.alliance.page_title': 'Alliance Doctrines',
-        'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available on [alliance contracts](/contracts/).',
+        'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available on contracts.',
         'doctrines.militia.page_title': 'Militia Doctrines',
-        'doctrines.militia.page_leading_text': 'Doctrines that are flown in militia by Minmatar Fleet Alliance fleet commanders and are available on [public contracts](/contracts/).',
+        'doctrines.militia.page_leading_text': 'Doctrines that are flown in militia by Minmatar Fleet Alliance fleet commanders and are available on contracts.',
 
         'doctrine.support_fittings.description': 'These fittings are not part of the doctrine, but are universally (all doctrines) acceptable for new players and alts.',
 
