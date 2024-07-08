@@ -18,14 +18,15 @@ const {
     picture_placement = 'left',
 } = Astro.props
 
+const ROFLRAZZI_ID = 1654509865
+
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
 <CorporationSlide
     id="vindicta-slide"
     ceo_image='/images/corporations/vindicta/ceo.png'
-    ceo_character_id={2120708580}
+    ceo_character_id={ROFLRAZZI_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
