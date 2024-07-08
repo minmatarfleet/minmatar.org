@@ -19,13 +19,15 @@ const {
     picture_placement = 'left',
 } = Astro.props
 
+const TWAN_MOLENAAR_ID = 2114993571
+
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 ---
 
 <CorporationSlide
     id="ballsdeep-slide"
     ceo_image='/images/corporations/ballsdeep/ceo.png'
-    ceo_character_id={2114993571}
+    ceo_character_id={TWAN_MOLENAAR_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
