@@ -37,6 +37,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
+import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
 
 import {
 	WatermelonXData,
@@ -96,9 +97,8 @@ const page_title = t('index.page_title');
 				<AugaInfo /> :
 				<WatermelonInfo />
 			}
-			{user &&
-				<FlexInline>
-
+			<FlexInline gap='var(--space-3xs)'>
+				{user &&
 					<StationAssets
 						corporation={
 							staggering === 'auga' ? {
@@ -114,9 +114,17 @@ const page_title = t('index.page_title');
 							'Sosala - WATERMELLON'
 						}
 					/>
-				
-				</FlexInline>
-			}
+				}
+				<a
+					class="[ w-[32px] neocom-button ]"
+					data-tippy-content={t('view_on_dotlan')}
+					href={`https://evemaps.dotlan.net/system/${staggering === 'auga' ? 'Auga' : 'Sosala'}`}
+					target="_blank"
+					rel="nofollow noopener noreferrer"
+				>
+					<MapEvEIcon />
+				</a>
+			</FlexInline>
 		</Flexblock>
 
 		<VerticalCenter
@@ -281,8 +289,8 @@ const page_title = t('index.page_title');
 
 	.camera-controls {
 		position: fixed;
-		bottom: 60px;
-		right: 60px;
+		top: 60px;
+		left: 100px;
 		width: 250px;
 	}
 
