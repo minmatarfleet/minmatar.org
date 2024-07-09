@@ -59,7 +59,7 @@ if (verify_structure_timer_error) {
         const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 
         const params = {
-            location: `${structure_timer.system_name} — ${structure_timer.name}`,
+            location: `${structure_timer.system_name} - ${structure_timer.name}`,
             alliance_id: structure_timer.alliance_id,
             alliance_name: structure_timer.alliance_name ?? t('unknown_alliance'),
             structure_type: structure_timer.structure_type,
