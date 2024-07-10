@@ -16,20 +16,17 @@ const {
     can_verify_timer = false,
 } = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
 ---
 
-<Flexblock
+<BlockList
     role="list"
     gap='var(--space-3xs)'
 >
-
     {structure_timers.length == 0 &&
-        <Flexblock gap='var(--space-xl)' centered={true}>
-            <p>{t('no_structure_timers')}</p>
-        </Flexblock>
+        <p class="[ text-center ]">{t('no_structure_timers')}</p>
     }
     
     {structure_timers.map((structure_timer) =>
@@ -40,4 +37,4 @@ import StructureTimerListItem from '@components/blocks/StructureTimerListItem.as
         />
     )}
 
-</Flexblock>
+</BlockList>

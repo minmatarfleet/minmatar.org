@@ -28,6 +28,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import StructureListItem from '@components/blocks/StructureListItem.astro';
 import Input from '@components/blocks/Input.astro';
@@ -141,7 +142,7 @@ for (let i in regions)
             </FlexInline>
         </FlexInline>
 
-        <Flexblock role="list" gap='0' class="[ filtered-list ]">
+        <BlockList role="list" gap='var(--space-3xs)'>
 
             {structures.length == 0 &&
                 <Flexblock gap='var(--space-xl)' class="text-center">
@@ -162,16 +163,12 @@ for (let i in regions)
                 <p class="[ text-center ]">{t('no_results')}</p>
             }
 
-        </Flexblock>
+        </BlockList>
     </PageWide>
 </Viewport>
 
 <style lang="scss">
     :not([style]) ~ p {
         display: none;
-    }
-
-    .filtered-list > * {
-        margin-top: var(--space-3xs) !important;
     }
 </style>

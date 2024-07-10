@@ -114,7 +114,7 @@
     {
         "slug": "corporations.members.mains",
         "path": "/alliance/corporations/members/mains",
-        "description": "page_finder.corporations.members.description",
+        "description": "page_finder.corporations.members.mains.description",
         "publish": true,
         "keywords": [ "corporations", "alts" ],
         "permissions" : {
