@@ -118,7 +118,6 @@ const page_title = t('intel.timers.history.page_title');
                     hx-on::after-request="this.removeAttribute('disabled')"
                     hx-swap="outerHTML transition:true"
                     x-on:click="show_duplicated = !show_duplicated; $nextTick(() => htmx.process($el))"
-                    x-text={`show_duplicated ? '${t('hide_duplicated')}' : '${t('show_duplicated')}'`}
                 >
                     <span x-text={`show_duplicated ? '${t('hide_duplicated')}' : '${t('show_duplicated')}'`}>{t('show_duplicated')}</span>
                     <NotificationBadge
