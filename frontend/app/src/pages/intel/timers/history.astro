@@ -25,6 +25,7 @@ const can_add_timers = is_superuser || user_permissions.includes('fleets.add_eve
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
+import { get_unique_by_key } from '@helpers/array'
 
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []
@@ -34,6 +35,8 @@ try {
     structure_timers.sort(function(a, b) {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
+
+    structure_timers = get_unique_by_key(structure_timers, 'timer')
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
@@ -73,6 +76,7 @@ const page_title = t('intel.timers.history.page_title');
             overlay: true
         }}
         x-data={`{
+            show_duplicated: false,
             structure_timers_count: ${structure_timers.length}
         }`}
     >
@@ -99,6 +103,20 @@ const page_title = t('intel.timers.history.page_title');
 
         <FlexInline slot="subheader">
             <Button
+                size='sm'
+                x-bind:hx-get={`\`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=\${!show_duplicated}\``}
+                hx-target=".structure-timers-list-container"
+                hx-indicator=".loader"
+                hx-on::before-request="this.setAttribute('disabled','');"
+                hx-on::after-request="this.removeAttribute('disabled')"
+                hx-swap="outerHTML transition:true"
+                x-on:click="show_duplicated = !show_duplicated"
+                x-text={`show_duplicated ? '${t('hide_duplicated')}' : '${t('show_duplicated')}'`}
+            >
+                {t('show_duplicated')}
+            </Button>
+
+            <Button
                 href={translatePath('/intel/timers/active')}
                 size='sm'
             >
@@ -115,11 +133,9 @@ const page_title = t('intel.timers.history.page_title');
                 }}
             />
             :
-            <Flexblock gap='var(--space-xl)'>
-                <div class="[ structure-timers-list-container ]">
-                    <StructureTimerList structure_timers={structure_timers} />
-                </div>
-            </Flexblock>
+            <div class="[ structure-timers-list-container ]">
+                <StructureTimerList structure_timers={structure_timers} />
+            </div>
         }
 	</PageWide>
 </Viewport>

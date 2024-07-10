@@ -25,8 +25,10 @@ const can_verify_timer = is_superuser || user_permissions.includes('structures.c
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
+import { get_unique_by_key } from '@helpers/array'
 
 const active = JSON.parse(Astro.url.searchParams.get('active')) as boolean
+const duplicated = JSON.parse(Astro.url.searchParams.get('duplicated')) as boolean
 
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []
@@ -36,15 +38,16 @@ try {
     structure_timers.sort(function(a, b) {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
+
+    if (!duplicated)
+        structure_timers = get_unique_by_key(structure_timers, 'timer')
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
 
-const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}`)
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}&duplicated=${duplicated ?? false}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
-
-import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -59,12 +62,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <Flexblock gap='var(--space-xl)'>
-        <div class="[ structure-timers-list-container ]">
-            <StructureTimerList
-                structure_timers={structure_timers}
-                can_verify_timer={can_verify_timer}
-            />
-        </div>
-    </Flexblock>
+    <div
+        class="[ structure-timers-list-container ]"
+        x-init={`structure_timers_count = ${structure_timers.length}`}
+    >
+        <StructureTimerList
+            structure_timers={structure_timers}
+            can_verify_timer={can_verify_timer}
+        />
+    </div>
 }
