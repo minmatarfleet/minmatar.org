@@ -36,6 +36,17 @@ export const unique = (list:any[], key:any) => {
     return [...new Set(list.map(item => item[key]))]
 }
 
+export const get_unique_by_key = (array, key) => {
+    const unique_objects = array.reduce((acc, current) => {
+        if (!acc.find(item => item[key] === current[key]))
+            acc.push(current);
+
+        return acc;
+    }, []);
+
+    return unique_objects;
+}
+
 export const semantic_list = (locale = 'en-US', list:string[]):string => {
     return new Intl.ListFormat(locale, {
         style: 'long',

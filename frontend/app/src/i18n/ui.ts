@@ -873,5 +873,7 @@ export const ui = {
         'drones': 'Drones',
         'find_us_in_reddit': 'Find us in Reddit',
         'check_our_discord': 'Check our Discord',
+        'show_duplicated': 'Show duplicated',
+        'hide_duplicated': 'Hide duplicated',
     },
 } as const;
