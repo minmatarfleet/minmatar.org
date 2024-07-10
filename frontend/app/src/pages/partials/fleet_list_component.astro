@@ -51,16 +51,18 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <div class="[ fleet-list-container ]">
+    <div
+        class="[ fleet-list-container ]"
+        x-data={`{
+            init() {
+                fleets_count = ${fleets.length}
+                tippy($el, tippy_options)
+            }
+        }`}
+    >
         <FleetList
             fleets={fleets}
             history={!upcoming}
-            x-data={`{
-                init() {
-                    fleets_count = ${fleets.length}
-                    tippy('[data-tippy-content]', tippy_options)
-                }
-            }`}
         />
     </div>
 }
