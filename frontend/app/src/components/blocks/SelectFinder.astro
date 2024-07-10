@@ -25,7 +25,9 @@ const {
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+
 import CaretIcon from '@components/icons/CaretIcon.astro';
 import BadgeAlpine from '@components/blocks/BadgeAlpine.astro';
 import Input from '@components/blocks/Input.astro';
@@ -131,8 +133,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             />
         </Wrapper>
 
-        <Flexblock
-            first_element_gap={true}
+        <BlockList
             gap="var(--space-3xs)"
             class="[ options ]"
         >
@@ -187,7 +188,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                     </Wrapper>
                 </StylessButton>
             </template>
-        </Flexblock>
+        </BlockList>
     </Flexblock>
     
     <CaretIcon />

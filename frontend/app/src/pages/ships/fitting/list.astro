@@ -41,6 +41,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import FitItem from '@components/blocks/FitItem.astro';
 import Input from '@components/blocks/Input.astro';
@@ -125,7 +126,7 @@ const page_title = t('fitting.list.page_title');
             </FlexInline>
         </FlexInline>
 
-        <Flexblock role="list" gap='0' class="[ filtered-list ]">
+        <BlockList role="list" gap='var(--space-3xs)'>
             {fittings.map((fitting) =>
                 <FitItem
                     role="listitem"
@@ -137,16 +138,12 @@ const page_title = t('fitting.list.page_title');
             
             <p class="[ text-center ]">{t('no_results')}</p>
 
-        </Flexblock>
+        </BlockList>
     </PageWide>
 </Viewport>
 
 <style lang="scss">
     :not([style]) ~ p {
         display: none;
-    }
-
-    .filtered-list > * {
-        margin-top: var(--space-3xs) !important;
     }
 </style>

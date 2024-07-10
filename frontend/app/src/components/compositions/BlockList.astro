@@ -1,0 +1,44 @@
+---
+interface Props {
+    gap?:               string;
+    [propName: string]: any;
+}
+
+const {
+    gap = 'var(--space-s)',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
+---
+
+<div class:list={['block-list', Astro.props.class]} {...attributes}>
+    <slot />
+</div>
+
+<style lang="scss" define:vars={{
+    block_list_gap: gap,
+}}>
+    .block-list {
+        gap: var(--block_list_gap);
+    }
+</style>
+
+<style lang="scss" is:global>
+    .block-list {
+        --block-list--gap: var(--space-s);
+
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+
+        &[data-mod="centered"] {
+            align-items: center;
+        }
+
+        > * {
+            width: 100%;
+        }
+    }
+</style>

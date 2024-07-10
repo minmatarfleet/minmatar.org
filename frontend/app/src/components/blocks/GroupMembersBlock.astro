@@ -18,7 +18,7 @@ const {
     ...attributes
 } = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import GroupItem from '@components/blocks/GroupItem.astro';
 import GroupMemberItem from '@components/blocks/GroupMemberItem.astro';
@@ -61,11 +61,10 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             </small>
         </GroupItem>
 
-        <Flexblock
+        <BlockList
             gap='var(--space-3xs)'
-            class="[ min-h-[64px] justify-center correct-first-element-margin ]"
+            class="[ min-h-[64px] justify-center ]"
             x-show="expanded"
-            first_element_gap={true}
             x-collapse.duration.100ms
         >
             {group.members.map( (member) => 
@@ -88,6 +87,6 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
                     x-show="show_item()"
                 />
             )}
-        </Flexblock>
+        </BlockList>
     </ComponentBlockHeader>
 </div>

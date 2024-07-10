@@ -16,7 +16,7 @@ const {
     ...attributes
 } = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import MainAltItem from '@components/blocks/MainAltItem.astro';
@@ -57,11 +57,10 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             </small>
         </PilotBadge>
 
-        <Flexblock
+        <BlockList
             gap='var(--space-3xs)'
-            class="[ min-h-[64px] !justify-center correct-first-element-margin ]"
+            class="[ min-h-[64px] !justify-center ]"
             x-show="expanded"
-            first_element_gap={true}
             x-collapse.duration.100ms
         >
             {main.alts.map( (alt) => 
@@ -79,6 +78,6 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             {main.alts.length === 0 &&
                 <p>{t('no_alts')}</p>
             }
-        </Flexblock>
+        </BlockList>
     </ComponentBlockHeader>
 </div>

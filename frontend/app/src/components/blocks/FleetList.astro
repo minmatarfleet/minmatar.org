@@ -22,6 +22,7 @@ const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upc
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
@@ -32,7 +33,7 @@ const hx_attrs = {
 }
 ---
 
-<Flexblock
+<BlockList
     role="list"
     gap='var(--space-3xs)'
     {...hx_attrs}
@@ -48,4 +49,4 @@ const hx_attrs = {
         <FleetListItem role="listitem" fleet={fleet} history={history} />
     )}
 
-</Flexblock>
+</BlockList>

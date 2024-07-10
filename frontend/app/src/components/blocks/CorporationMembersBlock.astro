@@ -16,7 +16,7 @@ const {
     ...attributes
 } = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import CorporationMemberItem from '@components/blocks/CorporationMemberItem.astro';
@@ -56,11 +56,10 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
             </small>
         </CorporationBadge>
 
-        <Flexblock
+        <BlockList
             gap='var(--space-3xs)'
-            class="[ min-h-[64px] justify-center correct-first-element-margin ]"
+            class="[ min-h-[64px] justify-center ]"
             x-show="expanded"
-            first_element_gap={true}
             x-collapse.duration.100ms
         >
             {corporation.members.map( (member) => 
@@ -75,6 +74,6 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
                     x-show="show_item()"
                 />
             )}
-        </Flexblock>
+        </BlockList>
     </ComponentBlockHeader>
 </div>
