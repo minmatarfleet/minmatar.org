@@ -191,18 +191,6 @@ const page_title = t('corporations.members.unregistered.page_title')
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/alliance/corporations/members/mains')}
-                size='sm'
-            >
-                {t('mains')}
-                <NotificationBadge
-                    color='fleet-yellow'
-                    x-text="MAIN_COUNT"
-                    number={MAIN_COUNT ?? 0}
-                />
-            </Button>
-
-            <Button
                 href={translatePath('/alliance/corporations/members')}
                 size='sm'
             >
@@ -223,6 +211,18 @@ const page_title = t('corporations.members.unregistered.page_title')
                 <NotificationBadge
                     x-text="UNREGISTERED_COUNT"
                     number={UNREGISTERED_COUNT ?? 0}
+                />
+            </Button>
+            
+            <Button
+                href={translatePath('/alliance/corporations/members/mains')}
+                size='sm'
+            >
+                {t('mains')}
+                <NotificationBadge
+                    color='fleet-yellow'
+                    x-text="MAIN_COUNT"
+                    number={MAIN_COUNT ?? 0}
                 />
             </Button>
         </FlexInline>

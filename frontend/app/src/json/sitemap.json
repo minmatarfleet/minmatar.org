@@ -112,16 +112,6 @@
         }
     },
     {
-        "slug": "corporations.members.mains",
-        "path": "/alliance/corporations/members/mains",
-        "description": "page_finder.corporations.members.mains.description",
-        "publish": true,
-        "keywords": [ "corporations", "alts" ],
-        "permissions" : {
-            "user": [ "eveonline.view_evecorporation" ]
-        }
-    },
-    {
         "slug": "corporations.members",
         "path": "/alliance/corporations/members/",
         "description": "page_finder.corporations.members.description",
@@ -137,6 +127,16 @@
         "description": "page_finder.corporations.members.unregistered.description",
         "publish": true,
         "keywords": [ "corporations" ],
+        "permissions" : {
+            "user": [ "eveonline.view_evecorporation" ]
+        }
+    },
+    {
+        "slug": "corporations.members.mains",
+        "path": "/alliance/corporations/members/mains",
+        "description": "page_finder.corporations.members.mains.description",
+        "publish": true,
+        "keywords": [ "corporations", "alts" ],
         "permissions" : {
             "user": [ "eveonline.view_evecorporation" ]
         }
