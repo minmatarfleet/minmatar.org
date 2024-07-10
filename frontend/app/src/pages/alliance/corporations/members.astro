@@ -90,7 +90,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
 import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
-import Select from '@components/blocks/Select.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
@@ -190,18 +189,6 @@ const page_title = t('corporations.members.page_title')
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/alliance/corporations/members/mains')}
-                size='sm'
-            >
-                {t('mains')}
-                <NotificationBadge
-                    color='fleet-yellow'
-                    x-text="MAIN_COUNT"
-                    number={MAIN_COUNT ?? 0}
-                />
-            </Button>
-
-            <Button
                 color='transparent'
                 href={translatePath('/alliance/corporations/members')}
                 size='sm'
@@ -222,6 +209,18 @@ const page_title = t('corporations.members.page_title')
                     color='fleet-yellow'
                     x-text="UNREGISTERED_COUNT"
                     number={UNREGISTERED_COUNT ?? 0}
+                />
+            </Button>
+            
+            <Button
+                href={translatePath('/alliance/corporations/members/mains')}
+                size='sm'
+            >
+                {t('mains')}
+                <NotificationBadge
+                    color='fleet-yellow'
+                    x-text="MAIN_COUNT"
+                    number={MAIN_COUNT ?? 0}
                 />
             </Button>
         </FlexInline>
