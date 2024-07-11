@@ -875,5 +875,8 @@ export const ui = {
         'check_our_discord': 'Check our Discord',
         'show_duplicated': 'Show duplicated',
         'hide_duplicated': 'Hide duplicated',
+        'minute_ago': 'Updated a minute ago',
+        'minutes_ago': 'Updated MINUTES minutes ago',
+        'just_now': 'Updated just now',
     },
 } as const;
