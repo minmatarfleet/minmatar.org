@@ -54,12 +54,35 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <div
         class="[ fleet-list-container ]"
         x-data={`{
+            last_update: ${new Date().getTime()},
+            updated_time_ago: '',
+            update_time_ago() {
+                const now = new Date()
+
+                const seconds_past = Math.floor((now.getTime() - this.last_update) / 1000);
+
+                if (seconds_past < 60)
+                    this.updated_time_ago = '${t('just_now')}';
+                else if (seconds_past < 120)
+                    this.updated_time_ago = '${t('minute_ago')}';
+                else {
+                    const minutes = Math.floor(seconds_past / 60)
+                    this.updated_time_ago = '${t('minutes_ago')}'.replace('MINUTES', minutes)
+                }
+
+                if ($refs.timeago_span !== undefined)
+                    setTimeout(() => this.update_time_ago(), 10000)
+            },
             init() {
                 fleets_count = ${fleets.length}
                 tippy($el, tippy_options)
+                this.update_time_ago()
+                setTimeout(() => this.update_time_ago(), 10000)
             }
         }`}
     >
+        <small class="[ absolute right-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+
         <FleetList
             fleets={fleets}
             history={!upcoming}
