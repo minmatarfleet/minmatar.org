@@ -33,6 +33,7 @@ try {
 }
 
 const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`
+const REFRESH_RATE_SECONDS = 300
 
 import FeedSwiper from '@components/blocks/FeedSwiper.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
@@ -44,10 +45,10 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
     <div
         class="[ fleet-feed swiper ][ animate-fade-in-up !hidden 2xl:!block ]"
         hx-get={FLEET_FEED_PARTIAL_URL}
-        hx-trigger="load delay:300s"
+        hx-trigger={`load delay:${REFRESH_RATE_SECONDS}s`}
         hx-swap="outerHTML transition:true"
-        x-on:htmx:response-error="htmx.process($el); console.log('restarted')"
-        x-on:htmx:send-error="htmx.process($el); console.log('restarted')"
+        x-on:htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
+        x-on:htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
     >
         <FeedSwiper>
             {fleets.map( (fleet) =>
