@@ -26,7 +26,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
-    ...(!history && { 'hx-trigger': 'load delay:300s' }),
+    ...(!history && { 'hx-trigger': 'load delay:60s' }),
     ...(!history && { 'hx-swap': 'innerHTML transition:true' }),
     ...(!history && { 'hx-target': '.fleet-list-container' }),
     ...(!history && { 'hx-indicator': '.loader' }),
@@ -37,6 +37,7 @@ const hx_attrs = {
     role="list"
     gap='var(--space-3xs)'
     {...hx_attrs}
+    hx-on:response-error="htmx.process($el); console.log('restarted')"
 >
 
     {fleets.length == 0 &&

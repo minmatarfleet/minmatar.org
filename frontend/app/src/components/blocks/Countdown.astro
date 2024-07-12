@@ -60,10 +60,8 @@ const {
                 if (distance < 0)
                     el.classList.add('expired')
                 
-                if (!document.getElementById('${`${tag}-${id}-${timestamp}`}')) {
+                if (!document.getElementById('${`${tag}-${id}-${timestamp}`}'))
                     clearInterval(x)
-                    console.log('clear')
-                }
             }, 1000);
         },
         update_countdown_text(new_text) {
