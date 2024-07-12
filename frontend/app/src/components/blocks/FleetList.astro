@@ -18,6 +18,7 @@ const {
 } = Astro.props
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
+const REFRESH_RATE_SECONDS = 300
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
@@ -26,7 +27,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
-    ...(!history && { 'hx-trigger': 'load delay:60s' }),
+    ...(!history && { 'hx-trigger': `load delay:${REFRESH_RATE_SECONDS}s` }),
     ...(!history && { 'hx-swap': 'innerHTML transition:true' }),
     ...(!history && { 'hx-target': '.fleet-list-container' }),
     ...(!history && { 'hx-indicator': '.loader' }),
@@ -37,8 +38,8 @@ const hx_attrs = {
     role="list"
     gap='var(--space-3xs)'
     {...hx_attrs}
-    x-on:htmx:response-error="htmx.process($el); console.log('restarted')"
-    x-on:htmx:send-error="htmx.process($el); console.log('restarted')"
+    x-on:htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
+    x-on:htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
 >
 
     {fleets.length == 0 &&
