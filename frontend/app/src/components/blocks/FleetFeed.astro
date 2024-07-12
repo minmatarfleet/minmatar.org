@@ -46,7 +46,7 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
         hx-get={FLEET_FEED_PARTIAL_URL}
         hx-trigger="load delay:300s"
         hx-swap="outerHTML transition:true"
-        hx-on:response-error="htmx.process($el); console.log('restarted')"
+        x-on:htmx:response-error="htmx.process($el); console.log('restarted')"
     >
         <FeedSwiper>
             {fleets.map( (fleet) =>

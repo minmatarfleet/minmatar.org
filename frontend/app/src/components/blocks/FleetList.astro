@@ -37,7 +37,7 @@ const hx_attrs = {
     role="list"
     gap='var(--space-3xs)'
     {...hx_attrs}
-    hx-on:response-error="htmx.process($el); console.log('restarted')"
+    x-on:htmx:response-error="htmx.process($el); console.log('restarted')"
 >
 
     {fleets.length == 0 &&
