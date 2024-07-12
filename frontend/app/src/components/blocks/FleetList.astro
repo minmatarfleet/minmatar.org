@@ -38,6 +38,7 @@ const hx_attrs = {
     gap='var(--space-3xs)'
     {...hx_attrs}
     x-on:htmx:response-error="htmx.process($el); console.log('restarted')"
+    x-on:htmx:send-error="htmx.process($el); console.log('restarted')"
 >
 
     {fleets.length == 0 &&
