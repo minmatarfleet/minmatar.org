@@ -75,13 +75,18 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             },
             init() {
                 fleets_count = ${fleets.length}
-                tippy($el, tippy_options)
-                this.update_time_ago()
-                setTimeout(() => this.update_time_ago(), 10000)
+            
+                if (fleets_count > 0) {
+                    tippy($el, tippy_options)
+                    this.update_time_ago()
+                    setTimeout(() => this.update_time_ago(), 10000)
+               }
             }
         }`}
     >
-        <small class="[ absolute right-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+        {fleets.length > 0 &&
+            <small class="[ absolute right-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+        }
 
         <FleetList
             fleets={fleets}
