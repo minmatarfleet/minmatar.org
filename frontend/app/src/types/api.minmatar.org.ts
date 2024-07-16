@@ -269,6 +269,8 @@ export const structure_types = [
     'tenebrex_cyno_jammer',
     'pharolux_cyno_beacon',
     'ansiblex_jump_gate',
+    'orbital_skyhook',
+    'metenox_moon_drill',
 ] as const
 export type StructureType = typeof structure_types[number]
 
