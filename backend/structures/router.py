@@ -7,10 +7,13 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+import logging
 
+from structures.helpers import get_structure_details, get_skyhook_details
 from .models import EveStructure, EveStructureTimer
 
 router = Router(tags=["Structures"])
+logger = logging.getLogger(__name__)
 
 
 class EveStructureState(Enum):
@@ -34,6 +37,8 @@ class EveStructureType(Enum):
     ANSIBLEX_JUMP_GATE = "ansiblex_jump_gate"
     ORBITAL_SKYHOOK = "orbital_skyhook"
     METENOX_MOON_DRILL = "metenox_moon_drill"
+    player_owned_customs_office = "player_owned_customs_office"
+    player_owned_starbase = "player_owned_starbase"
 
 
 class StructureResponse(BaseModel):
@@ -155,24 +160,28 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
 
     # Parse the request
     try:
-        selected_item_window = payload.selected_item_window.split("\n")
-        # Get system, structure, and timer
-        system_name, structure_name = selected_item_window[0].split(" - ")
-        _ = selected_item_window[1]
-        _, timer = selected_item_window[2].split(" until ")
-        timer = datetime.strptime(timer, "%Y.%m.%d %H:%M:%S")
+        if "Orbital Skyhook" in payload.selected_item_window:
+            structure_response = get_skyhook_details(
+                payload.selected_item_window
+            )
+        else:
+            structure_response = get_structure_details(
+                payload.selected_item_window
+            )
     except ValueError:
-        return 400, ErrorResponse(message="Invalid request")
+        return 400, ErrorResponse(
+            detail=f"Invalid request: {payload.selected_item_window}"
+        )
 
     # Create the structure timer
     timer = EveStructureTimer.objects.create(
         state=payload.state.value,
         type=payload.type.value,
-        timer=timer,
+        timer=structure_response.timer,
         created_by=request.user,
         corporation_name=payload.corporation_name,
-        system_name=system_name,
-        name=structure_name,
+        system_name=structure_response.location,
+        name=structure_response.structure_name,
     )
 
     response = {
@@ -208,7 +217,7 @@ def verify_structure_timer(
     try:
         timer = EveStructureTimer.objects.get(id=timer_id)
     except EveStructureTimer.DoesNotExist:
-        return 400, ErrorResponse(message="Timer does not exist")
+        return 400, ErrorResponse(detail="Timer does not exist")
 
     timer.updated_by = request.user
     timer.updated_at = datetime.now()
