@@ -77,6 +77,8 @@ export const get_structure_id = (structure_type:string):number => {
         'tenebrex_cyno_jammer': 37534,
         'pharolux_cyno_beacon': 35840,
         'ansiblex_jump_gate': 35841,
+        'orbital_skyhook': 81080,
+        'metenox_moon_drill': 81826,
     }
 
     return STRUCTURE_TYPE_BY_ID[structure_type] ?? null

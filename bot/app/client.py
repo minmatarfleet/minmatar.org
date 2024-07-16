@@ -118,7 +118,7 @@ class TimerForm(discord.ui.Modal, title="Timer"):
         elif "gate" in structure_type or "jb" in structure_type:
             structure_type = "ansiblex_jump_gate"
         elif "drill" in structure_type or "moon" in structure_type:
-            structure_type = "metanox_moon_drill"
+            structure_type = "metenox_moon_drill"
         elif "skyhook" in structure_type:
             structure_type = "orbital_skyhook"
         else:
