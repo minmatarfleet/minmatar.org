@@ -35,6 +35,7 @@ try {
 }
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
+const TIMEAGO_UPDATE_RATE_MS = 10000
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
@@ -71,16 +72,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                 }
 
                 if ($refs.timeago_span !== undefined)
-                    setTimeout(() => this.update_time_ago(), 10000)
+                    setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
             },
             init() {
                 fleets_count = ${fleets.length}
             
-                if (fleets_count > 0) {
+                if (fleets_count > 0)
                     tippy($el, tippy_options)
-                    this.update_time_ago()
-                    setTimeout(() => this.update_time_ago(), 10000)
-               }
+                    
+                this.update_time_ago()
+                setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
             }
         }`}
     >
@@ -92,5 +93,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             fleets={fleets}
             history={!upcoming}
         />
+
+        {fleets.length === 0 &&
+            <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+        }
     </div>
 }
