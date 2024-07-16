@@ -37,8 +37,8 @@ class EveStructureType(Enum):
     ANSIBLEX_JUMP_GATE = "ansiblex_jump_gate"
     ORBITAL_SKYHOOK = "orbital_skyhook"
     METENOX_MOON_DRILL = "metenox_moon_drill"
-    player_owned_customs_office = "player_owned_customs_office"
-    player_owned_starbase = "player_owned_starbase"
+    PLAYER_OWNED_CUSTOMS_OFFICE = "player_owned_customs_office"
+    PLAYER_OWNED_STARBASE = "player_owned_starbase"
 
 
 class StructureResponse(BaseModel):
