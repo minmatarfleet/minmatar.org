@@ -831,6 +831,8 @@ export const ui = {
         'tenebrex_cyno_jammer': 'Tenebrex Cyno Jammer',
         'pharolux_cyno_beacon': 'Pharolux Cyno Beacon',
         'ansiblex_jump_gate': 'Ansiblex Jump Gate',
+        'orbital_skyhook': 'Orbital Skyhook',
+        'metenox_moon_drill': 'Metenox Moon Drill',
         'structure_timers_error': 'An error occurred while fetching structure timers.',
         'structure_timers': 'Structure timers',
         'structure_timer': 'Structure timer',
