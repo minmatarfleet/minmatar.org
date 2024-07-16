@@ -44,7 +44,7 @@ try {
 
     duplicated_count = unfiltered_count - structure_timers.length
 
-    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${item.system_name} - ${item.system_name} (${item.corporation_name})\r`, '')
+    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${item.system_name} - ${item.name} (${item.corporation_name})\r`, '')
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
