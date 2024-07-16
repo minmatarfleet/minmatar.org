@@ -75,6 +75,8 @@ class EveStructureTimer(models.Model):
         ("ansiblex_jump_gate", "Ansiblex Jump Gate"),
         ("orbital_skyhook", "Orbital Skyhook"),
         ("metenox_moon_drill", "Metenox Moon Drill"),
+        ("player_owned_customs_office", "Player Owned Customs Office"),
+        ("player_owned_starbase", "Player Owned Starbase"),
     )
 
     name = models.CharField(max_length=255)
