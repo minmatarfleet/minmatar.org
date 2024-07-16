@@ -878,5 +878,8 @@ export const ui = {
         'minute_ago': 'Updated a minute ago',
         'minutes_ago': 'Updated MINUTES minutes ago',
         'just_now': 'Updated just now',
+        'timers_copied_dialog': 'Active timers',
+        'timers_copied_dialog_text': 'Active structure timers copied to clipboard.',
+        'copied': 'Copied!',
     },
 } as const;

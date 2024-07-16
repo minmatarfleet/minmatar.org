@@ -23,9 +23,18 @@ const onclick_attr = `copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_pr
 const Textarea = 'textarea';
 ---
 
-<Button onclick={onclick_attr} size='sm' {...attributes}>
+<Button
+    onclick={onclick_attr}
+    size='sm'
+    {...attributes}
+    x-data={`{
+        button_text: '${t('copy')}',
+    }`}
+    x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', 2000)`}
+
+>
     <ClipboardIcon slot="icon" />
-    {t('copy')}
+    <span x-text="button_text">{t('copy')}</span>
 </Button>
 
 <Textarea class="[ hidden ]" id={id} readonly><slot /></Textarea>
