@@ -115,8 +115,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import Fit from '@components/blocks/Fit.astro';
 import Button from '@components/blocks/Button.astro';
-
-import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
 const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
 
@@ -167,10 +166,10 @@ const page_title = fitting.name
                         {t('enable_rendering')}
                     </Button>
                 </div>
-                <Button onclick="copyFitToClipboard('fit-clipboard', 'Fit copied (EFT Format): ')">
-                    <ClipboardIcon slot="icon" />
-                    {t('copy_to_clipboard')}
-                </Button>
+                
+                <ClipboardButton id="fit-clipboard">
+                    {fitting.eft_format}
+                </ClipboardButton>
             </FlexInline>
         </FlexInline>
 
@@ -183,8 +182,6 @@ const page_title = fitting.name
         </Flexblock>
     </PageDefault>
 </Viewport>
-
-<textarea id="fit-clipboard" set:html={fitting.eft_format}></textarea>
 
 <style>
     #fit-clipboard {

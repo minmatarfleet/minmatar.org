@@ -30,6 +30,7 @@ import { get_unique_by_key } from '@helpers/array'
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []
 let duplicated_count = 0
+let timers_clipboard = ''
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string)
@@ -42,6 +43,8 @@ try {
     structure_timers = get_unique_by_key(structure_timers, 'timer')
 
     duplicated_count = unfiltered_count - structure_timers.length
+
+    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${item.system_name} - ${item.system_name} (${item.corporation_name})\r`, '')
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
@@ -66,6 +69,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
 const page_title = t('intel.timers.page_title');
 ---
@@ -137,6 +141,10 @@ const page_title = t('intel.timers.page_title');
             >
                 {t('timers_history')}
             </Button>
+
+            <ClipboardButton id="active-timers-to-clipboard">
+                {timers_clipboard}
+            </ClipboardButton>
         </FlexInline>
         
         {structure_timers_error ?
