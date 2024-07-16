@@ -65,7 +65,7 @@ class TimerForm(discord.ui.Modal, title="Timer"):
     structure_type = discord.ui.TextInput(
         label="Structure type",
         style=discord.TextStyle.short,
-        placeholder="Keepstar, Raitaru, Azbel, etc.",
+        placeholder="Keepstar, Raitaru, Azbel, skyhook, drill, etc.",
         required=True,
         max_length=32,
     )
@@ -117,6 +117,10 @@ class TimerForm(discord.ui.Modal, title="Timer"):
             structure_type = "pharolux_cyno_beacon"
         elif "gate" in structure_type or "jb" in structure_type:
             structure_type = "ansiblex_jump_gate"
+        elif "drill" in structure_type or "moon" in structure_type:
+            structure_type = "metanox_moon_drill"
+        elif "skyhook" in structure_type:
+            structure_type = "orbital_skyhook"
         else:
             await interaction.response.send_message("Invalid type provided")
             return

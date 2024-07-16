@@ -32,6 +32,8 @@ class EveStructureType(Enum):
     TENEBREX_CYNO_JAMMER = "tenebrex_cyno_jammer"
     PHAROLUX_CYNO_BEACON = "pharolux_cyno_beacon"
     ANSIBLEX_JUMP_GATE = "ansiblex_jump_gate"
+    ORBITAL_SKYHOOK = "orbital_skyhook"
+    METANOX_MOON_DRILL = "metanox_moon_drill"
 
 
 class StructureResponse(BaseModel):

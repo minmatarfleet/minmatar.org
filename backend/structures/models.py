@@ -73,6 +73,8 @@ class EveStructureTimer(models.Model):
         ("tenebrex_cyno_jammer", "Tenebrex Cyno Jammer"),
         ("pharolux_cyno_beacon", "Pharolux Cyno Beacon"),
         ("ansiblex_jump_gate", "Ansiblex Jump Gate"),
+        ("orbital_skyhook", "Orbital Skyhook"),
+        ("metanox_moon_drill", "Metanox Moon Drill"),
     )
 
     name = models.CharField(max_length=255)
