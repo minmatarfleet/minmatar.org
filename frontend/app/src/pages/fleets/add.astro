@@ -28,6 +28,7 @@ import { fleet_types } from '@dtypes/api.minmatar.org'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { EveCharacterProfile, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, Alert } from '@dtypes/layout_components'
+import { send_active_fleet_notification } from '@helpers/notifications'
 
 let create_fleet_error
 let alert:Alert | false = false
@@ -53,8 +54,12 @@ if (Astro.request.method === "POST") {
             create_fleet_error = t('create_fleet_error')
         else {
             try {
+                let tracking_started = false
+                
                 if (data.get('start_tracking' as string) === 'on')
-                    await start_fleet(auth_token as string, new_fleet?.id)
+                    tracking_started = await start_fleet(auth_token as string, new_fleet?.id)
+
+                if (tracking_started) send_active_fleet_notification(auth_token as string, new_fleet?.id)
             } catch (error) {
                 const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
                 Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
