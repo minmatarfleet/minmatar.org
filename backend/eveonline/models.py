@@ -82,6 +82,33 @@ class EveCharacterSkill(models.Model):
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
 
+class EveCharacterKillmail(models.Model):
+    id = models.BigIntegerField(primary_key=True)
+    killmail_id = models.BigIntegerField()
+    killmail_hash = models.CharField(max_length=255)
+    killmail_time = models.DateTimeField()
+    solar_system_id = models.BigIntegerField()
+    ship_type_id = models.BigIntegerField()
+    victim_character_id = models.BigIntegerField(null=True)
+    victim_corporation_id = models.BigIntegerField(null=True)
+    victim_alliance_id = models.BigIntegerField(null=True)
+    victim_faction_id = models.BigIntegerField(null=True)
+    attackers = models.TextField()
+    items = models.TextField()
+    character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+
+
+class EveCharacterKillmailAttacker(models.Model):
+    killmail = models.ForeignKey(
+        "EveCharacterKillmail", on_delete=models.CASCADE
+    )
+    character_id = models.BigIntegerField(null=True)
+    corporation_id = models.BigIntegerField(null=True)
+    alliance_id = models.BigIntegerField(null=True)
+    faction_id = models.BigIntegerField(null=True)
+    ship_type_id = models.BigIntegerField(null=True)
+
+
 class EveCharacterAsset(models.Model):
     """Character asset model"""
 
