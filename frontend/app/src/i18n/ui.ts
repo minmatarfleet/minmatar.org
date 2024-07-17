@@ -883,5 +883,6 @@ export const ui = {
         'timers_copied_dialog': 'Active timers',
         'timers_copied_dialog_text': 'Active structure timers copied to clipboard.',
         'copied': 'Copied!',
+        'lastest_timers': 'Latest TIMERS structure timers',
     },
 } as const;

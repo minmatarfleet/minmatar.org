@@ -29,7 +29,7 @@ import { get_unique_by_key } from '@helpers/array'
 
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []
-let duplicated_count = 0
+const MAX_TIMERS_COUNT = 50
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, false)
@@ -37,11 +37,9 @@ try {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
 
-    const unfiltered_count = structure_timers.length
-
     structure_timers = get_unique_by_key(structure_timers, 'timer')
 
-    duplicated_count = unfiltered_count - structure_timers.length
+    structure_timers.splice(MAX_TIMERS_COUNT)
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
@@ -58,7 +56,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import Button from '@components/blocks/Button.astro';
-import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
@@ -92,8 +89,8 @@ const page_title = t('intel.timers.history.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${structure_timers_count} \${structure_timers_count != 1 ? '${t('structure_timers').toLowerCase()}' : '${t('structure_timer').toLowerCase()}'}\``}>
-                        {structure_timers.length} {structure_timers.length != 1 ? t('structure_timers').toLowerCase() : t('structure_timer').toLowerCase()}
+                    <small x-text={`${t('lastest_timers')}.replace('TIMERS', structure_timers_count.toString())`}>
+                        {t('lastest_timers').replace('TIMERS', structure_timers.length.toString())}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -108,25 +105,6 @@ const page_title = t('intel.timers.history.page_title');
         </FlexInline>
 
         <FlexInline slot="subheader">
-            {duplicated_count > 0 &&
-                <Button
-                    size='sm'
-                    x-bind:hx-get={`\`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=\${!show_duplicated}\``}
-                    hx-target=".structure-timers-list-container"
-                    hx-indicator=".loader"
-                    hx-on::before-request="this.setAttribute('disabled','');"
-                    hx-on::after-request="this.removeAttribute('disabled')"
-                    hx-swap="outerHTML transition:true"
-                    x-on:click="show_duplicated = !show_duplicated; $nextTick(() => htmx.process($el))"
-                >
-                    <span x-text={`show_duplicated ? '${t('hide_duplicated')}' : '${t('show_duplicated')}'`}>{t('show_duplicated')}</span>
-                    <NotificationBadge
-                        color='fleet-yellow'
-                        number={duplicated_count ?? 0}
-                    />
-                </Button>
-            }
-
             <Button
                 href={translatePath('/intel/timers/active')}
                 size='sm'
