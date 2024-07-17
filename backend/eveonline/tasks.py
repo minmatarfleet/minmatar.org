@@ -12,7 +12,14 @@ from .helpers.skills import (
     create_eve_character_skillset,
     upsert_character_skills,
 )
-from .models import EveAlliance, EveCharacter, EveCorporation, EveSkillset
+from .models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EveSkillset,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
+)
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -137,6 +144,9 @@ def update_characters():
         update_character_assets.apply_async(
             args=[character.character_id], countdown=character.id % 1800
         )
+        update_character_killmails.apply_async(
+            args=[character.character_id], countdown=character.id % 1800
+        )
 
 
 @app.task
@@ -168,6 +178,96 @@ def update_character_assets(eve_character_id):
     character.assets_json = json.dumps(esi_assets)
     character.save()
     create_character_assets(character)
+
+
+@app.task(rate_limit="10/m")
+def update_character_killmails(eve_character_id):
+    logger.info("Updating killmails for character %s", eve_character_id)
+    required_scopes = [
+        "esi-killmails.read_killmails.v1",
+    ]
+    token = Token.objects.filter(
+        character_id=eve_character_id, scopes__name__in=required_scopes
+    ).first()
+    if token is None:
+        logger.info(
+            "Skipping killmail update for character %s", eve_character_id
+        )
+        return
+    esi_killmails = (
+        esi.client.Killmails.get_characters_character_id_killmails_recent(
+            character_id=eve_character_id, token=token.valid_access_token()
+        ).results()
+    )
+    character = EveCharacter.objects.get(character_id=eve_character_id)
+    for killmail in esi_killmails:
+        details = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
+            killmail_id=killmail["killmail_id"],
+            killmail_hash=killmail["killmail_hash"],
+        ).results()
+        killmail_id = killmail["killmail_id"]
+        if not EveCharacterKillmail.objects.filter(id=killmail_id).exists():
+            killmail = EveCharacterKillmail.objects.create(
+                id=killmail_id,
+                killmail_id=killmail_id,
+                killmail_hash=killmail["killmail_hash"],
+                solar_system_id=details["solar_system_id"],
+                ship_type_id=details["victim"]["ship_type_id"],
+                killmail_time=details["killmail_time"],
+                victim_character_id=(
+                    details["victim"]["character_id"]
+                    if "character_id" in details["victim"]
+                    else None
+                ),
+                victim_corporation_id=(
+                    details["victim"]["corporation_id"]
+                    if "corporation_id" in details["victim"]
+                    else None
+                ),
+                victim_alliance_id=(
+                    details["victim"]["alliance_id"]
+                    if "alliance_id" in details["victim"]
+                    else None
+                ),
+                victim_faction_id=(
+                    details["victim"]["faction_id"]
+                    if "faction_id" in details["victim"]
+                    else None
+                ),
+                attackers=details["attackers"],
+                items=details["victim"]["items"],
+                character=character,
+            )
+
+            for attacker in details["attackers"]:
+                EveCharacterKillmailAttacker.objects.create(
+                    killmail=killmail,
+                    character_id=(
+                        attacker["character_id"]
+                        if "character_id" in attacker
+                        else None
+                    ),
+                    corporation_id=(
+                        attacker["corporation_id"]
+                        if "corporation_id" in attacker
+                        else None
+                    ),
+                    alliance_id=(
+                        attacker["alliance_id"]
+                        if "alliance_id" in attacker
+                        else None
+                    ),
+                    faction_id=(
+                        attacker["faction_id"]
+                        if "faction_id" in attacker
+                        else None
+                    ),
+                    ship_type_id=(
+                        attacker["ship_type_id"]
+                        if "ship_type_id" in attacker
+                        else None
+                    ),
+                )
 
 
 @app.task
