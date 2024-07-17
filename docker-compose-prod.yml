@@ -88,6 +88,13 @@ services:
             - mumble_murmur
         expose:
             - 6502
+    
+    metabase:
+        image: metabase/metabase:latest
+        ports:
+        - 3000:3000
+        env_file:
+            - .env
 
 volumes:
     redis: {}
