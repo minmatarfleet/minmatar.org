@@ -13,6 +13,7 @@ from discord.models import DiscordUser
 
 from .helpers import get_user_profile
 from .schemas import UserProfileSchema
+from discord.tasks import sync_discord_user
 
 logger = logging.getLogger(__name__)
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
@@ -120,3 +121,14 @@ def delete_account(request):
     request.user.delete()
     request.session.flush()
     return "Account deleted successfully"
+
+
+@router.post(
+    "/{user_id}/sync",
+    summary="Sync user with Discord",
+    description="This will sync the user with Discord.",
+    auth=AuthBearer(),
+)
+def sync_user(request, user_id: int):
+    sync_discord_user(user_id)
+    return "User synced successfully"
