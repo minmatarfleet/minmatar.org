@@ -1,0 +1,27 @@
+---
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const translatePath = useTranslatedPath(lang);
+
+import * as jose from 'jose'
+
+if (Astro.request.method !== "GET") Astro.redirect(translatePath('/friend/welcome'))
+
+let token = null
+
+try {
+    token = Astro.url.searchParams.get('token')
+    jose.decodeJwt(token)
+} catch (error) {
+    throw new Error(`Error during token exchange: ${error.message}`)
+}
+
+const ONE_DAY_IN_MS = 24*60*60*1000
+const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
+Astro.cookies.set('guest_auth_token', token, { path: '/', expires: in_20_days })
+
+const redirect = translatePath('/friend/')
+
+return Astro.redirect(redirect)
+---

@@ -1,0 +1,160 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('guest_auth_token') ? Astro.cookies.get('guest_auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return Astro.redirect(translatePath('/friend/welcome'))
+
+import type { Character } from '@dtypes/api.minmatar.org'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
+let pilots:Character[] = []
+let get_characters_error:string | false = false
+
+try {
+    pilots = await get_characters(auth_token as string);
+} catch (error) {
+    get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
+}
+
+const GUEST_PILOTS_LIST_PARTIAL_URL = translatePath('/partials/guest_pilots_list_component/')
+const REFRESH_DISCORD_ROLES_PARTIAL_URL = translatePath('/partials/refresh_discord_roles_component/')
+
+import GuestsViewport from '@layouts/GuestsViewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import TextGroup from '@components/blocks/TextGroup.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+
+import GuestPilotList from '@components/blocks/GuestPilotList.astro';
+import Mumble from '@components/blocks/Mumble.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+const page_title = t('friend.page_title');
+---
+
+<GuestsViewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/friend-cover.jpg",
+            image_990: "/images/friend-cover-990.jpg",
+            alt: t('account.cover_alt'),
+            scrollable: true,
+            overlay: true
+        }}
+        neocom={false}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline width='64' class="[ grow ]">
+                <FleetLogo square={true} />
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/friend/logout/')}>
+                    <LogoutIcon slot="icon" />
+                    {t('logout')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+        
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p>{t('friend.leading_text')}</p>
+            </TextBox>
+            <Flexblock>
+                <ComponentBlock width='narrow'>
+                    <FlexInline justification='space-between'>
+                        <FlexInline class="[ grow ]">
+                            <VerticalCenter class="[ basis-48 ]">
+                                <TextGroup title={t('account_name')}>
+                                    {user.username}
+                                </TextGroup>
+                            </VerticalCenter>
+                        </FlexInline>
+                        <VerticalCenter>
+                            <Button
+                                size='sm'
+                                type="button"
+                                hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
+                                hx-swap="outerHTML transition:true"
+                                hx-on::before-request="this.setAttribute('disabled','');"
+                                hx-on::after-request="this.removeAttribute('disabled')"
+                            >
+                                {t('refresh_discord_roles')}
+                            </Button>
+                        </VerticalCenter>
+                    </FlexInline>
+                </ComponentBlock>
+
+                <Mumble is_friend={true} />
+
+                <ComponentBlock
+                    width='narrow'
+                    x-data={`{
+                        remove_request_ongoing: [],
+                        start_remove_animation(character_id) {
+                            if (!character_id) return
+                            this.remove_request_ongoing.push(character_id)
+                        },
+                        stop_remove_animation(character_id) {
+                            if (!character_id) return
+                            this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
+                        },
+                    }`}
+                >
+                    {get_characters_error ?
+                        <GuestPilotList pilots={pilots}>
+                            <ErrorRefetch
+                                args={{
+                                    partial: GUEST_PILOTS_LIST_PARTIAL_URL,
+                                    message: get_characters_error,
+                                    delay: 0,
+                                    target: '#pilots-list',
+                                }}
+                            />
+                        </GuestPilotList>
+                        :
+                        <GuestPilotList pilots={pilots} />
+                    }
+                </ComponentBlock>
+            </Flexblock>
+        </Flexblock>
+    </PageDefault>
+</GuestsViewport>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

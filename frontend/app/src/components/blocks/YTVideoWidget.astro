@@ -9,13 +9,15 @@ import type { VideoWidgetCredits } from '@dtypes/layout_components';
 import { query_string } from '@helpers/string';
 
 interface Props {
-    url:            string;
+    videoid:        string;
+    videotitle?:    string;
     credits?:       false | VideoWidgetCredits;
     shadow?:        boolean;
 }
 
 const {
-    url,
+    videoid,
+    videotitle = 'YouTube video player',
     credits = false,
     shadow = false,
 } = Astro.props
@@ -30,34 +32,26 @@ import Wrapper from "@components/compositions/Wrapper.astro";
     padding_block="0"
 >
     <div
-        class="[ video-frame w-full relative ]"
+        class="[ video-frame w-full ]"
         x-data={`{
-            id: $id('yt-player'),
-            SYNC_INTERVAL: 10000,
-            sync_players() {
-                if (!$refs.main_player) return
-
-                $refs.background_player.currentTime = $refs.main_player.currentTime;
-                setTimeout(() => this.sync_players(), this.SYNC_INTERVAL)
-            },
-            init() {
-                this.sync_players()
-            }
+            id: $id('yt-player')
         }`}
     >
-        <div class="[ video-container ]">
-            <video x-ref="main_player" class="[ w-full relative z-10 ]" autoplay loop muted>
-                <source src={url} type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-        
-        <div x-ref="background_player" class="[ video-container background-light z-0 ]">
-            <video class="[ w-full ]" autoplay loop muted>
-                <source src={url} type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        </div>
+        <lite-youtube
+            class="[ max-w-full h-full w-full ]"
+            x-bind:id="id"
+            videoid={videoid}
+            videotitle={videotitle}
+            posterquality="maxresdefault"
+            x-data={`{
+                init() {
+                    $nextTick(() => {
+                        const frame = document.getElementById(this.id).shadowRoot.getElementById('frame')
+                        frame.innerHTML += '<style>#frame:before { display: none }</style>'
+                    })
+                }
+            }`}
+        />
     </div>
     {credits !== false &&
         <p>{t('credits')}:
@@ -82,37 +76,21 @@ import Wrapper from "@components/compositions/Wrapper.astro";
     }
 </Wrapper>
 
+<script>
+    import '@justinribeiro/lite-youtube';
+</script>
+
 <style lang="scss">
-    .video-container {
-        overflow: hidden;
-
-        > video {
-            transform: scale(1.1);
-            display: block;
-            width: 100%;
-        }
-    }
-
-    .background-light {
-        position: absolute;
-        inset: 0;
-        transform: scale(1.1);
-        filter: blur(100px);
-        opacity: 0.7;
-        display: flex;
-        align-items: center;
-    }
-
     .video-frame {
+        overflow: hidden;
         display: flex;
         align-items: center;
         aspect-ratio: 960/540;
-        max-width: 960px;
+        max-width: 960;
     }
 
     .shadow {
-        max-width: 960px;
-        box-shadow: 0 0 200px 60px black, inset 0 0 400px 400px black;
+        box-shadow: 0 0 200px 60px black, inset 0 0 200px 200px black;
     }
 
     span {

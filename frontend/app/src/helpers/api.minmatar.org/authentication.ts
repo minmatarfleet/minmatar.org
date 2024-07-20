@@ -91,3 +91,34 @@ export async function delete_account(access_token:string) {
         throw new Error(`Error deleting account: ${error.message}`);
     }
 }
+
+export async function sync_user_with_discord(access_token:string, user_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${user_id}/sync`
+    
+    console.log(ENDPOINT)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
+        }
+
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error syncing user roles with Discord: ${error.message}`);
+    }
+}

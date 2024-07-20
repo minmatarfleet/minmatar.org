@@ -1,0 +1,162 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang)
+
+const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
+if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
+
+import { ViewTransitions } from 'astro:transitions';
+
+import GuestsHeadScripts from '@components/partials/GuestsHeadScripts.astro';
+import GuestsFooterScripts from '@components/partials/GuestsFooterScripts.astro';
+import AlertDialog from '@components/blocks/AlertDialog.astro';
+import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
+import Modal from '@components/blocks/Modal.astro';
+import {
+	AlertDialogXData,
+	ConfirmDialogXData,
+	ModalXData,
+	PersistentModalXData,
+	UtilitiesXData,
+	RifterAnimationXData,
+	InitXData,
+} from '@components/partials/AlpineScripts.astro';
+
+import type { ViewportComponents } from '@dtypes/layout_components'
+
+interface Props {
+	title: 					string;
+	meta_image?: 			string;
+	meta_description?: 		string;
+	components?:			ViewportComponents;
+}
+
+const {
+	title,
+	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
+	meta_description = t('generic.meta_description'),
+	components = {},
+} = Astro.props
+
+components.modal = components.modal ?? true
+
+import '@fontsource-variable/montserrat';
+import '@fontsource/qahiri';
+import 'tippy.js/dist/tippy.css';
+import '../styles/base.scss';
+import RifterIcon from '@components/icons/RifterIcon.astro';
+---
+
+<!doctype html>
+<html
+	lang="en"
+	x-data={`{
+		${PersistentModalXData}
+	}`}
+>
+	<head>
+		<meta charset="UTF-8" />
+		{meta_description && <meta name="description" content={meta_description} />}
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<ViewTransitions />
+
+		<meta property="og:title" content={title}>
+		{meta_description && <meta property="og:description" content={meta_description} />}
+		<meta property="og:image" content={meta_image}>
+		<meta property="og:type" content="website">
+		<meta property="og:url" content={Astro.url}>
+		<meta name="twitter:title" content={title}>
+		{meta_description && <meta name="twitter:description" content={meta_description} />}
+		<meta name="twitter:image" content={meta_image}>
+		<link rel="preload" href="/fonts/norwester-webfont.woff2" as="font" type="font/woff" crossorigin>
+
+		<GuestsHeadScripts />
+
+		<link rel="manifest" href="/site.webmanifest">
+	</head>
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
+	<script is:inline>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'G-H2HFG2XB2N');
+	</script>
+	<body
+		class="[ viewport-layout ]"
+		x-data={`{
+			post_header_height: null,
+			${components?.alert_dialog ? AlertDialogXData : ''}
+			${components?.confirm_dialog ? ConfirmDialogXData : ''}
+			${components?.modal ? ModalXData : ''}
+            ${UtilitiesXData}
+            ${RifterAnimationXData}
+            ${InitXData}
+		}`}
+		x-on:scroll.window.throttle.750ms={`
+			setTimeout(() => {
+				post_header = document.querySelector('.post-header')
+				post_header_height = post_header ? post_header.offsetHeight : 0
+			}, 250)
+		`}
+		x-init="rifter_animation_init"
+	>
+		<div class="[ viewport-layout-inner ]">
+			<slot />
+			<canvas id="confetti-canvas" transition:persist></canvas>
+		</div>
+
+		{components?.alert_dialog &&
+			<AlertDialog />
+		}
+		{components?.confirm_dialog &&
+			<ConfirmDialog />
+		}
+		{components?.modal &&
+			<Modal />
+		}
+
+		{middleware_error &&
+			<div class="toast">
+				{middleware_error}
+			</div>
+		}
+
+		<div class="[ hidden ]">
+			<RifterIcon x-ref="rifter" />
+		</div>
+
+		<GuestsFooterScripts />
+	</body>
+</html>
+
+<style is:global lang="scss">
+	/* The integration's default injected base.css file */
+	@tailwind components;
+	@tailwind utilities;
+
+	.toast {
+		position: fixed;
+		right: var(--space-s);
+		bottom: var(--space-s);
+		background-color: var(--fleet-red);
+		color: var(--foreground);
+		padding: var(--space-2xs) var(--space-2xs);
+	}
+
+	#confetti-canvas {
+		position:fixed;
+		inset: 0;
+		z-index: 1000;
+		width: 100%;
+		pointer-events: none;
+		height: 100%;
+	}
+</style>

@@ -1,11 +1,13 @@
 ---
 interface Props {
-    max_width?: string;
+    max_width?:         string;
+    neocom?:            boolean;
     [propName: string]: any;
 }
 
 const {
     max_width = '80rem',
+    neocom = true,
 } = Astro.props;
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -25,7 +27,7 @@ const subheader_content = await Astro.slots.render('subheader');
         x-intersect:leave.full="sticky = true"
         x-intersect.enter.full="sticky = false"
     >
-        <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={true} centered={true}>
+        <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
             <slot />
         </Wrapper>
     </div>

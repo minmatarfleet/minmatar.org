@@ -1,0 +1,178 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { query_string } from '@helpers/string';
+import type { Character } from '@dtypes/api.minmatar.org'
+import { get_api_url, get_app_url } from '@helpers/env'
+import type { Alert } from '@dtypes/layout_components'
+
+interface Props {
+    pilots?:            Array<Character>;
+    readonly?:          boolean;
+    removed_character?: number | false;
+    alert?:             Alert | false;
+    [propName: string]: any;
+}
+
+const {
+    pilots = [],
+    readonly = true,
+    removed_character = false,
+    alert = false,
+    ...attributes
+} = Astro.props
+
+const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
+
+// const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Basic`
+const GUEST_PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/guest_pilots_list_component')}`
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from '@components/blocks/Button.astro';
+import DisableBlock from '@components/blocks/DisableBlock.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+
+delete attributes.class
+---
+
+<DisableBlock
+    id="pilots-list"
+    disabled={false}
+    x_model="enabled"
+    class:list={['pilot-list', Astro.props.class]}
+    {...attributes}
+    gap='var(--space-s)'
+    x-data={`{
+        pilots: ${JSON.stringify(pilots)},
+        primary_pilot: ${primary_pilot_id},
+        character_name_slugs: {},
+        enabled: true,
+        add_pilot(accepted) {
+            if (accepted) window.location.href = "${ADD_CHARACTER_URL}"
+        },
+        pilot_list_init() {
+            ${removed_character !== false ? `stop_remove_animation(${removed_character})` : ''}
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+    x-init="pilot_list_init()"
+>
+    <Flexblock gap='var(--component-block-gap)'>
+        <FlexInline
+            justification='space-between'
+            gap="var(--space-s)"
+            class="[ items-center ]"
+        >
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{t('character')}</h2>
+                <small class="!mt-[var(--space-3xs)]">{t('pilot_used')}</small>
+            </Flexblock>
+            
+            {pilots.length === 0 &&
+                <FlexInline>
+                    <Button
+                        size='sm'
+                        type="button"
+                        x-data={`{
+                            show_add_pilot_disclaimer() {
+                                show_alert_dialog({
+                                    title: '${t('add_pilot_dialog_title')}',
+                                    partial: '${translatePath('/partials/add_pilot_dialog/')}?${query_string({
+                                        is_main: JSON.stringify(false),
+                                    })}',
+                                }).then( (accepted) => add_pilot(accepted) )
+                            }
+                        }`}
+                        x-on:click="show_add_pilot_disclaimer"
+                    >
+                        {t('add_primary_pilot')}
+                    </Button>
+                </FlexInline>
+            }
+        </FlexInline>
+
+        <Flexblock gap='var(--space-3xs)'>
+            {pilots.map((pilot) =>
+                <FlexInline class="[ pilot-item ]" justification='space-between'>
+                    <PilotBadge
+                        class="[ grow ]"
+                        character_id={pilot.character_id}
+                        character_name={pilot.character_name}
+                    />
+                    <Button
+                        class="[ action-button ]"
+                        size='sm'
+                        type="button"
+                        narrow={true}
+                        x-data={`{
+                            show_remove_character_dialog() {
+                                show_confirm_dialog({
+                                    title: '${t('remove_pilot_dialog_title')}',
+                                    partial: '${translatePath('/partials/dialog_with_character/')}?${query_string({
+                                        id: pilot.character_id.toString(),
+                                        character_name: pilot.character_name,
+                                        message: t('remove_pilot_dialog_text'),
+                                    })}',
+                                    return_on_accept: ${pilot.character_id},
+                                    hx: {
+                                        method: 'delete',
+                                        url: '${GUEST_PILOTS_LIST_PARTIAL_URL}?${query_string({
+                                            id: pilot.character_id.toString(),
+                                            character_name: pilot.character_name
+                                        })}',
+                                        target: '#pilots-list',
+                                        swap: 'outerHTML transition:true'
+                                    }
+                                }).then( (character_id) => start_remove_animation(character_id) )
+                            }
+                        }`}
+                        x-on:click="show_remove_character_dialog()"
+                    >
+                        <TrashIcon slot="icon" />
+                    </Button>
+                </FlexInline>
+            )}
+            {pilots.length == 0 &&
+                <slot>
+                    {t('empty_pilots_text')}
+                </slot>
+            }
+        </Flexblock>
+    </Flexblock>
+</DisableBlock>
+
+<style lang="scss">
+    .pilot-list {
+        transition: var(--slow-transition);
+
+        .pilot-item {
+            @media (hover: hover) {
+                .action-button {
+                    transition: var(--fast-transition);
+                    opacity: 0;
+                }
+
+                &:hover,
+                &:focus-within {
+                    .action-button {
+                        opacity: 1;
+                    }
+                }
+            }
+        }
+
+        &.disabled {
+            pointer-events: none;
+            opacity: 0.25;
+        }
+    }
+</style>

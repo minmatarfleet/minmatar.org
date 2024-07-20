@@ -1,0 +1,79 @@
+---
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import { get_friend_auth_url } from '@helpers/env'
+
+const is_auth = Astro.cookies.has('guest_auth_token')
+if (is_auth)
+    return Astro.redirect(translatePath('/friend/'))
+
+import GuestsViewport from '@layouts/GuestsViewport.astro';
+
+import PageVideo from '@components/page/PageVideo.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Button from '@components/blocks/Button.astro';
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
+
+const page_title = t('friend.welcome.page_title');
+const page_description = t('friend.welcome.leading_text');
+---
+
+<GuestsViewport
+    title={page_title}
+    meta_description={page_description}
+>
+    <PageVideo
+        cover={{
+            image: "/images/friend-cover.jpg",
+            image_990: "/images/friend-cover-990.jpg",
+            alt: t('account.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        video={{
+            url: 'https://nx54639.your-storageshare.de/s/Y7KtjjTfxDGWgDm/download/The%20Vargur%20Scalation.mp4',
+        }}
+        neocom={false}
+    >
+        <Flexblock gap="var(--space-l)" class="[ slide-in text-center z-10 relative ]">
+            <h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+            <h2>{page_title}</h2>
+            <p set:html={marked.parseInline(page_description, { breaks: true })} />
+            <Flexblock centered={true}>
+                <Button href={get_friend_auth_url()}>
+                    {t('lets_rock')}
+                    <ArrowRight />
+                </Button>
+            </Flexblock>
+            <small set:html={marked.parseInline(t('friend.welcome.leading_text_sub'), { renderer })} />
+        </Flexblock>
+    </PageVideo>
+</GuestsViewport>
+
+<style lang="scss">
+    #content {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+		position: relative;
+    }
+
+    h2 {
+		font-size: var(--step-3);
+	}
+
+	.markdown {
+		font-size: var(--step-0);
+	}
+</style>

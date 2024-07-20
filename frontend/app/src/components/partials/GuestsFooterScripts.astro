@@ -1,0 +1,24 @@
+<script is:inline src="/js/clipboard.js"></script>
+
+<!-- Tippy.js -->
+<script is:inline src="https://unpkg.com/@popperjs/core@2"></script>
+<script is:inline src="https://unpkg.com/tippy.js@6"></script>
+
+<script is:inline>
+    const tippy_options = {
+        delay: [ 100, 200 ],
+        arrow: true,
+        onShow(instance) {
+            htmx.process(instance.popper)
+        }
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        tippy('[data-tippy-content]', tippy_options)
+    }, { once: true })
+
+    document.addEventListener('astro:after-swap', () => {
+        tippy('[data-tippy-content]', tippy_options)
+        htmx.process(document.body)
+    })
+</script>

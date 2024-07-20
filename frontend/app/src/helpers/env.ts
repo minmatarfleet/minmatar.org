@@ -14,6 +14,10 @@ export const get_auth_url = () => {
     return `${API_URL}/api/users/login?redirect_url=${APP_URL}/auth/login`
 }
 
+export const get_friend_auth_url = () => {
+    return `${API_URL}/api/users/login?redirect_url=${APP_URL}/friend/login`
+}
+
 export const get_api_url = () => {
     return API_URL
 }
