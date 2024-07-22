@@ -164,7 +164,7 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
         {group?.status == 'requested' &&
             <Tag
                 data-tippy-content={group_type === 'team' ? t('pending_team_request_tooltip') : t('pending_group_request_tooltip')}
-                x-init="tippy(this, tippy_options)"
+                x-init="tippy($el, tippy_options)"
                 color='alliance-blue'
                 text={t('pending')} 
             />
@@ -172,14 +172,14 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
         {group?.status == 'denied' && !is_re_applicable &&
             <Tag
                 data-tippy-content={REQUEST_DENIED_TOOLTIP}
-                x-init="tippy(this, tippy_options)"
+                x-init="tippy($el, tippy_options)"
                 text={t('denied')} 
             />
         }
         {group?.status == 'error' &&
             <Tag
                 data-tippy-content={t('error_reload')}
-                x-init="tippy(this, tippy_options)"
+                x-init="tippy($el, tippy_options)"
                 text={t('error_status_corp')} 
             />
         }

@@ -66,7 +66,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         slot="absolute"
         class="[ absolute !w-auto top-[var(--space-3xs)] right-[var(--space-3xs)] ]"
         gap='0px'
-        x-init="tippy(this, tippy_options)"
     >
         {create_fleet &&
             <a
@@ -77,6 +76,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 })}`}
                 target="_blank"
                 rel="nofollow noopener noreferrer"
+                x-init="tippy($el, tippy_options)"
             >
                 <FleetEvEIcon />
             </a>
@@ -87,6 +87,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
             target="_blank"
             rel="nofollow noopener noreferrer"
+            x-init="tippy($el, tippy_options)"
         >
             <MapEvEIcon />
         </a>
