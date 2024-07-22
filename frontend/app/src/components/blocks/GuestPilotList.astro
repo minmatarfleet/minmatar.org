@@ -30,7 +30,7 @@ const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cook
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
-const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Basic`
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Public`
 const GUEST_PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/guest_pilots_list_component')}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -85,10 +85,8 @@ delete attributes.class
                         x-data={`{
                             show_add_pilot_disclaimer() {
                                 show_alert_dialog({
-                                    title: '${t('add_pilot_dialog_title')}',
-                                    partial: '${translatePath('/partials/add_pilot_dialog/')}?${query_string({
-                                        is_main: JSON.stringify(false),
-                                    })}',
+                                    title: '${t('add_friend_pilot_dialog_title')}',
+                                    content: '${t('add_guest_pilot_dialog_text')}',
                                 }).then( (accepted) => add_pilot(accepted) )
                             }
                         }`}
@@ -102,7 +100,11 @@ delete attributes.class
 
         <Flexblock gap='var(--space-3xs)'>
             {pilots.map((pilot) =>
-                <FlexInline class="[ pilot-item ]" justification='space-between'>
+                <FlexInline
+                    class="[ pilot-item ]"
+                    justification='space-between'
+                    x-bind:class={`{ 'blink-animation': remove_request_ongoing.includes(${pilot.character_id}) }`}
+                >
                     <PilotBadge
                         class="[ grow ]"
                         character_id={pilot.character_id}
