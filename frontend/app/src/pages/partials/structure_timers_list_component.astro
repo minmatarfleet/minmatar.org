@@ -45,7 +45,7 @@ try {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
 
-const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}&duplicated=${duplicated ?? false}`)
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${active}&duplicated=${duplicated ?? false}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay'))
 
@@ -69,6 +69,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         <StructureTimerList
             structure_timers={structure_timers}
             can_verify_timer={can_verify_timer}
+            create_fleet={active ? true : false}
         />
     </div>
 }

@@ -47,7 +47,7 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
         <div class="[ max-w-fit ]">
             <Tag color='green'
                 data-tippy-content={t('joined_corporation_tooltip')}
-                x-init="tippy('this, tippy_options)"
+                x-init="tippy($el, tippy_options)"
                 text={t('joined')}
             />
         </div>
@@ -135,7 +135,7 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                 corporation?.status === 'accepted' ?
                     <Tag
                         data-tippy-content={t('application_accepted_tooltip')}
-                        x-init="tippy('this, tippy_options)"
+                        x-init="tippy($el, tippy_options)"
                         color='green'
                         text={t('accepted')}
                     />
@@ -143,21 +143,21 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                 corporation?.status === 'rejected' ?
                     <Tag
                         data-tippy-content={t('application_denied_tooltip')}
-                        x-init="tippy('this, tippy_options)"
+                        x-init="tippy($el, tippy_options)"
                         text={t('denied')}
                     />
                 :
                 corporation?.status == 'pending' ?
                     <Tag
                         data-tippy-content={t('pending_application_tooltip')}
-                        x-init="tippy('this, tippy_options)"
+                        x-init="tippy($el, tippy_options)"
                         color='alliance-blue' text={t('pending')}
                     />
                 :
                 corporation?.status == 'error' &&
                     <Tag
                         data-tippy-content={t('error_reload')}
-                        x-init="tippy('this, tippy_options)"
+                        x-init="tippy($el, tippy_options)"
                         text={t('error_status_corp')}
                     />
                 }

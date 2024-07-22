@@ -899,5 +899,6 @@ export const ui = {
         'discord_roles_updated': 'Discord roles updated',
         'add_friend_pilot_dialog_title': 'Add your character',
         'add_guest_pilot_dialog_text': 'You will undergo the pilot setting process outside of our site. Once it is successfully completed, we will return to our platform. No additional scopes but public data will be requested',
+        'create_fleet_from_timer': 'Create fleet from timer',
     },
 } as const;

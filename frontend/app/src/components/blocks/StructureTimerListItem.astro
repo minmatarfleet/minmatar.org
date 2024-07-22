@@ -11,14 +11,18 @@ import type { VerifyStructureTimerRequest } from '@dtypes/api.minmatar.org'
 interface Props {
     structure_timer:    StructureTimerUI;
     can_verify_timer:   boolean;
+    create_fleet?:      boolean;
     [propName: string]: any;
 }
 
 const {
     structure_timer,
     can_verify_timer = false,
+    create_fleet = false,
     ...attributes
 } = Astro.props
+
+console.log(create_fleet)
 
 import { get_item_icon, get_alliance_logo } from '@helpers/eve_image_server'
 
@@ -31,11 +35,13 @@ import TextGroup from '@components/blocks/TextGroup.astro';
 import Button from '@components/blocks/Button.astro';
 
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
+import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 
 const ITEM_ID = `structure-timer-${structure_timer.id}`
 
 import { query_string } from '@helpers/string';
 import Tag from './Tag.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
 const eve_time = new Date(structure_timer.timer);
@@ -56,16 +62,36 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }`}
     {...attributes}
 >
-    <a
+    <FlexInline
         slot="absolute"
-        class="[ absolute top-[var(--space-3xs)] right-[var(--space-3xs)] w-[32px] neocom-button ]"
-        data-tippy-content={t('view_on_dotlan')}
-        href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
-        target="_blank"
-        rel="nofollow noopener noreferrer"
+        class="[ absolute !w-auto top-[var(--space-3xs)] right-[var(--space-3xs)] ]"
+        gap='0px'
     >
-        <MapEvEIcon />
-    </a>
+        {create_fleet &&
+            <a
+                class="[ w-[32px] neocom-button ]"
+                data-tippy-content={t('create_fleet_from_timer')}
+                href={`${translatePath('/fleets/add/')}?${query_string({
+                    timer: structure_timer.timer,
+                })}`}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                x-init="tippy($el, tippy_options)"
+            >
+                <FleetEvEIcon />
+            </a>
+        }
+        <a
+            class="[ w-[32px] neocom-button ]"
+            data-tippy-content={t('view_on_dotlan')}
+            href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            x-init="tippy($el, tippy_options)"
+        >
+            <MapEvEIcon />
+        </a>
+    </FlexInline>
     
     <VerticalCenter>
         <Flexblock gap="var(--space-s-m)">
