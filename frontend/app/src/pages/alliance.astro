@@ -32,7 +32,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import AllianceReel from '@components/blocks/AllianceReel.astro';
-// import AllianceBento from '@components/blocks/AllianceBento.astro';
 
 const page_title = t('alliance.page_title');
 const page_description = t('alliance.leading_text');
@@ -50,7 +49,8 @@ const page_description = t('alliance.leading_text');
             image: "/images/alliance-cover.jpg",
             image_990: "/images/alliance-cover-990.jpg",
             alt: t('alliance.cover_alt'),
-            overlay: true
+            overlay: true,
+            scrollable: true,
         }}
         wide={true}
     >

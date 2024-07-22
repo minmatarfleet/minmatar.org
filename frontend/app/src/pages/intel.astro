@@ -30,10 +30,6 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import IntelReel from '@components/blocks/IntelReel.astro';
 
-import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
-
 const page_title = t('intel.page_title');
 const page_description = t('intel.leading_text');
 ---
@@ -44,7 +40,8 @@ const page_description = t('intel.leading_text');
             image: "/images/intel-cover.jpg",
             image_990: "/images/intel-cover-990.jpg",
             alt: t('intel.cover_alt'),
-            overlay: true
+            overlay: true,
+            scrollable: true,
         }}
         wide={true}
     >
