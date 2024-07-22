@@ -181,9 +181,8 @@ const page_title = t('fleets.add.page_title');
 
 const timer = Astro.url.searchParams.get('timer')
 const eve_datetime = timer ? new Date(timer) : new Date()
-let eve_date = `${eve_datetime.getFullYear()}-${eve_datetime.getMonth() + 1}-${eve_datetime.getDate()}`
-let eve_time = `${eve_datetime.getHours()}:${timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15}`
----
+let eve_date = `${eve_datetime.getFullYear()}-${(eve_datetime.getMonth() + 1).toString().padStart(2, '0')}-${eve_datetime.getDate().toString().padStart(2, '0')}`
+let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15).toString().padStart(2, '0')}`
 
 <Viewport
     title={page_title}
