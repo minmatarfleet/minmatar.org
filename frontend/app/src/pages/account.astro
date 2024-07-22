@@ -6,6 +6,7 @@ const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
 import { prod_error_messages } from '@helpers/env'
+import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -86,27 +87,6 @@ const page_title = t('account.page_title');
             scrollable: true,
             overlay: true
         }}
-        x-data={`{
-            getDeviceInfo() {
-                const ua = navigator.userAgent
-                const platform = navigator.platform
-                const vendor = navigator.vendor
-                const browser = (() => {
-                    if (ua.indexOf("Chrome") > -1) return "Chrome"
-                    if (ua.indexOf("Safari") > -1) return "Safari"
-                    if (ua.indexOf("Firefox") > -1) return "Firefox"
-                    if (ua.indexOf("MSIE") > -1 || !!document.documentMode) return "IE" // MSIE or IE
-                    return "Unknown"
-                })()
-                return {
-                    userAgent: ua,
-                    platform: platform,
-                    vendor: vendor,
-                    browser: browser,
-                }
-            },
-        }`}
-        x-init="console.log(getDeviceInfo())"
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>

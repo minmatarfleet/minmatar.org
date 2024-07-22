@@ -5,6 +5,14 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
+interface Props {
+    is_friend?:  boolean;
+}
+
+const {
+    is_friend = false,
+} = Astro.props
+
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
@@ -31,6 +39,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             </Flexblock>
         </FlexInline>
         
-        <MumbleConnectButton />
+        <MumbleConnectButton is_friend={is_friend} />
     </FlexInline>
 </ComponentBlock>

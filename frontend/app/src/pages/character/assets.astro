@@ -39,6 +39,13 @@ let character_assets:AssetsUI = {
 let get_character_assets_error:string | false = false
 try {
     character_assets = await get_assets(auth_token, character_id)
+    
+    const location_icons_sorted = character_assets.location_icons.map((i) => {
+        i.assets = i.assets.sort((a, b) => a.name.localeCompare(b.name))
+        return i
+    })
+
+    character_assets.location_icons = location_icons_sorted
 } catch (error) {
     get_character_assets_error = prod_error_messages() ? t('get_character_assets_error') : error.message
 }

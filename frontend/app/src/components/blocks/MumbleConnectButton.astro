@@ -8,14 +8,16 @@ const translatePath = useTranslatedPath(lang);
 import type { Alert } from '@dtypes/layout_components'
 
 interface Props {
+    is_friend?: boolean;
     alert?:     Alert;
 }
 
 const {
-    alert = false
+    is_friend = false,
+    alert = false,
 } = Astro.props
 
-const MUMBLE_LAUNCH_BUTTON_PARTIAL_URL = translatePath('/partials/mumble_launch_button_component/')
+const MUMBLE_LAUNCH_BUTTON_PARTIAL_URL = `${translatePath('/partials/mumble_launch_button_component/')}?is_friend=${is_friend}`
 
 import Button from '@components/blocks/Button.astro';
 import Tippy from '@components/blocks/Tippy.astro';

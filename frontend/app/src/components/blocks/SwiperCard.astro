@@ -1,0 +1,42 @@
+---
+interface Props {
+    cover:              string;
+    [propName: string]: any;
+}
+
+const {
+    cover,
+    ...attributes
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+
+<ComponentBlock class="[ relative animate-fade-in-up ]"
+    class:list={['relative animate-fade-in-up', Astro.props.class ]}
+>
+    <img class="[ z-0 ]" src={cover} />
+    
+    <BlockList class="[ relative z-10 !justify-between min-h-[340px] ]">
+        <slot name="header" />
+        
+        <Flexblock gap='var(--space-m)'>
+            <slot />
+        </Flexblock>
+    </BlockList>
+</ComponentBlock>
+
+<style lang="scss">
+    img {
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 50%, transparent 90%);
+    }
+</style>

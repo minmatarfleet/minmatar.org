@@ -16,18 +16,21 @@ import type { PageCoverOptions } from '@dtypes/layout_components'
 
 interface Props {
     cover?:                 false | PageCoverOptions;
+    neocom?:                boolean;
     [propName: string]:     any;
 }
 
 const {
     cover,
+    neocom = true,
     ...attributes
 } = Astro.props;
 ---
+
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 
-    <PageHeader max_width="var(--max-content-width)">
+    <PageHeader max_width="var(--max-content-width)" neocom={neocom}>
         <slot name="header">
             <DebugTag set:html={marked.parse(t('missing_header_slot'))} />
         </slot>
@@ -35,7 +38,7 @@ const {
     </PageHeader>
 
 
-    <PageBody max_width="var(--max-content-width)">
+    <PageBody max_width="var(--max-content-width)" neocom={neocom}>
         <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
             <slot />
         </Wrapper>

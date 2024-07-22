@@ -5,22 +5,18 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { is_prod_mode } from '@helpers/env'
-
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import SwiperCard from '@components/blocks/SwiperCard.astro';
 
 import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
-import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <Wrapper
@@ -34,55 +30,41 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         id="ships-list"
     >
         <LandingSwiper>
-            <div class="[ swiper-slide ]">
-                <ComponentBlock>
-                    <Flexblock>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <FitsEvEIcon />
-                            <h2>{t('fittings')}</h2>
-                        </FlexInline>
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-0 ]" cover='/images/fittings-tile-background.jpg'>
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <FitsEvEIcon />
+                        <h2>{t('fittings')}</h2>
+                    </FlexInline>
                         
-                        <Flexblock gap='var(--space-m)'>
-                            <p>{t('fitting.leading_text')}</p>
-
-                            <FlexInline>
-                                <Button size='sm' href={translatePath('/ships/fitting/list/')}>
-                                    {t('view_fittings')}
-                                </Button>
-                            </FlexInline>
-                        </Flexblock>
-                    </Flexblock>
-                </ComponentBlock>
+                    <p>{t('fitting.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/ships/fitting/list/')}>
+                            {t('view_fittings')}
+                        </Button>
+                    </FlexInline>
+                </SwiperCard>
             </div>
 
             <div class="[ swiper-slide ]">
-                <ComponentBlock>
-                    <Flexblock>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <DoctrinesEvEIcon />
-                            <h2>{t('doctrines.page_title')}</h2>
-                        </FlexInline>
+                <SwiperCard class="[ animate-delay-200 ]" cover='/images/doctrines-tile-background.jpg'>
+                    <FlexInline slot="header" gap='var(--space-2xs)'>
+                        <DoctrinesEvEIcon />
+                        <h2>{t('doctrines.page_title')}</h2>
+                    </FlexInline>
                         
-                        <Flexblock gap='var(--space-m)'>
-                            <p set:html={marked.parseInline(t('doctrines.leading_text'), { renderer })} />
-
-                            <FlexInline>
-                                <Button
-                                    size='sm'
-                                    href={translatePath('/ships/doctrines/list/')}
-                                >
-                                    {t('view_doctrines')}
-                                </Button>
-                            </FlexInline>
-                        </Flexblock>
-                    </Flexblock>
-                </ComponentBlock>
+                    <p set:html={marked.parseInline(t('doctrines.leading_text'), { renderer })} />
+                    <FlexInline>
+                        <Button
+                            size='sm'
+                            href={translatePath('/ships/doctrines/list/')}
+                        >
+                            {t('view_doctrines')}
+                        </Button>
+                    </FlexInline>
+                </SwiperCard>
             </div>
         </LandingSwiper>
-    </div>
-
-    <div class="intel-reel-animation-wrapper">
-        <RifterIcon id="intel-reel-animation" />
     </div>
 
     <div class="[ swiper-button-prev hidden lg:block ]"></div>
@@ -126,28 +108,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         transform: translateY(-1.25rem);
     }
 
-    .swiper {
-        opacity: 0;
-        transition: var(--fast-transition);
-        //mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
-
-        &.swiper-initialized {
-            opacity: 1;
-        }
-    }
-
     .swiper-slide {
         width: min(100%, 700px);
-    }
-
-    .swiper-initialized + .intel-reel-animation-wrapper {
-        opacity: 0;
-    }
-
-    .intel-reel-animation-wrapper {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%, -50%);
     }
 </style>

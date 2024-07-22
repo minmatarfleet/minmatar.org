@@ -1,5 +1,7 @@
 ---
 import MumbleLaunchButton from "@components/blocks/MumbleLaunchButton.astro";
+
+const is_friend = JSON.parse(Astro.url.searchParams.get('is_friend') ?? 'false') as boolean
 ---
 
-<MumbleLaunchButton />
+<MumbleLaunchButton is_friend={is_friend} />

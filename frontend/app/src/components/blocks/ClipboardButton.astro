@@ -19,6 +19,8 @@ const {
     ...attributes
 } = Astro.props
 
+const COPIED_LABEL_TIME_MS = 2000
+
 const onclick_attr = `copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`
 const Textarea = 'textarea';
 ---
@@ -30,7 +32,7 @@ const Textarea = 'textarea';
     x-data={`{
         button_text: '${t('copy')}',
     }`}
-    x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', 2000)`}
+    x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', ${COPIED_LABEL_TIME_MS})`}
 
 >
     <ClipboardIcon slot="icon" />

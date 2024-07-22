@@ -47,7 +47,7 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
 
 <div
     id="fitting-custom" 
-    class="[ fitting-grid ][ w-full ]"
+    class="[ fitting-grid ]"
 >
     <!-- Hight -->
     <div class="[ high ]">
@@ -143,10 +143,9 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
     #fitting-custom {
         position: fixed;
         left: 50%;
+        right: var(--space-2xl);
         padding-block: var(--space-xl);
-        transform: translateX(-104px);
         z-index: 1;
-        max-width: var(--max-text-width);
         min-height: 100vh;
         display: grid;
         grid-template-rows: 64px 1fr 64px;

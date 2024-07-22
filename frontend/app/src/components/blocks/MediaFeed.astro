@@ -21,7 +21,7 @@ const FEEDS = [
     },
 ]
 
-import VideoWidget from '@components/blocks/VideoWidget.astro';
+import YTVideoWidget from '@components/blocks/YTVideoWidget.astro';
 ---
 
 <div class="[ swiper media-swiper ][ w-full ]">
@@ -55,7 +55,7 @@ import VideoWidget from '@components/blocks/VideoWidget.astro';
     >
         {FEEDS.map((feed) =>
             <div class="[ swiper-slide ]">
-                <VideoWidget
+                <YTVideoWidget
                     videoid={feed.id}
                     videotitle={feed.title}
                 />

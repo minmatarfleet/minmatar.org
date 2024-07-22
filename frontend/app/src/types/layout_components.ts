@@ -201,10 +201,15 @@ export interface PageCoverOptions {
     overlay?:       boolean;
 }
 
-export interface PageVideoOptions {
+export interface PageYTVideoOptions {
     id:        string;
     title:     string;
     credits?:  VideoWidgetCredits;
+}
+
+export interface PageVideoOptions {
+    url:        string;
+    credits?:   VideoWidgetCredits;
 }
 
 export interface ViewportComponents {   

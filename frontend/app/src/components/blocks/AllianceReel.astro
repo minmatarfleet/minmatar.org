@@ -24,19 +24,17 @@ const {
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import SwiperCard from '@components/blocks/SwiperCard.astro';
 import Tag from '@components/blocks/Tag.astro';
 
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
 import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
-import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <Wrapper
@@ -50,109 +48,90 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         id="corporations-list"
     >
         <LandingSwiper>
-            <div class="[ swiper-slide ]">
-                <ComponentBlock>
-                    <Flexblock>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <CorporationEvEIcon />
-                            <h2>{t('corporations')}</h2>
-                        </FlexInline>
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-0 ]" cover='/images/corporations-tile-background.jpg'>                    
+                    <FlexInline slot="header" gap='var(--space-2xs)'>
+                        <CorporationEvEIcon />
+                        <h2>{t('corporations')}</h2>
+                    </FlexInline>
                         
-                        <Flexblock gap='var(--space-m)'>
-                            <p>{t('corporations.leading_text')}</p>
-
-                            <FlexInline>
-                                <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
-                                    {t('view')}
-                                </Button>
-                                {can_view_applications &&
-                                    <Button size='sm' href={translatePath('/alliance/corporations/applications/')}>
-                                        {t('view_applications')}
-                                    </Button>
-                                }
-                                {can_view_corp_members &&
-                                    <Button size='sm' href={translatePath('/alliance/corporations/members/')}>
-                                        {t('view_members')}
-                                    </Button>
-                                }
-                            </FlexInline>
-                        </Flexblock>
-                    </Flexblock>
-                </ComponentBlock>
+                    <p>{t('corporations.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
+                            {t('view')}
+                        </Button>
+                        {can_view_applications &&
+                            <Button size='sm' href={translatePath('/alliance/corporations/applications/')}>
+                                {t('view_applications')}
+                            </Button>
+                        }
+                        {can_view_corp_members &&
+                            <Button size='sm' href={translatePath('/alliance/corporations/members/')}>
+                                {t('view_members')}
+                            </Button>
+                        }
+                    </FlexInline>
+                </SwiperCard>
             </div>
 
-            <div class="[ swiper-slide ]">
-                <ComponentBlock>
-                    <Flexblock>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <GroupsEvEIcon />
-                            <h2>{t('groups.list.page_title')}</h2>
-                        </FlexInline>
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-200 ]" cover='/images/sigs-tile-background.jpg'>                    
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <GroupsEvEIcon />
+                        <h2>{t('groups.list.page_title')}</h2>
+                    </FlexInline>
                         
-                        <Flexblock gap='var(--space-m)'>
-                            <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
-
-                            <FlexInline>
-                                <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
-                                    {t('view_groups')}
-                                </Button>
-                                
-                                {user_is_officer === null &&
-                                    <Tag text={t('page_reload_error')} />
-                                }
-                                {(user_is_officer || is_superuser) &&
-                                    <Button size='sm' href={translatePath('/alliance/sigs/requests/')}>
-                                        {t('group_requests')}
-                                    </Button>
-                                    
-                                    <Button size='sm' href={translatePath('/alliance/sigs/members/')}>
-                                        {t('view_members')}
-                                    </Button>
-                                }
-                            </FlexInline>
-                        </Flexblock>
-                    </Flexblock>
-                </ComponentBlock>
+                    <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
+                            {t('view_groups')}
+                        </Button>
+                        
+                        {user_is_officer === null &&
+                            <Tag text={t('page_reload_error')} />
+                        }
+                        {(user_is_officer || is_superuser) &&
+                            <Button size='sm' href={translatePath('/alliance/sigs/requests/')}>
+                                {t('group_requests')}
+                            </Button>
+                            
+                            <Button size='sm' href={translatePath('/alliance/sigs/members/')}>
+                                {t('view_members')}
+                            </Button>
+                        }
+                    </FlexInline>
+                </SwiperCard>
             </div>
             
             <div class="[ swiper-slide ]">
-                <ComponentBlock>
-                    <Flexblock>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <AugmentationEvEIcon />
-                            <h2>{t('teams.list.page_title')}</h2>
-                        </FlexInline>
+                <SwiperCard class="[ animate-delay-400 ]" cover='/images/teams-tile-background.jpg'>
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <AugmentationEvEIcon />
+                        <h2>{t('teams.list.page_title')}</h2>
+                    </FlexInline>
                         
-                        <Flexblock gap='var(--space-m)'>
-                            <p>{t('teams.leading_text')}</p>
-
-                            <FlexInline>
-                                <Button size='sm' href={translatePath('/alliance/teams/list/')}>
-                                    {t('view_teams')}
-                                </Button>
-                                
-                                {user_is_director === null &&
-                                    <Tag text={t('page_reload_error')} />
-                                }
-                                {(user_is_director || is_superuser) &&
-                                    <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
-                                        {t('team_requests')}
-                                    </Button>
-                                    
-                                    <Button size='sm' href={translatePath('/alliance/teams/members/')}>
-                                        {t('view_members')}
-                                    </Button>
-                                }
-                            </FlexInline>
-                        </Flexblock>
-                    </Flexblock>
-                </ComponentBlock>
+                    <p>{t('teams.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/alliance/teams/list/')}>
+                            {t('view_teams')}
+                        </Button>
+                        
+                        {user_is_director === null &&
+                            <Tag text={t('page_reload_error')} />
+                        }
+                        {(user_is_director || is_superuser) &&
+                            <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
+                                {t('team_requests')}
+                            </Button>
+                            
+                            <Button size='sm' href={translatePath('/alliance/teams/members/')}>
+                                {t('view_members')}
+                            </Button>
+                        }
+                    </FlexInline>
+                </SwiperCard>
             </div>
         </LandingSwiper>
-    </div>
-
-    <div class="intel-reel-animation-wrapper">
-        <RifterIcon id="intel-reel-animation" />
     </div>
 
     <div class="[ swiper-button-prev hidden lg:block ]"></div>
@@ -196,28 +175,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         transform: translateY(-1.25rem);
     }
 
-    .swiper {
-        opacity: 0;
-        transition: var(--fast-transition);
-        //mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
-
-        &.swiper-initialized {
-            opacity: 1;
-        }
-    }
-
     .swiper-slide {
         width: min(100%, 700px);
-    }
-
-    .swiper-initialized + .intel-reel-animation-wrapper {
-        opacity: 0;
-    }
-
-    .intel-reel-animation-wrapper {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%, -50%);
     }
 </style>
