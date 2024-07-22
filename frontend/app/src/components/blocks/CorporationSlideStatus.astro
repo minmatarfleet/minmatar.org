@@ -152,7 +152,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         corporation?.status == 'error' &&
             <Tag
                 data-tippy-content={t('error_reload')}
-                x-init="tippy('this, tippy_options)"
+                x-init="tippy(this, tippy_options)"
                 text={t('error_status_corp')}
             />
     }

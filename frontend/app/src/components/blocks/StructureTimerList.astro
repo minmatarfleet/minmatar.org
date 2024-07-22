@@ -9,12 +9,16 @@ import type { StructureTimerUI } from '@dtypes/layout_components'
 interface Props {
     structure_timers:   StructureTimerUI[];
     can_verify_timer?:  boolean;
+    create_fleet?:      boolean;
 }
 
 const {
     structure_timers,
     can_verify_timer = false,
+    create_fleet = false,
 } = Astro.props
+
+console.log(create_fleet)
 
 import BlockList from '@components/compositions/BlockList.astro';
 
@@ -34,6 +38,7 @@ import StructureTimerListItem from '@components/blocks/StructureTimerListItem.as
             role="listitem"
             structure_timer={structure_timer}
             can_verify_timer={can_verify_timer}
+            create_fleet={create_fleet}
         />
     )}
 
