@@ -24,6 +24,7 @@ router = Router(tags=["Characters"])
 
 class TokenType(Enum):
     CEO = "CEO"
+    PUBLIC = "Public"
     BASIC = "Basic"
     ADVANCED = "Advanced"
 
@@ -315,6 +316,8 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             scopes = BASIC_SCOPES
         case TokenType.ADVANCED:
             scopes = ADVANCED_SCOPES
+        case TokenType.PUBLIC:
+            scopes = ["publicData"]
         case TokenType.CEO:
             scopes = CEO_SCOPES
 
