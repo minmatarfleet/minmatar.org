@@ -24,15 +24,14 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 ---
 
 <Wrapper
-    class:list={[ 'relative', {shadow:shadow} ]}
+    class="relative"
     max_width="var(--max-col-width)"
     padding_inline="0"
     padding_block="0"
 >
     <div
-        class="[ video-frame w-full relative ]"
+        class:list={[ '[ video-frame w-full relative ]', {shadow:shadow} ]}
         x-data={`{
-            id: $id('yt-player'),
             SYNC_INTERVAL: 10000,
             sync_players() {
                 if (!$refs.main_player) return

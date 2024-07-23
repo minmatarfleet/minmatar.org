@@ -26,13 +26,13 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 ---
 
 <Wrapper
-    class:list={[ 'relative', {shadow:shadow} ]}
+    class="relative"
     max_width="var(--max-col-width)"
     padding_inline="0"
     padding_block="0"
 >
     <div
-        class="[ video-frame w-full ]"
+        class:list={[ '[ video-frame w-full ]', {shadow:shadow} ]}
         x-data={`{
             id: $id('yt-player')
         }`}
