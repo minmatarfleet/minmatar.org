@@ -29,7 +29,7 @@ try {
 }
 
 const GUEST_PILOTS_LIST_PARTIAL_URL = translatePath('/partials/guest_pilots_list_component/')
-const REFRESH_DISCORD_ROLES_PARTIAL_URL = translatePath('/partials/refresh_discord_roles_component/')
+const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=true`
 
 import GuestsViewport from '@layouts/GuestsViewport.astro';
 
