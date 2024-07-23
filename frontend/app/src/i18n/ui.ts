@@ -436,7 +436,7 @@ export const ui = {
         'alt_character': 'Alt character',
         'main': 'Main',
         'alt': 'Alt',
-        'clear_account_cache': 'Clear account info cache',
+        'clear_account_cache': 'Clear cache',
         'calculating': 'Calculating',
         'fun_fleet': 'Fun fleet',
         'courier': 'Courier',
