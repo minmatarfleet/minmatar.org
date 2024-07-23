@@ -8,10 +8,13 @@ const translatePath = useTranslatedPath(lang);
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { prod_error_messages } from '@helpers/env'
 
+const is_friend = JSON.parse(Astro.url.searchParams.get('is_friend') ?? 'false') as boolean
+
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('guest_auth_token') ? Astro.cookies.get('guest_auth_token').value : false
+const token_name = is_friend ? 'guest_auth_token' : 'auth_token'
+const auth_token = Astro.cookies.has(token_name) ? Astro.cookies.get(token_name).value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -41,7 +44,7 @@ if (sync_user_with_discord_error) {
     }
 }
 
-const REFRESH_DISCORD_ROLES_PARTIAL_URL = translatePath('/partials/refresh_discord_roles_component/')
+const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=${is_friend}`
 
 const ROLES_UPDATED_LABEL_TIME_MS = 2000
 

@@ -42,6 +42,7 @@ try {
 const DELETE_ACCOUNT_URL = translatePath('/api/auth')
 const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
+const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -115,7 +116,17 @@ const page_title = t('account.page_title');
                             </TextGroup>
                         </VerticalCenter>
                     </FlexInline>
-                    <VerticalCenter>
+                    <FlexInline class="[ items-center ]">
+                        <Button
+                            size='sm'
+                            type="button"
+                            hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
+                            hx-swap="outerHTML transition:true"
+                            hx-on::before-request="this.setAttribute('disabled','');"
+                            hx-on::after-request="this.removeAttribute('disabled')"
+                        >
+                            {t('refresh_discord_roles')}
+                        </Button>
                         <Tippy
                             data-tippy-placement="top"
                             partial={`${translatePath('/partials/normal_tooltip')}?description=clear_cache_description`}
@@ -147,7 +158,7 @@ const page_title = t('account.page_title');
                                 {t('clear_account_cache')}
                             </Button>
                         </Tippy>
-                    </VerticalCenter>
+                    </FlexInline>
                 </FlexInline>
             </ComponentBlock>
 
