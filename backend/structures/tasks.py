@@ -15,7 +15,12 @@ logger = logging.getLogger(__name__)
 
 @app.task
 def update_structures():
-    for corporation in EveCorporation.objects.all():
+    for corporation in EveCorporation.objects.filter(
+        alliance__name__in=[
+            "Minmatar Fleet Alliance",
+            "Minmatar Fleet Associates",
+        ]
+    ):
         update_corporation_structures.delay(corporation.corporation_id)
 
 
