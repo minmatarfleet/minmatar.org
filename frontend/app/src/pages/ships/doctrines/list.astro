@@ -37,9 +37,10 @@ import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 const page_title = t('doctrines.page_title');
+const page_description = t('doctrines.alliance.page_leading_text');
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageWide
         cover={{
             image: "/images/doctrines-cover.jpg",
