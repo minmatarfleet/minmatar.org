@@ -1,8 +1,9 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+const translatePath = useTranslatedPath(lang);
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -10,7 +11,7 @@ import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 
 let doctrines:DoctrineType[] = []
-let fetch_doctrines_error:string | false = false
+let fetch_doctrines_error:string
 
 try {
     doctrines = await fetch_doctrines()
@@ -19,6 +20,8 @@ try {
 }
 
 const are_sigs_doctrines = doctrines.find((doctrine) => doctrine.sigs.length > 0)
+
+const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component`)
 
 import { marked } from 'marked';
 
@@ -35,6 +38,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('doctrines.page_title');
 const page_description = t('doctrines.alliance.page_leading_text');
@@ -52,6 +56,7 @@ const page_description = t('doctrines.alliance.page_leading_text');
         }}
         x-data={`{
             show_all: $persist(false),
+            doctrines_count: ${doctrines.length},
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -60,7 +65,9 @@ const page_description = t('doctrines.alliance.page_leading_text');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small>{doctrines.length} {t('doctrine').toLowerCase()}{doctrines.length != 1 ? 's' : ''}</small>
+                    <small x-text={`\`\${doctrines_count} \${doctrines_count != 1 ? '${t('doctrines').toLowerCase()}' : '${t('doctrine').toLowerCase()}'}\``}>
+                        {doctrines.length} {doctrines.length != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}
+                    </small>
                 </Flexblock>
             </FlexInline>
         </FlexInline>
@@ -80,16 +87,24 @@ const page_description = t('doctrines.alliance.page_leading_text');
 
         <Flexblock gap="var(--space-xl)">
             <TextBox set:html={marked.parse(t('doctrines.alliance.page_leading_text'))} />
-            
-            <Flexblock role="list" gap='var(--space-3xs)'>
-                
-                {doctrines.map((doctrine) =>
-                    <ComponentBlock x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
-                        <DoctrineItem role="listitem" doctrine={doctrine} />
-                    </ComponentBlock>
-                )}
 
-            </Flexblock>
+                {fetch_doctrines_error ?
+                    <ErrorRefetch
+                        args={{
+                            partial: DOCTRINES_PARTIAL_URL,
+                            message: fetch_doctrines_error,
+                            delay: 0,
+                        }}
+                    />
+                    :
+                    <Flexblock role="list" gap='var(--space-3xs)'>
+                        {doctrines.map((doctrine) =>
+                            <ComponentBlock x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
+                                <DoctrineItem role="listitem" doctrine={doctrine} />
+                            </ComponentBlock>
+                        )}
+                    </Flexblock>
+                }
         </Flexblock>
     </PageWide>
 </Viewport>

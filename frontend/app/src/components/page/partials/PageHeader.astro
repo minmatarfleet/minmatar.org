@@ -33,9 +33,7 @@ const subheader_content = await Astro.slots.render('subheader');
     </div>
 
     {subheader_content !== '' &&
-        <div
-            class="[ subheader-bar ]"
-        >
+        <div class="[ subheader-bar ]">
             <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                     <slot name="subheader" />

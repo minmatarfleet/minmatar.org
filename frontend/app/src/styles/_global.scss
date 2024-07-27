@@ -75,14 +75,6 @@ a[href] {
     }
 }
 
-.card.component {
-    .flex-block {
-        > h2 + * {
-            margin-block-start: var(--space-l);
-        }
-    }
-}
-
 .sentence-cap::first-letter {
     text-transform: capitalize;
 }
