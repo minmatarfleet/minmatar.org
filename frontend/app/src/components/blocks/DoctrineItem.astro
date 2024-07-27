@@ -38,7 +38,32 @@ const {
     class="[ w-full ]"
     gap='var(--space-m)'
 >
-    <h2>{doctrine.name}</h2>
+    <FlexInline justification='space-between'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>{doctrine.name}</h2>
+
+            <TippyBase description={`${doctrine.type}.description`}>
+                <FlexInline gap='var(--space-3xs)'>
+                    <picture class="[ border ]">
+                        {doctrine.type === 'armor' &&
+                            <ArmorIcon />
+                        }
+                        {doctrine.type === 'shield' &&
+                            <ShieldIcon />
+                        }
+                        {doctrine.type === 'armorshield' &&
+                            <ShieldArmorIcon />
+                        }
+                    </picture>
+                    <small>{t(doctrine.type)}</small>
+                </FlexInline>
+            </TippyBase>
+        </Flexblock>
+        <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
+            <MagnifierIcon slot="icon" />
+            {t('view_details')}
+        </Button>
+    </FlexInline>
     <Grid
         role="list"
         class="[ w-full grid-fill ]"
@@ -127,27 +152,7 @@ const {
                     </Badge>
                 </TippyBase>
             }
-
-            <TippyBase
-                title={doctrine.type}
-                description={`${doctrine.type}.description`}
-            >
-                {doctrine.type === 'armor' &&
-                    <ArmorIcon />
-                }
-                {doctrine.type === 'shield' &&
-                    <ShieldIcon />
-                }
-                {doctrine.type === 'armorshield' &&
-                    <ShieldArmorIcon />
-                }
-            </TippyBase>
         </FlexInline>
-
-        <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
-            <MagnifierIcon slot="icon" />
-            {t('view_details')}
-        </Button>
     </FlexInline>
 </Flexblock>
 
