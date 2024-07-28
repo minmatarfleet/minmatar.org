@@ -42,11 +42,12 @@ export async function DELETE({ cookies }) {
     const t = useTranslations(lang)
     
     const subscription_id = cookies.has('subscription_id') ? cookies.get('subscription_id').value : null
-    let deleted_id
 
     if (subscription_id) {
         try {
-            deleted_id = await remove_subscription(subscription_id)
+            await remove_subscription(subscription_id)
+            cookies.delete('subscription_id', { path: '/' })
+            return HTTP_200_Success()
         } catch (error) {
             console.log(error)
 
@@ -54,12 +55,6 @@ export async function DELETE({ cookies }) {
                 error: is_prod_mode() ? t('create_subscription_error') : error.message
             })
         }
-    }
-
-    if (deleted_id > 0) {
-        cookies.delete('subscription_id', { path: '/' })
-
-        return HTTP_200_Success()
     }
 
     return HTTP_404_Not_Found()
