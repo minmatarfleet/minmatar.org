@@ -7,6 +7,7 @@ const translatePath = useTranslatedPath(lang);
 Astro.cookies.delete('auth_token', { path: '/' })
 Astro.cookies.delete('avatar', { path: '/' })
 Astro.cookies.delete('primary_pilot', { path: '/' })
+Astro.cookies.delete('subscription_id', { path: '/' })
 
 const redirect = translatePath('/')
 ---
