@@ -42,8 +42,12 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
                 <p>Meet the backbone of our alliance. We are recruiting</p>
                 
                 <ButtonStack>
-                    <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
-                        {t('view')}
+                    <Button
+                        size='sm'
+                        color='green'
+                        href={translatePath('/alliance/corporations/list/')}
+                    >
+                        {t('join_us')}
                     </Button>
                 </ButtonStack>
             </Flexblock>
