@@ -60,10 +60,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 const page_title = t('fleets.upcoming.page_title');
+const page_description = t('page_finder.fleets.upcoming.description');
 ---
 
 <Viewport
     title={page_title}
+    meta_description={page_description}
     components={{
         confirm_dialog: true
     }}

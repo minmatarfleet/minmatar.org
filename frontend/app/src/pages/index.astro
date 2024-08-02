@@ -52,9 +52,10 @@ const BLACK_OMEGA_SECUTIRY_ID = 263585335
 const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
 
 const page_title = t('index.page_title');
+const page_description = t('index.leading_text');
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
             image: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
@@ -144,7 +145,7 @@ const page_title = t('index.page_title');
 				>
 					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
 					
-					<h2 class="[ welcome-heading ]">Welcome to Minmatar Fleet</h2>
+					<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
 
 					<p>{t('index.leading_text')}</p>
 
