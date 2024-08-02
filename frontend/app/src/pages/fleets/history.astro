@@ -59,9 +59,10 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 
 const page_title = t('fleets.history.page_title');
+const page_description = t('page_finder.fleets.history.description');
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageWide
         cover={{
             image: "/images/fleets-cover.jpg",

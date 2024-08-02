@@ -51,9 +51,10 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 
 const page_title = t('fitting.list.page_title');
+const page_description = t('fitting.leading_text');
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageWide
         cover={{
             image: "/images/fits-cover.jpg",

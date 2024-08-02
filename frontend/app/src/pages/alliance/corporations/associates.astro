@@ -46,10 +46,12 @@ import CorporationsList from '@components/blocks/CorporationsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('corporations.associates.page_title');
+const page_description = t('corporations.associates.leading_text');
 ---
 
 <Viewport
     title={page_title}
+    meta_description={page_description}
     components={{
         alert_dialog: true,
         confirm_dialog: true,

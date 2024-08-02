@@ -23,6 +23,7 @@ export const ui = {
         'generic.meta_description': 'The ultimate platform for Minmatar pilots, provided by the Minmatar Fleet Alliance.',
 
         'index.page_title': 'Minmatar Fleet',
+        'index.title': 'Welcome to Minmatar Fleet',
         'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of an space structure.',
@@ -193,6 +194,7 @@ export const ui = {
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
 
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
+        'corporations.associates.leading_text': 'Minmatar Fleet Associates is a collection of small, medium, and large corporations focused on supplying the relentless war machine of the Minmatar Fleet. These organizations typically specialize in industry, resource collection, and logistics.',
 
         'corporations.applications.page_title': 'Corporations applications',
         'corporations.applications.leading_text': 'Here a list of all the applications to join alliance corporations.',
