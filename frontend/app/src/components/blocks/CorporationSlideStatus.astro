@@ -66,6 +66,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         :
         (corporation?.status == 'available' && !primary_character_id) ?
             <ButtonAddPrimary
+                color='green'
                 size='sm'
                 dialog_title={t('corporation_join_request_dialog_title')}
             >
@@ -75,6 +76,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         (!is_user_corporation && corporation?.status == 'available' && primary_character_id) ||
         (is_re_applicable && corporation?.status == 'rejected') ?
             <Button
+                color='green'
                 type="button"
                 size='sm'
                 x-bind:disabled="disabled"
@@ -114,6 +116,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         :
         corporation?.status == 'unauth' ?
             <ButtonAuth
+                color='green'
                 size='sm'
                 dialog_title={t('corporation_join_request_dialog_title')}
             >
