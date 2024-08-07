@@ -40,6 +40,8 @@ const DESCRIPTION_TEXT = {
     'team': t('view_team_description'),
     'group': t('view_group_description'),
 }
+
+const PLACEHOLDER_IMAGE = type === 'team' ? '/images/icons/48px-Augmentations.png' : '/images/icons/48px-Grouplist.png';
 ---
 
 <FixedFluid
@@ -64,7 +66,20 @@ const DESCRIPTION_TEXT = {
         </picture>
         :
         <picture>
-            <img loading="lazy" src={group.image_url} width="64" height="64" alt={`${group.name} ${LOGO_TEXT[type]}`} />
+            <img
+                loading="lazy"
+                src={group.image_url}
+                width="64"
+                height="64"
+                alt={`${group.name} ${LOGO_TEXT[type]}`}
+                onerror={`
+                    this.onerror=null;
+                    this.src='${PLACEHOLDER_IMAGE}';
+                    this.closest('picture').classList.add('bordered')
+                    this.height = 48
+                    this.width = 48
+                `}
+            />
         </picture>
     }
     <FlexInline justification='space-between' class="[ items-center ]">
