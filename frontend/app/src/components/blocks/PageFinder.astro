@@ -184,7 +184,9 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                         {page?.description &&
                                             <small>{t(page.description as any)}</small>
                                         }
-                                        <small><code class="[ p-0 ]">{page.path}</code></small>
+                                        {page.path &&
+                                            <small><code class="[ p-0 ]">{page.path}</code></small>
+                                        }
                                     </Flexblock>
                                 </FlexInline>
                             </a>
