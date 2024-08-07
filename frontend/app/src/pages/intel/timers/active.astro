@@ -142,9 +142,11 @@ const page_title = t('intel.timers.page_title');
                 {t('timers_history')}
             </Button>
 
-            <ClipboardButton id="active-timers-to-clipboard">
-                {timers_clipboard}
-            </ClipboardButton>
+            {structure_timers.length > 0 &&
+                <ClipboardButton id="active-timers-to-clipboard">
+                    {timers_clipboard}
+                </ClipboardButton>
+            }
         </FlexInline>
         
         {structure_timers_error ?
