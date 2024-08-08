@@ -33,6 +33,7 @@ from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
 from structures.router import router as structures_router
 from users.router import router as users_router
+from conversion.router import router as conversion_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -45,6 +46,7 @@ api.add_router("doctrines/", doctrines_router)
 api.add_router("structures/", structures_router)
 api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
+api.add_router("conversion/", conversion_router)
 
 
 @api.exception_handler(UnauthorizedError)
