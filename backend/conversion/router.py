@@ -13,7 +13,6 @@ class ItemsResponse(BaseModel):
     qty_7d: int
     qty_30d: int
 
-
 router = Router(tags=["Conversion"])
 
 type_ids = [
@@ -34,6 +33,8 @@ region_forge = '10000002'
 corp_tlf = '1000182'
 
 items = []
+
+last_refresh = datetime.datetime.min
 
 @router.get("",
     response={200: List[ItemsResponse]},
@@ -103,5 +104,11 @@ def update_traded_quantities():
     description="Refresh the market data; can take a while to complete."
 )
 def refresh_data(request):
+    global last_refresh
+    print(last_refresh)
+    if (datetime.datetime.now() - last_refresh) < datetime.timedelta(hours=2):
+        return "LP store items not refreshed, last refresh was " + last_refresh.strftime("%Y-%m-%d %H:%M:%S")
+
     update_traded_quantities()
+    last_refresh = datetime.datetime.now()
     return "LP store items refreshed"
