@@ -46,6 +46,8 @@ def get_expected_nickname(user: User):
     if discord_user.dress_wearer:
         nickname = f"[👗] {character.character_name}"
 
+    nickname = re.sub(r'rat'gi, 'RAT', nickname)
+    
     return nickname
 
 
