@@ -8,6 +8,8 @@ from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from users.helpers import offboard_user
 
+import core
+
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
@@ -36,18 +38,7 @@ def get_expected_nickname(user: User):
     if not eve_primary_character or not is_valid_for_nickname:
         return None
 
-    character = eve_primary_character.character
-    corporation = character.corporation
-    nickname = f"[{corporation.ticker}] {character.character_name}"
-
-    if discord_user.is_down_under:
-        nickname = upsidedown.transform(nickname)
-
-    if discord_user.dress_wearer:
-        nickname = f"[👗] {character.character_name}"
-
-    return nickname
-
+    return make_nickname(eve_primary_character.character, discord_user)
 
 def get_discord_user(user: User, notify=False):
     """
