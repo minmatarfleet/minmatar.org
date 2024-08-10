@@ -665,7 +665,7 @@ export const ui = {
         'rotation_y': 'Rotation Y',
         'zkillboard_description': 'Check out our numbers over zkillboard',
         'authentication': 'Authentication',
-        'authentication_description': 'Log into our platform if you are already in Minmatar Fleet Discord server',
+        'authentication_description': 'Log into our platform if you are already in Minmatar Fleet Discord server and your user is already logged on the browser',
         'clear_cache_description': 'Clean up session variables. May fix UI issues.',
         'help_description': 'Find help and colaborate reporting issues. Check our **hotkeys** to step up your experience using our platform',
         'ccp_disclaimer': 'EVE Online, its logo, and all affiliated logos, fonts, and designs are the intellectual property of CCP. Similarly, all artwork, screenshots, characters, vehicles, storylines, and world facts associated with these trademarks are CCP’s intellectual property. EVE Online and its logo are registered trademarks of CCP. CCP bears no responsibility for the content or operation of this website and cannot be held liable for any damages resulting from its use.',
