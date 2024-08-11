@@ -5,11 +5,11 @@ import type { CorporationApplications, SelectOptions } from '@dtypes/layout_comp
 import { get_all_corporations_applications } from '@helpers/fetching/applications'
 
 export interface ApplicationData {
-    corporations_applications:          CorporationApplications[];
-    corporations_unfiltered:            CorporationApplications[];
-    corporations_applications_count:    number[];
-    total_applications:                 number;
-    corporations_options:               SelectOptions[];
+    corporations_applications?:         CorporationApplications[];
+    corporations_unfiltered?:           CorporationApplications[];
+    corporations_applications_count?:   number[];
+    total_applications?:                number;
+    corporations_options?:              SelectOptions[];
 }
 
 export async function get_applications_data(auth_token:string, lang:'en' = 'en') {
@@ -23,7 +23,7 @@ export async function get_applications_data(auth_token:string, lang:'en' = 'en')
             return b.applications.length - a.applications.length
         })
     } catch (error) {
-        throw new (prod_error_messages() ? t('get_all_corporations_applications_error') : error.message)
+        throw new Error(prod_error_messages() ? t('get_all_corporations_applications_error') : error.message)
     }
 
     let total_applications = 0

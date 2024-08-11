@@ -10,7 +10,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.get('auth_token').value
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -25,22 +25,22 @@ if (!can_view_page)
 import { get_applications_data } from '@helpers/pages/applications'
 import type { ApplicationData } from '@helpers/pages/applications'
 
-let data:ApplicationData
-let get_all_corporations_applications_error
+let applications_data:ApplicationData = {}
+let data_fetching_error
 
 try {
-    data = await get_applications_data(auth_token, lang)
+    applications_data = await get_applications_data(auth_token, lang)
 } catch (error) {
-    get_all_corporations_applications_error = error
+    data_fetching_error = error
 }
 
 const {
-    corporations_applications,
-    corporations_unfiltered,
-    corporations_applications_count,
-    total_applications,
-    corporations_options
-} = data
+    corporations_applications = [],
+    corporations_unfiltered = [],
+    corporations_applications_count = [],
+    total_applications = 0,
+    corporations_options = [],
+} = applications_data
 
 const CORPORATIONS_APPLICATIONS_PARTIAL_URL = translatePath('/partials/corporations_applications_component')
 
@@ -50,11 +50,11 @@ import CorporationApplicationsList from '@components/blocks/CorporationApplicati
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_all_corporations_applications_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
-            message: get_all_corporations_applications_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />
