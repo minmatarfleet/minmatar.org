@@ -23,9 +23,9 @@ if (!can_view_page)
     return HTTP_404_Not_Found()
 
 import { get_applications_data } from '@helpers/pages/applications'
-import type { ApplicationData } from '@helpers/pages/applications'
+import type { ApplicationsData } from '@helpers/pages/applications'
 
-let applications_data:ApplicationData = {}
+let applications_data:ApplicationsData = {}
 let data_fetching_error
 
 try {

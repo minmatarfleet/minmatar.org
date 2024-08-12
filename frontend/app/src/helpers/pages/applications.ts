@@ -4,7 +4,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { CorporationApplications, SelectOptions } from '@dtypes/layout_components'
 import { get_all_corporations_applications } from '@helpers/fetching/applications'
 
-export interface ApplicationData {
+export interface ApplicationsData {
     corporations_applications?:         CorporationApplications[];
     corporations_unfiltered?:           CorporationApplications[];
     corporations_applications_count?:   number[];
@@ -51,5 +51,5 @@ export async function get_applications_data(auth_token:string, lang:'en' = 'en')
         corporations_applications_count: corporations_applications_count,
         total_applications: total_applications,
         corporations_options: corporations_options,
-    } as ApplicationData
+    } as ApplicationsData
 }
