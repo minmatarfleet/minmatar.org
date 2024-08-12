@@ -1,5 +1,6 @@
 import _slugify from 'slugify';
 import { marked } from 'marked';
+import * as cheerio from 'cheerio';
 
 export const remove_space = (text:string):string => {
     return text.replaceAll(" ", "_")
@@ -44,4 +45,9 @@ export function get_error_message(status:number, endpoint:string) {
 
 export function decode_unicode_escapes(text) {
     return text.replace(/\\u([0-9A-Fa-f]{4})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
+}
+
+export async function strip_markdown(text:string) {
+    const $ = cheerio.load(await marked.parse(text))
+    return $('p:first').text()
 }

@@ -35,6 +35,7 @@ import { get_module_model } from '@helpers/sde/modules'
 import ccpwgl_turrets from '@/data/ccpwgl_turrets.json'
 import { get_item_id } from '@helpers/sde/items'
 import { get_ship_dna } from '@helpers/ccpwgl'
+import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
 import { parse_eft } from '@helpers/fit_parser.ts';
@@ -79,6 +80,7 @@ import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 
 const page_title = fitting_parsed.name;
+const page_description = await strip_markdown(fitting.description)
 ---
 
 <script define:vars={{ normal_view }}>
@@ -88,7 +90,7 @@ const page_title = fitting_parsed.name;
         window.location.href = normal_view
 </script>
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
             image: "/images/fitting-cover.jpg",
