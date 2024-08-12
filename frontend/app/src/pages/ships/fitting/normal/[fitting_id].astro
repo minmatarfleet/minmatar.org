@@ -25,6 +25,7 @@ try {
 import { get_item_icon } from '@helpers/eve_image_server';
 import { parse_eft } from '@helpers/fit_parser.ts';
 import { get_item_id } from '@helpers/sde/items'
+import { strip_markdown } from '@helpers/string'
 import { format_date_short } from '@helpers/date';
 
 const fitting_parsed = await parse_eft(fitting.eft_format)
@@ -120,6 +121,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
 
 const page_title = fitting.name
+const page_description = await strip_markdown(fitting.description)
 ---
 
 <script define:vars={{ render_view }}>
@@ -129,7 +131,7 @@ const page_title = fitting.name
         window.location.href = render_view
 </script>
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageDefault
         cover={{
             image: "/images/fits-cover.jpg",
