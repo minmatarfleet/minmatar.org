@@ -8,8 +8,7 @@ from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from users.helpers import offboard_user
 
-import core
-
+from .core import make_nickname
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
