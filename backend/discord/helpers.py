@@ -1,7 +1,6 @@
 import logging
 
 import requests
-import upsidedown
 from django.contrib.auth.models import User
 
 from discord.client import DiscordClient
