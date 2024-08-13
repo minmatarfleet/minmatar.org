@@ -3,9 +3,10 @@ from unittest.mock import Mock
 
 from core import make_nickname
 
+
 class DiscordTests(unittest.TestCase):
     """
-    Unit tests for Discord functionality. 
+    Unit tests for Discord functionality.
     """
     def test_basic_nickname(self):
         character = Mock(character_name="Bob", corporation=Mock(ticker="ABC"))
@@ -26,6 +27,7 @@ class DiscordTests(unittest.TestCase):
         character = Mock(character_name="Scott", corporation=Mock(ticker="-DRY-"))
         discord = Mock(is_down_under=False, dress_wearer=True)
         self.assertEqual("[ω] Scott", make_nickname(character, discord))
+
 
 if __name__ == "__main__":
     unittest.main()
