@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from core import make_nickname
+from .core import make_nickname
 
 
 class DiscordTests(unittest.TestCase):
