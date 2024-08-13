@@ -262,7 +262,9 @@ def remove_sigs():
                     sig.members.remove(user)
                     logger.info("Removing user %s from sig %s", user, sig)
             except Exception as e:
-                logger.error("Error removing user %s from sig %s: %s", user, sig, e)
+                logger.error(
+                    "Error removing user %s from sig %s: %s", user, sig, e
+                )
                 continue
 
 
