@@ -1,5 +1,5 @@
 from ninja import Router
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 from pydantic import BaseModel
 from typing import List
 import csv
@@ -92,7 +92,7 @@ def send_csv(request):
 
 def get_item_name(item_id):
     url = base_url + "/universe/types/" + str(item_id) + "/"
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     return response.json()["name"]
 
 
@@ -110,7 +110,7 @@ def update_traded_quantity(item_id):
         + "/history/?datasource=tranquility&type_id="
         + str(item_id)
     )
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     total_1d = 0
     total_7d = 0
     total_30d = 0
