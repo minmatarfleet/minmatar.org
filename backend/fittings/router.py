@@ -12,6 +12,7 @@ fittings_router = Router(tags=["Ships"])
 
 class FittingResponse(BaseModel):
     """Fittings API Response"""
+
     id: int
     name: str
     ship_id: int
@@ -25,6 +26,7 @@ class FittingResponse(BaseModel):
 
 class DoctrineResponse(BaseModel):
     """Doctrines API Response"""
+
     id: int
     name: str
     type: str

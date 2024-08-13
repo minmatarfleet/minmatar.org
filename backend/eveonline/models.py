@@ -68,6 +68,7 @@ class EveCharacter(models.Model):
 
 class EveCharacterLog(models.Model):
     """Character log model"""
+
     username = models.CharField(max_length=255)
     character_name = models.CharField(max_length=255)
 
@@ -85,6 +86,7 @@ class EveCharacterSkill(models.Model):
 
 class EveCharacterKillmail(models.Model):
     """Killmail model"""
+
     id = models.BigIntegerField(primary_key=True)
     killmail_id = models.BigIntegerField()
     killmail_hash = models.CharField(max_length=255)
@@ -102,6 +104,7 @@ class EveCharacterKillmail(models.Model):
 
 class EveCharacterKillmailAttacker(models.Model):
     """Killmail attacker model"""
+
     killmail = models.ForeignKey(
         "EveCharacterKillmail", on_delete=models.CASCADE
     )
