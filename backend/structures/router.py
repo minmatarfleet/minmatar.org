@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class EveStructureState(Enum):
     """States for Eve Structures"""
+
     ANCHORING = "anchoring"
     ARMOR = "armor"
     HULL = "hull"
@@ -26,6 +27,7 @@ class EveStructureState(Enum):
 
 class EveStructureType(Enum):
     """Eve Structure Types"""
+
     ASTRAHUS = "astrahus"
     FORTIZAR = "fortizar"
     KEEPSTAR = "keepstar"
@@ -45,6 +47,7 @@ class EveStructureType(Enum):
 
 class StructureResponse(BaseModel):
     """Response model for structures API"""
+
     id: int
     name: str
     type: str
@@ -53,6 +56,7 @@ class StructureResponse(BaseModel):
 
 class EveStructureTimerRequest(BaseModel):
     """Request model for structure timer API"""
+
     selected_item_window: str
     corporation_name: str
     state: EveStructureState
@@ -61,12 +65,14 @@ class EveStructureTimerRequest(BaseModel):
 
 class EveStructureTimerVerificationRequest(BaseModel):
     """Request model for structure timer API"""
+
     corporation_name: str
     alliance_name: str | None = None
 
 
 class EveStructureTimerResponse(BaseModel):
     """Response model for structure timer API"""
+
     id: int
     name: str
     state: str
