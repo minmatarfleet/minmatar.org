@@ -706,3 +706,5 @@ export interface StructureTimerUI {
     structure_type_id:  number;
     verified:           boolean;
 }
+
+export type MemberStatus = 'registered' | 'unregistered'
