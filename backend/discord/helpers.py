@@ -3,6 +3,7 @@ import logging
 import requests
 from django.contrib.auth.models import User
 
+
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from users.helpers import offboard_user
@@ -37,6 +38,7 @@ def get_expected_nickname(user: User):
         return None
 
     return make_nickname(eve_primary_character.character, discord_user)
+
 
 def get_discord_user(user: User, notify=False):
     """

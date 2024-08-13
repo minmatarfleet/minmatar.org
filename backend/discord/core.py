@@ -1,5 +1,6 @@
 import upsidedown
 
+
 def make_nickname(character, discord_user):
     corporation = character.corporation
 
@@ -15,4 +16,3 @@ def make_nickname(character, discord_user):
         nickname = f"[ω] {character.character_name}"
 
     return nickname
-
