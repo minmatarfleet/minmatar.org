@@ -1,19 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 
 import { marked } from 'marked';
-
-import PageHeader from '@components/page/partials/PageHeader.astro';
-import PageBody from '@components/page/partials/PageBody.astro';
-import PageCover from '@components/page/partials/PageCover.astro';
-
-import Wrapper from '@components/compositions/Wrapper.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-
-import DebugTag from '@components/blocks/DebugTag.astro';
 
 import type { PageCoverOptions } from '@dtypes/layout_components'
 
@@ -26,7 +15,17 @@ const {
     cover,
     ...attributes
 } = Astro.props;
+
+import PageHeader from '@components/page/partials/PageHeader.astro';
+import PageBody from '@components/page/partials/PageBody.astro';
+import PageCover from '@components/page/partials/PageCover.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import DebugTag from '@components/blocks/DebugTag.astro';
 ---
+
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 

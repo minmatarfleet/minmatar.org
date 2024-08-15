@@ -1,9 +1,4 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-
 import type { StructureType } from '@dtypes/api.minmatar.org'
 
 const location = Astro.url.searchParams.get('location')

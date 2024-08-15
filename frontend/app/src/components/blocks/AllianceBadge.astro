@@ -1,8 +1,6 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 
 import type { AllianceBadgeProps } from '@dtypes/layout_components'
 import { get_alliance_by_id } from '@helpers/api.eveonline/alliances'

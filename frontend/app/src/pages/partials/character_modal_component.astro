@@ -1,9 +1,4 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils'
-
-const lang = getLangFromUrl(Astro.url)
-const t = useTranslations(lang)
-
 import CharacterInfo from '@components/blocks/CharacterInfo.astro'
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id'))

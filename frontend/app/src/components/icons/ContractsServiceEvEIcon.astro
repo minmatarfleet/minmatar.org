@@ -1,7 +1,5 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 ---
 <img loading="lazy" src="/images/icons/48px-Contractsicon.png" width="48" height="48" alt={t('icon.contract.alt')} />

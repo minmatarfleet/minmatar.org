@@ -1,7 +1,3 @@
-import { useTranslatedPath } from '@i18n/utils';
-
-const translatePath = useTranslatedPath('en');
-
 export const HTTP_404_Not_Found = (body = null):Response => {
     return new Response(body, {
         status: 404,

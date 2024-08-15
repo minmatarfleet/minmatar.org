@@ -1,4 +1,4 @@
-import { useTranslations, useTranslatedPath } from '@i18n/utils';
+import { i18n } from '@helpers/i18n'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
@@ -9,9 +9,9 @@ export async function POST({ request, cookies, redirect }) {
     if (request.headers.get("Content-Type") !== "application/json")
         return HTTP_404_Not_Found()
 
+    const { t } = i18n(new URL(request.url))
+
     const subscription = await request.json()
-    const lang = 'en'
-    const t = useTranslations(lang)
 
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
     const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
@@ -37,9 +37,8 @@ export async function POST({ request, cookies, redirect }) {
     })
 }
 
-export async function DELETE({ cookies }) {
-    const lang = 'en'
-    const t = useTranslations(lang)
+export async function DELETE({ request, cookies }) {
+    const { t } = i18n(new URL(request.url))
     
     const subscription_id = cookies.has('subscription_id') ? cookies.get('subscription_id').value : null
 

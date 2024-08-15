@@ -1,10 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 
 import Button from '@components/blocks/Button.astro';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 ---
 
 <div class="[ skip-content ]">

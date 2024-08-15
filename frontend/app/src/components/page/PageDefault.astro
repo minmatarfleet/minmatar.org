@@ -1,16 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 
 import { marked } from 'marked';
-
-import Wrapper from '@components/compositions/Wrapper.astro';
-import PageHeader from '@components/page/partials/PageHeader.astro';
-import PageBody from '@components/page/partials/PageBody.astro';
-import PageCover from '@components/page/partials/PageCover.astro';
-import DebugTag from '@components/blocks/DebugTag.astro';
 
 import type { PageCoverOptions } from '@dtypes/layout_components'
 
@@ -25,6 +17,12 @@ const {
     neocom = true,
     ...attributes
 } = Astro.props;
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import PageHeader from '@components/page/partials/PageHeader.astro';
+import PageBody from '@components/page/partials/PageBody.astro';
+import PageCover from '@components/page/partials/PageCover.astro';
+import DebugTag from '@components/blocks/DebugTag.astro';
 ---
 
 <main id="content" {...attributes}>

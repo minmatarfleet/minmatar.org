@@ -1,6 +1,4 @@
 ---
-import Wrapper from '@components/compositions/Wrapper.astro';
-
 interface Props {
     max_width?: string;
     neocom?:    boolean;
@@ -10,6 +8,8 @@ const {
     max_width = '80rem',
     neocom = true,
 } = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
 ---
 
 <div class="[ post-content ]">

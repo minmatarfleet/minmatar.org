@@ -1,10 +1,6 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-import CorporationStatus from '@components/blocks/CorporationStatus.astro';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
@@ -77,7 +73,7 @@ if (create_corporation_application_error) {
     }
 }
 
-
+import CorporationStatus from '@components/blocks/CorporationStatus.astro';
 ---
 
 <CorporationStatus

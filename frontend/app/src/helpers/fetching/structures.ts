@@ -1,6 +1,3 @@
-import { useTranslations } from '@i18n/utils';
-const t = useTranslations('en');
-
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { get_structure_timers } from '@helpers/api.minmatar.org/structures'
 import { get_structure_id } from '@helpers/eve'

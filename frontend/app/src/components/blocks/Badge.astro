@@ -1,9 +1,4 @@
 ---
-import { getLangFromUrl, useTranslations } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-
 interface Props {
     title:      string;
     subtitle?:  string;
@@ -12,6 +7,7 @@ interface Props {
     border?:    boolean;
     highlight?: boolean;
     gap?:       string;
+    [propName: string]: any;
 }
 
 const {
@@ -22,6 +18,7 @@ const {
     border = false,
     highlight = true,
     gap = 'var(--space-s)',
+    ...attributes
 } = Astro.props
 
 import FixedFluid from '@components/compositions/FixedFluid.astro'
@@ -31,6 +28,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     width={`${size}px`}
     class="[ items-center ]"
     gap={gap}
+    {...attributes}
 >
     <slot name="picture">
         <picture class:list={{ border: border }}>
