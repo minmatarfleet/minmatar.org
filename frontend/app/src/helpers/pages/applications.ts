@@ -12,13 +12,13 @@ export interface ApplicationsData {
     corporations_options?:              SelectOptions[];
 }
 
-export async function get_applications_data(auth_token:string, lang:'en' = 'en') {
+export async function get_applications_data(auth_token:string, lang:'en' = 'en', records:boolean = false) {
     const t = useTranslations(lang);
 
     let corporations_applications:CorporationApplications[] = []
 
     try {
-        corporations_applications = await get_all_corporations_applications(auth_token as string)
+        corporations_applications = await get_all_corporations_applications(auth_token as string, records)
         corporations_applications.sort( (a, b) => {
             return b.applications.length - a.applications.length
         })
