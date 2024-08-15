@@ -1,10 +1,4 @@
 ---
-import PageCover from '@components/page/partials/PageCover.astro';
-import FluidFixed from '@components/compositions/FluidFixed.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-
-import VideoWidget from '@components/blocks/VideoWidget.astro';
-
 import type { PageCoverOptions, PageVideoOptions } from '@dtypes/layout_components'
 
 interface Props {
@@ -22,7 +16,14 @@ const {
     shadow = true,
     ...attributes
 } = Astro.props;
+
+import PageCover from '@components/page/partials/PageCover.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import VideoWidget from '@components/blocks/VideoWidget.astro';
 ---
+
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 

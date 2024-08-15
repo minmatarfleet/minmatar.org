@@ -1,6 +1,4 @@
 ---
-import Wrapper from '@components/compositions/Wrapper.astro';
-
 interface Props {
     max_width?:     string;
 }
@@ -8,6 +6,8 @@ interface Props {
 const {
     max_width = 'var(--max-text-width)'
 } = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
 ---
 
 <Wrapper max_width={max_width} padding_inline="0" padding_block="0">

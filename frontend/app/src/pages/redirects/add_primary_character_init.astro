@@ -1,9 +1,4 @@
 ---
-import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const translatePath = useTranslatedPath(lang);
-
 import { get_api_url, get_app_url } from '@helpers/env'
 
 const redirect = Astro.url.searchParams.get('redirect')

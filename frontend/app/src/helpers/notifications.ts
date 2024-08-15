@@ -1,13 +1,9 @@
-
 import { useTranslations, useTranslatedPath } from '@i18n/utils';
-
-import { get_error_message } from '@helpers/string'
 
 const t = useTranslations('en')
 const translatePath = useTranslatedPath('en')
 
-import { marked } from 'marked';
-import * as cheerio from 'cheerio';
+import { strip_markdown } from '@helpers/string'
 
 import { get_player_icon } from '@helpers/eve_image_server';
 import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
@@ -38,11 +34,9 @@ export async function send_active_fleet_notification(auth_token:string, fleet_id
 
     const fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
 
-    const $ = cheerio.load(await marked.parse(fleet.description))
-
     const payload = JSON.stringify({
         title: t('push_up_notification_title'),
-        body: $('p:first').text(),
+        body: await strip_markdown(fleet.description),
         icon: get_player_icon(fleet.fleet_commander_id),
         url: translatePath(`/fleets/upcoming/${fleet_id}`),
     });

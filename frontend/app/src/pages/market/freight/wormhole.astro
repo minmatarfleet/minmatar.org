@@ -1,10 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-import calculation from '@json/page/freight/standard/calculate.example.json';
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
 
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
+import calculation from '@json/page/freight/standard/calculate.example.json';
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'

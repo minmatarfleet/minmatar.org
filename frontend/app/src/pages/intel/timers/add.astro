@@ -1,9 +1,6 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { is_prod_mode } from '@helpers/env'

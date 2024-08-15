@@ -1,15 +1,13 @@
-import { useTranslations, useTranslatedPath } from '@i18n/utils';
+import { i18n } from '@helpers/i18n'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { delete_characters } from '@helpers/api.minmatar.org/characters'
 
-export async function DELETE({ params, cookies, redirect }) {
+export async function DELETE({ request, params, cookies, redirect }) {
     const character_id = params.id
-    const lang = params.lang ?? 'en'
-    const t = useTranslations(lang)
-    const translatePath = useTranslatedPath(lang)
+    const { t, translatePath } = i18n(new URL(request.url))
 
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
     const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false

@@ -1,10 +1,6 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
-import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
-
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
-const translatePath = useTranslatedPath(lang);
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -71,7 +67,7 @@ if (verify_structure_timer_error) {
     }
 }
 
-
+import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
 ---
 
 <StructureTimerListItem

@@ -1,4 +1,4 @@
-import { useTranslations, useTranslatedPath } from '@i18n/utils'
+import { i18n } from '@helpers/i18n'
 import { prod_error_messages } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
@@ -7,9 +7,7 @@ import { remove_subscription } from '@helpers/db/notification_subscriptions'
 const ONE_DAY_IN_MS = 24*60*60*1000
 
 export const onRequest = async ({ locals, cookies, request }, next) => {
-    const lang = 'en'
-    const t = useTranslations(lang);
-    const translatePath = useTranslatedPath(lang);
+    const { t, translatePath } = i18n(new URL(request.url))
 
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
 

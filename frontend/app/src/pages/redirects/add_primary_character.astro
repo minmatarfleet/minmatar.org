@@ -1,8 +1,6 @@
 ---
-import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
-
-const lang = getLangFromUrl(Astro.url);
-const translatePath = useTranslatedPath(lang);
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
 
 Astro.cookies.delete('primary_pilot', { path: '/' })
 

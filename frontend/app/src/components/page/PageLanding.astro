@@ -1,7 +1,4 @@
 ---
-import PageCover from '@components/page/partials/PageCover.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-
 import type { PageCoverOptions } from '@dtypes/layout_components'
 
 interface Props {
@@ -21,7 +18,11 @@ const {
 } = Astro.props;
 
 const max_width = (wide ? 'var(--max-content-width)' : 'var(--max-text-width)')
+
+import PageCover from '@components/page/partials/PageCover.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 ---
+
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
     <slot name="cover" />
