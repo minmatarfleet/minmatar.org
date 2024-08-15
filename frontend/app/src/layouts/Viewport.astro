@@ -75,7 +75,6 @@ const {
 components.modal = components.modal ?? true
 
 const CHARACTER_FINDER_PARTIAL_URL = translatePath('/partials/character_finder_component')
-const MEMBER_FINDER_PARTIAL_URL = translatePath('/partials/member_finder_component')
 const FITTING_FINDER_PARTIAL_URL = translatePath('/partials/fitting_finder_component')
 
 import '@fontsource-variable/montserrat';
@@ -193,15 +192,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<div
 				transition:persist
 				hx-get={CHARACTER_FINDER_PARTIAL_URL}
-				hx-trigger="load"
-				hx-indicator=".loader"
-			/>
-		}
-
-		{(user_is_officer || user_is_director) &&
-			<div
-				transition:persist
-				hx-get={MEMBER_FINDER_PARTIAL_URL}
 				hx-trigger="load"
 				hx-indicator=".loader"
 			/>

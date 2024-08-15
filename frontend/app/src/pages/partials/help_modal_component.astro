@@ -16,6 +16,7 @@ import Hotkeys from '@components/blocks/Hotkeys.astro'
 <Wrapper
     padding_block='var(--component-padding-block)'
     padding_inline='var(--space-l-xl)'
+    class="help-modal overflow-y-auto"
 >
     <InterContext>
         <Hotkeys />
@@ -26,3 +27,10 @@ import Hotkeys from '@components/blocks/Hotkeys.astro'
         </Flexblock>
     </InterContext>
 </Wrapper>
+
+<style lang="scss">
+    .help-modal {
+        max-height: min(750px, 88vh);
+        height: 100%;
+    }
+</style>
