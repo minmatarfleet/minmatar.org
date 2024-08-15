@@ -5,13 +5,12 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -23,63 +22,30 @@ const can_view_page = is_superuser || user_permissions.includes('eveonline.view_
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import type { CorporationMembers, SelectOptions } from '@dtypes/layout_components'
-import { get_all_corporations_members } from '@helpers/fetching/corporations'
+import { get_corporations_members_data } from '@helpers/pages/corporations_members'
+import type { CorporationsMembersData } from '@helpers/pages/corporations_members'
 
-let corporations_members:CorporationMembers[] = []
-let get_all_corporations_members_error:string | false = false
-let MAIN_COUNT = 0
-let UNREGISTERED_COUNT = 0
-let ALLIANCE_MEMBERS_COUNT = 0
+let corporations_members_data:CorporationsMembersData = {}
+let data_fetching_error
 
 try {
-    corporations_members = await get_all_corporations_members(auth_token as string)
-    
-    corporations_members.sort( (a, b) => {
-        return b.members.length - a.members.length
-    })
-
-    corporations_members = corporations_members.map( (corporation) => {
-        ALLIANCE_MEMBERS_COUNT += corporation.members.length
-        MAIN_COUNT += corporation.members.filter( (member) => member.is_main && member.registered ).length
-
-        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
-
-        corporation.members = unregistered_members
-        
-        UNREGISTERED_COUNT += unregistered_members.length
-
-        return corporation
-    })
-
-    corporations_members = corporations_members.filter( (corporation) => corporation.members.length > 0 )
+    corporations_members_data = await get_corporations_members_data(auth_token, lang, 'unregistered')
 } catch (error) {
-    get_all_corporations_members_error = prod_error_messages() ? t('get_all_corporations_members_error') : error.message
+    data_fetching_error = error
 }
 
+const {
+    corporations_members = [],
+    main_count = 0,
+    alliance_members_count = 0,
+    unregistered_count = 0,
+    corporations_unfiltered = {},
+    corporations_members_count = {},
+    total_members = 0,
+    corporations_options = [],
+} = corporations_members_data
+
 const CORPORATIONS_MEMBERS_PARTIAL_URL = `${translatePath('/partials/corporations_members_component')}?status=unregistered`
-
-let TOTAL_MEMBERS = 0
-const CORPORATIONS_UNFILTERED = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.members.map( (member) => member.character_id )
-    TOTAL_MEMBERS += corporation.members.length
-})
-
-const CORPORATIONS_MEMBERS_COUNT = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_MEMBERS_COUNT[corporation.corporation_id] = corporation.members.length
-})
-
-import { get_corporation_logo } from '@helpers/eve_image_server';
-
-const corporations_options = corporations_members.map( (corporation):SelectOptions => {
-    return {
-        value: corporation.corporation_id,
-        label: corporation.corporation_name,
-        image: get_corporation_logo(corporation.corporation_id, 32),
-    }
-} )
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -119,16 +85,16 @@ const page_title = t('corporations.members.unregistered.page_title')
             overlay: true
         }}
         x-data={`{
-            MAIN_COUNT: ${MAIN_COUNT},
-            ALLIANCE_MEMBERS_COUNT: ${ALLIANCE_MEMBERS_COUNT},
-            UNREGISTERED_COUNT: ${UNREGISTERED_COUNT},
+            main_count: ${main_count},
+            alliance_members_count: ${alliance_members_count},
+            unregistered_count: ${unregistered_count},
             global_collapsed: [],
             corporations_members: ${JSON.stringify(corporations_members)},
-            corporations_unfiltered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered_members_count: ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)},
-            total_members_filtered: ${TOTAL_MEMBERS},
-            total_members_unfiltered: ${TOTAL_MEMBERS},
+            corporations_unfiltered: ${JSON.stringify(corporations_unfiltered)},
+            corporations_filtered: ${JSON.stringify(corporations_unfiltered)},
+            corporations_filtered_members_count: ${JSON.stringify(corporations_members_count)},
+            total_members_filtered: ${total_members},
+            total_members_unfiltered: ${total_members},
             corporations_options: ${JSON.stringify(corporations_options)},
             character_name: '',
             corporation_filter: '-1',
@@ -136,7 +102,7 @@ const page_title = t('corporations.members.unregistered.page_title')
                 console.log(this.character_name)
                 if (this.character_name === '' && this.corporation_filter === '-1') {
                     this.corporations_filtered = this.corporations_unfiltered
-                    this.corporations_filtered_memberss_count = ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)}
+                    this.corporations_filtered_memberss_count = ${JSON.stringify(corporations_members_count)}
                     this.total_members_filtered = this.total_members_unfiltered
                     return
                 }
@@ -197,8 +163,8 @@ const page_title = t('corporations.members.unregistered.page_title')
                 {t('members')}
                 <NotificationBadge
                     color='fleet-yellow'
-                    x-text="ALLIANCE_MEMBERS_COUNT"
-                    number={TOTAL_MEMBERS ?? 0}
+                    x-text="alliance_members_count"
+                    number={total_members ?? 0}
                 />
             </Button>
 
@@ -209,8 +175,8 @@ const page_title = t('corporations.members.unregistered.page_title')
             >
                 {t('unregistered')}
                 <NotificationBadge
-                    x-text="UNREGISTERED_COUNT"
-                    number={UNREGISTERED_COUNT ?? 0}
+                    x-text="unregistered_count"
+                    number={unregistered_count ?? 0}
                 />
             </Button>
             
@@ -221,8 +187,8 @@ const page_title = t('corporations.members.unregistered.page_title')
                 {t('mains')}
                 <NotificationBadge
                     color='fleet-yellow'
-                    x-text="MAIN_COUNT"
-                    number={MAIN_COUNT ?? 0}
+                    x-text="main_count"
+                    number={main_count ?? 0}
                 />
             </Button>
         </FlexInline>
@@ -232,11 +198,11 @@ const page_title = t('corporations.members.unregistered.page_title')
                 <p>{t('corporations.members.unregistered.leading_text')}</p>
             </TextBox>
 
-            {get_all_corporations_members_error ?
+            {data_fetching_error ?
                 <ErrorRefetch
                     args={{
                         partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
-                        message: get_all_corporations_members_error,
+                        message: data_fetching_error,
                         delay: 0,
                     }}
                 />

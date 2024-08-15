@@ -5,13 +5,12 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -23,41 +22,27 @@ const can_view_page = is_superuser || user_permissions.includes('applications.ch
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import type { CorporationApplications, SelectOptions } from '@dtypes/layout_components'
-import { get_all_corporations_applications } from '@helpers/fetching/applications'
+import { get_applications_data } from '@helpers/pages/applications'
+import type { ApplicationsData } from '@helpers/pages/applications'
 
-let corporations_applications:CorporationApplications[] = []
-let get_all_corporations_applications_error:string | false = false
+let applications_data:ApplicationsData = {}
+let data_fetching_error
 
 try {
-    corporations_applications = await get_all_corporations_applications(auth_token as string)
-    corporations_applications.sort( (a, b) => {
-        return b.applications.length - a.applications.length
-    })
+    applications_data = await get_applications_data(auth_token, lang)
 } catch (error) {
-    get_all_corporations_applications_error = prod_error_messages() ? t('get_all_corporations_applications_error') : error.message
+    data_fetching_error = error
 }
 
+const {
+    corporations_applications = [],
+    corporations_unfiltered = [],
+    corporations_applications_count = [],
+    total_applications = 0,
+    corporations_options = [],
+} = applications_data
+
 const CORPORATIONS_APPLICATIONS_PARTIAL_URL = translatePath('/partials/corporations_applications_component')
-
-let TOTAL_APPLICATIONS = 0
-const CORPORATIONS_UNFILTERED = {}
-corporations_applications.forEach( (corporation) => {
-    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.applications.map( (application) => application.id )
-    TOTAL_APPLICATIONS += corporation.applications.length
-})
-
-const CORPORATIONS_APPLICATIONS_COUNT = {}
-corporations_applications.forEach( (corporation) => {
-    CORPORATIONS_APPLICATIONS_COUNT[corporation.corporation_id] = corporation.applications.length
-})
-
-const corporations_options = corporations_applications.map( (corporation):SelectOptions => {
-    return {
-        value: corporation.corporation_id,
-        label: corporation.corporation_name,
-    }
-} )
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -98,11 +83,11 @@ const page_title = t('corporations.applications.page_title')
         x-data={`{
             global_collapse: false,
             corporations_applications: ${JSON.stringify(corporations_applications)},
-            corporations_unfiltered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered: ${JSON.stringify(CORPORATIONS_UNFILTERED)},
-            corporations_filtered_applications_count: ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)},
-            total_applications_filtered: ${TOTAL_APPLICATIONS},
-            total_applications_unfiltered: ${TOTAL_APPLICATIONS},
+            corporations_unfiltered: ${JSON.stringify(corporations_unfiltered)},
+            corporations_filtered: ${JSON.stringify(corporations_unfiltered)},
+            corporations_filtered_applications_count: ${JSON.stringify(corporations_applications_count)},
+            total_applications_filtered: ${total_applications},
+            total_applications_unfiltered: ${total_applications},
             corporations_options: ${JSON.stringify(corporations_options)},
             character_name: '',
             corporation_filter: '-1',
@@ -110,7 +95,7 @@ const page_title = t('corporations.applications.page_title')
                 console.log(this.character_name)
                 if (this.character_name === '' && this.corporation_filter === '-1') {
                     this.corporations_filtered = this.corporations_unfiltered
-                    this.corporations_filtered_applicationss_count = ${JSON.stringify(CORPORATIONS_APPLICATIONS_COUNT)}
+                    this.corporations_filtered_applicationss_count = ${JSON.stringify(corporations_applications_count)}
                     this.total_applications_filtered = this.total_applications_unfiltered
                     return
                 }
@@ -179,11 +164,11 @@ const page_title = t('corporations.applications.page_title')
                 <p>{t('corporations.applications.leading_text')}</p>
             </TextBox>
 
-            {get_all_corporations_applications_error ?
+            {data_fetching_error ?
                 <ErrorRefetch
                     args={{
                         partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
-                        message: get_all_corporations_applications_error,
+                        message: data_fetching_error,
                         delay: 0,
                     }}
                 />

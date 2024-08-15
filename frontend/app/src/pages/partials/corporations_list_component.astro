@@ -1,38 +1,35 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
-
-import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const user_id = !user ? false : user.user_id
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
+const user = auth_token ? jose.decodeJwt(auth_token) as User : null
+const user_id = user?.user_id ?? null
 
-import type { CorporationObject, CorporationType } from '@dtypes/layout_components'
-import { get_corporations_list, get_corporations_list_auth, get_user_corporation_id } from '@helpers/fetching/corporations'
+import type { CorporationType } from '@dtypes/layout_components'
+import { get_associates_data } from '@helpers/pages/associates'
+import type { AssociatesData } from '@helpers/pages/associates'
 
-const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
-
-let corporations:CorporationObject[] = []
-let get_all_corporations_error:string | false = false
-let user_corporation_id:number
+let associates_data:AssociatesData = {}
+let data_fetching_error:string
 
 try {
-    user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
-
-    if (auth_token && user_id)
-        corporations = await get_corporations_list_auth(auth_token, user_id, corporation_type)
-    else
-        corporations = await get_corporations_list(corporation_type)
+    associates_data = await get_associates_data(auth_token, lang, user_id)
 } catch (error) {
-    get_all_corporations_error = prod_error_messages() ? t('get_all_corporations_error') : error.message
+    data_fetching_error = error
 }
+
+const {
+    corporations = [],
+    user_corporation_id = 0,
+} = associates_data
+
+const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
 
 const CORPORATIONS_LIST_PARTIAL_URL = `${translatePath('/partials/corporations_list_component')}?corporation_type=${corporation_type}`
 
@@ -42,11 +39,11 @@ import CorporationsList from '@components/blocks/CorporationsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_all_corporations_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: CORPORATIONS_LIST_PARTIAL_URL,
-            message: get_all_corporations_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />

@@ -37,8 +37,16 @@ import { accept_corporation_applications, reject_corporation_applications } from
 
 let application:ApplicationDetail
 let get_corporation_application_error:string | false = false
+
+try {
+    application = await get_application_by_id(auth_token as string, corporation_id, application_id)
+} catch (error) {
+    get_corporation_application_error = prod_error_messages() ? t('get_corporation_application_error') : error.message
+}
+
 let application_action_error
 let action
+let alert:Alert
 
 if (Astro.request.method === "POST") {
     action = Astro.url.searchParams.get('action')
@@ -51,26 +59,15 @@ if (Astro.request.method === "POST") {
         }
     } catch (error) {
         application_action_error = prod_error_messages() ? (action == 'accept' ? t('approve_application_error') : t('deny_application_error')) : error.message
-    }
-}
 
-try {
-    application = await get_application_by_id(auth_token as string, corporation_id, application_id)
-} catch (error) {
-    get_corporation_application_error = prod_error_messages() ? t('get_corporation_application_error') : error.message
-}
+        alert = {
+            title: (action === 'accept' ? t('accept_application_dialog_title') : t('deny_application_dialog_title')),
+            content: application_action_error,
+        }
 
-let alert:Alert | false = false
-if (application_action_error) {
-    alert = {
-        title: (action === 'accept' ? t('accept_application_dialog_title') : t('deny_application_dialog_title')),
-        content: application_action_error,
-    }
-
-    if (corporation) {
         const character:CharacterBasic = {
-            character_id: application.character_id,
-            character_name: application.character_name,
+            character_id: application?.character_id ?? 0,
+            character_name: application?.character_name ?? t('unknown_character'),
         }
 
         const params = {
@@ -86,6 +83,7 @@ if (application_action_error) {
 }
 
 import { query_string } from '@helpers/string';
+
 const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
     corporation_id: corporation_id,
     application_id: application_id,

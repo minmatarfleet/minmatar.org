@@ -49,6 +49,7 @@ const corporation:CorporationBasic = {
     id: corporation_id,
     name: corporation_eve.name,
 }
+
 const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
     corporation: JSON.stringify(corporation),
     application_id: application_id,

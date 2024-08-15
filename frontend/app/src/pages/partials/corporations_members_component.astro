@@ -1,97 +1,65 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_page = is_superuser || user_permissions.includes('auth.change_evecorporationmember')
+const can_view_page = is_superuser || user_permissions.includes('eveonline.view_evecorporation')
 
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import type { CorporationMembers, SelectOptions } from '@dtypes/layout_components'
-import { get_all_corporations_members } from '@helpers/fetching/corporations'
+import { get_corporations_members_data } from '@helpers/pages/corporations_members'
+import type { CorporationsMembersData } from '@helpers/pages/corporations_members'
+import type { MemberStatus } from '@dtypes/layout_components'
 
-let corporations_members:CorporationMembers[] = []
-let get_all_corporations_members_error:string | false = false
-let MAIN_COUNT = 0
-let UNREGISTERED_COUNT = 0
-let ALLIANCE_MEMBERS_COUNT = 0
-
-const status = (Astro.url.searchParams.get('status') ?? 'registered')
+let corporations_members_data:CorporationsMembersData = {}
+let data_fetching_error
+const status = (Astro.url.searchParams.get('status') ?? 'registered') as MemberStatus
 
 try {
-    corporations_members = await get_all_corporations_members(auth_token as string)
-    
-    corporations_members.sort( (a, b) => {
-        return b.members.length - a.members.length
-    })
 
-    corporations_members = corporations_members.map( (corporation) => {
-        ALLIANCE_MEMBERS_COUNT += corporation.members.length
-        MAIN_COUNT += corporation.members.filter( (member) => member.is_main ).length
-
-        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
-
-        if (status === 'unregistered')
-            corporation.members = unregistered_members
-        
-        UNREGISTERED_COUNT += unregistered_members.length
-        
-        return corporation
-    })
-
-    corporations_members = corporations_members.filter( (corporation) => corporation.members.length > 0 )
+    corporations_members_data = await get_corporations_members_data(auth_token, lang, status)
 } catch (error) {
-    get_all_corporations_members_error = prod_error_messages() ? t('get_all_corporations_members_error') : error.message
+    data_fetching_error = error
 }
 
-const CORPORATIONS_MEMBERS_PARTIAL_URL = translatePath('/partials/corporations_members_component')
+const {
+    corporations_members = [],
+    main_count = 0,
+    alliance_members_count = 0,
+    unregistered_count = 0,
+    corporations_unfiltered = {},
+    corporations_members_count = {},
+    total_members = 0,
+    corporations_options = [],
+} = corporations_members_data
 
+const CORPORATIONS_MEMBERS_PARTIAL_URL = `${translatePath('/partials/corporations_members_component')}?status=${status}`
+                
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-
-let TOTAL_MEMBERS = 0
-const CORPORATIONS_UNFILTERED = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_UNFILTERED[corporation.corporation_id] = corporation.members.map( (member) => member.character_id )
-    TOTAL_MEMBERS += corporation.members.length
-})
-
-const CORPORATIONS_MEMBERS_COUNT = {}
-corporations_members.forEach( (corporation) => {
-    CORPORATIONS_MEMBERS_COUNT[corporation.corporation_id] = corporation.members.length
-})
-
-const corporations_options = corporations_members.map( (corporation):SelectOptions => {
-    return {
-        value: corporation.corporation_id,
-        label: corporation.corporation_name,
-    }
-} )
 
 import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_all_corporations_members_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: CORPORATIONS_MEMBERS_PARTIAL_URL,
-            message: get_all_corporations_members_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />
@@ -100,15 +68,15 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         corporations={corporations_members}
         x-data={`{
             init() {
-                MAIN_COUNT = ${MAIN_COUNT}
-                ALLIANCE_MEMBERS_COUNT = ${ALLIANCE_MEMBERS_COUNT}
-                UNREGISTERED_COUNT = ${UNREGISTERED_COUNT}
+                main_count = ${main_count}
+                alliance_members_count = ${alliance_members_count}
+                unregistered_count = ${unregistered_count}
                 corporations_members = ${JSON.stringify(corporations_members)}
-                corporations_unfiltered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
-                corporations_filtered = ${JSON.stringify(CORPORATIONS_UNFILTERED)}
-                corporations_filtered_members_count = ${JSON.stringify(CORPORATIONS_MEMBERS_COUNT)}
-                total_members_filtered = ${TOTAL_MEMBERS}
-                total_members_unfiltered = ${TOTAL_MEMBERS}
+                corporations_unfiltered = ${JSON.stringify(corporations_unfiltered)}
+                corporations_filtered = ${JSON.stringify(corporations_unfiltered)}
+                corporations_filtered_members_count = ${JSON.stringify(corporations_members_count)}
+                total_members_filtered = ${total_members}
+                total_members_unfiltered = ${total_members}
                 corporations_options = ${JSON.stringify(corporations_options)}
             }
         }`}

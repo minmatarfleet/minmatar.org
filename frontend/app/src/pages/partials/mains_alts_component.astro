@@ -1,17 +1,15 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -23,89 +21,30 @@ const can_view_page = is_superuser || user_permissions.includes('eveonline.view_
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import type { CorporationMembers, MainCharacters, SelectOptions } from '@dtypes/layout_components'
-import { get_all_corporations_members } from '@helpers/fetching/corporations'
+import { get_mains_data } from '@helpers/pages/mains'
+import type { MainsData } from '@helpers/pages/mains'
 
-let corporations_members:CorporationMembers[] = []
-let get_all_mains_alts_error:string | false = false
-let mains_alts:MainCharacters[] = []
-let MAIN_COUNT = 0
-let UNREGISTERED_COUNT = 0
-let ALLIANCE_MEMBERS_COUNT = 0
+let mains_data:MainsData = {}
+let data_fetching_error
 
 try {
-    corporations_members = await get_all_corporations_members(auth_token as string)
-    
-    corporations_members.sort( (a, b) => {
-        return b.members.length - a.members.length
-    })
-
-    corporations_members = corporations_members.map( (corporation) => {
-        ALLIANCE_MEMBERS_COUNT += corporation.members.length
-
-        MAIN_COUNT += corporation.members.filter( (member) => {
-            if (member.is_main) {
-                mains_alts.push({
-                    character_id: member.character_id,
-                    character_name: member.character_name,
-                    corporation_id: corporation.corporation_id,
-                    corporation_name: corporation.corporation_name,
-                    alts: [],
-                    registered: member.registered,
-                })
-            }
-
-            return member.is_main 
-        }).length
-
-        corporation.members.map( (member) => {
-            if (!member.is_main) {
-                mains_alts.map( (main) => {
-                    if (main.character_id === member?.main_character?.character_id) {
-                        member.corporation_id = corporation.corporation_id
-                        member.corporation_name = corporation.corporation_name
-                        main.alts.push(member)
-                    }
-
-                    return main
-                })
-            }
-
-            return member.is_main 
-        }).length
-
-        const unregistered_members = corporation.members.filter( (member) => !member.registered && !member.exempt )
-        
-        UNREGISTERED_COUNT += unregistered_members.length
-
-        return corporation
-    })
+    mains_data = await get_mains_data(auth_token, lang)
 } catch (error) {
-    get_all_mains_alts_error = prod_error_messages() ? t('get_all_mains_alts_error') : error.message
+    data_fetching_error = error
 }
 
+const {
+    mains_alts = [],
+    main_count = 0,
+    alliance_members_count = 0,
+    unregistered_count = 0,
+    mains_unfiltered = {},
+    mains_alts_count = {},
+    total_alts = 0,
+    mains_options = [],
+} = mains_data
+
 const MAINS_ALTS_PARTIAL_URL = `${translatePath('/partials/mains_alts_component')}`
-
-mains_alts.sort( (a, b) => a.character_name.localeCompare(b.character_name))
-
-let TOTAL_ALTS = 0
-const MAINS_UNFILTERED = {}
-mains_alts.forEach( (main) => {
-    MAINS_UNFILTERED[main.character_id] = main.alts.map( (alt) => alt.character_id )
-    TOTAL_ALTS += main.alts.length
-})
-
-const MAINS_ALTS_COUNT = {}
-mains_alts.forEach( (main) => {
-    MAINS_ALTS_COUNT[main.character_id] = main.alts.length
-})
-
-const mains_options = mains_alts.map( (main):SelectOptions => {
-    return {
-        value: main.character_id,
-        label: main.character_name,
-    }
-} )
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -113,11 +52,11 @@ import MainAltsList from '@components/blocks/MainAltsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_all_mains_alts_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: MAINS_ALTS_PARTIAL_URL,
-            message: get_all_mains_alts_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />
@@ -126,15 +65,15 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         mains={mains_alts}
         x-data={`{
             init() {
-                MAIN_COUNT = ${MAIN_COUNT}
-                ALLIANCE_MEMBERS_COUNT = ${ALLIANCE_MEMBERS_COUNT}
-                UNREGISTERED_COUNT = ${UNREGISTERED_COUNT}
+                main_count = ${main_count}
+                alliance_members_count = ${alliance_members_count}
+                unregistered_count = ${unregistered_count}
                 mains_alts = ${JSON.stringify(mains_alts)}
-                mains_unfiltered = ${JSON.stringify(MAINS_UNFILTERED)}
-                mains_filtered = ${JSON.stringify(MAINS_UNFILTERED)}
-                mains_filtered_alts_count = ${JSON.stringify(MAINS_ALTS_COUNT)}
-                total_alts_filtered = ${TOTAL_ALTS}
-                total_alts_unfiltered = ${TOTAL_ALTS}
+                mains_unfiltered = ${JSON.stringify(mains_unfiltered)}
+                mains_filtered = ${JSON.stringify(mains_unfiltered)}
+                mains_filtered_alts_count = ${JSON.stringify(mains_alts_count)}
+                total_alts_filtered = ${total_alts}
+                total_alts_unfiltered = ${total_alts}
                 mains_options = ${JSON.stringify(mains_options)}
             }
         }`}

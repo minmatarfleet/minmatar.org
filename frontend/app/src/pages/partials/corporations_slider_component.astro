@@ -1,35 +1,32 @@
 ---
-import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '@i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
 const translatePath = useTranslatedPath(lang);
-
-import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const user_id = !user ? false : user.user_id
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
+const user = auth_token ? jose.decodeJwt(auth_token) as User : null
+const user_id = user?.user_id ?? null
 
-import type { CorporationObject } from '@dtypes/layout_components'
-import { get_corporations_list_auth, get_corporations_list, get_user_corporation_id } from '@helpers/fetching/corporations'
+import { get_corporations_list_data } from '@helpers/pages/corporations_list'
+import type { CorporationsListData } from '@helpers/pages/corporations_list'
 
-let corporations:CorporationObject[] = []
-let get_all_corporations_error:string | false = false
-let user_corporation_id:number
+let corporations_list_data:CorporationsListData = {}
+let data_fetching_error:string
 
 try {
-    user_corporation_id = (user_id ? await get_user_corporation_id(user_id) : null)
-    if (auth_token && user_id)
-        corporations = await get_corporations_list_auth(auth_token, user_id, 'alliance')
-    else
-        corporations = await get_corporations_list('alliance')
+    corporations_list_data = await get_corporations_list_data(auth_token, lang, user_id)
 } catch (error) {
-    get_all_corporations_error = prod_error_messages() ? t('get_all_corporations_error') : error.message
+    data_fetching_error = error
 }
+
+const {
+    corporations = [],
+    user_corporation_id = null,
+} = corporations_list_data
 
 const CORPORATIONS_SLIDER_PARTIAL_URL = translatePath('/partials/corporations_slider_component/')
 
@@ -39,11 +36,11 @@ import CorporationsSlider from '@components/blocks/CorporationsSlider.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{get_all_corporations_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: CORPORATIONS_SLIDER_PARTIAL_URL,
-            message: get_all_corporations_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />
