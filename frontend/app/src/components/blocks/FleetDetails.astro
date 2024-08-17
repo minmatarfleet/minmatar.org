@@ -60,8 +60,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 >
     <ComponentBlock>
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-            <h2>{t('fleet_information')}</h2>
-
             <FlexInline class="[ grow !items-start ]" justification='space-between'>
                 <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
                     <h4>{t('fleet_commander')}</h4>
@@ -71,26 +69,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         size={32}
                     />
                 </Flexblock>
-                <div class="[ basis-[250px] ]">
-                    <Flexblock class="[ basis-[250px] ]">
-                        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                            {eve_time_text}
-                        </TextGroup>
-                        <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
-                            <span class="[ loading ]">{t('calculating')}</span>
-                        </TextGroup>
-                    </Flexblock>
-                </div>
-                <div class="[ basis-[250px] ]">
-                    <Flexblock class="[ basis-[250px] ]">
-                        <TextGroup title={t('location')} class="[ sentence-cap ]">
-                            {fleet.location}
-                        </TextGroup>
-                        <TextGroup title={t('type')} class="[ sentence-cap ]">
-                            {t(fleet.type as any)}
-                        </TextGroup>
-                    </Flexblock>
-                </div>
                 {!history && can_remove_fleet && fleet.tracking === null &&
                     <Button
                         size='sm'
@@ -115,6 +93,29 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         {t('remove')}
                     </Button>
                 }
+            </FlexInline>
+
+            <FlexInline class="[ !items-start ]">
+                <div class="[ basis-[250px] ]">
+                    <Flexblock class="[ basis-[250px] ]">
+                        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                            {eve_time_text}
+                        </TextGroup>
+                        <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                            <span class="[ loading ]">{t('calculating')}</span>
+                        </TextGroup>
+                    </Flexblock>
+                </div>
+                <div class="[ basis-[250px] ]">
+                    <Flexblock class="[ basis-[250px] ]">
+                        <TextGroup title={t('location')} class="[ sentence-cap ]">
+                            {fleet.location}
+                        </TextGroup>
+                        <TextGroup title={t('type')} class="[ sentence-cap ]">
+                            {t(fleet.type as any)}
+                        </TextGroup>
+                    </Flexblock>
+                </div>
             </FlexInline>
 
             <TextGroup
