@@ -1,8 +1,8 @@
 ---
 const FEEDS = [
     {
-        title: 'Hoist the Colours | EVE Online',
-        id: 'skUf1yUeV3o',
+        title: 'We Are Minmatar (Fleet Alliance)',
+        id: 'JMddiOzaDsA',
     }, {
         title: 'TYPHOONS | EVE ONLINE',
         id: 'VbDzNRCEJlw',
@@ -81,6 +81,10 @@ import YTVideoWidget from '@components/blocks/YTVideoWidget.astro';
         --swiper-pagination-color: var(--fleet-yellow);
         --swiper-pagination-bullet-inactive-color: var(--highlight);
         --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+    :global(.swiper-slide:first-child lite-youtube) {
+        transform: scale(1.01);
     }
 
     .swiper-wrapper {
