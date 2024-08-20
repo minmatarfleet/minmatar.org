@@ -1,4 +1,6 @@
 ---
+import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
+
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -66,8 +68,6 @@ if (verify_structure_timer_error) {
         alert.partial = `${translatePath('/partials/dialog_verify_structure_timer/')}?${query_string(params)}`
     }
 }
-
-import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
 ---
 
 <StructureTimerListItem
