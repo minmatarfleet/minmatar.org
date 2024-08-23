@@ -903,5 +903,8 @@ export const ui = {
         'add_guest_pilot_dialog_text': 'You will undergo the pilot setting process outside of our site. Once it is successfully completed, we will return to our platform. No additional scopes but public data will be requested',
         'create_fleet_from_timer': 'Create fleet from timer',
         'join_us': 'Join us',
+        'visit_rat_bible': 'Visit The Rat Bible',
+        'holy_rat_quotes': 'Holy Rat quotes',
+        'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community',
     },
 } as const;
