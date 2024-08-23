@@ -23,6 +23,7 @@ const can_verify_timer = is_superuser || user_permissions.includes('structures.c
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
 import { get_unique_by_key } from '@helpers/array'
+import { remove_line_breaks } from '@helpers/string'
 
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []
@@ -41,7 +42,7 @@ try {
 
     duplicated_count = unfiltered_count - structure_timers.length
 
-    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${item.system_name} - ${item.name} (${item.corporation_name})\r`, '')
+    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${t(item.structure_type as any)} [${item.corporation_name}] [${item.system_name} - ${remove_line_breaks(item.name)}]\r`, '')
 } catch (error) {
     structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
 }
