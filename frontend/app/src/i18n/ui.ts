@@ -781,7 +781,7 @@ export const ui = {
         'pending_group_request_tooltip': 'Your request has been submitted and will be processed by an officer within the next day',
         'pending_team_request_tooltip': 'Your request has been submitted and will be processed by a director within the next days',
         'error_reload': 'An error occurred while fetching the data. Please reload the page to resolve the issue',
-        'application_accepted_tooltip': 'Your application has been accepted',
+        'application_accepted_tooltip': 'Your application has been accepted. You may join the corporation by accepting in-game',
         'application_denied_tooltip': 'Your application has been denied. You will be able to re-apply TIME_TO_REAPPLY',
         'request_denied_tooltip': 'Your request has been denied. You will be able to re-apply TIME_TO_REAPPLY',
         'pending_application_tooltip': 'Your application has been submitted and will be processed within the next days',
