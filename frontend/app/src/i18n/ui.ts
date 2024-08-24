@@ -906,5 +906,6 @@ export const ui = {
         'visit_rat_bible': 'Visit The Rat Bible',
         'holy_rat_quotes': 'Holy Rat quotes',
         'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community',
+        'rat_quote': 'Rat Genesis 1:1 - ‘In the beginning, Rat created the holes and the cheese.’',
     },
 } as const;
