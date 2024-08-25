@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     "mumble.apps.MumbleConfig",
     # Reminders
     "reminders.apps.RemindersConfig",
+    # Freight
+    "freight.apps.FreightConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',
