@@ -10,7 +10,7 @@ class EveFreightLocation(models.Model):
     short_name = models.CharField(max_length=32)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class EveFreightRoute(models.Model):
