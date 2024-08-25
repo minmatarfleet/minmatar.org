@@ -106,6 +106,15 @@ class CreateEveFleetRequest(BaseModel):
     location_id: int
 
 
+class UpdateEveFleetRequest(BaseModel):
+    type: EveFleetType
+    description: str
+    start_time: datetime
+    doctrine_id: Optional[int] = None
+    audience_id: int
+    location_id: int
+
+
 @router.get(
     "/types",
     auth=AuthBearer(),
@@ -422,6 +431,57 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
         fleet.doctrine = doctrine
         fleet.save()
+
+    payload = {
+        "id": fleet.id,
+        "type": fleet.type,
+        "description": fleet.description,
+        "start_time": fleet.start_time,
+        "fleet_commander": fleet.created_by.id,
+        "location": fleet.location.location_name,
+        "audience": fleet.audience.name,
+    }
+
+    if fleet.doctrine:
+        payload["doctrine_id"] = fleet.doctrine.id
+
+    return EveFleetResponse(**payload)
+
+
+@router.patch(
+    "/{fleet_id}",
+    auth=AuthBearer(),
+    response={200: EveFleetResponse, 403: ErrorResponse, 400: ErrorResponse},
+    description="Update the fleet details. Must have fleets.add_evefleet permission",
+)
+def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
+    if not request.user.has_perm("fleets.add_evefleet"):
+        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+
+    fleet = EveFleet.objects.get(id=fleet_id)
+
+    if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
+        return 400, {"detail": "Audience does not exist"}
+
+    if not EveFleetLocation.objects.filter(
+        location_id=payload.location_id
+    ).exists():
+        return 400, {"detail": "Location does not exist"}
+
+    audience = EveFleetAudience.objects.get(id=payload.audience_id)
+    fleet.type = payload.type
+    fleet.description = payload.description
+    fleet.start_time = payload.start_time
+    fleet.location = EveFleetLocation.objects.get(
+        location_id=payload.location_id
+    )
+    fleet.audience = audience
+
+    if payload.doctrine_id:
+        doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
+        fleet.doctrine = doctrine
+
+    fleet.save()
 
     payload = {
         "id": fleet.id,
