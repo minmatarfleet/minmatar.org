@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "reminders.apps.RemindersConfig",
     # Freight
     "freight.apps.FreightConfig",
+    # Posts
+    "posts.apps.PostsConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',

@@ -32,6 +32,7 @@ from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
+from posts.router import router as posts_router
 from structures.router import router as structures_router
 from users.router import router as users_router
 
@@ -47,6 +48,7 @@ api.add_router("structures/", structures_router)
 api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)
+api.add_router("blog", posts_router)
 
 
 @api.exception_handler(UnauthorizedError)
