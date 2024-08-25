@@ -24,6 +24,7 @@ gunicorn = "*"
 sentry-sdk = {extras = ["django","celery"], version = "*"}
 gitpython = "*"
 upsidedown = "*"
+pillow = "*"
 
 [dev-packages]
 pylint = "*"
