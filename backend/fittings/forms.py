@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 from groups.models import Sig
+
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 
 class EveDoctrineForm(forms.ModelForm):

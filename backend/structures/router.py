@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from enum import Enum
 from typing import List
@@ -7,9 +8,8 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-import logging
+from structures.helpers import get_skyhook_details, get_structure_details
 
-from structures.helpers import get_structure_details, get_skyhook_details
 from .models import EveStructure, EveStructureTimer
 
 router = Router(tags=["Structures"])

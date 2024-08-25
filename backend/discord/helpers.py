@@ -3,7 +3,6 @@ import logging
 import requests
 from django.contrib.auth.models import User
 
-
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from users.helpers import offboard_user

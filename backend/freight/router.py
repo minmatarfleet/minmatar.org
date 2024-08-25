@@ -1,7 +1,9 @@
+from typing import List
+
 from ninja import Router
-from .models import EveFreightLocation, EveFreightRoute, EveFreightRoute
 from pydantic import BaseModel
-from typing import List, Optional
+
+from .models import EveFreightLocation, EveFreightRoute
 
 # Create your views here.
 router = Router(tags=["Freight"])

@@ -28,12 +28,12 @@ from discord.views import discord_login
 from eveonline.routers import router
 from fittings.router import doctrines_router, fittings_router
 from fleets.router import router as fleets_router
+from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from mumble.router import router as mumble_router
 from structures.router import router as structures_router
 from users.router import router as users_router
-from freight.router import router as freight_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
