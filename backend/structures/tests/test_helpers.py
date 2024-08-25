@@ -1,5 +1,6 @@
-from structures.helpers import get_skyhook_details, get_structure_details
 from datetime import datetime
+
+from structures.helpers import get_skyhook_details, get_structure_details
 
 
 def test_get_skyhook_details():

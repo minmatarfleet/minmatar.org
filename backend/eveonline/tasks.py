@@ -15,10 +15,10 @@ from .helpers.skills import (
 from .models import (
     EveAlliance,
     EveCharacter,
-    EveCorporation,
-    EveSkillset,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
+    EveCorporation,
+    EveSkillset,
 )
 
 esi = EsiClientProvider()
