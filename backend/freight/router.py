@@ -16,18 +16,18 @@ class EveFreightLocationResponse(BaseModel):
 
 
 class EveFreightRouteResponse(BaseModel):
-    orgin: EveFreightLocation
-    destination: EveFreightLocation
+    orgin: EveFreightLocationResponse
+    destination: EveFreightLocationResponse
     bidirectional: bool
 
 
 class EveFreightRouteOptionResponse(BaseModel):
-    route: EveFreightRoute
+    route_id: int
     maximum_m3: int
 
 
 class EveFreightRouteCostResponse(BaseModel):
-    route: EveFreightRoute
+    route_id: int
     cost: int
 
 
@@ -43,8 +43,16 @@ def get_routes(request):
     for route in routes:
         response.append(
             EveFreightRouteResponse(
-                orgin=route.orgin,
-                destination=route.destination,
+                orgin=EveFreightLocationResponse(
+                    location_id=route.orgin.location_id,
+                    name=route.orgin.name,
+                    short_name=route.orgin.short_name,
+                ),
+                destination=EveFreightLocationResponse(
+                    location_id=route.destination.location_id,
+                    name=route.destination.name,
+                    short_name=route.destination.short_name,
+                ),
                 bidirectional=route.bidirectional,
             )
         )
@@ -59,7 +67,7 @@ def get_route_options(request, route_id: int):
     for option in options:
         response.append(
             EveFreightRouteOptionResponse(
-                route=option.route,
+                route_id=route_id,
                 maximum_m3=option.maximum_m3,
             )
         )
@@ -70,4 +78,4 @@ def get_route_options(request, route_id: int):
 def get_route_cost(request, route_id: int, m3: int, collateral: int):
     route = EveFreightRoute.objects.get(id=route_id)
     cost = route.base_cost + (route.collateral_modifier * collateral)
-    return EveFreightRouteCostResponse(route=route, cost=cost)
+    return EveFreightRouteCostResponse(route_id=route_id, cost=cost)
