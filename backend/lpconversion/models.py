@@ -1,6 +1,4 @@
-lpconvert_status = "Unknown"
-
-lpconvert_data = ""
+from django.core.cache import cache
 
 lp_type_ids = [
     # 41490,
@@ -42,19 +40,22 @@ lp_blueprint_ids = {
 
 
 def set_status(status):
-    global lpconvert_status
-    lpconvert_status = status
+    cache.set("lpconvert_status", status)
 
 
 def get_status():
-    global lpconvert_status
-    return lpconvert_status
+    status = cache.get("lpconvert_status")
+    if status is None:
+        return "Unknown"
+    return status
 
 
 def set_item_data(data):
-    global lpconvert_data
-    lpconvert_data = data
+    cache.set("lpconvert_data", data)
 
 
 def get_item_data():
-    return lpconvert_data
+    data = cache.get("lpconvert_data")
+    if data is None:
+        return ""
+    return data
