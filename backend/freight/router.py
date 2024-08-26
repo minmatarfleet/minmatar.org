@@ -16,6 +16,7 @@ class EveFreightLocationResponse(BaseModel):
 
 
 class EveFreightRouteResponse(BaseModel):
+    route_id: int
     orgin: EveFreightLocationResponse
     destination: EveFreightLocationResponse
     bidirectional: bool
@@ -43,6 +44,7 @@ def get_routes(request):
     for route in routes:
         response.append(
             EveFreightRouteResponse(
+                route_id=route.id,
                 orgin=EveFreightLocationResponse(
                     location_id=route.orgin.location_id,
                     name=route.orgin.name,
