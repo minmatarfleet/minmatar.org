@@ -8,7 +8,7 @@ from .tasks import update_lpstore_items
 router = Router(tags=["conversion"])
 
 
-@router.get("/", response=str)
+@router.get("/lpitems/csv", response=str)
 def item_data(request):
     response = HttpResponse(
         content_type="text/csv",
