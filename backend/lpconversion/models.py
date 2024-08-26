@@ -7,5 +7,4 @@ def set_status(status):
 
 
 def get_status():
-    global lpconvert_status
     return lpconvert_status
