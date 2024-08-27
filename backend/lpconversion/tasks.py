@@ -75,5 +75,7 @@ def update_lpstore_items():
             quantities.qty_30d,
         )
 
-    set_status("Updated " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    set_status(
+        "Updated " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
     logger.info("Updated LP store item data.")
