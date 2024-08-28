@@ -1,5 +1,7 @@
 from django.core.cache import cache
 
+from django.db import models
+
 lp_type_ids = [
     # 41490,
     # 32006,
@@ -39,6 +41,25 @@ lp_blueprint_ids = {
 }
 
 
+class LpStoreItem(models.Model):
+    """
+    Model for loyalty point store items.
+    """
+
+    type_id = models.IntegerField(
+        primary_key=True, serialize=True, auto_created=False
+    )
+    description = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+    qty_1d = models.IntegerField(default=0)
+    qty_7d = models.IntegerField(default=0)
+    qty_30d = models.IntegerField(default=0)
+    blueprint_id = models.IntegerField(null=True)
+
+    def __str__(self):
+        return str(self.type_id) + ": " + str(self.description)
+
+
 def set_status(status):
     cache.set("lpconvert_status", status)
 
@@ -50,12 +71,15 @@ def get_status():
     return status
 
 
-def set_item_data(data):
-    cache.set("lpconvert_data", data)
+def update_lp_item(type_id, description, qty_1d, qty_7d, qty_30d):
+    try:
+        lp_item = LpStoreItem.objects.get(type_id=type_id)
+    except LpStoreItem.DoesNotExist:
+        lp_item = LpStoreItem(type_id=type_id)
 
+    lp_item.description = description
+    lp_item.qty_1d = qty_1d
+    lp_item.qty_7d = qty_7d
+    lp_item.qty_30d = qty_30d
 
-def get_item_data():
-    data = cache.get("lpconvert_data")
-    if data is None:
-        return ""
-    return data
+    lp_item.save()

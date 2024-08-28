@@ -4,7 +4,7 @@ import datetime
 
 from app.celery import app
 
-from .models import set_status, set_item_data, lp_type_ids
+from .models import set_status, update_lp_item, lp_type_ids
 
 base_url = "https://esi.evetech.net/latest"
 region_forge = "10000002"
@@ -63,16 +63,19 @@ def get_traded_quantities(type_id):
 def update_lpstore_items():
     logger.info("Updating LP store item data...")
     set_status("Updating...")
-    data = "type_id, item_name, qty_1d, qty_7d, qty_30d\n"
 
     for type_id in lp_type_ids:
         item_name = get_item_name(type_id)
         quantities = get_traded_quantities(type_id)
-        data += (
-            str(type_id)
-            + f", {item_name}, {quantities.qty_1d}, {quantities.qty_7d}, {quantities.qty_30d}\n"
+        update_lp_item(
+            type_id,
+            item_name,
+            quantities.qty_1d,
+            quantities.qty_7d,
+            quantities.qty_30d,
         )
 
-    set_item_data(data)
-    set_status("Test " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    set_status(
+        "Updated " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
     logger.info("Updated LP store item data.")

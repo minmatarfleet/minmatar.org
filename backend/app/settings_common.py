@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
+    "lpconversion",
 ]
 
 # Discord Login
