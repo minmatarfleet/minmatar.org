@@ -3,7 +3,7 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveFreightRoute
+from .models import EveFreightRoute, EveFreightRouteOption
 
 # Create your views here.
 router = Router(tags=["Freight"])
@@ -76,8 +76,15 @@ def get_route_options(request, route_id: int):
     return response
 
 
-@router.get("/routes/{route_id}/cost", response=EveFreightRouteCostResponse)
-def get_route_cost(request, route_id: int, m3: int, collateral: int):
-    route = EveFreightRoute.objects.get(id=route_id)
-    cost = route.base_cost + (route.collateral_modifier * collateral)
-    return EveFreightRouteCostResponse(route_id=route_id, cost=cost)
+@router.get(
+    "/routes/{route_id}/options/{route_option_id}/cost",
+    response=EveFreightRouteCostResponse,
+)
+def get_route_cost(
+    request, route_id: int, route_option_id: int, m3: int, collateral: int
+):
+    route_option = EveFreightRouteOption.objects.get(id=route_option_id)
+    cost = route_option.base_cost + (
+        route_option.collateral_modifier * collateral
+    )
+    return EveFreightRouteCostResponse(route_id=route_option_id, cost=cost)
