@@ -23,7 +23,7 @@ class EveFreightRouteResponse(BaseModel):
 
 
 class EveFreightRouteOptionResponse(BaseModel):
-    route_id: int
+    route_option_id: int
     maximum_m3: int
 
 
@@ -69,7 +69,7 @@ def get_route_options(request, route_id: int):
     for option in options:
         response.append(
             EveFreightRouteOptionResponse(
-                route_id=route_id,
+                route_option_id=option.id,
                 maximum_m3=option.maximum_m3,
             )
         )
