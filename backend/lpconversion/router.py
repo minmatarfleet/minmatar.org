@@ -33,5 +33,5 @@ def conversion_status(request):
 
 @router.get("/refresh", response=str)
 def refresh_lpitem_data(request):
-    update_lpstore_items()
+    update_lpstore_items.apply()
     return get_status()
