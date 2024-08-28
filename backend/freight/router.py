@@ -78,12 +78,14 @@ def get_route_options(request, route_id: int):
 
 @router.get(
     "/routes/{route_id}/options/{route_option_id}/cost",
-    response=EveFreightRouteCostResponse,
+    response={200: EveFreightRouteCostResponse, 404: dict},
 )
 def get_route_cost(
-    request, route_id: int, route_option_id: int, m3: int, collateral: int
+    request, route_id: int, route_option_id: int, collateral: int
 ):
     route_option = EveFreightRouteOption.objects.get(id=route_option_id)
+    if route_option.route.id != route_id:
+        return 404, {"detail": "Route option not found."}
     cost = route_option.base_cost + (
         route_option.collateral_modifier * collateral
     )
