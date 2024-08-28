@@ -79,5 +79,10 @@ def get_route_options(request, route_id: int):
 @router.get("/routes/{route_id}/cost", response=EveFreightRouteCostResponse)
 def get_route_cost(request, route_id: int, m3: int, collateral: int):
     route = EveFreightRoute.objects.get(id=route_id)
-    cost = route.base_cost + (route.collateral_modifier * collateral)
+    smallest = 999999
+    cost = -1
+    for option in route.evefreightrouteoption_set.all():
+        if (m3 <= option.maximum_m3) and (option.maximum_m3 < smallest):
+            cost = option.base_cost + (option.collateral_modifier * collateral)
+            smallest = option.maximum_m3
     return EveFreightRouteCostResponse(route_id=route_id, cost=cost)
