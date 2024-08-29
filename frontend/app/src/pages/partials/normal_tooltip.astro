@@ -24,12 +24,12 @@ import Tag from '@components/blocks/Tag.astro';
         </FlexInline>
     }
     {description &&
-        <small set:html={marked.parseInline(t(description as any))} />
+        <span set:html={marked.parseInline(t(description as any))} />
     }
 </Context>
 
 <style lang="scss">
-    small {
+    span {
         text-wrap: pretty;
     }
 </style>

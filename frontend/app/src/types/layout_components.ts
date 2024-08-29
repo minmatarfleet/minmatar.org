@@ -517,9 +517,10 @@ export interface MemberUI {
 }
 
 export interface SelectOptions {
-    value?: string | number;
-    label:  string;
-    image?: string;
+    value?:     string | number;
+    label:      string;
+    image?:     string;
+    subtitle?:  string;
 }
 
 export interface PageFinderUI {
@@ -708,3 +709,27 @@ export interface StructureTimerUI {
 }
 
 export type MemberStatus = 'registered' | 'unregistered'
+
+import type { RouteOptions } from '@dtypes/api.minmatar.org'
+
+export interface FreightRoutesData {
+    routes:             SelectOptions[];
+    sizes:              FreightSizes;
+    route_translation:  RouteTranslate;
+    stations:           RouteStations;
+}
+
+export interface RoutesData {
+    [propName: string]: RouteOptions;
+}
+
+export interface FreightSizes {
+    [propName: string]: SelectOptions[];
+}
+
+export interface RouteTranslate {
+    [propName: string]: number;
+}
+export interface RouteStations {
+    [propName: string]: string[];
+}

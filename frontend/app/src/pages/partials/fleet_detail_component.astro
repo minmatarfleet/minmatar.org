@@ -61,7 +61,7 @@ try {
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||

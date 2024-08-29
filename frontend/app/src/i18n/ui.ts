@@ -127,15 +127,16 @@ export const ui = {
         'friend.leading_text': 'Hi friend, lets get you set everything for you to partake on Minmatar Fleet Alliance operations. Start by linking your main character. This is a requirement before checking your roles are properly set in our Discord server. You may refresh discord roles to fix them in case they are incorrect. Lastly, set Mumble with the help of the wiki guide.',
 
         'market.page_title': 'Market',
-        'market.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
-        'market.cover_alt': 'Interior of Jita 4.4 station',
+        'market.leading_text': 'Minmatar Republic loses nearly half a trillion ISK per month in faction warfare engagements. A large percentage of this has large margins.(10-20%). [FL33T] is in a unique position. We know all of the staging systems, all of the common modules and ships, and are the main driver of fleet content (losses)',
+        'market.cover_alt': 'Closeup picture of Jita station entrance',
+        'market.description': 'Request alliance freight service',
 
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Our curriculum is tailored to ensure that each successful graduate will be on par with the average pilot from an elite EVE Online alliance. You will be exposed to game mechanics and game concepts that most pilots skip over, ensuring that you’re not just another cog in the machine.',
         'contracts.cover_alt': 'Interior of Jita 4.4 station',
 
         'freight.page_title': 'Freight Service',
-        'freight.leading_text': 'After 6 months, we expect pilots to be ready to move on to another corporation in the alliance or help build the academy further as a director. We want to move you through the early stages of the game as fast as possible so that you can dig into everything that EVE Online has to offer.',
+        'freight.leading_text': 'Minmatar Fleet Logistics is a logistics powerhouse that supports Minmatar Fleet efforts. We move tens of millions of m3 every single month to the front lines, ensuring that pilots can destroy hundreds of billions of ISK every month.',
         'freight.cover_alt': 'An Amarr hauler initiating warp drive.',
 
         'freight.summary.page_title': '30 Days Summary',
@@ -156,7 +157,7 @@ export const ui = {
         'skillsets.cover_alt': 'First person sight of a capusuleer awakening with the AIR logo in front',
 
         'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
-        'assets.description': 'Locate your personal assets accross New Eden. Minmatar Fleet only tracks assets in NPC and structures owned by our alliance. This is not a replacement for the in-game asset window.',
+        'assets.description': 'Locate your personal assets accross New Eden. Minmatar Fleet only tracks assets in NPC and structures owned by our alliance. This is not a replacement for the in-game asset window',
 
         'teams.page_title': 'Teams',
         'teams.leading_text': 'Teams are similar to special interest groups, but without them our alliance would cease to exist. These are people running things behind the curtain to ensure that we’re not going to failcascade in 6 months.',
@@ -588,6 +589,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page',
         'page_finder.teams.description': 'Teams landing page',
         'page_finder.groups.description': 'Special Interest Groups landing page',
+        'page_finder.market.description': 'Market landing page',
+        'page_finder.market.standard.description': 'Alliance freight calculator',
         'page_finder.intel.description': 'Intel landing page',
         'page_finder.intel.timers.active.description': 'List of active structure timers',
         'page_finder.intel.timers.history.description': 'List of past structure timers',
@@ -907,5 +910,8 @@ export const ui = {
         'holy_rat_quotes': 'Holy Rat quotes',
         'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community',
         'rat_quote': 'Rat Genesis 1:1 - ‘In the beginning, Rat created the holes and the cheese.’',
+        'fetch_freight_routes_error': 'An error occurred while fetching freight routes.',
+        'fetch_freight_cost_error': 'An error occurred while calculating freight cost.',
+        'freight_calculator_title': 'Freight calculator',
     },
 } as const;

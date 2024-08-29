@@ -196,6 +196,22 @@
         }
     },
     {
+        "slug": "market",
+        "alt": "icon.market.alt",
+        "path": "/market/",
+        "publish": true,
+        "icon": "/images/icons/48px-Market.png",
+        "description": "page_finder.market.description"
+    },
+    {
+        "slug": "freight.standard",
+        "alt": "icon.fit_cargo.alt",
+        "path": "/market/freight/standard/",
+        "publish": true,
+        "icon": "/images/icons/48px-Cargo.png",
+        "description": "page_finder.market.standard.description"
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

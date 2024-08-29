@@ -13,7 +13,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-if (is_prod_mode() && !user_is_superadmin)
+if (is_prod_mode())
     return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';

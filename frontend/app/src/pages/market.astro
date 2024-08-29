@@ -1,19 +1,21 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
-import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (is_prod_mode() && !user_is_superadmin)
+if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
     return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';
@@ -21,13 +23,9 @@ import Viewport from '@layouts/Viewport.astro';
 import PageLanding from '@components/page/PageLanding.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
-import ButtonCardGrid from '@components/layout/ButtonCardGrid.astro';
-
-import ButtonCard from '@components/blocks/ButtonCard.astro';
-
-import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
-import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
+import MarketReel from '@components/blocks/MarketReel.astro';
 
 const page_title = t('market.page_title');
 const page_description = t('market.leading_text');
@@ -36,27 +34,27 @@ const page_description = t('market.leading_text');
 <Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
-            image: "/images/contract-service-cover.jpg",
-            image_990: "/images/contract-service-cover-990.jpg",
+            image: "/images/market-cover.jpg",
+            image_990: "/images/market-cover-990.jpg",
             alt: t('market.cover_alt'),
-            overlay: true
+            overlay: true,
+            scrollable: true,
         }}
+        wide={true}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <Flexblock>
-                <h1>{page_title}</h1>
-                <p>{page_description}</p>
-            </Flexblock>
-
-            <ButtonCardGrid>
-                <ButtonCard title={t('freight')} href={translatePath('/market/freight/')}>
-                    <FreightServiceEvEIcon slot="icon" />
-                </ButtonCard>
-
-                <ButtonCard title={t('contract')} href={translatePath('/market/contracts/')}>
-                    <ContractsServiceEvEIcon slot="icon" />
-                </ButtonCard>
-            </ButtonCardGrid>
+            <Wrapper
+                max_width="var(--max-landing-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap='var(--space-xl)'>
+                    <h1>{page_title}</h1>
+                    <p>{page_description}</p>
+                </Flexblock>
+            </Wrapper>
+            
+            <MarketReel />
         </Flexblock>
     </PageLanding>
 </Viewport>

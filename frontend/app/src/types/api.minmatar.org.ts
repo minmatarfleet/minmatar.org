@@ -285,3 +285,26 @@ export interface VerifyStructureTimerRequest {
     corporation_name:   string;
     alliance_name:      string;
 }
+
+export interface FreightRoute {
+    orgin:          FreightLocation;
+    destination:    FreightLocation;
+    bidirectional:  boolean;
+    route_id:       number;
+}
+
+export interface FreightLocation {
+    location_id:    number;
+    name:           string;
+    short_name:     string;
+}
+
+export interface RouteOptions {
+    route_option_id:    number;
+    maximum_m3:         number;
+}
+
+export interface RouteCost {
+    route_id:   number;
+    cost:       number;
+}

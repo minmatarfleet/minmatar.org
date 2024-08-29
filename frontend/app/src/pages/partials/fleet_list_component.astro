@@ -34,7 +34,7 @@ try {
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
 const TIMEAGO_UPDATE_RATE_MS = 10000
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import FleetList from '@components/blocks/FleetList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';

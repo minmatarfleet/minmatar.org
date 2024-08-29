@@ -88,17 +88,14 @@ const page = Astro.url.pathname
             >
                 <FleetEvEIcon />
             </NeocomButton>
-            {!is_prod_mode() &&
-                <NeocomButton
-                    active={page.startsWith(translatePath('/market/'))}
-                    title='neocom.market'
-                    description='market.leading_text'
-                    tag="dev"
-                    href={translatePath('/market/')}
-                >
-                    <MarketEvEIcon />
-                </NeocomButton>
-            }
+            <NeocomButton
+                active={page.startsWith(translatePath('/market/'))}
+                title='neocom.market'
+                description='market.description'
+                href={translatePath('/market/')}
+            >
+                <MarketEvEIcon />
+            </NeocomButton>
             {(user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')) &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/intel/'))}
