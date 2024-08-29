@@ -224,6 +224,8 @@ export const ui = {
         'freight.standard.faq_2_text': 'Collateral is a payment you receive if the contract fails to deliver. It prevents scamming, and covers you if the freighter pilot dies in transit. Is equivalent to the cost of your items.',
         'freight.standard.faq_3_title': 'How do sign up to haul?',
         'freight.standard.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics and request join into the [Supply team](https://my.minmatar.org/alliance/teams/list/).',
+        'freight.standard.faq_4_title': 'How can I estimate the collateral?',
+        'freight.standard.faq_4_text': 'Keeping a record of the cost of all your contracted items. You may use tools like [Janice](https://janice.e-351.com/) to estimate it in case you don’t have any record at your disposal.',
 
         'freight.wormhole.page_title': 'Wormhole Freight',
         'freight.wormhole.calculator_title': 'Freight calculator',
@@ -913,5 +915,6 @@ export const ui = {
         'fetch_freight_routes_error': 'An error occurred while fetching freight routes.',
         'fetch_freight_cost_error': 'An error occurred while calculating freight cost.',
         'freight_calculator_title': 'Freight calculator',
+        'money_input_placeholder': '0.00 (You may use M/B/T)',
     },
 } as const;
