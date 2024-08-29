@@ -3,7 +3,7 @@ from ninja import Router
 from django.http import HttpResponse
 
 from .models import LpStoreItem, get_status
-from .tasks import update_lpstore_items
+from .tasks import update_lpstore_items, get_tlf_lp_items
 
 router = Router(tags=["conversion"])
 
@@ -14,13 +14,20 @@ def item_data(request):
         content_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="lp_items.csv"'},
     )
-    response.write("type_id, item_name, qty_1d, qty_7d, qty_30d\n")
+    response.write(
+        "type_id, item_name, qty_1d, qty_7d, qty_30d, store_qty, store_lp, store_isk, sell_price, updated\n"
+    )
     for lp_item in LpStoreItem.objects.all():
         response.write(str(lp_item.type_id) + ", ")
         response.write(str(lp_item.description) + ", ")
         response.write(str(lp_item.qty_1d) + ", ")
         response.write(str(lp_item.qty_7d) + ", ")
-        response.write(str(lp_item.qty_30d))
+        response.write(str(lp_item.qty_30d) + ", ")
+        response.write(str(lp_item.store_qty) + ", ")
+        response.write(str(lp_item.store_lp) + ", ")
+        response.write(str(lp_item.store_isk) + ", ")
+        response.write(str(lp_item.jita_price) + ", ")
+        response.write(str(lp_item.updated_at.strftime("%Y-%m-%dT%H:%M:%S")))
         response.write("\n")
 
     return response
@@ -28,6 +35,7 @@ def item_data(request):
 
 @router.get("/status", response=str)
 def conversion_status(request):
+    get_tlf_lp_items()
     return get_status()
 
 
