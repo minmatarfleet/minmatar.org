@@ -23,7 +23,7 @@ let get_character_assets_error:string | false = false
 let user_character:EveCharacterProfile
 
 const station = Astro.url.searchParams.get('station')
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 let location_assets
 let station_assets
 

@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import Button from '@components/blocks/Button.astro';
+import SwiperCard from '@components/blocks/SwiperCard.astro';
+
+import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
+---
+
+<Wrapper
+    class="[ ships-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <div
+        class="[ swiper ][ w-full pb-10 ]"
+        id="ships-list"
+    >
+        <LandingSwiper>
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-0 ]" cover='/images/freight-tile-background.jpg'>
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <CargoHoldEvEIcon />
+                        <h2>{t('freight.page_title')}</h2>
+                    </FlexInline>
+                        
+                    <p>{t('freight.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/market/freight/standard/')}>
+                            {t('standard_freight')}
+                        </Button>
+                    </FlexInline>
+                </SwiperCard>
+            </div>
+        </LandingSwiper>
+    </div>
+
+    <div class="[ swiper-button-prev hidden lg:block ]"></div>
+    <div class="[ swiper-button-next hidden lg:block ]"></div>
+</Wrapper>
+
+<style lang="scss">
+    .ships-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 700px);
+    }
+</style>

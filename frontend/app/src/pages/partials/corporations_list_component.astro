@@ -31,7 +31,7 @@ const corporation_type = Astro.url.searchParams.get('corporation_type') as Corpo
 
 const CORPORATIONS_LIST_PARTIAL_URL = `${translatePath('/partials/corporations_list_component')}?corporation_type=${corporation_type}`
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import CorporationsList from '@components/blocks/CorporationsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';

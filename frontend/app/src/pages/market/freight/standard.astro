@@ -1,51 +1,42 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import calculation from '@json/page/freight/standard/calculate.example.json';
+import { prod_error_messages } from '@helpers/env'
+import { fetch_freight_routes } from '@helpers/fetching/freights'
+import type { FreightRoutesData } from '@dtypes/layout_components'
 
-import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+let freight_routes_data:FreightRoutesData
+let default_route:string | number
+let fetch_freight_routes_error:string
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
-
-Astro.cookies.delete('contract', { path: '/market/freight/' })
-
-if (Astro.request.method === "POST") {
-    try {
-        const data = await Astro.request.formData();
-        calculation.collateral = parseFloat((data.get("collateral") as string).replaceAll(',', ''));
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error(error.message);
-        }
-    }
-    // TODO: Replace the static JSON value `calculation` with the endpoint request using the id
-    //                                👇
-    Astro.cookies.set('contract', calculation, { path: '/market/freight/' })
-    Astro.cookies.set('from', 'standard', { path: '/market/freight/' })
-
-    return Astro.redirect(translatePath('/market/freight/contract'))
+try {
+    freight_routes_data = await fetch_freight_routes()
+    default_route = freight_routes_data.routes[0].value
+} catch (error) {
+    fetch_freight_routes_error = prod_error_messages() ? t('fetch_freight_routes_error') : error.message
 }
 
-import routes_options from '@json/hosted/freight.standard.route.options.json';
-import sizes_options from '@json/hosted/freight.standard.size.options.json';
+const FREIGHT_FORM_PARTIAL_URL = `${translatePath('/partials/freight_form_component')}`
+
+import type { Alert } from '@dtypes/layout_components'
+
+let alert:Alert
+if (Astro.cookies.has('contract_error')) {
+    alert = {
+        title: t('freight_calculator_title'),
+        content: Astro.cookies.get('contract_error').value,
+    }
+
+    Astro.cookies.delete('contract_error', { path: '/' })
+}
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked'
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageAside from '@components/page/PageAside.astro';
+import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -55,19 +46,21 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import Button from '@components/blocks/Button.astro';
-import Select from '@components/blocks/Select.astro';
-import Input from '@components/blocks/Input.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
-import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import FreightForm from '@components/blocks/FreightForm.astro'
 
 const page_title = t('freight.standard.page_title');
 ---
 
-<Viewport title={page_title}>
-    <PageAside
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
+    <PageDefault
         cover={{
             image: "/images/freight-service-cover.jpg",
             image_990: "/images/freight-service-cover-990.jpg",
@@ -76,23 +69,17 @@ const page_title = t('freight.standard.page_title');
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            init() {
+                ${alert ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
     >
-
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-            </FlexInline>
-            <FlexInline>
-                <Button color={'green'} class="[ !hidden md:!flex ]" href={translatePath('/market/freight/wormhole/')}>
-                    <AddIcon slot="icon" />
-                    {t('wormhole_freight')}
-                </Button>
-                <Button class="[ !hidden lg:!flex ]" href={translatePath('/market/freight/summary/')}>
-                    <HistoryIcon slot="icon" />
-                    {t('30_day_summary')}
-                </Button>
             </FlexInline>
         </FlexInline>
 
@@ -120,77 +107,38 @@ const page_title = t('freight.standard.page_title');
             </ComponentBlock>
 
             <Flexblock gap='var(--space-3xs)'>
+                {fetch_freight_routes_error ?
+                    <ErrorRefetch
+                        args={{
+                            partial: FREIGHT_FORM_PARTIAL_URL,
+                            message: fetch_freight_routes_error,
+                            delay: 0,
+                        }}
+                    />
+                    :
+                    <ComponentBlock width='narrow'>
+                        <FreightForm
+                            freight_routes_data={freight_routes_data}
+                            default_route={default_route}
+                        />
+                    </ComponentBlock>
+                }
+
                 <ComponentBlock width='narrow'>
-                    <form method="POST">
-                        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                            <h2>{t('freight.standard.calculator_title')}</h2>
-                            
-                            <Flexblock>
-                                <VerticalCenter>
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="route">{t('route')}</label>
-                                        <Select id="route" name="route">
-                                            {routes_options.map((option) => 
-                                                <option value={option.id}>{option.name}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-                                </VerticalCenter>
-
-                                <VerticalCenter>
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="contract_size">{t('contract_size')} (<span class="[ lowercase ]">m<sup>3</sup></span>)</label>
-                                        <Select id="contract_size" name="contract_size">
-                                            {sizes_options.map((option) => 
-                                                <option value={option.id}>{option.name}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-                                </VerticalCenter>
-
-                                <VerticalCenter>
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="collateral">{t('collateral')}</label>
-                                        <Input
-                                            id="collateral"
-                                            type="text"
-                                            placeholder="0.00"
-                                            onclick="this.select();"
-                                            data-tippy-content=""
-                                            x-mask:dynamic="$money($input)"
-                                            x-data={`{ collateral: '0.00' }`}
-                                            x-model="collateral"
-                                            x-bind:data-tippy-content={`number_name(collateral, '${lang}')`}
-                                            onkeyup={`this._tippy.setContent(this.getAttribute('data-tippy-content'), '${lang}')`}
-                                            data-tippy-placement='top'
-                                            name="collateral"
-                                        />
-                                    </FixedFluid>
-                                </VerticalCenter>
-                            </Flexblock>
-
-                            <Button type="submit" class="[ w-full ]">{t('calculate')}</Button>
-                        </Flexblock>
-                    </form>
+                    <Flexblock>
+                        <FixedFluid width="48" class="[ items-center ]">
+                            <TutorialIcon />
+                            <h2>{t('freight.standard.faq_title')}</h2>
+                        </FixedFluid>
+                        <h3>{t('freight.standard.faq_1_title')}</h3>
+                        <p>{t('freight.standard.faq_1_text')}</p>
+                        <h3>{t('freight.standard.faq_3_title')}</h3>
+                        <p>{t('freight.standard.faq_3_text')}</p>
+                    </Flexblock>
                 </ComponentBlock>
             </Flexblock>
         </Flexblock>
-
-        <ComponentBlock slot="aside">
-            <Flexblock>
-                <FixedFluid width="48" class="[ items-center ]">
-                    <TutorialIcon />
-                    <h2>{t('freight.standard.faq_title')}</h2>
-                </FixedFluid>
-                <h3>{t('freight.standard.faq_1_title')}</h3>
-                <p>{t('freight.standard.faq_1_text')}</p>
-                <h3>{t('freight.standard.faq_2_title')}</h3>
-                <p>{t('freight.standard.faq_2_text')}</p>
-                <h3>{t('freight.standard.faq_3_title')}</h3>
-                <p>{t('freight.standard.faq_3_text')}</p>
-            </Flexblock>
-        </ComponentBlock>
-    </PageAside>
+    </PageDefault>
 </Viewport>
 
 <style lang="scss">

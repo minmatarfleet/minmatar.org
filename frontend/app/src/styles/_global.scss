@@ -95,6 +95,8 @@ pre {
     background-color: var(--component-background);
     padding: var(--space-3xs);
     border: solod 1px var(--border-color);
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 code {
