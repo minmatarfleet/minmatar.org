@@ -33,11 +33,11 @@ lp_type_ids = [
 ]
 
 lp_blueprint_ids = {
-    # Blueprint: Item
-    33158: 33157,
-    72923: 72811,
-    29339: 29336,
-    17714: 17713,
+    # Item: Blueprint
+    33157: 33158,
+    72811: 72923,
+    29336: 29339,
+    17713: 17714,
 }
 
 
@@ -55,6 +55,12 @@ class LpStoreItem(models.Model):
     qty_7d = models.IntegerField(default=0)
     qty_30d = models.IntegerField(default=0)
     blueprint_id = models.IntegerField(null=True)
+    store_qty = models.IntegerField(default=0)
+    store_lp = models.IntegerField(default=0)
+    store_isk = models.IntegerField(default=0)
+    jita_price = models.DecimalField(
+        default=0.0, max_digits=15, decimal_places=2
+    )
 
     def __str__(self):
         return str(self.type_id) + ": " + str(self.description)
@@ -71,7 +77,17 @@ def get_status():
     return status
 
 
-def update_lp_item(type_id, description, qty_1d, qty_7d, qty_30d):
+def update_lp_item(
+    type_id,
+    description,
+    qty_1d,
+    qty_7d,
+    qty_30d,
+    store_qty,
+    store_lp,
+    store_isk,
+    price,
+):
     try:
         lp_item = LpStoreItem.objects.get(type_id=type_id)
     except LpStoreItem.DoesNotExist:
@@ -81,5 +97,11 @@ def update_lp_item(type_id, description, qty_1d, qty_7d, qty_30d):
     lp_item.qty_1d = qty_1d
     lp_item.qty_7d = qty_7d
     lp_item.qty_30d = qty_30d
+
+    lp_item.store_qty = store_qty
+    lp_item.store_lp = store_lp
+    lp_item.store_isk = store_isk
+
+    lp_item.jita_price = price
 
     lp_item.save()
