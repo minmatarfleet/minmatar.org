@@ -223,7 +223,7 @@ export const ui = {
         'freight.standard.faq_2_title': 'What is collateral?',
         'freight.standard.faq_2_text': 'Collateral is a payment you receive if the contract fails to deliver. It prevents scamming, and covers you if the freighter pilot dies in transit. Is equivalent to the cost of your items.',
         'freight.standard.faq_3_title': 'How do sign up to haul?',
-        'freight.standard.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics. Contact BearThatCares.',
+        'freight.standard.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics and request join into the [Supply team](https://my.minmatar.org/alliance/teams/list/).',
 
         'freight.wormhole.page_title': 'Wormhole Freight',
         'freight.wormhole.calculator_title': 'Freight calculator',

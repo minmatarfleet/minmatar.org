@@ -60,10 +60,8 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FreightFAQs from '@components/blocks/FreightFAQs.astro'
 
-import PageBody from '@components/page/partials/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 
@@ -194,16 +192,7 @@ const page_title = t('freight.contract.page_title');
         </Flexblock>
 
         <ComponentBlock slot="aside" class="sticky top-[170px]">
-            <Flexblock>
-                <FixedFluid width="48" class="[ items-center ]">
-                    <TutorialIcon />
-                    <h2>{t('freight.standard.faq_title')}</h2>
-                </FixedFluid>
-                <h3>{t('freight.contract.faq_1_title')}</h3>
-                <p>{t('freight.contract.faq_1_text')}</p>
-                <h3>{t('freight.standard.faq_3_title')}</h3>
-                <p>{t('freight.standard.faq_3_text')}</p>
-            </Flexblock>
+            <FreightFAQs />
         </ComponentBlock>
     </PageAside>
 </Viewport>
