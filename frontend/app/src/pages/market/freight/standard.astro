@@ -46,9 +46,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import FreightFAQs from '@components/blocks/FreightFAQs.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import FreightForm from '@components/blocks/FreightForm.astro'
 
 const page_title = t('freight.standard.page_title');
@@ -125,16 +125,7 @@ const page_title = t('freight.standard.page_title');
                 }
 
                 <ComponentBlock width='narrow'>
-                    <Flexblock>
-                        <FixedFluid width="48" class="[ items-center ]">
-                            <TutorialIcon />
-                            <h2>{t('freight.standard.faq_title')}</h2>
-                        </FixedFluid>
-                        <h3>{t('freight.standard.faq_1_title')}</h3>
-                        <p>{t('freight.standard.faq_1_text')}</p>
-                        <h3>{t('freight.standard.faq_3_title')}</h3>
-                        <p>{t('freight.standard.faq_3_text')}</p>
-                    </Flexblock>
+                    <FreightFAQs />
                 </ComponentBlock>
             </Flexblock>
         </Flexblock>
