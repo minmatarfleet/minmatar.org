@@ -33,7 +33,7 @@ import Input from '@components/blocks/Input.astro';
         },
     }`}
     x-model={model}
-    x-bind:data-tippy-content={`number_name(${model}, '${lang}')`}
+    x-bind:data-tippy-content={`number_name((${model} ?? 0).toString(), '${lang}')`}
     onkeyup={`this._tippy.setContent(this.getAttribute('data-tippy-content'), '${lang}')`}
     @keypress={`
         const current_val = parseFloat(${model}.replaceAll(',', ''))
