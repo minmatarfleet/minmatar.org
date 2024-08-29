@@ -2,22 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
-    return HTTP_404_Not_Found()
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -28,10 +12,13 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import MarketReel from '@components/blocks/MarketReel.astro';
 
 const page_title = t('market.page_title');
-const page_description = t('market.leading_text');
+const leading_text = t('market.leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={t('market.meta_description')}
+>
     <PageLanding
         cover={{
             image: "/images/market-cover.jpg",
@@ -50,7 +37,7 @@ const page_description = t('market.leading_text');
             >
                 <Flexblock gap='var(--space-xl)'>
                     <h1>{page_title}</h1>
-                    <p>{page_description}</p>
+                    <p>{leading_text}</p>
                 </Flexblock>
             </Wrapper>
             
