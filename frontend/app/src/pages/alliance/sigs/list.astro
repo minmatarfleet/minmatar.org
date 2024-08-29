@@ -41,12 +41,12 @@ import GroupsList from '@components/blocks/GroupsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('groups.list.page_title');
-const page_description = t('groups.list.leading_text');
+const leading_text = t('groups.list.leading_text');
 ---
 
 <Viewport
     title={page_title}
-    meta_description={page_description}
+    meta_description={t('groups.list.meta_description')}
     components={{
         alert_dialog: true,
         confirm_dialog: true,
@@ -76,7 +76,7 @@ const page_description = t('groups.list.leading_text');
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{page_description}</p>
+                <p>{leading_text}</p>
             </TextBox>
 
             {get_groups_error ?
