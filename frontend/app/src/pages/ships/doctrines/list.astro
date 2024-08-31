@@ -38,10 +38,12 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('doctrines.page_title');
-const page_description = t('doctrines.alliance.page_leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={t('doctrines.alliance.meta_description')}
+>
     <PageWide
         cover={{
             image: "/images/doctrines-cover.jpg",

@@ -46,6 +46,7 @@ export const ui = {
 
         'alliance.page_title': 'Alliance',
         'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
+        'alliance.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, and internal groups.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
         'alliance.description': 'Browse our corporations, teams and SIGs portfolio and submit your application',
@@ -60,6 +61,7 @@ export const ui = {
 
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Fittings are the atom of fleet warfare, and typically will be combined to make up doctrines. However, you will find much more than doctrine fittings here- take a look at our solo and small gang fittings.',
+        'fitting.meta_description': 'Browse hundreds of fittings optimized for faction warfare',
         'fitting.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
 
         'fitting.render.cover_alt': 'Open space with a whitish nubula in the background',
@@ -72,6 +74,7 @@ export const ui = {
 
         'doctrines.alliance.page_title': 'Alliance Doctrines',
         'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available on contracts.',
+        'doctrines.alliance.meta_description': 'Prepare yourself for the next fleet by browsing the doctrines of Minmatar Fleet Alliance.',
         'doctrines.militia.page_title': 'Militia Doctrines',
         'doctrines.militia.page_leading_text': 'Doctrines that are flown in militia by Minmatar Fleet Alliance fleet commanders and are available on contracts.',
 
@@ -93,6 +96,7 @@ export const ui = {
         'fleets.upcoming.page_title': 'Upcoming fleets',
         'fleets.upcoming.empty_message': 'There are no fleets on schedule. Be the one adding the first one.',
         'page_finder.fleets.upcoming.description': 'List of upcoming fleets',
+        'page_finder.fleets.upcoming.meta_description': 'Wondering when the next fleet is? We’ve got you covered.',
 
         'fleets.history.page_title': 'Fleet history',
         'fleets.history.empty_message': 'There are no fleet records.',
@@ -100,6 +104,7 @@ export const ui = {
 
         'intel.page_title': 'Intel',
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
+        'intel.meta_description': 'Learn more about intel at Minmatar Fleet Alliance, and report various timers.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
         'intel.description': 'Inspect active structure timers and submit new ones',
 
@@ -128,6 +133,7 @@ export const ui = {
 
         'market.page_title': 'Market',
         'market.leading_text': 'Minmatar Republic loses nearly half a trillion ISK per month in faction warfare engagements. A large percentage of this has large margins.(10-20%). [FL33T] is in a unique position. We know all of the staging systems, all of the common modules and ships, and are the main driver of fleet content (losses)',
+        'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
         'market.description': 'Request alliance freight service',
 
@@ -173,9 +179,11 @@ export const ui = {
 
         'groups.list.page_title': 'Special Interest Groups',
         'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by one of our group officers, and you will be contacted via Discord for further details',
+        'groups.list.meta_description': 'Learn more about special interest groups in Minmatar Fleet Alliance, the community led groups that create the majority of our in-game content.',
 
         'teams.list.page_title': 'Teams',
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details',
+        'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
@@ -193,6 +201,7 @@ export const ui = {
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
+        'corporations.list.meta_description': 'Learn more about the corporations of Minmatar Fleet Alliance, who runs them, and what differentiates them from eachother.',
 
         'corporations.associates.page_title': 'Minmatar Fleet Associates Corporations',
         'corporations.associates.leading_text': 'Minmatar Fleet Associates is a collection of small, medium, and large corporations focused on supplying the relentless war machine of the Minmatar Fleet. These organizations typically specialize in industry, resource collection, and logistics.',
@@ -215,6 +224,7 @@ export const ui = {
         'corporations.application.leading_text': 'Review the following application.',
 
         'freight.standard.page_title': 'Standard Freight',
+        'freight.standard.meta_description': 'Looking to ship in from Jita? Minmatar Freight has got you covered, at half the price of PushX.',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
         'freight.standard.faq_title': 'FAQ',
