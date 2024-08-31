@@ -620,17 +620,25 @@ export interface GroupBasic {
 
 export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
 
+import type { DoctrineComposition } from '@dtypes/api.minmatar.org'
+
 export interface DoctrineType {
-    id:                 number;
-    name:               string;
-    type:               DoctrineTypes;
-    created_at:         Date;
-    updated_at:         Date;
-    description:        string;
-    primary_fittings:   FittingItem[];
-    secondary_fittings: FittingItem[];
-    support_fittings:   FittingItem[];
-    sigs:               GroupBasic[];
+    id:                     number;
+    name:                   string;
+    type:                   DoctrineTypes;
+    created_at:             Date;
+    updated_at:             Date;
+    description:            string;
+    primary_fittings:       FittingItem[];
+    secondary_fittings:     FittingItem[];
+    support_fittings:       FittingItem[];
+    sigs:                   GroupBasic[];
+    ideal_composition?:     IdealComposition;
+}
+
+export interface IdealComposition {
+    ideal_fleet_size:   number;
+    [propName: string]: number;
 }
 
 export interface FittingGroup {
@@ -648,6 +656,7 @@ export interface FleetItem {
     type:                   FleetTypes;
     audience:               string;
     description:            string;
+    doctrine_id:            number;
     start_time:             Date;
     fleet_commander_id:     number;
     fleet_commander_name:   string;
