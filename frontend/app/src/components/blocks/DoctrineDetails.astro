@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DoctrineType } from '@dtypes/layout_components'
+import type { FleetItem } from '@dtypes/layout_components'
+
+interface Props {
+    doctrine:           DoctrineType;
+    recently_fleets:    FleetItem[];
+}
+
+const {
+    doctrine,
+    recently_fleets,
+} = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import FleetList from '@components/blocks/FleetList.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import DoctrineTier from '@components/blocks/DoctrineTier.astro';
+---
+
+<Flexblock gap="var(--space-xl)">
+    <TextBox>
+        <p>{doctrine.description}</p>
+    </TextBox>
+    
+    <Flexblock gap="var(--space-3xs)" role="list">
+        <ComponentBlock>
+            <Flexblock gap='var(--space-l)'>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h2>{t('primary_fittings')}</h2>
+                    <small>{t('primary_fittings_descriptions')}</small>
+                </Flexblock>
+                <DoctrineTier
+                    fittings={doctrine.primary_fittings}
+                    ideal_composition={doctrine.ideal_composition}
+                />
+            </Flexblock>
+        </ComponentBlock>
+
+        {doctrine.secondary_fittings.length > 0 &&
+            <ComponentBlock>
+                <Flexblock gap='var(--space-l)'>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h2>{t('secondary_fittings')}</h2>
+                        <small>{t('secondary _fittings_descriptions')}</small>
+                    </Flexblock>
+                    <DoctrineTier
+                        fittings={doctrine.secondary_fittings}
+                        ideal_composition={doctrine.ideal_composition}
+                    />
+                </Flexblock>
+            </ComponentBlock>
+        }
+
+        {doctrine.support_fittings.length > 0 &&
+            <ComponentBlock>
+                <Flexblock gap='var(--space-l)'>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h2>{t('support_fittings')}</h2>
+                        <small>{t('support_fittings_descriptions')}</small>
+                    </Flexblock>
+                    <DoctrineTier
+                        fittings={doctrine.support_fittings}
+                        ideal_composition={doctrine.ideal_composition}
+                    />
+                </Flexblock>
+            </ComponentBlock>
+        }
+    </Flexblock>
+
+    <Flexblock gap='var(--space-xl)'>
+        <TextBox>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>{t('recently_flied')}</h2>
+                <small x-text={`\`\${recently_fleets_count} \${recently_fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('in_past_30_days').toLowerCase()}\``}>
+                    {recently_fleets.length} {recently_fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('in_past_30_days').toLowerCase()}
+                </small>
+            </Flexblock>
+        </TextBox>
+
+        <FleetList fleets={recently_fleets} history={true} />
+    </Flexblock>
+
+</Flexblock>

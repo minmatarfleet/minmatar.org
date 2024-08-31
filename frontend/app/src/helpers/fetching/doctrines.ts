@@ -2,9 +2,9 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import type { DoctrineType } from '@dtypes/layout_components'
+import type { DoctrineType, IdealComposition } from '@dtypes/layout_components'
 import type { Doctrine } from '@dtypes/api.minmatar.org'
-import { get_doctrines, get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
+import { get_doctrines, get_doctrine_by_id, get_doctrine_composition } from '@helpers/api.minmatar.org/doctrines'
 import { get_fitting_item } from '@helpers/fetching/ships'
 import { get_groups } from '@helpers/fetching/groups'
 
@@ -41,8 +41,14 @@ export async function fetch_doctrines() {
 
 export async function fetch_doctrine_by_id(id:number) {
     let doctrine:Doctrine
+    let ideal_composition:IdealComposition = {
+        ideal_fleet_size: 0
+    }
 
     doctrine = await get_doctrine_by_id(id)
+    const doctrine_composition = await get_doctrine_composition(doctrine.id)
+    doctrine_composition.composition.forEach((ship) => ideal_composition[ship.fitting.id] = ship.ideal_ship_count)
+    ideal_composition.ideal_fleet_size = doctrine_composition.ideal_fleet_size
 
     return {            
         id: doctrine.id,
@@ -54,5 +60,6 @@ export async function fetch_doctrine_by_id(id:number) {
         primary_fittings: await Promise.all(doctrine.primary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
+        ideal_composition: ideal_composition,
     } as DoctrineType
 }

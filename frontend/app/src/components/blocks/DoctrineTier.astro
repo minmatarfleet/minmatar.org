@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_item_icon } from '@helpers/eve_image_server';
+import type { FittingItem, IdealComposition } from '@dtypes/layout_components';
+
+interface Props {
+    fittings:           FittingItem[];
+    ideal_composition?: IdealComposition;
+}
+
+const {
+    fittings,
+    ideal_composition = {},
+} = Astro.props
+
+console.log(ideal_composition)
+
+import Grid from '@components/compositions/Grid.astro';
+import Badge from '@components/blocks/Badge.astro';
+---
+
+<Grid
+    role="list"
+    class="[ w-full grid-fill ]"
+    min_item_width='270px'
+    row_gap='var(--space-s-m)'
+    column_gap='var(--space-s-m)'
+>
+    {fittings.map((fitting) => 
+        <a
+            class="[ items-center flex ]"
+            role="listitem"
+            href={translatePath(`/ships/fitting/${fitting.id}`)}
+        >
+            {fitting.id.toString() in ideal_composition ?
+                <Badge
+                    title={fitting.fitting_name}
+                    subtitle={`${fitting.id.toString() in ideal_composition ? ideal_composition[fitting.id.toString()] : 0} ${(fitting.id.toString() in ideal_composition ? ideal_composition[fitting.id.toString()] : 0) === 1 ? t('ship') : t('ships')}`}
+                    image={get_item_icon(fitting.ship_id)}
+                    size={64}
+                    highlight={true}
+                />
+                :
+                <Badge
+                    title={fitting.fitting_name}
+                    image={get_item_icon(fitting.ship_id)}
+                    size={64}
+                    highlight={true}
+                />
+            }
+        </a>
+    )}
+</Grid>

@@ -308,3 +308,13 @@ export interface RouteCost {
     route_id:   number;
     cost:       number;
 }
+
+export interface DoctrineComposition {
+    ideal_fleet_size:   number;
+    composition:        Ships[];
+}
+
+export interface Ships {
+    fitting:            Fitting;
+    ideal_ship_count:   number;
+}
