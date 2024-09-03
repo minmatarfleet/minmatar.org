@@ -69,29 +69,39 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         size={32}
                     />
                 </Flexblock>
-                {!history && can_remove_fleet && fleet.tracking === null &&
-                    <Button
-                        size='sm'
-                        narrow={true}
-                        x-data={`{
-                            show_set_main_dialog() {
-                                show_confirm_dialog({
-                                    title: '${t('remove_fleet_dialog_title')}',
-                                    content: '${t('remove_fleet_dialog_text')}',
-                                    hx: {
-                                        method: 'delete',
-                                        url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
-                                            fleet_id: fleet.id,
-                                        })}',
-                                        swap: 'outerHTML transition:true'
+                {!history && can_remove_fleet &&
+                    <FlexInline>
+                        <Button
+                            size='sm'
+                            href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
+                        >
+                            {t('edit')}
+                        </Button>
+
+                        {fleet.tracking === null &&
+                            <Button
+                                size='sm'
+                                x-data={`{
+                                    show_set_main_dialog() {
+                                        show_confirm_dialog({
+                                            title: '${t('remove_fleet_dialog_title')}',
+                                            content: '${t('remove_fleet_dialog_text')}',
+                                            hx: {
+                                                method: 'delete',
+                                                url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
+                                                    fleet_id: fleet.id,
+                                                })}',
+                                                swap: 'outerHTML transition:true'
+                                            }
+                                        })
                                     }
-                                })
-                            }
-                        }`}
-                        x-on:click="show_set_main_dialog"
-                    >
-                        {t('remove')}
-                    </Button>
+                                }`}
+                                x-on:click="show_set_main_dialog"
+                            >
+                                {t('remove')}
+                            </Button>
+                        }
+                    </FlexInline>
                 }
             </FlexInline>
 

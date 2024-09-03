@@ -99,6 +99,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         type: fleet.type,
         doctrine: fleet?.doctrine_id ? doctrine : null,
         tracking: fleet.tracking,
+        audience: fleet.audience,
     } as FleetUI
 }
 

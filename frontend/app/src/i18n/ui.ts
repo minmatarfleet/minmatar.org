@@ -735,7 +735,9 @@ export const ui = {
         'casual': 'Casual',
         'training': 'Training',
         'create_fleet_error': 'An error ocurred creating the fleet',
+        'update_fleet_error': 'An error ocurred updating the fleet',
         'create_fleet_dialog_title': 'Schedule fleet',
+        'edit_fleet_dialog_title': 'Edit fleet',
         'location': 'Location',
         'fetch_fleets_error': 'An error ocurred fetching fleets',
         'start_fleet_error': 'An error ocurred starting the fleet',
@@ -936,5 +938,6 @@ export const ui = {
         'ships': 'Ships',
         'ideal_fleet_size': 'ships ideally',
         'recently_flied': 'Recent fleet with this doctrine',
+        'edit': 'Edit',
     },
 } as const;
