@@ -185,6 +185,40 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
     }
 }
 
+export async function update_fleet(access_token:string, fleet:FleetRequest, fleet_id: number) {
+    const data = JSON.stringify(fleet);
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}?fleet_id=${fleet_id}`
+
+    console.log(`Requesting PATCH: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            body: data,
+            method: 'PATCH'
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as Fleet;
+    } catch (error) {
+        throw new Error(`Error creating fleet: ${error.message}`);
+    }
+}
+
 export async function get_fleet_by_id(access_token:string, id:number) {
     const headers = {
         'Content-Type': 'application/json',

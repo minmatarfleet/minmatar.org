@@ -674,6 +674,7 @@ export interface FleetUI {
     location:               string;
     doctrine:               DoctrineType;
     tracking:               Tracking;
+    audience:               string;
 }
 
 export interface Tracking {

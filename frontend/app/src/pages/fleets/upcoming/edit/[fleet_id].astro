@@ -20,13 +20,18 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-import { create_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
+const fleet_id = parseInt(Astro.params.fleet_id)
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+import { update_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
-let create_fleet_error
+let update_fleet_error
 let alert:Alert | false = false
 
 if (Astro.request.method === "POST") {
@@ -44,49 +49,51 @@ if (Astro.request.method === "POST") {
             audience_id: parseInt(data.get('audience_id') as string),
         } as FleetRequest
         
-        const new_fleet = await create_fleet(auth_token as string, fleet_data)
+        const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
 
-        if (!new_fleet?.id)
-            create_fleet_error = t('create_fleet_error')
+        if (!updated_fleet?.id)
+            update_fleet_error = t('update_fleet_error')
         else {
             try {
                 let tracking_started = false
                 
                 if (data.get('start_tracking' as string) === 'on')
-                    tracking_started = await start_fleet(auth_token as string, new_fleet?.id)
+                    tracking_started = await start_fleet(auth_token as string, updated_fleet?.id)
 
-                if (tracking_started) send_active_fleet_notification(auth_token as string, new_fleet?.id)
+                if (tracking_started) send_active_fleet_notification(auth_token as string, updated_fleet?.id)
             } catch (error) {
                 const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
                 Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
             }
 
-            return Astro.redirect(translatePath(`/fleets/upcoming/${new_fleet?.id}`))
+            return Astro.redirect(translatePath(`/fleets/upcoming/${updated_fleet?.id}`))
         }
     } catch (error) {
-        create_fleet_error = prod_error_messages() ? t('create_fleet_error') : error.message
+        update_fleet_error = prod_error_messages() ? t('update_fleet_error') : error.message
     }
 
     alert = {
-        title: t('create_fleet_dialog_title'),
-        content: create_fleet_error,
+        title: t('edit_fleet_dialog_title'),
+        content: update_fleet_error,
     }
 }
 
-import { get_user_character } from '@helpers/fetching/characters'
+import type { FleetUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
+let fleet:FleetUI
 let fleet_commander:CharacterBasic
 let fetch_doctrines_error:string | false = false
 let locations:Location[]
 let audiences:Audience[]
 
 try {
-    const user_profile = await get_user_character((user as User).user_id)
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     fleet_commander = {
-        character_id: user_profile.character_id,
-        character_name: user_profile.character_name,
+        character_id: fleet.fleet_commander_id,
+        character_name: fleet.fleet_commander_name,
     }
     doctrines = await fetch_doctrines()
     locations = await get_locations(auth_token as string)
@@ -111,9 +118,9 @@ import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 import FleetForm from '@components/blocks/FleetForm.astro'
 
-const page_title = t('fleets.add.page_title');
+const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
 
-const timer = Astro.url.searchParams.get('timer')
+const timer = fleet.start_time
 const eve_datetime = timer ? new Date(timer) : new Date()
 let eve_date = `${eve_datetime.getFullYear()}-${(eve_datetime.getMonth() + 1).toString().padStart(2, '0')}-${eve_datetime.getDate().toString().padStart(2, '0')}`
 let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15).toString().padStart(2, '0')}`
@@ -163,6 +170,7 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
             <TextBox><p>{t('fleets.add.page_leading_text')}</p></TextBox>
 
             <FleetForm
+                fleet={fleet}
                 audiences={audiences}
                 doctrines={doctrines}
                 locations={locations}
