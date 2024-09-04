@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
 import { get_api_url, get_app_url } from '@helpers/env'
 
 const redirect = Astro.url.searchParams.get('redirect')
