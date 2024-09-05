@@ -939,5 +939,7 @@ export const ui = {
         'ideal_fleet_size': 'ships ideally',
         'recently_flied': 'Recent fleet with this doctrine',
         'edit': 'Edit',
+        'status': 'Status',
+        'default': 'Default',
     },
 } as const;
