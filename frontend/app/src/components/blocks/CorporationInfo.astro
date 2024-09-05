@@ -23,7 +23,6 @@ let get_corporation_info_error:string | false = false
 
 try {
     corporation = await get_corporation_info(corporation_id)
-    console.log(corporation)
 } catch (error) {
     get_corporation_info_error = (prod_error_messages() ? t('get_corporation_info_error') : error.message)
 }

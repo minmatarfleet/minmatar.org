@@ -129,7 +129,6 @@ export async function parse_eft(fitting_eft: string) {
         }
     }
 
-    console.log('Done parsing eft')
     return ship_fitting
 }
 

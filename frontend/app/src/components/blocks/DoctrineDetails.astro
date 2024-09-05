@@ -102,17 +102,24 @@ import ArmorIcon from '@components/icons/ArmorIcon.astro';
         }
     </Flexblock>
 
-    <Flexblock gap='var(--space-xl)'>
-        <TextBox>
-            <Flexblock gap='var(--space-3xs)'>
-                <h2>{t('recently_flied')}</h2>
-                <small x-text={`\`\${recently_fleets_count} \${recently_fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('in_past_30_days').toLowerCase()}\``}>
-                    {recently_fleets.length} {recently_fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('in_past_30_days').toLowerCase()}
-                </small>
-            </Flexblock>
-        </TextBox>
+    {recently_fleets &&
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h2>{t('recently_flied')}</h2>
+                    <small x-text={`\`\${recently_fleets_count} \${recently_fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('in_past_30_days').toLowerCase()}\``}>
+                        {recently_fleets.length} {recently_fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('in_past_30_days').toLowerCase()}
+                    </small>
+                </Flexblock>
+            </TextBox>
 
-        <FleetList fleets={recently_fleets} history={true} />
-    </Flexblock>
-
+            {recently_fleets.length > 0 ?
+                <FleetList fleets={recently_fleets} history={true} />
+                :
+                <Flexblock gap='var(--space-xl)' centered={true}>
+                    <p>{t('no_recent_fleets')}</p>
+                </Flexblock>
+            }
+        </Flexblock>
+    }
 </Flexblock>

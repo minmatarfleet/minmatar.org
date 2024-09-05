@@ -74,7 +74,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         filtered_pages: [ false ],
         pages: ${JSON.stringify(filter_pages)},
         page_filter() {
-            console.log('asd')
             if (this.search === '') {
                 this.filtered_pages = ${JSON.stringify(filter_pages.map( (i) => i.slug ))}
                 return

@@ -99,7 +99,7 @@ import StylessButton from './StylessButton.astro';
                                 target: '${`#group-request-list-${group_request.group_id}`}',
                                 swap: 'outerHTML transition:true'
                             }
-                        }).then( (group_id) => console.log(group_id) )
+                        })
                     }
                 }`}
                 x-on:click="show_accept_group_request_dialog()"
@@ -139,7 +139,7 @@ import StylessButton from './StylessButton.astro';
                             target: '${`#group-request-list-${group_request.group_id}`}',
                             swap: 'outerHTML transition:true'
                         }
-                    }).then( (group_id) => console.log(group_id) )
+                    })
                 }
             }`}
             x-on:click="show_deny_group_request_dialog()"

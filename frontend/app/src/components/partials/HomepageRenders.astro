@@ -56,7 +56,6 @@ export const WatermelonXData = `init_ccpwgl() {
     
     scene.loadSun('res:/fisfx/lensflare/pink_hazy.red', function () {
         scene.wrappedScene.lensflares.forEach(lensflare=> {
-            console.log(lensflare)
             lensflare._transform = mat4.fromValues(
                 100, 0, 0, 0,
                 0, 100, 0, 0,
@@ -388,7 +387,6 @@ export const OurzadCameraXData = `
     resize_canvas: null,
     rotation_angle: 0,
     resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
-        console.log('recalculate')
         // Lookup the size the browser is displaying the canvas in CSS pixels.
         const displayWidth  = canvas.clientWidth;
         const displayHeight = canvas.clientHeight;
