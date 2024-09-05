@@ -28,7 +28,6 @@ import Input from '@components/blocks/Input.astro';
         clamp(num, min, max) { return Math.min(Math.max(num, min), max); },
         updateValue(value, mult, min, max) {
             const num = value.replace(/[^-0-9\.]/g, '');
-            console.log({value,num});
             return clamp(num * mult, min, max);
         },
     }`}

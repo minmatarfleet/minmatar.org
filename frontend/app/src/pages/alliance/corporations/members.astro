@@ -96,7 +96,6 @@ const page_title = t('corporations.members.page_title')
             character_name: '',
             corporation_filter: '-1',
             filter() {
-                console.log(this.character_name)
                 if (this.character_name === '' && this.corporation_filter === '-1') {
                     this.corporations_filtered = this.corporations_unfiltered
                     this.corporations_filtered_memberss_count = ${JSON.stringify(corporations_members_count)}
