@@ -24,7 +24,7 @@ import { marked } from 'marked';
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageWide from '@components/page/PageWide.astro';
+import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -44,7 +44,7 @@ const page_title = t('doctrines.page_title');
     title={page_title}
     meta_description={t('doctrines.alliance.meta_description')}
 >
-    <PageWide
+    <PageDefault
         cover={{
             image: "/images/doctrines-cover.jpg",
             image_990: "/images/doctrines-cover-990.jpg",
@@ -105,5 +105,5 @@ const page_title = t('doctrines.page_title');
                     </Flexblock>
                 }
         </Flexblock>
-    </PageWide>
+    </PageDefault>
 </Viewport>

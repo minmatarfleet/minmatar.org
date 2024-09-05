@@ -941,5 +941,6 @@ export const ui = {
         'edit': 'Edit',
         'status': 'Status',
         'default': 'Default',
+        'no_recent_fleets': 'No recent fleets using this doctrine.',
     },
 } as const;
