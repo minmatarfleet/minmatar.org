@@ -21,7 +21,7 @@ import { semantic_list } from '@helpers/array';
 let roles:string[] = []
 if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
-const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('no_roles_assigned'))
+const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
@@ -108,7 +108,7 @@ const page_title = t('account.page_title');
                             </TextGroup>
                         </VerticalCenter>
                         <VerticalCenter class="[ basis-48 ]">
-                            <TextGroup title={t('roles')}>
+                            <TextGroup title={t('status')}>
                                 {roles_semantic_list}
                             </TextGroup>
                         </VerticalCenter>
