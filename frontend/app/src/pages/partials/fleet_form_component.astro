@@ -1,0 +1,88 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page)
+    return HTTP_404_Not_Found()
+
+import { get_locations, get_audiences } from '@helpers/api.minmatar.org/fleets'
+import type { Audience } from '@dtypes/api.minmatar.org'
+import type { Location } from '@dtypes/api.minmatar.org'
+import type { DoctrineType, CharacterBasic } from '@dtypes/layout_components'
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+
+let doctrines:DoctrineType[] = []
+let fleet:FleetUI
+let fleet_commander:CharacterBasic
+let fetch_doctrines_error:string | false = false
+let locations:Location[]
+let audiences:Audience[]
+
+try {
+    if (!isNaN(fleet_id)) {
+        fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+        fleet_commander = {
+            character_id: fleet.fleet_commander_id,
+            character_name: fleet.fleet_commander_name,
+        }
+    }
+    
+    doctrines = await fetch_doctrines()
+    locations = await get_locations(auth_token as string)
+    audiences = await get_audiences(auth_token as string)
+} catch (error) {
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+}
+
+const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import FleetForm from '@components/blocks/FleetForm.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const timer = fleet?.start_time
+const eve_datetime = timer ? new Date(timer) : new Date()
+let eve_date = `${eve_datetime.getFullYear()}-${(eve_datetime.getMonth() + 1).toString().padStart(2, '0')}-${eve_datetime.getDate().toString().padStart(2, '0')}`
+let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15).toString().padStart(2, '0')}`
+---
+
+{fetch_doctrines_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${FLEET_FORM_PARTIAL_URL}`,
+            message: fetch_doctrines_error,
+            delay: delay,
+        }}
+    />
+    :
+    <FleetForm
+        fleet={fleet}
+        audiences={audiences}
+        doctrines={doctrines}
+        locations={locations}
+        fleet_commander={fleet_commander}
+        eve_date={eve_date}
+        eve_time={eve_time}
+        lang={lang}
+    />
+}

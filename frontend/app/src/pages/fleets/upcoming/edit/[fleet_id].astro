@@ -102,6 +102,8 @@ try {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
+const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -113,6 +115,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
@@ -120,7 +123,7 @@ import FleetForm from '@components/blocks/FleetForm.astro'
 
 const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
 
-const timer = fleet.start_time
+const timer = fleet?.start_time
 const eve_datetime = timer ? new Date(timer) : new Date()
 let eve_date = `${eve_datetime.getFullYear()}-${(eve_datetime.getMonth() + 1).toString().padStart(2, '0')}-${eve_datetime.getDate().toString().padStart(2, '0')}`
 let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15).toString().padStart(2, '0')}`
@@ -169,16 +172,26 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
         <Flexblock gap="var(--space-xl)">
             <TextBox><p>{t('fleets.add.page_leading_text')}</p></TextBox>
 
-            <FleetForm
-                fleet={fleet}
-                audiences={audiences}
-                doctrines={doctrines}
-                locations={locations}
-                fleet_commander={fleet_commander}
-                eve_date={eve_date}
-                eve_time={eve_time}
-                lang={lang}
-            />
+            {fetch_doctrines_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: `${FLEET_FORM_PARTIAL_URL}?fleet_id=${fleet_id}`,
+                        message: fetch_doctrines_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetForm
+                    fleet={fleet}
+                    audiences={audiences}
+                    doctrines={doctrines}
+                    locations={locations}
+                    fleet_commander={fleet_commander}
+                    eve_date={eve_date}
+                    eve_time={eve_time}
+                    lang={lang}
+                />
+            }
         </Flexblock>
 	</PageDefault>
 </Viewport>
