@@ -29,8 +29,6 @@ const {
     lang,
 } = Astro.props
 
-console.log(fleet)
-
 const no_doctrine_option = {
     label: t('no_doctrine'),
     value: '-1'
@@ -65,8 +63,6 @@ const audiences_select_options = [  no_audience_option  ].concat(
     } )
 )
 
-console.log(AUDIENCES)
-
 let fleet_audience_id
 let fleet_location_id
 if (fleet) {
@@ -81,9 +77,6 @@ const default_location = fleet_location_id ?? locations_select_options[0].value
 const default_location_name = fleet?.location ?? locations_select_options[0].label
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
 const default_audience = fleet_audience_id ?? audiences_select_options[0].value
-
-console.log(default_location_name)
-console.log(default_location)
 
 const AUDIENCE_ICONS = {
     1: '/images/fleet-logo.svg',
@@ -276,7 +269,7 @@ import Grid from '@components/compositions/Grid.astro';
                         <Context>
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                 <label for="description">{t('description')}</label>
-                                <Textarea id="description" name="description" rows="5" required />
+                                <Textarea id="description" name="description" rows="5" required>{fleet?.description}</Textarea>
                             </Flexblock>
                             <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
                                 <FlexInline gap='var(--space-3xs)'>

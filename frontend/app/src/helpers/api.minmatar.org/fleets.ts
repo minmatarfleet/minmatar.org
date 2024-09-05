@@ -152,7 +152,7 @@ export async function get_fleets_v2(upcoming:boolean = true) {
 }
 
 export async function create_fleet(access_token:string, fleet:FleetRequest) {
-    const data = JSON.stringify(fleet);
+    const data = JSON.stringify(fleet)
 
     const headers = {
         'Content-Type': 'application/json',
@@ -186,14 +186,14 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
 }
 
 export async function update_fleet(access_token:string, fleet:FleetRequest, fleet_id: number) {
-    const data = JSON.stringify(fleet);
-
+    const data = JSON.stringify(fleet)
+    
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}?fleet_id=${fleet_id}`
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}`
 
     console.log(`Requesting PATCH: ${ENDPOINT}`)
 
@@ -215,7 +215,7 @@ export async function update_fleet(access_token:string, fleet:FleetRequest, flee
 
         return await response.json() as Fleet;
     } catch (error) {
-        throw new Error(`Error creating fleet: ${error.message}`);
+        throw new Error(`Error updating fleet: ${error.message}`);
     }
 }
 
