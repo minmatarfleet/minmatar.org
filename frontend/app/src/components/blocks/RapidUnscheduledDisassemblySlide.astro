@@ -1,0 +1,147 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const LUCAS_ERMANELOS_ID = 96380813
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="vindicta-slide"
+    ceo_image='/images/corporations/rude/ceo.png'
+    ceo_character_id={LUCAS_ERMANELOS_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ zirnitra ]" src="/images/corporations/rude/zirnitra.png" />
+    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/rude/ikitursa.png" />
+    <img slot="ships" class="[ kikimora ]" src="/images/corporations/rude/kikimora.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('vindicta_expeditionary_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .zirnitra {
+        position: absolute;
+        top: 22%;
+        right: 27%;
+        height: auto;
+        width: 78%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .ikitursa {
+        position: absolute;
+        top: 42%;
+        right: 29%;
+        width: 73%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .kikimora {
+        position: absolute;
+        right: 24%;
+        top: 30%;
+        width: 54%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    @keyframes zirnitra {
+        from {
+            transform: scale(0);
+            top: 22%;
+            right: 27%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 1%;
+            right: 29%;
+        }
+    }
+
+    @keyframes ikitursa {
+        from {
+            transform: scale(0);
+            top: 42%;
+            right: 29%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 37%;
+            right: 42%;
+        }
+    }
+
+    @keyframes kikimora {
+        from {
+            transform: scale(0);
+            top: 30%;
+            right: 24%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 54%;
+            right: 47%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #vindicta-slide .ceo {
+        right: 7%;
+    }
+
+    .swiper-slide-active {
+        .zirnitra {
+            animation: zirnitra cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .ikitursa {
+            animation: ikitursa cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .kikimora {
+            animation: kikimora cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
