@@ -1,4 +1,5 @@
 ---
+import Flexblock from '@components/compositions/Flexblock.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 
@@ -20,9 +21,12 @@ const {
 <label class="[ switch ][ w-full ]">
     <FluidFixed width='46px' breakpoint='80%' class="[ items-center ]">
         <div class="[ w-full ]">
-            <TextGroup title={label}>
-                {description}
-            </TextGroup>
+            <Flexblock gap='0'>
+                {label &&
+                    <span class="[ text-[var(--highlight)] ]">{label}</span>
+                }
+                <small {...attributes}>{description}</small>
+            </Flexblock>
         </div>
 
         <div>
@@ -90,6 +94,10 @@ const {
 
         [disabled] + .slider {
             filter: saturate(50%);
+        }
+
+        small {
+            font-weight: 400;
         }
     }
 
