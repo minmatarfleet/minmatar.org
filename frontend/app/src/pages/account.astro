@@ -23,14 +23,25 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { Character } from '@dtypes/api.minmatar.org'
+import type { Character, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { CorporationsListData } from '@helpers/pages/corporations_list'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
+import { get_corporations_list_data } from '@helpers/pages/corporations_list'
+import { get_user_character } from '@helpers/fetching/characters'
 
 let pilots:Character[] = []
 let get_characters_error:string | false = false
+let corporations_list_data:CorporationsListData = {}
+let user_character:EveCharacterProfile
+let is_fleet_pilot = false
 let readonly = false
+
 try {
-    pilots = await get_characters(auth_token);
+    pilots = await get_characters(auth_token)
+    corporations_list_data = await get_corporations_list_data(auth_token, lang, user.user_id)
+    user_character = await get_user_character(user.user_id)
+    const user_corporation = corporations_list_data.corporations.find((corporation) => corporation.corporation_id === user_character.corporation_id)
+    is_fleet_pilot = user_corporation !== undefined
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
@@ -159,7 +170,9 @@ const page_title = t('account.page_title');
                 </FlexInline>
             </ComponentBlock>
 
-            <Mumble />
+            {is_fleet_pilot &&
+                <Mumble />
+            }
 
             <ComponentBlock 
                 width='narrow'
@@ -197,11 +210,13 @@ const page_title = t('account.page_title');
                 }
             </ComponentBlock>
 
-            <ComponentBlock
-                width='narrow'
-            >
-                <PushNotifications />
-            </ComponentBlock>
+            {is_fleet_pilot &&
+                <ComponentBlock
+                    width='narrow'
+                >
+                    <PushNotifications />
+                </ComponentBlock>
+            }
 
             <Context>
                 <ComponentBlock
