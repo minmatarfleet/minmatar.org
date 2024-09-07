@@ -23,28 +23,36 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { Character, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { CorporationsListData } from '@helpers/pages/corporations_list'
+import type { Character, Corporation, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { NotificationSubscription, CorporationObject } from '@dtypes/layout_components'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
-import { get_corporations_list_data } from '@helpers/pages/corporations_list'
 import { get_user_character } from '@helpers/fetching/characters'
+import { get_subscriptions_by_user } from '@helpers/db/notification_subscriptions'
+import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 
 let pilots:Character[] = []
 let get_characters_error:string | false = false
-let corporations_list_data:CorporationsListData = {}
+let alliance_corporations:Corporation[]
 let user_character:EveCharacterProfile
 let is_fleet_pilot = false
 let readonly = false
+let notification_subscriptions:NotificationSubscription[]
 
 try {
     pilots = await get_characters(auth_token)
-    corporations_list_data = await get_corporations_list_data(auth_token, lang, user.user_id)
+    alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
-    const user_corporation = corporations_list_data.corporations.find((corporation) => corporation.corporation_id === user_character.corporation_id)
+    const user_corporation = alliance_corporations.find((corporation) => corporation.corporation_id === user_character.corporation_id)
     is_fleet_pilot = user_corporation !== undefined
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
+}
+
+try {
+    notification_subscriptions = await get_subscriptions_by_user(user.user_id)
+} catch (error) {
+    console.log(error)
 }
 
 const DELETE_ACCOUNT_URL = translatePath('/api/auth')
@@ -214,7 +222,7 @@ const page_title = t('account.page_title');
                 <ComponentBlock
                     width='narrow'
                 >
-                    <PushNotifications />
+                    <PushNotifications notification_subscriptions={notification_subscriptions} />
                 </ComponentBlock>
             }
 
