@@ -2,6 +2,18 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import type { NotificationSubscription } from '@dtypes/layout_components'
+
+interface Props {
+    notification_subscriptions:     NotificationSubscription[];
+}
+
+const {
+    notification_subscriptions,
+} = Astro.props
+
+const is_subscripted = notification_subscriptions ? (notification_subscriptions.filter((subscription) => subscription.id === subscription_id) !== undefined) : true
+
 import { get_app_url } from '@helpers/env'
 const SUBSCRIPTION_URL = `${get_app_url()}/api/notifications`
 
@@ -19,7 +31,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 <Flexblock
     x-data={`{
         notifications_support: null,
-        fleet_notifications: ${JSON.stringify(subscription_id > 0)},
+        fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id)},
         notifications_permission: null,
         check_notification_support() {
             this.notifications_support = ('serviceWorker' in navigator) && ('Notification' in window)
