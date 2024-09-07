@@ -50,7 +50,7 @@ try {
 }
 
 try {
-    notification_subscriptions = await get_user_subscriptions(user.user_id)
+    if (is_fleet_pilot) notification_subscriptions = await get_user_subscriptions(user.user_id)
 } catch (error) {
     console.log(error)
 }
