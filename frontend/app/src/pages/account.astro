@@ -27,7 +27,7 @@ import type { Character, Corporation, EveCharacterProfile } from '@dtypes/api.mi
 import type { NotificationSubscription, CorporationObject } from '@dtypes/layout_components'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_user_character } from '@helpers/fetching/characters'
-import { get_subscriptions_by_user } from '@helpers/db/notification_subscriptions'
+import { get_user_subscriptions } from '@helpers/db/notification_subscriptions'
 import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 
 let pilots:Character[] = []
@@ -50,7 +50,7 @@ try {
 }
 
 try {
-    notification_subscriptions = await get_subscriptions_by_user(user.user_id)
+    notification_subscriptions = await get_user_subscriptions(user.user_id)
 } catch (error) {
     console.log(error)
 }
