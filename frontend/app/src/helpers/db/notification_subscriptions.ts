@@ -4,7 +4,6 @@ import * as schema from '@/models/main/schema.ts';
 import type { NotificationSubscription } from '@dtypes/layout_components'
 
 export async function get_user_subscriptions(user_id:number) {
-    console.log('get_subscriptions_by_user')
     const q = await db.select({
         id: schema.fleet_push_subscriptions.id,
         subscription: schema.fleet_push_subscriptions.subscription,
