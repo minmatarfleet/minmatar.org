@@ -42,8 +42,8 @@ try {
     pilots = await get_characters(auth_token)
     alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
-    const user_corporation = alliance_corporations.find((corporation) => corporation.corporation_id === user_character.corporation_id)
-    is_fleet_pilot = user_corporation !== undefined
+    const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character.corporation_id) : undefined
+    is_fleet_pilot = (user_corporation && user_corporation !== undefined)
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
