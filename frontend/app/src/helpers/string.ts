@@ -25,7 +25,7 @@ export const is_valid_http_url = (string:string):boolean => {
 export const slugify = (string:string):string => {
     return _slugify(string, {
         replacement: '_',
-        remove: /[*+~.\-\()'"!:@]/g
+        remove: /[*+~.,\-\()'"!:@]/g
     })
 }
 

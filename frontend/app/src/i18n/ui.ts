@@ -903,5 +903,10 @@ export const ui = {
         'add_guest_pilot_dialog_text': 'You will undergo the pilot setting process outside of our site. Once it is successfully completed, we will return to our platform. No additional scopes but public data will be requested',
         'create_fleet_from_timer': 'Create fleet from timer',
         'join_us': 'Join us',
+        'add_title': 'Add title',
+        'add_excerpt': 'Add excerpt',
+        'update_post': 'Update post',
+        'post_author': 'Post author',
+        'wyswyg_placeholder': 'Write your story on the right [Markdown](https://www.markdownguide.org/) compatible **WYSWYG** editor and review it with the preview on the left.',
     },
 } as const;
