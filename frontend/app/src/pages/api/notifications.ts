@@ -3,7 +3,7 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden, HTTP_200_Success, HTTP_500_Server_Error } from '@helpers/http_responses'
-import { create_subscription, remove_subscription } from '@helpers/db/notification_subscriptions'
+import { create_subscription, remove_subscription } from '@helpers/db/push_notification_subscriptions'
 
 export async function POST({ request, cookies, redirect }) {
     if (request.headers.get("Content-Type") !== "application/json")

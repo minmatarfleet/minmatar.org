@@ -8,7 +8,7 @@ import { strip_markdown } from '@helpers/string'
 import { get_player_icon } from '@helpers/eve_image_server';
 import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
 
-import { get_all_subscriptions, remove_subscription } from '@helpers/db/notification_subscriptions'
+import { get_all_subscriptions, remove_subscription } from '@helpers/db/push_notification_subscriptions'
 import { unique } from '@helpers/array'
 
 import webpush from 'web-push'
