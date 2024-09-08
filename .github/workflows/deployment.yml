@@ -14,7 +14,7 @@ jobs:
           host: ${{ secrets.UBUNTU_HOST }}
           username: ${{ secrets.UBUNTU_USERNAME }}
           password: ${{ secrets.UBUNTU_PASSWORD }}
-          script: cd /home/minmatar/minmatar.org; git reset --hard; git pull; docker-compose -f docker-compose-prod.yml up -d --build --no-cache;  docker image prune -a -f
+          script: cd /home/minmatar/minmatar.org; git pull; docker-compose -f docker-compose-prod.yml up -d --build;  docker image prune -a -f
   notify-discord-failure:
     name: Notify Discord Failure
     runs-on: ubuntu-latest
