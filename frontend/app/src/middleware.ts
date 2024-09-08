@@ -2,7 +2,7 @@ import { i18n } from '@helpers/i18n'
 import { prod_error_messages } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
-import { remove_subscription } from '@helpers/db/push_notification_subscriptions'
+import { remove_subscription } from '@helpers/push_notification_subscriptions'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
