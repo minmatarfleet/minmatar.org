@@ -1,8 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
-import { get_item_icon } from '@helpers/eve_image_server';
 import type { FittingItem, IdealComposition } from '@dtypes/layout_components';
 
 interface Props {
@@ -16,38 +15,28 @@ const {
 } = Astro.props
 
 import Grid from '@components/compositions/Grid.astro';
-import Badge from '@components/blocks/Badge.astro';
+import FittingCard from '@components/blocks/FittingCard.astro';
 ---
 
 <Grid
     role="list"
     class="[ w-full grid-fill ]"
-    min_item_width='270px'
-    row_gap='var(--space-s-m)'
-    column_gap='var(--space-s-m)'
+    min_item_width='240px'
+    row_gap='var(--space-3xs)'
+    column_gap='var(--space-3xs)'
 >
     {fittings.map((fitting) => 
-        <a
+        <div
             class="[ items-center flex ]"
             role="listitem"
-            href={translatePath(`/ships/fitting/${fitting.id}`)}
         >
-            {fitting.id.toString() in ideal_composition ?
-                <Badge
-                    title={fitting.fitting_name}
-                    subtitle={`${fitting.id.toString() in ideal_composition ? ideal_composition[fitting.id.toString()] : 0} ${(fitting.id.toString() in ideal_composition ? ideal_composition[fitting.id.toString()] : 0) === 1 ? t('ship') : t('ships')}`}
-                    image={get_item_icon(fitting.ship_id)}
-                    size={64}
-                    highlight={true}
-                />
-                :
-                <Badge
-                    title={fitting.fitting_name}
-                    image={get_item_icon(fitting.ship_id)}
-                    size={64}
-                    highlight={true}
-                />
-            }
-        </a>
+            <FittingCard
+                id={fitting.id}
+                ship_id={fitting.ship_id}
+                fitting_name={fitting.fitting_name}
+                subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : null}
+                eft_format={fitting.eft_format}
+            />
+        </div>
     )}
 </Grid>

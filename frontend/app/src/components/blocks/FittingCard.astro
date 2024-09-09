@@ -1,0 +1,73 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    id:             number;
+    ship_id:        number;
+    fitting_name:   string;
+    subtitle?:      string;
+    eft_format:     string;
+}
+
+const {
+    id,
+    ship_id,
+    fitting_name,
+    subtitle,
+    eft_format,
+} = Astro.props
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+---
+
+<ComponentBlock padding_block='0' padding_inline='0'>
+    <Flexblock gap="0" class="[ fitting-card ]">
+        <ItemPicture
+            item_id={ship_id}
+            item_name={fitting_name}
+            size={256}
+            icon_quality={256}
+            mask={true}
+        />
+        <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <Flexblock gap='var(--space-2xs)'>
+                <Flexblock gap='0'>
+                    <h4><a href={translatePath(`/ships/fitting/${id}`)}>{fitting_name}</a></h4>
+                    {subtitle && <small>{subtitle}</small>}
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+        <Wrapper class="[ fitting-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <ClipboardButton narrow={true} id={id.toString()}>{eft_format}</ClipboardButton>
+        </Wrapper>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fitting-card {
+        position: relative;
+
+        .fitting-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .fitting-card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+    }
+
+    h4 {
+        font-weight: 400;
+    }
+</style>
