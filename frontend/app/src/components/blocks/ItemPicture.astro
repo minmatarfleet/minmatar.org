@@ -9,6 +9,7 @@ interface Props {
     item_name?:     string;
     size?:          EvEImageServiceSize;
     icon_quality?:  EvEImageServiceSize;
+    mask?:      boolean;
 }
 
 const {
@@ -16,12 +17,14 @@ const {
     item_name,
     size = 64,
     icon_quality = 64,
+    mask = false,
 } = Astro.props
 
 import { get_item_icon } from '@helpers/eve_image_server';
 ---
 <picture>
     <img
+        class:list={{ mask }}
         loading="lazy"
         height={size}
         width={size}
@@ -29,3 +32,14 @@ import { get_item_icon } from '@helpers/eve_image_server';
         alt={item_name ?? t('item_picture')}
     />
 </picture>
+
+<style lang="scss">
+    img {
+        object-fit: cover;
+    }
+
+    .mask {
+        -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, .5) 50%, transparent 100%);
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, .5) 50%, transparent 100%);
+    }
+</style>
