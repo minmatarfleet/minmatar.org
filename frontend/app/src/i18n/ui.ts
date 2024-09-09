@@ -937,7 +937,7 @@ export const ui = {
         'ship': 'Ship',
         'ships': 'Ships',
         'ideal_fleet_size': 'ships ideally',
-        'recently_flied': 'Recent fleet with this doctrine',
+        'recently_flied': 'Used recently on',
         'edit': 'Edit',
         'status': 'Status',
         'default': 'Default',
