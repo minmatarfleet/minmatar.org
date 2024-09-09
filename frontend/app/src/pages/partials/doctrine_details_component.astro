@@ -18,8 +18,10 @@ let recently_fleets:FleetItem[] = []
 
 try {
     doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
-    recently_fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
-    recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
+    if (auth_token) {
+        recently_fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
+        recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
+    }
 } catch (error) {
     fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
 }
