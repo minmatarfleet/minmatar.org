@@ -2,20 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import type { FittingItem } from '@dtypes/layout_components';
+import { get_ship_type_icon } from '@helpers/eve';
+
 interface Props {
-    id:             number;
-    ship_id:        number;
-    fitting_name:   string;
+    fitting:        FittingItem;
+    title?:         string;
     subtitle?:      string;
-    eft_format:     string;
+    [propName: string]: any;
 }
 
 const {
-    id,
-    ship_id,
-    fitting_name,
+    fitting,
+    title,
     subtitle,
-    eft_format,
+    ...attributes
 } = Astro.props
 
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -24,34 +25,59 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
-<ComponentBlock padding_block='0' padding_inline='0'>
-    <Flexblock gap="0" class="[ fitting-card ]">
+<ComponentBlock class="[ fitting-card ]" padding_block='0' padding_inline='0' {...attributes}>
+    <Flexblock gap="0">
         <ItemPicture
-            item_id={ship_id}
-            item_name={fitting_name}
+            item_id={fitting.ship_id}
+            item_name={fitting.ship_name}
             size={256}
-            icon_quality={256}
+            icon_quality={512}
             mask={true}
         />
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <Flexblock gap='var(--space-2xs)'>
-                <Flexblock gap='0'>
-                    <h4><a href={translatePath(`/ships/fitting/${id}`)}>{fitting_name}</a></h4>
-                    {subtitle && <small>{subtitle}</small>}
-                </Flexblock>
+            <Flexblock gap='0'>
+                <h4><a href={translatePath(`/ships/fitting/${fitting.id}`)}>{title ? title : fitting.fitting_name}</a></h4>
+                {subtitle && <small>{subtitle}</small>}
             </Flexblock>
         </Wrapper>
+        <picture
+            class="[ ship-type-icon ]"
+            data-tippy-content={fitting.ship_type}
+            x-init={`tippy($el, {
+                delay: [ 100, 200 ],
+                arrow: true,
+            })`}
+        >
+            <img
+                src={`/images/icons/ships/${get_ship_type_icon(fitting.ship_type)}`}
+                height="32"
+                width="32"
+                alt={`${fitting.ship_type} icon`}
+            />
+        </picture>
         <Wrapper class="[ fitting-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <ClipboardButton narrow={true} id={id.toString()}>{eft_format}</ClipboardButton>
+            <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
         </Wrapper>
+        <div class="[ fitting-card-filters ]">
+            <p>{fitting.fitting_name}</p>
+            <p>{fitting.fitting_type}</p>
+            <p>{fitting.ship_type}</p>
+        </div>
     </Flexblock>
 </ComponentBlock>
 
 <style lang="scss">
     .fitting-card {
         position: relative;
+
+        &:hover {
+            .fitting-card-actions {
+                opacity: 1;
+            }
+        }
 
         .fitting-card-body {
             position: absolute;
@@ -60,10 +86,21 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
             right: 0;
         }
 
+        .ship-type-icon {
+            position: absolute;
+            top: var(--space-3xs);
+            left: var(--space-3xs);
+        }
+
         .fitting-card-actions {
             position: absolute;
             top: 0;
             right: 0;
+            opacity: 0;
+        }
+
+        .fitting-card-filters {
+            display: none;
         }
     }
 
