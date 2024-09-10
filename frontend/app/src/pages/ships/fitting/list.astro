@@ -97,7 +97,7 @@ const page_title = t('fitting.list.page_title');
                                     )
 
                 return show_item
-            }
+            },
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -150,15 +150,8 @@ const page_title = t('fitting.list.page_title');
             {fittings_grouped_by_ship_type.map((group_fittings) =>
                 group_fittings.length > 0 &&
                     <Flexblock
-                        x-data={`{
-                            visible: true,
-                            show_group() {
-                                this.visible = countVisibleElements('.fitting-card', $el) > 0
-                            }
-                        }`}
-                        x-bind:class="{ 'visually-hidden': !visible }"
+                        class="[ fitting-groups ]"
                         gap='var(--space-m)'
-                        x-effect="(fits_count >= 0 && show_group())"
                     >
                         <h2>{group_fittings[0].ship_type}</h2>
                         <Grid
@@ -169,13 +162,14 @@ const page_title = t('fitting.list.page_title');
                             column_gap='var(--space-3xs)'
                         >
                             {group_fittings.map((fitting) =>
-                                <FittingCard
-                                    fitting={fitting}
-                                    title={fitting.fitting_name.replace(`[${fitting.fitting_type}] `, '')}
-                                    subtitle={fitting.fitting_type}
-                                    role="listitem"
-                                    x-show="show_item($el)"
-                                />
+                                <div class="[ fitting-card-container ]" x-show="show_item($el)">
+                                    <FittingCard
+                                        fitting={fitting}
+                                        title={fitting.fitting_name.replace(`[${fitting.fitting_type}] `, '')}
+                                        subtitle={fitting.fitting_type}
+                                        role="listitem"
+                                    />
+                                </div>
                             )}
                         </Grid>
                     </Flexblock>
@@ -191,5 +185,19 @@ const page_title = t('fitting.list.page_title');
         flex-basis: 243px;
         flex-grow: 1;
         max-width: 300px !important;
+    }
+
+    .fitting-groups:not(:has(.fitting-card-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
     }
 </style>
