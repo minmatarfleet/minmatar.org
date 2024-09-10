@@ -8,6 +8,7 @@ from .combatlog import (
     total_damage,
     enemy_damage,
     weapon_damage,
+    damage_over_time,
 )
 
 router = Router(tags=["combatlog"])
@@ -20,6 +21,8 @@ class LogAnalysis(BaseModel):
     damage_from_enemies: Dict[str, int] = {}
     damage_to_enemies: Dict[str, int] = {}
     damage_with_weapons: Dict[str, int] = {}
+    damage_time_in: Dict[str, int] = {}
+    damage_time_out: Dict[str, int] = {}
 
 
 @router.post(
@@ -47,5 +50,7 @@ def analyze_logs(request):
     analysis.damage_from_enemies = enemy_damage(dmg_events, "from")
     analysis.damage_to_enemies = enemy_damage(dmg_events, "to")
     analysis.damage_with_weapons = weapon_damage(dmg_events)
+    analysis.damage_time_in = damage_over_time(dmg_events, "from")
+    analysis.damage_time_out = damage_over_time(dmg_events, "to")
 
     return analysis

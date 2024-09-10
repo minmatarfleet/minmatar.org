@@ -9,6 +9,7 @@ class LogEvent:
 
 
 class DamageEvent:
+    event_time: str
     damage: int = 0
     direction: str
     entity: str
@@ -77,34 +78,45 @@ def strip_html(text):
 def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
     dmg_events = []
     for event in events:
-        if event.event_type == "combat":
-            damage_event = DamageEvent()
+        if event.event_type != "combat":
+            continue
 
-            text = event.text
+        text = event.text
 
-            pos = text.find(" to ")
-            if pos >= 0:
-                damage_event.damage = int(text[0:pos])
-                damage_event.direction = "to"
-                text = text[pos + 4 :]
+        if len(text) == 0:
+            continue
 
-            pos = text.find(" from ")
-            if pos >= 0:
-                damage_event.damage = int(text[0:pos])
-                damage_event.direction = "from"
-                text = text[pos + 6 :]
+        if text[0] < "0" or text[0] > "9":
+            continue
 
-            parts = text.split("-")
-            if len(parts) >= 1:
-                damage_event.entity = parts[0].strip()
-            if len(parts) >= 2:
-                damage_event.weapon = parts[1].strip()
-            if len(parts) >= 3:
-                damage_event.outcome = parts[2].strip()
+        damage_event = DamageEvent()
+        damage_event.event_time = event.event_time
 
-            if damage_event.damage > 0:
-                damage_event.text = text
-                dmg_events.append(damage_event)
+        pos = text.find(" to ")
+        if pos >= 0:
+            damage_event.damage = int(text[0:pos])
+            damage_event.direction = "to"
+            text = text[pos + 4 :]
+
+        pos = text.find(" from ")
+        if pos >= 0:
+            damage_event.damage = int(text[0:pos])
+            damage_event.direction = "from"
+            text = text[pos + 6 :]
+
+        parts = text.split("-")
+        if len(parts) >= 1:
+            damage_event.entity = parts[0].strip()
+        if len(parts) >= 3:
+            damage_event.weapon = parts[1].strip()
+            damage_event.outcome = parts[2].strip()
+        elif len(parts) == 2:
+            damage_event.weapon = ""
+            damage_event.outcome = parts[1].strip()
+
+        if damage_event.damage > 0:
+            damage_event.text = text
+            dmg_events.append(damage_event)
 
     return dmg_events
 
@@ -146,3 +158,20 @@ def weapon_damage(dmg_events: List[DamageEvent]) -> Dict[str, int]:
             result[event.weapon] += event.damage
 
     return result
+
+
+def damage_over_time(
+    dmg_events: List[DamageEvent], direction: str
+) -> Dict[str, int]:
+    results: Dict[str, int] = {}
+
+    for event in dmg_events:
+        time_bucket = event.event_time[0:-1] + "0"
+
+        if time_bucket not in results:
+            results[time_bucket] = 0
+
+        if event.direction == direction:
+            results[time_bucket] += event.damage
+
+    return results
