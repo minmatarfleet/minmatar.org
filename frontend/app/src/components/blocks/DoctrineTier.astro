@@ -29,11 +29,8 @@ import FittingCard from '@components/blocks/FittingCard.astro';
             role="listitem"
         >
             <FittingCard
-                id={fitting.id}
-                ship_id={fitting.ship_id}
-                fitting_name={fitting.fitting_name}
+                fitting={fitting}
                 subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : null}
-                eft_format={fitting.eft_format}
             />
         </div>
     )}
