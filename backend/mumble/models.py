@@ -8,7 +8,7 @@ MUMBLE_ACCESS_PASSWORD_LENGTH = 20
 
 
 def generate_password():
-    possible_chars = string.ascii_letters + string.digits + string.punctuation
+    possible_chars = string.ascii_letters + string.digits
     return "".join(
         (secrets.choice(possible_chars))
         for i in range(MUMBLE_ACCESS_PASSWORD_LENGTH)
