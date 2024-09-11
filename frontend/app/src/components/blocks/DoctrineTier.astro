@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { translatePath, t } = i18n(Astro.url)
 
 import type { FittingItem, IdealComposition } from '@dtypes/layout_components';
 
@@ -24,14 +24,15 @@ import FittingCard from '@components/blocks/FittingCard.astro';
     gap='var(--space-3xs)'
 >
     {fittings.map((fitting) => 
-        <div
+        <a
             class="[ items-center flex ]"
             role="listitem"
+            href={translatePath(`/ships/fitting/${fitting.id}`)}
         >
             <FittingCard
                 fitting={fitting}
                 subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : null}
             />
-        </div>
+        </a>
     )}
 </FlexInline>

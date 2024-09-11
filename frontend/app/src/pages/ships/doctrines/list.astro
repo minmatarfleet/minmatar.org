@@ -126,12 +126,16 @@ const page_title = t('doctrines.page_title');
                             column_gap='var(--space-3xs)'
                         >
                             {doctrines_by_group.doctrines.map((doctrine) =>
-                                <div class="[ doctrine-card-container ]" x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
+                                <a
+                                    class="[ doctrine-card-container ]"
+                                    x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
+                                    href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
+                                >
                                     <DoctrineCard
                                         doctrine={doctrine}
                                         subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
                                     />
-                                </div>
+                                </a>
                             )}
                         </Grid>
                     </Flexblock>
