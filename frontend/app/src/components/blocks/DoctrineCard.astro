@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import type { DoctrineType } from '@dtypes/layout_components';
 
@@ -39,7 +39,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         />
         <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='0'>
-                <h4><a href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>{title ? title : doctrine.name}</a></h4>
+                <h4>{title ? title : doctrine.name}</h4>
                 {subtitle && <small>{subtitle}</small>}
             </Flexblock>
         </Wrapper>
@@ -105,5 +105,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
     h4 {
         font-weight: 400;
+    }
+
+    small {
+        color: var(--fleet-yellow);
     }
 </style>

@@ -38,7 +38,7 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
         />
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='0'>
-                <h4><a href={translatePath(`/ships/fitting/${fitting.id}`)}>{title ? title : fitting.fitting_name}</a></h4>
+                <h4>{title ? title : fitting.fitting_name}</h4>
                 {subtitle && <small>{subtitle}</small>}
             </Flexblock>
         </Wrapper>
@@ -105,5 +105,9 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
 
     h4 {
         font-weight: 400;
+    }
+
+    small {
+        color:  var(--fleet-yellow);
     }
 </style>

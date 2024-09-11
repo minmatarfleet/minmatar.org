@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { translatePath, t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -164,14 +164,18 @@ const page_title = t('fitting.list.page_title');
                             column_gap='var(--space-3xs)'
                         >
                             {group_fittings.map((fitting) =>
-                                <div class="[ fitting-card-container ]" x-show="show_item($el)">
+                                <a
+                                    class="[ fitting-card-container ]"
+                                    x-show="show_item($el)"
+                                    href={translatePath(`/ships/fitting/${fitting.id}`)}
+                                >
                                     <FittingCard
                                         fitting={fitting}
                                         title={fitting.fitting_name.replace(`[${fitting.fitting_type}] `, '')}
                                         subtitle={fitting.fitting_type}
                                         role="listitem"
                                     />
-                                </div>
+                                </a>
                             )}
                         </Grid>
                     </Flexblock>
