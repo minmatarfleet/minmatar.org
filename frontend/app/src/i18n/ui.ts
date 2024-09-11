@@ -813,7 +813,7 @@ export const ui = {
         'learn_more': 'Learn more',
         'rattini_description_fallback': 'A cult of Minmatar pilots who worship a fictional deity, the Rat, who they believe is the source of their strength. Minmatar scientists speculate that a decade of failed mind state record scans in the heat of wormhole combat have altered their capsuleer memory banks permanantly.',
         'black_omega_description_fallback': 'Jump first, ask questions later. A formidable capital force and a passion for Vindicators define the Black Omega lifestyle. We have been leading the universe since the dawn of the capsuleer era and now we’re enjoying mimosas on the beach, basking in the chaos we seeded long ago.',
-        'vindicta_expeditionary_description_fallback': 'Our focus is clear - the crucible of battle is our home. Engage in Faction Warfare, roam the warzones, and partake in epic clashes where victory is forged by the fires of combat.',
+        'vindicta_expeditionary_description_fallback': 'We like the game. You will find Vindicta participating in all kinds of pvp activities across lowsec. Please be able to fly doctrines or support or willing to train towards doctrines. We are here for fun and act accordingly.',
         'balls_deep_expeditionary_description_fallback': 'You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.',
         'l34rn_description_fallback': 'Enjoy a tailored learning experience while contibruting to one of the most active PvP alliances in the game.',
         'requirements': 'Requirements',
