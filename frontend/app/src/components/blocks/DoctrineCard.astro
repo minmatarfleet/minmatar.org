@@ -48,7 +48,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
                 <FlexInline gap='var(--space-3xs)'>
                     <picture
-                        class="[ ship-type-icon ]"
                         data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
                         x-init={`tippy($el, {
                             delay: [ 100, 200 ],
@@ -67,7 +66,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
             {!doctrine?.sigs?.length &&
                 <picture
-                    class="[ ship-type-icon ]"
+                    class="[ p-[var(--space-3xs)] ]"
                     data-tippy-content={t('alliance_doctrine_description')}
                     x-init={`tippy($el, {
                         delay: [ 100, 200 ],
