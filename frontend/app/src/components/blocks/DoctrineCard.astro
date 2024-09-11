@@ -25,6 +25,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <ComponentBlock class="[ doctrine-card ]" padding_block='0' padding_inline='0' {...attributes}>
@@ -45,21 +46,23 @@ import FleetLogo from '@components/icons/FleetLogo.astro';
 
         <div class="[ doctrine-groups ]">
             {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
-                <picture
-                    class="[ ship-type-icon ]"
-                    data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
-                    x-init={`tippy($el, {
-                        delay: [ 100, 200 ],
-                        arrow: true,
-                    })`}
-                >
-                    <img
-                        src={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
-                        height="32"
-                        width="32"
-                        alt={`${sig.name} icon`}
-                    />
-                </picture>
+                <FlexInline gap='var(--space-3xs)'>
+                    <picture
+                        class="[ ship-type-icon ]"
+                        data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
+                        x-init={`tippy($el, {
+                            delay: [ 100, 200 ],
+                            arrow: true,
+                        })`}
+                    >
+                        <img
+                            src={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
+                            height="32"
+                            width="32"
+                            alt={`${sig.name} icon`}
+                        />
+                    </picture>
+                </FlexInline>
             )}
 
             {!doctrine?.sigs?.length &&
