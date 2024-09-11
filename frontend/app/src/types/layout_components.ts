@@ -619,10 +619,6 @@ export interface GroupBasic {
     description:    string;
 }
 
-export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
-
-import type { DoctrineComposition } from '@dtypes/api.minmatar.org'
-
 export interface DoctrineType {
     id:                     number;
     name:                   string;
@@ -792,3 +788,11 @@ export const fitting_ship_types = [
 ]
 
 export type FittingShipType = typeof fitting_ship_types[number]
+
+export type DoctrineTypes = typeof doctrine_types[number]
+
+export const doctrine_types = [
+    'skirmish',
+    'strategic',
+    'specialized',
+]
