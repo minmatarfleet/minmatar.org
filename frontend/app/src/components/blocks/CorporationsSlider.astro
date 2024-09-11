@@ -20,6 +20,7 @@ const CORPORATIONS_WIDTH_SLIDE = [
     'Balls Deep Inc.',
     'Vindicta Expeditionary',
     'Minmatar Fleet Academy',
+    'Soltech Armada',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -59,6 +60,7 @@ import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
 import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
 import VindictaExpeditionarySlider from '@components/blocks/VindictaExpeditionarySlider.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
+import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -107,6 +109,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Soltech Armada' &&
+                        <SoltechArmadaSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'right' : 'left'}
                         />
                     }
                 </div>

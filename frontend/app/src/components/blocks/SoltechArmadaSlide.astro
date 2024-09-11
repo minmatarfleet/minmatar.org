@@ -1,0 +1,148 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const CHRONUS_ID = 146444251
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="rattini-slide"
+    ceo_image='/images/corporations/soltecharmada/ceo.png'
+    ceo_character_id={CHRONUS_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ thorax ]" src="/images/corporations/soltecharmada/thorax.png" />
+    <img slot="ships" class="[ blackbird ]" src="/images/corporations/soltecharmada/blackbird.png" />
+    <img slot="ships" class="[ stabber ]" src="/images/corporations/soltecharmada/stabber.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .thorax {
+        position: absolute;
+        top: 39%;
+        left: -37%;
+        height: auto;
+        width: 72%;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .blackbird {
+        position: absolute;
+        top: 36%;
+        left: -51%;
+        width: 77%;
+        height: auto;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    .stabber {
+        position: absolute;
+        top: 52%;
+        left: -39%;
+        width: 57%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes thorax {
+        from {
+            transform: scale(0);
+            top: 39%;
+            left: -37%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 15%;
+            left: 33%;
+        }
+    }
+
+    @keyframes blackbird {
+        from {
+            transform: scale(0);
+            top: 36%;
+            left: -51%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 31%;
+            left: 32%;
+        }
+    }
+
+    @keyframes stabber {
+        from {
+            transform: scale(0);
+            left: -39%;
+            top: 52%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 47%;
+            left: 45%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #rattini-slide .ceo {
+        left: 0%;
+    }
+
+    .swiper-slide-active {
+        .thorax {
+            animation: thorax cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .blackbird {
+            animation: blackbird cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .stabber {
+            animation: stabber cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
