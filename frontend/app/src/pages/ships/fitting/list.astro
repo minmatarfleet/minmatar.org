@@ -35,9 +35,11 @@ let ship_type_filter = [];
 
 for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
+fitting_type_filter.sort( (a, b) => a.localeCompare(b))
 
 for (let i in ship_type)
     ship_type_filter.push(ship_type[i])
+ship_type_filter.sort( (a, b) => a.localeCompare(b))
 
 import Viewport from '@layouts/Viewport.astro';
 
