@@ -1,17 +1,32 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
-import type { DoctrineType } from '@dtypes/layout_components'
+import type { DoctrineType, DoctrineTypes } from '@dtypes/layout_components'
+import { doctrine_types } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 
 let doctrines:DoctrineType[] = []
 let fetch_doctrines_error:string
 
+interface GroupedDoctrines {
+    type:       DoctrineTypes;
+    doctrines:  DoctrineType[];
+}
+
+let doctrines_by_groups:GroupedDoctrines[] = []
+
 try {
     doctrines = await fetch_doctrines()
+
+    doctrine_types.forEach((doctrine_type) => {
+        doctrines_by_groups.push({
+            type: doctrine_type,
+            doctrines: doctrines.filter((doctrine) => doctrine.type === doctrine_type)
+        })
+    })
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
@@ -20,7 +35,7 @@ const are_sigs_doctrines = doctrines.find((doctrine) => doctrine.sigs.length > 0
 
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component`)
 
-import { marked } from 'marked';
+import { semantic_list } from '@helpers/array';
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -31,10 +46,10 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import DoctrineItem from '@components/blocks/DoctrineItem.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import DoctrineCard from '@components/blocks/DoctrineCard.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('doctrines.page_title');
@@ -84,26 +99,60 @@ const page_title = t('doctrines.page_title');
             </FlexInline>
         }
 
-        <Flexblock gap="var(--space-xl)">
-            <TextBox set:html={marked.parse(t('doctrines.alliance.page_leading_text'))} />
-
-                {fetch_doctrines_error ?
-                    <ErrorRefetch
-                        args={{
-                            partial: DOCTRINES_PARTIAL_URL,
-                            message: fetch_doctrines_error,
-                            delay: 0,
-                        }}
-                    />
-                    :
-                    <Flexblock role="list" gap='var(--space-3xs)'>
-                        {doctrines.map((doctrine) =>
-                            <ComponentBlock x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
-                                <DoctrineItem role="listitem" doctrine={doctrine} />
-                            </ComponentBlock>
-                        )}
+        {fetch_doctrines_error ?
+            <ErrorRefetch
+                args={{
+                    partial: DOCTRINES_PARTIAL_URL,
+                    message: fetch_doctrines_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <Flexblock role="list" gap='var(--space-xl)'>
+                {doctrines_by_groups.map((doctrines_by_group) =>
+                    <Flexblock class="[ doctrine-groups ]" gap='var(--space-m)'>
+                        <TextBox>
+                            <Flexblock>
+                                <h2>{t(doctrines_by_group.type as any)}</h2>
+                                <p>{t(`${doctrines_by_group.type}_description` as any)}</p>
+                            </Flexblock>
+                        </TextBox>
+                    
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='240px'
+                            row_gap='var(--space-3xs)'
+                            column_gap='var(--space-3xs)'
+                        >
+                            {doctrines_by_group.doctrines.map((doctrine) =>
+                                <div class="[ doctrine-card-container ]" x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}>
+                                    <DoctrineCard
+                                        doctrine={doctrine}
+                                        subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
+                                    />
+                                </div>
+                            )}
+                        </Grid>
                     </Flexblock>
-                }
-        </Flexblock>
+                )}
+            </Flexblock>
+        }
     </PageDefault>
 </Viewport>
+
+<style lang="scss">
+    .doctrine-groups:not(:has(.doctrine-card-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
+    }
+</style>
