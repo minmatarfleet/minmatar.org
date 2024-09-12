@@ -101,6 +101,8 @@ if (fitting_parsed?.cargohold?.length > 0) {
     })
 }
 
+import { marked } from 'marked';
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -174,7 +176,7 @@ const page_description = await strip_markdown(fitting.description)
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{fitting.description}</p>
+                <Flexblock set:html={marked.parse(fitting.description)} />
             </TextBox>
             
             <Fit fitting_groups={fitting_groups} />
