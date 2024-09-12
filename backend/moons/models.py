@@ -102,7 +102,6 @@ class EveMoon(models.Model):
     planet = models.IntegerField()
     moon = models.IntegerField()
     reported_by = models.ForeignKey("auth.User", on_delete=models.CASCADE)
-    owned_by_ticker = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.system} - {self.planet} - {self.moon}"
