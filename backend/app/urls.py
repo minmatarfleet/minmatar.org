@@ -37,6 +37,7 @@ from structures.router import router as structures_router
 from users.router import router as users_router
 from lpconversion.router import router as conversion_router
 from combatlog.router import router as combatlog_router
+from moons.router import moons_router as moons_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -53,6 +54,7 @@ api.add_router("freight", freight_router)
 api.add_router("blog", posts_router)
 api.add_router("conversion", conversion_router)
 api.add_router("combatlog", combatlog_router)
+api.add_router("moons", moons_router)
 
 
 @api.exception_handler(UnauthorizedError)
