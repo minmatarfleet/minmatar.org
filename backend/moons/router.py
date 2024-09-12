@@ -77,7 +77,7 @@ def get_moon(request, moon_id: int):
         ores=moon.ores,
         reported_by=moon.reported_by.username,
         distribution=[
-            MoonDistributionResponse(ore=d.ore, percentage=d.percentage)
+            MoonDistributionResponse(ore=d.ore, percentage=d.yield_percent)
             for d in distribution
         ],
     )
@@ -97,7 +97,9 @@ def create_moon(request, moon_request: CreateMoonRequest):
     )
     for distribution in moon_request.distribution:
         EveMoonDistribution.objects.create(
-            moon=moon, ore=distribution.ore, percentage=distribution.percentage
+            moon=moon,
+            ore=distribution.ore,
+            yield_percent=distribution.percentage,
         )
 
     return moon.id
