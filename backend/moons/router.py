@@ -33,14 +33,14 @@ class MoonResponse(BaseModel):
     planet: int
     moon: int
     reported_by: str
-    distrubution: List[MoonDistributionResponse]
+    distribution: List[MoonDistributionResponse]
 
 
 class CreateMoonRequest(BaseModel):
     system: str
     planet: int
     moon: int
-    distrubution: List[MoonDistributionResponse]
+    distribution: List[MoonDistributionResponse]
 
 
 @moons_router.get("", response=List[MoonViewResponse])
@@ -76,7 +76,7 @@ def get_moon(request, moon_id: int):
         moon=moon.moon,
         ores=moon.ores,
         reported_by=moon.reported_by.username,
-        distrubution=[
+        distribution=[
             MoonDistributionResponse(ore=d.ore, percentage=d.percentage)
             for d in distribution
         ],
