@@ -98,6 +98,10 @@ ore_yield_map = {
 
 # Create your models here.
 class EveMoon(models.Model):
+    """
+    Represents a scanned alliance moon
+    """
+
     system = models.CharField(max_length=100)
     planet = models.CharField(max_length=10)
     moon = models.IntegerField()
@@ -113,6 +117,10 @@ class EveMoon(models.Model):
 
 
 class EveMoonDistribution(models.Model):
+    """
+    Represents the distribution of ores on a moon
+    """
+
     ore_choices = (
         ("Bitumens", "Bitumens"),
         ("Coesite", "Coesite"),

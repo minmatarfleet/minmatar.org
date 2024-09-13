@@ -36,4 +36,3 @@ class EveMoonPasteTestCase(TestCase):
         self.assertEqual(
             EveMoonDistribution.objects.filter(ore="Bitumens").count(), 4
         )
-

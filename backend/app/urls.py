@@ -37,7 +37,7 @@ from structures.router import router as structures_router
 from users.router import router as users_router
 from lpconversion.router import router as conversion_router
 from combatlog.router import router as combatlog_router
-from moons.router import moons_router as moons_router
+from moons.router import moons_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)

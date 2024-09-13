@@ -71,7 +71,9 @@ def process_moon_paste(moon_paste: str, user_id: int = None):
             id=parsed_moon.system_id
         )
         # Name comes back as Rahadalon VI
-        planet, _ = EsiPlanet.objects.get_or_create_esi(id=parsed_moon.planet_id)
+        planet, _ = EsiPlanet.objects.get_or_create_esi(
+            id=parsed_moon.planet_id
+        )
         planet_number = planet.name.split(" ")[-1]
         # Name comes back as Rahadalon VI - Moon 1
         moon, _ = EsiMoon.objects.get_or_create_esi(id=parsed_moon.moon_id)
@@ -84,7 +86,10 @@ def process_moon_paste(moon_paste: str, user_id: int = None):
             )
         else:
             eve_moon = EveMoon.objects.create(
-                system=system.name, planet=planet_number, moon=moon_number, reported_by_id=user_id
+                system=system.name,
+                planet=planet_number,
+                moon=moon_number,
+                reported_by_id=user_id,
             )
 
         EveMoonDistribution.objects.create(
