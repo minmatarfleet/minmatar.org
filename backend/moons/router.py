@@ -20,7 +20,7 @@ class MoonDistributionResponse(BaseModel):
 class MoonViewResponse(BaseModel):
     id: int
     system: str
-    planet: int
+    planet: str
     moon: int
     reported_by: str
 
@@ -30,7 +30,7 @@ class MoonResponse(BaseModel):
 
     id: int
     system: str
-    planet: int
+    planet: str
     moon: int
     reported_by: str
     distribution: List[MoonDistributionResponse]
@@ -38,7 +38,7 @@ class MoonResponse(BaseModel):
 
 class CreateMoonRequest(BaseModel):
     system: str
-    planet: int
+    planet: str
     moon: int
     distribution: List[MoonDistributionResponse]
 
