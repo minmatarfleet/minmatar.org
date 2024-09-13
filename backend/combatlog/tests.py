@@ -1,14 +1,14 @@
 from django.test import TestCase
 
 from .combatlog import (
-    LogEvent,
     DamageEvent,
+    LogEvent,
+    damage_events,
+    enemy_damage,
     parse,
     parse_line,
     strip_html,
-    damage_events,
     total_damage,
-    enemy_damage,
 )
 
 

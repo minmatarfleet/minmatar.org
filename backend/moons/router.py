@@ -3,8 +3,9 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveMoon, EveMoonDistribution
 from app.errors import ErrorResponse
+from moons.models import EveMoon, EveMoonDistribution
+
 from .parser import process_moon_paste
 
 moons_router = Router(tags=["Moons"])

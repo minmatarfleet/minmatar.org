@@ -1,13 +1,13 @@
-from eveuniverse.models import (
-    EveSolarSystem as EsiSolarSystem,
-    EveMoon as EsiMoon,
-    EvePlanet as EsiPlanet,
-)
-from .models import EveMoon, EveMoonDistribution
+import logging
 import re
 from typing import List
+
+from eveuniverse.models import EveMoon as EsiMoon
+from eveuniverse.models import EvePlanet as EsiPlanet
+from eveuniverse.models import EveSolarSystem as EsiSolarSystem
 from pydantic import BaseModel
-import logging
+
+from moons.models import EveMoon, EveMoonDistribution
 
 logger = logging.getLogger(__name__)
 

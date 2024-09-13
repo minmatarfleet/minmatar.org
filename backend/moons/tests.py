@@ -1,7 +1,8 @@
 # flake8: noqa
 from app.test import TestCase
+from moons.models import EveMoon, EveMoonDistribution
+
 from .parser import process_moon_paste
-from .models import EveMoon, EveMoonDistribution
 
 paste = """
 Moon	Moon Product	Quantity	Ore TypeID	SolarSystemID	PlanetID	MoonID
