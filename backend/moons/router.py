@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from .models import EveMoon, EveMoonDistribution
 from app.errors import ErrorResponse
+from .parser import process_moon_paste
 
 moons_router = Router(tags=["Moons"])
 
@@ -103,3 +104,11 @@ def create_moon(request, moon_request: CreateMoonRequest):
         )
 
     return moon.id
+
+
+@moons_router.post("/paste", response=None)
+def create_moon_from_paste(request, paste: str):
+    if not request.user.has_perm("moons.add_evemoon"):
+        return ErrorResponse(detail="You do not have permission to add moons")
+
+    process_moon_paste(paste, user_id=request.user.id)
