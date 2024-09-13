@@ -33,7 +33,7 @@ from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from lpconversion.router import router as conversion_router
-from moons.router import moons_router, moons_paste_router
+from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from structures.router import router as structures_router

@@ -4,6 +4,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
+from authentication import AuthBearer
 from moons.models import EveMoon, EveMoonDistribution
 
 from .parser import process_moon_paste
@@ -49,12 +50,21 @@ class CreateMoonFromPasteRequest(BaseModel):
     paste: str
 
 
-@moons_paste_router.post("", response=List[int])
+@moons_paste_router.post(
+    "",
+    response={
+        200: List[int],
+        403: ErrorResponse,
+    },
+    auth=AuthBearer(),
+)
 def create_moon_from_paste(
     request, moon_paste_request: CreateMoonFromPasteRequest
 ):
     if not request.user.has_perm("moons.add_evemoon"):
-        return ErrorResponse(detail="You do not have permission to add moons")
+        return 403, ErrorResponse(
+            detail="You do not have permission to add moons"
+        )
 
     ids = process_moon_paste(moon_paste_request.paste, user_id=request.user.id)
     return ids
