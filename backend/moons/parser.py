@@ -61,6 +61,7 @@ def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
         )
         moons.append(moon)
 
+    logger.info(f"Processed moon lines: {moons}")
     return moons
 
 
@@ -82,16 +83,17 @@ def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
         if EveMoon.objects.filter(
             system=system.name, planet=planet_number, moon=moon_number
         ).exists():
-            eve_moon = EveMoon.objects.get(
-                system=system.name, planet=planet_number, moon=moon_number
+            logger.info(
+                f"Skipping existing moon {system.name} - {planet_number} - {moon_number}"
             )
-        else:
-            eve_moon = EveMoon.objects.create(
-                system=system.name,
-                planet=planet_number,
-                moon=moon_number,
-                reported_by_id=user_id,
-            )
+            continue
+
+        eve_moon = EveMoon.objects.create(
+            system=system.name,
+            planet=planet_number,
+            moon=moon_number,
+            reported_by_id=user_id,
+        )
 
         EveMoonDistribution.objects.create(
             moon=eve_moon,
