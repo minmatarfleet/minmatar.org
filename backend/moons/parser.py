@@ -64,8 +64,9 @@ def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
     return moons
 
 
-def process_moon_paste(moon_paste: str, user_id: int = None):
+def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
     parsed_moons = _parse_eve_moon_format(moon_paste)
+    ids = []
     for parsed_moon in parsed_moons:
         system, _ = EsiSolarSystem.objects.get_or_create_esi(
             id=parsed_moon.system_id
@@ -97,3 +98,6 @@ def process_moon_paste(moon_paste: str, user_id: int = None):
             ore=parsed_moon.ore,
             yield_percent=parsed_moon.quantity,
         )
+
+        ids.append(eve_moon.id)
+    return ids
