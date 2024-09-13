@@ -9,6 +9,7 @@ from moons.models import EveMoon, EveMoonDistribution
 from .parser import process_moon_paste
 
 moons_router = Router(tags=["Moons"])
+moons_paste_router = Router(tags=["Moons"])
 
 
 class MoonDistributionResponse(BaseModel):
@@ -44,7 +45,7 @@ class CreateMoonRequest(BaseModel):
     distribution: List[MoonDistributionResponse]
 
 
-@moons_router.post("/paste", response=None)
+@moons_paste_router.post("", response=None)
 def create_moon_from_paste(request, paste: str):
     if not request.user.has_perm("moons.add_evemoon"):
         return ErrorResponse(detail="You do not have permission to add moons")

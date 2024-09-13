@@ -33,7 +33,7 @@ from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from lpconversion.router import router as conversion_router
-from moons.router import moons_router
+from moons.router import moons_router, moons_paste_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from structures.router import router as structures_router
@@ -55,6 +55,7 @@ api.add_router("blog", posts_router)
 api.add_router("conversion", conversion_router)
 api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
+api.add_router("moon_paste", moons_paste_router)
 
 
 @api.exception_handler(UnauthorizedError)
