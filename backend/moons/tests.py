@@ -1,3 +1,4 @@
+# flake8: noqa
 from app.test import TestCase
 from .parser import process_moon_paste
 from .models import EveMoon, EveMoonDistribution
