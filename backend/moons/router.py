@@ -44,6 +44,14 @@ class CreateMoonRequest(BaseModel):
     distribution: List[MoonDistributionResponse]
 
 
+@moons_router.post("/paste", response=None)
+def create_moon_from_paste(request, paste: str):
+    if not request.user.has_perm("moons.add_evemoon"):
+        return ErrorResponse(detail="You do not have permission to add moons")
+
+    process_moon_paste(paste, user_id=request.user.id)
+
+
 @moons_router.get("", response=List[MoonViewResponse])
 def get_moons(request, system: str = None):
     moons = EveMoon.objects.all()
@@ -104,11 +112,3 @@ def create_moon(request, moon_request: CreateMoonRequest):
         )
 
     return moon.id
-
-
-@moons_router.post("/paste", response=None)
-def create_moon_from_paste(request, paste: str):
-    if not request.user.has_perm("moons.add_evemoon"):
-        return ErrorResponse(detail="You do not have permission to add moons")
-
-    process_moon_paste(paste, user_id=request.user.id)
