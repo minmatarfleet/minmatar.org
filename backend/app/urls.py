@@ -24,6 +24,7 @@ from ninja import NinjaAPI
 
 from applications.router import router as applications_router
 from authentication import UnauthorizedError
+from combatlog.router import router as combatlog_router
 from discord.views import discord_login
 from eveonline.routers import router
 from fittings.router import doctrines_router, fittings_router
@@ -31,13 +32,12 @@ from fleets.router import router as fleets_router
 from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
+from lpconversion.router import router as conversion_router
+from moons.router import moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from structures.router import router as structures_router
 from users.router import router as users_router
-from lpconversion.router import router as conversion_router
-from combatlog.router import router as combatlog_router
-from moons.router import moons_router as moons_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)

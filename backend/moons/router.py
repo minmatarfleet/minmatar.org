@@ -1,11 +1,12 @@
-from datetime import datetime
 from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveMoon, EveMoonDistribution
 from app.errors import ErrorResponse
+from moons.models import EveMoon, EveMoonDistribution
+
+from .parser import process_moon_paste
 
 moons_router = Router(tags=["Moons"])
 
@@ -20,7 +21,7 @@ class MoonDistributionResponse(BaseModel):
 class MoonViewResponse(BaseModel):
     id: int
     system: str
-    planet: int
+    planet: str
     moon: int
     reported_by: str
 
@@ -30,7 +31,7 @@ class MoonResponse(BaseModel):
 
     id: int
     system: str
-    planet: int
+    planet: str
     moon: int
     reported_by: str
     distribution: List[MoonDistributionResponse]
@@ -38,7 +39,7 @@ class MoonResponse(BaseModel):
 
 class CreateMoonRequest(BaseModel):
     system: str
-    planet: int
+    planet: str
     moon: int
     distribution: List[MoonDistributionResponse]
 
@@ -103,3 +104,11 @@ def create_moon(request, moon_request: CreateMoonRequest):
         )
 
     return moon.id
+
+
+@moons_router.post("/paste", response=None)
+def create_moon_from_paste(request, paste: str):
+    if not request.user.has_perm("moons.add_evemoon"):
+        return ErrorResponse(detail="You do not have permission to add moons")
+
+    process_moon_paste(paste, user_id=request.user.id)

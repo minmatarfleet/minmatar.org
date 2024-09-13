@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import EvePost, EveTag, EvePostImage, EvePostTag
+
+from .models import EvePost, EvePostImage, EvePostTag, EveTag
 
 # Register your models here.
 admin.site.register(EvePost)
