@@ -44,23 +44,7 @@ const show_subtitles = ((show_primary_fittings ? 1 : 0) + (show_secondary_fittin
     <FlexInline justification='space-between'>
         <Flexblock gap='var(--space-3xs)'>
             <h2>{doctrine.name}</h2>
-
-            <TippyBase description={`${doctrine.type}.description`}>
-                <FlexInline gap='var(--space-3xs)'>
-                    <picture class="[ border ]">
-                        {doctrine.type === 'armor' &&
-                            <ArmorIcon />
-                        }
-                        {doctrine.type === 'shield' &&
-                            <ShieldIcon />
-                        }
-                        {doctrine.type === 'armorshield' &&
-                            <ShieldArmorIcon />
-                        }
-                    </picture>
-                    <small>{t(doctrine.type)}</small>
-                </FlexInline>
-            </TippyBase>
+            <small>{t(doctrine.type as any)}</small>
         </Flexblock>
         <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
             <MagnifierIcon slot="icon" />

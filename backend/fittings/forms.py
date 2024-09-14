@@ -13,11 +13,7 @@ class EveDoctrineForm(forms.ModelForm):
 
     name = forms.CharField(max_length=255)
     type = forms.ChoiceField(
-        choices=(
-            ("armor", "Armor"),
-            ("shield", "Shield"),
-            ("kitchen_sink", "Kitchen Sink"),
-        )
+        choices=EveDoctrine.type_choices,
     )
     description = forms.CharField(widget=forms.Textarea)
     primary_fittings = forms.ModelMultipleChoiceField(

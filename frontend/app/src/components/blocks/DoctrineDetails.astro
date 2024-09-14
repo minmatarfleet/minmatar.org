@@ -18,42 +18,14 @@ const {
 import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetList from '@components/blocks/FleetList.astro';
-
 import DoctrineTier from '@components/blocks/DoctrineTier.astro';
-import TippyBase from '@components/blocks/TippyBase.astro';
-
-import ShieldArmorIcon from '@components/icons/ShieldArmorIcon.astro';
-import ShieldIcon from '@components/icons/ShieldIcon.astro';
-import ArmorIcon from '@components/icons/ArmorIcon.astro';
 ---
 
 <Flexblock gap="var(--space-xl)">
     <TextBox>
-        <Flexblock gap='var(--space-s)'>
-            <p>{doctrine.description}</p>
-
-            <FlexInline>
-                <TippyBase description={`${doctrine.type}.description`}>
-                    <FlexInline gap='var(--space-3xs)'>
-                        <picture class="[ border ]">
-                            {doctrine.type === 'armor' &&
-                                <ArmorIcon />
-                            }
-                            {doctrine.type === 'shield' &&
-                                <ShieldIcon />
-                            }
-                            {doctrine.type === 'armorshield' &&
-                                <ShieldArmorIcon />
-                            }
-                        </picture>
-                        <small>{t(doctrine.type)}</small>
-                    </FlexInline>
-                </TippyBase>
-            </FlexInline>
-        </Flexblock>
+        <p>{doctrine.description}</p>
     </TextBox>
     
     <Flexblock role="list" gap='var(--space-l)'>

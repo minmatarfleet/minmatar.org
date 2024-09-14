@@ -43,9 +43,9 @@ class EveDoctrine(models.Model):
     """
 
     type_choices = (
-        ("armor", "Armor"),
-        ("shield", "Shield"),
-        ("kitchen_sink", "Kitchen Sink"),
+        ("skirmish", "Skirmish"),
+        ("strategic", "Strategic"),
+        ("specialized", "Specialized"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)
