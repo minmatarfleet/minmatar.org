@@ -124,6 +124,9 @@ export const ui = {
 
         'intel.add_structure.page_title': 'Add structure',
 
+        'intel.moon_tracking.page_title': 'Moon tracking',
+        'intel.moon_tracking.leading_text': 'Information on moons within our sphere of influence. Critical for passive income sources.',
+
         'friend.welcome.page_title': 'Welcome Honorary Rat',
         'friend.welcome.leading_text': 'If you are seeing this page you must has come here to fight alongside Minmatar Fleet Alliance. You honor us with your prescence and we hope you have a good time with us.\nWe like the game!',
         'friend.welcome.leading_text_sub': 'Requires user in [Minmatar Fleet Discord](https://discord.com/invite/3hZfahmkFx)',
@@ -282,6 +285,7 @@ export const ui = {
         'icon.fit_med.alt': 'EVE Online Medium Slot Icon',
         'icon.fit_low.alt': 'EVE Online Low Slot Icon',
         'icon.fit_rig.alt': 'EVE Online Rig Slot Icon',
+        'icon.planet.alt': 'EVE Online Planet Icon',
         'icon.map.alt': 'EVE Online Map Icon',
         'icon.calendar.alt': 'EVE Online Calendar Icon',
 
@@ -947,5 +951,12 @@ export const ui = {
         'strategic_description': 'These doctrines are more advanced, and require additional support (e.g capitals) and knowledge to utilize properly. Due to their cost, they are less abundant on contracts.',
         'specialized': 'Specialized',
         'specialized_description': 'These doctrines have a specific use case, and are only used in situations where they’re the right tool for the job. They are commonly deployed by special interest groups. Certain doctrines (e.g tornados) will be available on contract.',
+        'moon_tracking': 'Moon tracking',
+        'add_moon': 'Add moon',
+        'add_moon_dialog_title': 'Add moon',
+        'add_moon_dialog_text': 'Proceed adding the following moon?',
+        'moon_information': 'Moon information',
+        'add_moon_error': 'An error occurred while adding the moon.',
+        'add_moon_success': 'Moon added successfully',
     },
 } as const;
