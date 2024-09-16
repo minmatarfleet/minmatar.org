@@ -84,6 +84,7 @@ def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
             system=system.name,
             planet=planet_number,
             moon=moon_number,
+            defaults={"reported_by": user_id},
         )
 
         if not EveMoonDistribution.objects.filter(

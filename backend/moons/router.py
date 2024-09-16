@@ -77,13 +77,17 @@ def get_moons(request, system: str = None):
         moons = moons.filter(system=system)
     response = []
     for moon in moons:
+        if moon.reported_by is None:
+            reported_by_user = "{Unknown}"
+        else:
+            reported_by_user = moon.reported_by.username
         response.append(
             MoonViewResponse(
                 id=moon.id,
                 system=moon.system,
                 planet=moon.planet,
                 moon=moon.moon,
-                reported_by=moon.reported_by.username,
+                reported_by=reported_by_user,
             )
         )
     return response
