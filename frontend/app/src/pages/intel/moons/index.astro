@@ -1,0 +1,107 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
+    return HTTP_404_Not_Found()
+
+import { get_systems_at_range } from '@helpers/eve'
+import { find_system_moons } from '@helpers/sde/map'
+import type { SystemAtRange } from '@dtypes/layout_components'
+
+let systems_at_range:SystemAtRange[] = []
+let low_sec_systems_at_range:SystemAtRange[]
+const BASE_SYSTEM = 'Sosala'
+const MAX_RANGE = 5
+
+try {
+    systems_at_range = await get_systems_at_range(BASE_SYSTEM, MAX_RANGE)
+    console.log(systems_at_range.length)
+    low_sec_systems_at_range = systems_at_range.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))
+    low_sec_systems_at_range = await Promise.all(low_sec_systems_at_range.map(async (system) => {
+        system.moons_count = (await find_system_moons(system.system_name)).length
+        return system
+    }))
+} catch (error) {
+    console.log(error)
+}
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import AddMoonButton from '@components/blocks/AddMoonButton.astro';
+import SystemCard from '@components/blocks/SystemCard.astro'
+
+const page_title = t('intel.moon_tracking.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/moon-tracking-cover.jpg",
+            image_990: "/images/moon-tracking-cover-900.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small>{low_sec_systems_at_range.length - 1} {t('in_range_with')}</small>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                <AddMoonButton />
+            </FlexInline>
+        </FlexInline>
+
+        <BlockList gap='var(--space-l)'>
+            <Grid
+                role="list"
+                class="[ w-full grid-fill ]"
+                min_item_width='240px'
+                row_gap='var(--space-3xs)'
+                column_gap='var(--space-3xs)'
+            >
+                {low_sec_systems_at_range.map((system) =>
+                    <a
+                        class="[ fitting-card-container ]"
+                        href={translatePath(`/intel/moons/${system.system_id}`)}
+                    >
+                        <SystemCard system={system} role="listitem" />
+                    </a>
+                )}
+            </Grid>
+        </BlockList>
+	</PageWide>
+</Viewport>

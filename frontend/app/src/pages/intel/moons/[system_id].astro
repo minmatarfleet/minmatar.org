@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
+    return HTTP_404_Not_Found()
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+
+const page_title = t('intel.moon_tracking.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/moon-tracking-cover.jpg",
+            image_990: "/images/moon-tracking-cover-900.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                <Button href={translatePath('/intel/moons/')}>
+                    {t('keep_browsing')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+        
+        
+	</PageWide>
+</Viewport>

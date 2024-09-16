@@ -133,3 +133,59 @@ export const get_ship_type_icon = (ship_type:string):string => {
 
     return SHIP_TYPE_ICONS[ship_type] ?? null
 }
+
+const METERS_IN_A_YEAR_LIGHT = 9460528400000000
+
+export const get_distance_among_systems = (system_a:SDE_SYSTEM, system_b:SDE_SYSTEM):number => {
+    return Math.sqrt(Math.pow(system_b.x - system_a.x, 2) + Math.pow(system_b.y - system_a.y, 2) + Math.pow(system_b.z - system_a.z, 2)) / METERS_IN_A_YEAR_LIGHT
+}
+
+import type { SDE_SYSTEM } from '@helpers/sde/map'
+import { get_systems_coordinates } from '@helpers/sde/map'
+import type { SystemAtRange } from '@dtypes/layout_components'
+
+export const get_systems_at_range = async (origin_system_name:string, years_light:number) => {
+    const systems_at_range:SystemAtRange[] = []
+
+    const sde_systems = await get_systems_coordinates()
+
+    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
+
+    if (origin_system === undefined)
+        throw new Error('Origin system invalid')
+    
+    sde_systems.forEach((sde_system) => {
+        const distance_yl = get_distance_among_systems(origin_system, sde_system)
+
+        if (distance_yl > years_light) return true
+
+        systems_at_range.push({
+            system_name: sde_system.solarSystemName,
+            system_id: sde_system.sunTypeId,
+            sun_type_id: sde_system.sunTypeId,
+            distance_yl: distance_yl,
+            region_name: sde_system.regionName,
+            constellation_name: sde_system.constellationName,
+            security: sde_system.security,
+        })
+    })
+
+    return systems_at_range.sort((a, b) => a.distance_yl - b.distance_yl)
+}
+
+export const sec_status_class = (security:string):string => {
+    const SEC_CLASS = {
+        '1.0': 'text-status-1',
+        '0.9': 'text-status-point-9',
+        '0.8': 'text-status-point-8',
+        '0.7': 'text-status-point-7',
+        '0.6': 'text-status-point-6',
+        '0.5': 'text-status-point-5',
+        '0.4': 'text-status-point-4',
+        '0.3': 'text-status-point-3',
+        '0.2': 'text-status-point-2',
+        '0.1': 'text-status-point-1',
+    }
+
+    return SEC_CLASS[security] ?? 'text-status-null'
+}

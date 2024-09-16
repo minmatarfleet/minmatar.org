@@ -958,5 +958,12 @@ export const ui = {
         'moon_information': 'Moon information',
         'add_moon_error': 'An error occurred while adding the moon.',
         'add_moon_success': 'Moon added successfully',
+        'light_years': 'Light-years',
+        'light_years_abbr': 'ly',
+        'in_range_with': 'systems in range',
+        'home_system': 'Home system',
+        'moon': 'Moon',
+        'moons': 'Moons',
+        'browse': 'Browse',
     },
 } as const;

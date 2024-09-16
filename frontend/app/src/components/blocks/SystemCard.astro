@@ -1,0 +1,97 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SystemAtRange } from '@dtypes/layout_components';
+
+interface Props {
+    system:             SystemAtRange;
+    [propName: string]: any;
+}
+
+const {
+    system,
+    ...attributes
+} = Astro.props
+
+import { sec_status_class } from '@helpers/eve'
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import Progress from './Progress.astro';
+---
+
+<ComponentBlock class="[ system-card ]" padding_block='0' padding_inline='0' {...attributes}>
+    <Flexblock gap="0">
+        <ItemPicture
+            item_id={system.sun_type_id}
+            item_name={system.system_name}
+            size={256}
+            icon_quality={512}
+            mask={true}
+        />
+        <Flexblock class="[ system-card-body ]" gap='0'>
+            <Wrapper padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+                <Flexblock gap='0'>
+                    <h4>
+                        {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
+                        <small>({system.moons_count} {system.moons_count === 1 ? t('moon').toLowerCase() : t('moons').toLowerCase()})</small>
+                    </h4>
+                    <small>{system.constellation_name} ‹ {system.region_name}</small>
+                </Flexblock>
+            </Wrapper>
+            <Progress
+                max="100"
+                value={Math.random()*100}
+                data-tippy-content="50%"
+            >
+                50%
+            </Progress>
+        </Flexblock>
+        <Flexblock class="[ system-location ]" gap='0'>
+            <small>
+                {system.distance_yl === 0 ?
+                    t('home_system') :
+                    <span>{system.distance_yl.toFixed(2)}</span> <abbr data-tippy-content={t('light_years')}>{t('light_years_abbr')}</abbr>
+                }
+            </small>
+        </Flexblock>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .system-card {
+        position: relative;
+
+        &:hover {
+            .system-card-actions {
+                opacity: 1;
+            }
+        }
+
+        .system-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .system-location {
+            position: absolute;
+            top: var(--space-2xs);
+            left: var(--space-2xs);
+        }
+    }
+
+    h4 {
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+</style>

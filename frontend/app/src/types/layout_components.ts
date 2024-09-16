@@ -796,3 +796,29 @@ export const doctrine_types = [
     'strategic',
     'specialized',
 ]
+
+export interface SystemAtRange {
+    system_name:            string;
+    system_id:              number;
+    sun_type_id:            number;
+    distance_yl:            number;
+    region_name:            string;
+    constellation_name:     string;
+    security:               number;
+    moons_count?:           number;
+}
+
+export interface RegionBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface ConstellationBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface MoonBasic {
+    id:      number;
+    name:    string;
+}
