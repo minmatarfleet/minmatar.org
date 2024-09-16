@@ -20,6 +20,8 @@ const {
 
 const primary_character = Astro.cookies.has('primary_pilot')
 
+const can_view_intel = user_permissions.includes('structures.view_evestructuretimer')
+
 import { is_prod_mode } from '@helpers/env'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -96,7 +98,7 @@ const page = Astro.url.pathname
             >
                 <MarketEvEIcon />
             </NeocomButton>
-            {(user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')) &&
+            {(user_is_superadmin || can_view_intel) &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/intel/'))}
                     title='neocom.intel'
