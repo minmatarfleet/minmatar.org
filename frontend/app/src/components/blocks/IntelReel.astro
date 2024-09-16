@@ -4,13 +4,13 @@ const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
     can_view_timers?:           boolean;
-    can_view_moon_tracking?:    boolean;
+    can_add_moons?:    boolean;
     is_superuser?:              boolean;
 }
 
 const {
     can_view_timers = false,
-    can_view_moon_tracking = false,
+    can_add_moons = false,
     is_superuser = false,
 } = Astro.props
 
@@ -89,7 +89,7 @@ import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
                 </div>
             }
 
-            {can_view_moon_tracking &&
+            {can_add_moons &&
                 <div class="[ swiper-slide ]" style="margin-right: 20px">
                     <SwiperCard class="[ animate-delay-200 ]" cover='/images/moon-tracking-tile-background.jpg'>
                         <FlexInline slot="header" gap='var(--space-2xs)'>
