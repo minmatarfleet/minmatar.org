@@ -42,15 +42,20 @@ class EveMoonPasteTestCase(TestCase):
 
 
 class EveMoonYieldTestCase(TestCase):
-    
+    """Test case for moon yield calculations."""
+
     def test_moon_yield(self):
         distributions = [
             # Use Rahadalon V - Moon 2 as an example
-            EveMoonDistribution(moon=None, ore='Bitumens', yield_percent=0.5413627028),
-            EveMoonDistribution(moon=None, ore='Sylvite', yield_percent=0.2586372793),
+            EveMoonDistribution(
+                moon=None, ore="Bitumens", yield_percent=0.5413627028
+            ),
+            EveMoonDistribution(
+                moon=None, ore="Sylvite", yield_percent=0.2586372793
+            ),
         ]
-        
+
         yields = calc_metanox_yield(distributions)
-        
-        self.assertEqual(422, int(yields['Hydrocarbons']))
-        self.assertEqual(201, int(yields['Evaporite Deposits']))
+
+        self.assertEqual(422, int(yields["Hydrocarbons"]))
+        self.assertEqual(201, int(yields["Evaporite Deposits"]))
