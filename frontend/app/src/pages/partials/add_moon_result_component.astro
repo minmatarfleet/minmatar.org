@@ -1,0 +1,47 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { get_auth_url } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import { add_moon } from '@helpers/api.minmatar.org/moons'
+import type { Alert } from '@dtypes/layout_components'
+
+let add_moon_error:string | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const moon_information = await Astro.request.formData()
+        const paste = JSON.parse(JSON.parse( moon_information.get("data").valueOf() as string ))
+
+        await add_moon(auth_token, paste)
+    } catch (error) {
+        add_moon_error = prod_error_messages() ? t('add_moon_error') : error.message
+    }
+}
+
+const alert = {
+    title: t('add_moon_dialog_title'),
+    content: add_moon_error ? add_moon_error : t('add_moon_success'),
+} as Alert
+---
+
+<div id="add-moon-result"
+    x-data={`{
+        init() {
+            show_alert_dialog(${JSON.stringify(alert)})
+        }
+    }`}
+/>
