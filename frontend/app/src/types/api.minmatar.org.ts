@@ -318,3 +318,11 @@ export interface Ships {
     fitting:            Fitting;
     ideal_ship_count:   number;
 }
+
+export interface SystemMoon {
+    id:             number;
+    system:         string;
+    planet:         string;
+    moon:           number;
+    reported_by:    string;
+}

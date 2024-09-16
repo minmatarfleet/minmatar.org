@@ -18,13 +18,14 @@ if (!is_superuser && !user_permissions.includes('structures.view_evestructuretim
     return HTTP_404_Not_Found()
 
 import { get_systems_at_range } from '@helpers/eve'
+import { get_system_moons } from '@helpers/api.minmatar.org/moons'
 import { find_system_moons } from '@helpers/sde/map'
 import type { SystemAtRange } from '@dtypes/layout_components'
 
 let systems_at_range:SystemAtRange[] = []
 let low_sec_systems_at_range:SystemAtRange[]
 const BASE_SYSTEM = 'Sosala'
-const MAX_RANGE = 5
+const MAX_RANGE = 4
 
 try {
     systems_at_range = await get_systems_at_range(BASE_SYSTEM, MAX_RANGE)
@@ -32,6 +33,13 @@ try {
     low_sec_systems_at_range = systems_at_range.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))
     low_sec_systems_at_range = await Promise.all(low_sec_systems_at_range.map(async (system) => {
         system.moons_count = (await find_system_moons(system.system_name)).length
+        return system
+    }))
+
+    low_sec_systems_at_range = low_sec_systems_at_range.filter((system) => system.moons_count > 0)
+
+    low_sec_systems_at_range = await Promise.all(low_sec_systems_at_range.map(async (system) => {
+        system.progress = ((await get_system_moons(system.system_name)).length / system.moons_count) * 100
         return system
     }))
 } catch (error) {

@@ -806,6 +806,7 @@ export interface SystemAtRange {
     constellation_name:     string;
     security:               number;
     moons_count?:           number;
+    progress?:              number;
 }
 
 export interface RegionBasic {

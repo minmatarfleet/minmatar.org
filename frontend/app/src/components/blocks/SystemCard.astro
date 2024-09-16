@@ -22,6 +22,7 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 import Progress from './Progress.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <ComponentBlock class="[ system-card ]" padding_block='0' padding_inline='0' {...attributes}>
@@ -36,19 +37,21 @@ import Progress from './Progress.astro';
         <Flexblock class="[ system-card-body ]" gap='0'>
             <Wrapper padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
                 <Flexblock gap='0'>
-                    <h4>
-                        {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
-                        <small>({system.moons_count} {system.moons_count === 1 ? t('moon').toLowerCase() : t('moons').toLowerCase()})</small>
-                    </h4>
+                    <FlexInline gap='var(--space-3xs)'>
+                        <h4>
+                            {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
+                        </h4>
+                        <small>🌕 {system.moons_count}</small>
+                    </FlexInline>
                     <small>{system.constellation_name} ‹ {system.region_name}</small>
                 </Flexblock>
             </Wrapper>
             <Progress
                 max="100"
                 value={Math.random()*100}
-                data-tippy-content="50%"
+                data-tippy-content={`${system.progress.toFixed(2)}%`}
             >
-                50%
+                {`${system.progress.toFixed(2)}%`}
             </Progress>
         </Flexblock>
         <Flexblock class="[ system-location ]" gap='0'>
