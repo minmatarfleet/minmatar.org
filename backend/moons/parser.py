@@ -80,26 +80,20 @@ def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
         # Name comes back as Rahadalon VI - Moon 1
         moon, _ = EsiMoon.objects.get_or_create_esi(id=parsed_moon.moon_id)
         moon_number = int(moon.name.split(" ")[-1])
-        if EveMoon.objects.filter(
-            system=system.name, planet=planet_number, moon=moon_number
-        ).exists():
-            logger.info(
-                f"Skipping existing moon {system.name} - {planet_number} - {moon_number}"
-            )
-            continue
-
-        eve_moon = EveMoon.objects.create(
+        eve_moon, _ = EveMoon.objects.get_or_create(
             system=system.name,
             planet=planet_number,
             moon=moon_number,
-            reported_by_id=user_id,
         )
 
-        EveMoonDistribution.objects.create(
-            moon=eve_moon,
-            ore=parsed_moon.ore,
-            yield_percent=parsed_moon.quantity,
-        )
+        if not EveMoonDistribution.objects.filter(
+            moon=eve_moon, ore=parsed_moon.ore
+        ).exists():
+            EveMoonDistribution.objects.create(
+                moon=eve_moon,
+                ore=parsed_moon.ore,
+                yield_percent=parsed_moon.quantity,
+            )
 
         ids.append(eve_moon.id)
     return ids
