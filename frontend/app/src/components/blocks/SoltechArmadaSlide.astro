@@ -30,9 +30,9 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ thorax ]" src="/images/corporations/soltecharmada/thorax.png" />
     <img slot="ships" class="[ blackbird ]" src="/images/corporations/soltecharmada/blackbird.png" />
-    <img slot="ships" class="[ stabber ]" src="/images/corporations/soltecharmada/stabber.png" />
+    <img slot="ships" class="[ condor ]" src="/images/corporations/soltecharmada/condor.png" />
+    <img slot="ships" class="[ thorax ]" src="/images/corporations/soltecharmada/thorax.png" />
 
     <p>{corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback') }</p>
 </CorporationSlide>
@@ -42,75 +42,75 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         image-rendering: pixelated;
     }
 
-    .thorax {
+    .blackbird {
         position: absolute;
-        top: 39%;
-        left: -37%;
+        top: 14%;
+        left: -39%;
         height: auto;
         width: 72%;
         z-index: 2;
         transform: scale(0);
     }
 
-    .blackbird {
+    .condor {
         position: absolute;
-        top: 36%;
-        left: -51%;
-        width: 77%;
+        top: 24%;
+        left: -20%;
+        width: 54%;
         height: auto;
         z-index: 3;
         transform: scale(0);
     }
 
-    .stabber {
+    .thorax {
         position: absolute;
-        top: 52%;
-        left: -39%;
-        width: 57%;
+        top: 38%;
+        left: -23%;
+        width: 69%;
         height: auto;
         z-index: 1;
         transform: scale(0);
     }
 
-    @keyframes thorax {
-        from {
-            transform: scale(0);
-            top: 39%;
-            left: -37%;
-        }
-
-        to {
-            transform: scale(1);
-            top: 15%;
-            left: 37%;
-        }
-    }
-
     @keyframes blackbird {
         from {
             transform: scale(0);
-            top: 36%;
-            left: -51%;
+            top: 14%;
+            left: -39%;
         }
 
         to {
             transform: scale(1);
-            top: 31%;
+            top: 11%;
             left: 32%;
         }
     }
 
-    @keyframes stabber {
+    @keyframes condor {
         from {
             transform: scale(0);
-            left: -39%;
-            top: 52%;
+            top: 24%;
+            left: -20%;
         }
 
         to {
             transform: scale(1);
-            top: 47%;
-            left: 45%;
+            top: 34%;
+            left: 51%;
+        }
+    }
+
+    @keyframes thorax {
+        from {
+            transform: scale(0);
+            left: -23%;
+            top: 38%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 36%;
+            left: 36%;
         }
     }
 </style>
@@ -121,24 +121,24 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     .swiper-slide-active {
-        .thorax {
-            animation: thorax cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .blackbird {
+            animation: blackbird cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .blackbird {
-            animation: blackbird cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .condor {
+            animation: condor cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .stabber {
-            animation: stabber cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .thorax {
+            animation: thorax cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
