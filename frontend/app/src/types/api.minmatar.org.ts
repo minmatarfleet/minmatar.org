@@ -203,6 +203,7 @@ export interface FleetRequest {
     doctrine_id:    number;
     location_id:    number;
     audience_id:    number;
+    disable_motd:   boolean;
 }
 
 export interface MumbleInformation {
