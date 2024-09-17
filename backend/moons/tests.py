@@ -1,5 +1,7 @@
 # flake8: noqa
 from app.test import TestCase
+from django.contrib.auth.models import User
+
 from moons.models import EveMoon, EveMoonDistribution
 from moons.helpers import calc_metanox_yield
 
@@ -33,11 +35,19 @@ class EveMoonPasteTestCase(TestCase):
     """Test case for the moon paste parser."""
 
     def test_process_moon_paste(self):
-        process_moon_paste(paste)
+        user = User.objects.create_user(
+            "tester", "tester@testing.org", "notsosecret"
+        )
+
+        process_moon_paste(paste, user.id)
+
         self.assertEqual(EveMoon.objects.count(), 5)
         self.assertEqual(EveMoonDistribution.objects.count(), 13)
         self.assertEqual(
             EveMoonDistribution.objects.filter(ore="Bitumens").count(), 4
+        )
+        self.assertEqual(
+            "tester", EveMoon.objects.first().reported_by.username
         )
 
 
