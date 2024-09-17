@@ -100,13 +100,18 @@ def get_moon(request, moon_id: int):
 
     moon = EveMoon.objects.get(id=moon_id)
     distribution = EveMoonDistribution.objects.filter(moon=moon)
+
+    if moon.reported_by is None:
+        reported_by_user = "{Unknown}"
+    else:
+        reported_by_user = moon.reported_by.username
+
     response = MoonResponse(
         id=moon.id,
         system=moon.system,
         planet=moon.planet,
         moon=moon.moon,
-        ores=moon.ores,
-        reported_by=moon.reported_by.username,
+        reported_by=reported_by_user,
         distribution=[
             MoonDistributionResponse(ore=d.ore, percentage=d.yield_percent)
             for d in distribution
