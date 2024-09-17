@@ -56,7 +56,7 @@ class EveMoonYieldTestCase(TestCase):
 
     def test_moon_yield(self):
         distributions = [
-            # Use Rahadalon V - Moon 2 as an example
+            # Use "Rahadalon V - Moon 2" as an example
             EveMoonDistribution(
                 moon=None, ore="Bitumens", yield_percent=0.5413627028
             ),
