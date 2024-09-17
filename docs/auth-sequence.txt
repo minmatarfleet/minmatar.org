@@ -1,0 +1,27 @@
+title Minmatar.org Authentication Sequence
+
+actor Browser
+participant "Front-end\n(Astro)" as FrontEnd
+participant "Back-end\n(Django)" as BackEnd
+database Database
+boundary Discord
+
+Browser->FrontEnd: Get home page
+FrontEnd->Browser: Home page with login icon
+Browser->BackEnd: /users/login
+BackEnd->Browser: Redirect to Discord
+Browser->Discord: oauth2/authorize
+Discord->Browser: Redirect to callback API {with code}
+Browser->BackEnd: /users/callback {code}
+BackEnd->Discord: Get access token {with code}
+Discord->BackEnd: Access token
+BackEnd->>Database: Save discord+django users
+BackEnd->Browser: Redirect to frontend login {with token}
+Browser->FrontEnd: /users/login {token}
+FrontEnd->Browser: Logged-in page
+Browser->Browser: Store token in cookie
+Browser->FrontEnd: Get page with data {token}
+FrontEnd->BackEnd: Get backend data {token}
+BackEnd->BackEnd: Validate token
+BackEnd->FrontEnd: JSON content
+FrontEnd->Browser: HTML content
