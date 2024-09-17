@@ -797,7 +797,7 @@ export const doctrine_types = [
     'specialized',
 ]
 
-export interface SystemAtRange {
+export interface SystemCardInfo {
     system_name:            string;
     system_id:              number;
     sun_type_id:            number;

@@ -1,0 +1,44 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { filter_systems_by_name } from '@helpers/sde/map'
+import type { sde_filtered_system } from '@helpers/sde/map'
+import { get_item_icon } from '@helpers/eve_image_server';
+import { sec_status_class } from '@helpers/eve'
+
+const system_name = Astro.url.searchParams.get('system')
+
+let systems:sde_filtered_system[] = []
+
+try {
+    systems = system_name?.length > 2 ? await filter_systems_by_name(system_name) : []
+    systems = systems.sort((a, b) => a.security - b.security)
+} catch (error) {
+    console.log(error)
+}
+
+import Badge from '@components/blocks/Badge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+{(system_name?.length > 2 && systems.length === 0) ?
+    <div class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]">
+        <span>{t('no_systems')}</span>
+    </div>
+    :
+    systems.map((system) =>
+        <StylessButton
+            type="button"
+            href={translatePath(`/intel/moons/${system.system_name}`)}
+        >
+            <Badge
+                title={system.system_name}
+                image={get_item_icon(system.sun_type_id)}
+            >
+                <span slot="title" class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
+                <small>{system.constellation_name} ‹ {system.region_name}</small>
+            </Badge>
+        </StylessButton>
+    )
+}

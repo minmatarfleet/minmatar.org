@@ -633,8 +633,10 @@ export const ui = {
         'page_finder.ships.doctrines.description': 'List of doctrines',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
+        'find_system_placeholder': 'Type star system name to find',
         'find_member_placeholder': 'Type member name to find',
         'no_characters': 'No characters found',
+        'no_systems': 'No systems found',
         'no_pages': 'No pages found',
         'quick_navigation': 'Quick navigation',
         'character_finder': 'Character finder (requires authentication)',
@@ -965,5 +967,7 @@ export const ui = {
         'moon': 'Moon',
         'moons': 'Moons',
         'browse': 'Browse',
+        'find_system': 'Find system',
+        'systems_in_the_region': 'systems in the region',
     },
 } as const;

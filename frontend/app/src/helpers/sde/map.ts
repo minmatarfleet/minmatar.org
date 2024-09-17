@@ -23,7 +23,7 @@ export async function get_system_id(solar_system:string) {
     }
 }
 
-export interface SDE_SYSTEM {
+export interface sde_system {
     regionId:           number;
     regionName:         string;
     constellationId:    number;
@@ -63,7 +63,47 @@ export async function find_systems_by_name(find:string) {
         like(schema.mapSolarSystems.solarSystemName, `%${find}%`),
     );
     
-    return q as SDE_SYSTEM[]
+    return q as sde_system[]
+}
+
+export interface sde_filtered_system {
+    system_id:              number;
+    system_name:            string;
+    sun_type_id:            number;
+    security:               number;
+    region_id:              number;
+    region_name:            string;
+    constellation_id:       number;
+    constellation_name:     string;
+}
+
+export async function filter_systems_by_name(find:string) {
+    console.log(`Requesting: sde_db.find_systems_by_name(${find})`)
+
+    const q = await sde_db.select({
+        system_id: schema.mapSolarSystems.solarSystemId,
+        system_name: schema.mapSolarSystems.solarSystemName,
+        sun_type_id: schema.mapSolarSystems.sunTypeId,
+        security: schema.mapSolarSystems.security,
+        region_id: schema.mapSolarSystems.regionId,
+        region_name: schema.mapRegions.regionName,
+        constellation_id: schema.mapSolarSystems.constellationId,
+        constellation_name: schema.mapConstellations.constellationName,
+    })
+    .from(schema.mapSolarSystems)
+    .innerJoin(
+        schema.mapRegions,
+        eq(schema.mapSolarSystems.regionId, schema.mapRegions.regionId),
+    )
+    .innerJoin(
+        schema.mapConstellations,
+        eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
+    )
+    .where(
+        like(schema.mapSolarSystems.solarSystemName, `${find}%`),
+    );
+    
+    return q as sde_filtered_system[]
 }
 
 export async function find_system_moons(system_name:string) {
@@ -129,7 +169,7 @@ export async function get_systems_coordinates() {
         eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
     )
     
-    return q as SDE_SYSTEM[]
+    return q as sde_system[]
 }
 
 export async function get_regions() {

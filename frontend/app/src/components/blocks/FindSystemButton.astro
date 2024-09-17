@@ -1,0 +1,162 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Porps {
+    size?:      ButtonSizes;
+    iconed?:    boolean;
+    color?:     ButtonColors;
+}
+
+const {
+    size = 'lg',
+    iconed = true,
+    color = 'fleet-red',
+} = Astro.props
+
+const MOON_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_system_list_component/')
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import Dialog from '@components/blocks/Dialog.astro';
+import Input from '@components/blocks/Input.astro';
+import Kbd from '@components/blocks/Kbd.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+---
+
+<div class="[ system-finder ]"
+    x-data={`{
+        system_finder_open: false,
+        search: '',
+        close_dialog() {
+            this.system_finder_open = false
+            this.search = ''
+            $refs.system_finder_list.innerHTML = ''
+        }
+    }`}
+>
+    <Button
+        size={size}
+        type="button"
+        color={color}
+        x-on:click="system_finder_open = true"
+        type="button"
+    >
+        {iconed && <MagnifierIcon slot="icon" />}
+        {t('find_system')}
+    </Button>
+
+    <div class="[ system-finder-dialog ]">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            thin={true}
+            class="[ w-full max-w-[500px] ]"
+            x-bind:class="(system_finder_open ? 'open' : '')"
+            x-bind:aria-hidden="system_finder_open == false"
+            x-trap="system_finder_open"
+            x-bind:inert="!system_finder_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
+        >
+            <Flexblock gap="0">
+                <Input
+                    class="[ relative z-10 ]"
+                    placeholder={t('find_system_placeholder')}
+                    autocomplete="off"
+                    name="system"
+                    x-model="search"
+                    hx-get={MOON_SYSTEMS_LIST_PARTIAL_URL}
+                    hx-trigger="keyup changed delay:1s"
+                    hx-target=".system-finder-list"
+                    hx-indicator=".loader"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+
+                <div class="[ relative ]">
+                    <Flexblock gap='var(--space-3xs)'>
+                        <BlockList
+                            class="[ system-finder-list ][ light-transparency w-full ]"
+                            gap='var(--space-3xs)'
+                            x-ref="system_finder_list"
+                        />
+
+                        <FlexInline justification='center'>
+                            <FlexInline gap="var(--space-3xs)">
+                                <span class="[ text-[var(--highlight)] ]">(</span>
+                                <Kbd>Shift</Kbd>
+                                <span class="[ text-[var(--highlight)] ]">+</span>
+                                <span class="[ text-[var(--highlight)] ]">)</span>
+                                <Kbd>Tab</Kbd>
+                                <small>to navigate</small>
+                            </FlexInline>
+                            <FlexInline gap="var(--space-3xs)">
+                                <Kbd>Enter</Kbd>
+                                <small>to select</small>
+                            </FlexInline>
+                            <FlexInline gap="var(--space-3xs)">
+                                <Kbd>Esc</Kbd>
+                                <small>to close</small>
+                            </FlexInline>
+                        </FlexInline>
+                    </Flexblock>
+                </div>
+            </Flexblock>
+        </Dialog>
+    </div>
+</div>
+
+<style lang="scss">
+    :global([system-finder-action] *) {
+        pointer-events: none !important;
+    }
+
+    picture {
+        aspect-ratio: 1/1;
+        width: 48px;
+    }
+
+    .dialog {
+        top: 12%;
+    }
+
+    .system-finder-list {
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+        height: calc(100% - 20px);
+    }
+
+    :global(.system-finder-list > a) {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+        
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>

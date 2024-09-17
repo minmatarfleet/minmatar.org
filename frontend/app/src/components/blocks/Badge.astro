@@ -44,7 +44,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                 { 'text-[var(--highlight)]': highlight }
             ]}
         >
-            {title}
+            {title} <slot name="title"></slot>
         </span>
         <slot>
             {subtitle &&

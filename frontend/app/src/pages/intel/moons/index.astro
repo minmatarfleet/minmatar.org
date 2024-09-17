@@ -17,29 +17,30 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
     return HTTP_404_Not_Found()
 
-import { get_systems_at_range } from '@helpers/eve'
+import { get_region_systems } from '@helpers/eve'
 import { get_system_moons } from '@helpers/api.minmatar.org/moons'
 import { find_system_moons } from '@helpers/sde/map'
-import type { SystemAtRange } from '@dtypes/layout_components'
+import type { SystemCardInfo } from '@dtypes/layout_components'
 
-let systems_at_range:SystemAtRange[] = []
-let low_sec_systems_at_range:SystemAtRange[]
+let systems:SystemCardInfo[] = []
+let low_sec_systems:SystemCardInfo[]
 const BASE_SYSTEM = 'Sosala'
-const MAX_RANGE = 4
+const MAX_RANGE = 1
 
 try {
-    systems_at_range = await get_systems_at_range(BASE_SYSTEM, MAX_RANGE)
-    console.log(systems_at_range.length)
-    low_sec_systems_at_range = systems_at_range.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))
-    low_sec_systems_at_range = await Promise.all(low_sec_systems_at_range.map(async (system) => {
+    systems = await get_region_systems('The Bleak Lands', BASE_SYSTEM)
+    /*console.log(systems.length)
+    low_sec_systems = systems.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))*/
+    low_sec_systems = await Promise.all(systems.map(async (system) => {
         system.moons_count = (await find_system_moons(system.system_name)).length
         return system
     }))
 
-    low_sec_systems_at_range = low_sec_systems_at_range.filter((system) => system.moons_count > 0)
+    low_sec_systems = low_sec_systems.filter((system) => system.moons_count > 0)
 
-    low_sec_systems_at_range = await Promise.all(low_sec_systems_at_range.map(async (system) => {
-        system.progress = ((await get_system_moons(system.system_name)).length / system.moons_count) * 100
+    low_sec_systems = await Promise.all(low_sec_systems.map(async (system) => {
+        const moons = await get_system_moons(system.system_name)
+        system.progress = system.moons_count > 0 ? ((moons?.length && 0) / system.moons_count) * 100 : 0
         return system
     }))
 } catch (error) {
@@ -56,6 +57,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
+import FindSystemButton from '@components/blocks/FindSystemButton.astro';
 import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 import SystemCard from '@components/blocks/SystemCard.astro'
 
@@ -85,10 +87,11 @@ const page_title = t('intel.moon_tracking.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small>{low_sec_systems_at_range.length - 1} {t('in_range_with')}</small>
+                    <small>{low_sec_systems.length} {t('systems_in_the_region')}</small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>
+                <FindSystemButton />
                 <AddMoonButton />
             </FlexInline>
         </FlexInline>
@@ -101,7 +104,7 @@ const page_title = t('intel.moon_tracking.page_title');
                 row_gap='var(--space-3xs)'
                 column_gap='var(--space-3xs)'
             >
-                {low_sec_systems_at_range.map((system) =>
+                {low_sec_systems.map((system) =>
                     <a
                         class="[ fitting-card-container ]"
                         href={translatePath(`/intel/moons/${system.system_id}`)}
