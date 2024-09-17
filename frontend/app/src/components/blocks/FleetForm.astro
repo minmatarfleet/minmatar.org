@@ -393,22 +393,13 @@ import Grid from '@components/compositions/Grid.astro';
                         />
                     </Flexblock>
 
-                    {disable_motd ?
                         <SwitchSquare
                             class="[ w-full ]"
                             name="disable_motd"
                             label={t('disable_motd')}
                             description={t('disable_motd_description')}
-                            checked
+                            checked={disable_motd}
                         />
-                        :
-                        <SwitchSquare
-                            class="[ w-full ]"
-                            name="disable_motd"
-                            label={t('disable_motd')}
-                            description={t('disable_motd_description')}
-                        />
-                    }
                     
                     <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
                 </Flexblock>
