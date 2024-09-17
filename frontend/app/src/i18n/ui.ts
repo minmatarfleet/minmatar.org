@@ -958,5 +958,7 @@ export const ui = {
         'moon_information': 'Moon information',
         'add_moon_error': 'An error occurred while adding the moon.',
         'add_moon_success': 'Moon added successfully',
+        'disable_motd': 'Disable automatic generated MOTD',
+        'disable_motd_description': 'Use your custom MOTD later when creating the fleet',
     },
 } as const;
