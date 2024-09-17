@@ -181,6 +181,7 @@ export interface Fleet {
     fleet_commander:    number;
     doctrine_id:        number;
     location:           string;
+    disable_motd:       boolean;
     tracking:           Tracking;
 }
 

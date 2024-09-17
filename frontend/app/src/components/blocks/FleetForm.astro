@@ -15,6 +15,7 @@ interface Porps {
     fleet_commander:                CharacterBasic;
     eve_date:                       string;
     eve_time:                       string;
+    disable_motd:                   boolean;
     lang:                           string;
 }
 
@@ -26,6 +27,7 @@ const {
     fleet_commander,
     eve_date,
     eve_time,
+    disable_motd,
     lang,
 } = Astro.props
 
@@ -391,12 +393,22 @@ import Grid from '@components/compositions/Grid.astro';
                         />
                     </Flexblock>
 
-                    <SwitchSquare
-                        class="[ w-full ]"
-                        name="disable_motd"
-                        label={t('disable_motd')}
-                        description={t('disable_motd_description')}
-                    />
+                    {disable_motd ?
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="disable_motd"
+                            label={t('disable_motd')}
+                            description={t('disable_motd_description')}
+                            checked
+                        />
+                        :
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="disable_motd"
+                            label={t('disable_motd')}
+                            description={t('disable_motd_description')}
+                        />
+                    }
                     
                     <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
                 </Flexblock>
