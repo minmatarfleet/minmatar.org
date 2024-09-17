@@ -64,6 +64,7 @@ class EveFleetResponse(BaseModel):
     fleet_commander: int
     doctrine_id: Optional[int] = None
     location: str
+    disable_motd: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -333,6 +334,7 @@ def get_fleet(request, fleet_id: int):
         ),
         "audience": fleet.audience.name,
         "tracking": tracking,
+        "disable_motd": fleet.disable_motd,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
