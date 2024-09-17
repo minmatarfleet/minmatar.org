@@ -672,6 +672,7 @@ export interface FleetUI {
     doctrine:               DoctrineType;
     tracking:               Tracking;
     audience:               string;
+    disable_motd:           boolean;
 }
 
 export interface Tracking {
