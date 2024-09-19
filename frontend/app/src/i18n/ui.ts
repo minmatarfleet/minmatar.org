@@ -27,7 +27,7 @@ export const ui = {
         'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of an space structure.',
-        'index.description': 'Outer view of your favorite Minmatar Fleet structure',
+        'index.description': 'Outer view of your favorite Minmatar Fleet staging',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
@@ -49,7 +49,7 @@ export const ui = {
         'alliance.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, and internal groups.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
-        'alliance.description': 'Browse our corporations, teams and SIGs portfolio and submit your application',
+        'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application',
         'alliance.description.directors': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams members and applications',
         'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications',
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications',
@@ -57,7 +57,7 @@ export const ui = {
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
-        'ships.description': 'Discover our alliance and militia doctrines and fittings. You may export them to use in EVE',
+        'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE',
 
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Fittings are the atom of fleet warfare, and typically will be combined to make up doctrines. However, you will find much more than doctrine fittings here- take a look at our solo and small gang fittings.',
@@ -91,7 +91,7 @@ export const ui = {
         'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
-        'fleets.description': 'Schedule and inspect fleets',
+        'fleets.description': 'Schedule fleets and check those yet to come',
 
         'fleets.upcoming.page_title': 'Upcoming fleets',
         'fleets.upcoming.empty_message': 'There are no fleets on schedule. Be the one adding the first one.',
@@ -106,7 +106,7 @@ export const ui = {
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
         'intel.meta_description': 'Learn more about intel at Minmatar Fleet Alliance, and report various timers.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
-        'intel.description': 'Inspect active structure timers and submit new ones',
+        'intel.description': 'Inspect active structure timers and submit new ones and moon scans',
 
         'intel.tutrial.page_title': 'How to scan structures?',
         'intel.tutrial.leading_text': 'In this course, you will learn how to obtain structures information and provide it to a fleet commander. Through this activity, you might just be the small spark that creates a war!',
