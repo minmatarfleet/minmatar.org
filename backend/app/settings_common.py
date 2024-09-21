@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "freight.apps.FreightConfig",
     # Posts
     "posts.apps.PostsConfig",
+    # Moons
+    "moons.apps.MoonsConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',

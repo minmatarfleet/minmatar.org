@@ -16,17 +16,18 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 <Flexblock gap='var(--space-3xs)'>
     {fitting_groups.map( (group) =>
-        <ComponentBlock width='narrow'>
-            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                <h2>{group.name}</h2>
+        group.modules.length > 0 &&
+            <ComponentBlock width='narrow'>
+                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <h2>{group.name}</h2>
 
-                <Flexblock role="list" gap="var(--space-3xs)">
-                    {group.modules.map( (module) =>
-                        <FitSlot role="listitem" fittable={module} />
-                    )}
+                    <Flexblock role="list" gap="var(--space-3xs)">
+                        {group.modules.map( (module) =>
+                            <FitSlot role="listitem" fittable={module} />
+                        )}
+                    </Flexblock>
                 </Flexblock>
-            </Flexblock>
-        </ComponentBlock>
+            </ComponentBlock>
     )}
 </Flexblock>
 

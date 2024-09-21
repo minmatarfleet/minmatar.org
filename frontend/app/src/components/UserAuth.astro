@@ -20,7 +20,7 @@ const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cook
 const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.character_id) : null
 const primary_pilot_name = primary_pilot ? primary_pilot.character_name : null
 const discord_avatar = Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : null
-const no_pilot_avatar = discord_avatar.endsWith('None.png') ? '/images/no_pilot.jpg' : discord_avatar
+const no_pilot_avatar = discord_avatar && discord_avatar.endsWith('None.png') ? '/images/no_pilot.jpg' : discord_avatar
 const portrait = primary_pilot_avatar ?? no_pilot_avatar
 
 const title = is_auth ? 'account.page_title' : 'authentication'

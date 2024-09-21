@@ -47,6 +47,7 @@ if (Astro.request.method === "POST") {
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
+            disable_motd: (data.get('disable_motd' as string) === 'on'),
         } as FleetRequest
         
         const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
@@ -189,6 +190,7 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
                     fleet_commander={fleet_commander}
                     eve_date={eve_date}
                     eve_time={eve_time}
+                    disable_motd={fleet.disable_motd}
                     lang={lang}
                 />
             }

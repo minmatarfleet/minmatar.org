@@ -6,32 +6,33 @@ import Button from '@components/blocks/Button.astro';
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 
 interface Props {
-    id: string;
-    alert_prefix?: string;
+    id:                 string;
+    alert_prefix?:      string;
+    narrow?:            boolean;
     [propName: string]: any;
 }
 
 const {
     id,
     alert_prefix,
+    narrow = false,
     ...attributes
 } = Astro.props
 
 const COPIED_LABEL_TIME_MS = 2000
 
-const onclick_attr = `copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`
 const Textarea = 'textarea';
 ---
 
 <Button
-    onclick={onclick_attr}
+    narrow={narrow}
+    x-on:click.stop.prevent={`copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`}
     size='sm'
     {...attributes}
     x-data={`{
         button_text: '${t('copy')}',
     }`}
     x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', ${COPIED_LABEL_TIME_MS})`}
-
 >
     <ClipboardIcon slot="icon" />
     <span x-text="button_text">{t('copy')}</span>

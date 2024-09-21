@@ -26,6 +26,7 @@ export interface FittingItem {
     ship_name:      string;
     ship_id:        number;
     id:             number;
+    eft_format:     string;
 }
 
 export interface DoctrineItemObj {
@@ -618,10 +619,6 @@ export interface GroupBasic {
     description:    string;
 }
 
-export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
-
-import type { DoctrineComposition } from '@dtypes/api.minmatar.org'
-
 export interface DoctrineType {
     id:                     number;
     name:                   string;
@@ -675,6 +672,7 @@ export interface FleetUI {
     doctrine:               DoctrineType;
     tracking:               Tracking;
     audience:               string;
+    disable_motd:           boolean;
 }
 
 export interface Tracking {
@@ -743,3 +741,59 @@ export interface RouteTranslate {
 export interface RouteStations {
     [propName: string]: string[];
 }
+
+export const fitting_ship_types = [
+    'Frigate',
+    'Electronic Attack Ship',
+    'Assault Frigate',
+    'Logistics Frigate',
+    'Covert Ops',
+    'Stealth Bomber',
+    'Interceptor',
+    'Destroyer',
+    'Interdictor',
+    'Command Destroyer',
+    'Tactical Destroyer',
+    'Cruiser',
+    'Heavy Assault Cruiser',
+    'Heavy Interdiction Cruiser',
+    'Logistics',
+    'Logistics Crusiers',
+    'Strategic Cruiser',
+    'Recon Ship',
+    'Force Recon Ship',
+    'Combat Recon Ship',
+    'Battlecruiser',
+    'Combat Battlecruiser',
+    'Attack Battlecruiser',
+    'Command Ship',
+    'Battleship',
+    'Marauder',
+    'Black Ops',
+    'Capital',
+    'Dreadnought',
+    'Lancer Dreadnought',
+    'Carrier',
+    'Force Auxiliary',
+    'Supercapital',
+    'Supercarrier',
+    'Titan',
+    'Miningfrigate',
+    'Expedition Frigate',
+    'Miningbarge',
+    'Industrial',
+    'Transport Ship',
+    'Freighter',
+    'Jump Freighters',
+    'Industrialcommand',
+]
+
+export type FittingShipType = typeof fitting_ship_types[number]
+
+export type DoctrineTypes = typeof doctrine_types[number]
+
+export const doctrine_types = [
+    'skirmish',
+    'strategic',
+    'specialized',
+]

@@ -96,8 +96,6 @@ try {
     get_groups_members_error = prod_error_messages() ? t('get_groups_members_error') : error.message
 }
 
-console.log(groups_members)
-
 const GROUPS_MEMBERS_PARTIAL_URL = translatePath('/partials/groups_members_component')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')

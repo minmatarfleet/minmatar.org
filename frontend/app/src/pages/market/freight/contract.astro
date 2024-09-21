@@ -31,7 +31,6 @@ try {
     const route_id = freight_routes_data.route_translation[route]
 
     const route_cost = await get_route_cost(route_id, contract_size, collateral)
-    console.log(route_cost)
     cost = route_cost.cost
 
     origin = freight_routes_data.stations[route][0]

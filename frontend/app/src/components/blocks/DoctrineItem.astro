@@ -28,6 +28,12 @@ const {
     doctrine,
     ...attributes
 } = Astro.props
+
+const show_primary_fittings = true
+const show_secondary_fittings = false
+const show_support_fittings = false
+
+const show_subtitles = ((show_primary_fittings ? 1 : 0) + (show_secondary_fittings ? 1 : 0) + (show_support_fittings ? 1 : 0)) > 1
 ---
 
 <Flexblock 
@@ -38,23 +44,7 @@ const {
     <FlexInline justification='space-between'>
         <Flexblock gap='var(--space-3xs)'>
             <h2>{doctrine.name}</h2>
-
-            <TippyBase description={`${doctrine.type}.description`}>
-                <FlexInline gap='var(--space-3xs)'>
-                    <picture class="[ border ]">
-                        {doctrine.type === 'armor' &&
-                            <ArmorIcon />
-                        }
-                        {doctrine.type === 'shield' &&
-                            <ShieldIcon />
-                        }
-                        {doctrine.type === 'armorshield' &&
-                            <ShieldArmorIcon />
-                        }
-                    </picture>
-                    <small>{t(doctrine.type)}</small>
-                </FlexInline>
-            </TippyBase>
+            <small>{t(doctrine.type as any)}</small>
         </Flexblock>
         <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
             <MagnifierIcon slot="icon" />
@@ -68,7 +58,7 @@ const {
         row_gap='var(--space-s-m)'
         column_gap='var(--space-s-m)'
     >
-        {doctrine.primary_fittings.map((fitting) => 
+        {show_primary_fittings && doctrine.primary_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
                 role="listitem"
@@ -76,14 +66,14 @@ const {
             >
                 <Badge
                     title={fitting.fitting_name}
-                    subtitle={t('primary')}
+                    subtitle={show_subtitles ? t('primary') : null}
                     image={get_item_icon(fitting.ship_id)}
                     size={64}
                     highlight={true}
                 />
             </a>
         )}
-        {doctrine.secondary_fittings.map((fitting) => 
+        {show_secondary_fittings && doctrine.secondary_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
                 role="listitem"
@@ -91,14 +81,14 @@ const {
             >
                 <Badge
                     title={fitting.fitting_name}
-                    subtitle={t('secondary')}
+                    subtitle={show_subtitles ? t('secondary') : null}
                     image={get_item_icon(fitting.ship_id)}
                     size={64}
                     highlight={true}
                 />
             </a>
         )}
-        {doctrine.support_fittings.map((fitting) => 
+        {show_support_fittings && doctrine.support_fittings.map((fitting) => 
             <a
                 class="[ items-center flex ]"
                 role="listitem"
@@ -106,7 +96,7 @@ const {
             >
                 <Badge
                     title={fitting.fitting_name}
-                    subtitle={t('support')}
+                    subtitle={show_subtitles ? t('support') : null}
                     image={get_item_icon(fitting.ship_id)}
                     size={64}
                     highlight={true}
@@ -115,7 +105,7 @@ const {
         )}
     </Grid>
     <FlexInline
-        class="[ w-full items-center ]"
+        class="[ !hidden w-full items-center ]"
         gap='var(--space-m)'
         justification='space-between'
     >

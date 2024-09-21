@@ -50,6 +50,7 @@ class EveFleet(models.Model):
         blank=True,
         default=None,
     )
+    disable_motd = models.BooleanField(null=True, default=False)
 
     @property
     def token(self):
@@ -94,7 +95,8 @@ class EveFleet(models.Model):
                 eve_fleet=self,
             )
 
-        fleet_instance.update_motd()
+        if not self.disable_motd:
+            fleet_instance.update_motd()
         fleet_instance.update_free_move()
 
         if self.type != "strategic":
