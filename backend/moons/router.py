@@ -95,13 +95,37 @@ def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:
     return response
 
 
-@moons_router.get("/summary", response={200: List[MoonSummaryResponse]})
+@moons_router.get(
+    "/summary",
+    response={
+        200: List[MoonSummaryResponse],
+        403: ErrorResponse,
+    },
+    auth=AuthBearer(),
+)
 def get_moon_summary(request):
+    if not request.user.has_perm("moons.view_evemoon"):
+        return 403, ErrorResponse(
+            detail="You do not have permission to view moons"
+        )
+
     return count_scanned_moons(EveMoon.objects.all())
 
 
-@moons_router.get("", response=List[MoonViewResponse])
+@moons_router.get(
+    "",
+    response={
+        200: List[MoonViewResponse],
+        403: ErrorResponse,
+    },
+    auth=AuthBearer(),
+)
 def get_moons(request, system: str = None):
+    if not request.user.has_perm("moons.view_evemoon"):
+        return 403, ErrorResponse(
+            detail="You do not have permission to view moons"
+        )
+
     moons = EveMoon.objects.all()
     if system:
         moons = moons.filter(system=system)
@@ -123,9 +147,9 @@ def get_moons(request, system: str = None):
     return response
 
 
-@moons_router.get("/{moon_id}", response=MoonResponse)
+# @moons_router.get("/{moon_id}", response=MoonResponse)
 def get_moon(request, moon_id: int):
-    if not request.user.has_perm("moons.view_evemoon"):
+    if not request.user.has_perm("moons.manage_evemoon"):
         return ErrorResponse(detail="You do not have permission to view moons")
 
     moon = EveMoon.objects.get(id=moon_id)
@@ -150,7 +174,7 @@ def get_moon(request, moon_id: int):
     return response
 
 
-@moons_router.post("", response=int)
+# @moons_router.post("", response=int)
 def create_moon(request, moon_request: CreateMoonRequest):
     if not request.user.has_perm("moons.add_evemoon"):
         return ErrorResponse(detail="You do not have permission to add moons")
