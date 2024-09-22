@@ -3,9 +3,10 @@ import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/moons`
 
-export async function get_system_moons(system:string) {
+export async function get_system_moons(access_token:string, system:string) {
     const headers = {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
     }
 
     const ENDPOINT = `${API_ENDPOINT}?${query_string({'system': system})}`
@@ -32,9 +33,10 @@ export async function get_system_moons(system:string) {
     }
 }
 
-export async function get_moon_summary() {
+export async function get_moon_summary(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
     }
 
     const ENDPOINT = `${API_ENDPOINT}/summary`
