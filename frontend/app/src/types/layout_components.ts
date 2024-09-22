@@ -823,3 +823,23 @@ export interface MoonBasic {
     id:      number;
     name:    string;
 }
+
+export interface PlanetBasic {
+    id:         number;
+    name:       string;
+    type_id:    number;
+}
+
+export interface MoonUI {
+    id:         number;
+    name:       string;
+    scanned:    boolean;
+}
+
+export interface PlanetMoonsUI {
+    id:         number;
+    name:       string;
+    type_id:    number;
+    scanned:    number;
+    moons?:     MoonUI[];
+}

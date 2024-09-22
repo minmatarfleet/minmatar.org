@@ -2,7 +2,7 @@ import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql, like } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
-import type { RegionBasic, MoonBasic } from '@dtypes/layout_components'
+import type { RegionBasic, MoonBasic, PlanetBasic } from '@dtypes/layout_components'
 
 export async function get_system_id(solar_system:string) {
     console.log(`Requesting: sde_db.get_system_id(${solar_system})`)
@@ -109,6 +109,36 @@ export async function filter_systems_by_name(find:string) {
 export async function find_system_moons(system_name:string) {
     console.log(`Requesting: sde_db.find_system_moons(${system_name})`)
 
+    const SDE_MOONS_GROUP_ID = 8
+
+    const q = await sde_db.select({
+        id: schema.invItems.itemId,
+        name: schema.invUniqueNames.itemName,
+    })
+    .from(schema.invItems)
+    .innerJoin(
+        schema.mapSolarSystems,
+        eq(schema.invItems.locationId, schema.mapSolarSystems.solarSystemId),
+    )
+    .innerJoin(
+        schema.invUniqueNames,
+        eq(schema.invUniqueNames.itemId, schema.invItems.itemId),
+    )
+    .where(
+        and(
+            eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
+            like(schema.mapSolarSystems.solarSystemName, `${system_name}%`)
+        )
+    );
+    
+    return q as MoonBasic[]
+}
+
+export async function find_system_moons_fast(system_name:string) {
+    console.log(`Requesting: sde_db.find_system_moons(${system_name})`)
+
+    const SDE_MOONS_GROUP_ID = 8
+
     const q = await sde_db.select({
         id: schema.invUniqueNames.itemId,
         name: schema.invUniqueNames.itemName,
@@ -116,12 +146,41 @@ export async function find_system_moons(system_name:string) {
     .from(schema.invUniqueNames)
     .where(
         and(
-            eq(schema.invUniqueNames.groupId, 8),
+            eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
             like(schema.invUniqueNames.itemName, `${system_name}%`)
         )
     );
     
     return q as MoonBasic[]
+}
+
+export async function find_system_planets(system_name:string) {
+    console.log(`Requesting: sde_db.find_system_planets(${system_name})`)
+
+    const SDE_PLANETS_GROUP_ID = 7
+
+    const q = await sde_db.select({
+        id: schema.invItems.itemId,
+        name: schema.invUniqueNames.itemName,
+        type_id: schema.invItems.typeId,
+    })
+    .from(schema.invItems)
+    .innerJoin(
+        schema.invUniqueNames,
+        eq(schema.invUniqueNames.itemId, schema.invItems.itemId),
+    )
+    .innerJoin(
+        schema.mapSolarSystems,
+        eq(schema.invItems.locationId, schema.mapSolarSystems.solarSystemId),
+    )
+    .where(
+        and(
+            eq(schema.invUniqueNames.groupId, SDE_PLANETS_GROUP_ID),
+            like(schema.mapSolarSystems.solarSystemName, `${system_name}%`)
+        )
+    );
+    
+    return q as PlanetBasic[]
 }
 
 export async function get_system_sun_type_id(solar_system_id:number) {
@@ -133,6 +192,25 @@ export async function get_system_sun_type_id(solar_system_id:number) {
     .from(schema.mapSolarSystems)
     .where(
         eq(schema.mapSolarSystems.solarSystemId, solar_system_id),
+    )
+    .limit(1);
+    
+    if (q.length > 0) {
+        return q[0].sunTypeId
+    } else {
+        return null
+    }
+}
+
+export async function get_system_sun_type_id_by_name(solar_system_name:string) {
+    console.log(`Requesting: sde_db.get_system_sun_type_id_by_name(${solar_system_name})`)
+
+    const q = await sde_db.select({
+        sunTypeId: schema.mapSolarSystems.sunTypeId,
+    })
+    .from(schema.mapSolarSystems)
+    .where(
+        eq(schema.mapSolarSystems.solarSystemName, solar_system_name),
     )
     .limit(1);
     

@@ -30,7 +30,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     systems.map((system) =>
         <StylessButton
             type="button"
-            href={translatePath(`/intel/moons/${system.system_name}`)}
+            href={translatePath(`/intel/moons?home=${system.system_name}`)}
             x-on:click="close_dialog()"
         >
             <Badge

@@ -18,11 +18,11 @@ import { sec_status_class } from '@helpers/eve'
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from "@components/compositions/Wrapper.astro";
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
-import Progress from './Progress.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
+import Progress from '@components/blocks/Progress.astro';
 ---
 
 <ComponentBlock class="[ system-card ]" padding_block='0' padding_inline='0' {...attributes}>
@@ -49,19 +49,20 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             <Progress
                 max="100"
                 value={system?.progress !== undefined && system.progress}
-                data-tippy-content={`${system?.progress !== undefined && system.progress.toFixed(2)}%`}
+                data-tippy-content={`${system?.progress !== undefined && system.progress.toFixed(0)}%`}
             >
                 {`${system?.progress !== undefined && system?.progress?.toFixed(2)}%`}
             </Progress>
         </Flexblock>
-        <Flexblock class="[ system-location ]" gap='0'>
+        <FlexInline justification='space-between' class="[ system-card-head !items-start ]">
             <small>
                 {system.distance_yl === 0 ?
                     t('home_system') :
                     <span>{system.distance_yl.toFixed(2)}</span> <abbr data-tippy-content={t('light_years')}>{t('light_years_abbr')}</abbr>
                 }
             </small>
-        </Flexblock>
+            <slot />
+        </FlexInline>
     </Flexblock>
 </ComponentBlock>
 
@@ -82,10 +83,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             right: 0;
         }
 
-        .system-location {
+        .system-card-head {
             position: absolute;
             top: var(--space-2xs);
             left: var(--space-2xs);
+            right: var(--space-2xs);
         }
     }
 

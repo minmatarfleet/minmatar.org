@@ -126,6 +126,8 @@ export const ui = {
 
         'intel.moon_tracking.page_title': 'Moon tracking',
         'intel.moon_tracking.leading_text': 'Information on moons within our sphere of influence. Critical for passive income sources.',
+        
+        'intel.moon_tracking.system.leading_text': 'Assess the level of completion for scanning on moons in the system and colaborate scanning the missing ones.',
 
         'friend.welcome.page_title': 'Welcome Honorary Rat',
         'friend.welcome.leading_text': 'If you are seeing this page you must has come here to fight alongside Minmatar Fleet Alliance. You honor us with your prescence and we hope you have a good time with us.\nWe like the game!',
@@ -969,5 +971,13 @@ export const ui = {
         'browse': 'Browse',
         'find_system': 'Find system',
         'systems_in_the_region': 'systems in the region',
+        'change_home_system': 'Change home system',
+        'scanned': 'Scanned',
+        'no_data': 'No data',
+        'out_of': 'out of',
+        'moons_scanned': 'moons scanned',
+        'region_view': 'Region view',
+        'fetch_moon_system_data_error': 'An error occurred while fetching moons data.',
+        'too_many_tries': 'Too many tries refetching the data. You may try again by reloading the page after a few minutes.',
     },
 } as const;

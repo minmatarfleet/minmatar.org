@@ -5,18 +5,22 @@ const { t, translatePath } = i18n(Astro.url)
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Porps {
-    size?:      ButtonSizes;
-    iconed?:    boolean;
-    color?:     ButtonColors;
+    id:             string,
+    list_partial:   string;
+    size?:          ButtonSizes;
+    iconed?:        boolean;
+    color?:         ButtonColors;
+    title?:         string;
 }
 
 const {
+    id,
+    list_partial,
     size = 'lg',
     iconed = true,
     color = 'fleet-red',
+    title = t('find_system'),
 } = Astro.props
-
-const MOON_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_system_list_component/')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -30,7 +34,9 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 ---
 
-<div class="[ system-finder ]"
+<div
+    id={id}
+    class="[ system-finder ]"
     x-data={`{
         system_finder_open: false,
         search: '',
@@ -45,11 +51,12 @@ import BlockList from '@components/compositions/BlockList.astro';
         size={size}
         type="button"
         color={color}
-        x-on:click="system_finder_open = true"
+        x-on:click.stop.prevent="system_finder_open = true"
         type="button"
+
     >
         {iconed && <MagnifierIcon slot="icon" />}
-        {t('find_system')}
+        {title}
     </Button>
 
     <div class="[ system-finder-dialog ]">
@@ -72,9 +79,9 @@ import BlockList from '@components/compositions/BlockList.astro';
                     autocomplete="off"
                     name="system"
                     x-model="search"
-                    hx-get={MOON_SYSTEMS_LIST_PARTIAL_URL}
+                    hx-get={list_partial}
                     hx-trigger="keyup changed delay:1s"
-                    hx-target=".system-finder-list"
+                    hx-target={`#${id}-list`}
                     hx-indicator=".loader"
                 >
                     <MagnifierIcon slot="icon" />
@@ -83,6 +90,7 @@ import BlockList from '@components/compositions/BlockList.astro';
                 <div class="[ relative ]">
                     <Flexblock gap='var(--space-3xs)'>
                         <BlockList
+                            id={`${id}-list`}
                             class="[ system-finder-list ][ light-transparency w-full ]"
                             gap='var(--space-3xs)'
                             x-ref="system_finder_list"

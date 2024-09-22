@@ -326,3 +326,8 @@ export interface SystemMoon {
     moon:           number;
     reported_by:    string;
 }
+
+export interface MoonSummarySystem {
+    system:         string;
+    scanned_moons:  number;
+}

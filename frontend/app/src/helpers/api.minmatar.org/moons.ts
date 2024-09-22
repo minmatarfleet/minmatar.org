@@ -1,4 +1,4 @@
-import type { SystemMoon } from '@dtypes/api.minmatar.org'
+import type { SystemMoon, MoonSummarySystem } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/moons`
@@ -28,7 +28,36 @@ export async function get_system_moons(system:string) {
 
         return await response.json() as SystemMoon[];
     } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`);
+        throw new Error(`Error fetching system moons: ${error.message}`);
+    }
+}
+
+export async function get_moon_summary() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/summary`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as MoonSummarySystem[];
+    } catch (error) {
+        throw new Error(`Error fetching moon summary: ${error.message}`);
     }
 }
 

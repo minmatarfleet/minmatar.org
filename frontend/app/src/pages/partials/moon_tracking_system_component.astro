@@ -1,0 +1,120 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
+    return HTTP_404_Not_Found()
+
+let system_name = Astro.params.system_name
+
+import { fetch_scanned_moons } from '@helpers/fetching/moons'
+import { find_system_planets, find_system_moons } from '@helpers/sde/map'
+import type { PlanetBasic, MoonBasic, MoonUI, PlanetMoonsUI } from '@dtypes/layout_components'
+
+let planets:PlanetBasic[] = []
+let moons:MoonBasic[] = []
+let scanned_moons:MoonUI[] = []
+let planet_moons:PlanetMoonsUI[] = []
+let total_scanned:number = 0
+let fetch_moon_system_data_error:string
+
+try {
+    planets = await find_system_planets(system_name)
+    moons = await find_system_moons(system_name)
+    scanned_moons = await fetch_scanned_moons(system_name)
+
+    planet_moons = planets.map(planet => {
+        const planet_moons = moons.filter(moon => moon.name.startsWith(`${planet.name} - Moon`))
+
+        const planet_moons_ui = planet_moons.map(moon => {
+            const is_scanned = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name) !== undefined
+            if (is_scanned) total_scanned++
+
+            return {
+                id: moon.id,
+                name: moon.name,
+                scanned: is_scanned
+            } as MoonUI
+        })
+
+        return {
+            id: planet.id,
+            name: planet.name,
+            type_id: planet.type_id,
+            scanned: planet_moons_ui.reduce((c, v) => c + (v.scanned ? 1 : 0), 0),
+            moons: planet_moons_ui,
+        }
+    })
+} catch (error) {
+    fetch_moon_system_data_error = prod_error_messages() ? t('fetch_moon_system_data_error') : error.message
+}
+
+const MOON_TRACKING_SYSTEM_PARTIAL_URL = `${translatePath('/partials/moon_tracking_system_component')}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Badge from '@components/blocks/Badge.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_moon_system_data_error ?
+    <ErrorRefetch
+        args={{
+            partial: MOON_TRACKING_SYSTEM_PARTIAL_URL,
+            message: fetch_moon_system_data_error,
+            delay: delay,
+        }}
+    />
+    :
+    <Flexblock gap='var(--space-2xl)'>
+        {planet_moons.map(planet => {
+            const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
+            return (
+                planet?.moons.length > 0 &&
+                <Flexblock gap='var(--space-l)'>
+                    <Flexblock gap='0'>
+                        <Badge
+                            title={planet.name}
+                            image={get_item_icon(planet.type_id)}
+                            subtitle={`${progress.toFixed(0)}% ${t('completed').toLowerCase()}`}
+                            title_el='h2'
+                        />
+                    </Flexblock>
+
+                    <Grid class="[ w-full grid-fill ]" row_gap="var(--space-3xs)" column_gap="var(--space-3xs)" min_item_width="250px">
+                        {planet.moons.map(moon =>
+                            <ComponentBlock padding_block='var(--space-s)' padding_inline='var(--space-m)'>
+                                <Flexblock gap='0' class="[ w-full ]">
+                                    <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
+                                    {moon.scanned ?
+                                        <small class="[ text-[var(--green)] ]">{t('scanned')}</small> :
+                                        <small>{t('no_data')}</small>
+                                    }
+                                </Flexblock>
+                            </ComponentBlock>
+                        )}
+                    </Grid>
+                </Flexblock>
+            )
+        })}
+    </Flexblock>
+}
