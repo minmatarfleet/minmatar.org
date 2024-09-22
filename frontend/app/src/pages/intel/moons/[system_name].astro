@@ -35,7 +35,7 @@ let fetch_moon_system_data_error:string
 try {
     planets = await find_system_planets(system_name)
     moons = await find_system_moons(system_name)
-    scanned_moons = await fetch_scanned_moons(system_name)
+    scanned_moons = await fetch_scanned_moons(auth_token, system_name)
     sun_type_id = await get_system_sun_type_id_by_name(system_name)
 
     planet_moons = planets.map(planet => {
