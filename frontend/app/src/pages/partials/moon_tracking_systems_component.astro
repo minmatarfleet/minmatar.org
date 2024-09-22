@@ -31,7 +31,7 @@ const home_system = Astro.cookies.has('moon_tracking_home_system_name') ? Astro.
 
 try {
     systems = await get_region_systems(home_system)
-    const moon_summary_systems = await get_moon_summary()
+    const moon_summary_systems = await get_moon_summary(auth_token as string)
     console.log('moon_summary_systems')
     console.log(moon_summary_systems)
     

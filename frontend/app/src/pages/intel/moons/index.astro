@@ -37,7 +37,7 @@ home_system = Astro.cookies.has('moon_tracking_home_system_name') ? Astro.cookie
 try {
     systems = await get_region_systems(home_system)
 
-    const moon_summary_systems = await get_moon_summary()
+    const moon_summary_systems = await get_moon_summary(auth_token as string)
     
     // filtered_systems = systems.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))
 
