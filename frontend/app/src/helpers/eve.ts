@@ -202,7 +202,7 @@ export const get_constellation_systems = async (constellation_name:string, origi
     return constellation_systems.sort((a, b) => a.distance_yl - b.distance_yl)
 }
 
-export const get_region_systems = async (origin_system_name:string) => {
+export const get_moon_systems = async (origin_system_name:string, distance:number, same_region:boolean) => {
     const constellation_systems:SystemCardInfo[] = []
 
     const sde_systems = await get_systems_coordinates()
@@ -213,9 +213,11 @@ export const get_region_systems = async (origin_system_name:string) => {
         throw new Error('Origin system invalid')
     
     sde_systems.forEach((sde_system) => {
-        if (sde_system.regionName !== origin_system.regionName) return true
+        if (same_region && sde_system.regionName !== origin_system.regionName) return true
 
         const distance_yl = get_distance_among_systems(origin_system, sde_system)
+
+        if (distance_yl > distance) return true
 
         constellation_systems.push({
             system_name: sde_system.solarSystemName,

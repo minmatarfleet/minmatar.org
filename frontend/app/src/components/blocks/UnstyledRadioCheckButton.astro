@@ -1,0 +1,33 @@
+---
+interface Props {
+    label:  string;
+    type:   'checkbox' | 'radio'
+    [propName: string]: any;
+}
+
+const {
+    label,
+    type,
+    ...attributes
+} = Astro.props
+---
+
+<label class="[ cursor-pointer ]">
+    <input type={type} {...attributes} />
+    <small>{label}</small>
+</label>
+
+<style lang="scss">
+    input {
+        display: none;
+    }
+
+    small {
+        color: var(--fleet-yellow);
+    }
+
+    :checked + small {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+</style>
