@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 from moons.models import EveMoon, EveMoonDistribution
 from moons.helpers import calc_metanox_yield
+from moons.router import count_scanned_moons
 
 from .parser import process_moon_paste
 
@@ -69,3 +70,18 @@ class EveMoonYieldTestCase(TestCase):
 
         self.assertEqual(422, int(yields["Hydrocarbons"]))
         self.assertEqual(201, int(yields["Evaporite Deposits"]))
+
+
+class EveMoonQueryTest(TestCase):
+    """Test case for moon queries"""
+
+    def test_moon_count(self):
+        moons = [
+            EveMoon(system="Jita", planet="IV", moon=4),
+            EveMoon(system="Jita", planet="VI", moon=2),
+        ]
+
+        summary = count_scanned_moons(moons)
+
+        self.assertEqual("Jita", summary[0].system)
+        self.assertEqual(2, summary[0].scanned_moons)
