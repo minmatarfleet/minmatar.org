@@ -17,6 +17,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_view_timers = user_permissions.includes('structures.view_evestructuretimer')
 const can_add_moons = user_permissions.includes('moons.add_evemoon')
+const can_view_moons = user_permissions.includes('moons.view_evemoon')
 
 if (!is_superuser && !can_view_timers && !can_add_moons)
     return HTTP_404_Not_Found()
@@ -64,7 +65,7 @@ const leading_text = t('intel.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <IntelReel can_view_timers={can_view_timers} can_add_moons={can_add_moons} />
+            <IntelReel can_view_timers={can_view_timers} can_add_moons={can_add_moons} can_view_moons={can_view_moons} />
         </Flexblock>
     </PageLanding>
 </Viewport>

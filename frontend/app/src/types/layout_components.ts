@@ -797,3 +797,50 @@ export const doctrine_types = [
     'strategic',
     'specialized',
 ]
+
+export interface SystemCardInfo {
+    system_name:            string;
+    system_id:              number;
+    sun_type_id:            number;
+    distance_yl:            number;
+    region_name:            string;
+    constellation_name:     string;
+    security:               number;
+    moons_count?:           number;
+    progress?:              number;
+}
+
+export interface RegionBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface ConstellationBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface MoonBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface PlanetBasic {
+    id:         number;
+    name:       string;
+    type_id:    number;
+}
+
+export interface MoonUI {
+    id:         number;
+    name:       string;
+    scanned:    boolean;
+}
+
+export interface PlanetMoonsUI {
+    id:         number;
+    name:       string;
+    type_id:    number;
+    scanned:    number;
+    moons?:     MoonUI[];
+}
