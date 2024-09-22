@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
     return HTTP_404_Not_Found()
 
-import { get_region_systems } from '@helpers/eve'
+import { get_moon_systems } from '@helpers/eve'
 import { get_moon_summary } from '@helpers/api.minmatar.org/moons'
 import { find_system_moons_fast } from '@helpers/sde/map'
 import type { SystemCardInfo } from '@dtypes/layout_components'
@@ -34,14 +34,29 @@ if (home_system)
 
 home_system = Astro.cookies.has('moon_tracking_home_system_name') ? Astro.cookies.get('moon_tracking_home_system_name').value : 'Sosala'
 
+const distance = Astro.url.searchParams.get('distance') ?? '10'
+const region = Astro.url.searchParams.get('region') ?? '1'
+const security = Astro.url.searchParams.get('security') ?? 'low'
+
+console.log(distance)
+console.log(region)
+console.log(security)
+
 try {
-    systems = await get_region_systems(home_system)
+    systems = await get_moon_systems(home_system, parseInt(distance), region === '1')
 
     const moon_summary_systems = await get_moon_summary(auth_token as string)
     
-    // filtered_systems = systems.filter((system) => (system.security.toFixed(1) > '0.1' && system.security.toFixed(1) < '0.5'))
+    if (security === 'null')
+        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0)
+    else if (security === 'low')
+        filtered_systems = systems.filter(system => (parseFloat(system.security.toFixed(1)) > 0.1 && parseFloat(system.security.toFixed(1)) < 0.5))
+    else if (security === 'under_0d5')
+        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0.5)
+    else
+        filtered_systems = systems
 
-    filtered_systems = await Promise.all(systems.map(async (system) => {
+    filtered_systems = await Promise.all(filtered_systems.map(async (system) => {
         const moons_in_system = await find_system_moons_fast(system.system_name)
         system.moons_count = moons_in_system.length
         return system
@@ -60,7 +75,7 @@ try {
 
 const MOON_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_system_list_component/')
 const MOON_SET_HOME_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_set_home_system_list_component/')
-const MOON_TRACKING_SYSTEMS_PARTIAL_URL = `${translatePath('/partials/moon_tracking_systems_component')}`
+const MOON_TRACKING_SYSTEMS_PARTIAL_URL = `${translatePath('/partials/moon_tracking_systems_component')}?distance=${distance}&region=${region}&security=${security}`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -72,6 +87,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import Button from '@components/blocks/Button.astro';
 import FindSystemButton from '@components/blocks/FindSystemButton.astro';
 import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 import SystemCard from '@components/blocks/SystemCard.astro'
@@ -98,6 +115,10 @@ const page_title = t('intel.moon_tracking.page_title');
         }}
         x-data={`{
             filtered_systems_count: ${filtered_systems?.length ?? 0},
+            filters_expanded: false,
+            toggle_filters() {
+                this.filters_expanded = !this.filters_expanded
+            }
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -106,8 +127,8 @@ const page_title = t('intel.moon_tracking.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${filtered_systems_count}\` ${t('systems_in_the_region')}`}>
-                        {filtered_systems?.length ?? 0} {t('systems_in_the_region')}
+                    <small x-text={`\`\${filtered_systems_count} ${t('systems_found')}\``}>
+                        {filtered_systems?.length ?? 0} {t('systems_found')}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -127,6 +148,10 @@ const page_title = t('intel.moon_tracking.page_title');
                 iconed={false}
                 list_partial={MOON_SET_HOME_SYSTEMS_LIST_PARTIAL_URL} 
             />
+
+            <Button size='sm' x-on:click="toggle_filters()">
+                {t('filters')}
+            </Button>
         </FlexInline>
 
         {fetch_moon_system_data_error ?
@@ -138,23 +163,62 @@ const page_title = t('intel.moon_tracking.page_title');
                 }}
             />
             :
-            <BlockList gap='var(--space-l)'>
-                <Grid
-                    role="list"
-                    class="[ w-full grid-fill ]"
-                    min_item_width='240px'
-                    row_gap='var(--space-3xs)'
-                    column_gap='var(--space-3xs)'
+            <BlockList gap='var(--space-2xl)'>
+                <form
+                    x-collapse.duration.0ms
+                    x-show="filters_expanded"
+                    style="display: none"
+                    x-data={`{
+                        'submitted': false
+                    }`}
+                    x-on:submit="submitted = true;"
                 >
-                    {filtered_systems.map((system) =>
-                        <a
-                            class="[ fitting-card-container ]"
-                            href={translatePath(`/intel/moons/${system.system_name}`)}
-                        >
-                            <SystemCard system={system} role="listitem" />
-                        </a>
-                    )}
-                </Grid>
+                    <FlexInline class="[ !items-start ]" gap='var(--space-2xl)'>
+                        <Flexblock>
+                            <label>{t('distance_within')}</label>
+                            <UnstyledRadioCheckButton type='radio' label={t('5ly')} value="5" name="distance" checked={distance === '5' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('6ly')} value="6" name="distance" checked={distance === '6' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('7ly')} value="7" name="distance" checked={distance === '7' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('8ly')} value="8" name="distance" checked={distance === '8' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('9ly')} value="9" name="distance" checked={distance === '9' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('10ly')} value="10" name="distance" checked={distance === '10' ? 'checked' : undefined} />
+                        </Flexblock>
+                        <Flexblock>
+                            <label>{t('regions')}</label>
+                            <UnstyledRadioCheckButton type='radio' label={t('same_as_home_system')} value="1" name="region" checked={region === '1' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('any_region')} value="-1" name="region" checked={region === '-1' ? 'checked' : undefined} />
+                        </Flexblock>
+                        <Flexblock>
+                            <label>{t('system_security')}</label>
+                            <UnstyledRadioCheckButton type='radio' label={t('null_sec')} value="null" name="security" checked={security === 'null' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('low_sec')} value="low" name="security" checked={security === 'low' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('under_0d5')} value="under_0d5" name="security" checked={security === 'under_0d5' ? 'checked' : undefined} />
+                            <UnstyledRadioCheckButton type='radio' label={t('any_security')} value="any" name="security" checked={security === 'any' ? 'checked' : undefined} />
+                        </Flexblock>
+                        <Button size='sm' x-bind:disabled="submitted" type="submit">{t('run_filters')}</Button>
+                    </FlexInline>
+                </form>
+
+                {filtered_systems.length === 0 ?
+                    <p class="[ text-center ]">{t('no_systems_found')}</p>
+                    :
+                    <Grid
+                        role="list"
+                        class="[ w-full grid-fill ]"
+                        min_item_width='240px'
+                        row_gap='var(--space-3xs)'
+                        column_gap='var(--space-3xs)'
+                    >
+                        {filtered_systems.map((system) =>
+                            <a
+                                class="[ fitting-card-container ]"
+                                href={translatePath(`/intel/moons/${system.system_name}`)}
+                            >
+                                <SystemCard system={system} role="listitem" />
+                            </a>
+                        )}
+                    </Grid>
+                }
             </BlockList>
         }
 	</PageWide>
