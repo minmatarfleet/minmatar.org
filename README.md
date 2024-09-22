@@ -1,6 +1,12 @@
 # minmatar.org
 Platform for Minmatar Fleet
 
+# Technical Architecture
+The [my.minmatar.org](https://my.minmatar.org/) site is built with a [JavaScript/Astro](https://astro.build/) front-end and a [Python/Django](https://www.djangoproject.com/) back-end. It is deployed as a set of [Docker](https://www.docker.com/) containers to a bare-metal cloud host using Docker Compose. The backend uses a MariaDB database, and there is also a Redis cache instance.
+
+Authentication is handled via single-sign-on with [Discord](https://discord.com/), and the site also integrates with the [Eve Swagger Interface](https://esi.evetech.net/ui/#/).
+
+The source code is hosted on GitHub, and the CI/CD pipeline is built using GitHub Actions. Operational monitoring is implemented using [Sentry](https://minmatar-fleet.sentry.io/).
 # Prerequisites
 - Install Python
 - Install Docker and Docker Desktop (Mac, WSL)

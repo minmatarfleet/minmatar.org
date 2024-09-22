@@ -8,7 +8,6 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
-    
 }
 
 const {
@@ -17,24 +16,24 @@ const {
     picture_placement = 'left',
 } = Astro.props
 
-const BEARTHATCARES_ID = 634915984
+const LUCAS_ERMANELOS_ID = 96380813
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 ---
 
 <CorporationSlide
-    id="rattini-slide"
-    ceo_image='/images/corporations/rattini/ceo.png'
-    ceo_character_id={BEARTHATCARES_ID}
+    id="vindicta-slide"
+    ceo_image='/images/corporations/rude/ceo.png'
+    ceo_character_id={LUCAS_ERMANELOS_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ rifter ]" src="/images/corporations/rattini/rifter.png" />
-    <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />
-    <img slot="ships" class="[ sleipnir ]" src="/images/corporations/rattini/sleipnir.png" />
+    <img slot="ships" class="[ zirnitra ]" src="/images/corporations/rude/zirnitra.png" />
+    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/rude/ikitursa.png" />
+    <img slot="ships" class="[ kikimora ]" src="/images/corporations/rude/kikimora.png" />
 
-    <p>{corporation.introduction ? corporation.introduction : t('rattini_description_fallback') }</p>
+    <p>{corporation.introduction ? corporation.introduction : t('rapid_unscheduled_disassembly_description_fallback') }</p>
 </CorporationSlide>
 
 <style lang="scss">
@@ -42,103 +41,103 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         image-rendering: pixelated;
     }
 
-    .rifter {
+    .zirnitra {
         position: absolute;
-        top: 40%;
-        left: 5%;
+        top: 22%;
+        right: 27%;
         height: auto;
-        width: 32%;
+        width: 78%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .ikitursa {
+        position: absolute;
+        top: 42%;
+        right: 29%;
+        width: 73%;
+        height: auto;
         z-index: 1;
         transform: scale(0);
     }
 
-    .scimitar {
+    .kikimora {
         position: absolute;
-        top: 48%;
-        left: -40%;
-        width: 53%;
+        right: 24%;
+        top: 30%;
+        width: 54%;
         height: auto;
         z-index: 2;
         transform: scale(0);
     }
 
-    .sleipnir {
-        position: absolute;
-        left: -25%;
-        top: 34%;
-        width: 61%;
-        height: auto;
-        z-index: 1;
-        transform: scale(0);
-    }
-
-    @keyframes rifter {
+    @keyframes zirnitra {
         from {
             transform: scale(0);
-            top: 50%;
-            left: 5%;
+            top: 22%;
+            right: 27%;
         }
 
         to {
             transform: scale(1);
-            top: 12%;
-            left: 43%;
+            top: 1%;
+            right: 29%;
         }
     }
 
-    @keyframes scimitar {
+    @keyframes ikitursa {
         from {
             transform: scale(0);
-            top: 48%;
-            left: -40%;
+            top: 42%;
+            right: 29%;
         }
 
         to {
             transform: scale(1);
-            top: 26%;
-            left: 42%;
+            top: 37%;
+            right: 42%;
         }
     }
 
-    @keyframes sleipnir {
+    @keyframes kikimora {
         from {
             transform: scale(0);
-            left: -25%;
-            top: 34%;
+            top: 30%;
+            right: 24%;
         }
 
         to {
             transform: scale(1);
-            top: 43%;
-            left: 31%;
+            top: 54%;
+            right: 47%;
         }
     }
 </style>
 
 <style lang="scss" is:global>
-    #rattini-slide .ceo {
-        left: 0%;
+    #vindicta-slide .ceo {
+        right: 7%;
     }
 
     .swiper-slide-active {
-        .rifter {
-            animation: rifter cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .zirnitra {
+            animation: zirnitra cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .scimitar {
-            animation: scimitar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .ikitursa {
+            animation: ikitursa cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
         }
         
-        .sleipnir {
-            animation: sleipnir cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .kikimora {
+            animation: kikimora cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;

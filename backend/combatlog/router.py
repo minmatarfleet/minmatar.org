@@ -1,14 +1,15 @@
-from ninja import Router
-from pydantic import BaseModel
 from typing import Dict
 
+from ninja import Router
+from pydantic import BaseModel
+
 from .combatlog import (
-    parse,
     damage_events,
-    total_damage,
-    enemy_damage,
-    weapon_damage,
     damage_over_time,
+    enemy_damage,
+    parse,
+    total_damage,
+    weapon_damage,
 )
 
 router = Router(tags=["combatlog"])

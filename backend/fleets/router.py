@@ -64,6 +64,7 @@ class EveFleetResponse(BaseModel):
     fleet_commander: int
     doctrine_id: Optional[int] = None
     location: str
+    disable_motd: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -104,6 +105,7 @@ class CreateEveFleetRequest(BaseModel):
     doctrine_id: Optional[int] = None
     audience_id: int
     location_id: int
+    disable_motd: bool = False
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -113,6 +115,7 @@ class UpdateEveFleetRequest(BaseModel):
     doctrine_id: Optional[int] = None
     audience_id: int
     location_id: int
+    disable_motd: bool = False
 
 
 @router.get(
@@ -331,6 +334,7 @@ def get_fleet(request, fleet_id: int):
         ),
         "audience": fleet.audience.name,
         "tracking": tracking,
+        "disable_motd": fleet.disable_motd,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
@@ -425,6 +429,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         created_by=request.user,
         location=EveFleetLocation.objects.get(location_id=payload.location_id),
         audience=audience,
+        disable_motd=payload.disable_motd,
     )
 
     if payload.doctrine_id:
