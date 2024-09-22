@@ -95,15 +95,8 @@ def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:
     return response
 
 
-@moons_router.get(
-    "/summary", response={200: List[MoonSummaryResponse], 403: ErrorResponse}
-)
+@moons_router.get("/summary", response={200: List[MoonSummaryResponse]})
 def get_moon_summary(request):
-    if not request.user.has_perm("moons.view_evemoon"):
-        return 403, ErrorResponse(
-            detail="You do not have permission to view moons"
-        )
-
     return count_scanned_moons(EveMoon.objects.all())
 
 
