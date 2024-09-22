@@ -50,6 +50,11 @@ class CreateMoonFromPasteRequest(BaseModel):
     paste: str
 
 
+class MoonSummaryResponse(BaseModel):
+    system: str
+    scanned_moons: int
+
+
 @moons_paste_router.post(
     "",
     response={
@@ -68,6 +73,34 @@ def create_moon_from_paste(
 
     ids = process_moon_paste(moon_paste_request.paste, user_id=request.user.id)
     return ids
+
+
+def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:
+    moon_counts = {}
+
+    for moon in eve_moons:
+        print(moon.system, moon.planet, moon.moon)
+        if moon.system not in moon_counts:
+            moon_counts[moon.system] = 0
+
+        moon_counts[moon.system] += 1
+
+    response = []
+
+    for system, moons in moon_counts.items():
+        response.append(
+            MoonSummaryResponse(system=system, scanned_moons=moons)
+        )
+
+    return response
+
+
+@moons_router.get("/summary", response=List[MoonSummaryResponse])
+def get_moon_summary(request):
+    if not request.user.has_perm("moons.view_evemoon"):
+        return ErrorResponse(detail="You do not have permission to view moons")
+
+    return count_scanned_moons(EveMoon.objects.all())
 
 
 @moons_router.get("", response=List[MoonViewResponse])
