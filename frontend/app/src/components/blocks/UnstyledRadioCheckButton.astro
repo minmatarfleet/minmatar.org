@@ -19,7 +19,15 @@ const {
 
 <style lang="scss">
     input {
-        display: none;
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
     }
 
     small {
@@ -29,5 +37,10 @@ const {
     :checked + small {
         font-weight: 600;
         color: var(--highlight);
+    }
+
+    label:focus-within {
+        transform: scale(1.1);
+        transform-origin: left center
     }
 </style>
