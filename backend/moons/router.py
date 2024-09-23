@@ -7,7 +7,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from moons.models import EveMoon, EveMoonDistribution
 
-from .parser import process_moon_paste
+from .parser import process_moon_paste, MoonParsingResult
 
 moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])
@@ -58,21 +58,23 @@ class MoonSummaryResponse(BaseModel):
 @moons_paste_router.post(
     "",
     response={
-        200: List[int],
+        200: MoonParsingResult,
         403: ErrorResponse,
     },
     auth=AuthBearer(),
 )
 def create_moon_from_paste(
     request, moon_paste_request: CreateMoonFromPasteRequest
-):
+) -> MoonParsingResult:
     if not request.user.has_perm("moons.add_evemoon"):
         return 403, ErrorResponse(
             detail="You do not have permission to add moons"
         )
 
-    ids = process_moon_paste(moon_paste_request.paste, user_id=request.user.id)
-    return ids
+    results = process_moon_paste(
+        moon_paste_request.paste, user_id=request.user.id
+    )
+    return results
 
 
 def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:

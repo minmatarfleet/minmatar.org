@@ -21,6 +21,14 @@ class ParsedEveMoonQuantity(BaseModel):
     moon_id: int
 
 
+class MoonParsingResult(BaseModel):
+    systems_added: int = 0
+    systems_ignored: int = 0
+    moons_added: int = 0
+    moons_ignored: int = 0
+    ids_added: List[int] = []
+
+
 def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
     """
     Example moon format
@@ -65,9 +73,15 @@ def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
     return moons
 
 
-def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
+def process_moon_paste(
+    moon_paste: str, user_id: int = None
+) -> MoonParsingResult:
     parsed_moons = _parse_eve_moon_format(moon_paste)
-    ids = []
+
+    result = MoonParsingResult()
+
+    ignored_moons = {}
+
     for parsed_moon in parsed_moons:
         system, _ = EsiSolarSystem.objects.get_or_create_esi(
             id=parsed_moon.system_id
@@ -80,12 +94,17 @@ def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
         # Name comes back as Rahadalon VI - Moon 1
         moon, _ = EsiMoon.objects.get_or_create_esi(id=parsed_moon.moon_id)
         moon_number = int(moon.name.split(" ")[-1])
-        eve_moon, _ = EveMoon.objects.get_or_create(
+        eve_moon, created = EveMoon.objects.get_or_create(
             system=system.name,
             planet=planet_number,
             moon=moon_number,
             defaults={"reported_by_id": user_id},
         )
+
+        if created:
+            result.moons_added += 1
+        else:
+            ignored_moons[moon.name] = True
 
         if not EveMoonDistribution.objects.filter(
             moon=eve_moon, ore=parsed_moon.ore
@@ -96,5 +115,8 @@ def process_moon_paste(moon_paste: str, user_id: int = None) -> List[int]:
                 yield_percent=parsed_moon.quantity,
             )
 
-        ids.append(eve_moon.id)
-    return ids
+        result.ids_added.append(eve_moon.id)
+
+    result.moons_ignored = len(ignored_moons)
+
+    return result
