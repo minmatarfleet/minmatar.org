@@ -30,7 +30,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 <Flexblock
     x-data={`{
         notifications_support: null,
-        fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id)},
+        fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id > 0)},
         notifications_permission: null,
         check_notification_support() {
             this.notifications_support = ('serviceWorker' in navigator) && ('Notification' in window)
@@ -88,6 +88,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                 <SwitchSquare
                     x-on:change="toogle_subscription()"
                     class="[ w-full ]"
+                    checked={is_subscripted && subscription_id > 0}
                     x-model="fleet_notifications"
                     label={t('fleet_notifications')}
                     description={t('fleet_notifications_description')}
