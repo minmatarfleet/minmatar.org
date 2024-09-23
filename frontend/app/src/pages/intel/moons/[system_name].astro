@@ -57,7 +57,12 @@ try {
             name: planet.name,
             type_id: planet.type_id,
             scanned: planet_moons_ui.reduce((c, v) => c + (v.scanned ? 1 : 0), 0),
-            moons: planet_moons_ui,
+            moons: planet_moons_ui.sort((a, b) => {
+                let numA = parseInt(a.name.split("Moon ")[1]);
+                let numB = parseInt(b.name.split("Moon ")[1]);
+                
+                return numA - numB;
+            }),
         }
     })
 } catch (error) {
