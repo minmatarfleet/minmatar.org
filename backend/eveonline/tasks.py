@@ -136,15 +136,16 @@ def update_character_affilliations():
 
 @app.task
 def update_characters():
+    counter = 0
     for character in EveCharacter.objects.all():
         logger.info("Updating character %s", character.character_id)
         update_character_skills.apply_async(
-            args=[character.character_id], countdown=character.id % 86400
+            args=[character.character_id], countdown=counter % 86400
         )
         update_character_assets.apply_async(
-            args=[character.character_id], countdown=character.id % 86400
+            args=[character.character_id], countdown=counter % 86400
         )
-
+        counter += 1
 
 @app.task
 def update_character_skills(eve_character_id):
