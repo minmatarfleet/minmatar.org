@@ -147,6 +147,7 @@ def update_characters():
         )
         counter += 4
 
+
 @app.task
 def update_character_skills(eve_character_id):
     logger.info("Updating skills for character %s", eve_character_id)
