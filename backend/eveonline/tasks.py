@@ -145,7 +145,7 @@ def update_characters():
         update_character_assets.apply_async(
             args=[character.character_id], countdown=counter % 86400
         )
-        counter += 1
+        counter += 4
 
 @app.task
 def update_character_skills(eve_character_id):
