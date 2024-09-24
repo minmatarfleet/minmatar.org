@@ -103,7 +103,7 @@ export const ui = {
         'page_finder.fleets.history.description': 'History of fleets',
 
         'intel.page_title': 'Intel',
-        'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news. There are three important elements that a fleet commander must know for every structure.',
+        'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news.',
         'intel.meta_description': 'Learn more about intel at Minmatar Fleet Alliance, and report various timers.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
         'intel.description': 'Inspect active structure timers and submit new ones and moon scans',
