@@ -38,6 +38,9 @@ services:
         restart: always
         env_file: .env
         command: celery -A app worker -l info
+        deploy:
+            mode: replicated
+            replicas: 6
         depends_on:
             - app
 
