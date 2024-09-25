@@ -53,6 +53,7 @@ const value = t('wyswyg_placeholder')
     .toastui-editor-defaultUI-toolbar,
     .toastui-editor-defaultUI {
         border-radius: 0;
+        font-family: var(--content-font);
     }
 
     .toastui-editor-toolbar {
@@ -164,6 +165,7 @@ const value = t('wyswyg_placeholder')
     .toastui-editor {
         flex-basis: 0;
         flex-grow: 999;
+        max-width: 744px;
     }
 
     .toastui-editor-md-preview-highlight {
@@ -234,5 +236,93 @@ const value = t('wyswyg_placeholder')
         &:hover {
             color: var(--highlight);
         }
+    }
+
+    .toastui-editor-ok-button,
+    .toastui-editor-close-button,
+    .toastui-editor-dark .toastui-editor-popup-body .toastui-editor-file-select-button {
+        --background-color: var(--fleet-red);
+        --button-color: var(--fleet-yellow);
+        --font-size: var(--step--0);
+
+        display: inline-block;
+        text-decoration: none;
+        font-size: var(--font-size);
+        font-family: var(--button-font);
+        text-transform: uppercase;
+        text-align: left;
+        border: solid 1px var(--background-color) !important;
+        color: var(--button-color) !important;
+        background-color: var(--background-color) !important;
+        padding: var(--space-2xs) var(--space-xs-s) !important;
+        align-items: center;
+        transition: var(--fast-transition);
+        padding-inline: var(--space-s) !important;
+        border-radius: 0 !important;
+        height: auto !important;
+        font-weight: 400 !important;
+        line-height: 1.1 !important;
+
+        &.narrow {
+            padding-inline: var(--space-2xs);
+        }
+
+        :global(svg) {
+            scale: 0.85;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        @media (hover: hover) {
+            &:focus-visible,
+            &:hover:not([disabled]) {
+                cursor: pointer;
+                transform: scale(1.05);
+            }
+
+            &[data-size="sm"] {
+                &:focus-visible,
+                &:hover:not([disabled]) {
+                    transform: scale(1.1);
+                }
+            }
+        }
+    }
+
+    .toastui-editor-ok-button {
+        --background-color: var(--green);
+    }
+
+    .toastui-editor-tabs {
+        display: flex;
+        gap: var(--space-m);
+    }
+
+    .toastui-editor-dark .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item {
+        font-weight: 400;
+        color: var(--fleet-yellow);
+        border: none !important;
+        padding: 0 !important;
+        width: auto;
+        height: auto;
+        line-height: 1.1;
+    }
+
+    .toastui-editor-dark .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item.active {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .toastui-editor-popup {
+        border: none !important;
+        background-color: var(--light-transparency-background) !important;
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
+        border: solid 1px var(--border-color) !important;
+    }
+
+    .toastui-editor-popup-add-link .toastui-editor-popup-body, .toastui-editor-popup-add-image .toastui-editor-popup-body {
+        padding: var(--space-s);
     }
 </style>
