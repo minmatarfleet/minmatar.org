@@ -824,6 +824,7 @@ export const ui = {
         'rapid_unscheduled_disassembly_description_fallback': 'Highly Skilled and Highly Motivated, -RUDE Combines the best talent in all of New Eden. Forged in the hellscape of Pochven, We stay at the top of our game and we’re always looking for others who can do the same',
         'balls_deep_expeditionary_description_fallback': 'You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.',
         'l34rn_description_fallback': 'Enjoy a tailored learning experience while contibruting to one of the most active PvP alliances in the game.',
+        'exitstrategy_description_fallback': 'Over a decade of experience in wormhole space, operating when most of the universe is asleep.',
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',

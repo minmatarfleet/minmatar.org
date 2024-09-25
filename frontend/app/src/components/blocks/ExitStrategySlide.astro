@@ -1,0 +1,147 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const SIN_ALARMA_ID = 94914644
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="exitstrategy-slide"
+    ceo_image='/images/corporations/exitstrategy/ceo.png'
+    ceo_character_id={SIN_ALARMA_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ astero ]" src="/images/corporations/exitstrategy/astero.png" />
+    <img slot="ships" class="[ legion ]" src="/images/corporations/exitstrategy/legion.png" />
+    <img slot="ships" class="[ loki ]" src="/images/corporations/exitstrategy/loki.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('exitstrategy_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .astero {
+        position: absolute;
+        top: 24%;
+        right: 40%;
+        height: auto;
+        width: 32%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .legion {
+        position: absolute;
+        top: 30%;
+        right: 41%;
+        width: 60%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .loki {
+        position: absolute;
+        right: 41%;
+        top: 30%;
+        width: 64%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    @keyframes astero {
+        from {
+            transform: scale(0);
+            top: 24%;
+            right: 40%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 5%;
+            right: 43%;
+        }
+    }
+
+    @keyframes legion {
+        from {
+            transform: scale(0);
+            top: 22%;
+            right: 29%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 20%;
+            right: 44%;
+        }
+    }
+
+    @keyframes loki {
+        from {
+            transform: scale(0);
+            top: 30%;
+            right: 41%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 32%;
+            right: 41%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #exitstrategy-slide .ceo {
+        right: 7%;
+    }
+
+    .swiper-slide-active {
+        .astero {
+            animation: astero cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .legion {
+            animation: legion cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .loki {
+            animation: loki cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
