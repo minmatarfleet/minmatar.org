@@ -7,6 +7,7 @@ interface Props {
     border?:    boolean;
     highlight?: boolean;
     gap?:       string;
+    title_el?:  string;
     [propName: string]: any;
 }
 
@@ -18,8 +19,11 @@ const {
     border = false,
     highlight = true,
     gap = 'var(--space-s)',
+    title_el = 'span',
     ...attributes
 } = Astro.props
+
+const TitleElement = title_el
 
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -38,14 +42,14 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         </picture>
     </slot>
     <Flexblock gap='0'>
-        <span
+        <TitleElement
             class:list={[
                 'min-w-[200px]',
                 { 'text-[var(--highlight)]': highlight }
             ]}
         >
-            {title}
-        </span>
+            {title} <slot name="title"></slot>
+        </TitleElement>
         <slot>
             {subtitle &&
                 <small>{subtitle}</small>

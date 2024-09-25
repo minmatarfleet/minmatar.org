@@ -4,8 +4,9 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 from app.errors import ErrorResponse
+
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 doctrines_router = Router(tags=["Ships"])
 fittings_router = Router(tags=["Ships"])

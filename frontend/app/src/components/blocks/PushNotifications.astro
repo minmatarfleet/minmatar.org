@@ -12,12 +12,11 @@ const {
     notification_subscriptions,
 } = Astro.props
 
-const is_subscripted = notification_subscriptions ? (notification_subscriptions.filter((subscription) => subscription.id === subscription_id) !== undefined) : true
-
 import { get_app_url } from '@helpers/env'
 const SUBSCRIPTION_URL = `${get_app_url()}/api/notifications`
 
 const subscription_id = Astro.cookies.has('subscription_id') ? parseInt(Astro.cookies.get('subscription_id').value) : null
+const is_subscripted = notification_subscriptions ? (notification_subscriptions.filter((subscription) => subscription.id === subscription_id) !== undefined) : true
 
 import FlexInline from "@components/compositions/FlexInline.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -31,7 +30,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 <Flexblock
     x-data={`{
         notifications_support: null,
-        fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id)},
+        fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id > 0)},
         notifications_permission: null,
         check_notification_support() {
             this.notifications_support = ('serviceWorker' in navigator) && ('Notification' in window)
@@ -89,6 +88,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                 <SwitchSquare
                     x-on:change="toogle_subscription()"
                     class="[ w-full ]"
+                    checked={is_subscripted && subscription_id > 0}
                     x-model="fleet_notifications"
                     label={t('fleet_notifications')}
                     description={t('fleet_notifications_description')}

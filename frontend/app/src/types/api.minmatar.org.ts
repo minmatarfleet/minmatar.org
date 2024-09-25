@@ -181,6 +181,7 @@ export interface Fleet {
     fleet_commander:    number;
     doctrine_id:        number;
     location:           string;
+    disable_motd:       boolean;
     tracking:           Tracking;
 }
 
@@ -203,6 +204,7 @@ export interface FleetRequest {
     doctrine_id:    number;
     location_id:    number;
     audience_id:    number;
+    disable_motd:   boolean;
 }
 
 export interface MumbleInformation {
@@ -317,4 +319,17 @@ export interface DoctrineComposition {
 export interface Ships {
     fitting:            Fitting;
     ideal_ship_count:   number;
+}
+
+export interface SystemMoon {
+    id:             number;
+    system:         string;
+    planet:         string;
+    moon:           number;
+    reported_by:    string;
+}
+
+export interface MoonSummarySystem {
+    system:         string;
+    scanned_moons:  number;
 }

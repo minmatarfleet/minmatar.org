@@ -1,10 +1,11 @@
-import logging
-import requests
 import datetime
+import logging
+
+import requests
 
 from app.celery import app
 
-from .models import set_status, update_lp_item, lp_type_ids, lp_blueprint_ids
+from .models import lp_blueprint_ids, lp_type_ids, set_status, update_lp_item
 
 base_url = "https://esi.evetech.net/latest"
 region_forge = "10000002"
