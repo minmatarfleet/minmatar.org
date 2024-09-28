@@ -38,15 +38,17 @@ corporations.forEach( (corp, i) => {
     if (!CORPORATIONS_WIDTH_SLIDE.includes(corp.corporation_name)) {
         corporations_with_no_slide.push(corp)
         corp_filter.push(corp.corporation_id)
-    } else {
-        pagination_icons.push(get_corporation_logo(corp.corporation_id, 64))
     }
 });
 
 corporations = corporations.filter( (i) => !corp_filter.includes(i.corporation_id) )
 let corporations_sorted:CorporationObject[] = []
 
-CORPORATIONS_WIDTH_SLIDE.forEach(corp_name => corporations_sorted.push(corporations.find(corporation => corporation.corporation_name === corp_name)))
+CORPORATIONS_WIDTH_SLIDE.forEach(corp_name => {
+    const corp = corporations.find(corporation => corporation.corporation_name === corp_name)
+    corporations_sorted.push(corp)
+    pagination_icons.push(get_corporation_logo(corp.corporation_id, 64))
+})
 
 const MINMATAR_FLEET_ID = 99011978
 const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
