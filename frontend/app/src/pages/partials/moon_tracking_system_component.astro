@@ -32,8 +32,8 @@ let total_scanned:number = 0
 let fetch_moon_system_data_error:string
 
 try {
-    planets = await find_system_planets(system_name)
     const system_id = await get_system_id(system_name)
+    planets = await find_system_planets(system_id)
     moons = await find_systems_moons([system_id])
     scanned_moons = await fetch_scanned_moons(auth_token, system_name)
 

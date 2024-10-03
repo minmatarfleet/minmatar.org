@@ -155,8 +155,8 @@ export async function find_system_moons_fast(system_name:string) {
     return q as MoonBasic[]
 }
 
-export async function find_system_planets(system_name:string) {
-    console.log(`Requesting: sde_db.find_system_planets(${system_name})`)
+export async function find_system_planets(system_id:number) {
+    console.log(`Requesting: sde_db.find_system_planets(${system_id})`)
 
     const SDE_PLANETS_GROUP_ID = 7
 
@@ -177,7 +177,7 @@ export async function find_system_planets(system_name:string) {
     .where(
         and(
             eq(schema.invUniqueNames.groupId, SDE_PLANETS_GROUP_ID),
-            like(schema.mapSolarSystems.solarSystemName, `${system_name}%`)
+            eq(schema.mapSolarSystems.solarSystemId, system_id)
         )
     );
     
