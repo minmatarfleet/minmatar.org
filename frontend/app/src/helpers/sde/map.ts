@@ -107,7 +107,7 @@ export async function filter_systems_by_name(find:string) {
 }
 
 export async function find_systems_moons(systems_ids:number[]) {
-    console.log(`Requesting: sde_db.find_systems_moons(${systems_ids.join(',')})`)
+    console.log(`Requesting: sde_db.find_system_moons(${systems_ids.join(',')})`)
 
     const SDE_MOONS_GROUP_ID = 8
 
