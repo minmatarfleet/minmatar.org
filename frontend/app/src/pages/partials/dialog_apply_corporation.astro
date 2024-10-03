@@ -32,14 +32,18 @@ import CorporationItem from '@components/blocks/CorporationItem.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Markdown from '@components/icons/buttons/Markdown.astro';
+
+const MAX_APPLICATION_TEXT_LENGTH = 2000
 ---
 
 <Flexblock
     x-data={`{
         application_text: '',
+        error: true,
         update_status() {
             confirm_dialog_hx.vals = JSON.stringify(this.application_text)
-            confirm_dialog_set_accept_disable(!this.application_text)
+            this.error = !this.application_text || this.application_text.length > ${MAX_APPLICATION_TEXT_LENGTH}
+            confirm_dialog_set_accept_disable(this.error)
         }
     }`}
     x-init="update_status"
@@ -49,7 +53,17 @@ import Markdown from '@components/icons/buttons/Markdown.astro';
     <CorporationItem corporation={corporation} />
     <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
         <label for="description">{t('application_text')}</label>
-        <Textarea id="description" x-model="application_text" rows="5" />
+        <div class="[ remain-wrapper ]" x-data={`{ limit: $el.dataset.limit }`} data-limit={MAX_APPLICATION_TEXT_LENGTH}>
+            <Textarea x-ref="content" id="description" x-model="application_text" rows="5" />
+            <small
+                x-show={`application_text.length > ${MAX_APPLICATION_TEXT_LENGTH - 200}`}
+                x-ref="remaining"
+                x-text="limit - application_text.length"
+                x-bind:class="(error ? 'text-red animate-fade-in-up' : '')"
+            >
+                {MAX_APPLICATION_TEXT_LENGTH}
+            </small>
+        </div>
         <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
             <FlexInline gap='var(--space-3xs)'>
                 <Markdown />
@@ -58,3 +72,19 @@ import Markdown from '@components/icons/buttons/Markdown.astro';
         </a>
     </Flexblock>
 </Flexblock>
+
+<style lang="scss">
+    .remain-wrapper {
+        position: relative;
+
+        small {
+            position: absolute;
+            right: var(--space-2xs);
+            bottom: var(--space-3xs);
+
+            &.text-red {
+                font-weight: 600;
+            }
+        }
+    }
+</style>
