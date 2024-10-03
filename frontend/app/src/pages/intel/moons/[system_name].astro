@@ -21,7 +21,7 @@ if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
 let system_name = Astro.params.system_name
 
 import { fetch_scanned_moons } from '@helpers/fetching/moons'
-import { find_system_planets, find_system_moons, get_system_sun_type_id_by_name } from '@helpers/sde/map'
+import { find_system_planets, get_system_id, find_systems_moons, get_system_sun_type_id_by_name } from '@helpers/sde/map'
 import type { PlanetBasic, MoonBasic, MoonUI, PlanetMoonsUI } from '@dtypes/layout_components'
 
 let planets:PlanetBasic[] = []
@@ -34,7 +34,8 @@ let fetch_moon_system_data_error:string
 
 try {
     planets = await find_system_planets(system_name)
-    moons = await find_system_moons(system_name)
+    const system_id = await get_system_id(system_name)
+    moons = await find_systems_moons([system_id])
     scanned_moons = await fetch_scanned_moons(auth_token, system_name)
     sun_type_id = await get_system_sun_type_id_by_name(system_name)
 
