@@ -821,8 +821,9 @@ export interface ConstellationBasic {
 }
 
 export interface MoonBasic {
-    id:      number;
-    name:    string;
+    id:         number;
+    name:       string;
+    system_id?: number;
 }
 
 export interface PlanetBasic {

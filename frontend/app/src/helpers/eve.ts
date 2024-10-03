@@ -221,7 +221,7 @@ export const get_moon_systems = async (origin_system_name:string, distance:numbe
 
         constellation_systems.push({
             system_name: sde_system.solarSystemName,
-            system_id: sde_system.sunTypeId,
+            system_id: sde_system.solarSystemId,
             sun_type_id: sde_system.sunTypeId,
             distance_yl: distance_yl,
             region_name: sde_system.regionName,
