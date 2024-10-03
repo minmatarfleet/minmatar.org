@@ -1,5 +1,5 @@
 import { sde_db } from '@helpers/sde_db';
-import { eq, and, or, sql, like } from 'drizzle-orm';
+import { eq, and, or, sql, like, inArray } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
 import type { RegionBasic, MoonBasic, PlanetBasic } from '@dtypes/layout_components'
@@ -106,14 +106,15 @@ export async function filter_systems_by_name(find:string) {
     return q as sde_filtered_system[]
 }
 
-export async function find_system_moons(system_name:string) {
-    console.log(`Requesting: sde_db.find_system_moons(${system_name})`)
+export async function find_systems_moons(systems_ids:number[]) {
+    console.log(`Requesting: sde_db.find_systems_moons(${systems_ids.join(',')})`)
 
     const SDE_MOONS_GROUP_ID = 8
 
     const q = await sde_db.select({
         id: schema.invItems.itemId,
         name: schema.invUniqueNames.itemName,
+        system_id: schema.mapSolarSystems.solarSystemId,
     })
     .from(schema.invItems)
     .innerJoin(
@@ -127,7 +128,7 @@ export async function find_system_moons(system_name:string) {
     .where(
         and(
             eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
-            like(schema.mapSolarSystems.solarSystemName, `${system_name}%`)
+            inArray(schema.mapSolarSystems.solarSystemId, systems_ids)
         )
     );
     

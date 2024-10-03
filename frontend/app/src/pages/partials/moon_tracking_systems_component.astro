@@ -20,7 +20,7 @@ if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
 
 import { get_moon_systems } from '@helpers/eve'
 import { get_moon_summary } from '@helpers/api.minmatar.org/moons'
-import { find_system_moons_fast } from '@helpers/sde/map'
+import { find_systems_moons } from '@helpers/sde/map'
 import type { SystemCardInfo } from '@dtypes/layout_components'
 
 let systems:SystemCardInfo[] = []
@@ -52,8 +52,11 @@ try {
     else
         filtered_systems = systems
 
+    const systems_ids = filtered_systems.map(system => system.system_id)
+    const systems_moons = await find_systems_moons(systems_ids)
+
     filtered_systems = await Promise.all(filtered_systems.map(async (system) => {
-        const moons_in_system = await find_system_moons_fast(system.system_name)
+        const moons_in_system = systems_moons.filter(moon => moon.system_id === system.system_id)
         system.moons_count = moons_in_system.length
         return system
     }))
