@@ -262,6 +262,17 @@
         }
     },
     {
+        "slug": "intel.moon_tracking",
+        "alt": "icon.planet.alt",
+        "path": "/intel/moons",
+        "publish": true,
+        "icon": "/images/icons/48px-Planets.png",
+        "description": "page_finder.intel.moon_tracking.description",
+        "permissions" : {
+            "user": [ "moons.view_evemoon" ]
+        }
+    },
+    {
         "slug": "assets.user",
         "alt": "icon.assets.alt",
         "path": "/character/assets/user/",

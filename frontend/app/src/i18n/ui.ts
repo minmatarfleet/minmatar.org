@@ -612,6 +612,7 @@ export const ui = {
         'page_finder.intel.description': 'Intel landing page',
         'page_finder.intel.timers.active.description': 'List of active structure timers',
         'page_finder.intel.timers.history.description': 'List of past structure timers',
+        'page_finder.intel.moon_tracking.description': 'Explore for moons scanning completion',
         'page_finder.intel.timers.add.description': 'Submit a new structure timers',
         'page_finder.assets.user.description': 'View all your characters assets',
         'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
