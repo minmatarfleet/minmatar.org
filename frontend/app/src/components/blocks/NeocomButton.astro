@@ -125,4 +125,12 @@ import Tippy from '@components/blocks/Tippy.astro';
     :global(button.neocom-button:hover img) {
         filter: drop-shadow(0 0 5px white);
     }
+
+    :global(.neocom-button-focus:focus) {
+        outline: none;
+    }
+
+    :global(.neocom-button-focus:focus img) {
+        filter: drop-shadow(0 0 5px white) !important;
+    }
 </style>

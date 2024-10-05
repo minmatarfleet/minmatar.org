@@ -21,6 +21,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 import { ViewTransitions } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
+import CharacterFinder from '@components/blocks/CharacterFinder.astro';
 
 import SkipToContent from '@components/blocks/SkipToContent.astro';
 // import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
@@ -70,8 +71,7 @@ const {
 } = Astro.props
 
 components.modal = components.modal ?? true
-
-const CHARACTER_FINDER_PARTIAL_URL = translatePath('/partials/character_finder_component')
+ 
 const FITTING_FINDER_PARTIAL_URL = translatePath('/partials/fitting_finder_component')
 
 import '@fontsource-variable/montserrat';
@@ -186,12 +186,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		}
 
 		{(user) &&
-			<div
-				transition:persist
-				hx-get={CHARACTER_FINDER_PARTIAL_URL}
-				hx-trigger="load"
-				hx-indicator=".loader"
-			/>
+			<CharacterFinder />
 		}
 
 		<div
