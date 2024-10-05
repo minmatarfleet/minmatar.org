@@ -65,7 +65,16 @@ export async function get_all_corporations_applications(access_token:string, rec
             applications: []
         }
 
-        const api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
+        let api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
+        api_applications = api_applications.filter(application => {
+            if (records && (application.status === 'accepted' || application.status === 'rejected'))
+                return true
+
+            if (!records && (application.status !== 'accepted' && application.status !== 'rejected'))
+                return true
+
+            return false
+        })
 
         application.applications = (await Promise.all(api_applications.map(async (application) => {
             let character:EveCharacterProfile
@@ -86,15 +95,7 @@ export async function get_all_corporations_applications(access_token:string, rec
                 corporation_name: character_error ?? character?.corporation_name ?? t('unknown_corporation'),
                 status: application.status,
             } as ApplicationBasic
-        }))).filter( (application) => {
-            if (records && (application.status === 'accepted' || application.status === 'rejected'))
-                return true
-
-            if (!records && (application.status !== 'accepted' && application.status !== 'rejected'))
-                return true
-
-            return false
-        })
+        })))
 
         return application
     })))
