@@ -9,6 +9,7 @@ interface Props {
     character_name: string;
     corporation?:   CorporationBasic | false;
     size?:          EvEImageServiceSize;
+    inert?:         boolean;
     [propName: string]: any;
 }
 
@@ -17,6 +18,7 @@ const {
     character_name,
     corporation = false,
     size = 64,
+    inert = false,
     ...attributes
 } = Astro.props
 
@@ -34,7 +36,12 @@ const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : 
 delete attributes.class
 ---
 
-<FixedFluid width={`${size}px`} gap={size < 64 ? 'var(--space-3xs)' : 'var(--space-s)'} class:list={['pilot-item', Astro.props.class]} {...attributes}>
+<FixedFluid
+    width={`${size}px`}
+    gap={size < 64 ? 'var(--space-3xs)' : 'var(--space-s)'}
+    class:list={['pilot-item', { 'inert': inert }, Astro.props.class]}
+    {...attributes}
+>
     <CharacterPicture
         character_id={character_id}
         character_name={character_name}
@@ -79,3 +86,9 @@ delete attributes.class
         </Flexblock>
     </VerticalCenter>
 </FixedFluid>
+
+<style lang="scss">
+    .inert {
+        pointer-events: none;
+    }
+</style>
