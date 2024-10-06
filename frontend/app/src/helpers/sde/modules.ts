@@ -8,7 +8,7 @@ export async function get_module_props(module_name:string) {
     console.log(`Requesting: sde_db.get_module_props(${module_name})`)
 
     const q = await sde_db.select({
-        typeId: schema.invTypes.typeId,
+        typeId: schema.invTypes.typeID,
         moduleName: schema.invTypes.typeName,
         groupName: schema.invGroups.groupName,
         metaName: schema.invMetaGroups.metaGroupName,
@@ -17,23 +17,23 @@ export async function get_module_props(module_name:string) {
     .from(schema.invTypes)
     .innerJoin(
         schema.invMetaTypes,
-        eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
+        eq(schema.invTypes.typeID, schema.invMetaTypes.typeID),
     )
     .innerJoin(
         schema.invGroups,
-        eq(schema.invTypes.groupId, schema.invGroups.groupId),
+        eq(schema.invTypes.groupID, schema.invGroups.groupID),
     )
     .innerJoin(
         schema.invMetaGroups,
-        eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
+        eq(schema.invMetaTypes.metaGroupID, schema.invMetaGroups.metaGroupID),
     )
     .innerJoin(
         schema.dgmTypeEffects,
-        eq(schema.invTypes.typeId, schema.dgmTypeEffects.typeId),
+        eq(schema.invTypes.typeID, schema.dgmTypeEffects.typeID),
     )
     .innerJoin(
         schema.dgmEffects,
-        eq(schema.dgmTypeEffects.effectId, schema.dgmEffects.effectId),
+        eq(schema.dgmTypeEffects.effectID, schema.dgmEffects.effectID),
     )
     .where(
         and(
@@ -69,15 +69,15 @@ export async function get_weapon_charges_type(weapon_id:number) {
     .from(schema.invTypes)
     .innerJoin(
         schema.dgmTypeAttributes,
-        eq(schema.invTypes.typeId, schema.dgmTypeAttributes.typeId)
+        eq(schema.invTypes.typeID, schema.dgmTypeAttributes.typeID)
     )
     .innerJoin(
         schema.dgmAttributeTypes,
-        eq(schema.dgmTypeAttributes.attributeId, schema.dgmAttributeTypes.attributeId)
+        eq(schema.dgmTypeAttributes.attributeID, schema.dgmAttributeTypes.attributeID)
     )
     .where(
         and(
-            eq(schema.invTypes.typeId, weapon_id),
+            eq(schema.invTypes.typeID, weapon_id),
             eq(schema.dgmAttributeTypes.attributeName, 'Charge size'),
         )
     )
@@ -90,15 +90,15 @@ export async function get_module_model(module_id:number) {
     .from(schema.invTypes)
     .innerJoin(
         schema.dgmTypeAttributes,
-        eq(schema.invTypes.typeId, schema.dgmTypeAttributes.typeId)
+        eq(schema.invTypes.typeID, schema.dgmTypeAttributes.typeID)
     )
     .innerJoin(
         schema.eveGraphics,
-        eq(schema.invTypes.graphicId, schema.eveGraphics.graphicId)
+        eq(schema.invTypes.graphicID, schema.eveGraphics.graphicID)
     )
     .where(
         and(
-            eq(schema.invTypes.typeId, module_id),
+            eq(schema.invTypes.typeID, module_id),
         )
     )
     .limit(1)

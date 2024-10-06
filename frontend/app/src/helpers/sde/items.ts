@@ -6,7 +6,7 @@ export async function get_item_id(item_name:string) {
     console.log(`Requesting: sde_db.get_item_id(${item_name})`)
 
     const q = await sde_db.select({
-        typeId: schema.invTypes.typeId,
+        typeId: schema.invTypes.typeID,
     })
     .from(schema.invTypes)
     .where(
@@ -30,14 +30,14 @@ export async function get_item_category(item_id:number) {
     .from(schema.invTypes)
     .innerJoin(
         schema.invGroups,
-        eq(schema.invTypes.groupId, schema.invGroups.groupId),
+        eq(schema.invTypes.groupID, schema.invGroups.groupID),
     )
     .innerJoin(
         schema.invCategories,
-        eq(schema.invGroups.categoryId, schema.invCategories.categoryId),
+        eq(schema.invGroups.categoryID, schema.invCategories.categoryID),
     )
     .where(
-        eq(schema.invTypes.typeId, item_id),
+        eq(schema.invTypes.typeID, item_id),
     )
     .limit(1);
 

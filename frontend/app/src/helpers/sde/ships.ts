@@ -14,11 +14,11 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
     .from(schema.invTypes)
     .innerJoin(
         schema.dgmTypeAttributes,
-        eq(schema.invTypes.typeId, schema.dgmTypeAttributes.typeId),
+        eq(schema.invTypes.typeID, schema.dgmTypeAttributes.typeID),
     )
     .innerJoin(
         schema.dgmAttributeTypes,
-        eq(schema.dgmTypeAttributes.attributeId, schema.dgmAttributeTypes.attributeId),
+        eq(schema.dgmTypeAttributes.attributeID, schema.dgmAttributeTypes.attributeID),
     )
     .where(
         and(
@@ -26,7 +26,7 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
             or(
                 and(
                     eq(schema.dgmAttributeTypes.published, '1'),
-                    eq(schema.dgmAttributeTypes.categoryId, 1),
+                    eq(schema.dgmAttributeTypes.categoryID, 1),
                 ),
                 eq(schema.dgmAttributeTypes.attributeName, 'Subsystem Slots'),
             )
@@ -67,24 +67,24 @@ export async function get_ship_info(ship_id:number) {
     .from(schema.invGroups)
     .innerJoin(
         schema.invTypes,
-        eq(schema.invGroups.groupId, schema.invTypes.groupId),
+        eq(schema.invGroups.groupID, schema.invTypes.groupID),
     )
     .innerJoin(
         schema.chrRaces,
-        eq(schema.invTypes.raceId, schema.chrRaces.raceId),
+        eq(schema.invTypes.raceID, schema.chrRaces.raceID),
     )
     .leftJoin(
         schema.invMetaTypes,
-        eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
+        eq(schema.invTypes.typeID, schema.invMetaTypes.typeID),
     )
     .leftJoin(
         schema.invMetaGroups,
-        eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
+        eq(schema.invMetaTypes.metaGroupID, schema.invMetaGroups.metaGroupID),
     )
     .where(
         and(
-            eq(schema.invTypes.typeId, ship_id),
-            eq(schema.invGroups.categoryId, 6),
+            eq(schema.invTypes.typeID, ship_id),
+            eq(schema.invGroups.categoryID, 6),
         )
     )
     .limit(1)
@@ -112,10 +112,10 @@ export async function get_ship_graphics(ship_id:number) {
     .from(schema.invTypes)
     .innerJoin(
         schema.eveGraphics,
-        eq(schema.invTypes.graphicId, schema.eveGraphics.graphicId),
+        eq(schema.invTypes.graphicID, schema.eveGraphics.graphicID),
     )
     .where(
-        eq(schema.invTypes.typeId, ship_id)
+        eq(schema.invTypes.typeID, ship_id)
     )
     .limit(1)
 
