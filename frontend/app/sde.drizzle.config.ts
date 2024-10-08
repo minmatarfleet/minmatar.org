@@ -15,7 +15,7 @@ export default {
     out: "./src/models/sde/migrations/",
     driver: "better-sqlite",
     dbCredentials: {
-        url: "file:./src/data/sqlite-latest.sqlite",
+        url: "file:./src/data/sqlite-latest-2024-09-20.sqlite",
     },
     verbose: true,
     strict: true,
