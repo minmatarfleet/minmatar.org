@@ -36,6 +36,7 @@ class MoonResponse(BaseModel):
     planet: str
     moon: int
     reported_by: str
+    monthly_revenue: int
     distribution: List[MoonDistributionResponse]
 
 
@@ -149,10 +150,12 @@ def get_moons(request, system: str = None):
     return response
 
 
-# @moons_router.get("/{moon_id}", response=MoonResponse)
+@moons_router.get("/{moon_id}", response=MoonResponse, auth=AuthBearer())
 def get_moon(request, moon_id: int):
-    if not request.user.has_perm("moons.manage_evemoon"):
-        return ErrorResponse(detail="You do not have permission to view moons")
+    if not request.user.has_perm("moons.view_evemoondistribution"):
+        return ErrorResponse(
+            detail="You do not have permission to view moon distributions"
+        )
 
     moon = EveMoon.objects.get(id=moon_id)
     distribution = EveMoonDistribution.objects.filter(moon=moon)
@@ -168,6 +171,7 @@ def get_moon(request, moon_id: int):
         planet=moon.planet,
         moon=moon.moon,
         reported_by=reported_by_user,
+        monthly_revenue=moon.monthly_revenue,
         distribution=[
             MoonDistributionResponse(ore=d.ore, percentage=d.yield_percent)
             for d in distribution

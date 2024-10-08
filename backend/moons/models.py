@@ -105,6 +105,7 @@ class EveMoon(models.Model):
     system = models.CharField(max_length=100)
     planet = models.CharField(max_length=10)
     moon = models.IntegerField()
+    monthly_revenue = models.IntegerField(default=0)
     reported_by = models.ForeignKey(
         "auth.User", on_delete=models.CASCADE, null=True, blank=True
     )
