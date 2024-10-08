@@ -20,12 +20,17 @@ class MoonDistributionResponse(BaseModel):
     percentage: float
 
 
+class MoonDetailResponse(BaseModel):
+    monthly_revenue: int
+    reported_by: str
+
+
 class MoonViewResponse(BaseModel):
     id: int
     system: str
     planet: str
     moon: int
-    reported_by: str
+    detail: MoonDetailResponse
 
 
 class MoonResponse(BaseModel):
@@ -124,7 +129,11 @@ def get_moon_summary(request):
     auth=AuthBearer(),
 )
 def get_moons(request, system: str = None):
-    if not request.user.has_perm("moons.view_evemoon"):
+    if request.user.has_perm("moons.view_evemoondistribution"):
+        view_distribution = True
+    elif request.user.has_perm("moons.view_evemoon"):
+        view_distribution = False
+    else:
         return 403, ErrorResponse(
             detail="You do not have permission to view moons"
         )
@@ -138,19 +147,27 @@ def get_moons(request, system: str = None):
             reported_by_user = "{Unknown}"
         else:
             reported_by_user = moon.reported_by.username
-        response.append(
-            MoonViewResponse(
-                id=moon.id,
-                system=moon.system,
-                planet=moon.planet,
-                moon=moon.moon,
-                reported_by=reported_by_user,
-            )
+
+        moon_response = MoonViewResponse(
+            id=moon.id,
+            system=moon.system,
+            planet=moon.planet,
+            moon=moon.moon,
+            reported_by=reported_by_user,
         )
+
+        if view_distribution:
+            detail = MoonDetailResponse(
+                reported_by=moon.reported_by,
+                monthly_revenue=moon.monthly_revenue,
+            )
+            moon_response.detail = detail
+
+        response.append(moon_response)
     return response
 
 
-@moons_router.get("/{moon_id}", response=MoonResponse, auth=AuthBearer())
+# @moons_router.get("/{moon_id}", response=MoonResponse, auth=AuthBearer())
 def get_moon(request, moon_id: int):
     if not request.user.has_perm("moons.view_evemoondistribution"):
         return ErrorResponse(
