@@ -29,6 +29,7 @@ lp_type_ids = [
     31888,
     31892,
     31894,
+    15939,
 ]
 
 lp_blueprint_ids = {
