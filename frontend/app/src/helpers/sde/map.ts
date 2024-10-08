@@ -8,7 +8,7 @@ export async function get_system_id(solar_system:string) {
     console.log(`Requesting: sde_db.get_system_id(${solar_system})`)
 
     const q = await sde_db.select({
-        solarSystemId: schema.mapSolarSystems.solarSystemId,
+        solarSystemId: schema.mapSolarSystems.solarSystemID,
     })
     .from(schema.mapSolarSystems)
     .where(
@@ -41,23 +41,23 @@ export async function find_systems_by_name(find:string) {
     console.log(`Requesting: sde_db.find_systems_by_name(${find})`)
 
     const q = await sde_db.select({
-        solarSystemId: schema.mapSolarSystems.solarSystemId,
+        solarSystemId: schema.mapSolarSystems.solarSystemID,
         solarSystemName: schema.mapSolarSystems.solarSystemName,
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
+        sunTypeId: schema.mapSolarSystems.sunTypeID,
         security: schema.mapSolarSystems.security,
-        regionId: schema.mapSolarSystems.regionId,
+        regionId: schema.mapSolarSystems.regionID,
         regionName: schema.mapRegions.regionName,
-        constellationId: schema.mapSolarSystems.constellationId,
+        constellationId: schema.mapSolarSystems.constellationID,
         constellationName: schema.mapConstellations.constellationName,
     })
     .from(schema.mapSolarSystems)
     .innerJoin(
         schema.mapRegions,
-        eq(schema.mapSolarSystems.regionId, schema.mapRegions.regionId),
+        eq(schema.mapSolarSystems.regionID, schema.mapRegions.regionID),
     )
     .innerJoin(
         schema.mapConstellations,
-        eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
+        eq(schema.mapSolarSystems.constellationID, schema.mapConstellations.constellationID),
     )
     .where(
         like(schema.mapSolarSystems.solarSystemName, `%${find}%`),
@@ -81,23 +81,23 @@ export async function filter_systems_by_name(find:string) {
     console.log(`Requesting: sde_db.find_systems_by_name(${find})`)
 
     const q = await sde_db.select({
-        system_id: schema.mapSolarSystems.solarSystemId,
+        system_id: schema.mapSolarSystems.solarSystemID,
         system_name: schema.mapSolarSystems.solarSystemName,
-        sun_type_id: schema.mapSolarSystems.sunTypeId,
+        sun_type_id: schema.mapSolarSystems.sunTypeID,
         security: schema.mapSolarSystems.security,
-        region_id: schema.mapSolarSystems.regionId,
+        region_id: schema.mapSolarSystems.regionID,
         region_name: schema.mapRegions.regionName,
-        constellation_id: schema.mapSolarSystems.constellationId,
+        constellation_id: schema.mapSolarSystems.constellationID,
         constellation_name: schema.mapConstellations.constellationName,
     })
     .from(schema.mapSolarSystems)
     .innerJoin(
         schema.mapRegions,
-        eq(schema.mapSolarSystems.regionId, schema.mapRegions.regionId),
+        eq(schema.mapSolarSystems.regionID, schema.mapRegions.regionID),
     )
     .innerJoin(
         schema.mapConstellations,
-        eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
+        eq(schema.mapSolarSystems.constellationID, schema.mapConstellations.constellationID),
     )
     .where(
         like(schema.mapSolarSystems.solarSystemName, `${find}%`),
@@ -112,23 +112,23 @@ export async function find_systems_moons(systems_ids:number[]) {
     const SDE_MOONS_GROUP_ID = 8
 
     const q = await sde_db.select({
-        id: schema.invItems.itemId,
+        id: schema.invItems.itemID,
         name: schema.invUniqueNames.itemName,
-        system_id: schema.mapSolarSystems.solarSystemId,
+        system_id: schema.mapSolarSystems.solarSystemID,
     })
     .from(schema.invItems)
     .innerJoin(
         schema.mapSolarSystems,
-        eq(schema.invItems.locationId, schema.mapSolarSystems.solarSystemId),
+        eq(schema.invItems.locationID, schema.mapSolarSystems.solarSystemID),
     )
     .innerJoin(
         schema.invUniqueNames,
-        eq(schema.invUniqueNames.itemId, schema.invItems.itemId),
+        eq(schema.invUniqueNames.itemID, schema.invItems.itemID),
     )
     .where(
         and(
-            eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
-            inArray(schema.mapSolarSystems.solarSystemId, systems_ids)
+            eq(schema.invUniqueNames.groupID, SDE_MOONS_GROUP_ID),
+            inArray(schema.mapSolarSystems.solarSystemID, systems_ids)
         )
     );
     
@@ -141,13 +141,13 @@ export async function find_system_moons_fast(system_name:string) {
     const SDE_MOONS_GROUP_ID = 8
 
     const q = await sde_db.select({
-        id: schema.invUniqueNames.itemId,
+        id: schema.invUniqueNames.itemID,
         name: schema.invUniqueNames.itemName,
     })
     .from(schema.invUniqueNames)
     .where(
         and(
-            eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
+            eq(schema.invUniqueNames.groupID, SDE_MOONS_GROUP_ID),
             like(schema.invUniqueNames.itemName, `${system_name}%`)
         )
     );
@@ -161,23 +161,23 @@ export async function find_system_planets(system_id:number) {
     const SDE_PLANETS_GROUP_ID = 7
 
     const q = await sde_db.select({
-        id: schema.invItems.itemId,
+        id: schema.invItems.itemID,
         name: schema.invUniqueNames.itemName,
-        type_id: schema.invItems.typeId,
+        type_id: schema.invItems.typeID,
     })
     .from(schema.invItems)
     .innerJoin(
         schema.invUniqueNames,
-        eq(schema.invUniqueNames.itemId, schema.invItems.itemId),
+        eq(schema.invUniqueNames.itemID, schema.invItems.itemID),
     )
     .innerJoin(
         schema.mapSolarSystems,
-        eq(schema.invItems.locationId, schema.mapSolarSystems.solarSystemId),
+        eq(schema.invItems.locationID, schema.mapSolarSystems.solarSystemID),
     )
     .where(
         and(
-            eq(schema.invUniqueNames.groupId, SDE_PLANETS_GROUP_ID),
-            eq(schema.mapSolarSystems.solarSystemId, system_id)
+            eq(schema.invUniqueNames.groupID, SDE_PLANETS_GROUP_ID),
+            eq(schema.mapSolarSystems.solarSystemID, system_id)
         )
     );
     
@@ -188,11 +188,11 @@ export async function get_system_sun_type_id(solar_system_id:number) {
     console.log(`Requesting: sde_db.get_system_sun_type(${solar_system_id})`)
 
     const q = await sde_db.select({
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
+        sunTypeId: schema.mapSolarSystems.sunTypeID,
     })
     .from(schema.mapSolarSystems)
     .where(
-        eq(schema.mapSolarSystems.solarSystemId, solar_system_id),
+        eq(schema.mapSolarSystems.solarSystemID, solar_system_id),
     )
     .limit(1);
     
@@ -207,7 +207,7 @@ export async function get_system_sun_type_id_by_name(solar_system_name:string) {
     console.log(`Requesting: sde_db.get_system_sun_type_id_by_name(${solar_system_name})`)
 
     const q = await sde_db.select({
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
+        sunTypeId: schema.mapSolarSystems.sunTypeID,
     })
     .from(schema.mapSolarSystems)
     .where(
@@ -226,13 +226,13 @@ export async function get_systems_coordinates() {
     console.log(`Requesting: sde_db.get_systems_coordinates()`)
 
     const q = await sde_db.select({
-        regionId: schema.mapSolarSystems.regionId,
+        regionId: schema.mapSolarSystems.regionID,
         regionName: schema.mapRegions.regionName,
-        constellationId: schema.mapSolarSystems.constellationId,
+        constellationId: schema.mapSolarSystems.constellationID,
         constellationName: schema.mapConstellations.constellationName,
         solarSystemName: schema.mapSolarSystems.solarSystemName,
-        solarSystemId: schema.mapSolarSystems.solarSystemId,
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
+        solarSystemId: schema.mapSolarSystems.solarSystemID,
+        sunTypeId: schema.mapSolarSystems.sunTypeID,
         security: schema.mapSolarSystems.security,
         x: schema.mapSolarSystems.x,
         y: schema.mapSolarSystems.y,
@@ -241,11 +241,11 @@ export async function get_systems_coordinates() {
     .from(schema.mapSolarSystems)
     .innerJoin(
         schema.mapRegions,
-        eq(schema.mapSolarSystems.regionId, schema.mapRegions.regionId),
+        eq(schema.mapSolarSystems.regionID, schema.mapRegions.regionID),
     )
     .innerJoin(
         schema.mapConstellations,
-        eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
+        eq(schema.mapSolarSystems.constellationID, schema.mapConstellations.constellationID),
     )
     
     return q as sde_system[]
@@ -255,7 +255,7 @@ export async function get_regions() {
     console.log(`Requesting: sde_db.get_regions()`)
 
     const q = await sde_db.select({
-        id: schema.mapRegions.regionId,
+        id: schema.mapRegions.regionID,
         name: schema.mapRegions.regionName,
     })
     .from(schema.mapRegions);
@@ -269,7 +269,7 @@ export async function get_constellations() {
     console.log(`Requesting: sde_db.get_regions()`)
 
     const q = await sde_db.select({
-        id: schema.mapConstellations.constellationId,
+        id: schema.mapConstellations.constellationID,
         name: schema.mapConstellations.constellationName,
     })
     .from(schema.mapRegions);

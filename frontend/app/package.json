@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "studio": "drizzle-kit studio",
-    "introspect": "drizzle-kit introspect:sqlite",
+    "introspect": "drizzle-kit introspect",
+    "introspectsde": "drizzle-kit introspect --config=sde.drizzle.config.ts",
     "start": "astro dev",
     "build": "export $(cat .env.BUILDONLY) && astro check && astro build",
     "generate": "drizzle-kit generate --config=drizzle.config.ts",

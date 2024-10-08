@@ -127,5 +127,5 @@ dist
 .pnp.*
 
 # sde sqlite db
-sqlite-latest.sqlite
+sqlite-latest*.sqlite
 sqlite-main.sqlite
