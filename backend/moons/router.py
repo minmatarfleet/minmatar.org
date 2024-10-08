@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ninja import Router
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ class MoonViewResponse(BaseModel):
     system: str
     planet: str
     moon: int
-    detail: MoonDetailResponse
+    detail: Optional[MoonDetailResponse]
 
 
 class MoonResponse(BaseModel):
@@ -153,12 +153,12 @@ def get_moons(request, system: str = None):
             system=moon.system,
             planet=moon.planet,
             moon=moon.moon,
-            reported_by=reported_by_user,
+            reported_by="-",
         )
 
         if view_distribution:
             detail = MoonDetailResponse(
-                reported_by=moon.reported_by,
+                reported_by=reported_by_user,
                 monthly_revenue=moon.monthly_revenue,
             )
             moon_response.detail = detail
