@@ -21,7 +21,7 @@ class MoonDistributionResponse(BaseModel):
 
 
 class MoonDetailResponse(BaseModel):
-    monthly_revenue: int
+    monthly_revenue: Optional[int]
     reported_by: str
 
 
@@ -143,25 +143,26 @@ def get_moons(request, system: str = None):
         moons = moons.filter(system=system)
     response = []
     for moon in moons:
-        if moon.reported_by is None:
-            reported_by_user = "{Unknown}"
+        if view_distribution:
+            if moon.reported_by is None:
+                reported_by_user = "{Unknown}"
+            else:
+                reported_by_user = moon.reported_by.username
+
+            detail = MoonDetailResponse(
+                reported_by=reported_by_user,
+                monthly_revenue=moon.monthly_revenue,
+            )
         else:
-            reported_by_user = moon.reported_by.username
+            detail = None
 
         moon_response = MoonViewResponse(
             id=moon.id,
             system=moon.system,
             planet=moon.planet,
             moon=moon.moon,
-            reported_by="-",
+            detail=detail,
         )
-
-        if view_distribution:
-            detail = MoonDetailResponse(
-                reported_by=reported_by_user,
-                monthly_revenue=moon.monthly_revenue,
-            )
-            moon_response.detail = detail
 
         response.append(moon_response)
     return response
