@@ -322,11 +322,16 @@ export interface Ships {
 }
 
 export interface SystemMoon {
-    id:             number;
-    system:         string;
-    planet:         string;
-    moon:           number;
-    reported_by:    string;
+    id:         number;
+    system:     string;
+    planet:     string;
+    moon:       number;
+    detail:     SystemMoonDetails;
+}
+
+export interface SystemMoonDetails {
+    monthly_revenue?:   number;
+    reported_by:        string;
 }
 
 export interface MoonSummarySystem {
