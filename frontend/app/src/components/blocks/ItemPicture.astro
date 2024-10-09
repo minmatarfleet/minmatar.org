@@ -9,7 +9,7 @@ interface Props {
     item_name?:     string;
     size?:          EvEImageServiceSize;
     icon_quality?:  EvEImageServiceSize;
-    mask?:      boolean;
+    mask?:          boolean;
 }
 
 const {
@@ -22,7 +22,8 @@ const {
 
 import { get_item_icon } from '@helpers/eve_image_server';
 ---
-<picture>
+
+<picture class="animated">
     <img
         class:list={{ mask }}
         loading="lazy"

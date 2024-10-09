@@ -2,22 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { get_item_icon } from '@helpers/eve_image_server';
-
 import type { DoctrineType } from '@dtypes/layout_components'
 
-import Grid from '@components/compositions/Grid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
-import Badge from '@components/blocks/Badge.astro';
-import TippyBase from '@components/blocks/TippyBase.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
 
-import ShieldArmorIcon from '@components/icons/ShieldArmorIcon.astro';
-import ShieldIcon from '@components/icons/ShieldIcon.astro';
-import ArmorIcon from '@components/icons/ArmorIcon.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import FleetLogo from '@components/icons/FleetLogo.astro';
 
 interface Props {
     doctrine: DoctrineType;
@@ -28,6 +20,8 @@ const {
     doctrine,
     ...attributes
 } = Astro.props
+
+const primary_ship = doctrine.primary_fittings[0]
 
 const show_primary_fittings = true
 const show_secondary_fittings = false
@@ -42,104 +36,17 @@ const show_subtitles = ((show_primary_fittings ? 1 : 0) + (show_secondary_fittin
     gap='var(--space-m)'
 >
     <FlexInline justification='space-between'>
-        <Flexblock gap='var(--space-3xs)'>
-            <h2>{doctrine.name}</h2>
-            <small>{t(doctrine.type as any)}</small>
-        </Flexblock>
+        <FlexInline>
+            <ItemPicture item_id={primary_ship.ship_id} item_name={primary_ship.ship_name} />
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>{doctrine.name} {t('doctrine')}</h2>
+                <small>{t(doctrine.type as any)}</small>
+            </Flexblock>
+        </FlexInline>
         <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
             <MagnifierIcon slot="icon" />
             {t('view_details')}
         </Button>
-    </FlexInline>
-    <Grid
-        role="list"
-        class="[ w-full grid-fill ]"
-        min_item_width='270px'
-        row_gap='var(--space-s-m)'
-        column_gap='var(--space-s-m)'
-    >
-        {show_primary_fittings && doctrine.primary_fittings.map((fitting) => 
-            <a
-                class="[ items-center flex ]"
-                role="listitem"
-                href={translatePath(`/ships/fitting/${fitting.id}`)}
-            >
-                <Badge
-                    title={fitting.fitting_name}
-                    subtitle={show_subtitles ? t('primary') : null}
-                    image={get_item_icon(fitting.ship_id)}
-                    size={64}
-                    highlight={true}
-                />
-            </a>
-        )}
-        {show_secondary_fittings && doctrine.secondary_fittings.map((fitting) => 
-            <a
-                class="[ items-center flex ]"
-                role="listitem"
-                href={translatePath(`/ships/fitting/${fitting.id}`)}
-            >
-                <Badge
-                    title={fitting.fitting_name}
-                    subtitle={show_subtitles ? t('secondary') : null}
-                    image={get_item_icon(fitting.ship_id)}
-                    size={64}
-                    highlight={true}
-                />
-            </a>
-        )}
-        {show_support_fittings && doctrine.support_fittings.map((fitting) => 
-            <a
-                class="[ items-center flex ]"
-                role="listitem"
-                href={translatePath(`/ships/fitting/${fitting.id}`)}
-            >
-                <Badge
-                    title={fitting.fitting_name}
-                    subtitle={show_subtitles ? t('support') : null}
-                    image={get_item_icon(fitting.ship_id)}
-                    size={64}
-                    highlight={true}
-                />
-            </a>
-        )}
-    </Grid>
-    <FlexInline
-        class="[ !hidden w-full items-center ]"
-        gap='var(--space-m)'
-        justification='space-between'
-    >
-        <FlexInline>
-            {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
-                <TippyBase
-                    title={sig.name}
-                    description="doctrine_flayable_description"
-                >
-                    <Badge
-                        title={sig.name}
-                        image={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
-                        size={sig?.image_url ? 64 : 48}
-                        highlight={false}
-                    >
-                    </Badge>
-                </TippyBase>
-            )}
-
-            {!doctrine?.sigs?.length &&
-                <TippyBase description="alliance_doctrine_description">
-                    <Badge
-                        title={t('alliance_doctrine')}
-                        size={48}
-                        highlight={false}
-                    >
-                        <FleetLogo
-                            slot="picture"
-                            height="48"
-                        />
-                    </Badge>
-                </TippyBase>
-            }
-        </FlexInline>
     </FlexInline>
 </Flexblock>
 
