@@ -20,58 +20,24 @@ if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
 
 let system_name = Astro.params.system_name
 
-import { fetch_scanned_moons } from '@helpers/fetching/moons'
-import { find_system_planets, get_system_id, find_systems_moons, get_system_sun_type_id } from '@helpers/sde/map'
-import type { PlanetBasic, MoonBasic, MoonUI, PlanetMoonsUI } from '@dtypes/layout_components'
+import { get_system_moons_data } from '@helpers/pages/system_moons'
+import type { SystemMoonsData } from '@helpers/pages/system_moons'
 
-let planets:PlanetBasic[] = []
-let moons:MoonBasic[] = []
-let scanned_moons:MoonUI[] = []
-let planet_moons:PlanetMoonsUI[] = []
-let total_scanned:number = 0
-let sun_type_id:number
-let fetch_moon_system_data_error:string
+let system_moons_data:SystemMoonsData = {}
+let data_fetching_error
 
 try {
-    const system_id = await get_system_id(system_name)
-    planets = await find_system_planets(system_id)
-    moons = await find_systems_moons([system_id])
-    scanned_moons = await fetch_scanned_moons(auth_token, system_name)
-    sun_type_id = await get_system_sun_type_id(system_id)
-
-    planet_moons = planets.map(planet => {
-        const planet_moons = moons.filter(moon => moon.name.startsWith(`${planet.name} - Moon`))
-
-        const planet_moons_ui = planet_moons.map(moon => {
-            const scanned_moon = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name)
-            const is_scanned = scanned_moon !== undefined
-            
-            if (is_scanned) total_scanned++
-
-            return {
-                id: moon.id,
-                name: moon.name,
-                scanned: is_scanned,
-                monthly_revenue: scanned_moon?.monthly_revenue,
-            } as MoonUI
-        })
-
-        return {
-            id: planet.id,
-            name: planet.name,
-            type_id: planet.type_id,
-            scanned: planet_moons_ui.reduce((c, v) => c + (v.scanned ? 1 : 0), 0),
-            moons: planet_moons_ui.sort((a, b) => {
-                let numA = parseInt(a.name.split("Moon ")[1]);
-                let numB = parseInt(b.name.split("Moon ")[1]);
-                
-                return numA - numB;
-            }),
-        }
-    })
+    system_moons_data = await get_system_moons_data(auth_token as string, system_name, lang)
 } catch (error) {
-    fetch_moon_system_data_error = prod_error_messages() ? t('fetch_moon_system_data_error') : error.message
+    data_fetching_error = error
 }
+
+const {
+    sun_type_id,
+    total_scanned = 0,
+    moons = [],
+    planet_moons = [],
+} = system_moons_data
 
 const MOON_TRACKING_SYSTEM_PARTIAL_URL = `${translatePath('/partials/moon_tracking_system_component')}`
 
@@ -89,15 +55,16 @@ import Badge from '@components/blocks/Badge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{fetch_moon_system_data_error ?
+{data_fetching_error ?
     <ErrorRefetch
         args={{
             partial: MOON_TRACKING_SYSTEM_PARTIAL_URL,
-            message: fetch_moon_system_data_error,
+            message: data_fetching_error,
             delay: delay,
         }}
     />
     :
+    <div x-init={`total_scanned = ${total_scanned}; $el.remove()`} />
     <Flexblock gap='var(--space-2xl)'>
         {planet_moons.map(planet => {
             const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
