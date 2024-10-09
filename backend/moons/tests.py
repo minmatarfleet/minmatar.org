@@ -1,10 +1,12 @@
 # flake8: noqa
+from decimal import Decimal
 from app.test import TestCase
 from django.contrib.auth.models import User
 
 from moons.models import EveMoon, EveMoonDistribution
 from moons.helpers import calc_metanox_yield
 from moons.router import count_scanned_moons
+from moons.tasks import update_moon_revenues
 
 from .parser import process_moon_paste
 
@@ -59,10 +61,10 @@ class EveMoonYieldTestCase(TestCase):
         distributions = [
             # Use "Rahadalon V - Moon 2" as an example
             EveMoonDistribution(
-                moon=None, ore="Bitumens", yield_percent=0.5413627028
+                moon=None, ore="Bitumens", yield_percent=Decimal(0.5413627028)
             ),
             EveMoonDistribution(
-                moon=None, ore="Sylvite", yield_percent=0.2586372793
+                moon=None, ore="Sylvite", yield_percent=Decimal(0.2586372793)
             ),
         ]
 
@@ -70,6 +72,24 @@ class EveMoonYieldTestCase(TestCase):
 
         self.assertEqual(422, int(yields["Hydrocarbons"]))
         self.assertEqual(201, int(yields["Evaporite Deposits"]))
+
+    def test_moon_revenue(self):
+        moon = EveMoon.objects.create(
+            system="Jita",
+            planet="IV",
+            moon=4,
+        )
+        EveMoonDistribution.objects.create(
+            moon=moon,
+            ore="Bitumens",
+            yield_percent=0.5413627028,
+        )
+
+        update_moon_revenues()
+
+        updated_moon = EveMoon.objects.get(id=moon.id)
+
+        self.assertGreater(updated_moon.monthly_revenue, 500000000)
 
 
 class EveMoonQueryTest(TestCase):
