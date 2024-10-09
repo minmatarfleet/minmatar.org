@@ -1,7 +1,7 @@
 {
     "name": "Minmatar Fleet",
     "short_name": "Minmatar Fleet",
-    "start_url": ".",
+    "start_url": "/",
     "display_override": ["fullscreen", "minimal-ui"],
     "display": "standalone",
     "background_color": "#B53620",
@@ -36,7 +36,7 @@
         {
             "src": "/images/screenshot-540x720.jpg",
             "type": "image/jpg",
-            "sizes": "540x720",
+            "sizes": "570x720",
             "form_factor": "narrow"
         },
         {
