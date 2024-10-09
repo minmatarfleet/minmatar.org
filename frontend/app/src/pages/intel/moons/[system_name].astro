@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -43,13 +43,16 @@ try {
         const planet_moons = moons.filter(moon => moon.name.startsWith(`${planet.name} - Moon`))
 
         const planet_moons_ui = planet_moons.map(moon => {
-            const is_scanned = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name) !== undefined
+            const scanned_moon = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name)
+            const is_scanned = scanned_moon !== undefined
+            
             if (is_scanned) total_scanned++
 
             return {
                 id: moon.id,
                 name: moon.name,
-                scanned: is_scanned
+                scanned: is_scanned,
+                monthly_revenue: scanned_moon?.monthly_revenue,
             } as MoonUI
         })
 
@@ -74,6 +77,7 @@ const MOON_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_system_list_
 const MOON_TRACKING_SYSTEM_PARTIAL_URL = `${translatePath('/partials/moon_tracking_system_component')}`
 
 import { get_item_icon } from '@helpers/eve_image_server'
+import { number_name } from '@helpers/numbers.ts'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -87,6 +91,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import AddMoonButton from '@components/blocks/AddMoonButton.astro';
+import Square from '@components/blocks/Square.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import FindSystemButton from '@components/blocks/FindSystemButton.astro';
@@ -177,8 +182,13 @@ const page_title = `${system_name} ${t('moons')}`;
                                             <Flexblock gap='0' class="[ w-full ]">
                                                 <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
                                                 {moon.scanned ?
-                                                    <small class="[ text-[var(--green)] ]">{t('scanned')}</small> :
-                                                    <small>{t('no_data')}</small>
+                                                    moon.monthly_revenue >= 0 ?
+                                                        <small data-tippy-content={number_name(moon.monthly_revenue, lang)}>
+                                                            <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {moon.monthly_revenue.toLocaleString()} ISK</FlexInline>
+                                                        </small> :
+                                                        <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {t('scanned')}</FlexInline></small>
+                                                    :
+                                                    <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='fleet-red' /> {t('no_data')}</FlexInline></small>
                                                 }
                                             </Flexblock>
                                         </ComponentBlock>

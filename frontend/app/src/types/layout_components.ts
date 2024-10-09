@@ -833,9 +833,10 @@ export interface PlanetBasic {
 }
 
 export interface MoonUI {
-    id:         number;
-    name:       string;
-    scanned:    boolean;
+    id:                 number;
+    name:               string;
+    scanned:            boolean;
+    monthly_revenue?:   number;
 }
 
 export interface PlanetMoonsUI {

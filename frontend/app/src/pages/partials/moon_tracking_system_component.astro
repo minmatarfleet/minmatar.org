@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -21,7 +21,7 @@ if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
 let system_name = Astro.params.system_name
 
 import { fetch_scanned_moons } from '@helpers/fetching/moons'
-import { find_system_planets, get_system_id, find_systems_moons } from '@helpers/sde/map'
+import { find_system_planets, get_system_id, find_systems_moons, get_system_sun_type_id } from '@helpers/sde/map'
 import type { PlanetBasic, MoonBasic, MoonUI, PlanetMoonsUI } from '@dtypes/layout_components'
 
 let planets:PlanetBasic[] = []
@@ -29,6 +29,7 @@ let moons:MoonBasic[] = []
 let scanned_moons:MoonUI[] = []
 let planet_moons:PlanetMoonsUI[] = []
 let total_scanned:number = 0
+let sun_type_id:number
 let fetch_moon_system_data_error:string
 
 try {
@@ -36,18 +37,22 @@ try {
     planets = await find_system_planets(system_id)
     moons = await find_systems_moons([system_id])
     scanned_moons = await fetch_scanned_moons(auth_token, system_name)
+    sun_type_id = await get_system_sun_type_id(system_id)
 
     planet_moons = planets.map(planet => {
         const planet_moons = moons.filter(moon => moon.name.startsWith(`${planet.name} - Moon`))
 
         const planet_moons_ui = planet_moons.map(moon => {
-            const is_scanned = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name) !== undefined
+            const scanned_moon = scanned_moons.find(scanned_moon => scanned_moon.name === moon.name)
+            const is_scanned = scanned_moon !== undefined
+            
             if (is_scanned) total_scanned++
 
             return {
                 id: moon.id,
                 name: moon.name,
-                scanned: is_scanned
+                scanned: is_scanned,
+                monthly_revenue: scanned_moon?.monthly_revenue,
             } as MoonUI
         })
 
@@ -56,7 +61,12 @@ try {
             name: planet.name,
             type_id: planet.type_id,
             scanned: planet_moons_ui.reduce((c, v) => c + (v.scanned ? 1 : 0), 0),
-            moons: planet_moons_ui,
+            moons: planet_moons_ui.sort((a, b) => {
+                let numA = parseInt(a.name.split("Moon ")[1]);
+                let numB = parseInt(b.name.split("Moon ")[1]);
+                
+                return numA - numB;
+            }),
         }
     })
 } catch (error) {
@@ -71,8 +81,10 @@ import { get_item_icon } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Square from '@components/blocks/Square.astro';
 import Badge from '@components/blocks/Badge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
@@ -107,8 +119,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                                 <Flexblock gap='0' class="[ w-full ]">
                                     <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
                                     {moon.scanned ?
-                                        <small class="[ text-[var(--green)] ]">{t('scanned')}</small> :
-                                        <small>{t('no_data')}</small>
+                                        moon.monthly_revenue >= 0 ?
+                                            <small data-tippy-content={number_name(moon.monthly_revenue, lang)}>
+                                                <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {moon.monthly_revenue.toLocaleString()} ISK</FlexInline>
+                                            </small> :
+                                            <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {t('scanned')}</FlexInline></small>
+                                        :
+                                        <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='fleet-red' /> {t('no_data')}</FlexInline></small>
                                     }
                                 </Flexblock>
                             </ComponentBlock>

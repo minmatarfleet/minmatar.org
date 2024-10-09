@@ -11,6 +11,7 @@ export async function fetch_scanned_moons(access_token, system_name:string) {
         return {
             id: moon.id,
             name: `${moon.system} ${moon.planet} - Moon ${moon.moon}`,
+            monthly_revenue: moon.detail?.monthly_revenue,
         } as MoonUI
     })
 }
