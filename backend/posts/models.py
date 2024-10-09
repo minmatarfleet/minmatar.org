@@ -12,6 +12,7 @@ class EveTag(models.Model):
 
 class EvePost(models.Model):
     title = models.CharField(max_length=100)
+    seo_description = models.CharField(max_length=300)
     slug = models.SlugField(max_length=100)
     content = models.TextField()
     date_posted = models.DateTimeField(auto_now_add=True)
