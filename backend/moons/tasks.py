@@ -30,7 +30,9 @@ def get_prices():
 
     base_url = "https://esi.evetech.net/latest"
 
-    response = requests.post(url=base_url + "/universe/ids", json=products, timeout=5)
+    response = requests.post(
+        url=base_url + "/universe/ids", json=products, timeout=5
+    )
     product_ids = response.json()["inventory_types"]
     # logger.info(product_ids)
 
