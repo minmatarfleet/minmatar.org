@@ -13,6 +13,7 @@ CELERY_IMPORTS = (
     "discord.tasks",
     "fleets.tasks",
     "reminders.tasks",
+    "moons.tasks",
 )
 
 
