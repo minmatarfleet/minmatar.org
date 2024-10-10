@@ -1,5 +1,6 @@
 from django.core.cache import cache
 from django.db import models
+from django.contrib.auth.models import User
 
 lp_type_ids = [
     41490,
@@ -39,6 +40,43 @@ lp_blueprint_ids = {
     29336: 29339,
     17713: 17714,
 }
+
+
+class LpSellOrder(models.Model):
+    """
+    A request to sell loyalty points.
+    """
+
+    status_choices = (
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("sent", "LP Sent"),
+        ("paid", "Paid"),
+        ("closed", "Closed"),
+    )
+    status = models.CharField(
+        max_length=10, choices=status_choices, default="pending"
+    )
+    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    loyalty_points = models.IntegerField(default=0)
+    rate = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    discord_thread_id = models.BigIntegerField(blank=True, null=True)
+
+
+class LpBuyOffer(models.Model):
+    """
+    An offer to buy loyalty points, linked to an order.
+    """
+
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    order = models.ForeignKey(LpSellOrder, on_delete=models.CASCADE)
+    loyalty_points = models.IntegerField(default=0)
+    rate = models.IntegerField(default=0)
+    corporation = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class LpStoreItem(models.Model):

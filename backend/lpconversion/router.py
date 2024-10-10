@@ -1,5 +1,10 @@
 from django.http import HttpResponse
+from datetime import datetime
+from pydantic import BaseModel
 from ninja import Router
+from typing import List
+# from authentication import AuthBearer
+
 
 from .models import LpStoreItem, get_status
 from .tasks import get_tlf_lp_items, update_lpstore_items
@@ -42,3 +47,68 @@ def conversion_status(request):
 def refresh_lpitem_data(request):
     update_lpstore_items.apply()
     return get_status()
+
+
+class OrderResponse(BaseModel):
+    order_id: int
+    user_id: int
+    loyalty_points: int
+    rate: int
+    status: str
+    created_at: datetime
+
+
+@router.get(
+    "/orders",
+    response=List[OrderResponse],
+    # auth=AuthBearer(),
+)
+def get_open_orders(request):
+    orders = [
+        OrderResponse(
+            order_id=12345,
+            user_id=123,
+            loyalty_points=2000000,
+            rate=700,
+            status="pending",
+            created_at=datetime.now(),
+        )
+    ]
+    return orders
+
+
+class OfferResponse(BaseModel):
+    offer_id: int
+    user_id: int
+    corporation: str
+    loyalty_points: int
+    rate: int
+    created_at: datetime
+    order: OrderResponse
+
+
+@router.get(
+    "/offers",
+    response=List[OfferResponse],
+    # auth=AuthBearer(),
+)
+def get_open_offers(request):
+    offers = [
+        OfferResponse(
+            offer_id=123,
+            user_id=987,
+            corporation="AnyCorp",
+            loyalty_points=2000000,
+            rate=700,
+            created_at=datetime.Now(),
+            order=OrderResponse(
+                order_id=12345,
+                user_id=123,
+                loyalty_points=2000000,
+                rate=700,
+                status="accepted",
+                created_at=datetime.now(),
+            ),
+        )
+    ]
+    return offers
