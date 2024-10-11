@@ -98,5 +98,7 @@ def update_contracts():
                     "collateral": contract["collateral"],
                     "reward": contract["reward"],
                     "completed_by": completed_by,
+                    "date_issued": contract["date_issued"],
+                    "date_completed": contract["date_completed"],
                 },
             )

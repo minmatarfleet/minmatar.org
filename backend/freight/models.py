@@ -38,6 +38,8 @@ class EveFreightContract(models.Model):
     volume = models.BigIntegerField()
     collateral = models.BigIntegerField()
     reward = models.BigIntegerField()
+    date_issued = models.DateTimeField()
+    date_completed = models.DateTimeField(null=True, blank=True)
     completed_by = models.ForeignKey(
         "auth.User",
         on_delete=models.SET_NULL,
