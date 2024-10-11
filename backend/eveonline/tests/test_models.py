@@ -65,6 +65,8 @@ class EveSkillsetTestCase(TestCase):
     def test_get_number_of_characters_with_skillset(self):
         skill_list = """
         Drones II
+        Electronic Warfare II
+        Electronic Warfare III
         Electronic Warfare IV
         """
 

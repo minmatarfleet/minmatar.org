@@ -161,27 +161,25 @@ class EveSkillset(models.Model):
         skillset = self
         skills = skillset.skills.split("\n")
         q = Q()
+
+        skill_dict = {}
         for skill in skills:
-            # Skill name is everything except the last character
-            skill_name = skill[:-1]
-            # Skill level is the last character
-            skill_level = skill[-1]
-            q |= Q(skill_name=skill_name, skill_level__lt=skill_level)
+            skill_name = skill[:-1].strip()
+            skill_level = int(skill[-1])
+            if (
+                skill_name not in skill_dict
+                or skill_dict[skill_name] < skill_level
+            ):
+                skill_dict[skill_name] = skill_level
+
+        for skill_name, skill_level in skill_dict.items():
+            q |= Q(skill_name=skill_name, skill_level__gte=skill_level)
 
         for character in EveCharacter.objects.all():
-            if (
-                EveCharacterSkill.objects.filter(q)
-                .filter(character=character)
-                .exists()
-            ):
-                continue
-
-            if (
-                EveCharacterSkill.objects.filter(character=character).count()
-                == 0
-            ):
-                continue
-            character_names.append(character.character_name)
+            if EveCharacterSkill.objects.filter(q).filter(
+                character=character
+            ).count() == len(skill_dict.keys()):
+                character_names.append(character.character_name)
 
         return character_names
 
