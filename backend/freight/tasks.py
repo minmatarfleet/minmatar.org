@@ -86,7 +86,7 @@ def update_contracts():
                     character_id=contract["acceptor_id"]
                 ).first()
                 if completed_by_character and completed_by_character.token:
-                    completed_by = completed_by_character.user
+                    completed_by = completed_by_character.token.user
 
             EveFreightContract.objects.update_or_create(
                 contract_id=contract["contract_id"],
