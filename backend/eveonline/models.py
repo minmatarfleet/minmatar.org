@@ -156,7 +156,9 @@ class EveSkillset(models.Model):
     def get_skill_level(skill: str):
         return skill[-1]
 
-    def get_number_of_characters_with_skillset(self) -> List[str]:
+    def get_number_of_characters_with_skillset(
+        self, alliance_name: str = None
+    ) -> List[str]:
         character_names = []
         skillset = self
         skills = skillset.skills.split("\n")
@@ -175,7 +177,10 @@ class EveSkillset(models.Model):
         for skill_name, skill_level in skill_dict.items():
             q |= Q(skill_name=skill_name, skill_level__gte=skill_level)
 
-        for character in EveCharacter.objects.all():
+        characters = EveCharacter.objects.all()
+        if alliance_name:
+            characters = characters.filter(alliance__name=alliance_name)
+        for character in characters:
             if EveCharacterSkill.objects.filter(q).filter(
                 character=character
             ).count() == len(skill_dict.keys()):
