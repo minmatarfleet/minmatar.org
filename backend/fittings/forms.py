@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 from groups.models import Sig
+
+from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 
 class EveDoctrineForm(forms.ModelForm):
@@ -12,11 +13,7 @@ class EveDoctrineForm(forms.ModelForm):
 
     name = forms.CharField(max_length=255)
     type = forms.ChoiceField(
-        choices=(
-            ("armor", "Armor"),
-            ("shield", "Shield"),
-            ("kitchen_sink", "Kitchen Sink"),
-        )
+        choices=EveDoctrine.type_choices,
     )
     description = forms.CharField(widget=forms.Textarea)
     primary_fittings = forms.ModelMultipleChoiceField(

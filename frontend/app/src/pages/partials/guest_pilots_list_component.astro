@@ -63,7 +63,7 @@ try {
 
 const GUEST_PILOTS_LIST_PARTIAL_URL = translatePath('/partials/guest_pilots_list_component/')
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import GuestPilotList from '@components/blocks/GuestPilotList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';

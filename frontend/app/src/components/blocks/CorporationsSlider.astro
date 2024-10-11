@@ -20,6 +20,9 @@ const CORPORATIONS_WIDTH_SLIDE = [
     'Balls Deep Inc.',
     'Vindicta Expeditionary',
     'Minmatar Fleet Academy',
+    'Rapid Unscheduled Disassembly.',
+    'Soltech Armada',
+    'Exit-Strategy',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -35,12 +38,18 @@ corporations.forEach( (corp, i) => {
     if (!CORPORATIONS_WIDTH_SLIDE.includes(corp.corporation_name)) {
         corporations_with_no_slide.push(corp)
         corp_filter.push(corp.corporation_id)
-    } else
-        pagination_icons.push(get_corporation_logo(corp.corporation_id, 64))
+    }
 });
 
 corporations = corporations.filter( (i) => !corp_filter.includes(i.corporation_id) )
+let corporations_sorted:CorporationObject[] = []
 
+CORPORATIONS_WIDTH_SLIDE.forEach(corp_name => {
+    const corp = corporations.find(corporation => corporation.corporation_name === corp_name)
+    corporations_sorted.push(corp)
+    pagination_icons.push(get_corporation_logo(corp.corporation_id, 64))
+})
+              
 const MINMATAR_FLEET_ID = 99011978
 const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
 
@@ -58,7 +67,10 @@ import RattiniSlide from '@components/blocks/RattiniSlide.astro';
 import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
 import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
 import VindictaExpeditionarySlider from '@components/blocks/VindictaExpeditionarySlider.astro';
+import RapidUnscheduledDisassemblySlide from '@components/blocks/RapidUnscheduledDisassemblySlide.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
+import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
+import ExitStrategySlide from '@components/blocks/ExitStrategySlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -68,11 +80,11 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
     class:list={[ 'w-full', { swiper: corporations.length > 0 } ]}
     id="corporations-list"
 >
-    {corporations.length > 0 &&
+    {corporations_sorted.length > 0 &&
         <CorporationsSwiper
             pagination_icons={pagination_icons}
         >
-            {corporations.map((corporation, index) =>
+            {corporations_sorted.map((corporation, index) =>
                 <div class="swiper-slide" data-hash={slugify(corporation.corporation_name)}>
                     {corporation.corporation_name == 'Rattini Tribe' &&
                         <RattiniSlide
@@ -104,6 +116,27 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Minmatar Fleet Academy' &&
                         <L34RnSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Rapid Unscheduled Disassembly.' &&
+                        <RapidUnscheduledDisassemblySlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Soltech Armada' &&
+                        <SoltechArmadaSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Exit-Strategy' &&
+                        <ExitStrategySlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}

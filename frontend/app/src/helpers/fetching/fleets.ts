@@ -68,6 +68,7 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
         id: fleet.id,
         description: fleet.description,
         audience: fleet.audience,
+        doctrine_id: fleet.doctrine_id,
         fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('not_available'),
         location: fleet.location,
@@ -98,6 +99,8 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         type: fleet.type,
         doctrine: fleet?.doctrine_id ? doctrine : null,
         tracking: fleet.tracking,
+        audience: fleet.audience,
+        disable_motd: fleet.disable_motd,
     } as FleetUI
 }
 

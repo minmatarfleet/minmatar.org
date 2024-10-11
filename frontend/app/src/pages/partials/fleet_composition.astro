@@ -58,7 +58,7 @@ const is_fleet_commander = (user_character.character_id === fleet.fleet_commande
 if (!is_fleet_commander)
     return HTTP_404_Not_Found()
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet_id}`
 

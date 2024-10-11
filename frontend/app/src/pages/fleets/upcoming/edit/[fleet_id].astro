@@ -1,0 +1,199 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page)
+    return HTTP_404_Not_Found()
+
+const fleet_id = parseInt(Astro.params.fleet_id)
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+import { update_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
+import type { Location } from '@dtypes/api.minmatar.org'
+import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
+import { send_active_fleet_notification } from '@helpers/notifications'
+
+let update_fleet_error
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+        const doctrine = data.get('doctrine_id') as string
+        const doctrine_id = doctrine !== '-1' ? parseInt(doctrine) : null
+
+        const fleet_data = {
+            doctrine_id: doctrine_id,
+            description: data.get('description') as string,
+            location_id: parseInt(data.get('location') as string),
+            start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
+            type: data.get('fleet_type') as FleetTypes,
+            audience_id: parseInt(data.get('audience_id') as string),
+            disable_motd: (data.get('disable_motd' as string) === 'on'),
+        } as FleetRequest
+        
+        const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
+
+        if (!updated_fleet?.id)
+            update_fleet_error = t('update_fleet_error')
+        else {
+            try {
+                let tracking_started = false
+                
+                if (data.get('start_tracking' as string) === 'on')
+                    tracking_started = await start_fleet(auth_token as string, updated_fleet?.id)
+
+                if (tracking_started) send_active_fleet_notification(auth_token as string, updated_fleet?.id)
+            } catch (error) {
+                const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+                Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
+            }
+
+            return Astro.redirect(translatePath(`/fleets/upcoming/${updated_fleet?.id}`))
+        }
+    } catch (error) {
+        update_fleet_error = prod_error_messages() ? t('update_fleet_error') : error.message
+    }
+
+    alert = {
+        title: t('edit_fleet_dialog_title'),
+        content: update_fleet_error,
+    }
+}
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+
+let doctrines:DoctrineType[] = []
+let fleet:FleetUI
+let fleet_commander:CharacterBasic
+let fetch_doctrines_error:string | false = false
+let locations:Location[]
+let audiences:Audience[]
+
+try {
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    fleet_commander = {
+        character_id: fleet.fleet_commander_id,
+        character_name: fleet.fleet_commander_name,
+    }
+    doctrines = await fetch_doctrines()
+    locations = await get_locations(auth_token as string)
+    audiences = await get_audiences(auth_token as string)
+} catch (error) {
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+}
+
+const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import FleetForm from '@components/blocks/FleetForm.astro'
+
+const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
+
+const timer = fleet?.start_time
+const eve_datetime = timer ? new Date(timer) : new Date()
+let eve_date = `${eve_datetime.getFullYear()}-${(eve_datetime.getMonth() + 1).toString().padStart(2, '0')}-${eve_datetime.getDate().toString().padStart(2, '0')}`
+let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer ? eve_datetime.getMinutes() : eve_datetime.getMinutes() + 15).toString().padStart(2, '0')}`
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/fleets-cover.jpg",
+            image_990: "/images/fleets-cover-990.jpg",
+            alt: t('fleets.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            init() {
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
+    >
+
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming')}>
+                    <FleetIcon slot="icon" />
+                    {t('upcoming_fleets')}
+                </Button>
+                <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history')}>
+                    <HistoryIcon slot="icon" />
+                    {t('fleet_history')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox><p>{t('fleets.add.page_leading_text')}</p></TextBox>
+
+            {fetch_doctrines_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: `${FLEET_FORM_PARTIAL_URL}?fleet_id=${fleet_id}`,
+                        message: fetch_doctrines_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetForm
+                    fleet={fleet}
+                    audiences={audiences}
+                    doctrines={doctrines}
+                    locations={locations}
+                    fleet_commander={fleet_commander}
+                    eve_date={eve_date}
+                    eve_time={eve_time}
+                    disable_motd={fleet.disable_motd}
+                    lang={lang}
+                />
+            }
+        </Flexblock>
+	</PageDefault>
+</Viewport>

@@ -89,12 +89,16 @@ a[href] {
     position: absolute;
     width: 1px;
     white-space: nowrap;
+    left: 0;
+    top: 0;
 }
 
 pre {
     background-color: var(--component-background);
     padding: var(--space-3xs);
     border: solod 1px var(--border-color);
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 code {
@@ -176,6 +180,67 @@ ul {
 
 .text-red {
     color: var(--fleet-red);
+}
+
+.text-status-1 {
+    color: var(--security-status-1)    
+}
+
+.text-status-point-9 {
+    color: var(--security-status-point-9)    
+}
+
+.text-status-point-8 {
+    color: var(--security-status-point-8)    
+}
+
+.text-status-point-7 {
+    color: var(--security-status-point-7)    
+}
+
+.text-status-point-6 {
+    color: var(--security-status-point-6)    
+}
+
+.text-status-point-5 {
+    color: var(--security-status-point-5)    
+}
+
+.text-status-point-4 {
+    color: var(--security-status-point-4)    
+}
+
+.text-status-point-3 {
+    color: var(--security-status-point-3)    
+}
+
+.text-status-point-2 {
+    color: var(--security-status-point-2)    
+}
+
+.text-status-point-1 {
+    color: var(--security-status-point-1)    
+}
+
+.text-status-null {
+    color: var(--security-status-null)    
+}
+
+.card-animated {
+    picture.animated {
+        overflow: hidden;
+        
+        img {
+            transform: scale(1);
+            transition: var(--fast-transition);
+        }
+    }
+
+    &:hover {
+        picture.animated img {
+            transform: scale(1.1);
+        }
+    }
 }
 
 ul {

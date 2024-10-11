@@ -2,40 +2,45 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
-import universal_support_fittings from '@/data/universal_support_fittings.json'
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 
 const { doctrine_id } = Astro.params;
 
+import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let doctrine:DoctrineType
 let fetch_doctrine_error:string | false = false
+let recently_fleets:FleetItem[] = null
 
 try {
     doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
+    if (auth_token) {
+        recently_fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : null
+        recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
+    }
 } catch (error) {
     fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
 }
+
+const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import TextBox from '@components/layout/TextBox.astro';
-
-import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FitItem from '@components/blocks/FitItem.astro';
 import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import DoctrineDetails from '@components/blocks/DoctrineDetails.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-
-const page_title = `${doctrine.name} ${t('doctrine')}`;
+const page_title = `${doctrine?.name} ${t('doctrine')}`;
 ---
 
 <Viewport title={page_title}>
@@ -48,13 +53,20 @@ const page_title = `${doctrine.name} ${t('doctrine')}`;
             scrollable: true,
             overlay: true
         }}
+        x-data={`{
+            ideal_fleet_size: ${doctrine?.ideal_composition?.ideal_fleet_size ?? 0},
+            recently_fleets_count: ${recently_fleets?.length},
+        }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
+            <Flexblock gap='var(--space-3xs)'>
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-            </FlexInline>
+                <small x-text={`\`\${ideal_fleet_size} ${t('ideal_fleet_size')}\``}>
+                    {`${doctrine?.ideal_composition?.ideal_fleet_size ?? 0} ${t('ideal_fleet_size')}`}
+                </small>
+            </Flexblock>
             <FlexInline>
                 <Button href={translatePath('/ships/doctrines/list')} class="[ !hidden md:!flex ]">
                     {t('keep_browsing')}
@@ -62,53 +74,16 @@ const page_title = `${doctrine.name} ${t('doctrine')}`;
             </FlexInline>
         </FlexInline>
 
-        <Flexblock gap="var(--space-xl)">
-            <TextBox>
-                <p>{doctrine.description}</p>
-            </TextBox>
-            
-            <Flexblock gap="var(--space-3xs)" role="list">
-                <!--<ItemList title={t('ideal_composition')} items={doctrine.ideal_composition} /> -->
-                
-                <Flexblock gap="var(--space-3xs)" role="list">
-                    {doctrine.primary_fittings.map((fitting) =>
-                        <FitItem
-                            role="listitem"
-                            class="[ fit-item ]"
-                            fitting={fitting}
-                        />
-                    )}
-                    {doctrine.secondary_fittings.map((fitting) =>
-                        <FitItem
-                            role="listitem"
-                            class="[ fit-item ]"
-                            fitting={fitting}
-                        />
-                    )}
-                    {doctrine.support_fittings.map((fitting) =>
-                        <FitItem
-                            role="listitem"
-                            class="[ fit-item ]"
-                            fitting={fitting}
-                        />
-                    )}
-                </Flexblock>
-            </Flexblock>
-
-            <TextBox>
-                <p>{t('doctrine.support_fittings.description')}</p>
-            </TextBox>
-
-            <Flexblock gap="var(--space-3xs)" role="list">
-                {universal_support_fittings.map((fitting) =>
-                    <FitItem
-                        role="listitem"
-                        class="[ fit-item ]"
-                        fitting={fitting}
-                    />
-                )}
-            </Flexblock>
-
-        </Flexblock>
+        {fetch_doctrine_error ?
+            <ErrorRefetch
+                args={{
+                    partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
+                    message: fetch_doctrine_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <DoctrineDetails doctrine={doctrine} recently_fleets={recently_fleets} />
+        }
     </PageWide>
 </Viewport>

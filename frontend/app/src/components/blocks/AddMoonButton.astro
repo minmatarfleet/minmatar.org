@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Porps {
+    size?:      ButtonSizes;
+    iconed?:    boolean;
+    color?:     ButtonColors;
+}
+
+const {
+    size = 'lg',
+    iconed = true,
+    color = 'green',
+} = Astro.props
+
+const ADD_MOON_RESULT_PARTIAL_URL = translatePath('/partials/add_moon_result_component/')
+
+import Button from '@components/blocks/Button.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
+---
+
+<Button
+    size={size}
+    type="button"
+    color={color}
+    x-bind:disabled="disabled"
+    x-data={`{
+        disabled: false,
+        show_add_moon_dialog() {
+            this.disabled = true
+            
+            show_confirm_dialog({
+                title: '${t('add_moon_dialog_title')}',
+                partial: '${translatePath('/partials/dialog_add_moon/')}',
+                hx: {
+                    method: 'post',
+                    url: '${ADD_MOON_RESULT_PARTIAL_URL}',
+                    target: '#add-moon-result',
+                    swap: 'outerHTML transition:true'
+                }
+            }).then( () => { this.disabled = false, document.getElementById('moon-information').value = '' } )
+        }
+    }`}
+    x-on:click="show_add_moon_dialog()"
+    type="button"
+>
+    {iconed && <AddIcon slot="icon" />}    
+    {t('add_moon')}
+</Button>
+        
+<div id="add-moon-result" />

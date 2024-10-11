@@ -13,6 +13,7 @@ CELERY_IMPORTS = (
     "discord.tasks",
     "fleets.tasks",
     "reminders.tasks",
+    "moons.tasks",
 )
 
 
@@ -50,10 +51,17 @@ INSTALLED_APPS = [
     "mumble.apps.MumbleConfig",
     # Reminders
     "reminders.apps.RemindersConfig",
+    # Freight
+    "freight.apps.FreightConfig",
+    # Posts
+    "posts.apps.PostsConfig",
+    # Moons
+    "moons.apps.MoonsConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
+    "lpconversion",
 ]
 
 # Discord Login

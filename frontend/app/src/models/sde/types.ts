@@ -1,7 +1,7 @@
 // src/models/types.ts
 import type { InferSelectModel } from 'drizzle-orm';
 import {
-    crpNpcCorporations,
+    crpNPCCorporations,
     staOperations,
     invVolumes,
     industryActivityProbabilities,
@@ -57,14 +57,14 @@ import {
     skinLicense,
     dgmTypeAttributes,
     mapConstellations,
-    crpNpcCorporationDivisions,
+    crpNPCCorporationDivisions,
     dgmAttributeCategories,
     translationTables,
     planetSchematics,
     invMetaTypes,
     certMasteries,
-    crpNpcCorporationResearchFields,
-    crpNpcDivisions,
+    crpNPCCorporationResearchFields,
+    crpNPCDivisions,
     dgmTypeEffects,
     invNames,
     mapDenormalize,
@@ -79,7 +79,7 @@ import {
     invItems,
     mapUniverse,
     skinShip,
-    crpNpcCorporationTrades,
+    crpNPCCorporationTrades,
     chrBloodlines,
     warCombatZones,
     invMetaGroups,
@@ -90,10 +90,10 @@ import {
     dgmExpressions,
     ramActivities,
     agtAgents,
-    invGroups
+    invGroups,
 } from './schema.ts';
 
-export type crpNpcCorporations = InferSelectModel<typeof crpNpcCorporations>
+export type crpNPCCorporations = InferSelectModel<typeof crpNPCCorporations>
 export type staOperations = InferSelectModel<typeof staOperations>
 export type invVolumes = InferSelectModel<typeof invVolumes>
 export type industryActivityProbabilities = InferSelectModel<typeof industryActivityProbabilities>
@@ -149,14 +149,14 @@ export type certSkills = InferSelectModel<typeof certSkills>
 export type skinLicense = InferSelectModel<typeof skinLicense>
 export type dgmTypeAttributes = InferSelectModel<typeof dgmTypeAttributes>
 export type mapConstellations = InferSelectModel<typeof mapConstellations>
-export type crpNpcCorporationDivisions = InferSelectModel<typeof crpNpcCorporationDivisions>
+export type crpNPCCorporationDivisions = InferSelectModel<typeof crpNPCCorporationDivisions>
 export type dgmAttributeCategories = InferSelectModel<typeof dgmAttributeCategories>
 export type translationTables = InferSelectModel<typeof translationTables>
 export type planetSchematics = InferSelectModel<typeof planetSchematics>
 export type invMetaTypes = InferSelectModel<typeof invMetaTypes>
 export type certMasteries = InferSelectModel<typeof certMasteries>
-export type crpNpcCorporationResearchFields = InferSelectModel<typeof crpNpcCorporationResearchFields>
-export type crpNpcDivisions = InferSelectModel<typeof crpNpcDivisions>
+export type crpNPCCorporationResearchFields = InferSelectModel<typeof crpNPCCorporationResearchFields>
+export type crpNPCDivisions = InferSelectModel<typeof crpNPCDivisions>
 export type dgmTypeEffects = InferSelectModel<typeof dgmTypeEffects>
 export type invNames = InferSelectModel<typeof invNames>
 export type mapDenormalize = InferSelectModel<typeof mapDenormalize>
@@ -171,7 +171,7 @@ export type mapLocationWormholeClasses = InferSelectModel<typeof mapLocationWorm
 export type invItems = InferSelectModel<typeof invItems>
 export type mapUniverse = InferSelectModel<typeof mapUniverse>
 export type skinShip = InferSelectModel<typeof skinShip>
-export type crpNpcCorporationTrades = InferSelectModel<typeof crpNpcCorporationTrades>
+export type crpNPCCorporationTrades = InferSelectModel<typeof crpNPCCorporationTrades>
 export type chrBloodlines = InferSelectModel<typeof chrBloodlines>
 export type warCombatZones = InferSelectModel<typeof warCombatZones>
 export type invMetaGroups = InferSelectModel<typeof invMetaGroups>

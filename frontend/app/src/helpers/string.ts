@@ -35,6 +35,10 @@ export const capitalize = (text:string):string => {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+export const remove_line_breaks = (text:string):string => {
+    return text.replace(/(\r\n|\n|\r)/gm, "")
+}
+
 export async function parse_markdown(text:string) {
     return await marked.parseInline(text)
 }

@@ -52,7 +52,7 @@ const character_info:CharacterBasic = {
     character_name: character_assets?.character_name ?? '',
 }
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import AssetsListAlpine from '@components/blocks/AssetsListAlpine.astro';
 

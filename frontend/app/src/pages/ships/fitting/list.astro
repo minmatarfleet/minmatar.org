@@ -1,10 +1,11 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { translatePath, t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
 import type { FittingItem } from '@dtypes/layout_components'
+import { fitting_ship_types } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 
 let fittings:FittingItem[] = []
@@ -23,14 +24,22 @@ fittings.forEach((fitting) => {
     ship_type[fitting.ship_type] = fitting.ship_type;
 })
 
+let fittings_grouped_by_ship_type:FittingItem[][] = []
+fitting_ship_types.forEach((fitting_ship_type) => {
+    fittings_grouped_by_ship_type.push(fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)))
+     // = [ ...fittings_grouped_by_ship_type, ...fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)) ]
+})
+
 let fitting_type_filter = [];
 let ship_type_filter = [];
 
 for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
+fitting_type_filter.sort( (a, b) => a.localeCompare(b))
 
 for (let i in ship_type)
     ship_type_filter.push(ship_type[i])
+ship_type_filter.sort( (a, b) => a.localeCompare(b))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -38,21 +47,23 @@ import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
-import FitItem from '@components/blocks/FitItem.astro';
+import FittingCard from '@components/blocks/FittingCard.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-
 const page_title = t('fitting.list.page_title');
-const page_description = t('fitting.leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={t('fitting.meta_description')}
+>
     <PageWide
         cover={{
             image: "/images/fits-cover.jpg",
@@ -67,8 +78,20 @@ const page_description = t('fitting.leading_text');
             fitting_type_filter: '-1',
             ship_type_filter: '-1',
             fits_count: '${fittings.length}',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
             show_item(el) {
-                const content_to_filter = el.querySelectorAll('p')
+                const content_to_filter = el.querySelectorAll('.fitting-card-filters p')
                 const show_item =   (
                                         (this.fitting_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.fitting_name_filter.toLowerCase())) &&
                                         (this.fitting_type_filter == '-1' || content_to_filter[1].textContent.includes(this.fitting_type_filter)) &&
@@ -76,7 +99,7 @@ const page_description = t('fitting.leading_text');
                                     )
 
                 return show_item
-            }
+            },
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -94,7 +117,7 @@ const page_description = t('fitting.leading_text');
                 <Input type="text"
                     placeholder={t('filter')}
                     x-model="fitting_name_filter"
-                    x-on:keyup="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length })"
+                    x-on:keyup="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') })"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
@@ -102,7 +125,7 @@ const page_description = t('fitting.leading_text');
                 <div class="[ hidden 2xl:block ]">
                     <Select
                         x-model="fitting_type_filter"
-                        x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
+                        x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
                         <option selected value="-1">{t('fitting_type')}</option>
                         {fitting_type_filter.map((option) => 
@@ -114,7 +137,7 @@ const page_description = t('fitting.leading_text');
                 <div class="[ hidden xl:block ]">
                     <Select
                         x-model="ship_type_filter"
-                        x-on:change="setTimeout(function () { fits_count = document.querySelectorAll('.fit-item:not([style])').length }, 100)"
+                        x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
                         <option selected value="-1">{t('ship_type')}</option>
                         {ship_type_filter.map((option) => 
@@ -125,24 +148,55 @@ const page_description = t('fitting.leading_text');
             </FlexInline>
         </FlexInline>
 
-        <BlockList role="list" gap='var(--space-3xs)'>
-            {fittings.map((fitting) =>
-                <FitItem
-                    role="listitem"
-                    class="[ fit-item ]"
-                    fitting={fitting}
-                    x-show="show_item($el)"
-                />
+        <BlockList gap='var(--space-l)'>
+            {fittings_grouped_by_ship_type.map((group_fittings) =>
+                group_fittings.length > 0 &&
+                    <Flexblock
+                        class="[ fitting-groups ]"
+                        gap='var(--space-m)'
+                    >
+                        <h2>{group_fittings[0].ship_type}</h2>
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='240px'
+                            row_gap='var(--space-3xs)'
+                            column_gap='var(--space-3xs)'
+                        >
+                            {group_fittings.map((fitting) =>
+                                <a
+                                    class="[ fitting-card-container ]"
+                                    x-show="show_item($el)"
+                                    href={translatePath(`/ships/fitting/${fitting.id}`)}
+                                >
+                                    <FittingCard
+                                        fitting={fitting}
+                                        title={fitting.fitting_name.replace(`[${fitting.fitting_type}] `, '')}
+                                        subtitle={fitting.fitting_type}
+                                        role="listitem"
+                                    />
+                                </a>
+                            )}
+                        </Grid>
+                    </Flexblock>
             )}
-            
-            <p class="[ text-center ]">{t('no_results')}</p>
-
         </BlockList>
+        <p x-show="fits_count === 0" class="[ text-center ]">{t('no_results')}</p>
     </PageWide>
 </Viewport>
 
 <style lang="scss">
-    :not([style]) ~ p {
-        display: none;
+    .fitting-groups:not(:has(.fitting-card-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
     }
 </style>

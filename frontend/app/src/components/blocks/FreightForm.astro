@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FreightRoutesData } from '@dtypes/layout_components'
+
+interface Props {
+    freight_routes_data:    FreightRoutesData;
+    default_route:          string | number;
+}
+
+const {
+    freight_routes_data,
+    default_route,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import Button from '@components/blocks/Button.astro';
+import Select from '@components/blocks/Select.astro';
+import MoneyInput from './MoneyInput.astro';
+---
+
+<form
+    method="POST"
+    action={translatePath('/market/freight/contract')}
+    x-data={`{
+        route_id: '${default_route}',
+        routes_options: ${JSON.stringify(freight_routes_data.routes)},
+        sizes_options: ${JSON.stringify(freight_routes_data.sizes)},
+        'submitted': false,
+    }`}
+    x-on:submit="submitted = true"
+>
+    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+        <h2>{t('freight.standard.calculator_title')}</h2>
+        
+        <Flexblock>
+            <VerticalCenter>
+                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                    <label for="route">{t('route')}</label>
+                    <Select id="route" name="route" x-model="route_id">
+                        {freight_routes_data.routes.map((option) => 
+                            <option value={option.value}>{option.label}</option>
+                        )}
+                    </Select>
+                </FixedFluid>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                    <label for="contract_size">{t('contract_size')} (<span class="[ lowercase ]">m<sup>3</sup></span>)</label>
+                    <Select id="contract_size" name="contract_size">
+                        <template x-for="option in sizes_options[route_id]">
+                            <option x-bind:value="option.value" x-text="option.label" />
+                        </template>
+                    </Select>
+                </FixedFluid>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                    <label for="collateral"><span data-tippy-content={t('freight.standard.faq_2_text')}>{t('collateral')}</span></label>
+                    <MoneyInput
+                        id="collateral"
+                        name="collateral"
+                        model="collateral"
+                        required
+                    />
+                </FixedFluid>
+            </VerticalCenter>
+        </Flexblock>
+
+        <Button x-bind:disabled="submitted" type="submit" class="[ w-full ]">{t('calculate')}</Button>
+    </Flexblock>
+</form>

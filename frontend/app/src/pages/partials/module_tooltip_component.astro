@@ -11,7 +11,7 @@ let module:Module
 let module_name
 let module_id
 try {
-    module_name = JSON.parse(Astro.url.searchParams.get('module_name') ?? '')
+    module_name = Astro.url.searchParams.get('module_name')
     module = await get_module_props(module_name)
 
     module_id = module?.id ?? await get_item_id(module_name)

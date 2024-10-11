@@ -21,10 +21,9 @@ if (!can_view_page)
     return HTTP_404_Not_Found()
 
 import { create_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
-import { fleet_types } from '@dtypes/api.minmatar.org'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
-import type { EveCharacterProfile, Location } from '@dtypes/api.minmatar.org'
-import type { DoctrineType, SelectOptions, Alert } from '@dtypes/layout_components'
+import type { Location } from '@dtypes/api.minmatar.org'
+import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
 let create_fleet_error
@@ -43,6 +42,7 @@ if (Astro.request.method === "POST") {
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
+            disable_motd: (data.get('disable_motd' as string) === 'on'),
         } as FleetRequest
         
         const new_fleet = await create_fleet(auth_token as string, fleet_data)
@@ -78,13 +78,17 @@ import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 
 let doctrines:DoctrineType[] = []
-let fleet_commander:EveCharacterProfile
+let fleet_commander:CharacterBasic
 let fetch_doctrines_error:string | false = false
 let locations:Location[]
 let audiences:Audience[]
 
 try {
-    fleet_commander = await get_user_character((user as User).user_id)
+    const user_profile = await get_user_character((user as User).user_id)
+    fleet_commander = {
+        character_id: user_profile.character_id,
+        character_name: user_profile.character_name,
+    }
     doctrines = await fetch_doctrines()
     locations = await get_locations(auth_token as string)
     audiences = await get_audiences(auth_token as string)
@@ -92,86 +96,24 @@ try {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const no_doctrine_option = {
-    label: t('no_doctrine'),
-    value: '-1'
-} as SelectOptions
-
-const doctrines_select_options = [  no_doctrine_option  ].concat(
-    doctrines.map( (i):SelectOptions => { return { label: i.name, value: i.id } } )
-)
-
-let FLEET_TYPES_LABELS = {}
-const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
-    FLEET_TYPES_LABELS[i] = t(i as any)
-    return {value: i, label: t(i as any)}
-} )
-
-let FLEET_LOCATIONS = {}
-const locations_select_options = locations.map( (i):SelectOptions => {
-    FLEET_LOCATIONS[i.location_id] = i.location_name
-    return {value: i.location_id, label: i.location_name} 
-} )
-
-const no_audience_option = {
-    label: t('select_audience'),
-    value: ''
-} as SelectOptions
-
-let AUDIENCES = {}
-const audiences_select_options = [  no_audience_option  ].concat(
-    audiences.map( (i):SelectOptions => {
-        AUDIENCES[i.id] = i.display_name
-        return { label: i.display_name, value: i.id }
-    } )
-)
-
-const AUDIENCE_ICONS = {
-    1: '/images/fleet-logo.svg',
-    2: '/images/minmatar-logo.svg',
-}
-
-const default_fleet_type = fleet_types_select_options[0].value
-const default_location = locations_select_options[0].value
-const default_doctrine = doctrines_select_options[0].value
-const default_audience = audiences_select_options[0].value
-
-const doctrine:DoctrineType = doctrines.find( (item) => item.id == default_doctrine )
-
-import { get_player_icon } from '@helpers/eve_image_server'
+const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import Context from '@components/layout/Context.astro';
 import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Button from '@components/blocks/Button.astro';
-import ThumbCard from '@components/blocks/ThumbCard.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import Select from '@components/blocks/Select.astro';
-import Textarea from '@components/blocks/Textarea.astro';
-import FlatPicker from '@components/blocks/FlatPicker.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
-import StratopIcon from '@components/icons/StratopIcon.astro';
-import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
-import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
-import Markdown from '@components/icons/buttons/Markdown.astro';
-import RifterIcon from '@components/icons/RifterIcon.astro';
-import StylessButton from '@components/blocks/StylessButton.astro';
-import Grid from '@components/compositions/Grid.astro';
+import FleetForm from '@components/blocks/FleetForm.astro'
 
 const page_title = t('fleets.add.page_title');
 
@@ -197,42 +139,6 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
             overlay: true
         }}
         x-data={`{
-            fleet_type: '${default_fleet_type}',
-            eve_date: '${eve_date}',
-            eve_time: '${eve_time}',
-            location: '${default_location}',
-            audience: '${default_audience}',
-            doctrine_id: '${default_doctrine}',
-            local_datetime: '',
-            locations: ${JSON.stringify(FLEET_LOCATIONS)},
-            audiences: ${JSON.stringify(AUDIENCES)},
-            fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
-            get_images() {
-                let images = [{
-                    src: '${get_player_icon(fleet_commander.character_id)}',
-                    width: 64,
-                    height: 64,
-                }];
-
-                document.querySelectorAll('#doctrine-hx-target picture img').forEach((img) => {
-                    images.push({
-                        src: img.getAttribute('src'),
-                        width: 64,
-                        height: 64,
-                    })
-                })
-                
-                return images
-            },
-            fleet_datetime(utc) {
-                const date_time = this.eve_date+' '+this.eve_time
-                const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
-                    '${lang}',
-                    ${import.meta.env.DATETIME_FORMAT}
-                )
-
-                return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
-            },
             init() {
                 ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
             }
@@ -260,278 +166,26 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
         <Flexblock gap="var(--space-xl)">
             <TextBox><p>{t('fleets.add.page_leading_text')}</p></TextBox>
 
-            <form
-                method="POST"
-                x-data={`{
-                    'submitted': false
-                }`}
-                x-on:submit="launch_confetti(get_images()); submitted = true;"
-            >
-                <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-                    <Flexblock>
-                        <ComponentBlock width='narrow'>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('fleet_information')} (1/3)</h2>
-
-                                <p>{t('fleets.add.form_info')}</p>
-
-                                <Flexblock>
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label>{t('select_audience')}</label>
-                                        <FlexInline class="[ audiences ]">
-                                            {audiences.map((option) => 
-                                                <StylessButton
-                                                    x-on:click={`audience = ${option.id}`}
-                                                    type="button"
-                                                    data-tippy-content={option.display_name}
-                                                >
-                                                    <img
-                                                        x-bind:class={`audience === ${option.id} ? 'selected' : ''`}
-                                                        src={AUDIENCE_ICONS[option.id]}
-                                                        height="128"
-                                                        width="128"
-                                                    />
-                                                </StylessButton>
-                                            )}
-                                            <div class="[ opacity-0 ]">
-                                                <Select
-                                                    class="[ pointer-events-none ]"
-                                                    id="audience"
-                                                    name="audience_id"
-                                                    x-model="audience"
-                                                    tabindex="-1"
-                                                    required
-                                                >
-                                                    {audiences_select_options.map((option) => 
-                                                        <option value={option.value}>{option.label}</option>
-                                                    )}
-                                                </Select>
-                                            </div>
-                                        </FlexInline>
-                                    </FixedFluid>
-
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="doctrine">{t('doctrine')}</label>
-                                        <Select
-                                            id="doctrine"
-                                            name="doctrine_id"
-                                            x-model="doctrine_id"
-                                            hx-validate="true"
-                                            hx-get={translatePath('/partials/doctrine_component')}
-                                            hx-target="#doctrine-hx-target"
-                                            hx-on::after-request="this.removeAttribute('disabled')"
-                                            hx-trigger="change"
-                                            hx-swap="innerHTML transition:true"
-                                            hx-indicator=".loader"
-                                        >
-                                            {doctrines_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="fleet_date">{t('fleet_date_and_time')}</label>
-                                        <Grid>
-                                            <FlatPicker
-                                                id="fleet_date"
-                                                type="date"
-                                                x-model="eve_date"
-                                                name="eve_date"
-                                                required
-                                                value={eve_date}
-                                                options={{
-                                                    minDate: "today",
-                                                } as any}
-                                            />
-                                            <FlatPicker
-                                                id="fleet_time"
-                                                x-model="eve_time"
-                                                name="eve_time"
-                                                value={eve_time}
-                                                required
-                                                options={{
-                                                    enableTime: true,
-                                                    noCalendar: true,
-                                                    dateFormat: "H:i",
-                                                    time_24hr: true,
-                                                } as any}
-                                            />
-                                        </Grid>
-                                    </FixedFluid>
-
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="type">{t('type')}</label>
-                                        <Select id="type" x-model="fleet_type" name="fleet_type">
-                                            {fleet_types_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-
-                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                        <label for="location">{t('location')}</label>
-                                        <Select id="location" x-model="location" name="location">
-                                            {locations_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
-                                            )}
-                                        </Select>
-                                    </FixedFluid>
-
-                                    <Context>
-                                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                            <label for="description">{t('description')}</label>
-                                            <Textarea id="description" name="description" rows="5" required />
-                                        </Flexblock>
-                                        <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
-                                            <FlexInline gap='var(--space-3xs)'>
-                                                <Markdown />
-                                                <small>{t('markdown_support')}</small>
-                                            </FlexInline>
-                                        </a>
-                                    </Context>
-                                </Flexblock>
-                            </Flexblock>
-                        </ComponentBlock>
-
-                        <Flexblock gap='var(--space-3xs)'>
-                            <ComponentBlock width='narrow'>
-                                <h2>{t('confirm')} (2/3)</h2>
-                            </ComponentBlock>
-
-                            <ThumbCard
-                                thumb_name={fleet_commander.character_name}
-                                thumb_image={get_player_icon(fleet_commander.character_id, 512)}
-                                thumb_image_small={get_player_icon(fleet_commander.character_id, 512)}
-                                thumb_image_alt={fleet_commander.character_name}
-                                thumb_title={t('fleet_commander')}
-                                class="[ max-w-[var(--max-text-width)] ]"
-                            >
-                                <div
-                                    class="[ absolute top-0 left-0 ]"
-                                    x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
-                                >
-                                    <template x-if="fleet_type === 'strategic'">
-                                        <div data-fleet-tip data-tippy-content={t('strategic_fleet')}>
-                                            <StratopIcon />
-                                        </div>
-                                    </template>
-                                    <template x-if="fleet_type === 'non_strategic'">
-                                        <div data-fleet-tip data-tippy-content={t('non_strategic_fleet')}>
-                                            <NonStrategicIcon />
-                                        </div>
-                                    </template>
-                                    <template x-if="fleet_type === 'training'">
-                                        <div data-fleet-tip data-tippy-content={t('training_fleet')}>
-                                            <TrainingIcon />
-                                        </div>
-                                    </template>
-                                </div>
-
-                                <VerticalCenter>
-                                    <Flexblock gap="var(--space-s-m)">
-                                        <TextGroup x-bind:class="!audience && 'text-red'" title={t('audience')} x-text={`audience ? audiences[audience] : '${t('no_audience_selected')}'`}>
-                                            {default_audience ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                                        </TextGroup>
-                                        <TextGroup title={t('location')} x-text="locations[location]">
-                                            {t('alliance')}
-                                        </TextGroup>
-                                    </Flexblock>
-                                </VerticalCenter>
-                                
-                                <VerticalCenter>
-                                    <Flexblock gap="var(--space-s-m)">
-                                        <TextGroup
-                                            title={t('eve_time')}
-                                            class="[ sentence-cap ]"
-                                            x-text="fleet_datetime()"
-                                        >    
-                                            {t('waiting_fleet_time')}
-                                        </TextGroup>
-                                        <TextGroup
-                                            title={t('local_time')}
-                                            class="[ sentence-cap ]"
-                                            x-text="fleet_datetime(true)"
-                                        >
-                                            {t('waiting_fleet_time')}
-                                        </TextGroup>
-                                    </Flexblock>
-                                </VerticalCenter>
-                            </ThumbCard>
-
-                            <template x-if="doctrine_id !== '-1'">
-                                <ComponentBlock id="doctrine-hx-target" width='narrow'>
-                                    <FlexInline class="[ items-center ]">
-                                        <RifterIcon/>
-                                        <p class="[ loading ]">{t('updating')}</p>
-                                    </FlexInline>
-                                </ComponentBlock>
-                            </template>
-                        </Flexblock>
-
-                        <ComponentBlock width='narrow'>
-                            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                                <h2>{t('fleet_submit')} (3/3)</h2>
-
-                                <Flexblock
-                                    x-show="show"
-                                    x-data={`{
-                                        show: false,
-                                        is_last_minute_fleet() {
-                                            const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
-                                            const now = new Date().getTime();
-                                            const distance = fleet_time - now;
-                                            const DISTANCE_15_MINUTES = 15*60*1000
-
-                                            this.show = (distance <= DISTANCE_15_MINUTES && distance > 0)
-                                        }
-                                    }`}
-                                    x-effect="eve_date && eve_time && is_last_minute_fleet()"
-                                    style="display: none"
-                                >
-                                    <p>{t('fleet_starting_soon')}</p>
-                                    <SwitchSquare
-                                        class="[ w-full ]"
-                                        name="start_tracking"
-                                        label={t('start_tracking')}
-                                        description={t('start_fleet_tracking_description')}
-                                    />
-                                </Flexblock>
-                                
-                                <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
-                            </Flexblock>
-                        </ComponentBlock>
-                    </Flexblock>
-                </Wrapper>
-            </form>
+            {fetch_doctrines_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: `${FLEET_FORM_PARTIAL_URL}`,
+                        message: fetch_doctrines_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetForm
+                    audiences={audiences}
+                    doctrines={doctrines}
+                    locations={locations}
+                    fleet_commander={fleet_commander}
+                    eve_date={eve_date}
+                    eve_time={eve_time}
+                    disable_motd={false}
+                    lang={lang}
+                />
+            }
         </Flexblock>
 	</PageDefault>
 </Viewport>
-
-<style lang="scss">
-    .audiences{
-        button:focus-visible {
-            outline: none;
-            img {
-                transform: scale(0.8);
-                filter: saturate(0.5);
-            }
-        }
-
-        img {
-            filter: saturate(0);
-            transform: scale(0.6);
-            transition: var(--fast-transition);
-
-            &:hover {
-                transform: scale(0.8);
-                filter: saturate(0.5);
-            }
-
-            &.selected {
-                filter: saturate(1) !important;
-                transform: scale(1) !important;
-            }
-        }
-    }
-</style>

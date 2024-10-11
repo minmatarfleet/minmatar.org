@@ -1,0 +1,39 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_contract_page?:    boolean;
+}
+
+const {
+    is_contract_page = false,
+} = Astro.props
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+---
+
+<Flexblock>
+    <FixedFluid width="48" class="[ items-center ]">
+        <TutorialIcon />
+        <h2>{t('freight.standard.faq_title')}</h2>
+    </FixedFluid>
+    {!is_contract_page &&
+        <h3>{t('freight.standard.faq_4_title')}</h3>
+        <p set:html={marked.parseInline(t('freight.standard.faq_4_text'), { renderer })} />
+    }
+    {is_contract_page &&
+        <h3>{t('freight.contract.faq_1_title')}</h3>
+        <p>{t('freight.contract.faq_1_text')}</p>
+    }
+    <h3>{t('freight.standard.faq_1_title')}</h3>
+    <p>{t('freight.standard.faq_1_text')}</p>
+    <h3>{t('freight.standard.faq_3_title')}</h3>
+    <p set:html={marked.parseInline(t('freight.standard.faq_3_text'))} />
+</Flexblock>

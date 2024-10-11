@@ -12,8 +12,6 @@ def get_fleet_discord_notification(
 ):
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
-    if fleet_doctrine:
-        description += f"**DOCTRINE**: {fleet_doctrine.upper()}\n"
     description += (
         f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
     )

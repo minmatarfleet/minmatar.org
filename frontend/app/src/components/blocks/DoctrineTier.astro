@@ -1,0 +1,38 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath, t } = i18n(Astro.url)
+
+import type { FittingItem, IdealComposition } from '@dtypes/layout_components';
+
+interface Props {
+    fittings:           FittingItem[];
+    ideal_composition?: IdealComposition;
+}
+
+const {
+    fittings,
+    ideal_composition = {},
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FittingCard from '@components/blocks/FittingCard.astro';
+---
+
+<FlexInline
+    role="list"
+    class="[ w-full ]"
+    gap='var(--space-3xs)'
+>
+    {fittings.map((fitting) => 
+        <a
+            class="[ items-center flex ]"
+            role="listitem"
+            href={translatePath(`/ships/fitting/${fitting.id}`)}
+        >
+            <FittingCard
+                fitting={fitting}
+                subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : null}
+            />
+        </a>
+    )}
+</FlexInline>

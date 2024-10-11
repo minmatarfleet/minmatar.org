@@ -1,0 +1,112 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DoctrineType } from '@dtypes/layout_components';
+
+interface Props {
+    doctrine:       DoctrineType;
+    title?:         string;
+    subtitle?:      string;
+    [propName: string]: any;
+}
+
+const {
+    doctrine,
+    title,
+    subtitle,
+    ...attributes
+} = Astro.props
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<ComponentBlock class="[ doctrine-card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
+    <Flexblock gap="0">
+        <ItemPicture
+            item_id={doctrine.primary_fittings[0].ship_id}
+            item_name={doctrine.primary_fittings[0].ship_name}
+            size={256}
+            icon_quality={512}
+            mask={true}
+        />
+        <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <Flexblock gap='0'>
+                <h4>{title ? title : doctrine.name}</h4>
+                {subtitle && <small>{subtitle}</small>}
+            </Flexblock>
+        </Wrapper>
+
+        <div class="[ doctrine-groups ]">
+            {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
+                <FlexInline gap='var(--space-3xs)'>
+                    <picture
+                        data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
+                        x-init={`tippy($el, {
+                            delay: [ 100, 200 ],
+                            arrow: true,
+                        })`}
+                    >
+                        <img
+                            src={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
+                            height="32"
+                            width="32"
+                            alt={`${sig.name} icon`}
+                        />
+                    </picture>
+                </FlexInline>
+            )}
+
+            {!doctrine?.sigs?.length &&
+                <picture
+                    class="[ p-[var(--space-3xs)] ]"
+                    data-tippy-content={t('alliance_doctrine_description')}
+                    x-init={`tippy($el, {
+                        delay: [ 100, 200 ],
+                        arrow: true,
+                    })`}
+                >
+                    <FleetLogo
+                        square={true}
+                        slot="picture"
+                        width="32"
+                    />
+                </picture>
+            }
+        </div>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .doctrine-card {
+        position: relative;
+
+        .doctrine-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .doctrine-groups {
+            position: absolute;
+            top: var(--space-3xs);
+            left: var(--space-3xs);
+        }
+    }
+
+    h4 {
+        font-weight: 400;
+    }
+
+    small {
+        color: var(--fleet-yellow);
+    }
+</style>

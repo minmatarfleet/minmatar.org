@@ -83,3 +83,169 @@ export const get_structure_id = (structure_type:string):number => {
 
     return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
 }
+
+export const get_ship_type_icon = (ship_type:string):string => {
+    const SHIP_TYPE_ICONS = {
+        'Frigate': 'Isis_frigate.png',
+        'Electronic Attack Ship': 'Isis_frigate.png',
+        'Assault Frigate': 'Isis_frigate.png',
+        'Logistics Frigate': 'Isis_frigate.png',
+        'Covert Ops': 'Isis_frigate.png',
+        'Stealth Bomber': 'Isis_frigate.png',
+        'Interceptor': 'Isis_frigate.png',
+        'Destroyer': 'Isis_destroyer.png',
+        'Interdictor': 'Isis_destroyer.png',
+        'Command Destroyer': 'Isis_destroyer.png',
+        'Tactical Destroyer': 'Isis_destroyer.png',
+        'Cruiser': 'Isis_cruiser.png',
+        'Heavy Assault Cruiser': 'Isis_cruiser.png',
+        'Heavy Interdiction Cruiser': 'Isis_cruiser.png',
+        'Logistics': 'Isis_cruiser.png',
+        'Logistics Crusiers': 'Isis_cruiser.png',
+        'Strategic Cruiser': 'Isis_cruiser.png',
+        'Recon Ship': 'Isis_cruiser.png',
+        'Force Recon Ship': 'Isis_cruiser.png',
+        'Combat Recon Ship': 'Isis_cruiser.png',
+        'Battlecruiser': 'Isis_battlecruiser.png',
+        'Combat Battlecruiser': 'Isis_battlecruiser.png',
+        'Attack Battlecruiser': 'Isis_battlecruiser.png',
+        'Command Ship': 'Isis_battlecruiser.png',
+        'Battleship': 'Isis_battleship.png',
+        'Marauder': 'Isis_battleship.png',
+        'Black Ops': 'Isis_battleship.png',
+        'Capital': 'Isis_capital.png',
+        'Dreadnought': 'Isis_capital.png',
+        'Lancer Dreadnought': 'Isis_capital.png',
+        'Carrier': 'Isis_supercapital.png',
+        'Force Auxiliary': 'Isis_supercapital.png',
+        'Supercapital': 'Isis_supercapital.png',
+        'Supercarrier': 'Isis_supercarrier.png',
+        'Titan': 'Isis_titan.png',
+        'Miningfrigate': 'Isis_miningfrigate.png',
+        'Expedition Frigate': 'Isis_miningfrigate.png',
+        'Miningbarge': 'Isis_miningbarge.png',
+        'Industrial': 'Isis_industrial.png',
+        'Transport Ship': 'Isis_industrial.png',
+        'Freighter': 'Isis_industrial.png',
+        'Jump Freighters': 'Isis_freighter.png',
+        'Industrialcommand': 'Isis_industrialcommand.png',
+    }
+
+    return SHIP_TYPE_ICONS[ship_type] ?? null
+}
+
+const METERS_IN_A_YEAR_LIGHT = 9460528400000000
+
+export const get_distance_among_systems = (system_a:sde_system, system_b:sde_system):number => {
+    return Math.sqrt(Math.pow(system_b.x - system_a.x, 2) + Math.pow(system_b.y - system_a.y, 2) + Math.pow(system_b.z - system_a.z, 2)) / METERS_IN_A_YEAR_LIGHT
+}
+
+import type { sde_system } from '@helpers/sde/map'
+import { get_systems_coordinates } from '@helpers/sde/map'
+import type { SystemCardInfo } from '@dtypes/layout_components'
+
+export const get_systems_at_range = async (origin_system_name:string, years_light:number) => {
+    const systems_at_range:SystemCardInfo[] = []
+
+    const sde_systems = await get_systems_coordinates()
+
+    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
+
+    if (origin_system === undefined)
+        throw new Error('Origin system invalid')
+    
+    sde_systems.forEach((sde_system) => {
+        const distance_yl = get_distance_among_systems(origin_system, sde_system)
+
+        if (distance_yl > years_light) return true
+
+        systems_at_range.push({
+            system_name: sde_system.solarSystemName,
+            system_id: sde_system.sunTypeId,
+            sun_type_id: sde_system.sunTypeId,
+            distance_yl: distance_yl,
+            region_name: sde_system.regionName,
+            constellation_name: sde_system.constellationName,
+            security: sde_system.security,
+        })
+    })
+
+    return systems_at_range.sort((a, b) => a.distance_yl - b.distance_yl)
+}
+
+export const get_constellation_systems = async (constellation_name:string, origin_system_name:string) => {
+    const constellation_systems:SystemCardInfo[] = []
+
+    const sde_systems = await get_systems_coordinates()
+
+    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
+
+    if (origin_system === undefined)
+        throw new Error('Origin system invalid')
+    
+    sde_systems.forEach((sde_system) => {
+        if (sde_system.constellationName !== constellation_name) return true
+
+        const distance_yl = get_distance_among_systems(origin_system, sde_system)
+
+        constellation_systems.push({
+            system_name: sde_system.solarSystemName,
+            system_id: sde_system.sunTypeId,
+            sun_type_id: sde_system.sunTypeId,
+            distance_yl: distance_yl,
+            region_name: sde_system.regionName,
+            constellation_name: sde_system.constellationName,
+            security: sde_system.security,
+        })
+    })
+
+    return constellation_systems.sort((a, b) => a.distance_yl - b.distance_yl)
+}
+
+export const get_moon_systems = async (origin_system_name:string, distance:number, same_region:boolean) => {
+    const constellation_systems:SystemCardInfo[] = []
+
+    const sde_systems = await get_systems_coordinates()
+
+    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
+
+    if (origin_system === undefined)
+        throw new Error('Origin system invalid')
+    
+    sde_systems.forEach((sde_system) => {
+        if (same_region && sde_system.regionName !== origin_system.regionName) return true
+
+        const distance_yl = get_distance_among_systems(origin_system, sde_system)
+
+        if (distance_yl > distance) return true
+
+        constellation_systems.push({
+            system_name: sde_system.solarSystemName,
+            system_id: sde_system.solarSystemId,
+            sun_type_id: sde_system.sunTypeId,
+            distance_yl: distance_yl,
+            region_name: sde_system.regionName,
+            constellation_name: sde_system.constellationName,
+            security: sde_system.security,
+        })
+    })
+
+    return constellation_systems.sort((a, b) => a.distance_yl - b.distance_yl)
+}
+
+export const sec_status_class = (security:string):string => {
+    const SEC_CLASS = {
+        '1.0': 'text-status-1',
+        '0.9': 'text-status-point-9',
+        '0.8': 'text-status-point-8',
+        '0.7': 'text-status-point-7',
+        '0.6': 'text-status-point-6',
+        '0.5': 'text-status-point-5',
+        '0.4': 'text-status-point-4',
+        '0.3': 'text-status-point-3',
+        '0.2': 'text-status-point-2',
+        '0.1': 'text-status-point-1',
+    }
+
+    return SEC_CLASS[security] ?? 'text-status-null'
+}

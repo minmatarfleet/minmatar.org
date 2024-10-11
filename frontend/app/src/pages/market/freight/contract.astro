@@ -2,29 +2,47 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { prod_error_messages } from '@helpers/env'
+import { get_route_cost } from '@helpers/api.minmatar.org/freights'
+import { fetch_freight_routes } from '@helpers/fetching/freights'
+import type { FreightRoutesData } from '@dtypes/layout_components'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+let freight_routes_data:FreightRoutesData
+let data_fetching_error:string
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+let cost:number = 0
+let route:string = ''
+let contract_size:number = 0
+let collateral:number = 0
+let origin:string = ''
+let destination:string = ''
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+if (Astro.request.method !== "POST")
+    return Astro.redirect(translatePath('/market/freight/standard'))
 
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
+try {
+    freight_routes_data = await fetch_freight_routes()
+    
+    const data = await Astro.request.formData();
+    
+    route = data.get("route") as string
+    contract_size = parseInt(data.get("contract_size") as string)
+    collateral = parseFloat((data.get("collateral") as string).replaceAll(',', ''));
+    const route_id = freight_routes_data.route_translation[route]
 
-import type { FreightCalculation } from '@dtypes/layout_components'
+    const route_cost = await get_route_cost(route_id, contract_size, collateral)
+    cost = route_cost.cost
 
-const from = Astro.cookies.has('from') ? Astro.cookies.get('from').value : ''
-if (!Astro.cookies.has('contract')) {
-
-    return Astro.redirect(translatePath(`/market/freight/${from}`))
+    origin = freight_routes_data.stations[route][0]
+    destination = freight_routes_data.stations[route][1]
+} catch (error) {
+    data_fetching_error = prod_error_messages() ? t('fetch_freight_cost_error') : error.message
 }
 
-const calculation:FreightCalculation = Astro.cookies.get('contract').json();
+if (data_fetching_error) {
+    Astro.cookies.set('contract_error', data_fetching_error, { path: '/' })
+    return Astro.redirect(translatePath('/market/freight/standard'))
+}
 
 import { number_name } from '@helpers/numbers.ts';
 
@@ -41,10 +59,8 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FreightFAQs from '@components/blocks/FreightFAQs.astro'
 
-import PageBody from '@components/page/partials/PageBody.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 
@@ -69,7 +85,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:!block ]" href={translatePath(`/market/freight/${from}`)}>
+                <Button class="[ !hidden sm:!block ]" href={translatePath(`/market/freight/standard`)}>
                     <HistoryIcon slot="icon" />
                     {t('recalculate')}
                 </Button>
@@ -102,9 +118,9 @@ const page_title = t('freight.contract.page_title');
                             <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                                 <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                                     <h4>{t('name')}</h4>
-                                    <p>{calculation.name}</p>
+                                    <p>Minmatar Fleet Logistics</p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">{calculation.name}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">Minmatar Fleet Logistics</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
                     </Flexblock>
@@ -113,7 +129,7 @@ const page_title = t('freight.contract.page_title');
                 <ComponentBlock width='narrow'>
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                         <h2>{t('freight.contract.step_2_title')}</h2>
-                        <p>{calculation.pick_up_station}</p>
+                        <p>{origin}</p>
                     </Flexblock>
                 </ComponentBlock>
 
@@ -125,11 +141,9 @@ const page_title = t('freight.contract.page_title');
                             <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                                 <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                                     <h4>{t('ship_to')}</h4>
-                                    <p>{calculation.ship_to}</p>
+                                    <p>{destination}</p>
                                 </Flexblock>
-                                {calculation.ship_to != t('fl33t_structure') && 
-                                    <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{calculation.ship_to}</ClipboardButton>
-                                }
+                                <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{destination}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 
@@ -137,9 +151,9 @@ const page_title = t('freight.contract.page_title');
                             <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                                 <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                                     <h4>{t('reward')}</h4>
-                                    <p><span data-tippy-content={number_name(calculation.reward, lang)}>{calculation.reward.toLocaleString()}</span></p>
+                                    <p><span data-tippy-content={number_name(cost, lang)}>{cost.toLocaleString()}</span></p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{calculation.reward}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{cost}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 
@@ -147,21 +161,21 @@ const page_title = t('freight.contract.page_title');
                             <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                                 <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                                     <h4>{t('collateral')}</h4>
-                                    <p><span data-tippy-content={number_name(calculation.collateral, lang)}>{calculation.collateral.toLocaleString()}</span></p>
+                                    <p><span data-tippy-content={number_name(collateral, lang)}>{collateral.toLocaleString()}</span></p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{calculation.collateral}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{collateral}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 
                         <VerticalCenter>
                             <TextGroup title={t('expiration')}>
-                                {`${calculation.expiration} ${t('days')}`}
+                                {`${3} ${t('days')}`}
                             </TextGroup>
                         </VerticalCenter>
 
                         <VerticalCenter>
                             <TextGroup title={t('days_to_complete')}>
-                                {calculation.days_to_complete}
+                                {3}
                             </TextGroup>
                         </VerticalCenter>
                     </Flexblock>
@@ -177,16 +191,7 @@ const page_title = t('freight.contract.page_title');
         </Flexblock>
 
         <ComponentBlock slot="aside" class="sticky top-[170px]">
-            <Flexblock>
-                <FixedFluid width="48" class="[ items-center ]">
-                    <TutorialIcon />
-                    <h2>{t('freight.standard.faq_title')}</h2>
-                </FixedFluid>
-                <h3>{t('freight.contract.faq_1_title')}</h3>
-                <p>{t('freight.contract.faq_1_text')}</p>
-                <h3>{t('freight.standard.faq_3_title')}</h3>
-                <p>{t('freight.standard.faq_3_text')}</p>
-            </Flexblock>
+            <FreightFAQs is_contract_page={true} />
         </ComponentBlock>
     </PageAside>
 </Viewport>

@@ -34,9 +34,7 @@ if (Astro.request.method === "POST") {
             throw new Error(t('invalid_description'));
 
         application = await create_corporation_application(auth_token, corporation.corporation_id, description)
-        console.log(application)
         corporation.status = application.status as CorporationStatusType
-        console.log(corporation.status)
     } catch (error) {
         create_corporation_application_error = prod_error_messages() ? t('create_corporation_application_error') : error.message
     }

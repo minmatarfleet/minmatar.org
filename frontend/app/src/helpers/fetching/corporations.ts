@@ -131,7 +131,7 @@ export async function get_all_corporation_members(access_token:string, corporati
         members: []
     }
 
-    corporation_members.members = (await Promise.all(api_corporation.members.map(async (api_member) => {
+    corporation_members.members = api_corporation.members.map(api_member => {
         const is_alt = (api_member.primary_character_id !== null)
 
         let member:CharacterKind = {
@@ -150,7 +150,7 @@ export async function get_all_corporation_members(access_token:string, corporati
         }
 
         return member
-    })))
+    })
 
     return corporation_members
 }

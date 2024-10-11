@@ -2,8 +2,19 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
+interface Props {
+    can_view_timers?:           boolean;
+    can_view_moons?:            boolean;
+    can_add_moons?:             boolean;
+    is_superuser?:              boolean;
+}
+
+const {
+    can_view_timers = false,
+    can_view_moons = false,
+    can_add_moons = false,
+    is_superuser = false,
+} = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -11,23 +22,24 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
+import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
 import StructureEVEIcon from '@components/icons/StructureEVEIcon.astro';
+import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
 ---
 
 <Wrapper
-    class="[ intel-reel animate-fade-in-up ]"
+    class="[ intel-reel ]"
     padding_block='0'
     padding_inline='0'
     max_width='100%'
 >
     <div
         class="[ swiper ][ w-full pb-10 ]"
-        id="intel-list"
+        id="corporations-list"
     >
         <LandingSwiper>
-
             <!--<div class="[ swiper-slide ]">
                 <ComponentBlock>
                     <Flexblock>
@@ -57,25 +69,54 @@ import StructureEVEIcon from '@components/icons/StructureEVEIcon.astro';
                     </Flexblock>
                 </ComponentBlock>
             </div> -->
+            
+            {can_view_timers &&
+                <div class="[ swiper-slide ]" style="margin-right: 20px">
+                    <SwiperCard class="[ animate-delay-0 ]" cover='/images/timers-tile-background.jpg'>
+                        <FlexInline slot="header" gap='var(--space-2xs)'>
+                            <CalendarEVEIcon />
+                            <h2>{t('structure_timers')}</h2>
+                        </FlexInline>
+                            
+                        <p>{t('intel.timers.leading_text')}</p>
+                        <FlexInline>
+                            <Button size='sm' href={translatePath('/intel/timers/active/')}>
+                                {t('view')}
+                            </Button>
+                            <Button size='sm' href={translatePath('/intel/timers/add/')}>
+                                {t('add_timer')}
+                            </Button>
+                        </FlexInline>
+                    </SwiperCard>
+                </div>
+            }
 
-            <div class="[ swiper-slide ]">
-                <SwiperCard class="[ animate-delay-0 ]" cover='/images/timers-tile-background.jpg'>
-                    <FlexInline slot="header" gap='var(--space-2xs)'>
-                        <CalendarEVEIcon />
-                        <h2>{t('structure_timers')}</h2>
-                    </FlexInline>
-                        
-                    <p>{t('intel.timers.leading_text')}</p>
-                    <FlexInline>
-                        <Button size='sm' href={translatePath('/intel/timers/active/')}>
-                            {t('view')}
-                        </Button>
-                        <Button size='sm' href={translatePath('/intel/timers/add/')}>
-                            {t('add_timer')}
-                        </Button>
-                    </FlexInline>
-                </SwiperCard>
-            </div>
+            {(can_add_moons || can_view_moons) &&
+                <div class="[ swiper-slide ]" style="margin-right: 20px">
+                    <SwiperCard class="[ animate-delay-200 ]" cover='/images/moon-tracking-tile-background.jpg'>
+                        <FlexInline slot="header" gap='var(--space-2xs)'>
+                            <PlanetEVEIcon />
+                            <h2>{t('moon_tracking')}</h2>
+                        </FlexInline>
+                            
+                        <p>{t('intel.moon_tracking.leading_text')}</p>
+                        <FlexInline>
+                            {can_view_moons &&
+                                <Button size='sm' href={translatePath('/intel/moons/')}>
+                                    {t('view')}
+                                </Button>
+                            }
+                            {can_add_moons &&
+                                <AddMoonButton
+                                    size='sm'
+                                    color='fleet-red'
+                                    iconed={false}
+                                />
+                            }
+                        </FlexInline>
+                    </SwiperCard>
+                </div>
+            }
         </LandingSwiper>
     </div>
 

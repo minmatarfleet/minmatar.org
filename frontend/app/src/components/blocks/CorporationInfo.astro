@@ -23,7 +23,6 @@ let get_corporation_info_error:string | false = false
 
 try {
     corporation = await get_corporation_info(corporation_id)
-    console.log(corporation)
 } catch (error) {
     get_corporation_info_error = (prod_error_messages() ? t('get_corporation_info_error') : error.message)
 }
@@ -103,7 +102,7 @@ const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].sp
                             </Flexblock>
                             <a
                                 data-tippy-content={t('zkillboard')}
-                                class="[ w-[32px] neocom-button ]"
+                                class="[ w-[32px] neocom-button neocom-button-focus ]"
                                 href={get_zkillboard_corporation_link(corporation_id)}
                                 target="_blank"
                                 rel="nofollow noopener noreferrer"
@@ -134,7 +133,7 @@ const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].sp
             {corporation.biography !== '' &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('description')}>
-                        <div class:list={{ 'eve-html': is_html(corporation.biography) }} set:html={parse_eve_html(corporation.biography)} />
+                        <Flexblock set:html={marked.parse(corporation.biography, { renderer })} />
                     </SectionH4>
                 </ComponentBlock>
             }

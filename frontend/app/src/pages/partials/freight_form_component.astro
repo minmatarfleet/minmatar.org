@@ -1,0 +1,46 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { prod_error_messages } from '@helpers/env'
+import { fetch_freight_routes } from '@helpers/fetching/freights'
+import type { FreightRoutesData } from '@dtypes/layout_components'
+
+let freight_routes_data:FreightRoutesData
+let default_route:string | number
+let fetch_freight_routes_error:string
+
+try {
+    freight_routes_data = await fetch_freight_routes()
+    default_route = freight_routes_data.routes[0].value
+} catch (error) {
+    fetch_freight_routes_error = prod_error_messages() ? t('fetch_freight_routes_error') : error.message
+}
+
+const FREIGHT_FORM_PARTIAL_URL = `${translatePath('/partials/freight_form_component')}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import FreightForm from '@components/blocks/FreightForm.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_freight_routes_error ?
+    <ErrorRefetch
+        args={{
+            partial: FREIGHT_FORM_PARTIAL_URL,
+            message: fetch_freight_routes_error,
+            delay: delay,
+        }}
+    />
+    :
+    <ComponentBlock width='narrow'>
+        <FreightForm
+            freight_routes_data={freight_routes_data}
+            default_route={default_route}
+        />
+    </ComponentBlock>
+}

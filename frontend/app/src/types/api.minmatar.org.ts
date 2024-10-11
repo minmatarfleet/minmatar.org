@@ -181,6 +181,7 @@ export interface Fleet {
     fleet_commander:    number;
     doctrine_id:        number;
     location:           string;
+    disable_motd:       boolean;
     tracking:           Tracking;
 }
 
@@ -203,6 +204,7 @@ export interface FleetRequest {
     doctrine_id:    number;
     location_id:    number;
     audience_id:    number;
+    disable_motd:   boolean;
 }
 
 export interface MumbleInformation {
@@ -284,4 +286,55 @@ export interface StructureTimerRequest {
 export interface VerifyStructureTimerRequest {
     corporation_name:   string;
     alliance_name:      string;
+}
+
+export interface FreightRoute {
+    orgin:          FreightLocation;
+    destination:    FreightLocation;
+    bidirectional:  boolean;
+    route_id:       number;
+}
+
+export interface FreightLocation {
+    location_id:    number;
+    name:           string;
+    short_name:     string;
+}
+
+export interface RouteOptions {
+    route_option_id:    number;
+    maximum_m3:         number;
+}
+
+export interface RouteCost {
+    route_id:   number;
+    cost:       number;
+}
+
+export interface DoctrineComposition {
+    ideal_fleet_size:   number;
+    composition:        Ships[];
+}
+
+export interface Ships {
+    fitting:            Fitting;
+    ideal_ship_count:   number;
+}
+
+export interface SystemMoon {
+    id:         number;
+    system:     string;
+    planet:     string;
+    moon:       number;
+    detail:     SystemMoonDetails;
+}
+
+export interface SystemMoonDetails {
+    monthly_revenue?:   number;
+    reported_by:        string;
+}
+
+export interface MoonSummarySystem {
+    system:         string;
+    scanned_moons:  number;
 }

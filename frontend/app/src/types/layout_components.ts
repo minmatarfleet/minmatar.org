@@ -26,6 +26,7 @@ export interface FittingItem {
     ship_name:      string;
     ship_id:        number;
     id:             number;
+    eft_format:     string;
 }
 
 export interface DoctrineItemObj {
@@ -517,9 +518,10 @@ export interface MemberUI {
 }
 
 export interface SelectOptions {
-    value?: string | number;
-    label:  string;
-    image?: string;
+    value?:     string | number;
+    label:      string;
+    image?:     string;
+    subtitle?:  string;
 }
 
 export interface PageFinderUI {
@@ -617,19 +619,23 @@ export interface GroupBasic {
     description:    string;
 }
 
-export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'
-
 export interface DoctrineType {
-    id:                 number;
-    name:               string;
-    type:               DoctrineTypes;
-    created_at:         Date;
-    updated_at:         Date;
-    description:        string;
-    primary_fittings:   FittingItem[];
-    secondary_fittings: FittingItem[];
-    support_fittings:   FittingItem[];
-    sigs:               GroupBasic[];
+    id:                     number;
+    name:                   string;
+    type:                   DoctrineTypes;
+    created_at:             Date;
+    updated_at:             Date;
+    description:            string;
+    primary_fittings:       FittingItem[];
+    secondary_fittings:     FittingItem[];
+    support_fittings:       FittingItem[];
+    sigs:                   GroupBasic[];
+    ideal_composition?:     IdealComposition;
+}
+
+export interface IdealComposition {
+    ideal_fleet_size:   number;
+    [propName: string]: number;
 }
 
 export interface FittingGroup {
@@ -647,6 +653,7 @@ export interface FleetItem {
     type:                   FleetTypes;
     audience:               string;
     description:            string;
+    doctrine_id:            number;
     start_time:             Date;
     fleet_commander_id:     number;
     fleet_commander_name:   string;
@@ -664,6 +671,8 @@ export interface FleetUI {
     location:               string;
     doctrine:               DoctrineType;
     tracking:               Tracking;
+    audience:               string;
+    disable_motd:           boolean;
 }
 
 export interface Tracking {
@@ -708,3 +717,132 @@ export interface StructureTimerUI {
 }
 
 export type MemberStatus = 'registered' | 'unregistered'
+
+import type { RouteOptions } from '@dtypes/api.minmatar.org'
+
+export interface FreightRoutesData {
+    routes:             SelectOptions[];
+    sizes:              FreightSizes;
+    route_translation:  RouteTranslate;
+    stations:           RouteStations;
+}
+
+export interface RoutesData {
+    [propName: string]: RouteOptions;
+}
+
+export interface FreightSizes {
+    [propName: string]: SelectOptions[];
+}
+
+export interface RouteTranslate {
+    [propName: string]: number;
+}
+export interface RouteStations {
+    [propName: string]: string[];
+}
+
+export const fitting_ship_types = [
+    'Frigate',
+    'Electronic Attack Ship',
+    'Assault Frigate',
+    'Logistics Frigate',
+    'Covert Ops',
+    'Stealth Bomber',
+    'Interceptor',
+    'Destroyer',
+    'Interdictor',
+    'Command Destroyer',
+    'Tactical Destroyer',
+    'Cruiser',
+    'Heavy Assault Cruiser',
+    'Heavy Interdiction Cruiser',
+    'Logistics',
+    'Logistics Crusiers',
+    'Strategic Cruiser',
+    'Recon Ship',
+    'Force Recon Ship',
+    'Combat Recon Ship',
+    'Battlecruiser',
+    'Combat Battlecruiser',
+    'Attack Battlecruiser',
+    'Command Ship',
+    'Battleship',
+    'Marauder',
+    'Black Ops',
+    'Capital',
+    'Dreadnought',
+    'Lancer Dreadnought',
+    'Carrier',
+    'Force Auxiliary',
+    'Supercapital',
+    'Supercarrier',
+    'Titan',
+    'Miningfrigate',
+    'Expedition Frigate',
+    'Miningbarge',
+    'Industrial',
+    'Transport Ship',
+    'Freighter',
+    'Jump Freighters',
+    'Industrialcommand',
+]
+
+export type FittingShipType = typeof fitting_ship_types[number]
+
+export type DoctrineTypes = typeof doctrine_types[number]
+
+export const doctrine_types = [
+    'skirmish',
+    'strategic',
+    'specialized',
+]
+
+export interface SystemCardInfo {
+    system_name:            string;
+    system_id:              number;
+    sun_type_id:            number;
+    distance_yl:            number;
+    region_name:            string;
+    constellation_name:     string;
+    security:               number;
+    moons_count?:           number;
+    progress?:              number;
+}
+
+export interface RegionBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface ConstellationBasic {
+    id:      number;
+    name:    string;
+}
+
+export interface MoonBasic {
+    id:         number;
+    name:       string;
+    system_id?: number;
+}
+
+export interface PlanetBasic {
+    id:         number;
+    name:       string;
+    type_id:    number;
+}
+
+export interface MoonUI {
+    id:                 number;
+    name:               string;
+    scanned:            boolean;
+    monthly_revenue?:   number;
+}
+
+export interface PlanetMoonsUI {
+    id:         number;
+    name:       string;
+    type_id:    number;
+    scanned:    number;
+    moons?:     MoonUI[];
+}

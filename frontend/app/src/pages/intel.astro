@@ -15,7 +15,11 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
+const can_view_timers = user_permissions.includes('structures.view_evestructuretimer')
+const can_add_moons = user_permissions.includes('moons.add_evemoon')
+const can_view_moons = user_permissions.includes('moons.view_evemoon')
+
+if (!is_superuser && !can_view_timers && !can_add_moons)
     return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';
@@ -28,10 +32,17 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import IntelReel from '@components/blocks/IntelReel.astro';
 
 const page_title = t('intel.page_title');
-const page_description = t('intel.leading_text');
+const leading_text = t('intel.leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={t('intel.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
     <PageLanding
         cover={{
             image: "/images/intel-cover.jpg",
@@ -50,11 +61,11 @@ const page_description = t('intel.leading_text');
             >
                 <Flexblock gap='var(--space-xl)'>
                     <h1>{page_title}</h1>
-                    <p>{page_description}</p>
+                    <p>{leading_text}</p>
                 </Flexblock>
             </Wrapper>
             
-            <IntelReel />
+            <IntelReel can_view_timers={can_view_timers} can_add_moons={can_add_moons} can_view_moons={can_view_moons} />
         </Flexblock>
     </PageLanding>
 </Viewport>

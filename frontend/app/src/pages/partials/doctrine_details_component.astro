@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+
+const doctrine_id = Astro.url.searchParams.get('doctrine_id')
+
+import { prod_error_messages } from '@helpers/env'
+import type { DoctrineType } from '@dtypes/layout_components'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
+
+let doctrine:DoctrineType
+let fetch_doctrine_error:string | false = false
+let recently_fleets:FleetItem[] = []
+
+try {
+    doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
+    if (auth_token) {
+        recently_fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
+        recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
+    }
+} catch (error) {
+    fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
+}
+
+const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import DoctrineDetails from '@components/blocks/DoctrineDetails.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_doctrine_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
+            message: fetch_doctrine_error,
+            delay: delay,
+        }}
+    />
+    :
+    <DoctrineDetails doctrine={doctrine} recently_fleets={recently_fleets} />
+    
+    <span x-data={`{
+        init() {
+            ideal_fleet_size = ${doctrine?.ideal_composition?.ideal_fleet_size ?? 0}
+            recently_fleets_count = ${recently_fleets?.length ?? 0}
+            $el.remove()
+        }
+    }`}/>
+}

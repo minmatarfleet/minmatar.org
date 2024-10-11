@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+interface Props {
+    model:                  string;
+    placeholder?:           string;
+    [propName: string]:     any;
+}
+
+const {
+    model,
+    placeholder = t('money_input_placeholder'),
+    ...atributes
+} = Astro.props
+
+import Input from '@components/blocks/Input.astro';
+---
+
+<Input
+    type="text"
+    placeholder={placeholder}
+    onclick="this.select();"
+    data-tippy-content=""
+    x-mask:dynamic="$money($input)"
+    x-data={`{
+        ${model}: '',
+        clamp(num, min, max) { return Math.min(Math.max(num, min), max); },
+        updateValue(value, mult, min, max) {
+            const num = value.replace(/[^-0-9\.]/g, '');
+            return clamp(num * mult, min, max);
+        },
+    }`}
+    x-model={model}
+    x-bind:data-tippy-content={`number_name((${model} ?? 0).toString(), '${lang}')`}
+    onkeyup={`this._tippy.setContent(this.getAttribute('data-tippy-content'), '${lang}')`}
+    @keypress={`
+        const current_val = parseFloat(${model}.replaceAll(',', ''))
+        
+        if($event.key.toLowerCase() === 'm' && current_val < 1000)
+            ${model} = updateValue(${model}, 1000000, 0, Number.MAX_VALUE).toString()
+        else if($event.key.toLowerCase() === 'b' && current_val < 1000)
+            ${model} = updateValue(${model}, 1000000000, 0, Number.MAX_VALUE).toString()
+        else if($event.key.toLowerCase() === 't' && current_val < 1000)
+            ${model} = updateValue(${model}, 1000000000000, 0, Number.MAX_VALUE).toString()
+    `}
+    data-tippy-placement='top'
+    {...atributes}
+/>

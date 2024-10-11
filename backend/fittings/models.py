@@ -43,9 +43,9 @@ class EveDoctrine(models.Model):
     """
 
     type_choices = (
-        ("armor", "Armor"),
-        ("shield", "Shield"),
-        ("kitchen_sink", "Kitchen Sink"),
+        ("skirmish", "Skirmish"),
+        ("strategic", "Strategic"),
+        ("specialized", "Specialized"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)
@@ -53,6 +53,7 @@ class EveDoctrine(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
     sigs = models.ManyToManyField(Sig, blank=True)
+    ideal_fleet_size = models.IntegerField(default=50)
 
     @property
     def doctrine_link(self):
@@ -76,6 +77,7 @@ class EveDoctrineFitting(models.Model):
     doctrine = models.ForeignKey(EveDoctrine, on_delete=models.CASCADE)
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
     role = models.CharField(max_length=255, choices=role_choices)
+    ideal_ship_count = models.IntegerField(default=1)
 
     def __str__(self):
         return f"{self.doctrine.name} - {self.fitting.name}"

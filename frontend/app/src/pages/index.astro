@@ -29,6 +29,7 @@ import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
 import WikiSmall from '@components/blocks/WikiSmall.astro';
+import RatBibbleWidget from '@components/blocks/RatBibbleWidget.astro';
 import DiscordSmall from '@components/blocks/DiscordSmall.astro';
 import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
@@ -217,8 +218,14 @@ const page_description = t('index.leading_text');
 					width='656px'
 					gap='var(--space-3xs)'
 					breakpoint='49%'
+					class="[ !items-start ]"
 				>
 					<MetaGuideWidget />
+					<RatBibbleWidget						
+						padding_block='0'
+						padding_inline='var(--space-s)'
+						class="[ basis-[50%] shrink ]"
+					/>
 				</FluidFixed>
 			</Flexblock>
 
@@ -281,7 +288,7 @@ const page_description = t('index.leading_text');
 	}
 
 	.welcome-heading {
-		font-size: var(--step-3);
+		font-size: var(--step-5);
 	}
 
     .left-panel {

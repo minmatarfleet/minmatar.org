@@ -29,6 +29,8 @@ const stroke = ship_slot?.meta_name == 'Tech I' ? 'var(--tech-i)' :
                 ship_slot?.meta_name == 'Abyssal' ? 'var(--abyssal)' :
                 '#666'
 
+import { query_string } from '@helpers/string';
+
 import Tippy from '@components/blocks/Tippy.astro';
 import LowSlotEvEIcon from '@components/icons/LowSlotEvEIcon.astro';
 import MediumSlotEvEIcon from '@components/icons/MediumSlotEvEIcon.astro';
@@ -58,7 +60,7 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
         {ship_slot &&
             <Tippy
                 data-tippy-placement={placement}
-                partial={`${MODULE_TIPPY_PARTIAL_URL}?module_name=${JSON.stringify(ship_slot.name)}`}
+                partial={`${MODULE_TIPPY_PARTIAL_URL}?${query_string({ module_name: ship_slot.name, })}`}
                 height='70px'
                 width='340px'
             >

@@ -1,0 +1,174 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
+    return HTTP_404_Not_Found()
+
+let system_name = Astro.params.system_name
+
+import { get_system_moons_data } from '@helpers/pages/system_moons'
+import type { SystemMoonsData } from '@helpers/pages/system_moons'
+
+let system_moons_data:SystemMoonsData = {}
+let data_fetching_error
+
+try {
+    system_moons_data = await get_system_moons_data(auth_token as string, system_name, lang)
+} catch (error) {
+    data_fetching_error = error
+}
+
+const {
+    sun_type_id,
+    total_scanned = 0,
+    moons = [],
+    planet_moons = [],
+} = system_moons_data
+
+const MOON_SYSTEMS_LIST_PARTIAL_URL = translatePath('/partials/moon_system_list_component/')
+const MOON_TRACKING_SYSTEM_PARTIAL_URL = `${translatePath('/partials/moon_tracking_system_component')}`
+
+import { get_item_icon } from '@helpers/eve_image_server'
+import { number_name } from '@helpers/numbers.ts'
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import AddMoonButton from '@components/blocks/AddMoonButton.astro';
+import Square from '@components/blocks/Square.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import FindSystemButton from '@components/blocks/FindSystemButton.astro';
+import Button from '@components/blocks/Button.astro';
+import Badge from '@components/blocks/Badge.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+const page_title = `${system_name} ${t('moons')}`;
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/moon-tracking-cover.jpg",
+            image_990: "/images/moon-tracking-cover-900.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            total_scanned: ${total_scanned}
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <ItemPicture
+                    item_id={sun_type_id}
+                    item_name={system_name}
+                />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text={`\`\${total_scanned} ${t('out_of')} ${moons.length} ${t('moons_scanned')}\``}>
+                        {total_scanned} {t('out_of')} {moons.length} {t('moons_scanned')}
+                    </small>
+                </Flexblock>
+            </FlexInline>
+            <FlexInline>
+                <FindSystemButton id="moon_select_system" list_partial={MOON_SYSTEMS_LIST_PARTIAL_URL} />
+                <Button href={translatePath('/intel/moons/')}>
+                    {t('region_view')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader">   
+            <AddMoonButton
+                size='sm'
+                iconed={false}
+            />
+        </FlexInline>
+        
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p>{t('intel.moon_tracking.system.leading_text')}</p>
+            </TextBox>
+
+            {data_fetching_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: MOON_TRACKING_SYSTEM_PARTIAL_URL,
+                        message: data_fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <Flexblock gap='var(--space-2xl)'>
+                    {planet_moons.map(planet => {
+                        const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
+                        return (
+                            planet?.moons.length > 0 &&
+                            <Flexblock gap='var(--space-l)'>
+                                <Flexblock gap='0'>
+                                    <Badge
+                                        title={planet.name}
+                                        image={get_item_icon(planet.type_id)}
+                                        subtitle={`${progress.toFixed(0)}% ${t('completed').toLowerCase()}`}
+                                        title_el='h2'
+                                    />
+                                </Flexblock>
+
+                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-3xs)" column_gap="var(--space-3xs)" min_item_width="250px">
+                                    {planet.moons.map(moon =>
+                                        <ComponentBlock padding_block='var(--space-s)' padding_inline='var(--space-m)'>
+                                            <Flexblock gap='0' class="[ w-full ]">
+                                                <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
+                                                {moon.scanned ?
+                                                    moon.monthly_revenue >= 0 ?
+                                                        <small data-tippy-content={number_name(moon.monthly_revenue, lang)}>
+                                                            <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {moon.monthly_revenue.toLocaleString()} ISK</FlexInline>
+                                                        </small> :
+                                                        <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {t('scanned')}</FlexInline></small>
+                                                    :
+                                                    <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='fleet-red' /> {t('no_data')}</FlexInline></small>
+                                                }
+                                            </Flexblock>
+                                        </ComponentBlock>
+                                    )}
+                                </Grid>
+                            </Flexblock>
+                        )
+                    })}
+                </Flexblock>
+            }
+        </Flexblock>
+	</PageDefault>
+</Viewport>

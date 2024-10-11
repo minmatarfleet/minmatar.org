@@ -1,0 +1,40 @@
+---
+import type { ButtonColors } from '@dtypes/layout_components';
+
+interface Props {
+    color?:     ButtonColors;
+    [propName: string]: any;
+}
+
+const {
+    color = 'green',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div class:list={[ color ]} />
+
+<style lang="scss">
+    div {
+        padding: 5px;
+        display: inline-block;
+
+        &.fleet-red {
+            background-color: var(--fleet-red);
+        }
+
+        &.alliance-blue {
+            background-color: var(--alliance-blue);
+        }
+
+        &.militia-purple {
+            background-color: var(--militia-purple);
+        }
+        
+        &.green {
+            background-color: var(--green);
+        }
+    }
+</style>

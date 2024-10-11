@@ -37,7 +37,7 @@ try {
 
 const SKILLSETS_LIST_PARTIAL_URL = translatePath('/partials/skillsets_list_component')
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 const skillsets_count = character_skillsets?.skillsets.length ?? 0
 

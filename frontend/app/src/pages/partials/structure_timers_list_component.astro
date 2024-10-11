@@ -44,7 +44,7 @@ try {
 
 const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${active}&duplicated=${duplicated ?? false}`)
 
-const delay = parseInt(Astro.url.searchParams.get('delay'))
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
