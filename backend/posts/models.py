@@ -11,6 +11,10 @@ class EveTag(models.Model):
 
 
 class EvePost(models.Model):
+    """
+    Model for the blog post
+    """
+
     state_choices = [
         ("draft", "Draft"),
         ("published", "Published"),
