@@ -1,9 +1,11 @@
-from esi.clients import EsiClientProvider
 import logging
+
+from esi.clients import EsiClientProvider
+from esi.models import Token
+
+from app.celery import app
 from eveonline.models import EveCharacter
 from freight.models import EveFreightContract
-from esi.models import Token
-from app.celery import app
 from structures.models import EveStructure
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def update_contracts():
             end_id = int(contract["end_location_id"])
 
             start_location = "Unknown"
-            if start_id > 60000000 and start_id < 61000000:
+            if 60000000 < start_id < 61000000:
                 system_id = (
                     esi.client.Universe.get_universe_stations_station_id(
                         station_id=start_id
@@ -57,7 +59,7 @@ def update_contracts():
                     start_location = "Structure"
 
             end_location = "Unknown"
-            if end_id > 60000000 and end_id < 61000000:
+            if 60000000 < end_id < 61000000:
                 system_id = (
                     esi.client.Universe.get_universe_stations_station_id(
                         station_id=end_id
