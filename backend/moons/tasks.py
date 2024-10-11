@@ -1,10 +1,11 @@
 import logging
-import requests
-from app.celery import app
 from decimal import Decimal
 
-from moons.models import EveMoon, EveMoonDistribution, ore_yield_map
+import requests
+
+from app.celery import app
 from moons.helpers import calc_metanox_yield
+from moons.models import EveMoon, EveMoonDistribution, ore_yield_map
 
 logger = logging.getLogger(__name__)
 

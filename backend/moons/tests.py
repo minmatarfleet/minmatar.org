@@ -1,10 +1,11 @@
 # flake8: noqa
 from decimal import Decimal
-from app.test import TestCase
+
 from django.contrib.auth.models import User
 
-from moons.models import EveMoon, EveMoonDistribution
+from app.test import TestCase
 from moons.helpers import calc_metanox_yield
+from moons.models import EveMoon, EveMoonDistribution
 from moons.router import count_scanned_moons
 from moons.tasks import update_moon_revenues
 

@@ -7,7 +7,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from moons.models import EveMoon, EveMoonDistribution
 
-from .parser import process_moon_paste, MoonParsingResult
+from .parser import MoonParsingResult, process_moon_paste
 
 moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])
