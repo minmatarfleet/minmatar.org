@@ -11,7 +11,19 @@ class EveTag(models.Model):
 
 
 class EvePost(models.Model):
-    title = models.CharField(max_length=100)
+    """
+    Model for the blog post
+    """
+
+    state_choices = [
+        ("draft", "Draft"),
+        ("published", "Published"),
+        ("trash", "Trash"),
+    ]
+    state = models.CharField(
+        max_length=10, choices=state_choices, default="draft"
+    )
+    title = models.CharField(max_length=100, unique=True)
     seo_description = models.CharField(max_length=300)
     slug = models.SlugField(max_length=100)
     content = models.TextField()
@@ -20,6 +32,13 @@ class EvePost(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+    @staticmethod
+    def generate_slug(title):
+        """
+        Convert the title into a slug
+        """
+        return title.lower().replace(" ", "-")
 
 
 class EvePostImage(models.Model):

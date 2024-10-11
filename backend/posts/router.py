@@ -13,6 +13,7 @@ router = Router(tags=["Posts"])
 
 class EvePostListResponse(BaseModel):
     post_id: int
+    state: str
     title: str
     seo_description: str
     slug: str
@@ -23,6 +24,7 @@ class EvePostListResponse(BaseModel):
 
 class EvePostResponse(BaseModel):
     post_id: int
+    state: str
     title: str
     seo_description: str
     slug: str
@@ -39,7 +41,8 @@ class EveTagesponse(BaseModel):
 
 class CreateEvePosRequest(BaseModel):
     title: str
-    slug: str
+    state: str
+    seo_description: str
     content: str
 
 
@@ -58,6 +61,7 @@ def get_posts(request, user_id: int = None, tag_id: int = None):
         response.append(
             EvePostListResponse(
                 post_id=post.id,
+                state=post.state,
                 seo_description=post.seo_description,
                 title=post.title,
                 slug=post.slug,
@@ -77,6 +81,7 @@ def get_post(request, post_id: int):
 
     return EvePostResponse(
         post_id=post.id,
+        state=post.state,
         seo_description=post.seo_description,
         title=post.title,
         slug=post.slug,
@@ -89,16 +94,21 @@ def get_post(request, post_id: int):
 
 @router.post(
     "/posts",
-    response={403: ErrorResponse, 200: EvePostResponse},
+    response={403: ErrorResponse, 400: ErrorResponse, 200: EvePostResponse},
     auth=AuthBearer(),
 )
 def create_post(request, payload: CreateEvePosRequest):
     if not request.user.has_perm("posts.add_evepost"):
         return 403, {"detail": "You do not have permission to create a post."}
 
+    if EvePost.objects.filter(title=payload.title).exists():
+        return 400, {"detail": "A post with this title already exists."}
+
     post = EvePost.objects.create(
         title=payload.title,
-        slug=payload.slug,
+        state=payload.state,
+        seo_description=payload.seo_description,
+        slug=EvePost.generate_slug(payload.title),
         content=payload.content,
         user=request.user,
     )
@@ -115,17 +125,22 @@ def create_post(request, payload: CreateEvePosRequest):
 
 @router.put(
     "/posts/{post_id}",
-    response={403: ErrorResponse, 200: EvePostResponse},
+    response={403: ErrorResponse, 400: ErrorResponse, 200: EvePostResponse},
     auth=AuthBearer(),
 )
 def update_post(request, post_id: int, payload: CreateEvePosRequest):
     if not request.user.has_perm("posts.change_evepost"):
         return 403, {"detail": "You do not have permission to update a post."}
 
+    if EvePost.objects.filter(title=payload.title).exists():
+        return 400, {"detail": "A post with this title already exists."}
+
     post = EvePost.objects.get(id=post_id)
     post.title = payload.title
-    post.slug = payload.slug
     post.content = payload.content
+    post.seo_description = payload.seo_description
+    post.slug = EvePost.generate_slug(payload.title)
+    post.state = payload.state
     post.save()
 
     return EvePostResponse(
