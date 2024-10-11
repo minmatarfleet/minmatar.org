@@ -115,14 +115,14 @@ class EveSkillsetTestCase(TestCase):
         EveCharacterSkill.objects.create(
             character=EveCharacter.objects.get(character_id=125),
             skill_name="Drones",
-            skill_level=2,
+            skill_level=1,
             skill_id=random.randint(1, 1000),
             skill_points=random.randint(1, 1000),
         )
         EveCharacterSkill.objects.create(
             character=EveCharacter.objects.get(character_id=125),
             skill_name="Electronic Warfare",
-            skill_level=3,
+            skill_level=1,
             skill_id=random.randint(1, 1000),
             skill_points=random.randint(1, 1000),
         )
