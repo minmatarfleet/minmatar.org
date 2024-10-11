@@ -1,11 +1,17 @@
 import random
+
 import factory
 from django.db.models import signals
+
 from app.test import TestCase
-from eveonline.models import EveSkillset, EveCharacter, EveCharacterSkill
+from eveonline.models import EveCharacter, EveCharacterSkill, EveSkillset
 
 
 class EveSkillsetTestCase(TestCase):
+    """
+    Tests methods of the EveSkillset model.
+    """
+
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_get_missing_skills_for_character_id(self):
         skill_list = """

@@ -1,13 +1,13 @@
 import logging
+from typing import List
 
 from django.db import models
+from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
-from django.db.models import Q
-from typing import List
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
