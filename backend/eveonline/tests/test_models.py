@@ -127,12 +127,12 @@ class EveSkillsetTestCase(TestCase):
             skill_points=random.randint(1, 1000),
         )
         EveCharacter.objects.create(
-            character_id=126, character_name="Test Character 3"
+            character_id=126, character_name="Test Character 4"
         )
 
         result = skillset.get_number_of_characters_with_skillset()
-        self.assertEqual(len(result), 2)
         self.assertTrue("Test Character 1" in result)
         self.assertTrue("Test Character 2" in result)
         self.assertFalse("Test Character 3" in result)
         self.assertFalse("Test Character 4" in result)
+        self.assertEqual(len(result), 2)
