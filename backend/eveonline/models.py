@@ -6,6 +6,8 @@ from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
+from django.db.models import Q
+from typing import List
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -145,6 +147,67 @@ class EveSkillset(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    @staticmethod
+    def get_skill_name(skill: str):
+        return skill[:-1]
+
+    @staticmethod
+    def get_skill_level(skill: str):
+        return skill[-1]
+
+    def get_number_of_characters_with_skillset(self) -> List[str]:
+        character_names = []
+        skillset = self
+        skills = skillset.skills.split("\n")
+        q = Q()
+        for skill in skills:
+            # Skill name is everything except the last character
+            skill_name = skill[:-1]
+            # Skill level is the last character
+            skill_level = skill[-1]
+            q |= Q(skill_name=skill_name, skill_level__lt=skill_level)
+
+        for character in EveCharacter.objects.all():
+            if (
+                EveCharacterSkill.objects.filter(q)
+                .filter(character=character)
+                .exists()
+            ):
+                continue
+
+            if (
+                EveCharacterSkill.objects.filter(character=character).count()
+                == 0
+            ):
+                continue
+            character_names.append(character.character_name)
+
+        return character_names
+
+    def get_missing_skills_for_character_id(
+        self, character_id: int
+    ) -> List[str]:
+        character = EveCharacter.objects.get(character_id=character_id)
+        skillset = self
+        skills = skillset.skills.split("\n")
+
+        missing_skills = []
+        for skill in skills:
+            # Skill name is everything except the last character
+            skill_name = skill[:-1].strip()
+            # Skill level is the last character
+            skill_level = skill[-1].strip()
+            if (
+                not EveCharacterSkill.objects.filter(
+                    skill_name=skill_name, skill_level__gte=skill_level
+                )
+                .filter(character=character)
+                .exists()
+            ):
+                missing_skills.append(skill)
+
+        return missing_skills
 
     @staticmethod
     def roman_number_to_int(s):
