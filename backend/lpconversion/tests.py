@@ -32,15 +32,21 @@ class LpOrderTestCase(TestCase):
     def test_get_current_price(self):
         LpPrice.objects.create(
             price=700,
-            active_from=datetime.fromisoformat("2019-01-01T10:00:00Z"),
+            active_from=datetime.fromisoformat(
+                "2019-01-01T10:00:00.000+00:00"
+            ),
         )
         LpPrice.objects.create(
             price=650,
-            active_from=datetime.fromisoformat("2021-01-01T10:00:00Z"),
+            active_from=datetime.fromisoformat(
+                "2021-01-01T10:00:00.000+00:00"
+            ),
         )
         LpPrice.objects.create(
             price=600,
-            active_from=datetime.fromisoformat("2020-01-01T10:00:00Z"),
+            active_from=datetime.fromisoformat(
+                "2020-01-01T10:00:00.000+00:00"
+            ),
         )
         self.assertEqual(650, current_price())
 
