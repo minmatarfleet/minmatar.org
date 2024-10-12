@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from datetime import datetime
 
 from .models import EvePost, EveTag
 
@@ -17,7 +18,7 @@ class EvePostListResponse(BaseModel):
     title: str
     seo_description: str
     slug: str
-    date_posted: str
+    date_posted: datetime
     user_id: int
     tag_ids: List[int]
 
@@ -29,7 +30,7 @@ class EvePostResponse(BaseModel):
     seo_description: str
     slug: str
     content: str
-    date_posted: str
+    date_posted: datetime
     user_id: int
     tag_ids: List[int]
 
