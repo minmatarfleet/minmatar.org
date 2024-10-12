@@ -1,5 +1,7 @@
 from django.core.cache import cache
 from django.db import models
+from django.contrib.auth.models import User
+from datetime import datetime
 
 lp_type_ids = [
     41490,
@@ -40,6 +42,45 @@ lp_blueprint_ids = {
     17713: 17714,
 }
 
+DEFAULT_PRICE = 700
+
+
+class LpSellOrder(models.Model):
+    """
+    A request to sell loyalty points.
+    """
+
+    status_choices = (
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("sent", "LP Sent"),
+        ("paid", "Paid"),
+        ("closed", "Closed"),
+    )
+    status = models.CharField(
+        max_length=10, choices=status_choices, default="pending"
+    )
+    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    loyalty_points = models.IntegerField(default=0)
+    rate = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    discord_thread_id = models.BigIntegerField(blank=True, null=True)
+
+
+class LpSellOrderPurchase(models.Model):
+    """
+    A purchase of loyalty points, linked to a sell order.
+    """
+
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    order = models.ForeignKey(LpSellOrder, on_delete=models.CASCADE)
+    loyalty_points = models.IntegerField(default=0)
+    rate = models.IntegerField(default=0)
+    corporation = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
 class LpStoreItem(models.Model):
     """
@@ -64,6 +105,28 @@ class LpStoreItem(models.Model):
 
     def __str__(self):
         return str(self.type_id) + ": " + str(self.description)
+
+
+class LpPrice(models.Model):
+    """
+    The price that Loyalty Points are sold for.
+    Use the price with the latest active_from time that is not later than the current time.
+    """
+
+    price = models.IntegerField()
+    active_from = models.DateTimeField(unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+
+
+def current_price():
+    items = LpPrice.objects.filter(active_from__lte=datetime.now()).order_by(
+        "-active_from"
+    )
+    if items.count() == 0:
+        return DEFAULT_PRICE
+    else:
+        return items.first().price
 
 
 def set_status(status):
