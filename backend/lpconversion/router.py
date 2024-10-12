@@ -83,6 +83,26 @@ def get_open_orders(request):
     return response
 
 
+@router.get(
+    "/orders/{order_id}",
+    response=OrderResponse,
+    auth=AuthBearer(),
+)
+def get_order(request, order_id):
+    response = []
+    order = LpSellOrder.objects.get(order_id)
+    response = OrderResponse(
+        order_id=order.id,
+        user_id=order.seller.id,
+        loyalty_points=order.loyalty_points,
+        rate=order.rate,
+        status=order.status,
+        created_at=order.created_at,
+    )
+
+    return response
+
+
 class OfferResponse(BaseModel):
     offer_id: int
     user_id: int
