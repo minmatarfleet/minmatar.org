@@ -35,17 +35,25 @@ class EvePostResponse(BaseModel):
     tag_ids: List[int]
 
 
-class EveTagesponse(BaseModel):
+class EveTagResponse(BaseModel):
     tag_id: int
     tag: str
 
 
-class CreateEvePosRequest(BaseModel):
+class CreateEvePostRequest(BaseModel):
     title: str
     state: str
     seo_description: str
     content: str
     tag_ids: List[int]
+
+
+class UpdateEvePostRequest(BaseModel):
+    title: str | None = None
+    state: str | None = None
+    seo_description: str | None = None
+    content: str | None = None
+    tag_ids: List[int] | None = None
 
 
 @router.get("/posts", response=List[EvePostListResponse])
@@ -97,7 +105,7 @@ def get_post(request, post_id: int):
     response={403: ErrorResponse, 400: ErrorResponse, 200: EvePostResponse},
     auth=AuthBearer(),
 )
-def create_post(request, payload: CreateEvePosRequest):
+def create_post(request, payload: CreateEvePostRequest):
     if not request.user.has_perm("posts.add_evepost"):
         return 403, {"detail": "You do not have permission to create a post."}
 
@@ -127,25 +135,33 @@ def create_post(request, payload: CreateEvePosRequest):
     )
 
 
-@router.put(
+@router.patch(
     "/posts/{post_id}",
     response={403: ErrorResponse, 400: ErrorResponse, 200: EvePostResponse},
     auth=AuthBearer(),
 )
-def update_post(request, post_id: int, payload: CreateEvePosRequest):
+def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     if not request.user.has_perm("posts.change_evepost"):
         return 403, {"detail": "You do not have permission to update a post."}
 
-    if EvePost.objects.filter(title=payload.title).exists():
-        return 400, {"detail": "A post with this title already exists."}
-
     post = EvePost.objects.get(id=post_id)
-    post.title = payload.title
-    post.content = payload.content
-    post.seo_description = payload.seo_description
-    post.slug = EvePost.generate_slug(payload.title)
-    post.state = payload.state
-    post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
+
+    if payload.title:
+        post.title = payload.title
+        post.slug = EvePost.generate_slug(payload.title)
+
+    if payload.state:
+        post.state = payload.state
+
+    if payload.seo_description:
+        post.seo_description = payload.seo_description
+
+    if payload.content:
+        post.content = payload.content
+
+    if payload.tag_ids:
+        post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
+
     post.save()
 
     return EvePostResponse(
@@ -176,13 +192,13 @@ def delete_post(request, post_id: int):
     return 204, None
 
 
-@router.get("/tags", response=List[EveTagesponse])
+@router.get("/tags", response=List[EveTagResponse])
 def get_tags(request):
     tags = EveTag.objects.all()
     response = []
     for tag in tags:
         response.append(
-            EveTagesponse(
+            EveTagResponse(
                 tag_id=tag.id,
                 tag=tag.tag,
             )
