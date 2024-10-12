@@ -68,7 +68,7 @@ def get_posts(request, user_id: int = None, tag_id: int = None):
                 slug=post.slug,
                 date_posted=post.date_posted,
                 user_id=post.user.id,
-                tag_ids=[tag.tag.id for tag in post.tags.all()],
+                tag_ids=[tag.id for tag in post.tags.all()],
             )
         )
     return response
@@ -87,7 +87,7 @@ def get_post(request, post_id: int):
         content=post.content,
         date_posted=post.date_posted,
         user_id=post.user.id,
-        tag_ids=[tag.tag.id for tag in post.tags.all()],
+        tag_ids=[tag.id for tag in post.tags.all()],
     )
 
 
@@ -122,7 +122,7 @@ def create_post(request, payload: CreateEvePosRequest):
         user_id=post.user.id,
         state=post.state,
         seo_description=post.seo_description,
-        tag_ids=[tag.tag.id for tag in post.tags.all()],
+        tag_ids=[tag.id for tag in post.tags.all()],
     )
 
 
@@ -156,7 +156,7 @@ def update_post(request, post_id: int, payload: CreateEvePosRequest):
         user_id=post.user.id,
         state=post.state,
         seo_description=post.seo_description,
-        tag_ids=[tag.tag.id for tag in post.tags.all()],
+        tag_ids=[tag.id for tag in post.tags.all()],
     )
 
 
