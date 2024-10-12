@@ -67,7 +67,7 @@ class LpSellOrder(models.Model):
 
 class LpSellOrderPurchase(models.Model):
     """
-    An offer to buy loyalty points, linked to an order.
+    A purchase of loyalty points, linked to a sell order.
     """
 
     buyer = models.ForeignKey(User, on_delete=models.CASCADE)

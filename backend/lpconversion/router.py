@@ -7,8 +7,9 @@ from typing import List
 from authentication import AuthBearer
 from app.errors import ErrorResponse
 
-from .models import LpStoreItem, LpSellOrder, LpSellOrderPurchase, get_status
-from .tasks import get_tlf_lp_items, update_lpstore_items
+from .models import LpStoreItem, LpSellOrder, LpSellOrderPurchase
+
+# from .tasks import get_tlf_lp_items, update_lpstore_items
 
 router = Router(tags=["conversion"])
 active_rate = 645
@@ -39,16 +40,16 @@ def item_data(request):
     return response
 
 
-@router.get("/status", response=str)
-def conversion_status(request):
-    get_tlf_lp_items()
-    return get_status()
+# @router.get("/status", response=str)
+# def conversion_status(request):
+#     get_tlf_lp_items()
+#     return get_status()
 
 
-@router.get("/refresh", response=str)
-def refresh_lpitem_data(request):
-    update_lpstore_items.apply()
-    return get_status()
+# @router.get("/refresh", response=str)
+# def refresh_lpitem_data(request):
+#     update_lpstore_items.apply()
+#     return get_status()
 
 
 class OrderResponse(BaseModel):
@@ -103,41 +104,14 @@ def get_order(request, order_id):
     return response
 
 
-class OfferResponse(BaseModel):
-    offer_id: int
+class PurchaseResponse(BaseModel):
+    purchase_id: int
     user_id: int
     corporation: str
     loyalty_points: int
     rate: int
     created_at: datetime
     order: OrderResponse
-
-
-@router.get(
-    "/offers",
-    response=List[OfferResponse],
-    # auth=AuthBearer(),
-)
-def get_open_offers(request):
-    offers = [
-        OfferResponse(
-            offer_id=123,
-            user_id=987,
-            corporation="AnyCorp",
-            loyalty_points=2000000,
-            rate=700,
-            created_at=datetime.Now(),
-            order=OrderResponse(
-                order_id=12345,
-                user_id=123,
-                loyalty_points=2000000,
-                rate=700,
-                status="accepted",
-                created_at=datetime.now(),
-            ),
-        )
-    ]
-    return offers
 
 
 class CreateLpOrderRequest(BaseModel):
@@ -165,26 +139,28 @@ def create_order(request, order_details: CreateLpOrderRequest):
     return order.id
 
 
-class CreateLpOfferRequest(BaseModel):
+class CreateLpPurchaseRequest(BaseModel):
     corp_name: str
 
 
 @router.post(
-    "/orders/{order_id}/offers",
+    "/orders/{order_id}/purchase",
     response=int,
     auth=AuthBearer(),
 )
-def create_offer(request, order_id: int, order_details: CreateLpOfferRequest):
-    if not request.user.has_perm("lpconversion.add_lpsellorder"):
+def create_purchase(
+    request, order_id: int, order_details: CreateLpPurchaseRequest
+):
+    if not request.user.has_perm("lpconversion.add_lpsellorderpurchase"):
         return ErrorResponse(
-            detail="You do not have permission to create offers"
+            detail="You do not have permission to create purchases"
         )
 
     order = LpSellOrder.objects.get(order_id)
     order.status = "accepted"
     order.save()
 
-    offer = LpSellOrderPurchase.objects.create(
+    purchase = LpSellOrderPurchase.objects.create(
         buyer=request.user.id,
         order=order,
         loyalty_points=order.loyalty_points,
@@ -192,4 +168,4 @@ def create_offer(request, order_id: int, order_details: CreateLpOfferRequest):
         corporation=order_details.corporation,
     )
 
-    return offer.id
+    return purchase.id
