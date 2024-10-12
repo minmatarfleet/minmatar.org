@@ -4,13 +4,14 @@ from pydantic import BaseModel
 from ninja import Router
 from typing import List
 
-# from authentication import AuthBearer
+from authentication import AuthBearer
+from app.errors import ErrorResponse
 
-
-from .models import LpStoreItem, get_status
+from .models import LpStoreItem, LpSellOrder, LpSellOrderPurchase, get_status
 from .tasks import get_tlf_lp_items, update_lpstore_items
 
 router = Router(tags=["conversion"])
+active_rate = 645
 
 
 @router.get("/lpitems/csv", response=str)
@@ -62,20 +63,24 @@ class OrderResponse(BaseModel):
 @router.get(
     "/orders",
     response=List[OrderResponse],
-    # auth=AuthBearer(),
+    auth=AuthBearer(),
 )
 def get_open_orders(request):
-    orders = [
-        OrderResponse(
-            order_id=12345,
-            user_id=123,
-            loyalty_points=2000000,
-            rate=700,
-            status="pending",
-            created_at=datetime.now(),
-        )
-    ]
-    return orders
+    response = []
+    orders = LpSellOrder.objects.all()
+    for order in orders:
+        if order.status != "closed":
+            response.append(
+                OrderResponse(
+                    order_id=order.id,
+                    user_id=order.seller.id,
+                    loyalty_points=order.loyalty_points,
+                    rate=order.rate,
+                    status=order.status,
+                    created_at=order.created_at,
+                )
+            )
+    return response
 
 
 class OfferResponse(BaseModel):
@@ -113,3 +118,58 @@ def get_open_offers(request):
         )
     ]
     return offers
+
+
+class CreateLpOrderRequest(BaseModel):
+    loyalty_points: int
+
+
+@router.post(
+    "/orders",
+    response=int,
+    auth=AuthBearer(),
+)
+def create_order(request, order_details: CreateLpOrderRequest):
+    if not request.user.has_perm("lpconversion.add_lpsellorder"):
+        return ErrorResponse(
+            detail="You do not have permission to create orders"
+        )
+
+    order = LpSellOrder.objects.create(
+        status="pending",
+        seller=request.user.id,
+        loyalty_points=order_details.loyalty_points,
+        rate=active_rate,
+    )
+
+    return order.id
+
+
+class CreateLpOfferRequest(BaseModel):
+    corp_name: str
+
+
+@router.post(
+    "/orders/{order_id}/offers",
+    response=int,
+    auth=AuthBearer(),
+)
+def create_offer(request, order_id: int, order_details: CreateLpOfferRequest):
+    if not request.user.has_perm("lpconversion.add_lpsellorder"):
+        return ErrorResponse(
+            detail="You do not have permission to create offers"
+        )
+
+    order = LpSellOrder.objects.get(order_id)
+    order.status = "accepted"
+    order.save()
+
+    offer = LpSellOrderPurchase.objects.create(
+        buyer=request.user.id,
+        order=order,
+        loyalty_points=order.loyalty_points,
+        rate=order.rate,
+        corporation=order_details.corporation,
+    )
+
+    return offer.id

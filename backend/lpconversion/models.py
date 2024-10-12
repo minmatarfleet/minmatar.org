@@ -65,7 +65,7 @@ class LpSellOrder(models.Model):
     discord_thread_id = models.BigIntegerField(blank=True, null=True)
 
 
-class LpBuyOffer(models.Model):
+class LpSellOrderPurchase(models.Model):
     """
     An offer to buy loyalty points, linked to an order.
     """
