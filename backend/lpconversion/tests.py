@@ -4,6 +4,10 @@ from django.contrib.auth.models import User, Permission
 
 from app.test import TestCase
 
+from datetime import datetime
+
+from lpconversion.models import LpPrice, current_price
+
 BASE_URL = "/api/conversion/orders"
 
 
@@ -24,6 +28,21 @@ class LpOrderTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
+
+    def test_get_current_price(self):
+        LpPrice.objects.create(
+            price=700,
+            active_from=datetime.fromisoformat("2019-01-01T10:00:00Z"),
+        )
+        LpPrice.objects.create(
+            price=650,
+            active_from=datetime.fromisoformat("2021-01-01T10:00:00Z"),
+        )
+        LpPrice.objects.create(
+            price=600,
+            active_from=datetime.fromisoformat("2020-01-01T10:00:00Z"),
+        )
+        self.assertEqual(650, current_price())
 
     def test_create_order_api(self):
         user = User.objects.get(username="test")

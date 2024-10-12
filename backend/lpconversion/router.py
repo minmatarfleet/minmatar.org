@@ -7,12 +7,16 @@ from typing import List
 from authentication import AuthBearer
 from app.errors import ErrorResponse
 
-from .models import LpStoreItem, LpSellOrder, LpSellOrderPurchase
+from .models import (
+    LpStoreItem,
+    LpSellOrder,
+    LpSellOrderPurchase,
+    current_price,
+)
 
 # from .tasks import get_tlf_lp_items, update_lpstore_items
 
 router = Router(tags=["conversion"])
-active_rate = 645
 
 
 @router.get("/lpitems/csv", response=str)
@@ -133,7 +137,7 @@ def create_order(request, order_details: CreateLpOrderRequest):
         status="pending",
         seller_id=request.user.id,
         loyalty_points=order_details.loyalty_points,
-        rate=active_rate,
+        rate=current_price(),
     )
 
     return order.id

@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import datetime
 
 lp_type_ids = [
     41490,
@@ -40,6 +41,8 @@ lp_blueprint_ids = {
     29336: 29339,
     17713: 17714,
 }
+
+DEFAULT_PRICE = 700
 
 
 class LpSellOrder(models.Model):
@@ -102,6 +105,28 @@ class LpStoreItem(models.Model):
 
     def __str__(self):
         return str(self.type_id) + ": " + str(self.description)
+
+
+class LpPrice(models.Model):
+    """
+    The price that Loyalty Points are sold for.
+    Use the price with the latest active_from time that is not later than the current time.
+    """
+
+    price = models.IntegerField()
+    active_from = models.DateTimeField(unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+
+
+def current_price():
+    items = LpPrice.objects.filter(active_from__lte=datetime.now()).order_by(
+        "-active_from"
+    )
+    if items.count() == 0:
+        return DEFAULT_PRICE
+    else:
+        return items.first().price
 
 
 def set_status(status):
