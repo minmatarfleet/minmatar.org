@@ -131,7 +131,7 @@ def create_order(request, order_details: CreateLpOrderRequest):
 
     order = LpSellOrder.objects.create(
         status="pending",
-        seller=request.user.id,
+        seller_id=request.user.id,
         loyalty_points=order_details.loyalty_points,
         rate=active_rate,
     )

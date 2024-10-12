@@ -1,6 +1,6 @@
 from django.test import Client
 
-# from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User, Permission
 
 from app.test import TestCase
 
@@ -25,19 +25,22 @@ class LpOrderTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
 
-    # def test_create_order_api(self):
-    #     perm = Permission.objects.get(name="lpconversion.add_lpsellorder")
-    #     user = User.objects.create(
-    #         username="Test User",
-    #     )
-    #     user.user_permissions.add([perm])
-    #     user.save()
-    #     self.client.force_login(user)
+    def test_create_order_api(self):
+        user = User.objects.get(username="test")
+        user.user_permissions.add(
+            Permission.objects.get(codename="add_lpsellorder")
+        )
+        user.save()
+        self.client.force_login(user)
 
-    #     request = '{"loyalty_points": 1000000}'
+        request = '{"loyalty_points": 1000000}'
 
-    #     response = self.client.post(BASE_URL, request, content_type="application/json",
-    #                                 HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        response = self.client.post(
+            BASE_URL,
+            request,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
 
-    #     print(response)
-    #     self.assertEqual(response.status_code, 200)
+        print("Response=", response.content)
+        self.assertEqual(response.status_code, 200)
