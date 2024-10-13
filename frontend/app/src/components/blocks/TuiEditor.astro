@@ -8,7 +8,13 @@ import { marked } from 'marked';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-const value = t('wyswyg_placeholder')
+interface Props {
+    content?:   string;
+}
+
+const {
+    content = t('wyswyg_placeholder'),
+} = Astro.props
 ---
 
 <Wrapper
@@ -18,7 +24,7 @@ const value = t('wyswyg_placeholder')
 >
     <RifterIcon />
 </Wrapper>
-<div id="editor" style="display: none" set:html={marked.parse(value)} />
+<div id="editor" style="display: none" set:html={marked.parse(content)} />
 
 <script>
     const { Editor } = await import('@toast-ui/editor')
@@ -78,7 +84,7 @@ const value = t('wyswyg_placeholder')
     }
 
     .toastui-editor-dark .toastui-editor-toolbar-icons {
-        background-image: url(images/TUI-editor-sprite.png);
+        background-image: url(../../images/TUI-editor-sprite.png);
         background-color: var(--fleet-red);
         transition: var(--fast-transition);
         border-color: var(--fleet-red);

@@ -178,10 +178,10 @@ export async function is_director(access_token:string, user_id:number) {
     try {
         groups = await get_current_teams(access_token)
     } catch (error) {
-        return null
+        return undefined
     }
     
-    return groups.find( (group) => group.directors.includes(user_id) ) !== undefined
+    return groups.find( (group) => group.directors?.includes(user_id) ) !== undefined
 }
 
 export async function is_officer(access_token:string, user_id:number) {
@@ -190,7 +190,7 @@ export async function is_officer(access_token:string, user_id:number) {
     try {
         groups = await get_current_sigs(access_token)
     } catch (error) {
-        return null
+        return undefined
     }
     
     return groups.find( (group) => group.officers.includes(user_id) ) !== undefined

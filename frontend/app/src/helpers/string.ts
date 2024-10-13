@@ -6,8 +6,8 @@ export const remove_space = (text:string):string => {
     return text.replaceAll(" ", "_")
 }
 
-export const query_string = (params):URLSearchParams => {
-    return new URLSearchParams(params)
+export const query_string = (params):string => {
+    return new URLSearchParams(params).toString()
 }
 
 export const is_valid_http_url = (string:string):boolean => {
