@@ -8,7 +8,7 @@ import { fetch_freight_routes } from '@helpers/fetching/freights'
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
 let freight_routes_data:FreightRoutesData
-let data_fetching_error:string
+let data_fetching_error:string | null = null
 
 let cost:number = 0
 let route:string = ''

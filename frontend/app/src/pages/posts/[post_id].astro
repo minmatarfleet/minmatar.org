@@ -25,7 +25,7 @@ import type { Post, PostParams, PostTag } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 
 const param = Astro.params.post_id
-const post_id = param === 'new' ? 0 : parseInt(param)
+const post_id = param === 'new' ? 0 : parseInt(param ?? '')
 
 if (isNaN(post_id))
     return Astro.redirect(translatePath('/alliance/post/new'))

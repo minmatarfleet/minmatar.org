@@ -49,15 +49,19 @@ const {
         ],
         events: {
             load: () => {
-                document.querySelector('.tui-editor-loader').remove()
-                document.getElementById('editor').style.display = 'block'
+                const loader = document.querySelector('.tui-editor-loader')
+                if (loader) loader.remove()
+                
+                const editor = document.getElementById('editor')
+                if (editor) editor.style.display = 'block'
             },
             change: () => {
                 if (throttle_timer)
                     clearTimeout(throttle_timer)
 
                 throttle_timer = setTimeout(function () {
-                    document.getElementById('post-content').value = editor.getMarkdown()
+                    const content_input = document.getElementById('input.post-content') as HTMLInputElement
+                    if (content_input) content_input.value = editor.getMarkdown()
                 }, 750)
             }
         }

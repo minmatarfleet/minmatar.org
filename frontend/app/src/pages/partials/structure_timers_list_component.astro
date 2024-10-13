@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value ?? '') : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -24,8 +24,8 @@ import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
 import { get_unique_by_key } from '@helpers/array'
 
-const active = JSON.parse(Astro.url.searchParams.get('active')) as boolean
-const duplicated = JSON.parse(Astro.url.searchParams.get('duplicated')) as boolean
+const active = JSON.parse(Astro.url.searchParams.get('active') ?? '') as boolean
+const duplicated = JSON.parse(Astro.url.searchParams.get('duplicated') ?? '') as boolean
 
 let structure_timers_error:string | false = false
 let structure_timers:StructureTimerUI[] = []

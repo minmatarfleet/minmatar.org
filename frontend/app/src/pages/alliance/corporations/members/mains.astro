@@ -7,7 +7,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value ?? '') : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -26,7 +26,7 @@ let mains_data:MainsData = {}
 let data_fetching_error
 
 try {
-    mains_data = await get_mains_data(auth_token, lang)
+    mains_data = await get_mains_data(auth_token as string, lang)
 } catch (error) {
     data_fetching_error = error
 }

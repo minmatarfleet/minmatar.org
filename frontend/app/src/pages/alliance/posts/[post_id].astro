@@ -15,7 +15,7 @@ import type { PostUI } from '@dtypes/layout_components'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 const param = Astro.params.post_id
-const post_id = param === 'new' ? 0 : parseInt(param)
+const post_id = param === 'new' ? 0 : parseInt(param ?? '')
 
 if (isNaN(post_id))
     return Astro.redirect(translatePath('/alliance/'))
@@ -27,9 +27,9 @@ let is_user_post:boolean = false
 try {
     post = await fetch_post(post_id)
 
-    is_user_post = (user ? user.user_id : 0) === post.user_id
+    is_user_post = (user ? user.user_id : 0) === post?.user_id
 
-    if (post.state !== 'published' && !is_user_post)
+    if (post?.state !== 'published' && !is_user_post)
         return Astro.redirect(translatePath('/alliance/'))
 } catch (error) {
     console.log(error)
@@ -88,21 +88,21 @@ const page_title = post?.title ?? t('new_post')
             </FlexInline>
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
-                    <PilotBadge character_id={post?.author?.character_id} character_name={post.author?.character_name}>
-                        <small>{format_date(lang, post.date_posted)}</small>
+                    <PilotBadge character_id={post?.author?.character_id as number} character_name={post?.author?.character_name as string}>
+                        <small>{format_date(lang, post?.date_posted)}</small>
                     </PilotBadge>
 
                     <p class="[ excerpt ]">{post?.excerpt}</p>
 
-                    {post.tags.length > 0 &&
+                    {(post?.tags?.length ?? 0 > 0) &&
                         <FlexInline>
-                            {post.tags.map(tag =>
+                            {post?.tags.map(tag =>
                                 <Tag text={tag} />
                             )}
                         </FlexInline>
                     }
 
-                    <Flexblock gap='var(--space-m)' set:html={marked.parse(post.content, { renderer })}>
+                    <Flexblock gap='var(--space-m)' set:html={marked.parse(post?.content as string, { renderer })}>
                 </Flexblock>
             </TextBox>
         </Flexblock>

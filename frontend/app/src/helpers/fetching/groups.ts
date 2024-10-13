@@ -92,7 +92,6 @@ const add_status_to_group = async (
         description: api_group.description,
         image_url: api_group.image_url,
         status: 'available',
-        last_update: null,
     }
 
     try {
@@ -193,7 +192,7 @@ export async function is_officer(access_token:string, user_id:number) {
         return undefined
     }
     
-    return groups.find( (group) => group.officers.includes(user_id) ) !== undefined
+    return groups.find( (group) => group?.officers?.includes(user_id) ) !== undefined
 }
 
 export async function get_all_members(access_token:string, user_id:number, superadmin?:boolean) {
@@ -253,11 +252,11 @@ export async function get_all_members(access_token:string, user_id:number, super
 export async function get_owned_teams(user_id:number) {
     const groups = await get_teams()
 
-    return groups.filter( (group) => group.directors.includes(user_id) )
+    return groups.filter( (group) => group?.directors?.includes(user_id) )
 }
 
 export async function get_owned_sigs(user_id:number) {
     const groups = await get_sigs()
 
-    return groups.filter( (group) => group.officers.includes(user_id) )
+    return groups.filter( (group) => group?.officers?.includes(user_id) )
 }

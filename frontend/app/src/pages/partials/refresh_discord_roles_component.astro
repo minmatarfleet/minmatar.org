@@ -53,8 +53,8 @@ import Button from '@components/blocks/Button.astro';
     type="button"
     hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
     hx-swap="outerHTML transition:true"
-    hx-on::before-request="this.setAttribute('disabled','');"
-    hx-on::after-request="this.removeAttribute('disabled')"
+    hx-on--before-request="this.setAttribute('disabled','');"
+    hx-on--after-request="this.removeAttribute('disabled')"
     x-data={`{
         button_label: '${updated ? t('discord_roles_updated') : t('refresh_discord_roles')}',
         init() {
