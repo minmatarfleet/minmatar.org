@@ -2,8 +2,8 @@
 import Flexblock from '@components/compositions/Flexblock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 
-const character_id = parseInt(Astro.url.searchParams.get('id'))
-const character_name = Astro.url.searchParams.get('character_name')
+const character_id = parseInt(Astro.url.searchParams.get('id') ?? '')
+const character_name = Astro.url.searchParams.get('character_name') ?? ''
 const message = Astro.url.searchParams.get('message')
 ---
 

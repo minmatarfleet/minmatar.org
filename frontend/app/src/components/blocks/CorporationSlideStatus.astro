@@ -16,19 +16,19 @@ const {
     alert = false,
 } = Astro.props
 
-const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value ?? '') : null
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
 
 import { query_string } from '@helpers/string';
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_slide_request_status_item/')
 
 import { hours_diff, from_now_diff } from '@helpers/date'
-const hours_since_last_app = hours_diff(corporation.application_updated, new Date())
+const hours_since_last_app = hours_diff(corporation?.application_updated as Date, new Date())
 const REAPPLY_PERIOD_HOURS = 1
 const ACCEPT_PERIOD_HOURS = 72
 const is_re_applicable = (hours_since_last_app >= REAPPLY_PERIOD_HOURS)
 const is_acceptance_period_passed = (hours_since_last_app >= ACCEPT_PERIOD_HOURS)
-let reapplication_date = new Date(corporation.application_updated)
+let reapplication_date = new Date(corporation?.application_updated as Date)
 reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
 const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
 const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)

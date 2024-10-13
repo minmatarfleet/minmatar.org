@@ -19,11 +19,11 @@ export async function get_ship_dna(ship_id:number, subsystems:Module[]) {
 
     let ship_graphics = await get_ship_graphics(ship_id)
 
-    if (ship_info.meta === 'Faction')
-        ship_graphics.model = await get_navy_ship_model(ship_info)
+    if (ship_info?.meta === 'Faction' && ship_graphics)
+        ship_graphics.model = await get_navy_ship_model(ship_info) ?? ''
 
     let t3_model:string[] = []
-    if (ship_info.meta === 'Tech III' && ship_info.type === 'Strategic Cruiser') {
+    if (ship_info?.meta === 'Tech III' && ship_info.type === 'Strategic Cruiser') {
         const RACE_TOKEN = {
             amarr: 'asc1',
             caldari: 'csc1',
@@ -42,7 +42,7 @@ export async function get_ship_dna(ship_id:number, subsystems:Module[]) {
 
             const ship_graphics = await get_ship_graphics(subsystem.id)
             
-            let res = `res:/dx9/model/ship/${ship_graphics.race}/strategiccruiser/${RACE_TOKEN[ship_graphics.race]}/${ship_graphics.model}/${ship_graphics.model}.red`
+            let res = `res:/dx9/model/ship/${ship_graphics?.race}/strategiccruiser/${RACE_TOKEN[ship_graphics?.race ?? 'amarr']}/${ship_graphics?.model}/${ship_graphics?.model}.red`
 
             if (index >= 2)
                 res = res.replaceAll(`s${index+1}`, `s${index+2}`)
@@ -53,9 +53,10 @@ export async function get_ship_dna(ship_id:number, subsystems:Module[]) {
         return t3_model
     }
 
-    ship_graphics.skin = skin_translation[ship_graphics.skin] ?? ship_graphics.skin
+    if (ship_graphics?.skin)
+        ship_graphics.skin = skin_translation[ship_graphics.skin] ?? ship_graphics.skin
 
-    if (!ship_graphics.model || !ship_graphics.skin || !ship_graphics.race)
+    if (!ship_graphics?.model || !ship_graphics.skin || !ship_graphics.race)
         return null
 
     return `${ship_graphics.model}:${ship_graphics.skin}:${ship_graphics.race}`
@@ -64,7 +65,7 @@ export async function get_ship_dna(ship_id:number, subsystems:Module[]) {
 export async function get_navy_ship_model(ship_info:ShipInfo) {
     const base_ship_name = parse_faction_ship_name(ship_info)
     const base_ship_id = await get_item_id(base_ship_name)
-    const ship_graphics = await get_ship_graphics(base_ship_id)
+    const ship_graphics = base_ship_id ? await get_ship_graphics(base_ship_id) : null
 
-    return ship_graphics.model
+    return ship_graphics?.model
 }

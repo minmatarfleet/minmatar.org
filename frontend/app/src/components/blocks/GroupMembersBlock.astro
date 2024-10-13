@@ -48,7 +48,6 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
                 name: group.name,
                 description: group.description,
                 image_url: group.image_url,
-                status: null
             }}
             type={type}
         >
@@ -73,9 +72,8 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
                         name: group.name,
                         description: group.description,
                         image_url: group.image_url,
-                        status: null
                     }}
-                    is_officer={group.officers.includes(member.user_id)}
+                    is_officer={group.officers.includes(member.user_id as number)}
                     group_type={type}
                     x-data={`{
                         show_item() {

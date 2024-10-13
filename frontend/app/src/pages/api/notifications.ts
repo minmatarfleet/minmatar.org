@@ -32,9 +32,9 @@ export async function POST({ request, cookies, redirect }) {
 
     cookies.set('subscription_id', subscription_id, { path: '/' })
     
-    return HTTP_200_Success({
+    return HTTP_200_Success(JSON.stringify({
         subscription_id: subscription_id
-    })
+    }))
 }
 
 export async function DELETE({ request, cookies }) {
@@ -50,9 +50,9 @@ export async function DELETE({ request, cookies }) {
         } catch (error) {
             console.log(error)
 
-            return HTTP_500_Server_Error({
+            return HTTP_500_Server_Error(JSON.stringify({
                 error: is_prod_mode() ? t('create_subscription_error') : error.message
-            })
+            }))
         }
     }
 

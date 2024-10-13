@@ -1050,5 +1050,9 @@ export const ui = {
         'remove_post_dialog_title': 'Remove post',
         'remove_post_dialog_text': 'Continue removing this post out of existence? This action cannot be undone.',
         'patch_post_error': 'An error occurred while patching the post.',
+        'invalid_system_id': 'Not a valid solar system',
+        'invalid_staggering_solar_system': 'Not a valid staging solar system',
+        'invalid_module': 'Invalid module',
+        'invalid_fitting': 'Invalid fitting',
     },
 } as const;

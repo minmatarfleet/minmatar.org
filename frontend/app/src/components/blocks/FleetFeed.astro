@@ -44,8 +44,8 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
         hx-get={FLEET_FEED_PARTIAL_URL}
         hx-trigger={`load delay:${REFRESH_RATE_SECONDS}s`}
         hx-swap="outerHTML transition:true"
-        x-on:htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
-        x-on:htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
+        @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
+        @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
     >
         <FeedSwiper>
             {fleets.map( (fleet) =>

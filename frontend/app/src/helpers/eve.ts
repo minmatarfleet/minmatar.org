@@ -137,7 +137,7 @@ export const get_ship_type_icon = (ship_type:string):string => {
 const METERS_IN_A_YEAR_LIGHT = 9460528400000000
 
 export const get_distance_among_systems = (system_a:sde_system, system_b:sde_system):number => {
-    return Math.sqrt(Math.pow(system_b.x - system_a.x, 2) + Math.pow(system_b.y - system_a.y, 2) + Math.pow(system_b.z - system_a.z, 2)) / METERS_IN_A_YEAR_LIGHT
+    return Math.sqrt(Math.pow((system_b.x ?? 0) - (system_a.x ?? 0), 2) + Math.pow((system_b.y ?? 0) - (system_a.y ?? 0), 2) + Math.pow((system_b.z ?? 0) - (system_a.z ?? 0), 2)) / METERS_IN_A_YEAR_LIGHT
 }
 
 import type { sde_system } from '@helpers/sde/map'

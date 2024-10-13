@@ -13,7 +13,7 @@ import { get_corporations_list_data } from '@helpers/pages/corporations_list'
 import type { CorporationsListData } from '@helpers/pages/corporations_list'
 
 let corporations_list_data:CorporationsListData = {}
-let data_fetching_error:string
+let data_fetching_error:string | null = null
 
 try {
     corporations_list_data = await get_corporations_list_data(auth_token, lang, user_id)
@@ -74,7 +74,7 @@ const page_title = t('corporations.list.page_title');
                 :
                 <CorporationsSlider
                     corporations={corporations}
-                    user_corporation_id={user_corporation_id}
+                    user_corporation_id={user_corporation_id ?? 0}
                 />
             }
         </VerticalCenter>

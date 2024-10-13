@@ -4,8 +4,8 @@ import type { GroupRequestAction, CharacterBasic, CorporationBasic } from '@dtyp
 import Flexblock from '@components/compositions/Flexblock.astro';
 import ApplicationBadge from '@components/blocks/ApplicationBadge.astro';
 
-const character = JSON.parse(Astro.url.searchParams.get('character')) as CharacterBasic
-const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
+const character = JSON.parse(Astro.url.searchParams.get('character') ?? '') as CharacterBasic
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation') ?? '') as CorporationBasic
 const type = Astro.url.searchParams.get('type') as GroupRequestAction
 const message = Astro.url.searchParams.get('message')
 ---

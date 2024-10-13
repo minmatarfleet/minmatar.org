@@ -175,14 +175,14 @@ export type FleetTypes = typeof fleet_types[number]
 export interface Fleet {
     id:                 number;
     type:               FleetTypes;
-    audience:           string;
+    audience?:          string;
     description:        string;
     start_time:         Date;
-    fleet_commander:    number;
+    fleet_commander?:   number;
     doctrine_id:        number;
     location:           string;
     disable_motd:       boolean;
-    tracking:           Tracking;
+    tracking?:          Tracking;
 }
 
 export interface FleetBasic {

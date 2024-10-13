@@ -18,7 +18,7 @@ const {
     disable_applications = false
 } = Astro.props
 
-const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value ?? '') : null
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
 
 import { query_string } from '@helpers/string';

@@ -36,8 +36,8 @@ const {
             </Wrapper>
                 
             <YTVideoWidget
-                videoid={video.id}
-                videotitle={video.title}
+                videoid={video?.id as string}
+                videotitle={video?.title as string}
                 credits={video?.credits ?? false}
                 shadow={true}
             />

@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
     return HTTP_404_Not_Found()
 
-let system_name = Astro.params.system_name
+let system_name = Astro.params.system_name ?? ''
 
 import { get_system_moons_data } from '@helpers/pages/system_moons'
 import type { SystemMoonsData } from '@helpers/pages/system_moons'
@@ -69,7 +69,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         {planet_moons.map(planet => {
             const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
             return (
-                planet?.moons.length > 0 &&
+                (planet?.moons?.length ?? 0) > 0 &&
                 <Flexblock gap='var(--space-l)'>
                     <Flexblock gap='0'>
                         <Badge
@@ -81,14 +81,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                     </Flexblock>
 
                     <Grid class="[ w-full grid-fill ]" row_gap="var(--space-3xs)" column_gap="var(--space-3xs)" min_item_width="250px">
-                        {planet.moons.map(moon =>
+                        {planet.moons && planet.moons.map(moon =>
                             <ComponentBlock padding_block='var(--space-s)' padding_inline='var(--space-m)'>
                                 <Flexblock gap='0' class="[ w-full ]">
                                     <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
                                     {moon.scanned ?
-                                        moon.monthly_revenue >= 0 ?
+                                        (moon?.monthly_revenue ?? 0) >= 0 ?
                                             <small data-tippy-content={number_name(moon.monthly_revenue, lang)}>
-                                                <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {moon.monthly_revenue.toLocaleString()} ISK</FlexInline>
+                                                <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {(moon.monthly_revenue as number).toLocaleString()} ISK</FlexInline>
                                             </small> :
                                             <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {t('scanned')}</FlexInline></small>
                                         :

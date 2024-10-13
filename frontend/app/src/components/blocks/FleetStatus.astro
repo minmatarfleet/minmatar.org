@@ -33,13 +33,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-
-const hx_attrs = {
-    ...(!fleet?.tracking?.end_time && { 'hx-get': FLEET_STATUS_PARTIAL_URL }),
-    ...(!fleet?.tracking?.end_time && { 'hx-trigger': 'load delay:60s' }),
-    ...(!fleet?.tracking?.end_time && { 'hx-swap': 'outerHTML transition:true' }),
-    ...(!fleet?.tracking?.end_time && { 'hx-indicator': '.loader' }),
-}
 ---
 
 <ComponentBlock
@@ -51,7 +44,10 @@ const hx_attrs = {
             ${JSON.stringify(start_tracking)} && $dispatch('tracking_started')
         }
     }`}
-    {...hx_attrs}
+    hx-get={!fleet?.tracking?.end_time ? FLEET_STATUS_PARTIAL_URL: undefined}
+    hx-trigger={!fleet?.tracking?.end_time ? 'load delay:60s' : undefined}
+    hx-swap={!fleet?.tracking?.end_time ? 'outerHTML transition:true' : undefined}
+    hx-indicator={!fleet?.tracking?.end_time ? '.loader' : undefined}
 >
     <Flexblock
         class="[ grow text-center ]"

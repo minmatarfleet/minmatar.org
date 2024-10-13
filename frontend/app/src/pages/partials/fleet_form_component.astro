@@ -25,18 +25,18 @@ import type { Audience } from '@dtypes/api.minmatar.org'
 import type { Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic } from '@dtypes/layout_components'
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '')
 
 import type { FleetUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
-let fleet:FleetUI
-let fleet_commander:CharacterBasic
+let fleet:FleetUI | null = null
+let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error:string | false = false
-let locations:Location[]
-let audiences:Audience[]
+let locations:Location[] = []
+let audiences:Audience[] = []
 
 try {
     if (!isNaN(fleet_id)) {

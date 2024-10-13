@@ -33,7 +33,6 @@ export async function get_all_applications(access_token:string) {
                 corporation_id: character.corporation_id,
                 character_name: character.character_name,
                 corporation_name: character.corporation_name,
-                description: null,
             } as ApplicationOld
         })))
 
@@ -77,8 +76,8 @@ export async function get_all_corporations_applications(access_token:string, rec
         })
 
         application.applications = (await Promise.all(api_applications.map(async (application) => {
-            let character:EveCharacterProfile
-            let character_error:string
+            let character:EveCharacterProfile | null = null
+            let character_error:string | null = null
 
             try {
                 character = await get_user_character(application.user_id)

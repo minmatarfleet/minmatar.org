@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('guest_auth_token') ? Astro.cookies.get('guest_auth_token').value : false
+const auth_token = Astro.cookies.has('guest_auth_token') ? (Astro.cookies.get('guest_auth_token')?.value ?? '') : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -25,8 +25,8 @@ let removed_character_name:string | false = false
 let alert:Alert | false = false
 
 if (Astro.request.method === "DELETE") {
-    removed_character_id = parseInt(Astro.url.searchParams.get('id'))
-    removed_character_name = Astro.url.searchParams.get('character_name')
+    removed_character_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+    removed_character_name = Astro.url.searchParams.get('character_name') ?? ''
     let delete_character_error:string | false = false
 
     try {

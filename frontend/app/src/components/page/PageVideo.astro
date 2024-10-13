@@ -39,7 +39,7 @@ import VideoWidget from '@components/blocks/VideoWidget.astro';
             </Wrapper>
                 
             <VideoWidget
-                url={video.url}
+                url={video?.url as string}
                 credits={video?.credits ?? false}
                 shadow={shadow}
             />

@@ -18,11 +18,11 @@ const show_controls = Astro.url.searchParams.get('controls') ?? null
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 
-let fitting:Fitting
+let fitting:Fitting | null = null
 let get_fitting_error:string | false = false
 
 try {
-    fitting = await get_fitting_by_id(parseInt(fitting_id))
+    fitting = await get_fitting_by_id(parseInt(fitting_id ?? '0'))
 } catch (error) {
     get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
 }
@@ -37,10 +37,14 @@ import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
 import { parse_eft } from '@helpers/fit_parser.ts';
 
-const fitting_parsed = await parse_eft(fitting.eft_format)
+const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
+
+if (!fitting_parsed)
+    throw new Error(t('invalid_fitting'))
+
 let turrets:string[] = []
 
-await Promise.all(fitting_parsed?.high_slots.map(async (module, index) => {
+await Promise.all((fitting_parsed?.high_slots ?? []).map(async (module, index) => {
     const res = module?.id ? await get_module_model(module.id) : null
     if (res && ccpwgl_turrets.includes(module.module_type))
         turrets.push(res)
@@ -49,9 +53,9 @@ await Promise.all(fitting_parsed?.high_slots.map(async (module, index) => {
 const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
-const ship_dna = await get_ship_dna(ship_id, fitting_parsed.subsystem_slots)
+const ship_dna = await get_ship_dna(ship_id ?? 0, fitting_parsed?.subsystem_slots ?? [])
 
-const CAMERA_ZOOM = fitting_parsed?.subsystem_slots?.length > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
+const CAMERA_ZOOM = (fitting_parsed?.subsystem_slots?.length ?? 0) > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -77,7 +81,7 @@ import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 
 const page_title = fitting_parsed.name;
-const page_description = await strip_markdown(fitting.description)
+const page_description = await strip_markdown(fitting?.description ?? '')
 ---
 
 <script define:vars={{ normal_view }}>
@@ -259,18 +263,18 @@ const page_description = await strip_markdown(fitting.description)
                 <Flexblock gap='var(--space-xl)'>
                     <Flexblock class="[ page-header ]">
                         <Flexblock gap='var(--space-3xs)'>
-                            <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id)} alt={fitting_parsed.ship_name} />
+                            <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id ?? 0)} alt={fitting_parsed.ship_name} />
                             <PageTitle>{page_title}</PageTitle>
                         </Flexblock>
-                        <small>{t('last_updated')} {format_date_short(lang, fitting.updated_at)}</small>
+                        <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <ButtonStack>                            
                             <ClipboardButton id="fit-clipboard">
-                                {fitting.eft_format}
+                                {fitting?.eft_format as string}
                             </ClipboardButton>
                         </ButtonStack>
                     </Flexblock>
                     
-                    <Flexblock set:html={marked.parse(fitting.description)} />
+                    <Flexblock set:html={marked.parse(fitting?.description as string)} />
                 </Flexblock>
 
                 <Flexblock gap='var(--space-3xs)'>
@@ -279,11 +283,11 @@ const page_description = await strip_markdown(fitting.description)
                             <FitsEvEIcon />
                             <h3>{t('fitting')}</h3>
                         </FlexInline>
-                        <pre class="[ eve-html ]" set:html={fitting.eft_format} />
+                        <pre class="[ eve-html ]" set:html={fitting?.eft_format} />
                     </CollapsibleBlock>
 
-                    {fitting_parsed?.drones?.length > 0 &&
-                        <Cargohold cargo={fitting_parsed.drones}>
+                    {(fitting_parsed?.drones?.length ?? 0) > 0 &&
+                        <Cargohold cargo={fitting_parsed.drones ?? []}>
                             <FlexInline gap='var(--space-2xs)'>
                                 <DronesEvEIcon />
                                 <h3>{t('drone_bay')}</h3>
@@ -291,8 +295,8 @@ const page_description = await strip_markdown(fitting.description)
                         </Cargohold>
                     }
 
-                    {fitting_parsed?.cargohold?.length > 0 &&
-                        <Cargohold cargo={fitting_parsed.cargohold}>
+                    {(fitting_parsed?.cargohold?.length ?? 0) > 0 &&
+                        <Cargohold cargo={fitting_parsed.cargohold ?? []}>
                             <FlexInline gap='var(--space-2xs)'>
                                 <CargoHoldEvEIcon />
                                 <h3>{t('cargo_hold')}</h3>

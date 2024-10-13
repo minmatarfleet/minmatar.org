@@ -11,7 +11,7 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const token_name = is_friend ? 'guest_auth_token' : 'auth_token'
-const auth_token = Astro.cookies.has(token_name) ? Astro.cookies.get(token_name).value : false
+const auth_token = Astro.cookies.has(token_name) ? (Astro.cookies.get(token_name)?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)

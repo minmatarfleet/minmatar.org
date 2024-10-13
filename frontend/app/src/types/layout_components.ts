@@ -239,7 +239,7 @@ export interface ApplicationOld {
     character_name:         string;
     corporation_id:         number;
     corporation_name:       string;
-    description:            string;
+    description?:           string;
     status:                 CorporationStatusType;
 }
 
@@ -324,10 +324,10 @@ export interface CorporationObject {
     corporation_type:       CorporationType;
     status?:                CorporationStatusType;
     application_updated?:   Date;
-    introduction:           string;
-    biography:              string;
-    timezones:              string[];
-    requirements:           string[];
+    introduction?:          string;
+    biography?:             string;
+    timezones?:             string[];
+    requirements?:          string[];
 }
 
 export interface CorporationBasic {
@@ -359,8 +359,8 @@ export interface GroupRequestUI {
     corporation_name:   string;
     group_id:           number;
     group_name:         string;
-    group_image:        string;
-    description:        string;
+    group_image:        string | null;
+    description:        string | null;
 }
 
 export interface ErrorRefetchParams {
@@ -650,15 +650,15 @@ import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
 
 export interface FleetItem {
     id:                     number;
-    type:                   FleetTypes;
+    type?:                  FleetTypes;
     audience:               string;
-    description:            string;
+    description?:           string;
     doctrine_id:            number;
     start_time:             Date;
     fleet_commander_id:     number;
     fleet_commander_name:   string;
-    location:               string;
-    tracking:               Tracking;
+    location?:              string;
+    tracking?:              Tracking;
 }
 
 export interface FleetUI {

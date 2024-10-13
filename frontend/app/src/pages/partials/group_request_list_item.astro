@@ -18,9 +18,9 @@ if (!auth_token || !user) {
 
 import type { Alert, GroupRequestUI, GroupItemType } from '@dtypes/layout_components'
 
-const group_id = parseInt(Astro.url.searchParams.get('group_id'))
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
 const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
-const request_id = parseInt(Astro.url.searchParams.get('request_id'))
+const request_id = parseInt(Astro.url.searchParams.get('request_id') ?? '')
 const action = Astro.url.searchParams.get('action')
 
 let alert:Alert | false = false
@@ -36,7 +36,7 @@ import {
 } from '@helpers/api.minmatar.org/teams'
 import { query_string } from '@helpers/string';
 
-let group_action_request:SigRequest | TeamRequest
+let group_action_request:SigRequest | TeamRequest | null = null
 let group_request_action_error:string | false = false
 
 if (Astro.request.method === "POST") {
@@ -60,7 +60,7 @@ if (Astro.request.method === "POST") {
 import type { GroupRequestListUI } from '@dtypes/layout_components'
 import { get_group_requests_by_id, get_group_request_by_id } from '@helpers/fetching/group_requests'
 
-let group_requests:GroupRequestListUI
+let group_requests:GroupRequestListUI | null = null
 let get_group_requests_error:string | false = false
 try {
     group_requests = await get_group_requests_by_id(auth_token, group_id, group_type)
@@ -69,23 +69,23 @@ try {
 }
 
 if (group_request_action_error) {
-    const group_request:GroupRequestUI = group_requests.requests.find( (i) => i.request_id == request_id )
+    const group_request:GroupRequestUI | undefined = (group_requests as GroupRequestListUI).requests.find( (i) => i.request_id == request_id )
 
     alert = {
         title: (action == 'accept' ? t('accept_group_request_dialog_title') : t('deny_group_request_dialog_title')),
         content: group_request_action_error,
     }
 
-    if (group_requests) {
+    if (group_requests !== undefined) {
         const params = query_string({
-            character_id: group_request.character_id.toString(),
-            character_name: group_request.character_name,
-            group_id: group_request.character_id.toString(),
-            group_name: group_request.group_name,
-            group_image: JSON.stringify(group_request.group_image),
-            group_description: group_request.description,
-            corporation_id: group_request.corporation_id,
-            corporation_name: group_request.corporation_name,
+            character_id: group_request?.character_id.toString(),
+            character_name: group_request?.character_name,
+            group_id: group_request?.character_id.toString(),
+            group_name: group_request?.group_name,
+            group_image: JSON.stringify(group_request?.group_image),
+            group_description: group_request?.description,
+            corporation_id: group_request?.corporation_id,
+            corporation_name: group_request?.corporation_name,
             type: action,
             group_type: group_type,
             message: group_request_action_error
@@ -98,7 +98,7 @@ if (group_request_action_error) {
 let get_group_request_error:string | false = false
 if (group_action_request?.approved_by) {
     try {
-        const group_request:GroupRequestUI = await get_group_request_by_id(auth_token, group_id, request_id, group_type)
+        const group_request:GroupRequestUI | null = await get_group_request_by_id(auth_token, group_id, request_id, group_type)
         
         alert = {
             title: (action == 'accept' ?
@@ -140,7 +140,7 @@ import GroupRequestBlock from '@components/blocks/GroupRequestBlock.astro';
 ---
 
 <GroupRequestBlock
-    group_requests={group_requests}
+    group_requests={group_requests as GroupRequestListUI}
     alert={alert}
     group_type={group_type}
 />

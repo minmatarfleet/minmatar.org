@@ -24,7 +24,7 @@ let add_moon_error:string | false = false
 if (Astro.request.method === "POST") {
     try {
         const moon_information = await Astro.request.formData()
-        const paste = JSON.parse(JSON.parse( moon_information.get("data").valueOf() as string ))
+        const paste = JSON.parse(JSON.parse( moon_information.get("data")?.valueOf() as string ))
 
         await add_moon(auth_token, paste)
     } catch (error) {

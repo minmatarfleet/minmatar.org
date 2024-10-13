@@ -20,14 +20,14 @@ const user_permissions = await get_user_permissions(user?.username)
 if (!user.is_superuser && !user_permissions.includes('eveonline.view_evecharacter'))
     return HTTP_404_Not_Found()
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 
 import type { SkillsetsUI } from '@dtypes/layout_components'
 import { get_skillsets } from '@helpers/fetching/characters'
 
-let character_skillsets:SkillsetsUI
+let character_skillsets:SkillsetsUI | null = null
 let get_character_skillsets_error:string | false = false
 try {
     character_skillsets = await get_skillsets(auth_token, character_id)
@@ -55,15 +55,15 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     />
     :
     <SkillsetsList
-        skillsets={character_skillsets.skillsets}
+        skillsets={character_skillsets?.skillsets ?? []}
         character={{
-            character_id: character_skillsets.character_id,
-            character_name: character_skillsets.character_name,
+            character_id: character_skillsets?.character_id as number,
+            character_name: character_skillsets?.character_name as string,
         }}
         x-data={`{
             init() {
-                character_id = ${character_skillsets.character_id}
-                character_name = '${character_skillsets.character_name}'
+                character_id = ${character_skillsets?.character_id as number}
+                character_name = '${character_skillsets?.character_name as string}'
                 skillsets_count = ${skillsets_count}
             }
         }`}

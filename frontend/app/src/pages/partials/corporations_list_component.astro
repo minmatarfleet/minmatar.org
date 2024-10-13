@@ -14,7 +14,7 @@ import { get_associates_data } from '@helpers/pages/associates'
 import type { AssociatesData } from '@helpers/pages/associates'
 
 let associates_data:AssociatesData = {}
-let data_fetching_error:string
+let data_fetching_error:string | null = null
 
 try {
     associates_data = await get_associates_data(auth_token, lang, user_id)

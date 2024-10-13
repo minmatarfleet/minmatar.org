@@ -27,7 +27,7 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 let get_all_mains_alts_error:string | false = false
 let characters:Character[] = []
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
 const character_name = Astro.url.searchParams.get('character_name')
 
 try {
@@ -60,7 +60,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     :
     <UserCharacters
         user={user as User}
-        character_name={character_name}
+        character_name={character_name as string}
         characters={characters}
     />
 }

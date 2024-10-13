@@ -49,7 +49,7 @@ import {
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
 
-const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
+const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering')?.value as StaggeringType : 'watermelon'
 
 const page_title = t('index.page_title');
 const page_description = t('index.leading_text');
