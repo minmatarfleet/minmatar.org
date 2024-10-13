@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!auth_token || !user)
+    return HTTP_403_Forbidden()
+
+import type { PostListUI, Alert } from '@dtypes/layout_components'
+import { fetch_user_posts } from '@helpers/fetching/posts'
+import { delete_post, update_post } from '@helpers/api.minmatar.org/posts'
+import { post_states } from '@dtypes/api.minmatar.org'
+import type { PostStates } from '@dtypes/api.minmatar.org'
+import { get_user_permissions } from '@helpers/permissions'
+
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+
+if (!can_manage_posts)
+    return HTTP_403_Forbidden()
+
+let posts:PostListUI[] = []
+let fetch_user_posts_error:string | false = false
+
+const state = Astro.url.searchParams.get('state')
+
+let alert:Alert | false = false
+
+if (Astro.request.method === "DELETE") {
+    let delete_post_error:string | false = false
+
+    try {
+        const post_id = parseInt(Astro.url.searchParams.get('id'))
+
+        if (isNaN(post_id))
+            throw new Error('invalid_post_id')
+
+        await delete_post(auth_token as string, post_id)
+    } catch (error) {
+        delete_post_error = (prod_error_messages() ? t('delete_post_error') : error.message)
+        console.log(delete_post_error)
+    }
+    
+    if (delete_post_error) {
+        alert = {
+            title: t('remove_post_dialog_title'),
+            content: delete_post_error,
+        }
+    }
+}
+
+if (Astro.request.method === "PATCH") {
+    let patch_post_error:string | false = false
+
+    try {
+        const post_id = parseInt(Astro.url.searchParams.get('id'))
+        const new_state = Astro.url.searchParams.get('new_state')
+
+        if (post_states.find(post_state => post_state === new_state) === undefined)
+            throw new Error('invalid_post_state')
+
+        await update_post(auth_token as string, post_id, { state: new_state as PostStates })
+    } catch (error) {
+        patch_post_error = (prod_error_messages() ? t('patch_post_error') : error.message)
+    }
+    
+    if (patch_post_error) {
+        alert = {
+            title: t('trash_post_dialog_title'),
+            content: patch_post_error,
+        }
+    }
+}
+
+try {
+    posts = await fetch_user_posts(user.user_id)
+    if (state === 'trash')
+        posts = posts.filter(post => post.state === 'trash')
+    else
+        posts = posts.filter(post => post.state !== 'trash')
+} catch (error) {
+    fetch_user_posts_error = prod_error_messages() ? t('get_all_corporations_error') : error.message
+}
+
+const USER_POST_LIST_PARTIAL_URL = `${translatePath('/partials/user_post_list_component/')}${state === 'trash' ? '?state=trash' : ''}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import UserPosts from '@components/blocks/UserPosts.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_user_posts_error ?
+    <ErrorRefetch
+        args={{
+            partial: USER_POST_LIST_PARTIAL_URL,
+            message: fetch_user_posts_error,
+            delay: delay,
+        }}
+    />
+    :
+    <UserPosts posts={posts} />
+}
+
+<div
+    x-data={`{
+        init() {
+            posts_count = ${posts?.length ?? 0}
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            $el.remove()
+        }
+    }`}
+    style="display: none"
+/>

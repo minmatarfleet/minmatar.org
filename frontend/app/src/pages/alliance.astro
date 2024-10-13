@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
 
@@ -12,7 +12,9 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
-import { get_posts } from '@helpers/api.minmatar.org/posts'
+import { format_date } from '@helpers/date'
+import type { PostListUI } from '@dtypes/layout_components'
+import { fetch_posts } from '@helpers/fetching/posts'
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -22,8 +24,10 @@ const can_view_corp_members = is_superuser || user_permissions.includes('eveonli
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
+let posts:PostListUI[] = []
+
 try {
-    await get_posts();
+    posts = await fetch_posts();
 } catch (error) {
     console.log(error)
 }
@@ -85,44 +89,36 @@ const leading_text = t('alliance.leading_text');
                 is_superuser={is_superuser}
             />
 
-            <Flexblock gap='var(--space-l)'>
-                <h2>News timeline</h2>
-                <TextBox>
-                    <p>Welcome to our news timeline, where we track key developments and important milestones. Stay updated with the latest events, announcements, and stories that shape our journey.</p>
-                </TextBox>
-            </Flexblock>
-    
-            <Wrapper padding_inline='0' padding_block='0' max_width='var(--max-text-width)'>
-                <BlockList gap='var(--space-2xl)'>
-                    <FixedFluid width='64px'>
-                        <CharacterPicture
-                            character_id={2120834555}
-                            character_name={'Faye Vaelent'}
-                        />
-                        <Flexblock>
-                            <h3><a href="#">Write your story on the right Markdown compatible WYSWYG editor and review it with the preview on the left</a></h3>
-                            <FlexInline>
-                                <small>Oct 2, 2025</small>
-                                <Tag text="AAR" />
-                            </FlexInline>
-                        </Flexblock>
-                    </FixedFluid>
-    
-                    <FixedFluid width='64px'>
-                        <CharacterPicture
-                            character_id={2120834555}
-                            character_name={'Faye Vaelent'}
-                        />
-                        <Flexblock>
-                            <h3><a href="#">Write your story on the right Markdown compatible WYSWYG editor and review it with the preview on the left</a></h3>
-                            <FlexInline>
-                                <small>Oct 2, 2025</small>
-                                <Tag text="Propaganda" />
-                            </FlexInline>
-                        </Flexblock>
-                    </FixedFluid>
-                </BlockList>
-            </Wrapper>
+            {posts.length > 0 &&
+                <Flexblock gap='var(--space-l)'>
+                    <h2>{t('news_timeline')}</h2>
+                    <TextBox>
+                        <p>{t('news_timeline_description')}</p>
+                    </TextBox>
+                </Flexblock>
+        
+                <Wrapper padding_inline='0' padding_block='0' max_width='var(--max-text-width)'>
+                    <BlockList gap='var(--space-2xl)'>
+                        {posts.map(post =>
+                            <FixedFluid width='64px'>
+                                <CharacterPicture
+                                    character_id={post.author.character_id}
+                                    character_name={post.author.character_name}
+                                />
+                                <Flexblock>
+                                    <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
+                                    <FlexInline>
+                                        <small>{format_date(lang, post.date_posted)}</small>
+                                        {post.tags.map(tag =>
+                                            <Tag text={tag} />
+                                        )}
+                                    </FlexInline>
+                                </Flexblock>
+                            </FixedFluid>
+                        )}
+                    </BlockList>
+                </Wrapper>
+            }
         </Flexblock>
 
         <small class="[ cover-credits ][ hidden lg:block ]">

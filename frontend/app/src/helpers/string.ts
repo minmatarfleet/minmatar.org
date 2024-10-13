@@ -55,3 +55,15 @@ export async function strip_markdown(text:string) {
     const $ = cheerio.load(await marked.parse(text))
     return $('p:first').text()
 }
+
+export const parse_error_message = (error_details:string) => {
+    // Regular expression to match the error message inside the single quotes after "error": 
+    const regex = /'error': '([^']+)'/;
+    const match = error_details.match(regex);
+    
+    if (match && match[1]) {
+        return match[1];
+    } else {
+        return null; // or handle the case when the pattern doesn't match
+    }
+}

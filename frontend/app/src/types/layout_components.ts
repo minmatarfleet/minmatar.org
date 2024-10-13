@@ -846,3 +846,27 @@ export interface PlanetMoonsUI {
     scanned:    number;
     moons?:     MoonUI[];
 }
+
+export interface PostListUI {
+    post_id:            number;
+    title:              string;
+    state:              string;
+    slug:               string;
+    date_posted:        Date;
+    user_id:            number;
+    author:             CharacterBasic;
+    tags:               string[];
+}
+
+export interface PostUI {
+    post_id:            number;
+    state:              string;
+    title:              string;
+    slug:               string;
+    date_posted:        Date;
+    user_id:            number;
+    excerpt:            string;
+    content:            string;
+    author:             CharacterBasic;
+    tags:               string[];
+}

@@ -77,7 +77,7 @@ const page_title = t('fitting.list.page_title');
             fitting_name_filter: '',
             fitting_type_filter: '-1',
             ship_type_filter: '-1',
-            fits_count: '${fittings.length}',
+            fits_count: ${fittings.length},
             countVisibleElements(selector, parent = document) {
                 const elements = parent.querySelectorAll(selector)
                 let visible_count = 0

@@ -13,7 +13,7 @@ interface Props {
 }
 
 const {
-    content = t('wyswyg_placeholder'),
+    content = '',
 } = Astro.props
 ---
 
@@ -24,12 +24,14 @@ const {
 >
     <RifterIcon />
 </Wrapper>
-<div id="editor" style="display: none" set:html={marked.parse(content)} />
+<div id="editor" style="display: none" set:html={content} />
 
 <script>
     const { Editor } = await import('@toast-ui/editor')
 
-    const editor = new Editor({
+    let throttle_timer
+    const content = document.getElementById('editor')?.innerHTML
+    var editor = new Editor({
         el: document.querySelector('#editor'),
         minHeight: '500px',
         height: 'auto',
@@ -49,9 +51,19 @@ const {
             load: () => {
                 document.querySelector('.tui-editor-loader').remove()
                 document.getElementById('editor').style.display = 'block'
+            },
+            change: () => {
+                if (throttle_timer)
+                    clearTimeout(throttle_timer)
+
+                throttle_timer = setTimeout(function () {
+                    document.getElementById('post-content').value = editor.getMarkdown()
+                }, 750)
             }
         }
     })
+
+    editor.setMarkdown(content)
 </script>
 
 <style lang="scss" is:global>
@@ -84,7 +96,7 @@ const {
     }
 
     .toastui-editor-dark .toastui-editor-toolbar-icons {
-        background-image: url(../../images/TUI-editor-sprite.png);
+        background-image: url(../images/TUI-editor-sprite.png);
         background-color: var(--fleet-red);
         transition: var(--fast-transition);
         border-color: var(--fleet-red);

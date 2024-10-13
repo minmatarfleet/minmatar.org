@@ -1,0 +1,148 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { format_date } from '@helpers/date'
+import { semantic_list } from '@helpers/array'
+import { query_string } from '@helpers/string';
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    posts:      PostListUI[];
+    trash?:     boolean;
+}
+
+const {
+    posts = [],
+    trash = false,
+} = Astro.props
+
+const USER_POST_LIST_PARTIAL_URL = translatePath('/partials/user_post_list_component/')
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+---
+
+<div id="user-post-list">
+    <BlockList gap='var(--space-3xs)'>
+        {posts.map(post =>
+            <ComponentBlock x-show="show_item($el)" width='narrow'>
+                <Flexblock gap='var(--space-m)'>
+                    <h3>{post.title}</h3>
+                    <FlexInline gap='var(--space-l)' justification='space-between'>
+                        <FlexInline gap='var(--space-l)'>
+                            <TextGroup title={t('state')}><small>{t(post.state as any)}</small></TextGroup>
+                            <TextGroup title={t('publish_date')}><small>{format_date(lang, post.date_posted)}</small></TextGroup>
+                            {post.tags.length > 0 &&
+                                <TextGroup title={t('post_tags')}>
+                                    <small>{semantic_list(lang, post.tags)}</small>
+                                </TextGroup>
+                            }
+                        </FlexInline>
+                        <FlexInline>
+                            {!trash ?
+                                <Button
+                                    type="button"
+                                    size='sm'
+                                    href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post.post_id}` })}`}
+                                >
+                                    {t('edit')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size='sm'
+                                    x-data={`{
+                                        show_trash_post_confirm() {
+                                            show_confirm_dialog({
+                                                title: '${t('trash_post_dialog_title')}',
+                                                content: '${t('trash_post_dialog_text')}',
+                                                hx: {
+                                                    method: 'patch',
+                                                    url: '${USER_POST_LIST_PARTIAL_URL}?id=${post.post_id}&new_state=trash',
+                                                    target: '#user-post-list',
+                                                    swap: 'outerHTML transition:true'
+                                                }
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_trash_post_confirm"
+                                >
+                                    {t('trash')}
+                                </Button>
+                                <Button
+                                    href={translatePath(`/alliance/posts/${post.post_id}`)}
+                                    type="button"
+                                    size='sm'
+                                >
+                                    {t('view')}
+                                </Button>
+                                :
+                                <Button
+                                    type="button"
+                                    size='sm'
+                                    x-data={`{
+                                        show_restore_post_confirm() {
+                                            show_confirm_dialog({
+                                                title: '${t('restore_post_dialog_title')}',
+                                                content: '${t('restore_post_dialog_text')}',
+                                                hx: {
+                                                    method: 'patch',
+                                                    url: '${USER_POST_LIST_PARTIAL_URL}?id=${post.post_id}&state=trash&new_state=draft',
+                                                    target: '#user-post-list',
+                                                    swap: 'outerHTML transition:true'
+                                                }
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_restore_post_confirm"
+                                >
+                                    {t('switch_to_draft')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size='sm'
+                                    x-data={`{
+                                        show_remove_post_confirm() {
+                                            show_confirm_dialog({
+                                                title: '${t('remove_post_dialog_title')}',
+                                                content: '${t('remove_post_dialog_text')}',
+                                                hx: {
+                                                    method: 'delete',
+                                                    url: '${USER_POST_LIST_PARTIAL_URL}?id=${post.post_id}&state=trash',
+                                                    target: '#user-post-list',
+                                                    swap: 'outerHTML transition:true'
+                                                }
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_remove_post_confirm"
+                                >
+                                    {t('remove')}
+                                </Button>
+                            }
+                        </FlexInline>
+                    </FlexInline>
+                </Flexblock>
+            </ComponentBlock>
+        )}
+    </BlockList>
+
+    <p
+        x-show={posts.length > 0 ? "posts_count === 0" : undefined}
+        style={posts.length > 0 ? "display: none;" : undefined}
+        class="[ text-center ]"
+    >
+        {t('no_post_found')}
+    </p>
+</div>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

@@ -1,0 +1,116 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { prod_error_messages } from '@helpers/env'
+import { query_string } from '@helpers/string'
+import { fetch_post } from '@helpers/fetching/posts'
+import type { PostUI } from '@dtypes/layout_components'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+const param = Astro.params.post_id
+const post_id = param === 'new' ? 0 : parseInt(param)
+
+if (isNaN(post_id))
+    return Astro.redirect(translatePath('/alliance/'))
+
+let post:PostUI | null = null
+let get_post_error:string | false = false
+let is_user_post:boolean = false
+
+try {
+    post = await fetch_post(post_id)
+
+    is_user_post = (user ? user.user_id : 0) === post.user_id
+
+    if (post.state !== 'published' && !is_user_post)
+        return Astro.redirect(translatePath('/alliance/'))
+} catch (error) {
+    console.log(error)
+    return HTTP_404_Not_Found()
+}
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+import { format_date } from '@helpers/date'
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
+
+const page_title = post?.title ?? t('new_post')
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: "/images/editor-cover.jpg",
+            image_990: "/images/editor-cover-990.jpg",
+            alt: t('posts.cover_alt'),
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <FlexInline class="[ !items-start ]" justification='space-between'>
+                <TextBox>
+                    <h1>{post?.title}</h1>
+                </TextBox>
+                {is_user_post &&
+                    <Button
+                        type="button"
+                        href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post?.post_id}` })}`}
+                    >
+                        {t('edit_post')}
+                    </Button>
+                }
+            </FlexInline>
+            <TextBox>
+                <Flexblock gap='var(--space-xl)'>
+                    <PilotBadge character_id={post?.author?.character_id} character_name={post.author?.character_name}>
+                        <small>{format_date(lang, post.date_posted)}</small>
+                    </PilotBadge>
+
+                    <p class="[ excerpt ]">{post?.excerpt}</p>
+
+                    {post.tags.length > 0 &&
+                        <FlexInline>
+                            {post.tags.map(tag =>
+                                <Tag text={tag} />
+                            )}
+                        </FlexInline>
+                    }
+
+                    <Flexblock gap='var(--space-m)' set:html={marked.parse(post.content, { renderer })}>
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+    }
+</style>

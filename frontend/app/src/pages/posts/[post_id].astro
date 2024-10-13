@@ -1,0 +1,270 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+
+if (!can_manage_posts)
+    return HTTP_403_Forbidden()
+
+import { prod_error_messages } from '@helpers/env'
+import { get_post, create_post, update_post, get_posts_tags, delete_post } from '@helpers/api.minmatar.org/posts'
+import type { Post, PostParams, PostTag } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+
+const param = Astro.params.post_id
+const post_id = param === 'new' ? 0 : parseInt(param)
+
+if (isNaN(post_id))
+    return Astro.redirect(translatePath('/alliance/post/new'))
+
+let post:Post | null = null
+let submitted_post_data:PostParams = {}
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+
+        const submitted_post_id = parseInt(data.get('post_id') as string)
+        const tag_ids = data.getAll('tag_ids').map(tag_id => parseInt(tag_id as string))
+
+        submitted_post_data = {
+            title: data.get('title') as string,
+            seo_description: data.get('excerpt') as string,
+            content: data.get('content') as string,
+            state: data.get('state') as string,
+            tag_ids: tag_ids,
+        } as PostParams
+
+        console.log(submitted_post_data)
+
+        if (isNaN(submitted_post_id))
+            post = await create_post(auth_token as string, submitted_post_data)
+        else
+            post = await update_post(auth_token as string, submitted_post_id, submitted_post_data)
+
+        return Astro.redirect(translatePath(`/posts/${post?.post_id}`))
+    } catch (error) {
+        const create_post_error = prod_error_messages() ? t('create_post_error') : error.message
+
+        alert = {
+            title: t('post_dialog_title'),
+            content: create_post_error,
+        }
+    }
+}
+
+let error_fetching_post_tags:string | false = false
+let post_tags:PostTag[] = []
+try {
+    post_tags = await get_posts_tags()
+} catch (error) {
+    error_fetching_post_tags = prod_error_messages() ? t('error_fetching_post_tags') : error.message
+}
+
+if (!post && post_id) {
+    try {
+        post = await get_post(post_id)
+    } catch (error) {
+        const get_post_error = prod_error_messages() ? t('error_fetching_post') : error.message
+
+        if (!alert) {
+            alert = {
+                title: t('post_editor_dialog_title'),
+                content: get_post_error,
+            }
+        }
+    }
+}
+
+const {
+    title = post?.title ?? '',
+    seo_description = post?.seo_description ?? '',
+    content = post?.content ?? '',
+    state = post?.state ?? 'draft',
+    tag_ids = post?.tag_ids ?? [],
+} = submitted_post_data
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import TuiEditor from '@components/blocks/TuiEditor.astro';
+import StylessTextArea from '@components/blocks/StylessTextArea.astro';
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+
+import Markdown from '@components/icons/buttons/Markdown.astro';
+
+const page_title = post?.title ?? t('new_post')
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
+    <form
+        method="POST"
+        x-data={`{
+            title: '${title}',
+            excerpt: '${seo_description}',
+            state: '${state}',
+            disabled_draft: true,
+            disabled_publish: true,
+            update_disable() {
+                this.disabled_draft = this.title === ''
+                this.disabled_publish = this.title === '' || this.excerpt === ''
+            },
+            form_submit(state) {
+                this.state = state
+                $nextTick(() => $el.submit())
+            },
+        }`}
+        x-init="update_disable()"
+    >
+        <PageWide
+            fullscreen={true}
+            wide={true}
+            cover={{
+                image: "/images/editor-cover.jpg",
+                image_990: "/images/editor-cover-990.jpg",
+                alt: t('posts.cover_alt'),
+                scrollable: true,
+                overlay: true
+            }}
+            x-data={`{
+                update_wyswyg_toolbar() {
+                    post_header = document.querySelector('.post-header')
+                    post_header_height = post_header ? post_header.offsetHeight - 3 : 0
+                    const toolbar = document.querySelector('.toastui-editor-toolbar')
+                    if (toolbar)
+                        toolbar.style.top = \`\${post_header_height}px\`
+                },
+                init() {
+                    ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+                }
+            }`}
+            x-on:scroll.window.throttle.250ms={`
+                setTimeout(update_wyswyg_toolbar, 250)
+            `}
+        >
+            <FlexInline
+                slot="header"
+                justification='space-between'
+                class="[ w-full ]"
+                x-bind:class="{ '!items-start': !sticky }"
+            >
+                <TextBox>
+                    <PageTitle>
+                        <StylessTextArea
+                            placeholder={t('add_title')}
+                            class="[ uppercase !text-[var(--highlight)] !max-h-fit text-balance ]"
+                            name="title"
+                            x-model="title"
+                            x-on:keyup="update_disable()"
+                        >{title ? title : undefined}</StylessTextArea>
+                    </PageTitle>
+                </TextBox>
+                
+                <FlexInline>
+                    <Button
+                        type="button"
+                        color='transparent'
+                        x-on:click.prevent="form_submit('draft')"
+                        x-bind:disabled="disabled_draft"
+                    >
+                        {post?.state === 'published' ?
+                            t('switch_to_draft') :
+                            t('save_draft')
+                        }
+                    </Button>
+                    <Button
+                        type="button"
+                        color='green'
+                        x-on:click.prevent="form_submit('published')"
+                        x-bind:disabled="disabled_publish"
+                    >
+                        {(post_id > 0 && post?.state === 'published') ?
+                            t('update') :
+                            t('publish')
+                        }
+                    </Button>
+
+                    <input type="hidden" name="state" x-model="state" value={state} />
+                </FlexInline>
+            </FlexInline>
+
+            <Flexblock>
+                <TextBox>
+                    <Flexblock gap='var(--space-s)'>
+                        <Flexblock gap='0'>
+                            <StylessTextArea
+                                name="excerpt"
+                                placeholder={t('add_excerpt')}
+                                class="[ excerpt !max-h-none ]"
+                                x-model="excerpt"
+                                x-on:keyup="update_disable()"
+                            >{seo_description ? seo_description : undefined}</StylessTextArea>
+                            <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
+                                <FlexInline gap='var(--space-3xs)'>
+                                    <Markdown />
+                                    <small>{t('markdown_support')}</small>
+                                </FlexInline>
+                            </a>
+                        </Flexblock>
+
+                        {error_fetching_post_tags !== false ?
+                            <span set:html={error_fetching_post_tags}></span> :
+                            <FlexInline>
+                                <label>{t('post_tags')}:</label>
+                                {post_tags.map(tag =>
+                                    <UnstyledRadioCheckButton
+                                        type='checkbox'
+                                        label={tag.tag}
+                                        value={tag.tag_id}
+                                        name="tag_ids"
+                                        checked={tag_ids.find(tag_id => tag_id === tag.tag_id) !== undefined ? 'checked' : undefined}
+                                    />
+                                )}
+                            </FlexInline>
+                        }
+                    </Flexblock>
+                </TextBox>
+
+                <TuiEditor content={content} />
+                <input type="hidden" name="content" id="post-content" />
+
+                {post_id > 0 &&
+                    <input type="hidden" name="post_id" value={post_id} />
+                }
+            </Flexblock>
+        </PageWide>
+    </form>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+    }
+</style>
