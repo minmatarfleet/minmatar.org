@@ -30,7 +30,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
-const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value ?? '') : null
+const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 delete attributes.class

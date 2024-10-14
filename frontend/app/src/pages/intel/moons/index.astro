@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value ?? '') : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -32,7 +32,7 @@ let home_system = Astro.url.searchParams.get('home')
 if (home_system)
     Astro.cookies.set('moon_tracking_home_system_name', home_system, { path: '/' })
 
-home_system = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.cookies.get('moon_tracking_home_system_name')?.value ?? '') : 'Sosala'
+home_system = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.cookies.get('moon_tracking_home_system_name')?.value as string) : 'Sosala'
 
 const distance = Astro.url.searchParams.get('distance') ?? '10'
 const region = Astro.url.searchParams.get('region') ?? '1'

@@ -5,7 +5,7 @@ const { lang, translatePath } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value ?? '') : null
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : null
 const user_id = user?.user_id ?? null
 

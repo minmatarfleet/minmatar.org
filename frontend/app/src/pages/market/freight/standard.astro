@@ -25,7 +25,7 @@ let alert:Alert | null = null
 if (Astro.cookies.has('contract_error')) {
     alert = {
         title: t('freight_calculator_title'),
-        content: (Astro.cookies.get('contract_error')?.value ?? ''),
+        content: (Astro.cookies.get('contract_error')?.value as string),
     }
 
     Astro.cookies.delete('contract_error', { path: '/' })

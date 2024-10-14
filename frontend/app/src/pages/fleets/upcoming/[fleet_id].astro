@@ -10,7 +10,7 @@ import * as jose from 'jose'
 
 const user_agent = Astro.request.headers.get('user-agent')
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value ?? '') : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -69,7 +69,7 @@ const can_remove_fleet = is_superuser ||
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(true)}`)
 
-const fleet_tracking_error = Astro.cookies.has('fleet_tracking_error') ? (Astro.cookies.get('fleet_tracking_error')?.value ?? '') : false
+const fleet_tracking_error = Astro.cookies.has('fleet_tracking_error') ? (Astro.cookies.get('fleet_tracking_error')?.value as string) : false
 if (Astro.cookies.has('fleet_tracking_error'))
     Astro.cookies.delete('fleet_tracking_error', { path: '/' })
 

@@ -15,7 +15,7 @@ const {
 import { get_app_url } from '@helpers/env'
 const SUBSCRIPTION_URL = `${get_app_url()}/api/notifications`
 
-const subscription_id = Astro.cookies.has('subscription_id') ? parseInt(Astro.cookies.get('subscription_id')?.value ?? '') : 0
+const subscription_id = Astro.cookies.has('subscription_id') ? parseInt(Astro.cookies.get('subscription_id')?.value as string) : 0
 const is_subscripted = notification_subscriptions ? (notification_subscriptions.filter((subscription) => subscription.id === subscription_id) !== undefined) : true
 
 import FlexInline from "@components/compositions/FlexInline.astro";
