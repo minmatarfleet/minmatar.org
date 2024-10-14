@@ -13,6 +13,45 @@ class EveFreightLocation(models.Model):
         return str(self.name)
 
 
+class EveFreightContract(models.Model):
+    """Model for a freight contract."""
+
+    expected_contract_type = "courier"
+    supported_ceo_id = 96046515
+    supported_corporation_id = 98705678
+
+    tracked_statuses = [
+        "outstanding",
+        "in_progress",
+        "finished",
+    ]
+    status_choices = (
+        ("outstanding", "Outstanding"),
+        ("in_progress", "In Progress"),
+        ("finished", "Finished"),
+    )
+
+    contract_id = models.BigIntegerField(unique=True)
+    status = models.CharField(max_length=32)
+    start_location_name = models.CharField(max_length=255)
+    end_location_name = models.CharField(max_length=255)
+    volume = models.BigIntegerField()
+    collateral = models.BigIntegerField()
+    reward = models.BigIntegerField()
+    date_issued = models.DateTimeField()
+    date_completed = models.DateTimeField(null=True, blank=True)
+    completed_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="completed_contracts",
+    )
+
+    def __str__(self):
+        return f"{self.contract_id} ({self.status})"
+
+
 class EveFreightRoute(models.Model):
     """Model for a freight route."""
 

@@ -14,6 +14,7 @@ CELERY_IMPORTS = (
     "fleets.tasks",
     "reminders.tasks",
     "moons.tasks",
+    "freight.tasks",
 )
 
 
