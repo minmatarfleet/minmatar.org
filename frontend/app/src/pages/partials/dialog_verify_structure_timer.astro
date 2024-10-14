@@ -1,7 +1,7 @@
 ---
 import type { StructureType } from '@dtypes/api.minmatar.org'
 
-const location = Astro.url.searchParams.get('location') ?? ''
+const location = Astro.url.searchParams.get('location') as string
 const timer = Astro.url.searchParams.get('timer')
 const structure_type = Astro.url.searchParams.get('structure_type') as StructureType
 const message = Astro.url.searchParams.get('message')

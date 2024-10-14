@@ -19,7 +19,7 @@ import { query_string } from '@helpers/string';
 
 let alert:Alert | false = false
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '')
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 let redirect:string | null = null
 
 if (Astro.request.method === "DELETE") {

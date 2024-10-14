@@ -26,7 +26,7 @@ let application:CorporationApplication
 
 if (Astro.request.method === "POST") {
     try {
-        corporation = JSON.parse(Astro.url.searchParams.get('corporation') ?? '') as CorporationObject
+        corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationObject
         const application_text = await Astro.request.formData()
         const description = JSON.parse(JSON.parse( application_text.get("data")?.valueOf() as string ))
 

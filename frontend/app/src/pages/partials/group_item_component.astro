@@ -15,7 +15,7 @@ if (!auth_token || !user_id)
     return HTTP_404_Not_Found()
 
 import type { Alert, GroupItemType, GroupItemUI } from '@dtypes/layout_components'
-const group_id = parseInt(Astro.url.searchParams.get('id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('id') as string)
 const type = Astro.url.searchParams.get('type') as GroupItemType
 
 let alert:Alert | false = false

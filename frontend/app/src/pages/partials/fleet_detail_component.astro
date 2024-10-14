@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!user)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '')
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
@@ -37,7 +37,7 @@ let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let is_fleet_commander = false
 
-const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') ?? '')
+const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)

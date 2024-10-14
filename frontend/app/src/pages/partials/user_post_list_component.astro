@@ -40,7 +40,7 @@ if (Astro.request.method === "DELETE") {
     let delete_post_error:string | false = false
 
     try {
-        const post_id = parseInt(Astro.url.searchParams.get('id') ?? '')
+        const post_id = parseInt(Astro.url.searchParams.get('id') as string)
 
         if (isNaN(post_id))
             throw new Error('invalid_post_id')

@@ -18,10 +18,10 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 const can_view_page = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
 
 import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
-const corporation = JSON.parse(Astro.url.searchParams.get('corporation') ?? '') as CorporationBasic
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationBasic
 
 const corporation_id = corporation?.id ?? 0
-const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')
+const application_id = parseInt(Astro.url.searchParams.get('application_id') as string)
 
 const valid_request = (corporation_id > 0 && application_id > 0)
 

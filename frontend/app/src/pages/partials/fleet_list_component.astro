@@ -20,7 +20,7 @@ import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] | null = null
 
-const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') ?? '')
+const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
     fleets = auth_token ? await fetch_fleets_auth(auth_token as string, upcoming) : await fetch_fleets(upcoming)

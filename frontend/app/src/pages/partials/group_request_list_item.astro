@@ -18,9 +18,9 @@ if (!auth_token || !user) {
 
 import type { Alert, GroupRequestUI, GroupItemType } from '@dtypes/layout_components'
 
-const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') as string)
 const group_type = Astro.url.searchParams.get('group_type') as GroupItemType
-const request_id = parseInt(Astro.url.searchParams.get('request_id') ?? '')
+const request_id = parseInt(Astro.url.searchParams.get('request_id') as string)
 const action = Astro.url.searchParams.get('action')
 
 let alert:Alert | false = false

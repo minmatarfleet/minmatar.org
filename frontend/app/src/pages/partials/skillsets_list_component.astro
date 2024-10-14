@@ -20,7 +20,7 @@ const user_permissions = await get_user_permissions(user?.username)
 if (!user.is_superuser && !user_permissions.includes('eveonline.view_evecharacter'))
     return HTTP_404_Not_Found()
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 

@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
-const is_main = JSON.parse(Astro.url.searchParams.get('is_main') ?? '') as boolean
+const is_main = JSON.parse(Astro.url.searchParams.get('is_main') as string) as boolean
 ---
 
 <Flexblock>

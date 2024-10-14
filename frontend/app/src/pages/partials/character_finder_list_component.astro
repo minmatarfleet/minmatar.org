@@ -13,7 +13,7 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 import { get_all_alliance_members } from '@helpers/fetching/corporations'
 import type { CharacterBasic } from '@dtypes/layout_components'
 
-const character_name = Astro.url.searchParams.get('character_name') ?? ''
+const character_name = Astro.url.searchParams.get('character_name') as string
 
 let members:CharacterBasic[] = []
 let get_groups_members_error:string | false = false

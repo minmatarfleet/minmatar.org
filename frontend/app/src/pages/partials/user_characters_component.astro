@@ -27,7 +27,7 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 let get_all_mains_alts_error:string | false = false
 let characters:Character[] = []
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
 
 try {

@@ -34,8 +34,8 @@ import { remove_group_member as remove_team_member } from '@helpers/api.minmatar
 
 let delete_member_error:string | false = false
 if (Astro.request.method === "DELETE") {
-    const user_id = parseInt(Astro.url.searchParams.get('user_id') ?? '')
-    const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+    const user_id = parseInt(Astro.url.searchParams.get('user_id') as string)
+    const group_id = parseInt(Astro.url.searchParams.get('group_id') as string)
 
     try {
         if (group_type == 'team')
@@ -51,13 +51,13 @@ import { query_string } from '@helpers/string'
 let alert:Alert | false = false
 
 if (delete_member_error) {
-    const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
-    const character_name = Astro.url.searchParams.get('character_name') ?? ''
-    const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '0')
-    const group_name = Astro.url.searchParams.get('group_name') ?? ''
+    const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
+    const character_name = Astro.url.searchParams.get('character_name') as string
+    const group_id = parseInt(Astro.url.searchParams.get('group_id') as string)
+    const group_name = Astro.url.searchParams.get('group_name') as string
     const group_image = JSON.parse(JSON.stringify(Astro.url.searchParams.get('group_image')))
     const group_description = Astro.url.searchParams.get('group_description')
-    const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '0')
+    const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
     const corporation_name = Astro.url.searchParams.get('corporation_name')
 
     const REMOVE_MEMBER_DIALOG_TITLE = {

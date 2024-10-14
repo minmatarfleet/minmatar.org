@@ -14,7 +14,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!user)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('id') ?? '')
+const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()

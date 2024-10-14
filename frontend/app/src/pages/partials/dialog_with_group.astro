@@ -4,7 +4,7 @@ import GroupItem from '@components/blocks/GroupItem.astro';
 
 import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
 
-const name = Astro.url.searchParams.get('name') ?? ''
+const name = Astro.url.searchParams.get('name') as string
 const description = Astro.url.searchParams.get('description')
 const image_url = JSON.parse(JSON.stringify(Astro.url.searchParams.get('image_url')))
 const message = Astro.url.searchParams.get('message')

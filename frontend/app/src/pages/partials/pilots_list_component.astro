@@ -28,8 +28,8 @@ let removed_character_name:string | false = false
 let alert:Alert | false = false
 
 if (Astro.request.method === "DELETE") {
-    removed_character_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
-    removed_character_name = Astro.url.searchParams.get('character_name') ?? ''
+    removed_character_id = parseInt(Astro.url.searchParams.get('id') as string)
+    removed_character_name = Astro.url.searchParams.get('character_name') as string
     let delete_character_error:string | false = false
 
     try {

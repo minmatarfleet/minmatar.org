@@ -12,7 +12,7 @@ if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 let token:string | null = null
 let user:User | null = null
 try {
-    token = Astro.url.searchParams.get('token') ?? ''
+    token = Astro.url.searchParams.get('token') as string
     user = jose.decodeJwt(token)
     await get_characters(token)
 } catch (error) {

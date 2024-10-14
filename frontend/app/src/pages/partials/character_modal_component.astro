@@ -1,7 +1,7 @@
 ---
 import CharacterInfo from '@components/blocks/CharacterInfo.astro'
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '')
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 ---
 
 <CharacterInfo character_id={character_id} />

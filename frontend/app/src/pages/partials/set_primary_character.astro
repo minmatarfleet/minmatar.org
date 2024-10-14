@@ -20,7 +20,7 @@ import { set_primary_characters } from '@helpers/api.minmatar.org/characters'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
-const character_id = parseInt(Astro.url.searchParams.get('id') as '0')
+const character_id = parseInt(Astro.url.searchParams.get('id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
 let set_main_character_error
 let pilots:Character[] = []

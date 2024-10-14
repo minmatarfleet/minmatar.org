@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!user)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('id') ?? '')
+const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
