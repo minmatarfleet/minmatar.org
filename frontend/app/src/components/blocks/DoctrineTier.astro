@@ -31,7 +31,7 @@ import FittingCard from '@components/blocks/FittingCard.astro';
         >
             <FittingCard
                 fitting={fitting}
-                subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : ''}
+                subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : null}
             />
         </a>
     )}

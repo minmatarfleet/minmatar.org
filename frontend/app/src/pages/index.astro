@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
@@ -49,7 +49,7 @@ import {
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
 
-const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering')?.value as StaggeringType : 'watermelon'
+const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering').value as StaggeringType : 'watermelon'
 
 const page_title = t('index.page_title');
 const page_description = t('index.leading_text');

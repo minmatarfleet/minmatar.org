@@ -75,7 +75,7 @@ const parse_fittables = (fitting_eft: string) => {
         let fittable_name:string = line
 
         let words:string[] = line.split(' ')
-        const inline_amount_string:string = words.pop() as string
+        const inline_amount_string:string = words.pop()
         let amount:number = parseInt(inline_amount_string.substring(1))
 
         if (isNaN(amount)) {

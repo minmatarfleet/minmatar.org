@@ -7,7 +7,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const user_id = !user ? false : user.user_id
 
@@ -15,7 +15,7 @@ if (!auth_token || !user_id)
     return HTTP_404_Not_Found()
 
 import type { Alert, GroupItemType, GroupItemUI } from '@dtypes/layout_components'
-const group_id = parseInt(Astro.url.searchParams.get('id') as string)
+const group_id = parseInt(Astro.url.searchParams.get('id'))
 const type = Astro.url.searchParams.get('type') as GroupItemType
 
 let alert:Alert | false = false
@@ -55,7 +55,7 @@ if (Astro.request.method === "DELETE") {
     }
 }
 
-let group:GroupItemUI | null = null
+let group:GroupItemUI
 let get_group_request_error:string | false = false
 try {
     group = await get_group_by_id_auth(auth_token, group_id, user_id, type)
@@ -134,7 +134,7 @@ const partial_query_string = query_string({
     />
     :
     <GroupItem
-        group={group as GroupItemUI }
+        group={group}
         alert={alert}
         type={type}
     />

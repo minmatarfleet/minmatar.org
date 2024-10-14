@@ -16,25 +16,25 @@ let rig_slots:Module[] = []
 let subsystem_slots:Module[] = []
 
 try {
-    const low_slots_count = Math.max(fitting?.capabilities?.low_slots as number, fitting?.low_slots?.length ?? 0)
+    const low_slots_count = Math.max(fitting.capabilities.low_slots, fitting?.low_slots.length)
     for (let i = 0; i < low_slots_count; i++)
-        low_slots.push((fitting?.low_slots as Module[])[i] ?? null)
+        low_slots.push(fitting?.low_slots[i] ?? null)
 
-    const med_slots_count = Math.max(fitting?.capabilities?.med_slots as number, fitting?.med_slots?.length ?? 0)
+    const med_slots_count = Math.max(fitting.capabilities.med_slots, fitting?.med_slots.length)
     for (let i = 0; i < med_slots_count; i++)
-        med_slots.push((fitting?.med_slots as Module[])[i] ?? null)
+        med_slots.push(fitting?.med_slots[i] ?? null)
 
-    const high_slots_count = Math.max(fitting.capabilities?.high_slots as number, fitting?.high_slots?.length ?? 0)
+    const high_slots_count = Math.max(fitting.capabilities.high_slots, fitting?.high_slots.length)
     for (let i = 0; i < high_slots_count; i++)
-        high_slots.push((fitting?.high_slots as Module[])[i] ?? null)
+        high_slots.push(fitting?.high_slots[i] ?? null)
 
-    const rig_slots_count = Math.max(fitting.capabilities?.rig_slots as number, fitting?.rig_slots?.length ?? 0)
+    const rig_slots_count = Math.max(fitting.capabilities.rig_slots, fitting?.rig_slots.length)
     for (let i = 0; i < rig_slots_count; i++)
-        rig_slots.push((fitting?.rig_slots as Module[])[i] ?? null)
+        rig_slots.push(fitting?.rig_slots[i] ?? null)
 
-    const subsystem_slots_count = fitting.capabilities?.subsystem_slots ? fitting?.subsystem_slots?.length ?? 0 : 0
+    const subsystem_slots_count = fitting.capabilities?.subsystem_slots ? fitting?.subsystem_slots.length : 0
     for (let i = 0; i < subsystem_slots_count; i++)
-        subsystem_slots.push((fitting?.subsystem_slots as Module[])[i] ?? null)
+        subsystem_slots.push(fitting?.subsystem_slots[i] ?? null)
 
 } catch (error) {
     console.log(error)

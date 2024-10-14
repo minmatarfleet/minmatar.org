@@ -32,14 +32,14 @@ const Element = element
     :
     <Element
         data-tippy-content={`
-            <div hx-on--after-request="
+            <div hx-on::after-request="
                 const popper = this.closest('[data-tippy-root]')
                 const instance = popper._tippy
                 instance.popperInstance.update()
                 popper.classList.remove('visually-hidden')
             ">
                 <span
-                    hx-on--before-request="this.closest('[data-tippy-root]').classList.add('visually-hidden')"
+                    hx-on::before-request="this.closest('[data-tippy-root]').classList.add('visually-hidden')"
                     hx-trigger="intersect"
                     hx-get='${translatePath(partial)}'
                     hx-swap="outerHTML transition:false"

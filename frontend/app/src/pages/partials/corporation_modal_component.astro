@@ -1,7 +1,7 @@
 ---
 import CorporationInfo from '@components/blocks/CorporationInfo.astro'
 
-const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
 ---
 
 <CorporationInfo corporation_id={corporation_id} />

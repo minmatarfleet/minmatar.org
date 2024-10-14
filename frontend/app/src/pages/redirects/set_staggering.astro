@@ -3,9 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 const tag = Astro.url.searchParams.get('tag')
-
-if (tag)
-    Astro.cookies.set('staggering', tag, { path: '/' })
+Astro.cookies.set('staggering', tag, { path: '/' })
 
 const redirect = translatePath('/')
 ---

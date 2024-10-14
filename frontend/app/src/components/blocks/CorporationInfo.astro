@@ -18,7 +18,7 @@ import { get_corporation_info } from '@helpers/api.minmatar.org/corporations'
 import { parse_eve_html } from '@helpers/eve'
 import { is_html } from '@helpers/string'
 
-let corporation:CorporationInfo | null = null
+let corporation:CorporationInfo
 let get_corporation_info_error:string | false = false
 
 try {
@@ -52,7 +52,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
-const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezones[0].split('\n') : null
+const timezones = corporation.timezones.length > 0 ? corporation.timezones[0].split('\n') : null
 ---
 
 <Wrapper
@@ -93,8 +93,8 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
                     <VerticalCenter>
                         <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
                             <Flexblock gap='0' class="[ w-full ]">
-                                <span class="[ text-[var(--highlight)] ]">{corporation?.corporation_name}</span>
-                                {corporation?.alliance_id &&
+                                <span class="[ text-[var(--highlight)] ]">{corporation.corporation_name}</span>
+                                {corporation.alliance_id &&
                                     <AllianceBadge alliance={{
                                         id: corporation.alliance_id
                                     }} />
@@ -113,16 +113,16 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
                     </VerticalCenter>
                     <VerticalCenter>
                         <picture>
-                            {corporation?.faction_name === 'Amarr Empire' &&
+                            {corporation.faction_name === 'Amarr Empire' &&
                                 <AmarrLogo />
                             }
-                            {corporation?.faction_name === 'Minmatar Republic' &&
+                            {corporation.faction_name === 'Minmatar Republic' &&
                                 <MinmatarLogo />
                             }
-                            {corporation?.faction_name === 'Caldari State' &&
+                            {corporation.faction_name === 'Caldari State' &&
                                 <CaldariLogo />
                             }
-                            {corporation?.faction_name === 'Gallente Federation' &&
+                            {corporation.faction_name === 'Gallente Federation' &&
                                 <GallenteLogo />
                             }
                         </picture>
@@ -130,24 +130,24 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
                 </div>
             </FixedFluid>
             
-            {corporation?.biography !== '' &&
+            {corporation.biography !== '' &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('description')}>
-                        <Flexblock set:html={marked.parse(corporation?.biography as string, { renderer })} />
+                        <Flexblock set:html={marked.parse(corporation.biography, { renderer })} />
                     </SectionH4>
                 </ComponentBlock>
             }
-            {(corporation?.timezones.length ?? 0) > 0 &&
+            {corporation?.timezones.length > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('timezones')}>
-                        <Flexblock set:html={marked.parse(`- ${timezones?.join('- ')}`, { renderer })} />
+                        <Flexblock set:html={marked.parse(`- ${timezones.join('- ')}`, { renderer })} />
                     </SectionH4>
                 </ComponentBlock>
             }
-            {(corporation?.requirements.length ?? 0) > 0 &&
+            {corporation?.requirements.length > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('requirements')}>
-                        <div set:html={marked.parse(corporation?.requirements.join('') as string, { renderer })} />
+                        <div set:html={marked.parse(corporation.requirements.join(''), { renderer })} />
                     </SectionH4>
                 </ComponentBlock>
             }

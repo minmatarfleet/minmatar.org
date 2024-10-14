@@ -7,7 +7,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -19,8 +19,8 @@ import { query_string } from '@helpers/string';
 
 let alert:Alert | false = false
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
-let redirect:string | null = null
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
+let redirect:string
 
 if (Astro.request.method === "DELETE") {
     let delete_fleet_error:string | false = false

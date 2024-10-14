@@ -1,8 +1,6 @@
 ---
 const redirect = Astro.url.searchParams.get('redirect_url')
-
-if (redirect)
-    Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
+Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
 
 import { get_auth_url } from '@helpers/env'
 

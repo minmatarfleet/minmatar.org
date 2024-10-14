@@ -2,9 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 
-const doctrine_id = Astro.url.searchParams.get('doctrine_id') as string
+const doctrine_id = Astro.url.searchParams.get('doctrine_id')
 
 import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
@@ -12,7 +12,7 @@ import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
-let doctrine:DoctrineType | null = null
+let doctrine:DoctrineType
 let fetch_doctrine_error:string | false = false
 let recently_fleets:FleetItem[] = []
 
@@ -43,7 +43,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <DoctrineDetails doctrine={doctrine as DoctrineType} recently_fleets={recently_fleets} />
+    <DoctrineDetails doctrine={doctrine} recently_fleets={recently_fleets} />
     
     <span x-data={`{
         init() {

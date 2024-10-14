@@ -1,20 +1,17 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
-import { format_date } from '@helpers/date'
-import type { PostListUI } from '@dtypes/layout_components'
-import { fetch_posts } from '@helpers/fetching/posts'
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -24,29 +21,14 @@ const can_view_corp_members = is_superuser || user_permissions.includes('eveonli
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
-let posts:PostListUI[] = []
-
-try {
-    posts = await fetch_posts();
-} catch (error) {
-    console.log(error)
-}
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 
-import TextBox from '@components/layout/TextBox.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import BlockList from '@components/compositions/BlockList.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import AllianceReel from '@components/blocks/AllianceReel.astro';
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import Tag from '@components/blocks/Tag.astro';
 
 const page_title = t('alliance.page_title');
 const leading_text = t('alliance.leading_text');
@@ -88,37 +70,6 @@ const leading_text = t('alliance.leading_text');
                 can_view_corp_members={can_view_corp_members}
                 is_superuser={is_superuser}
             />
-
-            {posts.length > 0 &&
-                <Flexblock gap='var(--space-l)'>
-                    <h2>{t('news_timeline')}</h2>
-                    <TextBox>
-                        <p>{t('news_timeline_description')}</p>
-                    </TextBox>
-                </Flexblock>
-        
-                <Wrapper padding_inline='0' padding_block='0' max_width='var(--max-text-width)'>
-                    <BlockList gap='var(--space-2xl)'>
-                        {posts.map(post =>
-                            <FixedFluid width='64px'>
-                                <CharacterPicture
-                                    character_id={post.author.character_id}
-                                    character_name={post.author.character_name}
-                                />
-                                <Flexblock gap='var(--space-xs)'>
-                                    <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
-                                    <FlexInline>
-                                        {post.tags.map(tag =>
-                                            <Tag text={tag} />
-                                        )}
-                                        <small>{format_date(lang, post.date_posted)}</small>
-                                    </FlexInline>
-                                </Flexblock>
-                            </FixedFluid>
-                        )}
-                    </BlockList>
-                </Wrapper>
-            }
         </Flexblock>
 
         <small class="[ cover-credits ][ hidden lg:block ]">
@@ -149,13 +100,5 @@ const leading_text = t('alliance.leading_text');
             color: var(--highlight);
             cursor: pointer;
         }
-    }
-
-    h2 {
-        font-size: var(--step-3);
-    }
-
-    h3 {
-        font-size: var(--step-1);
     }
 </style>

@@ -86,14 +86,14 @@ const PLACEHOLDER_IMAGE = type === 'team' ? '/images/icons/48px-Augmentations.pn
                 {group.name}
             </span>
             <slot>
-                {is_valid_http_url(group?.description as string) ?
+                {is_valid_http_url(group.description) ?
                     <small>
                         <a href={group.description} target="_blank">
                             {DESCRIPTION_TEXT[type]}
                         </a>
                     </small>
                     :
-                    <small set:html={marked.parseInline(group.description as string, { renderer })} />
+                    <small set:html={marked.parseInline(group.description, { renderer })} />
                 }
             </slot>
         </Flexblock>

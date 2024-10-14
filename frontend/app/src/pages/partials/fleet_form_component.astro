@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -25,18 +25,18 @@ import type { Audience } from '@dtypes/api.minmatar.org'
 import type { Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic } from '@dtypes/layout_components'
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id'))
 
 import type { FleetUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
-let fleet:FleetUI | null = null
-let fleet_commander:CharacterBasic | null = null
+let fleet:FleetUI
+let fleet_commander:CharacterBasic
 let fetch_doctrines_error:string | false = false
-let locations:Location[] = []
-let audiences:Audience[] = []
+let locations:Location[]
+let audiences:Audience[]
 
 try {
     if (!isNaN(fleet_id)) {

@@ -79,7 +79,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
     
     const user_application = user_id ? corporation_applications.findLast( (application) => application.user_id == user_id ) : undefined
     
-    let application_detail:CorporationApplicationDetails | null = null
+    let application_detail:CorporationApplicationDetails
     try {
         if (user_application)
             application_detail = await get_corporation_applications_by_id(access_token, api_corporation.corporation_id, user_application.application_id)
@@ -99,7 +99,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
 }
 
 export async function get_user_corporation_id(user_id:number) {
-    let user_character:EveCharacterProfile | null = null
+    let user_character:EveCharacterProfile
     user_character = (user_id ? await get_user_character(user_id) : null)
     return !user_character ? null : (user_character?.corporation_id ?? null)
 }

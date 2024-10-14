@@ -21,14 +21,10 @@ export async function get_system_moons_data(auth_token:string, system_name:strin
     let scanned_moons:MoonUI[] = []
     let planet_moons:PlanetMoonsUI[] = []
     let total_scanned:number = 0
-    let sun_type_id:number | null = null
+    let sun_type_id:number
 
     try {
         const system_id = await get_system_id(system_name)
-
-        if (!system_id)
-            throw new Error(t('invalid_system_id'))
-
         planets = await find_system_planets(system_id)
         moons = await find_systems_moons([system_id])
         scanned_moons = await fetch_scanned_moons(auth_token, system_name)

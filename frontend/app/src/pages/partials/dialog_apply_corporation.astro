@@ -4,13 +4,13 @@ const { t } = i18n(Astro.url)
 
 import type { CorporationObject, CorporationType, GroupStatus } from '@dtypes/layout_components'
 
-const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
-const corporation_name = Astro.url.searchParams.get('corporation_name') as string
-const alliance_id = parseInt(Astro.url.searchParams.get('alliance_id') as string)
-const alliance_name = Astro.url.searchParams.get('alliance_name') as string
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id'))
+const corporation_name = Astro.url.searchParams.get('corporation_name')
+const alliance_id = parseInt(Astro.url.searchParams.get('alliance_id'))
+const alliance_name = Astro.url.searchParams.get('alliance_name')
 const corporation_type = Astro.url.searchParams.get('corporation_type') as CorporationType
 const status = Astro.url.searchParams.get('status') as GroupStatus
-const active = JSON.parse(Astro.url.searchParams.get('active') as string)
+const active = JSON.parse(Astro.url.searchParams.get('active'))
 const message = Astro.url.searchParams.get('message')
 
 const corporation:CorporationObject = {
@@ -20,6 +20,11 @@ const corporation:CorporationObject = {
     alliance_name: alliance_name,
     corporation_type: corporation_type,
     active: active,
+    biography: null,
+    introduction: null,
+    requirements: null,
+    timezones: null,
+    status: null
 }
 
 import Flexblock from '@components/compositions/Flexblock.astro';

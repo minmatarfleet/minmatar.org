@@ -8,7 +8,7 @@ import { get_auth_url } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!auth_token || !user) {
@@ -20,15 +20,15 @@ import type { CorporationObject, Alert, CorporationStatusType } from '@dtypes/la
 import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
 import type { CorporationApplication } from '@dtypes/api.minmatar.org'
 
-let corporation:CorporationObject | null = null
+let corporation:CorporationObject
 let create_corporation_application_error:string | false = false
 let application:CorporationApplication 
 
 if (Astro.request.method === "POST") {
     try {
-        corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationObject
+        corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationObject
         const application_text = await Astro.request.formData()
-        const description = JSON.parse(JSON.parse( application_text.get("data")?.valueOf() as string ))
+        const description = JSON.parse(JSON.parse( application_text.get("data").valueOf() as string ))
 
         if (!description)
             throw new Error(t('invalid_description'));
@@ -77,7 +77,7 @@ import CorporationStatus from '@components/blocks/CorporationStatus.astro';
 ---
 
 <CorporationStatus
-    corporation={corporation as CorporationObject }
+    corporation={corporation}
     is_user_corporation={false}
     alert={alert}
 />

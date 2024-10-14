@@ -8,7 +8,7 @@ import { get_auth_url } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!auth_token || !user) {
@@ -36,22 +36,21 @@ let alliance_corporations:Corporation[]
 let user_character:EveCharacterProfile
 let is_fleet_pilot = false
 let readonly = false
-let notification_subscriptions:NotificationSubscription[] = []
+let notification_subscriptions:NotificationSubscription[]
 
 try {
     pilots = await get_characters(auth_token)
     alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
     const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character.corporation_id) : undefined
-    is_fleet_pilot = (user_corporation !== undefined)
+    is_fleet_pilot = (user_corporation && user_corporation !== undefined)
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
 }
 
 try {
-    if (is_fleet_pilot)
-        notification_subscriptions = await get_user_subscriptions(user.user_id)
+    if (is_fleet_pilot) notification_subscriptions = await get_user_subscriptions(user.user_id)
 } catch (error) {
     console.log(error)
 }
@@ -139,8 +138,8 @@ const page_title = t('account.page_title');
                             type="button"
                             hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
                             hx-swap="outerHTML transition:true"
-                            hx-on--before-request="this.setAttribute('disabled','');"
-                            hx-on--after-request="this.removeAttribute('disabled')"
+                            hx-on::before-request="this.setAttribute('disabled','');"
+                            hx-on::after-request="this.removeAttribute('disabled')"
                         >
                             {t('refresh_discord_roles')}
                         </Button>

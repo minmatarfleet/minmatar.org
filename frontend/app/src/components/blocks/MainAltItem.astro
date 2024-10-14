@@ -32,8 +32,8 @@ import Tag from './Tag.astro';
         character_id={member.character_id}
         character_name={member.character_name}
         corporation={{
-            id: member.corporation_id as number,
-            name: member.corporation_name as string,
+            id: member.corporation_id,
+            name: member.corporation_name,
         }}
     />
     {!member.registered &&

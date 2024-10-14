@@ -47,9 +47,9 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
     
     let capabilities:ShipFittingCapabilities = {}
     q.map( (i) => {
-        const translation = TRANSLATE[i?.attributeName ?? '']
-        if (translation)
-            capabilities[translation] = i.value
+        if (TRANSLATE[i.attributeName]) {
+            capabilities[TRANSLATE[i.attributeName]] = i.value
+        }
     })
 
     return capabilities

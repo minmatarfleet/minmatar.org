@@ -15,7 +15,7 @@ const {
     alliance,
 } = Astro.props
 
-let alliance_eve:AllianceEvE | null = null
+let alliance_eve:AllianceEvE
 let get_eve_alliance_error
 if (!alliance?.name) {
     try {

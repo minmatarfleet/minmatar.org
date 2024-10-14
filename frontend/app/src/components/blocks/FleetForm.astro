@@ -207,7 +207,7 @@ import Grid from '@components/compositions/Grid.astro';
                                 hx-validate="true"
                                 hx-get={translatePath('/partials/doctrine_component')}
                                 hx-target="#doctrine-hx-target"
-                                hx-on--after-request="this.removeAttribute('disabled')"
+                                hx-on::after-request="this.removeAttribute('disabled')"
                                 hx-trigger="load, change"
                                 hx-swap="innerHTML transition:true"
                                 hx-indicator=".loader"

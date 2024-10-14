@@ -175,14 +175,14 @@ export type FleetTypes = typeof fleet_types[number]
 export interface Fleet {
     id:                 number;
     type:               FleetTypes;
-    audience?:          string;
+    audience:           string;
     description:        string;
     start_time:         Date;
-    fleet_commander?:   number;
+    fleet_commander:    number;
     doctrine_id:        number;
     location:           string;
     disable_motd:       boolean;
-    tracking?:          Tracking;
+    tracking:           Tracking;
 }
 
 export interface FleetBasic {
@@ -287,34 +287,6 @@ export interface VerifyStructureTimerRequest {
     corporation_name:   string;
     alliance_name:      string;
 }
-
-export interface Post {
-    post_id:            number;
-    state:              PostStates;
-    title:              string;
-    seo_description:    string;
-    slug:               string;
-    content?:           string;
-    date_posted:        Date;
-    user_id:            number;
-    tag_ids:            number[];
-}
-
-export interface PostParams {
-    title?:             string;
-    seo_description?:   string;
-    state?:             PostStates;
-    content?:           string;
-    tag_ids?:           number[];
-}
-
-export interface PostTag {
-    tag_id:     number;
-    tag:        string;
-}
-
-export const post_states = [ 'draft', 'published', 'trash' ] as const
-export type PostStates = typeof post_states[number]
 
 export interface FreightRoute {
     orgin:          FreightLocation;

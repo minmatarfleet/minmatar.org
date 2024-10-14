@@ -30,8 +30,8 @@ fitting_ship_types.forEach((fitting_ship_type) => {
      // = [ ...fittings_grouped_by_ship_type, ...fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)) ]
 })
 
-let fitting_type_filter:string[] = [];
-let ship_type_filter:string[] = [];
+let fitting_type_filter = [];
+let ship_type_filter = [];
 
 for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
@@ -77,7 +77,7 @@ const page_title = t('fitting.list.page_title');
             fitting_name_filter: '',
             fitting_type_filter: '-1',
             ship_type_filter: '-1',
-            fits_count: ${fittings.length},
+            fits_count: '${fittings.length}',
             countVisibleElements(selector, parent = document) {
                 const elements = parent.querySelectorAll(selector)
                 let visible_count = 0

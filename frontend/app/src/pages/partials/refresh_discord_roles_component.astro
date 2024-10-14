@@ -11,7 +11,7 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const token_name = is_friend ? 'guest_auth_token' : 'auth_token'
-const auth_token = Astro.cookies.has(token_name) ? (Astro.cookies.get(token_name)?.value as string) : false
+const auth_token = Astro.cookies.has(token_name) ? Astro.cookies.get(token_name).value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -53,8 +53,8 @@ import Button from '@components/blocks/Button.astro';
     type="button"
     hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
     hx-swap="outerHTML transition:true"
-    hx-on--before-request="this.setAttribute('disabled','');"
-    hx-on--after-request="this.removeAttribute('disabled')"
+    hx-on::before-request="this.setAttribute('disabled','');"
+    hx-on::after-request="this.removeAttribute('disabled')"
     x-data={`{
         button_label: '${updated ? t('discord_roles_updated') : t('refresh_discord_roles')}',
         init() {

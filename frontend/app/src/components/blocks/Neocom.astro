@@ -7,7 +7,7 @@ interface Props {
     user_is_director:   boolean;
     user_is_superadmin: boolean;
     authenticated:      boolean;
-    user_permissions:   string[];
+    user_permissions:        string[];
 }
 
 const {
@@ -21,7 +21,6 @@ const {
 const primary_character = Astro.cookies.has('primary_pilot')
 
 const can_view_intel = user_permissions.includes('structures.view_evestructuretimer')
-const can_view_posts = user_permissions.includes('posts.add_evepost')
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -34,7 +33,6 @@ import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
-import NotepadEvEIcon from '@components/icons/NotepadEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
@@ -118,16 +116,6 @@ const page = Astro.url.pathname
                     href={translatePath('/character/assets/user/')}
                 >
                     <AssetsEvEIcon />
-                </NeocomButton>
-            }
-            {can_view_posts &&
-                <NeocomButton
-                    active={page.startsWith(translatePath('/posts/'))}
-                    title='neocom.manage_posts'
-                    description='posts.description'
-                    href={translatePath('/posts/')}
-                >
-                    <NotepadEvEIcon />
                 </NeocomButton>
             }
             {!is_prod_mode() &&

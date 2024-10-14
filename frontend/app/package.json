@@ -27,8 +27,6 @@
     "@libsql/client": "^0.6.2",
     "@midudev/tailwind-animations": "^0.0.7",
     "@sentry/astro": "^7.110.0",
-    "@toast-ui/editor": "^3.2.2",
-    "@toast-ui/editor-plugin-code-syntax-highlight": "^3.1.0",
     "@types/alpinejs": "^3.13.5",
     "@types/marked": "^6.0.0",
     "astro": "latest",

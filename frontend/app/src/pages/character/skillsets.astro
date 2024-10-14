@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!auth_token || !user)
@@ -20,14 +20,14 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!user.is_superuser && !user_permissions.includes('eveonline.view_evecharacter'))
     return HTTP_404_Not_Found()
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
+const character_id = parseInt(Astro.url.searchParams.get('character_id'))
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 
 import type { SkillsetsUI } from '@dtypes/layout_components'
 import { get_skillsets } from '@helpers/fetching/characters'
 
-let character_skillsets:SkillsetsUI | null = null
+let character_skillsets:SkillsetsUI
 let get_character_skillsets_error:string | false = false
 try {
     character_skillsets = await get_skillsets(auth_token, character_id)
@@ -114,10 +114,10 @@ const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets'
             />
             :
             <SkillsetsList
-                skillsets={character_skillsets?.skillsets as []}
+                skillsets={character_skillsets.skillsets}
                 character={{
-                    character_id: character_skillsets?.character_id as number,
-                    character_name: character_skillsets?.character_name as string,
+                    character_id: character_skillsets.character_id,
+                    character_name: character_skillsets.character_name,
                 }}
             />
         }

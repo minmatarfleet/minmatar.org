@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : null
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : null
 const user_id = user?.user_id ?? null
 
@@ -13,7 +13,7 @@ import { get_associates_data } from '@helpers/pages/associates'
 import type { AssociatesData } from '@helpers/pages/associates'
 
 let associates_data:AssociatesData = {}
-let data_fetching_error:string | null = null
+let data_fetching_error:string
 
 try {
     associates_data = await get_associates_data(auth_token, lang, user_id)
@@ -91,7 +91,7 @@ const page_description = t('corporations.associates.leading_text');
                 :
                 <CorporationsList
                     corporations={corporations}
-                    user_corporation_id={user_corporation_id ?? 0}
+                    user_corporation_id={user_corporation_id}
                     disable_applications={true}
                 />
             }

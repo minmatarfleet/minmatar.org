@@ -273,26 +273,6 @@
         }
     },
     {
-        "slug": "posts",
-        "alt": "icon.notepad.alt",
-        "path": "/posts/",
-        "publish": true,
-        "icon": "/images/icons/48px-Notepad.png",
-        "description": "page_finder.posts.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
-    },
-    {
-        "slug": "posts_trash",
-        "path": "/posts/trash/",
-        "publish": true,
-        "description": "page_finder.posts.trash.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
-    },
-    {
         "slug": "assets.user",
         "alt": "icon.assets.alt",
         "path": "/character/assets/user/",

@@ -41,8 +41,8 @@ import Tippy from '@components/blocks/Tippy.astro';
         hx-indicator=".loader"
         hx-trigger="click"
         hx-swap="outerHTML transition:true"
-        hx-on--before-request="this.setAttribute('disabled','');"
-        hx-on--after-request="this.removeAttribute('disabled')"
+        hx-on::before-request="this.setAttribute('disabled','');"
+        hx-on::after-request="this.removeAttribute('disabled')"
         hx-target="#mumble-connect-button"
     >
         {t('connect_to_mumble')}

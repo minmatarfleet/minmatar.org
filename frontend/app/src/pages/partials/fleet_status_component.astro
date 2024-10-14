@@ -8,13 +8,13 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
+const fleet_id = parseInt(Astro.url.searchParams.get('id'))
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
@@ -28,8 +28,8 @@ import { send_active_fleet_notification } from '@helpers/notifications'
 
 let fetch_fleets_error:string | false = false
 let start_fleet_error:string | false = false
-let fleet:FleetUI | null = null
-let user_character:EveCharacterProfile | null = null
+let fleet:FleetUI
+let user_character:EveCharacterProfile
 let alert:Alert | false = false
 let start_tracking = false
 
@@ -57,7 +57,7 @@ try {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
-const is_fleet_commander = (user_character?.character_id === fleet?.fleet_commander_id)
+const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
 
 const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet_id}`
 
@@ -77,7 +77,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     />
     :
     <FleetStatus
-        fleet={fleet as FleetUI }
+        fleet={fleet}
         is_fleet_commander={is_fleet_commander}
         alert={alert}
         start_tracking={start_tracking === true}

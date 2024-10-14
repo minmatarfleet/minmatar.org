@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -24,15 +24,15 @@ import { find_systems_moons } from '@helpers/sde/map'
 import type { SystemCardInfo } from '@dtypes/layout_components'
 
 let systems:SystemCardInfo[] = []
-let filtered_systems:SystemCardInfo[] = []
-let fetch_moon_system_data_error:string | null = null
+let filtered_systems:SystemCardInfo[]
+let fetch_moon_system_data_error:string
 
 let home_system = Astro.url.searchParams.get('home')
 
 if (home_system)
     Astro.cookies.set('moon_tracking_home_system_name', home_system, { path: '/' })
 
-home_system = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.cookies.get('moon_tracking_home_system_name')?.value ?? 'Sosala') : 'Sosala'
+home_system = Astro.cookies.has('moon_tracking_home_system_name') ? Astro.cookies.get('moon_tracking_home_system_name').value : 'Sosala'
 
 const distance = Astro.url.searchParams.get('distance') ?? '10'
 const region = Astro.url.searchParams.get('region') ?? '1'
@@ -61,11 +61,11 @@ try {
         return system
     }))
 
-    filtered_systems = filtered_systems.filter((system) => (system?.moons_count ?? 0) > 0)
+    filtered_systems = filtered_systems.filter((system) => system.moons_count > 0)
 
     filtered_systems = filtered_systems.map(system => {
         const moons = moon_summary_systems.find(summary_system => summary_system.system === system.system_name)
-        system.progress = (system?.moons_count ?? 0) > 0 ? ((moons?.scanned_moons ?? 0) / (system.moons_count as number)) * 100 : 0
+        system.progress = system?.moons_count > 0 ? ((moons?.scanned_moons ?? 0) / system.moons_count) * 100 : 0
         return system
     })
 } catch (error) {

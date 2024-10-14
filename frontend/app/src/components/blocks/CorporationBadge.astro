@@ -17,7 +17,7 @@ const {
     border = false,
 } = Astro.props
 
-let corporation_eve:CorporationEvE | null = null
+let corporation_eve:CorporationEvE
 let get_eve_corporation_error
 if (!corporation?.name) {
     try {

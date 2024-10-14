@@ -7,15 +7,12 @@ import type { Module } from '@dtypes/layout_components'
 import { get_item_id } from '@helpers/sde/items'
 
 let get_module_props_error
-let module:Module | null = null
+let module:Module
 let module_name
 let module_id
 try {
     module_name = Astro.url.searchParams.get('module_name')
     module = await get_module_props(module_name)
-
-    if (!module)
-        throw new Error(t('invalid_module'))
 
     module_id = module?.id ?? await get_item_id(module_name)
 } catch (error) {

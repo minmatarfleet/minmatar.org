@@ -36,7 +36,7 @@ import Tag from '@components/blocks/Tag.astro';
             <small class="truncate">{t('main_character')}</small>
         }
         {!member.is_main &&
-            <small class="truncate">{member?.main_character?.character_name} {t('alt_character').toLowerCase()}</small>
+            <small class="truncate">{member.main_character.character_name} {t('alt_character').toLowerCase()}</small>
         }
     </PilotBadge>
     {!member.exempt && !member.registered &&

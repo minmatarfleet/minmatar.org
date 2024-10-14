@@ -7,18 +7,20 @@ import { prod_error_messages } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 import { get_all_alliance_members } from '@helpers/fetching/corporations'
 import type { CharacterBasic } from '@dtypes/layout_components'
 
-const character_name = Astro.url.searchParams.get('character_name') as string
+const character_name = Astro.url.searchParams.get('character_name')
+console.log('character_name')
+console.log(character_name)
 
 let members:CharacterBasic[] = []
 let get_groups_members_error:string | false = false
 try {
-    members = ((character_name?.length ?? 0) > 2 && auth_token && user ? await get_all_alliance_members(auth_token) : [])
+    members = (character_name?.length > 2 && auth_token && user ? await get_all_alliance_members(auth_token) : [])
     console.log(character_name)
     members = members.filter(member => member.character_name.toLowerCase().includes(character_name.toLowerCase()))
     members.sort((a, b) => a.character_name.localeCompare(b.character_name))

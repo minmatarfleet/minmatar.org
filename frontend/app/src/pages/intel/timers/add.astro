@@ -9,7 +9,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -180,7 +180,7 @@ const page_title = t('intel.timers.add.page_title');
                                     width="64px"
                                     breakpoint="60%"
                                 >
-                                    <img loading="lazy" height="64" width="64" src={STRUCTURE_ICONS[DEFAULT_STRUCTURE_TYPE as any]} x-bind:src={`get_structure_icon(structure_type)`} alt={DEFAULT_STRUCTURE_TYPE} />
+                                    <img loading="lazy" height="64" width="64" src={STRUCTURE_ICONS[DEFAULT_STRUCTURE_TYPE]} x-bind:src={`get_structure_icon(structure_type)`} alt={DEFAULT_STRUCTURE_TYPE} />
                                     <Select id="structure_type" x-model="structure_type" name="structure_type" required>
                                         {structure_types.map(type =>
                                             <option value={type}>{t(type)}</option>    

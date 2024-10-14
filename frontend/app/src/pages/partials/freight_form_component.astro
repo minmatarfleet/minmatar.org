@@ -8,13 +8,13 @@ import { prod_error_messages } from '@helpers/env'
 import { fetch_freight_routes } from '@helpers/fetching/freights'
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
-let freight_routes_data:FreightRoutesData | null = null
-let default_route:string | number | null = null
-let fetch_freight_routes_error:string | null = null
+let freight_routes_data:FreightRoutesData
+let default_route:string | number
+let fetch_freight_routes_error:string
 
 try {
     freight_routes_data = await fetch_freight_routes()
-    default_route = freight_routes_data.routes[0]?.value ?? ''
+    default_route = freight_routes_data.routes[0].value
 } catch (error) {
     fetch_freight_routes_error = prod_error_messages() ? t('fetch_freight_routes_error') : error.message
 }
@@ -39,8 +39,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     :
     <ComponentBlock width='narrow'>
         <FreightForm
-            freight_routes_data={freight_routes_data as FreightRoutesData}
-            default_route={default_route as string | number}
+            freight_routes_data={freight_routes_data}
+            default_route={default_route}
         />
     </ComponentBlock>
 }

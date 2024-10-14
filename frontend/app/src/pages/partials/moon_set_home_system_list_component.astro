@@ -7,7 +7,7 @@ import type { sde_filtered_system } from '@helpers/sde/map'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { sec_status_class } from '@helpers/eve'
 
-const system_name = Astro.url.searchParams.get('system') as string
+const system_name = Astro.url.searchParams.get('system')
 
 let systems:sde_filtered_system[] = []
 

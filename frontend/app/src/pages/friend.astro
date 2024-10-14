@@ -7,7 +7,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('guest_auth_token') ? (Astro.cookies.get('guest_auth_token')?.value as string) : false
+const auth_token = Astro.cookies.has('guest_auth_token') ? Astro.cookies.get('guest_auth_token').value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -107,8 +107,8 @@ const page_title = t('friend.page_title');
                                 type="button"
                                 hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
                                 hx-swap="outerHTML transition:true"
-                                hx-on--before-request="this.setAttribute('disabled','')"
-                                hx-on--after-request="this.removeAttribute('disabled')"
+                                hx-on::before-request="this.setAttribute('disabled','');"
+                                hx-on::after-request="this.removeAttribute('disabled')"
                             >
                                 {t('refresh_discord_roles')}
                             </Button>

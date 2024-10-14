@@ -7,7 +7,6 @@ h1, h2, h3 {
     font-family: var(--heading-font);
     text-transform: uppercase;
     font-weight: 400;
-    line-height: 1.2;
 }
 
 h4 {
@@ -18,11 +17,11 @@ h1 {
     font-size: var(--step-5);
 }
 
-h2 {
-    font-size: var(--step-1);
+/*h2 {
+    font-size: var(--step-3);
 }
 
-/*h3 {
+h3 {
     font-size: var(--step-2);
 }
 
@@ -41,8 +40,4 @@ label {
 img {
     font-size: var(--step--2);
     color: var(--foreground);
-}
-
-textarea.uppercase:focus {
-    text-transform: none !important;
 }

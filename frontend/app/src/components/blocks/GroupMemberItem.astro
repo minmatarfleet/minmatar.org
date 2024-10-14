@@ -85,7 +85,7 @@ import Tag from './Tag.astro';
                                 url: '${GROUPS_MEMBERS_PARTIAL_URL}?${query_string({
                                     group_id: group.id.toString(),
                                     group_type: group_type,
-                                    user_id: member?.user_id?.toString(),
+                                    user_id: member.user_id.toString(),
                                     character_id: member.character_id.toString(),
                                     character_name: member.character_name,
                                     group_name: group.name,

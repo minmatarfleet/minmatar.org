@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : null
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 const can_view_page = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
 
 import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
-const corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationBasic
+const corporation = JSON.parse(Astro.url.searchParams.get('corporation')) as CorporationBasic
 
 const corporation_id = corporation?.id ?? 0
 const application_id = parseInt(Astro.url.searchParams.get('application_id') ?? '0')
@@ -30,13 +30,12 @@ if (!can_view_page || !valid_request)
 
 import { get_applications_data } from '@helpers/pages/applications'
 import type { ApplicationsData } from '@helpers/pages/applications'
-import type { CorporationApplications } from '@dtypes/layout_components'
 
 let applications_data:ApplicationsData = {}
 let data_fetching_error
 
 try {
-    applications_data = await get_applications_data(auth_token as string, lang)
+    applications_data = await get_applications_data(auth_token, lang)
 } catch (error) {
     data_fetching_error = error
 }
@@ -52,7 +51,7 @@ const {
 import type { Alert } from '@dtypes/layout_components'
 import { accept_corporation_applications, reject_corporation_applications } from '@helpers/api.minmatar.org/applications'
 
-let alert:Alert | null = null
+let alert:Alert
 
 if (Astro.request.method === "POST") {
     const action = Astro.url.searchParams.get('action')
@@ -67,9 +66,8 @@ if (Astro.request.method === "POST") {
         const application_action_error = prod_error_messages() ? (action == 'accept' ? t('approve_application_error') : t('deny_application_error')) : error.message
 
         const application = corporations_applications
-            .find((corporations_application) => corporations_application.corporation_id === corporation_id)
-            ?.applications
-            ?.find((application) => application.id === application_id)
+            .find((corporations_application) => corporations_application.corporation_id === corporation_id).applications
+            .find((application) => application.id === application_id)
 
         if (application_action_error) {
             alert = {

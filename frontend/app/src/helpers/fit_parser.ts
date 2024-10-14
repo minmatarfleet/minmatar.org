@@ -9,8 +9,8 @@ export async function parse_eft(fitting_eft: string) {
     type EFTSection = 'name' | 'low' | 'med' | 'high' | 'rigs' | 'subsystem' | 'skip-drones' | 'drones' | 'cargo'
     let EFTSections:EFTSection[] = [ 'name', 'low', 'med', 'high', 'rigs', 'subsystem', 'drones', 'cargo' ]
     let has_subsystem = false
-    let ship_fitting:ShipFitting | null = null
-    let section:EFTSection | null = null
+    let ship_fitting:ShipFitting
+    let section:EFTSection
     const TRANSLATE = {
         'low': 'low_slots',
         'med': 'med_slots',
@@ -63,7 +63,7 @@ export async function parse_eft(fitting_eft: string) {
             continue
         }
 
-        if (line === '' && section) {
+        if (line === '') {
             if (section !== 'cargo' && section !== 'drones')
                 section = EFTSections[EFTSections.indexOf(section) + 1]
             
@@ -76,7 +76,7 @@ export async function parse_eft(fitting_eft: string) {
 
         if (section === 'drones' || section === 'cargo') {
             let words:string[] = line.split(' ')
-            const inline_amount_string:string = words.pop() as string
+            const inline_amount_string:string = words.pop()
             let amount:number = parseInt(inline_amount_string.substring(1))
 
             if (isNaN(amount)) {
@@ -85,51 +85,46 @@ export async function parse_eft(fitting_eft: string) {
                 module_name = words.join(' ')
             }
 
-            const item_id = await get_item_id(module_name) ?? 0
+            const item_id = await get_item_id(module_name)
 
             if (section === 'drones' && await get_item_category(item_id) !== 'Drone')
                 section = 'cargo'
 
-            if (ship_fitting) {
-                if (!ship_fitting[TRANSLATE[section]])
+            if (!ship_fitting[TRANSLATE[section]])
                 ship_fitting[TRANSLATE[section]] = []
 
-                ship_fitting[TRANSLATE[section]].push({
-                    id: await get_item_id(module_name),
-                    name: module_name,
-                    amount: amount,
-                })
-            }
+            ship_fitting[TRANSLATE[section]].push({
+                id: await get_item_id(module_name),
+                name: module_name,
+                amount: amount,
+            })
         } else {
             if (section === 'name')
                 section = 'low'
 
-            if (ship_fitting && !ship_fitting[TRANSLATE[section]])
+            if (!ship_fitting[TRANSLATE[section]])
                 ship_fitting[TRANSLATE[section]] = []
 
             if (module_name === EMPTY_SLOTS_TAGS[section]) {
-                if (ship_fitting)
-                    ship_fitting[TRANSLATE[section]].push(null)
+                ship_fitting[TRANSLATE[section]].push(null)
             } else {
-                const module:Module | null = await get_module_props(module_name)
+                const module:Module = await get_module_props(module_name)
 
                 if (module && (SHIP_SLOTS[section] !== module.slot_name))
                     throw new Error(`Error parsing EFT: Module "${module_name}" is not ${SHIP_SLOTS[section]}`);
 
-                if (ship_fitting) {
-                    ship_fitting[TRANSLATE[section]].push(
-                        module
-                        ?
-                        module
-                        :
-                        {
-                            id: await get_item_id(module_name),
-                            name: module_name,
-                            meta_name: 'Tech I',
-                            slot_name: SHIP_SLOTS[section],
-                        }
-                    )
-                }
+                ship_fitting[TRANSLATE[section]].push(
+                    module
+                    ?
+                    module
+                    :
+                    {
+                        id: await get_item_id(module_name),
+                        name: module_name,
+                        meta_name: 'Tech I',
+                        slot_name: SHIP_SLOTS[section],
+                    }
+                )
             }
         }
     }

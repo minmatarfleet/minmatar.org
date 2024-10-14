@@ -7,11 +7,11 @@ import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
-let doctrine:DoctrineType | null = null
+let doctrine:DoctrineType
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-let fetch_doctrines_error:string | null = null
+let fetch_doctrines_error:string
 
 try {
     doctrine = await fetch_doctrine_by_id(doctrine_id)
@@ -34,5 +34,5 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <DoctrineItem role="listitem" doctrine={doctrine as DoctrineType} />
+    <DoctrineItem role="listitem" doctrine={doctrine} />
 }
