@@ -60,8 +60,8 @@ const {
                     clearTimeout(throttle_timer)
 
                 throttle_timer = setTimeout(function () {
-                    const content_input = document.getElementById('input.post-content') as HTMLInputElement
-                    if (content_input) content_input.value = editor.getMarkdown()
+                    const content_textarea = document.getElementById('post-content') as HTMLTextAreaElement
+                    if (content_textarea) content_textarea.value = editor.getMarkdown()
                 }, 750)
             }
         }
