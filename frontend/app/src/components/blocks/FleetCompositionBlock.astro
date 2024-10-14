@@ -73,8 +73,8 @@ const members = composition.reduce(
                 hx-swap="outerHTML transition:true"
                 hx-indicator=".loader"
                 x-on:click="start_dscan_animation()"
-                hx-on::before-request="this.setAttribute('disabled','');"
-                hx-on::after-request="this.removeAttribute('disabled')"
+                hx-on--before-request="this.setAttribute('disabled','');"
+                hx-on--after-request="this.removeAttribute('disabled')"
             >
                 <RefreshIcon slot="icon" />
                 {t('reload')}

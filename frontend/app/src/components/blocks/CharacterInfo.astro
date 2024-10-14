@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 interface Props {
@@ -26,10 +26,10 @@ import { get_character_faction, get_race_cover_image, parse_eve_html } from '@he
 import { is_html } from '@helpers/string'
 import type { CharacterRaces } from '@dtypes/layout_components'
 
-let character:CharacterEvE
+let character:CharacterEvE | null = null
 let get_character_error:string | false = false
-let race:CharacterRaces
-let cover:string
+let race:CharacterRaces | null = null
+let cover:string | null = null
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -105,15 +105,15 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                     <VerticalCenter>
                         <Flexblock gap='var(--space-xs)' class="[ w-full ]">
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
-                                <span class="[ text-[var(--highlight)] ]">{character.name}</span>
-                                <small>Born: <span data-tippy-content={humanize_date_diff(lang, character.birthday, new Date())}>{format_date_time(lang, character.birthday)}</span></small>
-                                <small>Security Status: {character.security_status.toFixed(1)}</small>
+                                <span class="[ text-[var(--highlight)] ]">{character?.name}</span>
+                                <small>Born: <span data-tippy-content={humanize_date_diff(lang, character?.birthday as Date, new Date())}>{format_date_time(lang, character?.birthday)}</span></small>
+                                <small>Security Status: {character?.security_status.toFixed(1)}</small>
                             </Flexblock>
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
                                 <CorporationBadge corporation={{
-                                    id: character.corporation_id
+                                    id: character?.corporation_id ?? 0
                                 }} />
-                                {character.alliance_id &&
+                                {character?.alliance_id &&
                                     <AllianceBadge alliance={{
                                         id: character.alliance_id
                                     }} />
@@ -145,10 +145,10 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                 </div>
             </FixedFluid>
             
-            {character.description !== '' &&
+            {character?.description !== '' &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('description')}>
-                        <div class:list={{ 'eve-html': is_html(character.description) }} set:html={parse_eve_html(character.description)} />
+                        <div class:list={{ 'eve-html': is_html(character?.description) }} set:html={parse_eve_html(character?.description as string)} />
                     </SectionH4>
                 </ComponentBlock>
             }

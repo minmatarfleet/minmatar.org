@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -18,7 +18,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!user)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('id'))
+const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
@@ -31,10 +31,10 @@ import { get_user_character } from '@helpers/fetching/characters'
 import { get_system_id } from '@helpers/sde/map'
 
 let fetch_fleets_error:string | false = false
-let fleet:FleetUI
-let user_character:EveCharacterProfile
-let fleet_composition:FleetCompositionUI[]
-let fleet_radar:FleetRadarUI[]
+let fleet:FleetUI | null = null
+let user_character:EveCharacterProfile | null = null
+let fleet_composition:FleetCompositionUI[] | null = null
+let fleet_radar:FleetRadarUI[] | null = null
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
@@ -42,6 +42,9 @@ try {
 
     const staggering_solar_system = fleet.location.split(' - ')[0]
     const staggering_solar_system_id = await get_system_id(staggering_solar_system)
+
+    if (!staggering_solar_system_id)
+        throw new Error(t('invalid_staggering_solar_system'))
 
     const members = await get_fleet_members(auth_token as string, fleet_id)
     fleet_composition = await group_members_by_ship(members)
@@ -53,7 +56,7 @@ try {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
 
-const is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+const is_fleet_commander = (user_character?.character_id === fleet?.fleet_commander_id)
 
 if (!is_fleet_commander)
     return HTTP_404_Not_Found()
@@ -76,8 +79,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     />
     :
     <FleetCompositionBlock
-        composition={fleet_composition}
-        fleet_radar={fleet_radar}
-        fleet_id={fleet.id}
+        composition={fleet_composition as FleetCompositionUI[]}
+        fleet_radar={fleet_radar as FleetRadarUI[]}
+        fleet_id={fleet?.id as number}
     />
 }

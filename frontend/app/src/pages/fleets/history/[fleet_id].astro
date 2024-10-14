@@ -9,9 +9,8 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const user_agent = Astro.request.headers.get('user-agent')
-const is_discord_bot = user_agent.includes('Discordbot')
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -24,7 +23,7 @@ const HOME_REDIRECT_URL = `${translatePath('/')}`
 if (!user)
     return Astro.redirect(!is_discord_bot ? AUTH_REDIRECT_URL : HOME_REDIRECT_URL)
 
-const fleet_id = parseInt(Astro.params.fleet_id)
+const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
@@ -35,8 +34,8 @@ import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 
 let fetch_fleets_error:string | false = false
-let fleet:FleetUI
-let user_character:EveCharacterProfile
+let fleet:FleetUI | null = null
+let user_character:EveCharacterProfile | null = null
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
@@ -51,7 +50,7 @@ try {
 
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
-                         user_character.character_id === fleet.fleet_commander_id
+                         user_character?.character_id === fleet?.fleet_commander_id
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(false)}`)
 
@@ -69,7 +68,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-const page_title = `${t('fleet')} ${fleet.id}`;
+const page_title = `${t('fleet')} ${fleet?.id}`;
 ---
 
 <Viewport title={page_title}>
@@ -111,7 +110,7 @@ const page_title = `${t('fleet')} ${fleet.id}`;
             />
             :
             <FleetDetails
-                fleet={fleet}
+                fleet={fleet as FleetUI }
                 history={true}
                 can_remove_fleet={can_remove_fleet}
             />

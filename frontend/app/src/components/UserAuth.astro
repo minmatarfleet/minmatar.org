@@ -16,10 +16,10 @@ import { get_auth_url } from '@helpers/env'
 
 const is_auth = Astro.cookies.has('auth_token')
 const href = is_auth ? translatePath('/account/') : get_auth_url()
-const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.character_id) : null
 const primary_pilot_name = primary_pilot ? primary_pilot.character_name : null
-const discord_avatar = Astro.cookies.has('avatar') ? Astro.cookies.get('avatar').value : null
+const discord_avatar = Astro.cookies.has('avatar') ? (Astro.cookies.get('avatar')?.value as string) : null
 const no_pilot_avatar = discord_avatar && discord_avatar.endsWith('None.png') ? '/images/no_pilot.jpg' : discord_avatar
 const portrait = primary_pilot_avatar ?? no_pilot_avatar
 

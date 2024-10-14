@@ -23,7 +23,7 @@ const {
     ...attributes
 } = Astro.props
 
-const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot').value) : null
+const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`

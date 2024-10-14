@@ -16,17 +16,26 @@ const subheader_content = await Astro.slots.render('subheader');
 ---
 
 <div
-    class="[ post-header ][ mt-[var(--space-xl)] ]"
+    class="[ post-header ]"
     x-data={`{
         sticky: false,
+        init() {
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.intersectionRatio < 1 && entry.boundingClientRect.top <= 0)
+                        this.sticky = true
+                    else
+                        this.sticky = false
+                },
+                { threshold: [1] }
+            )
+            
+            observer.observe($el)
+        }
     }`}
-    x-bind:class="sticky ? 'sticky' : ''"
+    x-bind:class="{ sticky: sticky }"
 >
-    <div
-        class="[ relative z-10 pt-[3px] ]"
-        x-intersect:leave.full="sticky = true"
-        x-intersect.enter.full="sticky = false"
-    >
+    <div class="[ relative z-10 pt-[3px] ]">
         <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
             <slot />
         </Wrapper>
@@ -64,11 +73,14 @@ const subheader_content = await Astro.slots.render('subheader');
     .post-header {
         transition: var(--fast-transition);
         position: sticky;
-        top: -3px;
+        top: -1px;
         z-index: var(--header-z-index);
+        padding-top: var(--space-xl);        
+        border-top: 1px solid transparent;
 
         &.sticky {
             box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+            padding-top: 0;
 
             .subheader-bar {
                 border-top: solid 1px var(--border-color);

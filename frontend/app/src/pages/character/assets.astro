@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!auth_token || !user)
@@ -20,7 +20,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 if (!user.is_superuser && !user_permissions.includes('eveonline.view_evecharacter'))
     return HTTP_404_Not_Found()
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 if (isNaN(character_id))
     return HTTP_404_Not_Found()
 

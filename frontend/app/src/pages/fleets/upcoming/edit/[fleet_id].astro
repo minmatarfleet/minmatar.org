@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -20,7 +20,7 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_404_Not_Found()
 
-const fleet_id = parseInt(Astro.params.fleet_id)
+const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
@@ -84,11 +84,11 @@ import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
-let fleet:FleetUI
-let fleet_commander:CharacterBasic
+let fleet:FleetUI | null = null
+let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error:string | false = false
-let locations:Location[]
-let audiences:Audience[]
+let locations:Location[] | null = null
+let audiences:Audience[] | null = null
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
@@ -190,7 +190,7 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
                     fleet_commander={fleet_commander}
                     eve_date={eve_date}
                     eve_time={eve_time}
-                    disable_motd={fleet.disable_motd}
+                    disable_motd={fleet?.disable_motd}
                     lang={lang}
                 />
             }

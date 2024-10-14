@@ -1,16 +1,27 @@
 <script is:inline src="/js/countdown.js"></script>
 
 <script>
-    import { navigate } from 'astro:transitions/client'
+	import { navigate } from 'astro:transitions/client'
 
 	(window as any).navigate = function (route) {
 		return navigate(route)
 	}
 </script>
 
+<script>
+	import _slugify from 'slugify'
+
+	(window as any).slugify = function (string) {
+		return _slugify(string, {
+			replacement: '_',
+			remove: /[*+~.,\-\()'"!:@]/g
+		}).toLowerCase()
+	}
+</script>
+
 <link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+	rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
 />
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>

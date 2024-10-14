@@ -20,37 +20,30 @@ import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
 
 export async function get_all_groups_requests(access_token:string, group_type:GroupItemType, user_id:number, superuser?:boolean) {
     let groups:Group[] = []
-    let requests:GroupRequestListUI[]
 
     if(group_type === 'team')
         groups = superuser ? await get_teams() : await get_owned_teams(user_id)
     else
         groups = superuser ? await get_sigs() : await get_owned_sigs(user_id)
 
-    requests = await Promise.all(groups.map(async (request) => get_group_request(access_token, request, group_type)));
-
-    return requests
+    return await Promise.all(groups.map(async (request) => get_group_request(access_token, request, group_type))) as GroupRequestListUI[]
 }
 
 export async function get_group_requests_by_id(access_token:string, group_id:number, group_type:GroupItemType) {
     let group:Group
-    let request:GroupRequestListUI
 
     if(group_type === 'team')
         group = await get_team_by_id(group_id)
     else
         group = await get_sig_by_id(group_id)
 
-    request = await get_group_request(access_token, group, group_type)
-
-    return request
+    return await get_group_request(access_token, group, group_type) as GroupRequestListUI
 }
 
 export async function get_group_request_by_id(access_token:string, group_id:number, request_id:number, group_type:GroupItemType) {
     let group:Group
-    let api_request:SigRequest | TeamRequest
+    let api_request:SigRequest | TeamRequest | undefined
     let api_requests:(SigRequest | TeamRequest)[]
-    let request:GroupRequestUI
 
     if(group_type === 'team')
         group = await get_team_by_id(group_id)
@@ -64,9 +57,7 @@ export async function get_group_request_by_id(access_token:string, group_id:numb
 
     api_request = api_requests.find((i) => i.id === request_id)
 
-    request = await get_group_request_ui(group, api_request, group_type)
-
-    return request
+    return api_request !== undefined ? await get_group_request_ui(group, api_request, group_type) : null
 }
 
 const get_group_request = async (access_token:string, group:Group, group_type:GroupItemType) => {

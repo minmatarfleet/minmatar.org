@@ -6,8 +6,8 @@ export const remove_space = (text:string):string => {
     return text.replaceAll(" ", "_")
 }
 
-export const query_string = (params):URLSearchParams => {
-    return new URLSearchParams(params)
+export const query_string = (params):string => {
+    return new URLSearchParams(params).toString()
 }
 
 export const is_valid_http_url = (string:string):boolean => {
@@ -25,7 +25,7 @@ export const is_valid_http_url = (string:string):boolean => {
 export const slugify = (string:string):string => {
     return _slugify(string, {
         replacement: '_',
-        remove: /[*+~.\-\()'"!:@]/g
+        remove: /[*+~.,\-\()'"!:@]/g
     })
 }
 
@@ -54,4 +54,16 @@ export function decode_unicode_escapes(text) {
 export async function strip_markdown(text:string) {
     const $ = cheerio.load(await marked.parse(text))
     return $('p:first').text()
+}
+
+export const parse_error_message = (error_details:string) => {
+    // Regular expression to match the error message inside the single quotes after "error": 
+    const regex = /'error': '([^']+)'/;
+    const match = error_details.match(regex);
+    
+    if (match && match[1]) {
+        return match[1];
+    } else {
+        return null; // or handle the case when the pattern doesn't match
+    }
 }

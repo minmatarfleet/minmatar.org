@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-const middleware_error = Astro.cookies.has('middleware_error') ? Astro.cookies.get('middleware_error').value : false
+const middleware_error = Astro.cookies.has('middleware_error') ? (Astro.cookies.get('middleware_error')?.value as string) : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 
 import { ViewTransitions } from 'astro:transitions';

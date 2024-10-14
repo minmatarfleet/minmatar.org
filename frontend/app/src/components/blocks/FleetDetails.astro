@@ -156,8 +156,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             {fleet?.tracking &&
                 <ComponentBlock>
                     <FleetCompositionBlock
-                        composition={fleet_composition}
-                        fleet_radar={fleet_radar}
+                        composition={fleet_composition ?? []}
+                        fleet_radar={fleet_radar ?? []}
                         fleet_id={fleet.id}
                     />
                 </ComponentBlock>

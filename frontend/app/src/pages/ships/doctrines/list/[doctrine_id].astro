@@ -2,9 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 
-const { doctrine_id } = Astro.params;
+const doctrine_id = Astro.params.doctrine_id ?? '0';
 
 import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
@@ -12,15 +12,16 @@ import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
-let doctrine:DoctrineType
+let doctrine:DoctrineType | null = null
 let fetch_doctrine_error:string | false = false
-let recently_fleets:FleetItem[] = null
+let recently_fleets:FleetItem[] | null = null
 
 try {
     doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
+
     if (auth_token) {
         recently_fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : null
-        recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
+        recently_fleets = (recently_fleets ?? []).filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
     }
 } catch (error) {
     fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
@@ -83,7 +84,7 @@ const page_title = `${doctrine?.name} ${t('doctrine')}`;
                 }}
             />
             :
-            <DoctrineDetails doctrine={doctrine} recently_fleets={recently_fleets} />
+            <DoctrineDetails doctrine={doctrine as DoctrineType } recently_fleets={recently_fleets as FleetItem[]} />
         }
     </PageWide>
 </Viewport>

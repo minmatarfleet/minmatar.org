@@ -38,7 +38,7 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
         const subscription_id = cookies.has('subscription_id') ? parseInt(cookies.get('subscription_id').value) : null
         
         try {
-            subscription_id > 0 ? await remove_subscription(subscription_id) : null
+            (subscription_id ?? 0) > 0 ? await remove_subscription(subscription_id as number) : null
             cookies.delete('subscription_id', { path: '/' })
         } catch (error) {
             console.log(error.message)

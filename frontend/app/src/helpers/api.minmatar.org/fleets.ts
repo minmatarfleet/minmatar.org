@@ -1,5 +1,5 @@
 import type { FleetMember, Fleet, FleetRequest, Audience, Location, FleetBasic, FleetUsers } from '@dtypes/api.minmatar.org'
-import { get_error_message } from '@helpers/string'
+import { get_error_message, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
@@ -339,18 +339,6 @@ export async function get_fleet_members(access_token:string, id:number) {
         return await response.json() as FleetMember[];
     } catch (error) {
         throw new Error(`Error fetching fleet members: ${error.message}`);
-    }
-}
-
-const parse_error_message = (error_details:string) => {
-    // Regular expression to match the error message inside the single quotes after "error": 
-    const regex = /'error': '([^']+)'/;
-    const match = error_details.match(regex);
-    
-    if (match && match[1]) {
-        return match[1];
-    } else {
-        return null; // or handle the case when the pattern doesn't match
     }
 }
 

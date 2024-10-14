@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
@@ -42,8 +42,8 @@ structures.forEach((structure) => {
     regions[structure.region] = structure.region;
 })
 
-let alliance_filter = [];
-let region_filter = [];
+let alliance_filter:string[] = [];
+let region_filter:string[] = [];
 
 for (let i in alliances)
     alliance_filter.push(alliances[i])

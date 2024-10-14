@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -49,7 +49,7 @@ try {
 
 const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}`)
 
-const verify_timer_error = Astro.cookies.has('verify_timer_error') ? Astro.cookies.get('verify_timer_error').value : false
+const verify_timer_error = Astro.cookies.has('verify_timer_error') ? (Astro.cookies.get('verify_timer_error')?.value ?? false) : false
 if (Astro.cookies.has('verify_timer_error'))
     Astro.cookies.delete('verify_timer_error', { path: '/' })
 
@@ -120,8 +120,8 @@ const page_title = t('intel.timers.page_title');
                     x-bind:hx-get={`\`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=\${!show_duplicated}\``}
                     hx-target=".structure-timers-list-container"
                     hx-indicator=".loader"
-                    hx-on::before-request="this.setAttribute('disabled','');"
-                    hx-on::after-request="this.removeAttribute('disabled')"
+                    hx-on--before-request="this.setAttribute('disabled','');"
+                    hx-on--after-request="this.removeAttribute('disabled')"
                     hx-swap="outerHTML transition:true"
                     x-on:click="show_duplicated = !show_duplicated; $nextTick(() => htmx.process($el))"
                 >

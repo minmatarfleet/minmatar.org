@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
@@ -27,7 +27,7 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 let get_all_mains_alts_error:string | false = false
 let characters:Character[] = []
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
 
 try {
@@ -60,7 +60,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     :
     <UserCharacters
         user={user as User}
-        character_name={character_name}
+        character_name={character_name as string}
         characters={characters}
     />
 }

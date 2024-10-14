@@ -2,16 +2,17 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
-let token = null
-let user = null
+let token:string | null = null
+let user:User | null = null
 try {
-    token = Astro.url.searchParams.get('token')
+    token = Astro.url.searchParams.get('token') as string
     user = jose.decodeJwt(token)
     await get_characters(token)
 } catch (error) {
@@ -21,9 +22,9 @@ try {
 const ONE_DAY_IN_MS = 24*60*60*1000
 const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
 Astro.cookies.set('auth_token', token, { path: '/', expires: in_20_days })
-Astro.cookies.set('avatar', user.avatar, { path: '/', expires: in_20_days })
+Astro.cookies.set('avatar', user?.avatar ?? '', { path: '/', expires: in_20_days })
 
-const redirect = Astro.cookies.has('redirect_after_auth') ? Astro.cookies.get('redirect_after_auth').value : translatePath('/account/')
+const redirect = Astro.cookies.has('redirect_after_auth') ? (Astro.cookies.get('redirect_after_auth')?.value as string) : translatePath('/account/')
 Astro.cookies.delete('redirect_after_auth', { path: '/' })
 
 return Astro.redirect(redirect)

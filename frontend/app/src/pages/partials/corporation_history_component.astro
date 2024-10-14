@@ -1,5 +1,5 @@
 ---
-const character_id = parseInt(Astro.url.searchParams.get('character_id'))
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
 
 import CorporationHistory from '@components/blocks/CorporationHistory.astro'
 ---

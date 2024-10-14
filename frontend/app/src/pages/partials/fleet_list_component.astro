@@ -8,7 +8,7 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token').value : false
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
@@ -18,9 +18,9 @@ import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
-let fleets:FleetItem[]
+let fleets:FleetItem[] | null = null
 
-const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming'))
+const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
     fleets = auth_token ? await fetch_fleets_auth(auth_token as string, upcoming) : await fetch_fleets(upcoming)
@@ -72,7 +72,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                     setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
             },
             init() {
-                fleets_count = ${fleets.length}
+                fleets_count = ${fleets?.length}
             
                 if (fleets_count > 0)
                     tippy($el, tippy_options)
@@ -82,16 +82,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             }
         }`}
     >
-        {fleets.length > 0 &&
+        {(fleets?.length ?? 0) > 0 &&
             <small class="[ absolute right-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
         }
 
         <FleetList
-            fleets={fleets}
+            fleets={fleets as FleetItem[]}
             history={!upcoming}
         />
 
-        {fleets.length === 0 &&
+        {(fleets?.length ?? 0) === 0 &&
             <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
         }
     </div>

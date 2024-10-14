@@ -29,14 +29,10 @@ export async function fetch_fleets(upcoming:boolean = true) {
     return api_fleets_id.map((api_fleet) => {
         return {
             id: api_fleet.id,
-            description: null,
             audience: api_fleet.audience,
             fleet_commander_id: 0,
             fleet_commander_name: t('not_available'),
-            location: null,
             start_time: new Date('2100-01-01'),
-            type: null,
-            tracking: null,
         } as FleetItem
     } )
 }
@@ -50,17 +46,14 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
         fleet = {
             id: fleet_id,
             doctrine_id: 0,
-            audience: null,
-            fleet_commander: null,
             location: '',
             type: 'non_strategic',
             description: '',
             start_time: new Date('2100-01-01'),
-            tracking: null
         } as Fleet
     }
         
-    let character_profile:EveCharacterProfile
+    let character_profile:EveCharacterProfile | null = null
     if (fleet?.fleet_commander)
         character_profile = await get_user_character(fleet.fleet_commander)
 
@@ -81,18 +74,18 @@ export async function add_fleet_info(access_token:string, fleet_id:number) {
 export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
     const fleet = await get_fleet_by_id(access_token, fleet_id)
         
-    let character_profile:EveCharacterProfile
+    let character_profile:EveCharacterProfile | null = null
     if (fleet?.fleet_commander)
         character_profile = await get_user_character(fleet.fleet_commander)
 
-    let doctrine:DoctrineType
+    let doctrine:DoctrineType | null = null
     if (fleet?.doctrine_id)
         doctrine = await fetch_doctrine_by_id(fleet.doctrine_id)
 
     return {
         id: fleet.id,
         description: fleet.description,
-        fleet_commander_id: character_profile.character_id,
+        fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('unknown_character'),
         location: fleet.location,
         start_time: fleet.start_time,
@@ -149,7 +142,7 @@ export async function fetch_fleet_users(fleet_id:number) {
     const fleet_users = await get_fleet_users(fleet_id)
         
     if (fleet_users?.length > 0) {
-        return fleet_users.find(() => true).user_ids
+        return fleet_users.find(() => true)?.user_ids
     }
 
     return []
