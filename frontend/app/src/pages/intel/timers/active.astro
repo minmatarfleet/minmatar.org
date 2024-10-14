@@ -114,7 +114,7 @@ const page_title = t('intel.timers.page_title');
         </FlexInline>
 
         <FlexInline slot="subheader">
-            {duplicated_count == 0 &&
+            {duplicated_count > 0 &&
                 <Button
                     size='sm'
                     x-bind:hx-get={`\`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=\${!show_duplicated}\``}
