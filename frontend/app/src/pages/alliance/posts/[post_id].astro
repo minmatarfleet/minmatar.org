@@ -102,7 +102,7 @@ const page_title = post?.title ?? t('new_post')
                         </FlexInline>
                     }
 
-                    <Flexblock gap='var(--space-m)' set:html={marked.parse(post?.content as string, { renderer })}>
+                    <Flexblock class="[ post ]" gap='var(--space-m)' set:html={marked.parse(post?.content as string, { renderer })}>
                 </Flexblock>
             </TextBox>
         </Flexblock>

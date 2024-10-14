@@ -109,7 +109,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <UserPosts posts={posts} />
+    <UserPosts posts={posts} trash={state === 'trash' ? true : undefined} />
 }
 
 <div

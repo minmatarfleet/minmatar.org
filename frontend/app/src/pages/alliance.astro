@@ -105,13 +105,13 @@ const leading_text = t('alliance.leading_text');
                                     character_id={post.author.character_id}
                                     character_name={post.author.character_name}
                                 />
-                                <Flexblock>
+                                <Flexblock gap='var(--space-xs)'>
                                     <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
                                     <FlexInline>
-                                        <small>{format_date(lang, post.date_posted)}</small>
                                         {post.tags.map(tag =>
                                             <Tag text={tag} />
                                         )}
+                                        <small>{format_date(lang, post.date_posted)}</small>
                                     </FlexInline>
                                 </Flexblock>
                             </FixedFluid>
