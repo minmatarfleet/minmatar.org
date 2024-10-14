@@ -38,10 +38,6 @@ const distance = Astro.url.searchParams.get('distance') ?? '10'
 const region = Astro.url.searchParams.get('region') ?? '1'
 const security = Astro.url.searchParams.get('security') ?? 'low'
 
-console.log(distance)
-console.log(region)
-console.log(security)
-
 try {
     systems = await get_moon_systems(home_system, parseInt(distance), region === '1')
 
