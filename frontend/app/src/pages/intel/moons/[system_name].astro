@@ -135,7 +135,7 @@ const page_title = `${system_name} ${t('moons')}`;
                     {planet_moons.map(planet => {
                         const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
                         return (
-                            (planet?.moons?.length ?? 0 > 0) &&
+                            ((planet?.moons?.length ?? 0) > 0) &&
                             <Flexblock gap='var(--space-l)'>
                                 <Flexblock gap='0'>
                                     <Badge
@@ -152,7 +152,7 @@ const page_title = `${system_name} ${t('moons')}`;
                                             <Flexblock gap='0' class="[ w-full ]">
                                                 <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
                                                 {moon.scanned ?
-                                                    moon.monthly_revenue ?? 0 >= 0 ?
+                                                    ((moon?.monthly_revenue ?? 0) >= 0) ?
                                                         <small data-tippy-content={number_name(moon.monthly_revenue as number, lang)}>
                                                             <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {(moon.monthly_revenue as number).toLocaleString()} ISK</FlexInline>
                                                         </small> :
