@@ -33,7 +33,56 @@ import TextGroup from '@components/blocks/TextGroup.astro';
         {posts.map(post =>
             <ComponentBlock x-show="show_item($el)" width='narrow'>
                 <Flexblock gap='var(--space-m)'>
-                    <h3>{post.title}</h3>
+                    <FlexInline gap='var(--space-l)' justification='space-between'>
+                        <h3>{post.title}</h3>
+                        {(post.state !== 'trash' && post.state === 'draft') ?
+                            <Button
+                                type="button"
+                                size='sm'
+                                color='green'
+                                x-data={`{
+                                    show_publish_post_confirm() {
+                                        show_confirm_dialog({
+                                            title: '${t('publish_post_dialog_title')}',
+                                            content: '${t('publish_post_dialog_text')}',
+                                            hx: {
+                                                method: 'patch',
+                                                url: '${USER_POST_LIST_PARTIAL_URL}?id=${post.post_id}&new_state=published',
+                                                target: '#user-post-list',
+                                                swap: 'outerHTML transition:true'
+                                            }
+                                        })
+                                    }
+                                }`}
+                                x-on:click="show_publish_post_confirm"
+                            >
+                                {t('publish')}
+                            </Button>
+                            :
+                            post.state !== 'trash' &&
+                            <Button
+                                type="button"
+                                size='sm'
+                                x-data={`{
+                                    show_unpublish_post_confirm() {
+                                        show_confirm_dialog({
+                                            title: '${t('unpublish_post_dialog_title')}',
+                                            content: '${t('unpublish_post_dialog_text')}',
+                                            hx: {
+                                                method: 'patch',
+                                                url: '${USER_POST_LIST_PARTIAL_URL}?id=${post.post_id}&new_state=draft',
+                                                target: '#user-post-list',
+                                                swap: 'outerHTML transition:true'
+                                            }
+                                        })
+                                    }
+                                }`}
+                                x-on:click="show_unpublish_post_confirm"
+                            >
+                                {t('switch_to_draft')}
+                            </Button>
+                        }
+                    </FlexInline>
                     <FlexInline gap='var(--space-l)' justification='space-between'>
                         <FlexInline gap='var(--space-l)'>
                             <TextGroup title={t('state')}><small>{t(post.state as any)}</small></TextGroup>

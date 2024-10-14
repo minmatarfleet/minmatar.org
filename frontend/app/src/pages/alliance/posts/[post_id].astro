@@ -54,10 +54,12 @@ import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
 
 const page_title = post?.title ?? t('new_post')
+const page_description = post?.excerpt
 ---
 
 <Viewport
     title={page_title}
+    meta_description={page_description}
     components={{
         alert_dialog: true
     }}
