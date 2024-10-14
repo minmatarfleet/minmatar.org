@@ -54,7 +54,7 @@ import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
 
 const page_title = post?.title ?? t('new_post')
-const page_description = post?.excerpt
+const page_description = post?.excerpt ?? page_title
 ---
 
 <Viewport
@@ -94,9 +94,11 @@ const page_description = post?.excerpt
                         <small>{format_date(lang, post?.date_posted)}</small>
                     </PilotBadge>
 
-                    <p class="[ excerpt ]">{post?.excerpt}</p>
+                    {post?.excerpt &&
+                        <p class="[ excerpt ]">{post?.excerpt}</p>
+                    }
 
-                    {(post?.tags?.length ?? 0 > 0) &&
+                    {((post?.tags?.length ?? 0) > 0) &&
                         <FlexInline>
                             {post?.tags.map(tag =>
                                 <Tag text={tag} />
