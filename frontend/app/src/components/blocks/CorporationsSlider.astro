@@ -14,7 +14,7 @@ let {
     user_corporation_id = 0,
 } = Astro.props
 
-const CORPORATIONS_WIDTH_SLIDE = [
+const CORPORATIONS_WITH_SLIDE = [
     'Rattini Tribe',
     'Black Omega Security',
     'Balls Deep Inc.',
@@ -31,11 +31,14 @@ let corp_filter:number[] = []
 import { get_corporation_logo } from '@helpers/eve_image_server';
 import { get_alliance_logo } from '@helpers/eve_image_server';
 
-corporations = corporations.filter( (i) => i.corporation_id != 98735318 ) // Hide Minmatar Fleet Holdings
+const MINMATAR_FLEET_HOLDINGS_ID = 98735318
+const BLACK_RIFTER_COFFIN_COMPANY  = 98726032
+const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY ]
+corporations = corporations.filter( (i) => !CORPORATIONS_FILTER.includes(i.corporation_id) )
 
 const pagination_icons:string[] = []
 corporations.forEach( (corp, i) => {
-    if (!CORPORATIONS_WIDTH_SLIDE.includes(corp.corporation_name)) {
+    if (!CORPORATIONS_WITH_SLIDE.includes(corp.corporation_name)) {
         corporations_with_no_slide.push(corp)
         corp_filter.push(corp.corporation_id)
     }
@@ -44,7 +47,7 @@ corporations.forEach( (corp, i) => {
 corporations = corporations.filter( (i) => !corp_filter.includes(i.corporation_id) )
 let corporations_sorted:CorporationObject[] = []
 
-CORPORATIONS_WIDTH_SLIDE.forEach(corp_name => {
+CORPORATIONS_WITH_SLIDE.forEach(corp_name => {
     const corp = corporations.find(corporation => corporation.corporation_name === corp_name)
     if (corp !== undefined) {
         corporations_sorted.push(corp)
