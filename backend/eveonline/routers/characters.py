@@ -346,9 +346,22 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 logger.info(
                     "New token has more scopes, deleting old character token"
                 )
+                character.token = token
                 character.token.delete()
-            character.token = token
-            character.save()
+                character.save()
+            elif not character.token:
+                logger.info(
+                    "Character %s has no token, adding token",
+                    token.character_id,
+                )
+                character.token = token
+                character.save()
+            else:
+                logger.info(
+                    "Character %s already has better token, throwing this one away",
+                    token.character_id,
+                )
+                token.delete()
         else:
             logger.info(
                 "Creating new character %s with token",
