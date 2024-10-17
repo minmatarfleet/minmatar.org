@@ -3,9 +3,13 @@ import logging
 
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveuniverse.models import EveFaction
 
 from app.celery import app
+from eveonline.helpers.affiliations import (
+    create_or_update_affiliation_entities,
+    update_character_with_affiliations,
+)
+from groups.tasks import update_affiliation
 
 from .helpers.assets import create_character_assets
 from .helpers.skills import (
@@ -13,7 +17,6 @@ from .helpers.skills import (
     upsert_character_skills,
 )
 from .models import (
-    EveAlliance,
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
@@ -27,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 @app.task
 def update_character_affilliations():
-    known_corporation_ids = set()
-    known_alliance_ids = set()
-    known_faction_ids = set()
     character_ids = EveCharacter.objects.values_list("character_id", flat=True)
 
     character_id_batches = []
@@ -51,101 +51,49 @@ def update_character_affilliations():
             faction_id = result.get("faction_id")
 
             character = EveCharacter.objects.get(character_id=character_id)
-            if (
-                corporation_id
-                and corporation_id not in known_corporation_ids
-                and not EveCorporation.objects.filter(
-                    corporation_id=corporation_id
-                ).exists()
-            ):
-                logger.info(
-                    "Creating corporation %s for character %s",
-                    corporation_id,
-                    character_id,
-                )
-                EveCorporation.objects.create(corporation_id=corporation_id)
-                known_corporation_ids.add(corporation_id)
-            if (
-                alliance_id
-                and alliance_id not in known_alliance_ids
-                and not EveAlliance.objects.filter(
-                    alliance_id=alliance_id
-                ).exists()
-            ):
-                logger.info(
-                    "Creating alliance %s for character %s",
-                    alliance_id,
-                    character_id,
-                )
-                EveAlliance.objects.create(alliance_id=alliance_id)
-                known_alliance_ids.add(alliance_id)
-
-            if (
-                faction_id
-                and faction_id not in known_faction_ids
-                and not EveFaction.objects.filter(id=faction_id).exists()
-            ):
-                logger.info(
-                    "Creating faction %s for character %s",
-                    faction_id,
-                    character_id,
-                )
-                EveFaction.objects.get_or_create_esi(id=faction_id)
-                known_faction_ids.add(faction_id)
-
-            updated = False
-            if (corporation_id and not character.corporation) or (
-                corporation_id
-                and corporation_id != character.corporation.corporation_id
-            ):
-                character.corporation = EveCorporation.objects.get(
-                    corporation_id=corporation_id
-                )
-                updated = True
-
-            if (alliance_id and not character.alliance) or (
-                alliance_id and alliance_id != character.alliance.alliance_id
-            ):
-                character.alliance = EveAlliance.objects.get(
-                    alliance_id=alliance_id
-                )
-                updated = True
-
-            if not alliance_id and character.alliance:
-                character.alliance = None
-                updated = True
-
-            if (
-                (faction_id and not character.faction)
-                or faction_id
-                and (faction_id != character.faction.id)
-            ):
-                character.faction = EveFaction.objects.get(id=faction_id)
-                updated = True
-
-            if not faction_id and character.faction:
-                character.faction = None
-                updated = True
+            create_or_update_affiliation_entities(
+                corporation_id=corporation_id,
+                alliance_id=alliance_id,
+                faction_id=faction_id,
+            )
+            updated = update_character_with_affiliations(
+                character_id=character_id,
+                corporation_id=corporation_id,
+                alliance_id=alliance_id,
+                faction_id=faction_id,
+            )
 
             if updated:
                 logger.info(
-                    "Updating affiliations for character %s", character_id
+                    "Updated affiliations for character %s", character_id
                 )
-                character.save()
+                update_affiliation.apply_async(args=[character.token.user.id])
 
 
 @app.task
-def update_characters():
+def update_alliance_character_assets():
     counter = 0
-    for character in EveCharacter.objects.all():
-        logger.info("Updating character %s", character.character_id)
-        update_character_skills.apply_async(
-            args=[character.character_id], countdown=counter % 86400
-        )
+    for character in EveCharacter.objects.filter(
+        alliance__name="Minmatar Fleet Alliance"
+    ):
+        logger.info("Updating assets for character %s", character.character_id)
         update_character_assets.apply_async(
-            args=[character.character_id], countdown=counter % 86400
+            args=[character.character_id], countdown=counter % 3600
         )
-        counter += 4
+        counter += 1
+
+
+@app.task
+def update_alliance_character_skills():
+    counter = 0
+    for character in EveCharacter.objects.filter(
+        alliance__name="Minmatar Fleet Alliance"
+    ):
+        logger.info("Updating skills for character %s", character.character_id)
+        update_character_skills.apply_async(
+            args=[character.character_id], countdown=counter % 3600
+        )
+        counter += 1
 
 
 @app.task
