@@ -3,7 +3,6 @@ import logging
 from django.db.models import signals
 from django.dispatch import receiver
 from esi.clients import EsiClientProvider
-from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
@@ -13,7 +12,6 @@ from eveonline.tasks import update_character_assets, update_character_skills
 from .models import (
     EveAlliance,
     EveCharacter,
-    EveCharacterLog,
     EveCorporation,
     EvePrimaryCharacterChangeLog,
 )
@@ -70,24 +68,6 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
         )
 
         instance.save()
-
-
-@receiver(signals.post_save, sender=Token)
-def token_post_save(
-    sender, instance: Token, created, **kwargs
-):  # pylint: disable=unused-argument
-    """Create / update a character when a token is created"""
-    logger.info("Token saved, creating / updating character")
-    character, _ = EveCharacter.objects.get_or_create(
-        character_id=instance.character_id
-    )
-    character.token = instance
-    character.save()
-
-    EveCharacterLog.objects.create(
-        username=instance.user.username,
-        character_name=character.character_name,
-    )
 
 
 @receiver(

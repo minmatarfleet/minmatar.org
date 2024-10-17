@@ -46,8 +46,8 @@ class EveCharacter(models.Model):
         EveFaction, on_delete=models.SET_NULL, blank=True, null=True
     )
 
-    token = models.OneToOneField(
-        Token, on_delete=models.CASCADE, null=True, blank=True
+    token = models.ForeignKey(
+        Token, on_delete=models.SET_NULL, null=True, blank=True
     )
     exempt = models.BooleanField(default=False)
 

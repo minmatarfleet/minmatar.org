@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from ninja import Router
@@ -5,7 +6,6 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from datetime import datetime
 
 from .models import EvePost, EveTag
 
