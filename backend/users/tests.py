@@ -30,16 +30,20 @@ class UserRouterTestCase(TestCase):
 
     def test_get_user_profile_success(self):
         user = self.user
-        Token.objects.create(
+        token = Token.objects.create(
             character_id=634915984,
             user=user,
         )
+        character = EveCharacter.objects.create(
+            character_id=634915984,
+            character_name="Test Character",
+            token=token,
+        )
+
         corporation = EveCorporation.objects.create(
             corporation_id=98726134,
             name="Test Corporation",
         )
-
-        character = EveCharacter.objects.get(character_id=634915984)
         character.corporation = corporation
         character.save()
         discord_user = DiscordUser.objects.create(
