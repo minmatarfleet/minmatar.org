@@ -1,11 +1,9 @@
-from django.test import Client
-
-from django.contrib.auth.models import User, Permission
-
-from app.test import TestCase
-
 from datetime import datetime
 
+from django.contrib.auth.models import Permission, User
+from django.test import Client
+
+from app.test import TestCase
 from lpconversion.models import LpPrice, current_price
 
 BASE_URL = "/api/conversion/orders"

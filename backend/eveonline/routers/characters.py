@@ -1,4 +1,5 @@
 import json
+import logging
 from enum import Enum
 from typing import List, Optional
 
@@ -19,7 +20,6 @@ from eveonline.models import (
     EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
-import logging
 
 logger = logging.getLogger(__name__)
 
