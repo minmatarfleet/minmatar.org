@@ -1,14 +1,11 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
-
-import { get_item_icon } from '@helpers/eve_image_server'
+const { t } = i18n(Astro.url)
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Dropdown from '@components/blocks/Dropdown.astro';
-import Badge from '@components/blocks/Badge.astro';
-import StylessButton from './StylessButton.astro';
+import StationsSelector from '@components/blocks/StationsSelector.astro';
 ---
 
 <Dropdown>
@@ -34,16 +31,5 @@ import StylessButton from './StylessButton.astro';
         <small>{t('minmatar_fleet_hq')}</small>
     </Flexblock>
 
-    <Flexblock gap='var(--space-3xs)'>
-        <StylessButton
-            href={translatePath('/redirects/set_staggering?tag=auga')}
-            class="[ min-w-[350px] ]"
-        >
-            <Badge
-                title="Auga - Minmatar Militia HQ"
-                subtitle={t('auga_hq_description')}
-                image={get_item_icon(35833)}
-            />
-        </StylessButton>
-    </Flexblock>
+    <StationsSelector selected='watermelon'>
 </Dropdown>

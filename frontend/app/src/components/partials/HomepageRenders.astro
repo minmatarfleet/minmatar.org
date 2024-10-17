@@ -1,5 +1,5 @@
 ---
-export const WatermelonCameraXData = `
+export const WatermellonCameraXData = `
     rotation_x: 4.3827,
     rotation_y: 0.251,
     camera: null,
@@ -31,8 +31,8 @@ export const WatermelonCameraXData = `
         this.camera.rotationY = this.rotation_y
     }`
 
-export const WatermelonXData = `init_ccpwgl() {
-    let watermelon
+export const WatermellonXData = `init_ccpwgl() {
+    let watermellon
     let canvas
     let scene
     const mat4 = ccpwgl_int.math.mat4
@@ -74,7 +74,7 @@ export const WatermelonXData = `init_ccpwgl() {
 
     scene.setSunDirection([-0.90, 0.1, 0.7]);
     
-    watermelon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
+    watermellon = scene.loadShip('cl1_t1:aliastra:minmatar', function() {
         camera.focus(this, 1.9)
 
         let matrix = mat4.fromValues(
@@ -171,12 +171,12 @@ export const WatermelonXData = `init_ccpwgl() {
     ccpwgl.enablePostprocessing(true);
 
     function setColor(r, g, b, material) {
-        for (var i = 0; i < watermelon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+        for (var i = 0; i < watermellon.wrappedObjects[0].mesh.opaqueAreas.length; i++)
         {
-            for (var param in watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
-                if (watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+            for (var param in watermellon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+                if (watermellon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
 
-                    watermelon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+                    watermellon.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
                 }
             }
 
@@ -378,6 +378,133 @@ export const AugaMilitiaHQXData = `init_ccpwgl() {
     document.addEventListener('astro:after-swap', () => {
         clearTimeout(rotation_timer)
     })
+}`
+export const SpaceInvadersCameraXData = `
+    rotation_x: -4.68,
+    rotation_y: 0.41,
+    camera: null,
+    resize_canvas: null,
+    moon_rotation_angle: 0,
+    planet_rotation_angle: 0,
+    resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+
+            ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
+        }
+        
+        return needResize;
+    },
+    update() {
+        if (!this.camera) return
+
+        this.camera.rotationX = this.rotation_x
+        this.camera.rotationY = this.rotation_y
+    }`
+
+export const SpaceInvadersXData = `init_ccpwgl() {
+    let minmatar_hq
+    let canvas
+    let scene
+    const mat4 = ccpwgl_int.math.mat4
+
+    canvas = document.getElementById('mainCanvas');
+    
+    ccpwgl.initialize(canvas, fitting.options);
+    ccpwgl_context = canvas.getContext("webgl");
+    
+    camera = ccpwgl.createCamera(canvas, undefined, true);
+    camera.rotationX = rotation_x
+    camera.rotationY = rotation_y
+    camera.fov = 40
+    camera.minDistance = 2300
+    camera.maxDistance = 20000
+    camera.nearPlane = 1000
+    camera.farPlane = 5000000
+    camera.shift = 100.92
+
+    scene = ccpwgl.loadScene('res:/dx9/scene/Universe/a13_cube.red');
+    
+    scene.loadSun('res:/fisfx/lensflare/blue_sun.red', function () {
+        scene.wrappedScene.lensflares.forEach(lensflare=> {
+            lensflare._transform = mat4.fromValues(
+                100, 0, 0, 0,
+                0, 100, 0, 0,
+                0, 0, 100, 0,
+                0, 0, 0, 100
+            )
+            lensflare.mesh.additiveAreas
+            .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
+            .forEach(meshArea => meshArea.display = false);
+
+            lensflare.mesh.additiveAreas
+            .filter(meshArea => meshArea.name.toLowerCase() === "backr")
+            .forEach(meshArea => meshArea.effect.parameters.Size.value = [5.5, 6, 0, 0]);
+        })
+    });
+
+    scene.setSunDirection([-15, 1.6, -6.67]);
+
+    space_invaders = scene.loadShip('cl1_t1:minmatarbase:minmatar', function() {
+        camera.focus(this, 1)
+
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, 4)        
+        rotationMatrix[15] = 1
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+
+        setColor(143, 0, 0, 'Mtl1DiffuseColor')
+        setColor(255, 255, 255, 'Mtl2DiffuseColor')
+        setColor(135, 0, 0, 'Mtl3DiffuseColor')
+        setColor(255, 255, 255, 'Mtl4DiffuseColor')
+
+        setColor(0, 0, 0, 'Mtl1Gloss')
+        setColor(48, 47, 48, 'Mtl2Gloss')
+        setColor(0, 0, 0, 'Mtl3Gloss')
+        setColor(121, 121, 122, 'Mtl4Gloss')
+        
+        setColor(0, 0, 0, 'Mtl1FresnelColor')
+        setColor(240, 178, 72, 'Mtl2FresnelColor')
+        setColor(87, 27, 27, 'Mtl3FresnelColor')
+        setColor(0, 0, 0, 'Mtl4FresnelColor')
+    });
+
+    ccpwgl.enablePostprocessing(true);
+
+    function setColor(r, g, b, material) {
+        for (var i = 0; i < space_invaders.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+        {
+            for (var param in space_invaders.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+                if (space_invaders.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+
+                    space_invaders.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+                }
+            }
+
+        }
+    }
+
+    resize_canvas = ccpwgl_context.canvas
+    resizeCanvasToDisplaySize(resize_canvas)
+    // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 }`
 
 export const OurzadCameraXData = `

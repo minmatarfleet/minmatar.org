@@ -1,0 +1,59 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StaggeringType } from '@dtypes/layout_components'
+import { staggerings } from '@dtypes/layout_components'
+
+interface Props {
+    selected:   StaggeringType;
+}
+
+const {
+    selected
+} = Astro.props
+
+const current_staging = staggerings.find(staggerings => staggerings.includes(selected))
+const staging_to_filter = current_staging !== undefined ? current_staging : 'watermelon'
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+const STAGINGS = [{
+        title: 'Sosala - WATERMELLON',
+        subtitle: t('minmatar_fleet_hq'),
+        type_id: 35833,
+        slug: 'watermelon',
+    }, {
+        title: 'Auga - Minmatar Militia HQ',
+        subtitle: t('auga_hq_description'),
+        type_id: 35833,
+        slug: 'auga',
+    }, {
+        title: 'Yishinoon – Space Invaders',
+        subtitle: t('yishinoon_hq_description'),
+        type_id: 35833,
+        slug: 'yishinoon',
+    }
+]
+
+const staging_list = STAGINGS.filter(staging => staging.slug !== staging_to_filter)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Badge from '@components/blocks/Badge.astro';
+import StylessButton from './StylessButton.astro';
+---
+
+<Flexblock gap='var(--space-3xs)'>
+    {staging_list.map(staging =>
+        <StylessButton
+            href={`${translatePath('/redirects/set_staggering')}?tag=${staging.slug}`}
+            class="[ min-w-[350px] ]"
+        >
+            <Badge
+                title={staging.title}
+                subtitle={staging.subtitle}
+                image={get_item_icon(staging.type_id)}
+            />
+        </StylessButton>
+    )}
+</Flexblock>
