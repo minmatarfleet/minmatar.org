@@ -33,12 +33,12 @@ from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from lpconversion.router import router as conversion_router
+from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from structures.router import router as structures_router
 from users.router import router as users_router
-from market.router import router as market_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)

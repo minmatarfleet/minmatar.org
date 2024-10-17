@@ -1,7 +1,8 @@
 from django.db import models
+from eveuniverse.models import EveType
+
 from fittings.models import EveFitting
 from structures.models import EveStructure
-from eveuniverse.models import EveType
 
 
 class EveMarketContractExpectation(models.Model):
