@@ -13,11 +13,15 @@ from authentication import AuthBearer
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
+    EveCharacterLog,
     EveCharacterSkillset,
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router(tags=["Characters"])
 
@@ -327,17 +331,38 @@ def add_character(request, redirect_url: str, token_type: TokenType):
         if EveCharacter.objects.filter(
             character_id=token.character_id
         ).exists():
+            logger.info(
+                "Character %s already exists, updating token",
+                token.character_id,
+            )
             character = EveCharacter.objects.get(
                 character_id=token.character_id
             )
+            if (
+                character.token
+                and character.token != token
+                and len(token.scopes.all()) > len(character.token.scopes.all())
+            ):
+                logger.info(
+                    "New token has more scopes, deleting old character token"
+                )
+                character.token.delete()
             character.token = token
             character.save()
         else:
+            logger.info(
+                "Creating new character %s with token",
+                token.character_id,
+            )
             character = EveCharacter.objects.create(
                 character_id=token.character_id,
                 character_name=token.character_name,
                 token=token,
             )
+        EveCharacterLog.objects.create(
+            username=request.user.username,
+            character_name=character.character_name,
+        )
         # set as primary character if only one character
         if (
             not EvePrimaryCharacter.objects.filter(
@@ -346,6 +371,11 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             and EveCharacter.objects.filter(token__user=request.user).count()
             == 1
         ):
+            logger.info(
+                "Setting %s as primary character for user %s",
+                character.character_name,
+                request.user.username,
+            )
             EvePrimaryCharacter.objects.create(character=character)
         return redirect(request.session["redirect_url"])
 
