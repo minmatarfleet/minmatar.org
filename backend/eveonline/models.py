@@ -365,37 +365,8 @@ class EveCorporation(models.Model):
                 return
         else:
             logger.info("Skipping CEO for corporation %s", self.name)
-
-        # set alliance
-        logger.info("Updating alliance for corporation %s", self.name)
-        if (
-            "alliance_id" in esi_corporation
-            and esi_corporation["alliance_id"] is not None
-        ):
-            logger.info("Setting alliance for corporation %s", self.name)
-            alliance = EveAlliance.objects.get_or_create(
-                alliance_id=esi_corporation["alliance_id"]
-            )[0]
-            logger.info(
-                "Alliance for corporation %s is %s", self.name, alliance
-            )
-            self.alliance = alliance
-        else:
-            self.alliance = None
-            logger.info("Corporation %s has no alliance", self.name)
-        # set faction
-        logger.info("Updating faction for corporation %s", self.name)
-        if (
-            "faction_id" in esi_corporation
-            and esi_corporation["faction_id"] is not None
-        ):
-            logger.info("Setting faction for corporation %s", self.name)
-            self.faction = EveFaction.objects.get_or_create_esi(
-                id=esi_corporation["faction_id"]
-            )[0]
-        else:
-            self.faction = None
-            logger.info("Corporation %s has no faction", self.name)
+        # affiliations are set by update_character_affilliations
+        # better endpoint / faster
         self.save()
 
     def __str__(self):
