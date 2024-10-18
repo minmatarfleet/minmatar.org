@@ -2,34 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Dropdown from '@components/blocks/Dropdown.astro';
+import StationInfo from '@components/blocks/StationInfo.astro';
 import StationsSelector from '@components/blocks/StationsSelector.astro';
 ---
 
-<Dropdown>
-    <Flexblock
-        class="[ py-[var(--space-2xs)] ]"
+<Dropdown>    
+    <StationInfo
+        system="Auga"
+        security="0.4"
+        consterllation="Hed"
+        region="Heimatar"
+        station_name="Auga – Minmatar Militia HQ"
+        station_description={t('auga_hq_description')}
         slot="button"
-        gap='var(--space-2xs)'
-    >
-        <FlexInline gap='var(--space-3xs)' class="[ items-end ]">
-            <h2>Auga <span class="[ text-[var(--security-status-point-4)] ]">0.4</span></h2>
-            <FlexInline gap='var(--space-3xs)' class="[ items-end ]">
-                <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
-                </svg>
-                <h3><small>Hed</small></h3>
-                <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
-                </svg>
-                <h3><small>Heimatar</small></h3>
-            </FlexInline>
-        </FlexInline>
-        <h3>Auga – Minmatar Militia HQ</h3>
-        <small class="[ whitespace-nowrap ]">{t('auga_hq_description')}</small>
-    </Flexblock>
+    />
 
     <StationsSelector selected='auga'>
 </Dropdown>
