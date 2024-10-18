@@ -1,0 +1,44 @@
+---
+interface Props {
+    system:                 string;
+    security:               string;
+    consterllation:         string;
+    region:                 string;
+    station_name:           string;
+    station_description:    string;
+}
+
+const {
+    system,
+    security,
+    consterllation,
+    region,
+    station_name,
+    station_description,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock
+    class="[ py-[var(--space-2xs)] ]"
+    slot="button"
+    gap='var(--space-2xs)'
+>
+    <FlexInline gap='var(--space-3xs)' class="[ !items-end !flex-nowrap ]">
+    <h2 class="[ !text-nowrap ]">{system} <span class="[ text-[var(--security-status-point-4)] ]">{security}</span></h2>
+        <FlexInline gap='var(--space-3xs)' class="[ !items-end !flex-nowrap ]">
+            <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+            </svg>
+            <h3 class="[ !text-nowrap ]"><small>{consterllation}</small></h3>
+            <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+            </svg>
+            <h3 class="[ !text-nowrap ]"><small>{region}</small></h3>
+        </FlexInline>
+    </FlexInline>
+    <h3>{station_name}</h3>
+    <small class="[ whitespace-nowrap ]">{station_description}</small>
+</Flexblock>
