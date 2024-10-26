@@ -97,6 +97,21 @@ def update_alliance_character_skills():
 
 
 @app.task
+def update_alliance_character_killmails():
+    counter = 0
+    for character in EveCharacter.objects.filter(
+        alliance__name="Minmatar Fleet Alliance"
+    ):
+        logger.info(
+            "Updating killmails for character %s", character.character_id
+        )
+        update_character_killmails.apply_async(
+            args=[character.character_id], countdown=counter % 3600
+        )
+        counter += 1
+
+
+@app.task
 def update_character_skills(eve_character_id):
     logger.info("Updating skills for character %s", eve_character_id)
     upsert_character_skills(eve_character_id)

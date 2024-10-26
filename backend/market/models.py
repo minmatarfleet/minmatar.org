@@ -36,11 +36,7 @@ class EveMarketContract(models.Model):
     Model for tracking market contracts
     """
 
-    contract_id = models.BigIntegerField(unique=True)
-    status = models.CharField(
-        max_length=32,
-        choices=(("outstanding", "Outstanding"), ("completed", "Completed")),
-    )
+    id = models.BigIntegerField(unique=True, primary_key=True)
     title = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     assignee_id = models.BigIntegerField(null=True, blank=True)
