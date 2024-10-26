@@ -15,6 +15,7 @@ CELERY_IMPORTS = (
     "reminders.tasks",
     "moons.tasks",
     "freight.tasks",
+    "market.tasks",
 )
 
 
@@ -58,6 +59,8 @@ INSTALLED_APPS = [
     "posts.apps.PostsConfig",
     # Moons
     "moons.apps.MoonsConfig",
+    # Market
+    "market.apps.MarketConfig",
     # 'eve_auth',
     "eveuniverse",
     # 'colorfield',

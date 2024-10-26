@@ -19,7 +19,13 @@ from eveonline.models import (
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
 )
-from eveonline.scopes import ADVANCED_SCOPES, BASIC_SCOPES, CEO_SCOPES
+from eveonline.scopes import (
+    ADVANCED_SCOPES,
+    BASIC_SCOPES,
+    CEO_SCOPES,
+    FREIGHT_CHARACTER_SCOPES,
+    MARKET_CHARACTER_SCOPES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +37,8 @@ class TokenType(Enum):
     PUBLIC = "Public"
     BASIC = "Basic"
     ADVANCED = "Advanced"
+    MARKET = "Market"
+    FREIGHT = "Freight"
 
 
 class BasicCharacterResponse(BaseModel):
@@ -324,6 +332,10 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             scopes = ["publicData"]
         case TokenType.CEO:
             scopes = CEO_SCOPES
+        case TokenType.MARKET:
+            scopes = MARKET_CHARACTER_SCOPES
+        case TokenType.FREIGHT:
+            scopes = FREIGHT_CHARACTER_SCOPES
 
     @login_required()
     @token_required(scopes=scopes, new=True)
@@ -346,9 +358,10 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 logger.info(
                     "New token has more scopes, deleting old character token"
                 )
+                old_token = character.token
                 character.token = token
-                character.token.delete()
                 character.save()
+                old_token.delete()
             elif not character.token:
                 logger.info(
                     "Character %s has no token, adding token",
@@ -390,6 +403,15 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 request.user.username,
             )
             EvePrimaryCharacter.objects.create(character=character)
+
+        # populate corporation if CEO token
+        if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
+            logger.info(
+                "Populating CEO token corporation for character %s",
+                character.character_id,
+            )
+            character.corporation.populate()
+
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
