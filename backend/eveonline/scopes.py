@@ -32,5 +32,18 @@ CEO_SCOPES = [
     "esi-corporations.read_starbases.v1",
     "esi-corporations.read_titles.v1",
     "esi-wallet.read_corporation_wallets.v1",
-    "esi-contracts.read_corporation_contracts.v1",
 ] + ADVANCED_SCOPES
+
+# Used for the freight CEO (Minmatar Fleet Logistics)
+FREIGHT_CHARACTER_SCOPES = [
+    "esi-contracts.read_corporation_contracts.v1"
+] + CEO_SCOPES
+
+# Used for supply team seeders (characters, build corporations)
+MARKET_CHARACTER_SCOPES = [
+    "esi-wallet.read_character_wallet.v1",
+    "esi-markets.read_corporation_orders.v1",
+    "esi-markets.read_character_orders.v1",
+    "esi-contracts.read_character_contracts.v1",
+    "esi-contracts.read_corporation_contracts.v1",
+] + CEO_SCOPES
