@@ -102,3 +102,15 @@ def update_contracts():
                     "date_completed": contract["date_completed"],
                 },
             )
+
+    # Update all hanging contracts
+    contract_ids = set(
+        [int(contract["contract_id"]) for contract in contracts_data]
+    )
+    contracts = EveFreightContract.objects.filter(
+        status__in=["outstanding", "in_progress"],
+    )
+    for contract in contracts:
+        if int(contract.contract_id) not in contract_ids:
+            contract.status = "expired"
+            contract.save()

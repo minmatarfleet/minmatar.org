@@ -20,15 +20,12 @@ class EveFreightContract(models.Model):
     supported_ceo_id = 96046515
     supported_corporation_id = 98705678
 
-    tracked_statuses = [
-        "outstanding",
-        "in_progress",
-        "finished",
-    ]
+    tracked_statuses = ["outstanding", "in_progress", "finished"]
     status_choices = (
         ("outstanding", "Outstanding"),
         ("in_progress", "In Progress"),
         ("finished", "Finished"),
+        ("expired", "Expired"),
     )
 
     contract_id = models.BigIntegerField(unique=True)
