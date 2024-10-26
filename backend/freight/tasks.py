@@ -29,6 +29,7 @@ def update_contracts():
             token=token.valid_access_token(),
         ).results()
     )
+    contract_ids = set()
     for contract in contracts_data:
         if (
             contract["type"] == EveFreightContract.expected_contract_type
@@ -36,6 +37,7 @@ def update_contracts():
             and contract["assignee_id"]
             == EveFreightContract.supported_corporation_id
         ):
+            contract_ids.add(int(contract["contract_id"]))
             start_id = int(contract["start_location_id"])
             end_id = int(contract["end_location_id"])
 
@@ -104,9 +106,6 @@ def update_contracts():
             )
 
     # Update all hanging contracts
-    contract_ids = set(
-        [int(contract["contract_id"]) for contract in contracts_data]
-    )
     contracts = EveFreightContract.objects.filter(
         status__in=["outstanding", "in_progress"],
     )
