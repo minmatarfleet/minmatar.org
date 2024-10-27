@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 router = Router(tags=["Market"])
 
 
-class EntityType(Enum):
-    CHARACTER = "character"
-    CORPORATION = "corporation"
-
-
 class MarketCharacterResponse(BaseModel):
     character_id: int
     character_name: str
@@ -35,7 +30,7 @@ class MarketCorporationResponse(BaseModel):
 
 
 class MarketContractResponsibilityResponse(BaseModel):
-    entity_type: EntityType
+    entity_type: str
     entity_id: int
     entity_name: str
 
@@ -47,6 +42,8 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 class MarketContractResponse(BaseModel):
     title: str
+    fitting_id: int
+    structure_id: int | None = None
     location_name: str
     desired_quantity: int
     current_quantity: int
@@ -126,14 +123,14 @@ def fetch_eve_market_contracts(request):
             if EveCharacter.objects.filter(
                 character_id=responsibility.entity_id
             ).exists():
-                entity_type = EntityType.CHARACTER
+                entity_type = "character"
                 entity_name = EveCharacter.objects.get(
                     character_id=responsibility.entity_id
                 ).character_name
             elif EveCorporation.objects.filter(
                 corporation_id=responsibility.entity_id
             ).exists():
-                entity_type = EntityType.CORPORATION
+                entity_type = "corporation"
                 entity_name = EveCorporation.objects.get(
                     corporation_id=responsibility.entity_id
                 ).name
@@ -172,6 +169,12 @@ def fetch_eve_market_contracts(request):
         response.append(
             MarketContractResponse(
                 title=expectation.fitting.name,
+                fitting_id=expectation.fitting.id,
+                structure_id=(
+                    expectation.location.structure.id
+                    if expectation.location.structure
+                    else None
+                ),
                 location_name=expectation.location.location_name,
                 desired_quantity=expectation.quantity,
                 current_quantity=EveMarketContract.objects.filter(
