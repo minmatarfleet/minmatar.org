@@ -5,6 +5,10 @@ from fittings.models import EveFitting
 
 
 class EveMarketLocation(models.Model):
+    """
+    Model for tracking market locations
+    """
+
     location_id = models.BigIntegerField(primary_key=True)
     location_name = models.CharField(max_length=255)
     solar_system_id = models.BigIntegerField()

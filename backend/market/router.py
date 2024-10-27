@@ -1,19 +1,18 @@
 import logging
+from datetime import datetime, timedelta
 from typing import List
 
+import pytz
 from ninja import Router
 from pydantic import BaseModel
 
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.models import (
+    EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
-    EveMarketContract,
 )
-from enum import Enum
-from datetime import datetime, timedelta
-import pytz
 
 logger = logging.getLogger(__name__)
 router = Router(tags=["Market"])

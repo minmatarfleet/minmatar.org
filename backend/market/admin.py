@@ -2,9 +2,9 @@ from django.contrib import admin
 
 from market.models import (
     EveMarketContractExpectation,
+    EveMarketContractResponsibility,
     EveMarketItemExpectation,
     EveMarketLocation,
-    EveMarketContractResponsibility,
 )
 
 # Register your models here.
