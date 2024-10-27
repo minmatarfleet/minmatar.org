@@ -6,9 +6,22 @@ from pydantic import BaseModel
 
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
+from market.models import (
+    EveMarketContractExpectation,
+    EveMarketContractResponsibility,
+    EveMarketContract,
+)
+from enum import Enum
+from datetime import datetime, timedelta
+import pytz
 
 logger = logging.getLogger(__name__)
 router = Router(tags=["Market"])
+
+
+class EntityType(Enum):
+    CHARACTER = "character"
+    CORPORATION = "corporation"
 
 
 class MarketCharacterResponse(BaseModel):
@@ -19,6 +32,26 @@ class MarketCharacterResponse(BaseModel):
 class MarketCorporationResponse(BaseModel):
     corporation_id: int
     corporation_name: str
+
+
+class MarketContractResponsibilityResponse(BaseModel):
+    entity_type: EntityType
+    entity_id: int
+    entity_name: str
+
+
+class MarketContractHistoricalQuantityResponse(BaseModel):
+    date: str
+    quantity: int
+
+
+class MarketContractResponse(BaseModel):
+    title: str
+    location_name: str
+    desired_quantity: int
+    current_quantity: int
+    historical_quantity: List[MarketContractHistoricalQuantityResponse]
+    responsibilities: List[MarketContractResponsibilityResponse]
 
 
 @router.get(
@@ -63,6 +96,89 @@ def get_market_corporations(request):
             MarketCorporationResponse(
                 corporation_id=corporation.corporation_id,
                 corporation_name=corporation.name,
+            )
+        )
+
+    return response
+
+
+@router.get(
+    "/contracts",
+    description="Fetch all market contracts for all characters and corporations",
+    response=List[MarketContractResponse],
+)
+def fetch_eve_market_contracts(request):
+    """
+    - Fetch all expectations
+    - Fetch current quantity for all expectations
+    - Fetch all responsibilities
+    - Populate data
+    """
+    expectations = EveMarketContractExpectation.objects.all()
+    response = []
+    for expectation in expectations:
+        responsibilities = []
+        for responsibility in EveMarketContractResponsibility.objects.filter(
+            expectation=expectation
+        ):
+            entity_type = None
+            entity_name = None
+            if EveCharacter.objects.filter(
+                character_id=responsibility.entity_id
+            ).exists():
+                entity_type = EntityType.CHARACTER
+                entity_name = EveCharacter.objects.get(
+                    character_id=responsibility.entity_id
+                ).character_name
+            elif EveCorporation.objects.filter(
+                corporation_id=responsibility.entity_id
+            ).exists():
+                entity_type = EntityType.CORPORATION
+                entity_name = EveCorporation.objects.get(
+                    corporation_id=responsibility.entity_id
+                ).name
+            else:
+                continue
+            assert entity_type is not None
+            assert entity_name is not None
+            responsibilities.append(
+                MarketContractResponsibilityResponse(
+                    entity_type=entity_type,
+                    entity_id=responsibility.entity_id,
+                    entity_name=entity_name,
+                )
+            )
+        # build historical quantity data by grouping by last 6 months
+        # and counting the number of contracts
+        historical_quantity = []
+        today = datetime.today()
+        utc = pytz.UTC
+        for i in range(12):
+            month_start = (
+                today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
+            ).replace(day=1)
+            month_end = (month_start + timedelta(days=32)).replace(day=1)
+            historical_quantity.append(
+                MarketContractHistoricalQuantityResponse(
+                    date=month_start.strftime("%Y-%m-%d"),
+                    quantity=EveMarketContract.objects.filter(
+                        fitting=expectation.fitting,
+                        status="outstanding",
+                        created_at__gte=month_start,
+                        created_at__lt=month_end,
+                    ).count(),
+                )
+            )
+        response.append(
+            MarketContractResponse(
+                title=expectation.fitting.name,
+                location_name=expectation.location.location_name,
+                desired_quantity=expectation.quantity,
+                current_quantity=EveMarketContract.objects.filter(
+                    fitting=expectation.fitting, status="outstanding"
+                ).count(),
+                historical_quantity=historical_quantity,
+                responsibilities=responsibilities,
             )
         )
 

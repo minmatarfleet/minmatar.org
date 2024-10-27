@@ -327,6 +327,9 @@ class EveFleetLocation(models.Model):
     solar_system_id = models.BigIntegerField()
     solar_system_name = models.CharField(max_length=255)
 
+    def __str__(self):
+        return str(f"{self.location_name}")
+
 
 class EveFleetAudience(models.Model):
     """
