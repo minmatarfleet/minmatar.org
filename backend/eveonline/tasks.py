@@ -125,7 +125,6 @@ def update_character_assets(eve_character_id):
     logger.info("Updating assets for character %s", eve_character_id)
     required_scopes = [
         "esi-assets.read_assets.v1",
-        "esi-universe.read_structures.v1",
     ]
     token = Token.objects.filter(
         character_id=eve_character_id, scopes__name__in=required_scopes
