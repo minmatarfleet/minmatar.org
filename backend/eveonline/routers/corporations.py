@@ -92,27 +92,27 @@ def get_corporations(
     request, corporation_type: Optional[CorporationType] = None
 ):
     if corporation_type:
-        logger.info("Getting corporations of type %s", corporation_type)
+        logger.debug("Getting corporations of type %s", corporation_type)
     match corporation_type:
         case CorporationType.ALLIANCE:
-            logger.info("Getting alliance corporations")
+            logger.debug("Getting alliance corporations")
             corporations = EveCorporation.objects.filter(
                 alliance__alliance_id=99011978
             )
         case CorporationType.ASSOCIATE:
-            logger.info("Getting associate corporations")
+            logger.debug("Getting associate corporations")
             corporations = EveCorporation.objects.filter(
                 alliance__alliance_id=99012009
             )
         case CorporationType.MILITIA:
-            logger.info("Getting militia corporations")
+            logger.debug("Getting militia corporations")
             corporations = EveCorporation.objects.filter(faction__id=500002)
         case _:
-            logger.info("Getting public corporations")
+            logger.debug("Getting public corporations")
             corporations = EveCorporation.objects.all()
     response = []
     for corporation in corporations:
-        logger.info("Processing corporation %s", corporation.name)
+        logger.debug("Processing corporation %s", corporation.name)
         payload = {
             "corporation_id": corporation.corporation_id,
             "corporation_name": corporation.name,
@@ -120,12 +120,14 @@ def get_corporations(
             "active": corporation.active,
         }
         if corporation.alliance:
-            logger.info("Populating alliance details for %s", corporation.name)
+            logger.debug(
+                "Populating alliance details for %s", corporation.name
+            )
             payload["alliance_id"] = corporation.alliance.alliance_id
             payload["alliance_name"] = corporation.alliance.name
 
         if corporation.faction:
-            logger.info("Populating faction details for %s", corporation.name)
+            logger.debug("Populating faction details for %s", corporation.name)
             payload["faction_id"] = corporation.faction.id
             payload["faction_name"] = corporation.faction.name
 
@@ -143,7 +145,7 @@ def get_corporations(
         )
 
         response.append(payload)
-    logger.info("Finished processing corporations")
+    logger.debug("Finished processing corporations")
     return response
 
 

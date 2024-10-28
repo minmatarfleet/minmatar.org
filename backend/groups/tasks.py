@@ -36,11 +36,11 @@ def update_affiliations():
 @app.task
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
-    logger.info("Checking affiliations for user %s", user)
+    logger.debug("Checking affiliations for user %s", user)
     if not EvePrimaryCharacter.objects.filter(
         character__token__user=user
     ).exists():
-        logger.info("No primary character found for user %s", user)
+        logger.warning("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
     primary_character = EvePrimaryCharacter.objects.get(
@@ -49,7 +49,7 @@ def update_affiliation(user_id: int):
 
     # loop through affiliations in priority to find highest qualifying
     for affiliation in AffiliationType.objects.order_by("-priority"):
-        logger.info("Checking if qualified for affiliation %s", affiliation)
+        logger.debug("Checking if qualified for affiliation %s", affiliation)
         is_qualifying = False
         if affiliation.default:
             is_qualifying = True
@@ -57,7 +57,7 @@ def update_affiliation(user_id: int):
             primary_character.character.corporation
             in affiliation.corporations.all()
         ):
-            logger.info(
+            logger.debug(
                 "User %s is in corporation %s",
                 user,
                 primary_character.character.corporation,
@@ -66,7 +66,7 @@ def update_affiliation(user_id: int):
             is_qualifying = True
 
         if primary_character.character.alliance in affiliation.alliances.all():
-            logger.info(
+            logger.debug(
                 "User %s is in alliance %s",
                 user,
                 primary_character.character.alliance,
@@ -74,7 +74,7 @@ def update_affiliation(user_id: int):
             is_qualifying = True
 
         if primary_character.character.faction in affiliation.factions.all():
-            logger.info(
+            logger.debug(
                 "User %s is in faction %s",
                 user,
                 primary_character.character.faction,
@@ -82,7 +82,7 @@ def update_affiliation(user_id: int):
             is_qualifying = True
 
         if is_qualifying:
-            logger.info(
+            logger.debug(
                 "User %s qualifies for affiliation %s",
                 user,
                 affiliation,
@@ -90,7 +90,7 @@ def update_affiliation(user_id: int):
             if UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
             ).exists():
-                logger.info(
+                logger.debug(
                     "User %s already has affiliation %s",
                     user,
                     affiliation,
@@ -98,13 +98,13 @@ def update_affiliation(user_id: int):
                 return
 
             if UserAffiliation.objects.filter(user=user).exists():
-                logger.info(
+                logger.debug(
                     "User %s already has an affiliation, removing",
                     user,
                 )
                 UserAffiliation.objects.filter(user=user).delete()
 
-            logger.info(
+            logger.debug(
                 "Creating affiliation for user %s with %s",
                 user,
                 affiliation,
@@ -112,7 +112,7 @@ def update_affiliation(user_id: int):
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
             return
         else:
-            logger.info(
+            logger.debug(
                 "User %s does not qualify for affiliation %s",
                 user,
                 affiliation,
@@ -120,7 +120,7 @@ def update_affiliation(user_id: int):
             if UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
             ).exists():
-                logger.info(
+                logger.debug(
                     "User %s has affiliation %s, removing",
                     user,
                     affiliation,
@@ -129,7 +129,7 @@ def update_affiliation(user_id: int):
                     user=user, affiliation=affiliation
                 ).delete()
             else:
-                logger.info(
+                logger.debug(
                     "User %s does not have affiliation %s",
                     user,
                     affiliation,

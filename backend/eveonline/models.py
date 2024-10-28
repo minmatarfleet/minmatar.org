@@ -250,7 +250,7 @@ class EveSkillset(models.Model):
     # use roman_number_to_int
     def save(self, *args, **kwargs):
         if self.skills:
-            logger.info("Parsing skills for %s", self.name)
+            logger.debug("Parsing skills for %s", self.name)
             parsed_skills = []
             skills = self.skills.split("\n")
             for skill in skills:
@@ -344,7 +344,7 @@ class EveCorporation(models.Model):
                 corporation_id=self.corporation_id
             ).results()
         )
-        logger.info("ESI corporation data: %s", esi_corporation)
+        logger.debug("ESI corporation data: %s", esi_corporation)
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]

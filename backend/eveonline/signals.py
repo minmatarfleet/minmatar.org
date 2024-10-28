@@ -28,7 +28,7 @@ esi = EsiClientProvider()
 )
 def populate_eve_character_public_data(sender, instance, created, **kwargs):
     if created:
-        logger.info("Populating name for character %s", instance.character_id)
+        logger.debug("Populating name for character %s", instance.character_id)
         esi_character = esi.client.Character.get_characters_character_id(
             character_id=instance.character_id
         ).results()
@@ -81,17 +81,17 @@ def eve_alliance_post_save(sender, instance, created, **kwargs):
         esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
             alliance_id=instance.alliance_id
         ).results()
-        logger.info("ESI alliance data: %s", esi_alliance)
+        logger.debug("ESI alliance data: %s", esi_alliance)
         # public info
-        logger.info("Setting name to %s", esi_alliance["name"])
+        logger.debug("Setting name to %s", esi_alliance["name"])
         instance.name = esi_alliance["name"]
-        logger.info("Setting ticker to %s", esi_alliance["ticker"])
+        logger.debug("Setting ticker to %s", esi_alliance["ticker"])
         instance.ticker = esi_alliance["ticker"]
         if (
             "faction_id" in esi_alliance
             and esi_alliance["faction_id"] is not None
         ):
-            logger.info("Setting faction to %s", esi_alliance["faction_id"])
+            logger.debug("Setting faction to %s", esi_alliance["faction_id"])
             instance.faction = EveFaction.objects.get_or_create_esi(
                 id=esi_alliance["faction_id"],
             )[0]

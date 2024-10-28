@@ -64,7 +64,7 @@ def update_corporation_structures(corporation_id: int):
                 if EveStructure.objects.filter(
                     id=structure["structure_id"]
                 ).exists():
-                    logger.info(
+                    logger.debug(
                         "Updating existing structure %s", structure["name"]
                     )
                     eve_structure = EveStructure.objects.get(
@@ -80,7 +80,9 @@ def update_corporation_structures(corporation_id: int):
                     eve_structure.fuel_expires = structure["fuel_expires"]
                     eve_structure.save()
                 else:
-                    logger.info("Creating new structure %s", structure["name"])
+                    logger.debug(
+                        "Creating new structure %s", structure["name"]
+                    )
                     eve_structure = EveStructure.objects.create(
                         id=structure["structure_id"],
                         system_id=structure["system_id"],

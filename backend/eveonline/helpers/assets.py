@@ -33,10 +33,10 @@ def create_character_assets(character: EveCharacter):
     """Create assets for a character"""
     logger.info("Creating assets for character %s", character.character_id)
     EveCharacterAsset.objects.filter(character=character).delete()
-    logger.info("Loading assets for character %s", character.character_id)
+    logger.debug("Loading assets for character %s", character.character_id)
     assets: List[EveAssetResponse] = json.loads(character.assets_json)
     for asset in assets:
-        logger.info("Processing asset %s", asset)
+        logger.debug("Processing asset %s", asset)
         asset = EveAssetResponse(**asset)
         eve_type, _ = EveType.objects.get_or_create_esi(
             id=asset.type_id,
@@ -53,7 +53,7 @@ def create_character_assets(character: EveCharacter):
         eve_category = eve_group.eve_category
         if eve_category.name != "Ship":
             continue
-        logger.info("Found asset %s", eve_type.name)
+        logger.debug("Found asset %s", eve_type.name)
         location = None
         if asset.location_type == "station":
             location, _ = EveStation.objects.get_or_create_esi(
