@@ -2,18 +2,37 @@ from django.db import models
 from eveuniverse.models import EveType
 
 from fittings.models import EveFitting
-from structures.models import EveStructure
+
+
+class EveMarketLocation(models.Model):
+    """
+    Model for tracking market locations
+    """
+
+    location_id = models.BigIntegerField(primary_key=True)
+    location_name = models.CharField(max_length=255)
+    solar_system_id = models.BigIntegerField()
+    solar_system_name = models.CharField(max_length=255)
+    structure = models.ForeignKey(
+        "structures.EveStructure",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return str(f"{self.location_name}")
 
 
 class EveMarketContractExpectation(models.Model):
     """Model for seeding a quantity of fittings"""
 
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveStructure, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
-        return str(f"{self.fitting.name} - {self.location.name}")
+        return str(f"{self.fitting.name} - {self.location}")
 
 
 class EveMarketContractResponsibility(models.Model):
@@ -27,7 +46,7 @@ class EveMarketContractResponsibility(models.Model):
 
     def __str__(self):
         return str(
-            f"{self.character.character_name} - {self.fitting.fitting.name}"
+            f"{self.entity_id} - {self.expectation.fitting.name} - {self.expectation.location}"
         )
 
 
@@ -36,7 +55,15 @@ class EveMarketContract(models.Model):
     Model for tracking market contracts
     """
 
+    esi_contract_type = "item_exchange"
+    tracked_statuses = ["outstanding", "finished"]
+    status_choices = (
+        ("outstanding", "Outstanding"),
+        ("finished", "Finished"),
+        ("expired", "Expired"),
+    )
     id = models.BigIntegerField(unique=True, primary_key=True)
+    status = models.CharField(max_length=255, choices=status_choices)
     title = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     assignee_id = models.BigIntegerField(null=True, blank=True)
@@ -48,16 +75,22 @@ class EveMarketContract(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
     # relationships
+    location = models.ForeignKey(
+        EveMarketLocation, on_delete=models.CASCADE, null=True, blank=True
+    )
     fitting = models.ForeignKey(
         EveFitting, on_delete=models.SET_NULL, null=True, blank=True
     )
+
+    def __str__(self):
+        return str(f"{self.title} - {self.location}")
 
 
 class EveMarketItemExpectation(models.Model):
     """Model for seeding a quantity of items"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveStructure, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
@@ -81,7 +114,7 @@ class EveMarketItemOrder(models.Model):
     """Model for tracking an order for an item"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveStructure, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     quantity = models.IntegerField()
     issuer_external_id = models.BigIntegerField()
@@ -94,7 +127,7 @@ class EveMarketItemTransaction(models.Model):
     """Model for tracking a transaction for an item"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveStructure, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     quantity = models.IntegerField()
     issuer_external_id = models.BigIntegerField()

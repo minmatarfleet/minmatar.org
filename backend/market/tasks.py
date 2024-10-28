@@ -20,6 +20,7 @@ def fetch_eve_market_contracts():
     ).distinct()
 
     for character in characters:
+        logger.info(f"Fetching character contracts {character.character_id}")
         try:
             create_character_market_contracts(character.character_id)
         except Exception as e:
@@ -36,6 +37,9 @@ def fetch_eve_market_contracts():
     ).distinct()
 
     for corporation in corporations:
+        logger.info(
+            f"Fetching corporation contracts {corporation.corporation_id}"
+        )
         try:
             create_corporation_market_contracts(corporation.corporation_id)
         except Exception as e:

@@ -6,10 +6,65 @@ from esi.models import Token
 from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
-from market.models import EveMarketContract
+from market.models import EveMarketContract, EveMarketLocation
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
+
+
+def create_market_contract(contract: dict, issuer_id: int) -> None:
+    """
+    Creates a market contract from ESI data while trusting
+    the issuer_id from upstream filtering
+    """
+    if contract["acceptor_id"] == issuer_id:
+        logger.info(
+            f"Skipping {contract['contract_id']}, issuer is also acceptor."
+        )
+        return
+    if contract["type"] != EveMarketContract.esi_contract_type:
+        logger.info(
+            f"Skipping {contract['contract_id']}, not an item exchange."
+        )
+        return
+
+    if not EveMarketLocation.objects.filter(
+        location_id=contract["start_location_id"]
+    ).exists():
+        logger.info(f"Skipping {contract['contract_id']}, location not found.")
+        return
+
+    if not EveFitting.objects.filter(name=contract["title"]).exists():
+        logger.info(f"Skipping {contract['contract_id']}, fitting not found.")
+        return
+
+    # Data massaging
+    location = EveMarketLocation.objects.get(
+        location_id=contract["start_location_id"]
+    )
+    fitting = EveFitting.objects.get(name=contract["title"])
+    if contract["status"] == "outstanding":
+        status = "outstanding"
+    elif contract["status"] == "finished":
+        status = "finished"
+    else:
+        status = "expired"
+
+    contract, _ = EveMarketContract.objects.update_or_create(
+        id=contract["contract_id"],
+        defaults={
+            "title": contract["title"],
+            "status": status,
+            "price": contract["price"],
+            "assignee_id": contract["assignee_id"],
+            "acceptor_id": contract["acceptor_id"],
+            "issuer_external_id": issuer_id,
+            "completed_at": contract["date_completed"],
+            "fitting_id": fitting.id,
+            "location_id": location.location_id,
+        },
+    )
+    return contract
 
 
 def create_character_market_contracts(character_id: int):
@@ -29,21 +84,12 @@ def create_character_market_contracts(character_id: int):
     ).results()
 
     for contract in contracts:
-        fitting = None
-        if EveFitting.objects.filter(name=contract["title"]).exists():
-            fitting = EveFitting.objects.get(name=contract["title"])
-        EveMarketContract.objects.update_or_create(
-            id=contract["contract_id"],
-            defaults={
-                "title": contract["title"],
-                "price": contract["price"],
-                "assignee_id": contract["assignee_id"],
-                "acceptor_id": contract["acceptor_id"],
-                "issuer_external_id": contract["issuer_id"],
-                "completed_at": contract["date_completed"],
-                "fitting_id": fitting.id if fitting else None,
-            },
-        )
+        if (
+            contract["for_corporation"]
+            and contract["issuer_id"] != character_id
+        ):
+            continue
+        create_market_contract(contract, character_id)
     return
 
 
@@ -69,19 +115,10 @@ def create_corporation_market_contracts(corporation_id: int):
     ).results()
 
     for contract in contracts:
-        fitting = None
-        if EveFitting.objects.filter(name=contract["title"]).exists():
-            fitting = EveFitting.objects.get(name=contract["title"])
-        EveMarketContract.objects.update_or_create(
-            id=contract["contract_id"],
-            defaults={
-                "title": contract["title"],
-                "price": contract["price"],
-                "assignee_id": contract["assignee_id"],
-                "acceptor_id": contract["acceptor_id"],
-                "issuer_external_id": contract["issuer_id"],
-                "completed_at": contract["date_completed"],
-                "fitting_id": fitting.id if fitting else None,
-            },
-        )
+        if (
+            not contract["for_corporation"]
+            and contract["issuer_corporation_id"] != corporation_id
+        ):
+            continue
+        create_market_contract(contract, corporation_id)
     return
