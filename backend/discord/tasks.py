@@ -43,12 +43,12 @@ def sync_discord_users():
 @app.task()
 def sync_discord_user_nicknames():
     for user in User.objects.all():
-        logger.info("Syncing discord nickname user %s", user.username)
+        logger.debug("Syncing discord nickname user %s", user.username)
         discord_user = DiscordUser.objects.filter(user_id=user.id).first()
         if discord_user is None:
             continue
         expected_nickname = get_expected_nickname(user)
-        logger.info("Expected nickname: %s", expected_nickname)
+        logger.debug("Expected nickname: %s", expected_nickname)
         if expected_nickname is None:
             continue
 

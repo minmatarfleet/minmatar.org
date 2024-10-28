@@ -48,17 +48,17 @@ def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
     for line in moon_paste.split("\n"):
         line = line.strip()
         if not line:
-            logger.info("Skipping empty line")
+            logger.debug("Skipping empty line")
             continue
         if "Moon" in line:
-            logger.info("Skipping header line")
+            logger.debug("Skipping header line")
             continue
         parts = re.split(r"\s+", line)
         if len(parts) == 1:
-            logger.info("Skipping system line")
+            logger.debug("Skipping system line")
             continue
 
-        logger.info(f"Processing line: {parts}")
+        logger.debug(f"Processing line: {parts}")
         moon = ParsedEveMoonQuantity(
             ore=parts[0],
             quantity=float(parts[1]),

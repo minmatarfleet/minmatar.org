@@ -19,7 +19,7 @@ def update_fleet_instances():
     Update fleet instances
     """
     for fleet_instance in EveFleetInstance.objects.filter(end_time=None):
-        logger.info("Updating fleet instance %s", fleet_instance.id)
+        logger.debug("Updating fleet instance %s", fleet_instance.id)
         try:
             fleet_instance.update_is_registered_status()
             fleet_instance.update_fleet_members()
@@ -37,7 +37,7 @@ def update_fleet_instances():
 @app.task()
 def update_standing_fleet_instances():
     for standing_fleet in EveStandingFleet.objects.filter(end_time=None):
-        logger.info("Updating standing fleet instance %s", standing_fleet.id)
+        logger.debug("Updating standing fleet instance %s", standing_fleet.id)
         try:
             standing_fleet.update_fleet_members()
         except Exception as e:

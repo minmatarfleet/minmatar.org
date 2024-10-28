@@ -150,13 +150,12 @@ def update_fittings():  # noqa
                     current_fitting.latest_version = current_version
                     current_fitting.save()
                 else:
-                    logger.info(
+                    logger.debug(
                         "fitting up to date. skipping fitting: %s",
                         fitting_name,
                     )
             else:
                 logger.info("new fitting. creating fitting: %s", fitting_name)
-                print(f"creating fitting: {fitting_name}")
                 fitting = EveFitting.objects.create(
                     name=fitting_name,
                     ship_id=ship_id,

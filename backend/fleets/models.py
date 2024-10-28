@@ -72,6 +72,7 @@ class EveFleet(models.Model):
         """
         Start the fleet
         """
+        logger.info("Starting fleet %s", self.id)
         user = self.created_by
         eve_character = EvePrimaryCharacter.objects.get(
             character__token__user=user
@@ -80,8 +81,6 @@ class EveFleet(models.Model):
             character_id=eve_character.character_id,
             token=self.token,
         ).results()
-
-        logger.info(response)
 
         if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
             fleet_instance = EveFleetInstance.objects.get(
@@ -104,6 +103,11 @@ class EveFleet(models.Model):
         else:
             doctrine = None
 
+        logger.info(
+            "Sending fleet notification for fleet %s to discord channel %s",
+            self.id,
+            self.audience.discord_channel_id,
+        )
         discord.create_message(
             self.audience.discord_channel_id,
             payload=get_fleet_discord_notification(

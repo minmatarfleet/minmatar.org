@@ -65,13 +65,13 @@ def user_group_changed(
         logger.info("User added to group, adding to discord role")
         for group_id in pk_set:
             group = model.objects.get(pk=group_id)
-            logger.info("Checking group %s", group.name)
+            logger.debug("Checking group %s", group.name)
             if DiscordRole.objects.filter(group=group).exists():
-                logger.info("Group has discord role, adding user")
+                logger.debug("Group has discord role, adding user")
                 discord_user = instance.discord_user
                 # check if discord_user in role members
                 if discord_user in group.discord_group.members.all():
-                    logger.info("User already in role, skipping")
+                    logger.debug("User already in role, skipping")
                     continue
 
                 role = DiscordRole.objects.get(group=group)
@@ -81,11 +81,11 @@ def user_group_changed(
                     role,
                 )
                 discord.add_user_role(discord_user.id, role.role_id)
-                logger.info("User added to external discord role")
+                logger.debug("User added to external discord role")
                 role.members.add(discord_user)
-                logger.info("User added to discord role members")
+                logger.debug("User added to discord role members")
             else:
-                logger.info("No discord role for group %s", group.name)
+                logger.warning("No discord role for group %s", group.name)
     elif action == "pre_remove":
         logger.info("User removed from group, removing from discord role")
         for group_id in pk_set:
@@ -96,7 +96,7 @@ def user_group_changed(
                 discord.remove_user_role(discord_user.id, role.role_id)
                 role.members.remove(discord_user)
             else:
-                logger.info("No discord role for group %s", group.name)
+                logger.warning("No discord role for group %s", group.name)
     elif action == "pre_clear":
         logger.info(
             "User removed from all groups, removing from discord roles"

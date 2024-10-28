@@ -87,7 +87,7 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
     player_skill_count = 0
     total_skill_count = 0
     for skill in skillset_lookup:
-        logger.info("Checking skill %s", skill)
+        logger.debug("Checking skill %s", skill)
         # skill level is the last digit in string, remove it
         skill_name = skill[:-1].strip()
         skill_level = int(skill[-1])
@@ -96,7 +96,7 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
             missing_skills.append(skill)
             total_skill_count += skill_level * 12
         else:
-            logger.info(
+            logger.debug(
                 "Player has skill %s at level %s",
                 skill_name,
                 hydrated_skills[skill_name]["trained_skill_level"],
@@ -131,7 +131,7 @@ def create_eve_character_skillset(character_id: int, skillset: EveSkillset):
     missing_skills, progress = compare_skills_to_skillset(
         character_id, skillset
     )
-    logger.info(
+    logger.debug(
         "Character %s has %s missing skills for skillset %s",
         character.character_id,
         len(missing_skills),

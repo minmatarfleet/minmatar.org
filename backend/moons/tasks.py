@@ -35,14 +35,13 @@ def get_prices():
         url=base_url + "/universe/ids", json=products, timeout=5
     )
     product_ids = response.json()["inventory_types"]
-    # logger.info(product_ids)
 
     for price in prices:
         type_id = item_id(price, product_ids)
         url = base_url + "/markets/10000002/history?type_id=" + str(type_id)
         response = requests.get(url, timeout=5)
         data = response.json()[0]["average"]
-        logger.info("%s value = %.2f", price, data)
+        logger.debug("%s value = %.2f", price, data)
         prices[price] = Decimal(data)
 
     logger.info("Moon product prices retrieved.")
@@ -79,7 +78,7 @@ def update_moon_revenues():
     for moon in moons:
         distributions = EveMoonDistribution.objects.filter(moon=moon)
         moon_revenue = calculate_moon_revenue(moon, distributions, prices)
-        logger.info("Monthly revenue = %.2f", moon_revenue)
+        logger.debug("Monthly revenue = %.2f", moon_revenue)
         moon.monthly_revenue = moon_revenue
         moon.save()
 
