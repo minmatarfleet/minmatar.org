@@ -120,7 +120,9 @@ def get_corporations(
             "active": corporation.active,
         }
         if corporation.alliance:
-            logger.debug("Populating alliance details for %s", corporation.name)
+            logger.debug(
+                "Populating alliance details for %s", corporation.name
+            )
             payload["alliance_id"] = corporation.alliance.alliance_id
             payload["alliance_name"] = corporation.alliance.name
 
