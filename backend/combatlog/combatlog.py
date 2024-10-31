@@ -104,7 +104,7 @@ def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
             damage_event.direction = "from"
             text = text[pos + 6 :]
 
-        parts = text.split("-")
+        parts = text.split(" - ")
         if len(parts) >= 1:
             damage_event.entity = parts[0].strip()
         if len(parts) >= 3:
