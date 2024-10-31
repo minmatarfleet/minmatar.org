@@ -140,3 +140,19 @@ class DamageParseTest(TestCase):
         enemies = enemy_damage(events, "to")
 
         self.assertEqual(125, enemies["Rat"])
+
+    def test_parse_hyphen_names(self):
+        """Verify that log entries with hyphens in names work OK"""
+
+        logs = "[ 2024.09.07 14:58:50 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits"
+
+        events = parse(logs)
+        dmg_events = damage_events(events)
+        self.assertEqual(1, len(dmg_events))
+
+        event = dmg_events[0]
+
+        self.assertEqual(567, event.damage)
+        self.assertEqual("to", event.direction)
+        self.assertEqual("Inferno Rage Compiler Error", event.weapon)
+        self.assertEqual("[P-1]Bad Guy", event.entity)
