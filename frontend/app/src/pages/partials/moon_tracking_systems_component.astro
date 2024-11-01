@@ -27,32 +27,38 @@ let systems:SystemCardInfo[] = []
 let filtered_systems:SystemCardInfo[] = []
 let fetch_moon_system_data_error:string | null = null
 
-let home_system = Astro.url.searchParams.get('home')
+let home_system_name = Astro.url.searchParams.get('home')
 
-if (home_system)
-    Astro.cookies.set('moon_tracking_home_system_name', home_system, { path: '/' })
+if (home_system_name)
+    Astro.cookies.set('moon_tracking_home_system_name', home_system_name, { path: '/' })
 
-home_system = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.cookies.get('moon_tracking_home_system_name')?.value ?? 'Sosala') : 'Sosala'
+home_system_name = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.cookies.get('moon_tracking_home_system_name')?.value ?? 'Sosala') : 'Sosala'
 
 const distance = Astro.url.searchParams.get('distance') ?? '10'
 const region = Astro.url.searchParams.get('region') ?? '1'
 const security = Astro.url.searchParams.get('security') ?? 'low'
 
 try {
-    systems = await get_moon_systems(home_system, parseInt(distance), region === '1')
+    systems = await get_moon_systems(home_system_name, parseInt(distance), region === '1')
+
+    const home_system = systems.find(system => system.system_name === home_system_name)
+
+    if (home_system === undefined)
+        throw new Error(t('home_system_not_found'))
 
     const moon_summary_systems = await get_moon_summary(auth_token as string)
     
     if (security === 'null')
-        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0)
+        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0 || system.system_name === home_system_name)
     else if (security === 'low')
-        filtered_systems = systems.filter(system => (parseFloat(system.security.toFixed(1)) > 0.1 && parseFloat(system.security.toFixed(1)) < 0.5))
+        filtered_systems = systems.filter(system => (parseFloat(system.security.toFixed(1)) > 0.1 && parseFloat(system.security.toFixed(1)) < 0.5) || system.system_name === home_system_name)
     else if (security === 'under_0d5')
-        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0.5)
+        filtered_systems = systems.filter(system => parseFloat(system.security.toFixed(1)) < 0.5 || system.system_name === home_system_name)
     else
         filtered_systems = systems
 
     const systems_ids = filtered_systems.map(system => system.system_id)
+    
     const systems_moons = await find_systems_moons(systems_ids)
 
     filtered_systems = await Promise.all(filtered_systems.map(async (system) => {
@@ -61,11 +67,11 @@ try {
         return system
     }))
 
-    filtered_systems = filtered_systems.filter((system) => (system?.moons_count ?? 0) > 0)
+    filtered_systems = filtered_systems.filter(system => (system.moons_count ?? 0 > 0) || system.system_name === home_system_name)
 
     filtered_systems = filtered_systems.map(system => {
         const moons = moon_summary_systems.find(summary_system => summary_system.system === system.system_name)
-        system.progress = (system?.moons_count ?? 0) > 0 ? ((moons?.scanned_moons ?? 0) / (system.moons_count as number)) * 100 : 0
+        system.progress = system?.moons_count ?? 0 > 0 ? ((moons?.scanned_moons ?? 0) / (system.moons_count as number)) * 100 : 0
         return system
     })
 } catch (error) {
@@ -73,6 +79,8 @@ try {
 }
 
 const MOON_TRACKING_SYSTEMS_PARTIAL_URL = `${translatePath('/partials/moon_tracking_systems_component')}?distance=${distance}&region=${region}&security=${security}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -90,7 +98,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         args={{
             partial: MOON_TRACKING_SYSTEMS_PARTIAL_URL,
             message: fetch_moon_system_data_error,
-            delay: 0,
+            delay: delay,
         }}
     />
     :

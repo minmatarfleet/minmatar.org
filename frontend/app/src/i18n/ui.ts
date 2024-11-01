@@ -1060,5 +1060,6 @@ export const ui = {
         'invalid_staggering_solar_system': 'Not a valid staging solar system',
         'invalid_module': 'Invalid module',
         'invalid_fitting': 'Invalid fitting',
+        'home_system_not_found': 'Home system not found',
     },
 } as const;
