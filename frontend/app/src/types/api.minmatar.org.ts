@@ -366,3 +366,14 @@ export interface MoonSummarySystem {
     system:         string;
     scanned_moons:  number;
 }
+
+export interface CombatLog {
+    logged_events: number;
+    damage_done: number;
+    damage_taken: number;
+    damage_from_enemies: {};
+    damage_to_enemies: {};
+    damage_with_weapons: {};
+    damage_time_in: {};
+    damage_time_out: {};
+}
