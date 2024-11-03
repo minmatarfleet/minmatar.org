@@ -67,3 +67,9 @@ export const parse_error_message = (error_details:string) => {
         return null; // or handle the case when the pattern doesn't match
     }
 }
+
+export const get_parenthesis_content = (str:string) => {
+    const match = str.match(/\(([^)]+)\)/);
+
+    return match ? match[1] : ''
+}

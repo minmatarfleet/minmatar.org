@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Porps {
+    size?:      ButtonSizes;
+    color?:     ButtonColors;
+    target:     string;
+}
+
+const {
+    size = 'lg',
+    color = 'green',
+    target,
+} = Astro.props
+
+const COMBAT_LOG_ANALYSIS_PARTIAL_URL = translatePath('/partials/combatlog_analysis_component/')
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    size={size}
+    type="button"
+    color={color}
+    x-bind:disabled="disabled"
+    x-data={`{
+        disabled: false,
+        show_analize_combatlog_dialog() {
+            this.disabled = true
+            
+            show_confirm_dialog({
+                title: '${t('analize_combatlog_dialog_title')}',
+                partial: '${translatePath('/partials/dialog_paste_combatlog/')}',
+                hx: {
+                    method: 'post',
+                    url: '${COMBAT_LOG_ANALYSIS_PARTIAL_URL}',
+                    target: '${target}',
+                    swap: 'innerHTML transition:true'
+                }
+            }).then( () => { this.disabled = false, document.getElementById('combatlog-texarea').value = '' } )
+        }
+    }`}
+    x-on:click="show_analize_combatlog_dialog()"
+    type="button"
+>
+    {t('paste_combatlog')}
+</Button>

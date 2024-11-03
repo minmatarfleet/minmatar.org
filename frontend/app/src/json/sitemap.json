@@ -273,6 +273,17 @@
         }
     },
     {
+        "slug": "intel.combatlog",
+        "alt": "icon.log.alt",
+        "path": "/intel/combatlog",
+        "publish": true,
+        "icon": "/images/icons/48px-Log.png",
+        "description": "page_finder.intel.combatlog.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
         "slug": "posts",
         "alt": "icon.notepad.alt",
         "path": "/posts/",
