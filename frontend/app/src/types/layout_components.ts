@@ -870,3 +870,31 @@ export interface PostUI {
     author:             CharacterBasic;
     tags:               string[];
 }
+
+export interface CombatLogAnalysis {
+    logged_events:          number;
+    damage_done:            number;
+    damage_taken:           number;
+    start:                  Date;
+    end:                    Date;
+    damage_from_enemies:    Damage[];
+    damage_to_enemies:      Damage[];
+    damage_with_weapons:    WeaponDamage[];
+    timeline:               string[];
+    damage_in:              number[];
+    damage_out:             number[];
+}
+
+export interface Damage {
+    ship_name:      string;
+    item_type:      number;
+    value:          number;
+    percentage:     number;
+}
+
+export interface WeaponDamage {
+    weapon_name:    string;
+    item_type:      number;
+    value:          number;
+    percentage:     number;
+}
