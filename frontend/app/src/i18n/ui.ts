@@ -1080,6 +1080,7 @@ export const ui = {
         'damage_to_enemies': 'Damage to enemies',
         'damage_from_enemies': 'Damage from enemies',
         'combat_log_analizer': 'Combatlog analizer',
-        'resubmit_combatlog': 'Please, try again.'
+        'resubmit_combatlog': 'Please, try again.',
+        'home_system_not_found': 'Home system not found',
     },
 } as const;
