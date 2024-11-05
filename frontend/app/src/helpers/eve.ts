@@ -1,8 +1,6 @@
 import type { Locales, CharacterRaces } from '@dtypes/layout_components'
 import * as cheerio from 'cheerio';
-import { decode_unicode_escapes, get_parenthesis_content } from '@helpers/string'
-import type { Damage, WeaponDamage } from '@dtypes/layout_components'
-import { get_item_id } from '@helpers/sde/items'
+import { decode_unicode_escapes } from '@helpers/string'
 
 export const get_zkillboard_character_link = (character_id):string => {
     return `https://zkillboard.com/character/${character_id}/`
@@ -250,50 +248,4 @@ export const sec_status_class = (security:string):string => {
     }
 
     return SEC_CLASS[security] ?? 'text-status-null'
-}
-
-const CAPSULE_TYPE_ID = 670
-
-export const parse_damage_from_logs = async (str:Object) => {
-    const damage:Damage[] = []
-    let total_damage:number = 0
-
-    for (let enemy in str)
-        total_damage += str[enemy]
-
-    for (let enemy in str) {
-        let ship_name = get_parenthesis_content(enemy)
-        ship_name = ship_name ? ship_name : enemy
-        const value = str[enemy]
-
-        damage.push({
-            ship_name: ship_name ? ship_name : enemy,
-            item_type: await get_item_id(ship_name) ?? CAPSULE_TYPE_ID,
-            value: value,
-            percentage: total_damage > 0 ? value*100/total_damage : 0,
-        })
-    }
-
-    return damage
-}
-
-export const parse_weapon_damage_from_logs = async (str:Object) => {
-    const weapon_damage:WeaponDamage[] = []
-    let total_damage:number = 0
-
-    for (let weapon in str)
-        total_damage += str[weapon]
-
-    for (let weapon in str) {
-        const value = str[weapon]
-
-        weapon_damage.push({
-            weapon_name: weapon,
-            item_type: await get_item_id(weapon) ?? 0,
-            value: value,
-            percentage: total_damage > 0 ? value*100/total_damage : 0,
-        })
-    }
-
-    return weapon_damage
 }
