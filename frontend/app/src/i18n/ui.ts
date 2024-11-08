@@ -138,7 +138,7 @@ export const ui = {
         'friend.leading_text': 'Hi friend, lets get you set everything for you to partake on Minmatar Fleet Alliance operations. Start by linking your main character. This is a requirement before checking your roles are properly set in our Discord server. You may refresh discord roles to fix them in case they are incorrect. Lastly, set Mumble with the help of the wiki guide.',
 
         'market.page_title': 'Market',
-        'market.leading_text': 'Minmatar Republic loses nearly half a trillion ISK per month in faction warfare engagements. A large percentage of this has large margins.(10-20%). [FL33T] is in a unique position. We know all of the staging systems, all of the common modules and ships, and are the main driver of fleet content (losses)',
+        'market.leading_text': 'Minmatar Republic loses nearly half a trillion ISK per month in faction warfare engagements. A large percentage of this has large margins.(10-20%). [FL33T] is in a unique position. We know all of the staging systems, all of the common modules and ships, and are the main driver of fleet content (losses).',
         'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
         'market.description': 'Request alliance freight service',
