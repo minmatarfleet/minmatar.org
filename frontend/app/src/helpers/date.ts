@@ -92,18 +92,3 @@ export const from_to_now_text = (locale:Locales = 'en', from:Date):string => {
     
     return `${format_date_short(locale, from)} ${t('to_this_day')} (${days_diff_text(locale, from, to)})`
 }
-
-export const generate_timeline = (start_date, end_date) => {
-    const dates:Date[] = []
-    const step = 10 * 1000 // 10 seconds in milliseconds
-
-    let current_date = new Date(start_date)
-    const end = new Date(end_date)
-
-    while (current_date <= end) {
-        dates.push(new Date(current_date)) // Add the current date to the array
-        current_date = new Date(current_date.getTime() + step) // Increment by 10 seconds
-    }
-
-    return dates.map(date => date.toISOString().replace('T', ' ').replace('.000Z', '').replaceAll('-', '.'))
-}
