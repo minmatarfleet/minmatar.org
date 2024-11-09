@@ -34,7 +34,6 @@
     "astro": "latest",
     "astro-tooltips": "^0.6.2",
     "better-sqlite3": "^9.4.3",
-    "chart.js": "^4.4.6",
     "cheerio": "^1.0.0-rc.12",
     "countdown": "^2.6.0",
     "dotenv": "^16.3.1",
