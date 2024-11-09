@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from pydantic import BaseModel
+
 
 class LogEvent:
     raw_log: str
@@ -18,10 +20,29 @@ class DamageEvent:
     text: str
 
 
-class LogAnalysis:
-    logged_events: int
-    damage_done: int
-    damage_taken: int
+class DamageAnalysis(BaseModel):
+    name: str
+    category: str
+    volleys_in: int = 0
+    damage_in: int = 0
+    volleys_out: int = 0
+    damage_out: int = 0
+
+
+class LogAnalysis(BaseModel):
+    """Combat log analysis summary"""
+
+    logged_events: int = 0
+    damage_done: int = 0
+    damage_taken: int = 0
+    damage_from_enemies: Dict[str, int] = {}
+    damage_to_enemies: Dict[str, int] = {}
+    damage_with_weapons: Dict[str, int] = {}
+    damage_time_in: Dict[str, int] = {}
+    damage_time_out: Dict[str, int] = {}
+    weapons: List[DamageAnalysis] = []
+    enemies: List[DamageAnalysis] = []
+    times: List[DamageAnalysis] = []
 
 
 def parse_line(line: str) -> LogEvent:
@@ -173,5 +194,79 @@ def damage_over_time(
 
         if event.direction == direction:
             results[time_bucket] += event.damage
+
+    return results
+
+
+def enemy_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
+    enemies: Dict[str, DamageAnalysis] = {}
+
+    for event in dmg_events:
+        if event.entity not in enemies:
+            enemies[event.entity] = DamageAnalysis(
+                category="Enemy", name=event.entity
+            )
+
+        if event.direction == "to":
+            enemies[event.entity].volleys_out += 1
+            enemies[event.entity].damage_out += event.damage
+        if event.direction == "from":
+            enemies[event.entity].volleys_in += 1
+            enemies[event.entity].damage_in += event.damage
+
+    results = []
+    for _, value in enemies.items():
+        results.append(value)
+
+    return results
+
+
+def weapon_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
+    weapons: Dict[str, DamageAnalysis] = {}
+
+    for event in dmg_events:
+        if event.weapon == "":
+            continue
+
+        if event.weapon not in weapons:
+            weapons[event.weapon] = DamageAnalysis(
+                category="Weapon", name=event.weapon
+            )
+
+        if event.direction == "to":
+            weapons[event.weapon].volleys_out += 1
+            weapons[event.weapon].damage_out += event.damage
+        if event.direction == "from":
+            weapons[event.weapon].volleys_in += 1
+            weapons[event.weapon].damage_in += event.damage
+
+    results = []
+    for _, value in weapons.items():
+        results.append(value)
+
+    return results
+
+
+def time_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
+    times: Dict[str, DamageAnalysis] = {}
+
+    for event in dmg_events:
+        time_bucket = event.event_time[0:-1] + "0"
+
+        if time_bucket not in times:
+            times[time_bucket] = DamageAnalysis(
+                category="TimeBucket", name=time_bucket
+            )
+
+        if event.direction == "to":
+            times[time_bucket].volleys_out += 1
+            times[time_bucket].damage_out += event.damage
+        if event.direction == "from":
+            times[time_bucket].volleys_in += 1
+            times[time_bucket].damage_in += event.damage
+
+    results = []
+    for _, value in times.items():
+        results.append(value)
 
     return results
