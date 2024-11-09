@@ -27,6 +27,7 @@ import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
 import StructureEVEIcon from '@components/icons/StructureEVEIcon.astro';
 import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
+import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
 ---
 
 <Wrapper
@@ -113,6 +114,24 @@ import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
                                     iconed={false}
                                 />
                             }
+                        </FlexInline>
+                    </SwiperCard>
+                </div>
+            }
+
+            {false &&
+                <div class="[ swiper-slide ]" style="margin-right: 20px">
+                    <SwiperCard class="[ animate-delay-200 ]" cover='/images/combatlog-tile-background.jpg'>
+                        <FlexInline slot="header" gap='var(--space-2xs)'>
+                            <LogEVEIcon />
+                            <h2>{t('combat_log_analizer')}</h2>
+                        </FlexInline>
+                            
+                        <p>{t('intel.combatlog.leading_text')}</p>
+                        <FlexInline>
+                            <Button size='sm' href={translatePath('/intel/combatlog/')}>
+                                {t('view')}
+                            </Button>
                         </FlexInline>
                     </SwiperCard>
                 </div>

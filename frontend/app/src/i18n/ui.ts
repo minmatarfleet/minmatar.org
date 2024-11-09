@@ -129,6 +129,10 @@ export const ui = {
         'intel.moon_tracking.leading_text': 'Information on moons within our sphere of influence. Critical for passive income sources.',
         
         'intel.moon_tracking.system.leading_text': 'Assess the level of completion for scanning on moons in the system and colaborate scanning the missing ones.',
+        
+        'intel.combatlog.page_title': 'Combatlog analizer',
+        'intel.combatlog.leading_text': 'Get an insight of the fight and analize why your ship ended into a pile of debris.',
+        'intel.combatlog.cover_alt': 'A fleet of Munins hammering a Machariel',
 
         'friend.welcome.page_title': 'Welcome Honorary Rat',
         'friend.welcome.leading_text': 'If you are seeing this page you must has come here to fight alongside Minmatar Fleet Alliance. You honor us with your prescence and we hope you have a good time with us.\nWe like the game!',
@@ -298,6 +302,7 @@ export const ui = {
         'icon.notepad.alt': 'EVE Online Notepad Icon',
         'icon.map.alt': 'EVE Online Map Icon',
         'icon.calendar.alt': 'EVE Online Calendar Icon',
+        'icon.log.alt': 'EVE Online Log Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -621,6 +626,7 @@ export const ui = {
         'page_finder.intel.timers.active.description': 'List of active structure timers',
         'page_finder.intel.timers.history.description': 'List of past structure timers',
         'page_finder.intel.moon_tracking.description': 'Explore for moons scanning completion',
+        'page_finder.intel.combatlog.description': 'Get a summary of the fight',
         'page_finder.intel.timers.add.description': 'Submit a new structure timers',
         'page_finder.assets.user.description': 'View all your characters assets',
         'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
@@ -1060,5 +1066,20 @@ export const ui = {
         'invalid_staggering_solar_system': 'Not a valid staging solar system',
         'invalid_module': 'Invalid module',
         'invalid_fitting': 'Invalid fitting',
+        'combatlog': 'Combatlog',
+        'analize_combatlog_dialog_title': 'Analize Combat Log',
+        'analize_combatlog_dialog_text': 'Continue analizing the combat log information?',
+        'paste_combatlog': 'Paste combatlog',
+        'paste_combatlog_hint': 'Start pasting the combatlog information to analize it.',
+        'paste_combatlog_tutorial': 'More information on how to copy combatlog',
+        'combatlog_analysis_error': 'An error occurred while analyzing the combat log',
+        'log_start': 'Log start',
+        'log_end': 'Log end',
+        'logged_events': 'Logged events',
+        'damage_with_weapons': 'Damage with weapons',
+        'damage_to_enemies': 'Damage to enemies',
+        'damage_from_enemies': 'Damage from enemies',
+        'combat_log_analizer': 'Combatlog analizer',
+        'resubmit_combatlog': 'Please, try again.'
     },
 } as const;
