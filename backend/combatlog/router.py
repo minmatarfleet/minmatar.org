@@ -1,7 +1,4 @@
-from typing import Dict
-
 from ninja import Router
-from pydantic import BaseModel
 
 from .combatlog import (
     damage_events,
@@ -10,20 +7,13 @@ from .combatlog import (
     parse,
     total_damage,
     weapon_damage,
+    enemy_analysis,
+    weapon_analysis,
+    time_analysis,
+    LogAnalysis,
 )
 
 router = Router(tags=["combatlog"])
-
-
-class LogAnalysis(BaseModel):
-    logged_events: int = 0
-    damage_done: int = 0
-    damage_taken: int = 0
-    damage_from_enemies: Dict[str, int] = {}
-    damage_to_enemies: Dict[str, int] = {}
-    damage_with_weapons: Dict[str, int] = {}
-    damage_time_in: Dict[str, int] = {}
-    damage_time_out: Dict[str, int] = {}
 
 
 @router.post(
@@ -53,5 +43,9 @@ def analyze_logs(request):
     analysis.damage_with_weapons = weapon_damage(dmg_events)
     analysis.damage_time_in = damage_over_time(dmg_events, "from")
     analysis.damage_time_out = damage_over_time(dmg_events, "to")
+
+    analysis.enemies = enemy_analysis(dmg_events)
+    analysis.weapons = weapon_analysis(dmg_events)
+    analysis.times = time_analysis(dmg_events)
 
     return analysis
