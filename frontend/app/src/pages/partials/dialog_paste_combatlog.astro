@@ -1,0 +1,25 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+---
+
+<Flexblock
+    x-data={`{
+        combatlog: '',
+        update_status() {
+            confirm_dialog_hx.vals = JSON.stringify(this.combatlog)
+            confirm_dialog_set_accept_disable(!this.combatlog)
+        }
+    }`}
+    x-init="update_status"
+    x-effect="update_status"
+>
+    <p>{t('analize_combatlog_dialog_text')}</p>
+    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+        <label for="combatlog-texarea">{t('combatlog')}</label>
+        <Textarea id="combatlog-texarea" x-model="combatlog" rows="5" />
+    </Flexblock>
+</Flexblock>
