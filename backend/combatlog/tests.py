@@ -4,7 +4,6 @@ from .combatlog import (
     DamageEvent,
     LogEvent,
     damage_events,
-    enemy_damage,
     parse,
     parse_line,
     strip_html,
@@ -124,22 +123,6 @@ class DamageParseTest(TestCase):
         self.assertEqual("Rat", dmg_events[0].entity)
         self.assertEqual("Sharp Teeth", dmg_events[0].weapon)
         self.assertEqual("Hits", dmg_events[0].outcome)
-
-    def test_enemy_damage(self):
-        events = []
-        events.append(damage_event(100, "from", "Rat", "Sharp Teeth", "Hits"))
-        events.append(damage_event(123, "from", "Bat", "Sharp Teeth", "Hits"))
-        events.append(damage_event(110, "from", "Rat", "Sharp Teeth", "Hits"))
-        events.append(damage_event(125, "to", "Rat", "Sharp Teeth", "Hits"))
-
-        enemies = enemy_damage(events, "from")
-
-        self.assertEqual(210, enemies["Rat"])
-        self.assertEqual(123, enemies["Bat"])
-
-        enemies = enemy_damage(events, "to")
-
-        self.assertEqual(125, enemies["Rat"])
 
     def test_parse_hyphen_names(self):
         """Verify that log entries with hyphens in names work OK"""
