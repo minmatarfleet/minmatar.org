@@ -21,12 +21,20 @@ class DamageEvent:
 
 
 class DamageAnalysis(BaseModel):
+    """Analysis of damage to/from something"""
+
     name: str
     category: str
-    volleys_in: int = 0
-    damage_in: int = 0
-    volleys_out: int = 0
-    damage_out: int = 0
+    volleys_from: int = 0
+    damage_from: int = 0
+    max_from: int = 0
+    avg_from: int = 0
+    volleys_to: int = 0
+    damage_to: int = 0
+    max_to: int = 0
+    avg_to: int = 0
+    first: str = ""
+    last: str = ""
 
 
 class LogAnalysis(BaseModel):
@@ -43,6 +51,8 @@ class LogAnalysis(BaseModel):
     weapons: List[DamageAnalysis] = []
     enemies: List[DamageAnalysis] = []
     times: List[DamageAnalysis] = []
+    start: str = ""
+    end: str = ""
 
 
 def parse_line(line: str) -> LogEvent:
@@ -204,15 +214,13 @@ def enemy_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
     for event in dmg_events:
         if event.entity not in enemies:
             enemies[event.entity] = DamageAnalysis(
-                category="Enemy", name=event.entity
+                category="Enemy",
+                name=event.entity,
+                first=event.event_time,
+                last=event.event_time,
             )
 
-        if event.direction == "to":
-            enemies[event.entity].volleys_out += 1
-            enemies[event.entity].damage_out += event.damage
-        if event.direction == "from":
-            enemies[event.entity].volleys_in += 1
-            enemies[event.entity].damage_in += event.damage
+        update_damage_analysis(enemies[event.entity], event)
 
     results = []
     for _, value in enemies.items():
@@ -230,15 +238,13 @@ def weapon_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
 
         if event.weapon not in weapons:
             weapons[event.weapon] = DamageAnalysis(
-                category="Weapon", name=event.weapon
+                category="Weapon",
+                name=event.weapon,
+                first=event.event_time,
+                last=event.event_time,
             )
 
-        if event.direction == "to":
-            weapons[event.weapon].volleys_out += 1
-            weapons[event.weapon].damage_out += event.damage
-        if event.direction == "from":
-            weapons[event.weapon].volleys_in += 1
-            weapons[event.weapon].damage_in += event.damage
+        update_damage_analysis(weapons[event.weapon], event)
 
     results = []
     for _, value in weapons.items():
@@ -255,18 +261,41 @@ def time_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
 
         if time_bucket not in times:
             times[time_bucket] = DamageAnalysis(
-                category="TimeBucket", name=time_bucket
+                category="TimeBucket",
+                name=time_bucket,
+                first=event.event_time,
+                last=event.event_time,
             )
 
-        if event.direction == "to":
-            times[time_bucket].volleys_out += 1
-            times[time_bucket].damage_out += event.damage
-        if event.direction == "from":
-            times[time_bucket].volleys_in += 1
-            times[time_bucket].damage_in += event.damage
+        update_damage_analysis(times[time_bucket], event)
 
     results = []
     for _, value in times.items():
         results.append(value)
 
     return results
+
+
+def update_damage_analysis(analysis: DamageAnalysis, event: DamageEvent):
+    if event.direction == "to":
+        analysis.volleys_to += 1
+        analysis.damage_to += event.damage
+        analysis.max_to = max(analysis.max_to, event.damage)
+        analysis.avg_to = round(analysis.damage_to / analysis.volleys_to)
+
+    if event.direction == "from":
+        analysis.volleys_from += 1
+        analysis.damage_from += event.damage
+        analysis.max_from = max(analysis.max_from, event.damage)
+        analysis.avg_from = round(analysis.damage_from / analysis.volleys_from)
+
+    analysis.first = min(analysis.first, event.event_time)
+    analysis.last = max(analysis.last, event.event_time)
+
+
+def update_combat_time(events: List[DamageEvent], analysis: LogAnalysis):
+    analysis.start = events[0].event_time
+    analysis.end = analysis.start
+    for event in events:
+        analysis.start = min(analysis.start, event.event_time)
+        analysis.end = max(analysis.end, event.event_time)

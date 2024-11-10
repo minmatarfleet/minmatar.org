@@ -10,6 +10,7 @@ from .combatlog import (
     enemy_analysis,
     weapon_analysis,
     time_analysis,
+    update_combat_time,
     LogAnalysis,
 )
 
@@ -47,5 +48,7 @@ def analyze_logs(request):
     analysis.enemies = enemy_analysis(dmg_events)
     analysis.weapons = weapon_analysis(dmg_events)
     analysis.times = time_analysis(dmg_events)
+
+    update_combat_time(dmg_events, analysis)
 
     return analysis
