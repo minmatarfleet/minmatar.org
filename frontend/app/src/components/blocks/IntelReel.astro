@@ -119,7 +119,7 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                 </div>
             }
 
-            {false &&
+            {is_superuser &&
                 <div class="[ swiper-slide ]" style="margin-right: 20px">
                     <SwiperCard class="[ animate-delay-200 ]" cover='/images/combatlog-tile-background.jpg'>
                         <FlexInline slot="header" gap='var(--space-2xs)'>

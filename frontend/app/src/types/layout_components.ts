@@ -877,24 +877,22 @@ export interface CombatLogAnalysis {
     damage_taken:           number;
     start:                  Date;
     end:                    Date;
-    damage_from_enemies:    Damage[];
-    damage_to_enemies:      Damage[];
-    damage_with_weapons:    WeaponDamage[];
+    enemies:                Damage[];
+    weapons:                Damage[];
     timeline:               string[];
     damage_in:              number[];
     damage_out:             number[];
 }
 
 export interface Damage {
-    ship_name:      string;
+    name:           string;
     item_type:      number;
-    value:          number;
-    percentage:     number;
-}
-
-export interface WeaponDamage {
-    weapon_name:    string;
-    item_type:      number;
-    value:          number;
-    percentage:     number;
+    total_from:     number;
+    dps_from:       number;
+    volleys_from:   number;
+    max_from:       number;
+    total_to:       number;
+    dps_to:         number;
+    volleys_to:     number;
+    max_to:         number;
 }

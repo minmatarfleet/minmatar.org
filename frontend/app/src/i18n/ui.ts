@@ -1082,5 +1082,10 @@ export const ui = {
         'damage_from_enemies': 'Damage from enemies',
         'combat_log_analizer': 'Combatlog analizer',
         'resubmit_combatlog': 'Please, try again.',
+        'volleys': 'volleys',
+        'weapons': 'Weapons',
+        'enemies': 'Enemies',
+        'damage_to_enemy': 'Damage to enemy',
+        'damage_from_enemy': 'Damage from enemy',
     },
 } as const;
