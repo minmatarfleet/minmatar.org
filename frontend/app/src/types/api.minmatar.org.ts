@@ -368,12 +368,30 @@ export interface MoonSummarySystem {
 }
 
 export interface CombatLog {
-    logged_events: number;
-    damage_done: number;
-    damage_taken: number;
-    damage_from_enemies: {};
-    damage_to_enemies: {};
-    damage_with_weapons: {};
-    damage_time_in: {};
-    damage_time_out: {};
+    logged_events:  number;
+    damage_done:    number;
+    damage_taken:   number;
+    weapons:        CombatLogItem[];
+    enemies:        CombatLogItem[];
+    times:          CombatLogItem[];
+    start:          Date;
+    end:            Date;
+}
+
+export const combatlog_item_category = [ 'Weapon', 'Enemy', 'TimeBucket' ] as const
+export type CombatlogItemCategory = typeof combatlog_item_category[number]
+
+export interface CombatLogItem {
+    name:           string;
+    category:       CombatlogItemCategory;
+    volleys_from:   number;
+    damage_from:    number;
+    max_from:       number;
+    avg_from:       number;
+    volleys_to:     number;
+    damage_to:      number;
+    max_to:         number;
+    avg_to:         number;
+    first:          Date;
+    last:           Date;
 }

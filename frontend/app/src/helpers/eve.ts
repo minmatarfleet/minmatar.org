@@ -1,7 +1,7 @@
-import type { Locales, CharacterRaces } from '@dtypes/layout_components'
+import type { Locales, CharacterRaces, Damage } from '@dtypes/layout_components'
 import * as cheerio from 'cheerio';
-import { decode_unicode_escapes, get_parenthesis_content } from '@helpers/string'
-import type { Damage, WeaponDamage } from '@dtypes/layout_components'
+import { decode_unicode_escapes } from '@helpers/string'
+import type { CombatLogItem } from '@dtypes/api.minmatar.org'
 import { get_item_id } from '@helpers/sde/items'
 
 export const get_zkillboard_character_link = (character_id):string => {
@@ -254,46 +254,22 @@ export const sec_status_class = (security:string):string => {
 
 const CAPSULE_TYPE_ID = 670
 
-export const parse_damage_from_logs = async (str:Object) => {
-    const damage:Damage[] = []
-    let total_damage:number = 0
+export const parse_damage_from_logs = async (enemies:CombatLogItem[]) => {
+    const damage = await Promise.all(enemies.map(async enemy => {
+        return {
+            name: enemy.name,
+            item_type: await get_item_id(enemy.name) ?? CAPSULE_TYPE_ID,
+            total_from: enemy.damage_from,
+            volleys_from: enemy.volleys_from,
+            dps_from: enemy.avg_from,
+            max_from: enemy.max_from,
+            total_to: enemy.damage_to,
+            volleys_to: enemy.volleys_to,
+            dps_to: enemy.avg_to,
+            max_to: enemy.max_to,
 
-    for (let enemy in str)
-        total_damage += str[enemy]
-
-    for (let enemy in str) {
-        let ship_name = get_parenthesis_content(enemy)
-        ship_name = ship_name ? ship_name : enemy
-        const value = str[enemy]
-
-        damage.push({
-            ship_name: ship_name ? ship_name : enemy,
-            item_type: await get_item_id(ship_name) ?? CAPSULE_TYPE_ID,
-            value: value,
-            percentage: total_damage > 0 ? value*100/total_damage : 0,
-        })
-    }
+        } as Damage
+    }))
 
     return damage
-}
-
-export const parse_weapon_damage_from_logs = async (str:Object) => {
-    const weapon_damage:WeaponDamage[] = []
-    let total_damage:number = 0
-
-    for (let weapon in str)
-        total_damage += str[weapon]
-
-    for (let weapon in str) {
-        const value = str[weapon]
-
-        weapon_damage.push({
-            weapon_name: weapon,
-            item_type: await get_item_id(weapon) ?? 0,
-            value: value,
-            percentage: total_damage > 0 ? value*100/total_damage : 0,
-        })
-    }
-
-    return weapon_damage
 }
