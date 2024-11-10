@@ -43,11 +43,6 @@ class LogAnalysis(BaseModel):
     logged_events: int = 0
     damage_done: int = 0
     damage_taken: int = 0
-    damage_from_enemies: Dict[str, int] = {}
-    damage_to_enemies: Dict[str, int] = {}
-    damage_with_weapons: Dict[str, int] = {}
-    damage_time_in: Dict[str, int] = {}
-    damage_time_out: Dict[str, int] = {}
     weapons: List[DamageAnalysis] = []
     enemies: List[DamageAnalysis] = []
     times: List[DamageAnalysis] = []
@@ -163,49 +158,6 @@ def total_damage(dmg_events):
             total_taken += event.damage
 
     return (total_done, total_taken)
-
-
-def enemy_damage(
-    dmg_events: List[DamageEvent], direction: str
-) -> Dict[str, int]:
-    result = {}
-
-    for event in dmg_events:
-        if event.direction == direction:
-            if event.entity not in result:
-                result[event.entity] = 0
-            result[event.entity] += event.damage
-
-    return result
-
-
-def weapon_damage(dmg_events: List[DamageEvent]) -> Dict[str, int]:
-    result = {}
-
-    for event in dmg_events:
-        if event.direction == "to":
-            if event.weapon not in result:
-                result[event.weapon] = 0
-            result[event.weapon] += event.damage
-
-    return result
-
-
-def damage_over_time(
-    dmg_events: List[DamageEvent], direction: str
-) -> Dict[str, int]:
-    results: Dict[str, int] = {}
-
-    for event in dmg_events:
-        time_bucket = event.event_time[0:-1] + "0"
-
-        if time_bucket not in results:
-            results[time_bucket] = 0
-
-        if event.direction == direction:
-            results[time_bucket] += event.damage
-
-    return results
 
 
 def enemy_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
