@@ -24,21 +24,51 @@ log = logging.getLogger(__name__)
 
 
 @router.post(
-    "/",
+    "",
     description="Process an Eve combat log",
-    response={200: LogAnalysis},
+    response={200: LogAnalysis, 400: ErrorResponse},
     openapi_extra={
         "requestBody": {
-            "content": {"text/plain": {"schema": {"type": "string"}}}
-        }
+            "content": {
+                "text/plain": {"schema": {"type": "string"}},
+                "application/zip": {
+                    "schema": {"type": "string", "format": "binary"}
+                },
+                "application/gzip": {
+                    "schema": {"type": "string", "format": "binary"}
+                },
+            },
+        },
     },
 )
-def analyze_logs(request):
-    content = request.body.decode("utf-8")
+def analyze_logs(
+    request,
+    fleet_id: int = 0,
+    fitting_id: int = 0,
+    start_time: str = "",
+    end_time: str = "",
+):
+    log.info("Combat log fleet ID = %d, fitting ID = %d", fleet_id, fitting_id)
+    log.info("Combat log time range = %s to %s", start_time, end_time)
 
-    analysis = analyze_parsed_log(content)
+    if request.content_type == "text/plain":
+        content = request.body.decode("utf-8")
+    elif request.content_type == "application/zip":
+        zipdata = io.BytesIO(request.body)
+        with zipfile.ZipFile(zipdata) as z:
+            zip_bytes = z.read(z.infolist()[0])
+        content = zip_bytes.decode("utf-8")
+    elif request.content_type == "application/gzip":
+        zipdata = io.BytesIO(request.body)
+        gzip_bytes = gzip.decompress(zipdata.read())
+        content = gzip_bytes.decode("utf-8")
+    else:
+        return ErrorResponse(
+            status=400,
+            detail="Content type not supported: " + request.content_type,
+        )
 
-    return analysis
+    return analyze_parsed_log(content)
 
 
 def analyze_parsed_log(content: str) -> LogAnalysis:
@@ -90,9 +120,8 @@ def analyze_zipped_logs(request):
         content = gzip_bytes.decode("utf-8")
     else:
         log.info(zipdata.read(4))
-        return ErrorResponse(
-            status=400,
-            detail="Content type not supported: " + request.content_type,
-        )
+        return 400, {
+            "detail": "Content type not supported: " + request.content_type,
+        }
 
     return analyze_parsed_log(content)
