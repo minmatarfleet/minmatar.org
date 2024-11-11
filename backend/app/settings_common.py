@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     # 'colorfield',
     # "bootstrap_datepicker_plus",
     "lpconversion",
+    # Combat log analysis
+    "combatlog",
 ]
 
 # Discord Login
