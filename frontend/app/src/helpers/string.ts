@@ -73,3 +73,14 @@ export const get_parenthesis_content = (str:string) => {
 
     return match ? match[1] : ''
 }
+
+export const b64_to_Uint8Array = (b64encoded_string:string):Uint8Array => {
+    const binaryString = atob(b64encoded_string)
+
+    const len = binaryString.length
+    const uint8Array = new Uint8Array(len)
+    for (let i = 0; i < len; i++)
+        uint8Array[i] = binaryString.charCodeAt(i)
+
+    return uint8Array
+}

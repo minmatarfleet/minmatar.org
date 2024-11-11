@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
+import { b64_to_Uint8Array } from '@helpers/string'
 
 import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
@@ -12,10 +13,11 @@ let combatlog_analysis_error:string  | null = null
 
 if (Astro.request.method === "POST") {
     try {
-        const combatlog = await Astro.request.formData()
-        const paste = JSON.parse(JSON.parse( combatlog.get("data")?.valueOf() as string ))
+        const form_data = await Astro.request.formData()
+        const base64_gziped_combatlog = form_data.get("gziped_combatlog")?.valueOf()
+        const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 
-        combat_log_analysis = await fetch_combatlog_analysis(paste)
+        combat_log_analysis = await fetch_combatlog_analysis(gziped_combatlog, true)
     } catch (error) {
         combatlog_analysis_error = prod_error_messages() ? t('combatlog_analysis_error') : error.message
     }
@@ -25,7 +27,7 @@ import CombatLogAnalysisComponent from '@components/blocks/CombatLogAnalysisComp
 ---
 
 {combatlog_analysis_error ?
-    <p>{combatlog_analysis_error}. {t('resubmit_combatlog')}</p>
+    <p set:html={combatlog_analysis_error} />
     :
     <CombatLogAnalysisComponent combat_log_analysis={combat_log_analysis as CombatLogAnalysis} />
 }
