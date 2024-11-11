@@ -18,33 +18,130 @@ const {
 
 const COMBAT_LOG_ANALYSIS_PARTIAL_URL = translatePath('/partials/combatlog_analysis_component/')
 
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
 ---
 
-<Button
-    size={size}
-    type="button"
-    color={color}
-    x-bind:disabled="disabled"
+<div
+    class="[ combatlog-dialog ]"
     x-data={`{
-        disabled: false,
-        show_analize_combatlog_dialog() {
-            this.disabled = true
-            
-            show_confirm_dialog({
-                title: '${t('analize_combatlog_dialog_title')}',
-                partial: '${translatePath('/partials/dialog_paste_combatlog/')}',
-                hx: {
-                    method: 'post',
-                    url: '${COMBAT_LOG_ANALYSIS_PARTIAL_URL}',
-                    target: '${target}',
-                    swap: 'innerHTML transition:true'
-                }
-            }).then( () => { this.disabled = false, document.getElementById('combatlog-texarea').value = '' } )
+        combatlog_dialog_open: false,
+        combatlog: '',
+        gziped_combatlog: '',
+        combatlogfile: '',
+        async update_status() {
+            let array_buffer = this.str2ab(this.combatlog)
+            console.log(array_buffer)
+
+            if (this.combatlogfile) {
+                const file = $refs.combatlogfile.files[0]
+                array_buffer = await file.arrayBuffer()
+                console.log(array_buffer)
+            }
+
+            const compressed_data = pako.gzip(new Uint8Array(array_buffer))
+            const b64encoded_string = btoa(String.fromCharCode.apply(null, compressed_data))
+            this.gziped_combatlog = b64encoded_string
+        },
+        str2ab(str) {
+            const encoder = new TextEncoder()
+            return encoder.encode(str)
+        },
+        open_dialog() {
+            $refs.combatlog_form.reset()
+            this.combatlog = ''
+            this.combatlogfile = ''
+            this.gziped_combatlog = ''
+
+            $nextTick(() => {
+                this.combatlog_dialog_open = true
+            })
+        },
+        close_dialog() {
+            this.combatlog_dialog_open = false
         }
     }`}
-    x-on:click="show_analize_combatlog_dialog()"
-    type="button"
 >
-    {t('paste_combatlog')}
-</Button>
+    <Button
+        size={size}
+        type="button"
+        color={color}
+        x-on:click.stop.prevent="open_dialog()"
+        type="button"
+    >
+        {t('analyze_combatlog')}
+    </Button>
+
+    <div class="[ system-finder-dialog ]">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            class="[ w-full max-w-[700px] component ]"
+            x-bind:class="(combatlog_dialog_open ? 'open' : '')"
+            x-bind:aria-hidden="combatlog_dialog_open == false"
+            x-trap="combatlog_dialog_open"
+            x-bind:inert="!combatlog_dialog_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
+        >
+            <form
+                hx-post={COMBAT_LOG_ANALYSIS_PARTIAL_URL}
+                enctype="multipart/form-data"
+                hx-trigger="submit"
+                hx-target={target}
+                hx-indicator=".loader"
+                hx-swap="innerHTML transition:true"
+                x-ref="combatlog_form"
+            >
+                <Flexblock gap="var(--space-l)">
+                    <h3>{t('analize_combatlog_dialog_title')}</h3>
+
+                    <Flexblock>
+                        <p>{t('analize_combatlog_dialog_text')}</p>
+                        <Flexblock class="[ w-full ]">
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label for="combatlog-texarea">{t('combat_log')}</label>
+                                <Textarea id="combatlog-texarea" x-model="combatlog" x-on:change="update_status()" rows="5" />
+                            </Flexblock>
+                            <FlexInline class="[ w-full ]">
+                                <hr class="[ border grow ]" />
+                                <small>{t('or')}</small>
+                                <hr class="[ border grow ]" />
+                            </FlexInline>
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label for="combat_log_file">{t('combat_log_file')}</label>
+                                <Input x-ref="combatlogfile" x-model="combatlogfile" type="file" id="combat_log_file" x-on:change="update_status()" />
+                            </Flexblock>
+                            <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
+                        </Flexblock>
+                    </Flexblock>
+
+                    <FlexInline justification='flex-end'>
+                        <Button
+                            size='sm'
+                            x-on:click="close_dialog()"
+                            type="submit"
+                        >
+                            {t('submit')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size='sm'
+                            x-on:click="close_dialog()"
+                        >
+                            {t('close')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+        </Dialog>
+    </div>
+</div>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>

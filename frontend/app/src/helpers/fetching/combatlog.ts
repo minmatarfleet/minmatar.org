@@ -1,10 +1,12 @@
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
-import { analize_log } from '@helpers/api.minmatar.org/combatlog'
+import { analize_log, analize_zipped_log } from '@helpers/api.minmatar.org/combatlog'
 import { generate_timeline } from '@helpers/date'
 import { parse_damage_from_logs } from '@helpers/eve'
 
-export async function fetch_combatlog_analysis(combatlog:string) {
-    const analysis = await analize_log(combatlog)
+export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gzipped:boolean) {
+    console.log(combatlog)
+    console.log(gzipped)
+    const analysis = gzipped ? await analize_zipped_log(combatlog as Uint8Array) : await analize_log(combatlog as string)
 
     const start_time = analysis.times[0].name
     const end_time = analysis.times[analysis.times.length - 1].name
@@ -15,16 +17,16 @@ export async function fetch_combatlog_analysis(combatlog:string) {
 
     const damage_time_in = {}
     const damage_time_out = {}
-    analysis.times.forEach(tick => damage_time_in[tick.name] = tick.damage_from)
-    analysis.times.forEach(tick => damage_time_out[tick.name] = tick.damage_to)
+    analysis.times.forEach(tick => {
+        damage_time_in[tick.name] = tick.damage_from
+        damage_time_out[tick.name] = tick.damage_to 
+    })
 
     timeline.forEach(tick => {
         damage_in.push(damage_time_in[tick] ?? 0)
         damage_out.push(damage_time_out[tick] ?? 0)
     })
 
-    console.log(analysis.enemies)
-    console.log(analysis.weapons)
     const enemies = await parse_damage_from_logs(analysis.enemies)
     const weapons = await parse_damage_from_logs(analysis.weapons)
     

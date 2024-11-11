@@ -17,16 +17,13 @@ const damage_in = combat_log_analysis?.damage_in
 const damage_out = combat_log_analysis?.damage_out
 
 import { format_date_time } from '@helpers/date'
-import { get_item_icon } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Grid from '@components/compositions/Grid.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 
 import TextGroup from '@components/blocks/TextGroup.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Badge from '@components/blocks/Badge.astro'
-import Square from '@components/blocks/Square.astro'
+import DamageBadge from '@components/blocks/DamageBadge.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
@@ -48,34 +45,12 @@ import Square from '@components/blocks/Square.astro'
                     <h3>{t('weapons')}</h3>
                     <Grid
                         class="[ component w-full grid-fill ]"
-                        row_gap="var(--space-3xs)"
+                        row_gap="var(--space-m)"
                         column_gap="var(--space-3xs)"
-                        min_item_width="300px"
+                        min_item_width="350px"
                     >
                         {combat_log_analysis?.weapons.map(weapon_damage =>
-                            <Badge
-                                title={weapon_damage.name}
-                                image={get_item_icon(weapon_damage.item_type)}
-                            >
-                                <Flexblock gap='var(--space-3xs)'>
-                                    <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
-                                        <Square
-                                            color='green'
-                                            x-init="tippy($el, tippy_options)"
-                                            data-tippy-content={t('damage_to_enemy')}
-                                        />
-                                        <small>{weapon_damage.total_to} ({weapon_damage.dps_to} dps) - {weapon_damage.volleys_to} {t('volleys')}</small>
-                                    </FlexInline>
-                                    <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
-                                        <Square
-                                            color='fleet-red'
-                                            x-init="tippy($el, tippy_options)"
-                                            data-tippy-content={t('damage_from_enemy')}
-                                        />
-                                        <small>{weapon_damage.total_from} ({weapon_damage.dps_from} dps) - {weapon_damage.volleys_from} {t('volleys')}</small>
-                                    </FlexInline>
-                                </Flexblock>
-                            </Badge>
+                            <DamageBadge damage={weapon_damage} />
                         )}
                     </Grid>
                 </Flexblock>
@@ -88,34 +63,12 @@ import Square from '@components/blocks/Square.astro'
                     <h3>{t('enemies')}</h3>
                     <Grid
                         class="[ component w-full grid-fill ]"
-                        row_gap="var(--space-3xs)"
+                        row_gap="var(--space-m)"
                         column_gap="var(--space-3xs)"
-                        min_item_width="300px"
+                        min_item_width="350px"
                     >
                         {combat_log_analysis?.enemies.map(enemy_damage =>
-                            <Badge
-                                title={enemy_damage.name}
-                                image={get_item_icon(enemy_damage.item_type)}
-                            >
-                                <Flexblock gap='var(--space-3xs)'>
-                                    <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
-                                        <Square
-                                            color='green'
-                                            x-init="tippy($el, tippy_options)"
-                                            data-tippy-content={t('damage_to_enemy')}
-                                        />
-                                        <small>{enemy_damage.total_to} ({enemy_damage.dps_to} dps) - {enemy_damage.volleys_to} {t('volleys')}</small>
-                                    </FlexInline>
-                                    <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
-                                        <Square
-                                            color='fleet-red'
-                                            x-init="tippy($el, tippy_options)"
-                                            data-tippy-content={t('damage_from_enemy')}
-                                        />
-                                        <small>{enemy_damage.total_from} ({enemy_damage.dps_from} dps) - {enemy_damage.volleys_from} {t('volleys')}</small>
-                                    </FlexInline>
-                                </Flexblock>
-                            </Badge>
+                            <DamageBadge damage={enemy_damage} />
                         )}
                     </Grid>
                 </Flexblock>

@@ -1,0 +1,44 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { Damage } from '@dtypes/layout_components'
+
+interface Props {
+    damage:    Damage;
+}
+
+const { damage } = Astro.props
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Badge from '@components/blocks/Badge.astro'
+import Square from '@components/blocks/Square.astro'
+---
+
+<Badge
+    title={damage.name}
+    image={get_item_icon(damage.item_type)}
+>
+    <Flexblock gap='0'>
+        <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
+            <Square
+                color='green'
+                x-init="tippy($el, tippy_options)"
+                data-tippy-content={t('damage_to_enemy')}
+            />
+            <small>{damage.total_to} ({damage.dps_to} dps) - {damage.volleys_to} {t('volleys')}</small>
+        </FlexInline>
+        <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
+            <Square
+                color='fleet-red'
+                x-init="tippy($el, tippy_options)"
+                data-tippy-content={t('damage_from_enemy')}
+            />
+            <small>{damage.total_from} ({damage.dps_from} dps) - {damage.volleys_from} {t('volleys')}</small>
+        </FlexInline>
+    </Flexblock>
+</Badge>
