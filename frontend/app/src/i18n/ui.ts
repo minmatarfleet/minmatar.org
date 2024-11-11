@@ -1092,5 +1092,7 @@ export const ui = {
         'combat_log_file': 'Combat log file (e.g., from HOME\\Documents\\EVE\\logs\\Gamelogs)',
         'submit': 'Submit',
         'analyze_combatlog': 'Analyze Combat Log',
+        'combatlog_fitting_placeholder': 'Select your ship fitting',
+        'combatlog_fleet_placeholder': 'Select the fleet',
     },
 } as const;

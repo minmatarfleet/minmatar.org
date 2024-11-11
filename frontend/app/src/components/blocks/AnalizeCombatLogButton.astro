@@ -2,30 +2,35 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_components';
 
 interface Porps {
-    size?:      ButtonSizes;
-    color?:     ButtonColors;
-    target:     string;
+    size?:              ButtonSizes;
+    color?:             ButtonColors;
+    target:             string;
+    fitting_options:    SelectOptions[];
+    fleets_options:     SelectOptions[];
 }
 
 const {
     size = 'lg',
     color = 'green',
     target,
+    fitting_options,
+    fleets_options,
 } = Astro.props
 
 const COMBAT_LOG_ANALYSIS_PARTIAL_URL = translatePath('/partials/combatlog_analysis_component/')
 
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import Dialog from '@components/blocks/Dialog.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
+import SelectFinder from './SelectFinder.astro';
 ---
 
 <div
@@ -33,16 +38,18 @@ import Button from '@components/blocks/Button.astro';
     x-data={`{
         combatlog_dialog_open: false,
         combatlog: '',
+        fitting: '-1',
+        fleet: '-1',
+        fitting_options: ${JSON.stringify(fitting_options)},
+        fleets_options: ${JSON.stringify(fleets_options)},
         gziped_combatlog: '',
         combatlogfile: '',
         async update_status() {
             let array_buffer = this.str2ab(this.combatlog)
-            console.log(array_buffer)
 
             if (this.combatlogfile) {
                 const file = $refs.combatlogfile.files[0]
                 array_buffer = await file.arrayBuffer()
-                console.log(array_buffer)
             }
 
             const compressed_data = pako.gzip(new Uint8Array(array_buffer))
@@ -58,6 +65,8 @@ import Button from '@components/blocks/Button.astro';
             this.combatlog = ''
             this.combatlogfile = ''
             this.gziped_combatlog = ''
+            this.fitting = '-1'
+            this.fleet = '-1'
 
             $nextTick(() => {
                 this.combatlog_dialog_open = true
@@ -103,6 +112,22 @@ import Button from '@components/blocks/Button.astro';
                     <h3>{t('analize_combatlog_dialog_title')}</h3>
 
                     <Flexblock>
+                        <Grid min_item_width="250px">
+                            <SelectFinder
+                                name="fitting"
+                                model="fitting"
+                                placeholder={t('combatlog_fitting_placeholder')}
+                                options="fitting_options"
+                                value = '-1'
+                            />
+                            <SelectFinder
+                                name="fleet"
+                                model="fleet"
+                                placeholder={t('combatlog_fleet_placeholder')}
+                                options="fleets_options"
+                                value = '-1'
+                            />
+                        </Grid>
                         <p>{t('analize_combatlog_dialog_text')}</p>
                         <Flexblock class="[ w-full ]">
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
@@ -116,7 +141,13 @@ import Button from '@components/blocks/Button.astro';
                             </FlexInline>
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                 <label for="combat_log_file">{t('combat_log_file')}</label>
-                                <Input x-ref="combatlogfile" x-model="combatlogfile" type="file" id="combat_log_file" x-on:change="update_status()" />
+                                <Input
+                                    x-ref="combatlogfile"
+                                    x-model="combatlogfile"
+                                    type="file"
+                                    id="combat_log_file"
+                                    x-on:change="update_status()"
+                                />
                             </Flexblock>
                             <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
                         </Flexblock>
