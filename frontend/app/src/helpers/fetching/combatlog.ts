@@ -3,10 +3,8 @@ import { analize_log, analize_zipped_log } from '@helpers/api.minmatar.org/comba
 import { generate_timeline } from '@helpers/date'
 import { parse_damage_from_logs } from '@helpers/eve'
 
-export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gzipped:boolean) {
-    console.log(combatlog)
-    console.log(gzipped)
-    const analysis = gzipped ? await analize_zipped_log(combatlog as Uint8Array) : await analize_log(combatlog as string)
+export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gzipped:boolean, fitting_id?:number, fleet_id?:number) {
+    const analysis = gzipped ? await analize_zipped_log(combatlog as Uint8Array, fitting_id, fleet_id) : await analize_log(combatlog as string)
 
     const start_time = analysis.times[0].name
     const end_time = analysis.times[analysis.times.length - 1].name

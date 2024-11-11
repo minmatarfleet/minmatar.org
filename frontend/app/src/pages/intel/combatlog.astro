@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -13,6 +13,37 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 if (!user)
     return HTTP_404_Not_Found()
+
+import type { SelectOptions } from '@dtypes/layout_components'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { get_fleets } from '@helpers/api.minmatar.org/fleets'
+
+let fittings:Fitting[] = []
+let fitting_options:SelectOptions[] = []
+let combatlog_selects_error:string | false = false
+let fleets:number[] = []
+let fleets_options:SelectOptions[] = []
+
+try {
+    fittings = await get_fittings()
+    fitting_options = fittings.map(fitting => {
+        return {
+            label: fitting.name,
+            value: fitting.id,
+        } as SelectOptions
+    })
+
+    fleets = await get_fleets(false)
+    fleets_options = fleets.map(fleet => {
+        return {
+            label: `${t('fleet')} ${fleet}`,
+            value: fleet,
+        } as SelectOptions
+    })
+} catch (error) {
+    combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
+}
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -57,7 +88,12 @@ const page_title = t('intel.combatlog.page_title');
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <AnalizeCombatLogButton color={'green'} target="#combatlog">
+                <AnalizeCombatLogButton
+                    color={'green'}
+                    target="#combatlog"
+                    fitting_options={fitting_options}
+                    fleets_options={fleets_options}
+                >
                     {t('paste_combatlog')}
                 </AnalizeCombatLogButton>
             </FlexInline>

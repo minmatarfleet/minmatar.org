@@ -79,8 +79,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         x-model={model}
         {...attributes}
     >
+        <option value="-1">{placeholder}</option>
         <template x-for={`option in ${options}`}>
-            <option x-bind:value="option?.value ?? option?.label" x-text="option.label"  hidden/>
+            <option x-bind:value="option?.value ?? option?.label" x-text="option.label" />
         </template>
     </select>
 
@@ -92,6 +93,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         readonly
         x-bind:aria-expanded="open"
         x-bind:aria-controls="options_id"
+        type="button"
     >
         <span
             x-data={`{
@@ -144,6 +146,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                         return JSON.stringify(filtered) === JSON.stringify([ false ])
                     }
                 }`}
+                type="button"
             >
                 <Wrapper
                     padding_block='0'
@@ -162,6 +165,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                             return JSON.stringify(filtered) === JSON.stringify([ false ]) || filtered.includes(option?.value ?? option?.label)
                         }
                     }`}
+                    type="button"
                 >
                     <Wrapper
                         padding_block='0'
@@ -200,6 +204,10 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 </style>
 
 <style lang="scss">
+    .select-finder {
+        z-index: var(--sticky-z-index);
+    }
+
     button {
         &:hover,
         &:focus-visible {
