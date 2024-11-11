@@ -104,8 +104,8 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     return analysis
 
 
-@router.get("/{id}", response={200: LogAnalysis})
-def get_saved_log(request, id: int):
-    db_log = CombatLog.objects.get(id=id)
+@router.get("/{log_id}", response={200: LogAnalysis})
+def get_saved_log(request, log_id: int):
+    db_log = CombatLog.objects.get(id=log_id)
     analysis = analyze_parsed_log(db_log.log_text)
     return analysis
