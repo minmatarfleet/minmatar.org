@@ -7,6 +7,8 @@ from ninja import Router
 
 from app.errors import ErrorResponse
 
+from .models import CombatLog
+
 from .combatlog import (
     damage_events,
     parse,
@@ -68,7 +70,18 @@ def analyze_logs(
             detail="Content type not supported: " + request.content_type,
         )
 
-    return analyze_parsed_log(content)
+    analysis = analyze_parsed_log(content)
+
+    if fleet_id > 0 or fitting_id > 0:
+        combat_log = CombatLog(log_text=content)
+        if fleet_id > 0:
+            combat_log.fleet_id = fleet_id
+        if fitting_id > 0:
+            combat_log.fitting_id = fitting_id
+        combat_log.save()
+        analysis.db_id = combat_log.id
+
+    return analysis
 
 
 def analyze_parsed_log(content: str) -> LogAnalysis:
@@ -91,37 +104,8 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     return analysis
 
 
-@router.post(
-    "/zipfile",
-    description="Process a zipped Eve combat log",
-    response={200: LogAnalysis, 400: ErrorResponse},
-    openapi_extra={
-        "requestBody": {
-            "content": {
-                "application/zip": {
-                    "schema": {"type": "string", "format": "binary"}
-                },
-                "application/gzip": {
-                    "schema": {"type": "string", "format": "binary"}
-                },
-            }
-        }
-    },
-)
-def analyze_zipped_logs(request):
-    zipdata = io.BytesIO(request.body)
-
-    if request.content_type == "application/zip":
-        with zipfile.ZipFile(zipdata) as z:
-            zip_bytes = z.read(z.infolist()[0])
-        content = zip_bytes.decode("utf-8")
-    elif request.content_type == "application/gzip":
-        gzip_bytes = gzip.decompress(zipdata.read())
-        content = gzip_bytes.decode("utf-8")
-    else:
-        log.info(zipdata.read(4))
-        return 400, {
-            "detail": "Content type not supported: " + request.content_type,
-        }
-
-    return analyze_parsed_log(content)
+@router.get("/{log_id}", response={200: LogAnalysis})
+def get_saved_log(request, log_id: int):
+    db_log = CombatLog.objects.get(id=log_id)
+    analysis = analyze_parsed_log(db_log.log_text)
+    return analysis
