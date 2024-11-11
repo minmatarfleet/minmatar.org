@@ -1,8 +1,11 @@
 import io
 import zipfile
+import gzip
 import logging
 
 from ninja import Router
+
+from app.errors import ErrorResponse
 
 from .combatlog import (
     damage_events,
@@ -61,13 +64,16 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 @router.post(
     "/zipfile",
     description="Process a zipped Eve combat log",
-    response={200: LogAnalysis},
+    response={200: LogAnalysis, 400: ErrorResponse},
     openapi_extra={
         "requestBody": {
             "content": {
                 "application/zip": {
                     "schema": {"type": "string", "format": "binary"}
-                }
+                },
+                "application/gzip": {
+                    "schema": {"type": "string", "format": "binary"}
+                },
             }
         }
     },
@@ -75,9 +81,18 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 def analyze_zipped_logs(request):
     zipdata = io.BytesIO(request.body)
 
-    with zipfile.ZipFile(zipdata) as z:
-        zip_bytes = z.read(z.infolist()[0])
-
-    content = zip_bytes.decode("utf-8")
+    if request.content_type == "application/zip":
+        with zipfile.ZipFile(zipdata) as z:
+            zip_bytes = z.read(z.infolist()[0])
+        content = zip_bytes.decode("utf-8")
+    elif request.content_type == "application/gzip":
+        gzip_bytes = gzip.decompress(zipdata.read())
+        content = gzip_bytes.decode("utf-8")
+    else:
+        log.info(zipdata.read(4))
+        return ErrorResponse(
+            status=400,
+            detail="Content type not supported: " + request.content_type,
+        )
 
     return analyze_parsed_log(content)
