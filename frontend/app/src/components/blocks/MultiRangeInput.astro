@@ -1,0 +1,76 @@
+---
+interface Props {
+    values:     any[];
+}
+
+const {
+    values,
+} = Astro.props
+---
+
+<div
+    class="[ multi-range-input ]"
+    x-data={`{
+        values: ${JSON.stringify(values)},
+        init() {
+            noUiSlider.create($el, {
+                start: [this.values[0], this.values[this.values.length - 1]],
+                connect: true,
+                tooltips: true,
+                range: {
+                    min: 0,
+                    max: this.values.length - 1,
+                },
+                step: 1,
+                format: {
+                    to: (index) => this.values[Math.round(index)],
+                    from: (value) => this.values.indexOf(value),
+                }
+            })
+
+            $el.noUiSlider.on('update', function (values, handle) {
+                min = values[0]
+                max = values[1]
+            })
+        }
+    }`}
+/>
+
+<style lang="scss" is:global>
+    .multi-range-input {
+        border-radius: 0;
+        background-color: transparent;
+        box-shadow: none;
+        border: solid 1px var(--border-color);
+
+        .noUi-connect {
+            background-color: var(--fleet-yellow);
+        }
+
+        .noUi-tooltip {
+            border-radius: 0;
+            font-size: var(--step--2);
+            padding: 0 var(--space-3xs);
+            border: solid 1px var(--border-color);
+            background-color: transparent;
+            color: var(--highlight);
+        }
+    }
+
+    .multi-range-input .noUi-handle {
+        border-radius: 0;
+        background: white;
+        height: 18px;
+        width: 18px;
+        top: 0;
+        right: -9px;
+        box-shadow: none;
+        height: 16px;
+        width: 16px;
+
+        &:before,
+        &:after {
+            display: none;
+        }
+    }
+</style>

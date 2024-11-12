@@ -1095,5 +1095,10 @@ export const ui = {
         'combatlog_fitting_placeholder': 'Select your ship fitting',
         'combatlog_fleet_placeholder': 'Select the fleet',
         'combatlog_analizer_store_notice': 'By setting a fitting, a fleet or both the analisis will be stored for further use by the Fleet Commanders or the Fitting Team.',
+        'set': 'Set',
+        'damage': 'Damage',
+        'damage_taken': 'Damage taken',
+        'damage_done': 'Damage done',
+        'ticks_axis': 'Tick (events in 10 seconds spam)',
     },
 } as const;
