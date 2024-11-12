@@ -9,11 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: executing remote ssh commands using password
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.UBUNTU_HOST }}
           username: ${{ secrets.UBUNTU_USERNAME }}
           password: ${{ secrets.UBUNTU_PASSWORD }}
+          debug: true
           script: cd /home/minmatar/minmatar.org && df -h . && git pull && docker-compose -f docker-compose-prod.yml up -d --build &&  docker image prune -a -f
   notify-discord-failure:
     name: Notify Discord Failure
