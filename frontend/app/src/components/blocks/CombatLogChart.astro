@@ -1,0 +1,129 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    timeline_time:  string[];
+    damage_in:      number[];
+    damage_out:     number[];
+}
+
+const {
+    timeline_time,
+    damage_in,
+    damage_out,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
+---
+
+<Flexblock
+    x-data={`{
+        min: 0,
+        max: 0,
+        timeline_time: ${JSON.stringify(timeline_time)},
+        damage_in: ${JSON.stringify(damage_in)},
+        damage_out: ${JSON.stringify(damage_out)},
+        init() {
+            const ctx = document.getElementById("damage-log-chart").getContext("2d")
+
+            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
+            Chart.defaults.color = '#ffffff';
+            Chart.defaults.font.family = 'Montserrat Variable';
+
+            const damage_log_chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: this.timeline_time,
+                    datasets: [
+                        {
+                            label: "${t('damage_taken')}",
+                            data: this.damage_in,
+                            pointStyle: 'rect',
+                            backgroundColor: '#b53620',
+                            borderColor: '#b53620',
+                            borderWidth: 0,
+                            pointRadius: function(context) {
+                                const value = context.raw
+                                return value === 0 ? 0 : 2
+                            }
+                        },
+                        {
+                            label: "${t('damage_done')}",
+                            data: this.damage_out,
+                            pointStyle: 'rect',
+                            backgroundColor: '#198754',
+                            borderColor: '#198754',
+                            borderWidth: 0,
+                            pointRadius: function(context) {
+                                const value = context.raw
+                                return value === 0 ? 0 : 2
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "${t('ticks_axis')}"
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: "${t('damage')}"
+                            },
+                            grid: {
+                                display: false
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: "top"
+                        },
+                        title: {
+                            display: false,
+                        }
+                    }
+                }
+            })
+
+            const set_axis_button = document.querySelector('.set-x-axis')
+            set_axis_button.addEventListener('click', () => {
+                damage_log_chart.options.scales.x.min = this.min
+                damage_log_chart.options.scales.x.max = this.max
+                damage_log_chart.update()
+            })
+        }
+    }`}
+>
+    <div class="[ max-h-[80vh] h-dvh ]">
+        <canvas id="damage-log-chart"></canvas>
+    </div>
+    <FlexInline>
+        <Button size='sm' narrow={true} class="[ set-x-axis ]">
+            {t('set')}
+        </Button>
+        <div class="[ grow ]">
+            <MultiRangeInput values={timeline_time} />
+            <input type="hidden" x-model="min" />
+            <input type="hidden" x-model="max" />
+        </div>
+    </FlexInline>
+</Flexblock>
