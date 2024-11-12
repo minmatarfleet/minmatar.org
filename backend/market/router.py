@@ -5,6 +5,7 @@ from typing import List
 import pytz
 from ninja import Router
 from pydantic import BaseModel
+from app.errors import ErrorResponse
 
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
@@ -16,6 +17,25 @@ from market.models import (
 
 logger = logging.getLogger(__name__)
 router = Router(tags=["Market"])
+
+
+class CreateEveMarketContractReponsibilityRequest(BaseModel):
+    expectation_id: int
+    entity_id: int
+
+
+class CreateEveMarketContractReponsibilityResponse(BaseModel):
+    responsibility_id: int
+    entity_id: int
+
+
+class MarketExpectationResponse(BaseModel):
+    expectation_id: int
+    fitting_id: int
+    fitting_name: str
+    location_id: int
+    location_name: str
+    quantity: int
 
 
 class MarketCharacterResponse(BaseModel):
@@ -48,6 +68,24 @@ class MarketContractResponse(BaseModel):
     current_quantity: int
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
     responsibilities: List[MarketContractResponsibilityResponse]
+
+
+def _get_entity_ids(request):
+    characters = EveCharacter.objects.filter(
+        token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
+        token__user=request.user,
+    ).distinct()
+    corporations = EveCorporation.objects.filter(
+        ceo__token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
+        ceo__token__user=request.user,
+        alliance__name__in=[
+            "Minmatar Fleet Alliance",
+            "Minmatar Fleet Associates",
+        ],
+    ).distinct()
+    return [character.character_id for character in characters] + [
+        corporation.corporation_id for corporation in corporations
+    ]
 
 
 @router.get(
@@ -96,6 +134,58 @@ def get_market_corporations(request):
         )
 
     return response
+
+
+@router.get(
+    "/expectations",
+    description="Fetch all contract seeding expectations",
+    response=List[MarketExpectationResponse],
+)
+def fetch_eve_market_expectations(request):
+    expectations = EveMarketContractExpectation.objects.all()
+    response = []
+    for expectation in expectations:
+        response.append(
+            MarketExpectationResponse(
+                expectation_id=expectation.id,
+                fitting_id=expectation.fitting.id,
+                fitting_name=expectation.fitting.name,
+                location_id=expectation.location.location_id,
+                location_name=expectation.location.location_name,
+                quantity=expectation.quantity,
+            )
+        )
+
+    return response
+
+
+@router.post(
+    "/responsibilities",
+    description="Create a new responsibility for a contract seeding expectation",
+    response={
+        200: CreateEveMarketContractReponsibilityResponse,
+        403: ErrorResponse,
+    },
+)
+def create_eve_market_contract_responsibility(
+    request, payload: CreateEveMarketContractReponsibilityRequest
+):
+    if not request.user.has_perm("market.add_evemarketcontractresponsibility"):
+        return 403, {
+            "detail": "User missing permission market.add_evemarketcontractresponsibility"
+        }
+    if payload.entity_id not in _get_entity_ids(request):
+        return 403, {"detail": "User does not own entity"}
+
+    expectation = EveMarketContractExpectation.objects.get(
+        id=payload.expectation_id
+    )
+    responsibility = EveMarketContractResponsibility.objects.create(
+        expectation=expectation, entity_id=payload.entity_id
+    )
+    return CreateEveMarketContractReponsibilityResponse(
+        responsibility_id=responsibility.id, entity_id=responsibility.entity_id
+    )
 
 
 @router.get(
