@@ -130,7 +130,7 @@ export const ui = {
         
         'intel.moon_tracking.system.leading_text': 'Assess the level of completion for scanning on moons in the system and colaborate scanning the missing ones.',
         
-        'intel.combatlog.page_title': 'Combatlog analizer',
+        'intel.combatlog.page_title': 'Combatlog analyzer',
         'intel.combatlog.leading_text': 'Get an insight of the fight and analize why your ship ended into a pile of debris.',
         'intel.combatlog.cover_alt': 'A fleet of Munins hammering a Machariel',
 
@@ -1080,7 +1080,7 @@ export const ui = {
         'damage_with_weapons': 'Damage with weapons',
         'damage_to_enemies': 'Damage to enemies',
         'damage_from_enemies': 'Damage from enemies',
-        'combat_log_analizer': 'Combatlog analizer',
+        'combat_log_analyzer': 'Combatlog analyzer',
         'resubmit_combatlog': 'Please, try again.',
         'volleys': 'volleys',
         'weapons': 'Weapons',
@@ -1094,5 +1094,6 @@ export const ui = {
         'analyze_combatlog': 'Analyze Combat Log',
         'combatlog_fitting_placeholder': 'Select your ship fitting',
         'combatlog_fleet_placeholder': 'Select the fleet',
+        'combatlog_analizer_store_notice': 'By setting a fitting, a fleet or both the analisis will be stored for further use by the Fleet Commanders or the Fitting Team.',
     },
 } as const;

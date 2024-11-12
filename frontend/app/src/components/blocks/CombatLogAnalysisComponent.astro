@@ -35,7 +35,7 @@ import DamageBadge from '@components/blocks/DamageBadge.astro';
     >
         <TextGroup title={t('log_start')}>{format_date_time(lang, combat_log_analysis?.start)}</TextGroup>
         <TextGroup title={t('log_end')}>{format_date_time(lang, combat_log_analysis?.end)}</TextGroup>
-        <TextGroup title={t('logged_events')}>{combat_log_analysis?.logged_events}</TextGroup>
+        <TextGroup title={t('logged_events')}>{combat_log_analysis?.logged_events.toLocaleString()}</TextGroup>
     </Grid>
 
     <Flexblock>
@@ -95,6 +95,7 @@ import DamageBadge from '@components/blocks/DamageBadge.astro';
     console.log(damage_in)
     console.log(damage_out)
 
+    const timeline_time = timeline.map(datetime => datetime.split(' ')[1])
     const damage_in_scatter = []
     const damage_out_scatter = []
 
@@ -123,24 +124,33 @@ import DamageBadge from '@components/blocks/DamageBadge.astro';
     Chart.defaults.font.family = 'Montserrat Variable';
 
     new Chart(ctx, {
-        type: "scatter",
+        type: "line",
         data: {
+            labels: timeline_time,
             datasets: [
                 {
                     label: "Damage taken",
-                    data: damage_in_scatter,
+                    data: damage_in,
                     pointStyle: 'rect',
-                    pointRadius: 2,
                     backgroundColor: '#b53620',
                     borderColor: '#b53620',
+                    borderWidth: 0,
+                    pointRadius: function(context) {
+                        const value = context.raw
+                        return value === 0 ? 0 : 2
+                    }
                 },
                 {
                     label: "Damage done",
-                    data: damage_out_scatter,
+                    data: damage_out,
                     pointStyle: 'rect',
-                    pointRadius: 2,
                     backgroundColor: '#198754',
                     borderColor: '#198754',
+                    borderWidth: 0,
+                    pointRadius: function(context) {
+                        const value = context.raw
+                        return value === 0 ? 0 : 2
+                    }
                 }
             ]
         },
@@ -157,9 +167,8 @@ import DamageBadge from '@components/blocks/DamageBadge.astro';
                         display: false
                     },
                     ticks: {
-                        display: false
+                        maxTicksLimit: 10
                     },
-                    max: (timeline?.length ?? 9) + 1,
                 },
                 y: {
                     beginAtZero: true,
