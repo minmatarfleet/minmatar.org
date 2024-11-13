@@ -132,6 +132,7 @@ class DiscordClient(DiscordBaseClient):
             "redirect_uri": settings.DISCORD_REDIRECT_URL,
             "scope": "identify",
         }
+        logger.info("Discord OAuth2 Token Body: %s", data)
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = requests.post(
             "https://discord.com/api/oauth2/token",
@@ -139,7 +140,7 @@ class DiscordClient(DiscordBaseClient):
             headers=headers,
             timeout=10,
         )
-        logger.info("Discord OAuth2 Token Exchange: %s", response.json())
+        logger.info("Discord OAuth2 Token Response: %s", response.json())
         response.raise_for_status()
         credentials = response.json()
         access_token = credentials["access_token"]
