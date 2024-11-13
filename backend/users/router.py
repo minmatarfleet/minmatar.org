@@ -82,14 +82,12 @@ def callback(request, code: str):
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
-    logger.info("Redirecting to authentication URL...")
-    return redirect(
-        request.session.get(
-            "authentication_redirect_url", "https://my.minmatar.org/auth/login"
-        )
-        + "?token="
-        + encoded_jwt_token
-    )
+    logger.info("Signed JWT Token: %s", encoded_jwt_token)
+    redirect_url = request.session["authentication_redirect_url"]
+    if not redirect_url:
+        redirect_url = "https://my.minmatar.org/auth/login"
+    logger.info("Redirecting to authentication URL... %s", redirect_url)
+    return redirect(redirect_url + "?token=" + encoded_jwt_token)
 
 
 @router.get(
