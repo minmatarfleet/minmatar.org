@@ -17,7 +17,9 @@ auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={setting
 
 def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     # get next and store in session
+    logger.info("Adding redirect URL to session: %s", request.GET.get("next"))
     request.session["next"] = request.GET.get("next")
+    logger.info("Redirecting to Discord for login %s", auth_url_discord)
     return redirect(auth_url_discord)
 
 
@@ -67,7 +69,12 @@ def discord_login_redirect(request: HttpRequest):
 
     login(request, django_user)
     if request.session.get("next"):
+        logger.info(
+            "[DISCORD VIEW] :: Redirecting to next URL: %s",
+            request.session["next"],
+        )
         return redirect(request.session["next"])
+    logger.info("[DISCORD VIEW] :: Redirecting to admin panel")
     return redirect("/admin")
 
 
