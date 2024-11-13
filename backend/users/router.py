@@ -33,6 +33,8 @@ class ErrorResponse(BaseModel):
 )
 def login(request, redirect_url: str):
     logger.debug(f"Adding redirect URL to session: {redirect_url}")
+    if not redirect_url:
+        redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
     logger.debug(f"Current session: {request.session}")
     return redirect(auth_url_discord)
