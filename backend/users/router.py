@@ -80,9 +80,12 @@ def callback(request, code: str):
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
     logger.info("Signed JWT Token: %s", encoded_jwt_token)
-    redirect_url = request.session["authentication_redirect_url"]
-    if not redirect_url:
-        redirect_url = "https://my.minmatar.org/auth/login"
+    redirect_url = "https://my.minmatar.org/auth/login"
+    try:
+        redirect_url = request.session["authentication_redirect_url"]
+    except KeyError:
+        logger.warning("No redirect URL found in session")
+
     logger.info("Redirecting to authentication URL... %s", redirect_url)
     return redirect(redirect_url + "?token=" + encoded_jwt_token)
 
