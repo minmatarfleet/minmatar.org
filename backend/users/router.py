@@ -32,11 +32,11 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
-    logger.debug(f"Adding redirect URL to session: {redirect_url}")
+    logger.info(f"Adding redirect URL to session: {redirect_url}")
     if not redirect_url:
         redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
-    logger.debug(f"Current session: {request.session}")
+    logger.info(f"Current session: {request.session}")
     return redirect(auth_url_discord)
 
 
