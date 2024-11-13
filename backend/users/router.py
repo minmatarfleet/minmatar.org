@@ -77,7 +77,9 @@ def callback(request, code: str):
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
     return redirect(
-        request.session["authentication_redirect_url"]
+        request.session.get(
+            "authentication_redirect_url", "https://my.minmatar.org/auth/login"
+        )
         + "?token="
         + encoded_jwt_token
     )
