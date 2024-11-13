@@ -54,6 +54,8 @@ DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = os.environ.get(
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
 ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
+ESI_CONNECTION_ERROR_MAX_RETRIES = 0  # 0 means no retries
+ESI_SERVER_ERROR_MAX_RETRIES = 0  # 0 means no retries
 
 # MUMBLE
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
