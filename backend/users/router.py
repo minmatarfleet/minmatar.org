@@ -70,9 +70,6 @@ def callback(request, code: str):
             avatar=user["avatar"],
         )
 
-    logger.info("Logging in user...")
-    login(request, django_user)
-
     payload = {
         "user_id": django_user.id,
         "username": user["username"],
