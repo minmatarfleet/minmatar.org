@@ -52,7 +52,12 @@ def discord_login_redirect(request: HttpRequest):
         login(request, django_user)
 
         if request.session.get("next"):
+            logger.info(
+                "[DISCORD VIEW] :: Redirecting to next URL: %s",
+                request.session["next"],
+            )
             return redirect(request.session["next"])
+        logger.info("[DISCORD VIEW] :: Redirecting to admin panel")
         return redirect("/admin")
 
     logger.info("[DISCORD VIEW] :: User does not exist. Creating user...")
