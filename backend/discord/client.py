@@ -133,16 +133,15 @@ class DiscordClient(DiscordBaseClient):
             "scope": "identify",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(
+        response = self.post(
             "https://discord.com/api/oauth2/token",
             data=data,
             headers=headers,
             timeout=10,
         )
         credentials = response.json()
-        print(credentials)
         access_token = credentials["access_token"]
-        response = requests.get(
+        response = self.get(
             "https://discord.com/api/v6/users/@me",
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=10,
