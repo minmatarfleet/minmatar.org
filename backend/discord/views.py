@@ -8,9 +8,10 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 
 from .models import DiscordUser
+import logging
 
 # Create your views here.
-
+logger = logging.getLogger(__name__)
 auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_ADMIN_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
 
 
@@ -26,11 +27,15 @@ def discord_logout(request: HttpRequest):
 
 
 def discord_login_redirect(request: HttpRequest):
+    logger.info(
+        "[DISCORD VIEW] :: Recived discord callback with code: %s",
+        request.GET.get("code"),
+    )
     code = request.GET.get("code")
     user = exchange_code(code)
 
     if DiscordUser.objects.filter(id=user["id"]).exists():
-        print("User was found. Logging in...")
+        logger.info("[DISCORD VIEW] :: User already exists. Logging in...")
         discord_user = DiscordUser.objects.get(id=user["id"])
         discord_user.discord_tag = (
             user["username"] + "#" + user["discriminator"]
@@ -48,6 +53,7 @@ def discord_login_redirect(request: HttpRequest):
             return redirect(request.session["next"])
         return redirect("/admin")
 
+    logger.info("[DISCORD VIEW] :: User does not exist. Creating user...")
     django_user = User.objects.create(username=user["username"])
     django_user.username = user["username"]
     django_user.save()

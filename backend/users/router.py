@@ -42,9 +42,11 @@ def login(request, redirect_url: str):
 
 @router.get("/callback", include_in_schema=False)
 def callback(request, code: str):
+    logger.info("Recived discord callback with code: %s", code)
     user = discord.exchange_code(code)
+    logger.info("Successfully exchanged code for user: %s", user)
     if DiscordUser.objects.filter(id=user["id"]).exists():
-        print("User was found. Logging in...")
+        logger.info("User already exists. Logging in...")
         discord_user = DiscordUser.objects.get(id=user["id"])
         discord_user.discord_tag = (
             user["username"] + "#" + user["discriminator"]
@@ -56,6 +58,7 @@ def callback(request, code: str):
         django_user.username = user["username"]
         django_user.save()
     else:
+        logger.info("User does not exist. Creating user...")
         django_user = User.objects.create(username=user["username"])
         django_user.username = user["username"]
         django_user.save()
@@ -67,6 +70,9 @@ def callback(request, code: str):
             avatar=user["avatar"],
         )
 
+    logger.info("Logging in user...")
+    login(request, django_user)
+
     payload = {
         "user_id": django_user.id,
         "username": user["username"],
@@ -76,6 +82,7 @@ def callback(request, code: str):
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
+    logger.info("Redirecting to authentication URL...")
     return redirect(
         request.session.get(
             "authentication_redirect_url", "https://my.minmatar.org/auth/login"
