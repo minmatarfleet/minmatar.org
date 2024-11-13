@@ -6,6 +6,7 @@ import pytz
 from ninja import Router
 from pydantic import BaseModel
 from app.errors import ErrorResponse
+from authentication import AuthBearer
 
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
@@ -90,6 +91,7 @@ def _get_entity_ids(request):
 
 @router.get(
     "/characters",
+    auth=AuthBearer(),
     response=List[MarketCharacterResponse],
     description="List all owned characters with sufficient market scopes",
 )
@@ -112,6 +114,7 @@ def get_market_characters(request):
 
 @router.get(
     "/corporations",
+    auth=AuthBearer(),
     response=List[MarketCorporationResponse],
     description="List all owned corporations with sufficient market scopes",
 )
@@ -138,6 +141,7 @@ def get_market_corporations(request):
 
 @router.get(
     "/expectations",
+    auth=AuthBearer(),
     description="Fetch all contract seeding expectations",
     response=List[MarketExpectationResponse],
 )
@@ -161,6 +165,7 @@ def fetch_eve_market_expectations(request):
 
 @router.post(
     "/responsibilities",
+    auth=AuthBearer(),
     description="Create a new responsibility for a contract seeding expectation",
     response={
         200: CreateEveMarketContractReponsibilityResponse,
