@@ -88,7 +88,11 @@ def exchange_code(code: str):
         headers=headers,
         timeout=10,
     )
-    print(response.json())
+    logger.info("[DISCORD VIEW] :: Discord OAuth2 Token Body: %s", data)
+    logger.info(
+        "[DISCORD VIEW] :: Discord OAuth2 Token Response: %s", response.json()
+    )
+    response.raise_for_status()
     credentials = response.json()
     access_token = credentials["access_token"]
     response = requests.get(
