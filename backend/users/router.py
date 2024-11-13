@@ -86,8 +86,9 @@ def callback(request, code: str):
     except KeyError:
         logger.warning("No redirect URL found in session")
 
+    redirect_url = redirect_url + "?token=" + encoded_jwt_token
     logger.info("Redirecting to authentication URL... %s", redirect_url)
-    return redirect(redirect_url + "?token=" + encoded_jwt_token)
+    return redirect(redirect_url)
 
 
 @router.get(
