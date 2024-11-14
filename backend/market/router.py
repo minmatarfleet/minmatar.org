@@ -61,6 +61,7 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 
 class MarketContractResponse(BaseModel):
+    expectation_id: int
     title: str
     fitting_id: int
     structure_id: int | None = None
@@ -193,6 +194,30 @@ def create_eve_market_contract_responsibility(
     )
 
 
+@router.delete(
+    "/responsibilities/{responsibility_id}",
+    auth=AuthBearer(),
+    description="Delete a responsibility for a contract seeding expectation",
+    response={
+        204: None,
+        403: ErrorResponse,
+    },
+)
+def delete_eve_market_contract_responsibility(request, responsibility_id: int):
+    if not EveMarketContractResponsibility.objects.filter(
+        id=responsibility_id
+    ).exists():
+        return 404, {"detail": "Responsibility not found"}
+
+    responsibility = EveMarketContractResponsibility.objects.get(
+        id=responsibility_id
+    )
+    if responsibility.entity_id not in _get_entity_ids(request):
+        return 403, {"detail": "User does not own entity"}
+    responsibility.delete()
+    return 204, None
+
+
 @router.get(
     "/contracts",
     description="Fetch all market contracts for all characters and corporations",
@@ -262,6 +287,7 @@ def fetch_eve_market_contracts(request):
             )
         response.append(
             MarketContractResponse(
+                expectation_id=expectation.id,
                 title=expectation.fitting.name,
                 fitting_id=expectation.fitting.id,
                 structure_id=(
@@ -283,11 +309,11 @@ def fetch_eve_market_contracts(request):
 
 
 @router.get(
-    "/contracts/{contract_id}",
+    "/contracts/{expectation_id}",
     description="Fetch a single market contract by ID",
     response={200: MarketContractResponse, 404: ErrorResponse},
 )
-def fetch_eve_market_contract(request, contract_id: int):
+def fetch_eve_market_contract(request, expectation_id: int):
     """
     - Fetch all expectations
     - Fetch current quantity for all expectations
@@ -295,10 +321,10 @@ def fetch_eve_market_contract(request, contract_id: int):
     - Populate data
     """
     if not EveMarketContractExpectation.objects.filter(
-        id=contract_id
+        id=expectation_id
     ).exists():
         return 404, {"detail": "Contract expectation not found"}
-    expectation = EveMarketContractExpectation.objects.get(id=contract_id)
+    expectation = EveMarketContractExpectation.objects.get(id=expectation_id)
     responsibilities = []
     for responsibility in EveMarketContractResponsibility.objects.filter(
         expectation=expectation
@@ -352,6 +378,7 @@ def fetch_eve_market_contract(request, contract_id: int):
             )
         )
     return MarketContractResponse(
+        expectation_id=expectation.id,
         title=expectation.fitting.name,
         fitting_id=expectation.fitting.id,
         structure_id=(
