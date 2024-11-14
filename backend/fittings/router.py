@@ -95,8 +95,16 @@ def get_doctrines(request):
     return response
 
 
-@doctrines_router.get("/{doctrine_id}", response=DoctrineResponse)
+@doctrines_router.get(
+    "/{doctrine_id}", response={200: DoctrineResponse, 404: ErrorResponse}
+)
 def get_doctrine(request, doctrine_id: int):
+    if not EveDoctrine.objects.filter(id=doctrine_id).exists():
+        return ErrorResponse(
+            status=404,
+            message="Doctrine not found",
+        )
+
     doctrine = EveDoctrine.objects.get(id=doctrine_id)
     primary_fittings = []
     secondary_fittings = []
@@ -198,8 +206,15 @@ def get_fittings(request):
     return response
 
 
-@fittings_router.get("/{fitting_id}", response=FittingResponse)
+@fittings_router.get(
+    "/{fitting_id}", response={200: FittingResponse, 404: ErrorResponse}
+)
 def get_fitting(request, fitting_id: int):
+    if not EveFitting.objects.filter(id=fitting_id).exists():
+        return ErrorResponse(
+            status=404,
+            message="Fitting not found",
+        )
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = FittingResponse(
         id=fitting.id,
