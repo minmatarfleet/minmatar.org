@@ -68,6 +68,8 @@ INSTALLED_APPS = [
     "lpconversion",
     # Combat log analysis
     "combatlog",
+    # Standing fleet
+    "standingfleet",
 ]
 
 # Discord Login
