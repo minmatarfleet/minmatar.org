@@ -193,6 +193,32 @@ def create_eve_market_contract_responsibility(
     )
 
 
+@router.delete(
+    "/responsibilities/{responsibility_id}",
+    auth=AuthBearer(),
+    description="Delete a responsibility for a contract seeding expectation",
+    response={
+        200: CreateEveMarketContractReponsibilityResponse,
+        403: ErrorResponse,
+    },
+)
+def delete_eve_market_contract_responsibility(request, responsibility_id: int):
+    if not EveMarketContractResponsibility.objects.filter(
+        id=responsibility_id
+    ).exists():
+        return 404, {"detail": "Responsibility not found"}
+
+    responsibility = EveMarketContractResponsibility.objects.get(
+        id=responsibility_id
+    )
+    if responsibility.entity_id not in _get_entity_ids(request):
+        return 403, {"detail": "User does not own entity"}
+    responsibility.delete()
+    return CreateEveMarketContractReponsibilityResponse(
+        responsibility_id=responsibility.id, entity_id=responsibility.entity_id
+    )
+
+
 @router.get(
     "/contracts",
     description="Fetch all market contracts for all characters and corporations",
