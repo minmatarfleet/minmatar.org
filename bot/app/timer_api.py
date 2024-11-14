@@ -1,7 +1,9 @@
-import requests
 from datetime import datetime
-from pydantic import BaseModel
 from enum import Enum
+
+import requests
+from pydantic import BaseModel
+
 from app.settings import settings
 
 API_URL = "https://api.minmatar.org/api"
