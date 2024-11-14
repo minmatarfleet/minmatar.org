@@ -280,3 +280,90 @@ def fetch_eve_market_contracts(request):
         )
 
     return response
+
+
+@router.get(
+    "/contracts/{contract_id}",
+    description="Fetch a single market contract by ID",
+    response={200: MarketContractResponse, 404: ErrorResponse},
+)
+def fetch_eve_market_contract(request, contract_id: int):
+    """
+    - Fetch all expectations
+    - Fetch current quantity for all expectations
+    - Fetch all responsibilities
+    - Populate data
+    """
+    if not EveMarketContractExpectation.objects.filter(
+        id=contract_id
+    ).exists():
+        return 404, {"detail": "Contract expectation not found"}
+    expectation = EveMarketContractExpectation.objects.get(id=contract_id)
+    responsibilities = []
+    for responsibility in EveMarketContractResponsibility.objects.filter(
+        expectation=expectation
+    ):
+        entity_type = None
+        entity_name = None
+        if EveCharacter.objects.filter(
+            character_id=responsibility.entity_id
+        ).exists():
+            entity_type = "character"
+            entity_name = EveCharacter.objects.get(
+                character_id=responsibility.entity_id
+            ).character_name
+        elif EveCorporation.objects.filter(
+            corporation_id=responsibility.entity_id
+        ).exists():
+            entity_type = "corporation"
+            entity_name = EveCorporation.objects.get(
+                corporation_id=responsibility.entity_id
+            ).name
+        else:
+            continue
+        assert entity_type is not None
+        assert entity_name is not None
+        responsibilities.append(
+            MarketContractResponsibilityResponse(
+                entity_type=entity_type,
+                entity_id=responsibility.entity_id,
+                entity_name=entity_name,
+            )
+        )
+    # build historical quantity data by grouping by last 6 months
+    # and counting the number of contracts
+    historical_quantity = []
+    today = datetime.today()
+    utc = pytz.UTC
+    for i in range(12):
+        month_start = (
+            today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
+        ).replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        historical_quantity.append(
+            MarketContractHistoricalQuantityResponse(
+                date=month_start.strftime("%Y-%m-%d"),
+                quantity=EveMarketContract.objects.filter(
+                    fitting=expectation.fitting,
+                    status="outstanding",
+                    created_at__gte=month_start,
+                    created_at__lt=month_end,
+                ).count(),
+            )
+        )
+    return MarketContractResponse(
+        title=expectation.fitting.name,
+        fitting_id=expectation.fitting.id,
+        structure_id=(
+            expectation.location.structure.id
+            if expectation.location.structure
+            else None
+        ),
+        location_name=expectation.location.location_name,
+        desired_quantity=expectation.quantity,
+        current_quantity=EveMarketContract.objects.filter(
+            fitting=expectation.fitting, status="outstanding"
+        ).count(),
+        historical_quantity=historical_quantity,
+        responsibilities=responsibilities,
+    )

@@ -12,6 +12,7 @@ from eveonline.models import (
     EveCorporation,
     EvePrimaryCharacter,
 )
+from app.errors import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -231,10 +232,14 @@ def get_corporation_by_id(request, corporation_id: int):
 
 @router.get(
     "/corporations/{corporation_id}/info",
-    response=CorporationInfoResponse,
+    response={200: CorporationInfoResponse, 404: ErrorResponse},
     summary="Get a corporation's info",
 )
 def get_corporation_info(request, corporation_id: int):
+    if not EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).exists():
+        return 404, {"detail": "Corporation not found"}
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     response = {
         "corporation_id": corporation.corporation_id,
