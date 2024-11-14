@@ -17,7 +17,7 @@ class StandingFleetTrackingResponse(BaseModel):
 
 
 @router.post(
-    "/standingfleet/voicetracking",
+    "/voicetracking",
     response=StandingFleetTrackingResponse,
     auth=AuthBearer(),
 )
