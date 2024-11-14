@@ -198,7 +198,7 @@ def create_eve_market_contract_responsibility(
     auth=AuthBearer(),
     description="Delete a responsibility for a contract seeding expectation",
     response={
-        200: CreateEveMarketContractReponsibilityResponse,
+        204: None,
         403: ErrorResponse,
     },
 )
@@ -214,9 +214,7 @@ def delete_eve_market_contract_responsibility(request, responsibility_id: int):
     if responsibility.entity_id not in _get_entity_ids(request):
         return 403, {"detail": "User does not own entity"}
     responsibility.delete()
-    return CreateEveMarketContractReponsibilityResponse(
-        responsibility_id=responsibility.id, entity_id=responsibility.entity_id
-    )
+    return 204, None
 
 
 @router.get(
