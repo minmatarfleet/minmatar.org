@@ -59,7 +59,7 @@ async def check_standing_fleet_channel():
     to the API for tracking
     """
 
-    voice_channel_id = 1124719165933109381
+    voice_channel_id = 1306515072650313728
     guild = client.get_guild(1041384161505722368)
     if guild:
         voice_channel = guild.get_channel(voice_channel_id)
