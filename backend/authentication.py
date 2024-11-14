@@ -22,3 +22,22 @@ class AuthBearer(HttpBearer):
 
 class UnauthorizedError(Exception):
     pass
+
+
+def make_test_user(uid: int, user_name: str, is_super: bool):
+    """Adds a test user to the database and displays a JWT token for it."""
+
+    user = User(id=uid, username=user_name, is_superuser=is_super)
+    user.save()
+    print(f"User {uid} saved to database")
+
+    payload = {
+        "user_id": uid,
+        "username": user_name,
+        "is_superuser": is_super,
+    }
+    encoded_jwt_token = jwt.encode(
+        payload, settings.SECRET_KEY, algorithm="HS256"
+    )
+
+    print(f"JWT bearer token: {encoded_jwt_token}")
