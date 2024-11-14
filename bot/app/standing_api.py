@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 API_URL = "https://api.minmatar.org/api"
-STANDING_URL = f"{API_URL}/standing/tracking"
+STANDING_URL = f"{API_URL}/standingfleet/voicetracking"
 
 
 class CreateStandingFleetTrackingRequest(BaseModel):
