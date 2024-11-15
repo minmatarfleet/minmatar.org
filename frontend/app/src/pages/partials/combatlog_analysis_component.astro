@@ -14,8 +14,8 @@ let combatlog_analysis_error:string  | null = null
 if (Astro.request.method === "POST") {
     try {
         const form_data = await Astro.request.formData()
-        const fleet_id = parseInt(form_data.get("fleet")?.valueOf() as string)
-        const fitting_id = parseInt(form_data.get("fitting")?.valueOf() as string)
+        const fleet_id = parseInt(form_data.get("fleet")?.valueOf() as string ?? '-1')
+        const fitting_id = parseInt(form_data.get("fitting")?.valueOf() as string ?? '-1')
         const base64_gziped_combatlog = form_data.get("gziped_combatlog")?.valueOf()
         const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 

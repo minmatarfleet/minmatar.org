@@ -100,16 +100,14 @@ const page = Astro.url.pathname
             >
                 <MarketEvEIcon />
             </NeocomButton>
-            {(user_is_superadmin || can_view_intel) &&
-                <NeocomButton
-                    active={page.startsWith(translatePath('/intel/'))}
-                    title='neocom.intel'
-                    description='intel.description'
-                    href={translatePath('/intel/')}
-                >
-                    <IntelEvEIcon />
-                </NeocomButton>
-            }
+            <NeocomButton
+                active={page.startsWith(translatePath('/intel/'))}
+                title='neocom.intel'
+                description='intel.description'
+                href={translatePath('/intel/')}
+            >
+                <IntelEvEIcon />
+            </NeocomButton>
             {primary_character &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/character/assets/user/'))}
@@ -228,20 +226,46 @@ const page = Astro.url.pathname
         border-radius: 50%;
         display: inline-block;
         box-sizing: border-box;
-        animation: rotation 1s linear infinite;
 
         &.htmx-request,
         &.active {
+            animation: rotation 1s linear infinite, pulse .5s ease-in-out both;
             border-bottom-color: rgba(255, 255, 255, 0.75);
         }
     }
 
     @keyframes rotation {
         0% {
-            transform: rotate(0deg);
+            // transform: rotate(0deg);
+            rotate: 0deg;
         }
         100% {
-            transform: rotate(360deg);
+            // transform: rotate(360deg);
+            rotate: 360deg;
         }
-    } 
+    }
+
+    @keyframes pulse {
+        0% {
+            scale: 1;
+        }
+        30% {
+            scale: 1.25;
+        }
+        40% {
+            scale: .75;
+        }
+        50% {
+            scale: 1.15;
+        }
+        65% {
+            scale: .95;
+        }
+        75% {
+            scale: 1.05;
+        }
+        100% {
+            scale: 1;
+        }
+    }
 </style>

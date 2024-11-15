@@ -2,8 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
+interface Props {
+    is_superuser?:              boolean;
+}
+
+const {
+    is_superuser = false,
+} = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -12,7 +17,8 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
 
-import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
+import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
+import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
 ---
 
 <Wrapper
@@ -29,7 +35,7 @@ import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
             <div class="[ swiper-slide ]" style="margin-right: 20px">
                 <SwiperCard class="[ animate-delay-0 ]" cover='/images/freight-tile-background.jpg'>
                     <FlexInline slot='header' gap='var(--space-2xs)'>
-                        <CargoHoldEvEIcon />
+                        <FreightServiceEvEIcon />
                         <h2>{t('freight.page_title')}</h2>
                     </FlexInline>
                         
@@ -37,6 +43,22 @@ import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
                     <FlexInline>
                         <Button size='sm' href={translatePath('/market/freight/standard/')}>
                             {t('standard_freight')}
+                        </Button>
+                    </FlexInline>
+                </SwiperCard>
+            </div>
+
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-200 ]" cover='/images/contracts-tile-background.jpg'>
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <ContractsServiceEvEIcon />
+                        <h2>{t('contracts.page_title')}</h2>
+                    </FlexInline>
+                        
+                    <p>{t('contracts.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/market/contracts/')}>
+                            {t('view')}
                         </Button>
                     </FlexInline>
                 </SwiperCard>

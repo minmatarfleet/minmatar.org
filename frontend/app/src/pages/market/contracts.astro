@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -13,36 +13,139 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const is_supplier = user_is_superadmin || user_permissions.includes('market.add_evemarketcontractresponsibility')
+
+import { get_contracts_data } from '@helpers/pages/contracts'
+import type { ContractsData } from '@helpers/pages/contracts'
+
+let contracts_data:ContractsData = {}
+let data_fetching_error
+
+try {
+    contracts_data = await get_contracts_data(auth_token, lang)
+} catch (error) {
+    data_fetching_error = error
+}
+
+import { query_string } from '@helpers/string';
+
+const {
+    contracts_trade_hubs = [],
+    characters_options = [],
+    corporations_options = [],
+} = contracts_data
+
+let staging = Astro.url.searchParams.get('staging')
+if (!staging && contracts_trade_hubs.length > 0)
+    staging = contracts_trade_hubs[0].name
+
+const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?staging=${query_string(staging)}`
+
+const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageLanding from '@components/page/PageLanding.astro';
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
-const page_title = t('contracts.page_title');
-const page_description = t('contracts.leading_text');
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ContractsList from '@components/blocks/ContractsList.astro'
+import Input from '@components/blocks/Input.astro'
+import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('contracts.page_title')
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
-    <PageLanding
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageWide
         cover={{
-            image: "/images/contract-service-cover.jpg",
-            image_990: "/images/contract-service-cover-990.jpg",
+            image: "/images/contracts-cover.jpg",
+            image_990: "/images/contracts-cover-900.jpg",
             alt: t('contracts.cover_alt'),
+            animated: false,
+            scrollable: true,
             overlay: true
         }}
-    >
-        <Flexblock gap='var(--space-2xl)'>
-            <Flexblock>
-                <h1>{page_title}</h1>
-                <p>{page_description}</p>
-            </Flexblock>
-        </Flexblock>
-    </PageLanding>
-</Viewport>
+        x-data={`{
+            contracts_count: ${contracts_count},
+            item_name_filter: '',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
 
-<style lang="scss">
-</style>
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_item(el) {
+                const content_to_filter = el.querySelectorAll('.title')
+                const show_item = ( this.item_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.item_name_filter.toLowerCase()) )
+
+                return show_item
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text={`\`${t('showing')} \${contracts_count} \${contracts_count !== 1 ? '${t('contracts')}' : '${t('contract')}'}\``}>
+                        {t('showing')} {contracts_count} {contracts_count !== 1 ? t('contracts') : t('contract')}
+                    </small>
+                </Flexblock>
+            </FlexInline>
+            <Input type="text"
+                placeholder={t('filter')}
+                x-model="item_name_filter"
+                x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.title') })"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+        </FlexInline>
+
+        {user &&
+            <FlexInline slot="subheader">
+                <AddSupplierButton />
+            </FlexInline>
+        }
+    
+        {data_fetching_error ?
+            <ErrorRefetch
+                args={{
+                    partial: CONTRACTS_PARTIAL_URL,
+                    message: data_fetching_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <ContractsList
+                trade_hubs={contracts_trade_hubs}
+                characters_options={characters_options}
+                corporations_options={corporations_options}
+                is_supplier={is_supplier}
+                active_hub={staging}
+            />
+            <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
+        }
+	</PageWide>
+</Viewport>

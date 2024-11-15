@@ -5,6 +5,7 @@ export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'gr
 export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
 export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-around' | 'space-between'
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
+export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
 export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
 export type MetaGroupColors = 'tech-i' | 'tech-ii' | 'storyline' | 'faction' | 'officer' | 'deadspace' | 'tech-iii'
@@ -895,4 +896,31 @@ export interface Damage {
     dps_to:         number;
     volleys_to:     number;
     max_to:         number;
+}
+
+export interface TradeHub {
+    name:               string;
+    contract_groups:    MarketShipGroup[];
+}
+
+export interface MarketShipGroup {
+    ship_type:      string;
+    contracts:      ContractUI[];
+}
+
+import type { Responsability } from '@dtypes/api.minmatar.org'
+
+export interface ContractUI {
+    expectation_id:         number;
+    title:                  string;
+    eve_type_id:            number;
+    ship_type:              string;
+    desired_quantity:       number;
+    current_quantity:       number;
+    fitting_id:             number;
+    eft_format:             string;
+    trend_x_axis:           string[];
+    trend_y_axis:           number[];
+    responsabilities:       Responsability[];
+    entities:               number;
 }

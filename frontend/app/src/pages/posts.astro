@@ -91,7 +91,7 @@ const page_title = t('posts.page_title');
             },
             show_item(el) {
                 const content_to_filter = el.querySelectorAll('h3')
-                const show_item = ( this.fitting_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.post_name_filter.toLowerCase()) )
+                const show_item = ( this.post_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.post_name_filter.toLowerCase()) )
 
                 return show_item
             },
