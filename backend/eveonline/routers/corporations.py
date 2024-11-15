@@ -5,6 +5,7 @@ from typing import List, Optional
 from eveuniverse.models import EveFaction
 from ninja import Router, Schema
 
+from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import (
     EveAlliance,
@@ -12,7 +13,6 @@ from eveonline.models import (
     EveCorporation,
     EvePrimaryCharacter,
 )
-from app.errors import ErrorResponse
 
 logger = logging.getLogger(__name__)
 

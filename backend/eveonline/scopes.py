@@ -14,7 +14,6 @@ BASIC_SCOPES = [
 
 ADVANCED_SCOPES = [
     "esi-characters.read_blueprints.v1",
-    "esi-clones.read_clones.v1",
     "esi-planets.manage_planets.v1",
     "esi-industry.read_character_jobs.v1",
     "esi-industry.read_character_mining.v1",
