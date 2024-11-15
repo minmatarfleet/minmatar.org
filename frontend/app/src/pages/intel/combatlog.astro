@@ -50,10 +50,12 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
 const page_title = t('intel.combatlog.page_title');
+const page_description = t('intel.combatlog.leading_text');
 ---
 
 <Viewport
     title={page_title}
+    meta_description={page_description}
     components={{
         alert_dialog: true,
         confirm_dialog: true,
