@@ -2,6 +2,12 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
 import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_components';
 
 interface Porps {
@@ -113,24 +119,26 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
                     <h3>{t('analize_combatlog_dialog_title')}</h3>
 
                     <Flexblock>
-                        <p>{t('combatlog_analizer_store_notice')}</p>
+                        {user &&
+                            <p>{t('combatlog_analizer_store_notice')}</p>
 
-                        <Grid min_item_width="250px">
-                            <SelectFinder
-                                name="fitting"
-                                model="fitting"
-                                placeholder={t('combatlog_fitting_placeholder')}
-                                options="fitting_options"
-                                value = '-1'
-                            />
-                            <SelectFinder
-                                name="fleet"
-                                model="fleet"
-                                placeholder={t('combatlog_fleet_placeholder')}
-                                options="fleets_options"
-                                value = '-1'
-                            />
-                        </Grid>
+                            <Grid min_item_width="250px">
+                                <SelectFinder
+                                    name="fitting"
+                                    model="fitting"
+                                    placeholder={t('combatlog_fitting_placeholder')}
+                                    options="fitting_options"
+                                    value = '-1'
+                                />
+                                <SelectFinder
+                                    name="fleet"
+                                    model="fleet"
+                                    placeholder={t('combatlog_fleet_placeholder')}
+                                    options="fleets_options"
+                                    value = '-1'
+                                />
+                            </Grid>
+                        }
                         <p>{t('analize_combatlog_dialog_text')}</p>
                         <Flexblock class="[ w-full ]">
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">

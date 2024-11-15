@@ -19,9 +19,6 @@ const can_view_timers = user_permissions.includes('structures.view_evestructuret
 const can_add_moons = user_permissions.includes('moons.add_evemoon')
 const can_view_moons = user_permissions.includes('moons.view_evemoon')
 
-if (!is_superuser && !can_view_timers && !can_add_moons)
-    return HTTP_404_Not_Found()
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -65,7 +62,12 @@ const leading_text = t('intel.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <IntelReel can_view_timers={can_view_timers} can_add_moons={can_add_moons} can_view_moons={can_view_moons} is_superuser={is_superuser} />
+            <IntelReel
+                can_view_timers={can_view_timers}
+                can_add_moons={can_add_moons}
+                can_view_moons={can_view_moons}
+                is_superuser={is_superuser}
+            />
         </Flexblock>
     </PageLanding>
 </Viewport>

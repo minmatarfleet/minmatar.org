@@ -228,10 +228,7 @@
         "path": "/intel/",
         "publish": true,
         "icon": "/images/icons/48px-Satellite.png",
-        "description": "page_finder.intel.description",
-        "permissions" : {
-            "user": [ "structures.view_evestructuretimer" ]
-        }
+        "description": "page_finder.intel.description"
     },
     {
         "slug": "intel.timers",
@@ -289,10 +286,7 @@
         "path": "/intel/combatlog",
         "publish": true,
         "icon": "/images/icons/48px-Log.png",
-        "description": "page_finder.intel.combatlog.description",
-        "permissions" : {
-            "auth": true
-        }
+        "description": "page_finder.intel.combatlog.description"
     },
     {
         "slug": "posts",

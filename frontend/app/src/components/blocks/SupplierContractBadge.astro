@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { ContractUI, SelectOptions } from '@dtypes/layout_components'
+import type { ContractUI, SelectOptions, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
 
 interface Props {
     contract:               ContractUI;
@@ -10,31 +10,39 @@ interface Props {
     corporations_options:   SelectOptions[];
 }
 
-const {
+let {
     contract,
     characters_options,
     corporations_options,
 } = Astro.props
 
-let claimed_by_user_character:number = -1
-characters_options.some(characters_option => {
+let claimed_by_user_characters:CharacterBasic[] = []
+characters_options.forEach(characters_option => {
     if (contract.responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
-        claimed_by_user_character = characters_option.value as number
-        return true
+        claimed_by_user_characters.push({
+            character_id: characters_option.value as number,
+            character_name: characters_option.label,
+        })
     }
 })
 
-let claimed_by_user_corporation:number = -1
-corporations_options.some(corporations_option => {
+characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
+
+let claimed_by_user_corporations:CorporationBasic[] = []
+corporations_options.forEach(corporations_option => {
     if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
-        claimed_by_user_corporation = corporations_option.value as number
-        return true
+        claimed_by_user_corporations.push({
+            id: corporations_option.value as number,
+            name: corporations_option.label,
+        })
     }
 })
+
+corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
 
 const SUPPLIER_CONTRACT_BADGE_PARTIAL_URL = translatePath('/partials/supplier_contract_badge_component/')
 
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_corporation_logo } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -48,6 +56,9 @@ import Select from '@components/blocks/Select.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import Button from '@components/blocks/Button.astro';
 import OrSeparator from '@components/blocks/OrSeparator.astro';
+import PilotBadge from './PilotBadge.astro';
+import Grid from '@components/compositions/Grid.astro';
+import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
 ---
 
 <div
@@ -55,8 +66,8 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
     x-bind:id="id"
     x-data={`{
         id: $id('supplier-contract-badge'),
-        character: '${claimed_by_user_character}',
-        corporation: '${claimed_by_user_corporation}',
+        character: '-1',
+        corporation: '-1',
         disabled_submit: true,
         combatlog_dialog_open: false,
         open_dialog() {
@@ -122,14 +133,34 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
                                 <ClipboardButton narrow={true} id={contract.fitting_id.toString()}>{contract.eft_format}</ClipboardButton>
                             }
                         </FlexInline>
+
+                        {(claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0) &&
+                            <p>{t('claimed_by_user_characters')}</p>
+                            <Grid min_item_width="250px">
+                                {claimed_by_user_characters.map(characters =>
+                                    <PilotBadge
+                                        character_id={characters.character_id}
+                                        character_name={characters.character_name}
+                                        size={32}
+                                    />
+                                )}
+                                {claimed_by_user_corporations.map(corporation =>
+                                    <Badge
+                                        title={corporation.name}
+                                        image={get_corporation_logo(corporation.id)}
+                                        size={32}
+                                    />
+                                )}
+                            </Grid>
+                        }
     
-                        {(characters_options.length > 0 || corporations_options.length > 0) &&
+                        {(characters_options.length > 0 || corporations_options.length > 0) ?
                             <Flexblock>
                                 {characters_options.length > 0 &&
                                     <Select
                                         name="character"
                                         placeholder={t('contracts_character_placeholder')}
-                                        value={claimed_by_user_character}
+                                        value="-1"
                                         x-model="character"
                                         x-on:change="corporation = '-1'"
                                     >
@@ -146,7 +177,7 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
                                     <Select
                                         name="corporation"
                                         placeholder={t('contracts_corporation_placeholder')}
-                                        value={claimed_by_user_corporation}
+                                        value="-1"
                                         x-model="corporation"
                                         x-on:change="character = '-1'"
                                     >
@@ -157,6 +188,11 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
                                     </Select>
                                 }
                             </Flexblock>
+                            :
+                            <p>{t('add_supplier_note')}</p>
+                            <FlexInline>
+                                <AddSupplierButton />
+                            </FlexInline>
                         }
 
                         <input type="hidden" name="expectation_id" value={contract.expectation_id} />

@@ -48,23 +48,21 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
                 </SwiperCard>
             </div>
 
-            {is_superuser &&
-                <div class="[ swiper-slide ]" style="margin-right: 20px">
-                    <SwiperCard class="[ animate-delay-200 ]" cover='/images/contracts-tile-background.jpg'>
-                        <FlexInline slot='header' gap='var(--space-2xs)'>
-                            <ContractsServiceEvEIcon />
-                            <h2>{t('contracts.page_title')}</h2>
-                        </FlexInline>
-                            
-                        <p>{t('contracts.leading_text')}</p>
-                        <FlexInline>
-                            <Button size='sm' href={translatePath('/market/contracts/')}>
-                                {t('view')}
-                            </Button>
-                        </FlexInline>
-                    </SwiperCard>
-                </div>
-            }
+            <div class="[ swiper-slide ]" style="margin-right: 20px">
+                <SwiperCard class="[ animate-delay-200 ]" cover='/images/contracts-tile-background.jpg'>
+                    <FlexInline slot='header' gap='var(--space-2xs)'>
+                        <ContractsServiceEvEIcon />
+                        <h2>{t('contracts.page_title')}</h2>
+                    </FlexInline>
+                        
+                    <p>{t('contracts.leading_text')}</p>
+                    <FlexInline>
+                        <Button size='sm' href={translatePath('/market/contracts/')}>
+                            {t('view')}
+                        </Button>
+                    </FlexInline>
+                </SwiperCard>
+            </div>
         </LandingSwiper>
     </div>
 

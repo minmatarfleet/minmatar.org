@@ -260,7 +260,7 @@ export const parse_damage_from_logs = async (enemies:CombatLogItem[]) => {
         const enemy_name = player_ship ? player_ship : enemy.name
 
         return {
-            name: enemy_name,
+            name: enemy.name,
             item_type: await get_item_id(enemy_name) ?? CAPSULE_TYPE_ID,
             total_from: enemy.damage_from,
             volleys_from: enemy.volleys_from,

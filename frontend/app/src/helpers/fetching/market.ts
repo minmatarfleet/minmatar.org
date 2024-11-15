@@ -2,20 +2,18 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import { get_market_contracts, get_market_expectation } from '@helpers/api.minmatar.org/market'
+import { get_market_contracts } from '@helpers/api.minmatar.org/market'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import type { TradeHub, MarketShipGroup, ContractUI } from '@dtypes/layout_components'
 import { get_ship_info } from '@helpers/sde/ships'
 
 const CAPSULE_TYPE_ID = 670
 
-export async function fetch_market_contracts(access_token:string) {
+export async function fetch_market_contracts() {
     const trade_hubs = {}
     
     const api_fittings = await get_fittings()
     const api_contracts = await get_market_contracts()
-    // const api_expectation = await get_market_expectation(access_token)
-    //console.log(api_expectation)
 
     await Promise.all(api_contracts.map(async api_contract => {
         if (!(api_contract.location_name in trade_hubs)) {

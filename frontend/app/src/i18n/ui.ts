@@ -1107,7 +1107,7 @@ export const ui = {
         'contracts_in_hub': 'contracts in hub',
         'claimed_by_entities': 'Claimed by %d entities',
         'claimed_by_entity': 'Claimed by 1 entity',
-        'become_a_supplier': 'Become a supplier',
+        'add_supplier': 'Add supplier entity',
         'contracts_total': 'contracts total',
         'contract_total': 'contract total',
         'claim_contract_dialog_title': 'Claim contract',
@@ -1124,5 +1124,7 @@ export const ui = {
         'become_supplier_dialog_title': 'Become a supplier',
         'become_supplier_dialog_text': 'To become a supplier, we recommend you have access to a jump freighter and 5 billion ISK in liquid.\n\nTypically it is best to create a shell corporation for managing contracts and finances.\n\nContinue becoming one?',
         'invalid_contract': 'Invalid contract',
+        'claimed_by_user_characters': 'Your following entities has already claimed this contract:',
+        'add_supplier_note': 'You need to add additional entitities to claim this contract.',
     },
 } as const;
