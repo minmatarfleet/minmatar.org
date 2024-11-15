@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 logger = logging.getLogger("authentication")
 
+
 class AuthBearer(HttpBearer):
     """Authentication class for Ninja API methods"""
 
@@ -22,6 +23,7 @@ class AuthBearer(HttpBearer):
         except Exception as e:
             print(e)
             return None
+
 
 class AuthOptional(AuthBearer):
     """Authentication class for Ninja API methods"""
@@ -38,7 +40,6 @@ class AuthOptional(AuthBearer):
             return None
         token = " ".join(parts[1:])
         return self.authenticate(request, token)
-
 
 
 class UnauthorizedError(Exception):
