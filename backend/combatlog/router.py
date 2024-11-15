@@ -51,7 +51,7 @@ def analyze_logs(
     start_time: str = "",
     end_time: str = "",
 ):
-    log.info("User = " + str(request.user))
+    log.info("User = %s", str(request.user))
     log.info("Combat log fleet ID = %d, fitting ID = %d", fleet_id, fitting_id)
     log.info("Combat log time range = %s to %s", start_time, end_time)
 
