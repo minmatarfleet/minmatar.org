@@ -37,9 +37,9 @@ from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
+from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
-from standingfleet.router import router as standingfleet_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)

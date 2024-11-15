@@ -1,24 +1,23 @@
-import io
-import zipfile
 import gzip
+import io
 import logging
+import zipfile
 
 from ninja import Router
 
 from app.errors import ErrorResponse
 
-from .models import CombatLog
-
 from .combatlog import (
-    damage_events,
-    parse,
-    total_damage,
-    enemy_analysis,
-    weapon_analysis,
-    time_analysis,
-    update_combat_time,
     LogAnalysis,
+    damage_events,
+    enemy_analysis,
+    parse,
+    time_analysis,
+    total_damage,
+    update_combat_time,
+    weapon_analysis,
 )
+from .models import CombatLog
 
 router = Router(tags=["Combat Logs"])
 

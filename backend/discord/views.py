@@ -1,5 +1,7 @@
 """Views for the Discord app, deprecated"""
 
+import logging
+
 import requests
 from django.conf import settings
 from django.contrib.auth import login, logout
@@ -8,7 +10,6 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 
 from .models import DiscordUser
-import logging
 
 # Create your views here.
 logger = logging.getLogger(__name__)

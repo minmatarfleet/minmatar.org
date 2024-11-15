@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 from typing import List
 
 import pytz
+from django.db.models import Count, Q
 from ninja import Router
 from pydantic import BaseModel
+
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.models import (
@@ -97,10 +98,19 @@ def _get_entity_ids(request):
     description="List all owned characters with sufficient market scopes",
 )
 def get_market_characters(request):
-    characters = EveCharacter.objects.filter(
-        token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-        token__user=request.user,
-    ).distinct()
+    characters = (
+        EveCharacter.objects.annotate(
+            matching_scopes=Count(
+                "token__scopes",
+                filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+            token__user=request.user,
+        )
+        .distinct()
+    )
     response = []
     for character in characters:
         response.append(
@@ -120,14 +130,23 @@ def get_market_characters(request):
     description="List all owned corporations with sufficient market scopes",
 )
 def get_market_corporations(request):
-    corporations = EveCorporation.objects.filter(
-        ceo__token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-        ceo__token__user=request.user,
-        alliance__name__in=[
-            "Minmatar Fleet Alliance",
-            "Minmatar Fleet Associates",
-        ],
-    ).distinct()
+    corporations = (
+        EveCorporation.objects.annotate(
+            matching_scopes=Count(
+                "ceo__token__scopes",
+                filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+            ceo__token__user=request.user,
+            alliance__name__in=[
+                "Minmatar Fleet Alliance",
+                "Minmatar Fleet Associates",
+            ],
+        )
+        .distinct()
+    )
     response = []
     for corporation in corporations:
         response.append(
