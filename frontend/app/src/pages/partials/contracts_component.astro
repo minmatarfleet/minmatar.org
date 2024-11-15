@@ -1,0 +1,82 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { is_prod_mode } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+if (is_prod_mode() && !user_is_superadmin)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const is_supplier = user_is_superadmin || user_permissions.includes('market.add_evemarketcontractresponsibility')
+
+import { get_contracts_data } from '@helpers/pages/contracts'
+import type { ContractsData } from '@helpers/pages/contracts'
+
+let contracts_data:ContractsData = {}
+let data_fetching_error
+
+try {
+    contracts_data = await get_contracts_data(auth_token as string, lang)
+} catch (error) {
+    data_fetching_error = error
+}
+
+const {
+    contracts_trade_hubs = [],
+    characters_options = [],
+    corporations_options = [],
+} = contracts_data
+
+import { query_string } from '@helpers/string';
+
+let staging = Astro.url.searchParams.get('staging')
+
+const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?staging=${query_string(staging)}`
+
+const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ContractsList from '@components/blocks/ContractsList.astro'
+---
+        
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: CONTRACTS_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <ContractsList
+        trade_hubs={contracts_trade_hubs}
+        characters_options={characters_options}
+        corporations_options={corporations_options}
+        is_supplier={is_supplier}
+        active_hub={staging}
+    />
+    <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
+    
+    <div
+        x-data={`{
+            init() {
+                contracts_count = ${contracts_count}
+                $el.remove()
+            }
+        }`}
+    />
+}

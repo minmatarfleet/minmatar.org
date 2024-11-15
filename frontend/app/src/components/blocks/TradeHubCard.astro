@@ -1,0 +1,56 @@
+---
+interface Props {
+    system:         string;
+    security:       string;
+    constellation:  string;
+    region:         string;
+    station_name:   string;
+}
+
+const {
+    system,
+    security,
+    constellation,
+    region,
+    station_name,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+---
+
+<Wrapper class="[ trade-hub-card relative ]" padding_block='var(--space-2xs)' padding_block='var(--space-3xs)'>
+    <picture>
+        <img src="/images/watermelon-trade-hub-card.jpg" />
+    </picture>
+
+    <FlexInline gap='var(--space-3xs)' class="[ !items-end !flex-nowrap ]">
+        <h2>{system} <span class="[ text-[var(--security-status-point-4)] ]">{security}</span></h2>
+        <FlexInline gap='var(--space-3xs)' class="[ !items-end !flex-nowrap ]">
+            <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+            </svg>
+            <h3><small>{constellation}</small></h3>
+            <svg class="[ h-[17px] ]" width="6" height="9" viewBox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.25 0L0 4.5L5.25 9V5.883L3.35175 4.5L5.25 3.117V0Z" fill="white"/>
+            </svg>
+            <h3><small>{region}</small></h3>
+        </FlexInline>
+    </FlexInline>
+    <h3>{station_name}</h3>
+</Wrapper>
+
+<style lang="scss">
+    .trade-hub-card {
+        picture {
+            inset: 0;
+            position: absolute;
+
+            img {
+                object-fit: cover;
+                height: 100%;
+                width: 100%;
+            }
+        }
+    }
+</style>

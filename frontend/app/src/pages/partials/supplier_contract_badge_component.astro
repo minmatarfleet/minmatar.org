@@ -1,0 +1,144 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { is_prod_mode } from '@helpers/env'
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+if (is_prod_mode() && !user_is_superadmin)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const is_supplier = user_is_superadmin || user_permissions.includes('market.add_evemarketcontractresponsibility')
+
+if (!is_supplier)
+    return HTTP_404_Not_Found()
+
+import { create_market_contract_responsability, get_market_contract_by_id } from '@helpers/api.minmatar.org/market'
+import type { Alert, ContractUI, SelectOptions } from '@dtypes/layout_components'
+import type { Contract } from '@dtypes/api.minmatar.org'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { get_ship_info } from '@helpers/sde/ships'
+import { get_market_characters, get_market_corporations } from '@helpers/api.minmatar.org/market'
+
+let data_fetching_error
+let claim_contract_error
+let api_contract:Contract | null = null
+let contract:ContractUI | null = null
+let alert:Alert | false = false
+let characters_options:SelectOptions[] = []
+let corporations_options:SelectOptions[] = []
+
+let expectation_id = parseInt(Astro.url.searchParams.get('expectation_id') ?? '0')
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+        expectation_id = parseInt(data.get('expectation_id') as string)
+        const character_id = parseInt(data.get('character_id') as string)
+        const corporation_id = parseInt(data.get('corporation_id') as string)
+        const entity_id = character_id ? character_id : corporation_id
+
+        api_contract = await create_market_contract_responsability(auth_token as string, expectation_id, entity_id)
+
+        if (!api_contract)
+            throw new Error(t('invalid_contract'))
+    } catch (error) {
+        claim_contract_error = prod_error_messages() ? t('claim_contract_error') : error.message
+    }
+
+    alert = {
+        title: t('claim_contract_dialog_title'),
+        content: claim_contract_error,
+    }
+}
+
+try {
+    api_contract = await get_market_contract_by_id(expectation_id)
+
+    const api_fittings = await get_fittings()
+    const fitting = api_fittings.find(api_fitting => api_fitting.name === api_contract?.title)
+    const ship_info = fitting?.ship_id ? await get_ship_info(fitting?.ship_id) : null
+    const ship_type = ship_info?.type ?? t('unknown')
+
+    const CAPSULE_TYPE_ID = 670
+
+    contract = {
+        expectation_id: api_contract.expectation_id,
+        title: api_contract.title,
+        eve_type_id: fitting !== undefined ? fitting.ship_id : CAPSULE_TYPE_ID,
+        ship_type: ship_type,
+        fitting_id: api_contract.fitting_id,
+        eft_format: fitting?.eft_format ?? '',
+        trend_x_axis: api_contract.historical_quantity.map(point => point.date),
+        trend_y_axis: api_contract.historical_quantity.map(point => point.quantity),
+        current_quantity: api_contract.current_quantity,
+        desired_quantity: api_contract.desired_quantity,
+        responsabilities: api_contract.responsibilities,
+        entities: api_contract.responsibilities.length,
+    }
+
+    const market_characters = await get_market_characters(auth_token as string)
+    characters_options = market_characters.map(character => {
+        return {
+            value: character.character_id,
+            label: character.character_name,
+        } as SelectOptions
+    })
+
+    const market_corporations = await get_market_corporations(auth_token as string)
+    corporations_options = market_corporations.map(corporation => {
+        return {
+            value: corporation.corporation_id,
+            label: corporation.corporation_name,
+        } as SelectOptions
+    })
+} catch (error) {
+    data_fetching_error = prod_error_messages() ? t('fetch_contract_error') : error.message
+}
+
+const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?expectation_id=${expectation_id}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astro'
+---
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: CONTRACTS_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <SupplierContractBadge
+        contract={contract as ContractUI}
+        characters_options={characters_options}
+        corporations_options={corporations_options}
+    />
+}
+
+{alert &&
+    <div
+        x-data={`{
+            init() {
+                show_alert_dialog(${JSON.stringify(alert)})
+                $el.remove()
+            }
+        }`}
+    />
+}

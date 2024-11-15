@@ -1,0 +1,60 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { EvEImageServiceSize, ImageSize } from '@dtypes/layout_components'
+
+interface Props {
+    corporation_id:         number;
+    corporation_name?:      string;
+    x_corporation_id?:      string | false;
+    x_corporation_name?:    string | false;
+    size?:                  ImageSize;
+    icon_quality?:          EvEImageServiceSize;
+}
+
+const {
+    corporation_id,
+    corporation_name,
+    x_corporation_id = false,
+    x_corporation_name = false,
+    size = 64,
+    icon_quality = 64,
+} = Astro.props
+
+import { get_corporation_logo } from '@helpers/eve_image_server'
+---
+<picture>
+    <img
+        loading="lazy"
+        height={size}
+        width={size}
+        src={get_corporation_logo(corporation_id, icon_quality ?? size)}
+        x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
+        alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
+        x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
+        x-data={`{
+            show_corporation_modal() {
+                if (!${x_corporation_id} && ${corporation_id} == 0)
+                    return
+
+                show_modal({
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation_id}',
+                })
+            }
+        }`}
+        x-on:click.stop.prevent="show_corporation_modal()"
+    />
+</picture>
+
+<style lang="scss">
+    img {
+        cursor: pointer;
+        transition: var(--fast-transition);
+        filter: brightness(1);
+
+        &:hover {
+            filter: brightness(1.3);
+        }
+    }
+</style>

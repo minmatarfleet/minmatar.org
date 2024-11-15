@@ -2,6 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -41,7 +48,7 @@ const leading_text = t('market.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <MarketReel />
+            <MarketReel is_superuser={is_superuser} />
         </Flexblock>
     </PageLanding>
 </Viewport>

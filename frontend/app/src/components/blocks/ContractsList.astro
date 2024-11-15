@@ -1,0 +1,139 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TradeHub, SelectOptions } from '@dtypes/layout_components'
+
+interface Props {
+    trade_hubs:             TradeHub[];
+    is_supplier:            boolean;
+    characters_options:     SelectOptions[];
+    corporations_options:   SelectOptions[];
+    active_hub:             string | null;
+}
+
+const {
+    trade_hubs,
+    characters_options,
+    corporations_options,
+    is_supplier,
+    active_hub,
+} = Astro.props
+
+import { get_ship_type_icon } from '@helpers/eve';
+import { query_string } from '@helpers/string';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ContractBadge from '@components/blocks/ContractBadge.astro';
+import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astro';
+import StagingsReel from '@components/blocks/StagingsReel.astro';
+import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<Flexblock role="list" gap='var(--space-xl)'>
+    <StagingsReel>
+        {trade_hubs.map(trade_hub =>
+            <StagingReelSlide>
+                <Wrapper padding_block='0' padding_inline='0' max_width='350px'>
+                    {active_hub === trade_hub.name ?
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{trade_hub.name}</h2>
+                            <small>{trade_hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0)} {t('contracts_in_hub')}</small>
+                        </Flexblock>
+                        :
+                        <StylessButton class="[ w-full staging-selector ]" href={translatePath(`/market/contracts?${query_string({staging: trade_hub.name})}`)}>
+                            <Flexblock gap="var(--space-3xs)">
+                                <h2>{trade_hub.name}</h2>
+                                <small>{trade_hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0)} {t('contracts_in_hub')}</small>
+                            </Flexblock>
+                        </StylessButton>
+                    }
+                </Wrapper>
+            </StagingReelSlide>
+        )}
+    </StagingsReel>
+
+    {trade_hubs.map((trade_hub) =>
+        trade_hub.name === active_hub &&
+            <Flexblock class="[ doctrine-groups ]" gap='var(--space-2xl)'>        
+                {trade_hub.contract_groups.map(contract_group =>
+                    <Flexblock class="[ doctrine-contract-group ]" gap='var(--space-m)'>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <picture>
+                                <img
+                                    src={`/images/icons/ships/${get_ship_type_icon(contract_group.ship_type)}`}
+                                    height="32"
+                                    width="32"
+                                    alt={`${contract_group.ship_type} icon`}
+                                />
+                            </picture>
+                            <h3>{contract_group.ship_type}</h3>
+                        </FlexInline>
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='350px'
+                        >
+                            {contract_group.contracts.map(contract =>
+                                <div class="[ contract-badge-container ]" x-show="show_item($el)">
+                                    {is_supplier ?
+                                        <SupplierContractBadge
+                                            contract={contract}
+                                            characters_options={characters_options}
+                                            corporations_options={corporations_options}
+                                        /> :
+                                        <ContractBadge contract={contract} is_supplier={false} />
+                                    }
+                                </div>
+                            )}
+                        </Grid>
+                    </Flexblock>
+                )}
+            </Flexblock>
+    )}
+</Flexblock>
+
+<style lang="scss">
+    .doctrine-groups:not(:has(.contract-badge-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
+    }
+
+    .doctrine-contract-group:not(:has(.contract-badge-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
+    }
+
+    .staging-selector {
+        h2 {
+            color: var(--faded);
+        }
+
+        small {
+            color: var(--fleet-yellow);
+        }
+    }
+</style>
