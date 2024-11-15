@@ -2,8 +2,8 @@ import jwt
 import logging
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
-from ninja.security import HttpBearer
 from django.http import HttpRequest
+from ninja.security import HttpBearer
 from typing import Any, Optional
 
 logger = logging.getLogger("authentication")
@@ -25,7 +25,7 @@ class AuthBearer(HttpBearer):
 
 class AuthOptional(AuthBearer):
     """Authentication class for Ninja API methods"""
-        
+
     def __call__(self, request: HttpRequest) -> Optional[Any]:
         # Override this to return AnonymousUser if no auth token rather than failing auth.
         headers = request.headers
