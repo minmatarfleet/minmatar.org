@@ -1,5 +1,5 @@
 :root {
-    --fleet-yellow:     #F1D9A0;
+    --fleet-yellow:     #f1d9a0;
     --fleet-red:        #b53620;
     --alliance-blue:    #2051B5;
     --militia-purple:   #7342B2;
@@ -30,6 +30,7 @@
     --background:               #121212;
     --component-background:     rgb(25, 25, 25);
     --highlight:                white;
+    --faded:                    rgba(255, 255, 255, 0.7);
 
     --form-color:           var(--fleet-yellow);
     --button-color:         var(--fleet-yellow);

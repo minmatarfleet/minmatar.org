@@ -1,0 +1,206 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ContractUI, SelectOptions } from '@dtypes/layout_components'
+
+interface Props {
+    contract:               ContractUI;
+    characters_options:     SelectOptions[];
+    corporations_options:   SelectOptions[];
+}
+
+const {
+    contract,
+    characters_options,
+    corporations_options,
+} = Astro.props
+
+let claimed_by_user_character:number = -1
+characters_options.some(characters_option => {
+    if (contract.responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
+        claimed_by_user_character = characters_option.value as number
+        return true
+    }
+})
+
+let claimed_by_user_corporation:number = -1
+corporations_options.some(corporations_option => {
+    if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
+        claimed_by_user_corporation = corporations_option.value as number
+        return true
+    }
+})
+
+const SUPPLIER_CONTRACT_BADGE_PARTIAL_URL = translatePath('/partials/supplier_contract_badge_component/')
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ContractBadge from '@components/blocks/ContractBadge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import Dialog from '@components/blocks/Dialog.astro';
+import Badge from '@components/blocks/Badge.astro';
+import Square from '@components/blocks/Square.astro';
+import Select from '@components/blocks/Select.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import Button from '@components/blocks/Button.astro';
+import OrSeparator from '@components/blocks/OrSeparator.astro';
+---
+
+<div
+    class="[ supplier-contract-badge w-full ]"
+    x-bind:id="id"
+    x-data={`{
+        id: $id('supplier-contract-badge'),
+        character: '${claimed_by_user_character}',
+        corporation: '${claimed_by_user_corporation}',
+        disabled_submit: true,
+        combatlog_dialog_open: false,
+        open_dialog() {
+            $refs.combatlog_form.reset()
+
+            $nextTick(() => {
+                this.combatlog_dialog_open = true
+            })
+        },
+        close_dialog() {
+            this.combatlog_dialog_open = false
+        },
+        update_disabled() {
+            this.disabled_submit = !(this.character > 0 || this.corporation > 0)
+        }
+    }`}
+    x-effect="update_disabled()"
+>
+    <StylessButton class="[ w-full ]" x-on:click.stop.prevent="open_dialog()">
+        <ContractBadge contract={contract} is_supplier={true} />
+    </StylessButton>
+    
+    <div class="[ system-finder-dialog ]">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            class="[ w-full max-w-[600px] component ]"
+            x-bind:class="(combatlog_dialog_open ? 'open' : '')"
+            x-bind:aria-hidden="combatlog_dialog_open == false"
+            x-trap="combatlog_dialog_open"
+            x-bind:inert="!combatlog_dialog_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
+        >
+            <form
+                hx-post={SUPPLIER_CONTRACT_BADGE_PARTIAL_URL}
+                hx-trigger="submit"
+                x-bind:hx-target="`#${id}`"
+                hx-indicator=".loader"
+                hx-swap="innerHTML transition:true"
+                x-ref="combatlog_form"
+            >
+                <Flexblock gap="var(--space-l)">
+                    <h3>{t('claim_contract_dialog_title')}</h3>
+    
+                    <Flexblock>
+                        {(characters_options.length > 0 && corporations_options.length > 0) ?
+                            <p>{t('claim_contract_dialog_text')}</p> :
+                            characters_options.length > 0 ?
+                            <p>{t('claim_contract_character_dialog_text')}</p> :
+                            <p>{t('claim_contract_corporation_dialog_text')}</p>
+                        }
+
+                        <FlexInline class="[ !items-center ]">
+                            <Badge title="" image={get_item_icon(contract.eve_type_id)}>
+                                <a href={translatePath(`/ships/fitting/${contract.fitting_id}`)} slot="title">{contract.title}</a>
+                                <FlexInline gap='var(--space-3xs)'>
+                                    {contract.entities > 0 ? <Square color='green' /> : <Square color='fleet-red' />}
+                                    <small>{contract.entities === 1 ? t('claimed_by_entity') : t('claimed_by_entities').replace('%d', contract.entities.toString())}</small>
+                                </FlexInline>
+                            </Badge>
+                            {contract.eft_format &&
+                                <ClipboardButton narrow={true} id={contract.fitting_id.toString()}>{contract.eft_format}</ClipboardButton>
+                            }
+                        </FlexInline>
+    
+                        {(characters_options.length > 0 || corporations_options.length > 0) &&
+                            <Flexblock>
+                                {characters_options.length > 0 &&
+                                    <Select
+                                        name="character"
+                                        placeholder={t('contracts_character_placeholder')}
+                                        value={claimed_by_user_character}
+                                        x-model="character"
+                                        x-on:change="corporation = '-1'"
+                                    >
+                                        <option value="-1">{t('contracts_character_placeholder')}</option>
+                                        {characters_options.map((option) => 
+                                            <option value={option.value}>{option.label}</option>
+                                        )}
+                                    </Select>
+                                }
+                                {(characters_options.length > 0 && corporations_options.length > 0) &&
+                                    <OrSeparator />
+                                }
+                                {corporations_options.length > 0 &&
+                                    <Select
+                                        name="corporation"
+                                        placeholder={t('contracts_corporation_placeholder')}
+                                        value={claimed_by_user_corporation}
+                                        x-model="corporation"
+                                        x-on:change="character = '-1'"
+                                    >
+                                        <option value="-1">{t('contracts_corporation_placeholder')}</option>
+                                        {corporations_options.map((option) => 
+                                            <option value={option.value}>{option.label}</option>
+                                        )}
+                                    </Select>
+                                }
+                            </Flexblock>
+                        }
+
+                        <input type="hidden" name="expectation_id" value={contract.expectation_id} />
+                    </Flexblock>
+    
+                    <FlexInline justification='flex-end'>
+                        <Button
+                            size='sm'
+                            x-on:click="close_dialog()"
+                            type="submit"
+                            x-bind:disabled="disabled_submit"
+                        >
+                            {t('accept')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size='sm'
+                            x-on:click="close_dialog()"
+                        >
+                            {t('close')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+        </Dialog>
+    </div>
+
+</div>
+
+<style lang="scss" is:global>
+    .supplier-contract-badge {
+        overflow: hidden;
+
+        canvas {
+            transition: var(--fast-transition);
+        }
+
+        &:focus-within,
+        &:hover {
+            outline: none;
+
+            canvas {
+                transform: scale(1.1);
+            }
+        }
+    }
+</style>

@@ -30,7 +30,8 @@ import Dialog from '@components/blocks/Dialog.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
-import SelectFinder from './SelectFinder.astro';
+import SelectFinder from '@components/blocks/SelectFinder.astro';
+import OrSeparator from '@components/blocks/OrSeparator.astro';
 ---
 
 <div
@@ -136,11 +137,7 @@ import SelectFinder from './SelectFinder.astro';
                                 <label for="combatlog-texarea">{t('combat_log')}</label>
                                 <Textarea id="combatlog-texarea" x-model="combatlog" x-on:change="update_status()" rows="5" />
                             </Flexblock>
-                            <FlexInline class="[ w-full ]">
-                                <hr class="[ border grow ]" />
-                                <small>{t('or')}</small>
-                                <hr class="[ border grow ]" />
-                            </FlexInline>
+                            <OrSeparator />
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                 <label for="combat_log_file">{t('combat_log_file')}</label>
                                 <Input

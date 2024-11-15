@@ -108,9 +108,9 @@ const page_title = t('doctrines.page_title');
                 }}
             />
             :
-            <Flexblock role="list" gap='var(--space-xl)'>
+            <Flexblock role="list" gap='var(--space-2xl)'>
                 {doctrines_by_groups.map((doctrines_by_group) =>
-                    <Flexblock class="[ doctrine-groups ]" gap='var(--space-m)'>
+                    <Flexblock class="[ doctrine-groups ]" gap='var(--space-xl)'>
                         <TextBox>
                             <Flexblock>
                                 <h2>{t(doctrines_by_group.type as any)}</h2>
