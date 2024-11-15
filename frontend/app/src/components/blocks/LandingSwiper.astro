@@ -1,4 +1,12 @@
 ---
+interface Props {
+    pagination?:    boolean;
+}
+
+const {
+    pagination = true,
+} = Astro.props
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
@@ -14,11 +22,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             this.swiper = new Swiper('.swiper', {
                 slidesPerView: "auto",
                 spaceBetween: 20,
-                pagination: {
+                pagination: ${pagination ? JSON.stringify({
                     clickable: true,
                     dynamicBullets: true,
                     el: ".swiper-pagination",
-                },
+                }) : JSON.stringify(false)},
                 loop: false,
                 fadeEffect: {
                     crossFade: true

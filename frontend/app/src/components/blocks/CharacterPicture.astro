@@ -2,14 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { EvEImageServiceSize } from '@dtypes/layout_components'
+import type { EvEImageServiceSize, ImageSize } from '@dtypes/layout_components'
 
 interface Props {
     character_id:       number;
     character_name?:    string;
     x_character_id?:    string | false;
     x_character_name?:  string | false;
-    size?:              EvEImageServiceSize;
+    size?:              ImageSize;
     icon_quality?:      EvEImageServiceSize;
 }
 
@@ -24,6 +24,7 @@ const {
 
 import { get_player_icon } from '@helpers/eve_image_server'
 ---
+
 <picture>
     <img
         loading="lazy"

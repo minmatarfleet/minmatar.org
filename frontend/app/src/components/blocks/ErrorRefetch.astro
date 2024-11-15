@@ -27,11 +27,13 @@ const next_delay = args.delay + RETRYING_TIME_INCREMENT_SECONDS
 url.searchParams.append('delay', next_delay.toString())
 
 const target = args?.target
+
+console.log(args.message)
 ---
 
 {(args.delay > MAX_RETRYING_TIME_SECONDS) ?
     <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
-        <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)}></p>
+        <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)} />
         <small>{t('too_many_tries')}</small>
     </Flexblock>
     :
@@ -45,7 +47,7 @@ const target = args?.target
         {animation && <RifterIcon />}
             
         <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
-            <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)}>
+            <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)} />
             <div
                 class="[ loading ]"
                 hx-get={`${url.toString()}`}

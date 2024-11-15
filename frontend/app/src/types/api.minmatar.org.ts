@@ -395,3 +395,40 @@ export interface CombatLogItem {
     first:          Date;
     last:           Date;
 }
+
+export interface Contract {
+    expectation_id:         number;
+    title:                  string;
+    fitting_id:             number;
+    structure_id:           number;
+    location_name:          string;
+    desired_quantity:       number;
+    current_quantity:       number;
+    historical_quantity:    Record[];
+    responsibilities:       Responsability[]
+}
+
+export interface Record {
+    date:       string;
+    quantity:   number;
+}
+
+export interface Responsability {
+    entity_type:    string;
+    entity_id:      number;
+    entity_name:    string;
+}
+
+export interface MarketCorporation {
+    corporation_id:     number;
+    corporation_name:   string;
+}
+
+export interface MarketExpectation {
+    expectation_id:     number;
+    fitting_id:         number;
+    fitting_name:       string;
+    location_id:        number;
+    location_name:      string;
+    quantity:           number;
+}
