@@ -32,17 +32,21 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
-    logger.debug(f"Adding redirect URL to session: {redirect_url}")
+    logger.info(f"Adding redirect URL to session: {redirect_url}")
+    if not redirect_url:
+        redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
-    logger.debug(f"Current session: {request.session}")
+    logger.info(f"Current session: {request.session}")
     return redirect(auth_url_discord)
 
 
 @router.get("/callback", include_in_schema=False)
 def callback(request, code: str):
+    logger.info("Recived discord callback with code: %s", code)
     user = discord.exchange_code(code)
+    logger.info("Successfully exchanged code for user: %s", user)
     if DiscordUser.objects.filter(id=user["id"]).exists():
-        print("User was found. Logging in...")
+        logger.info("User already exists. Logging in...")
         discord_user = DiscordUser.objects.get(id=user["id"])
         discord_user.discord_tag = (
             user["username"] + "#" + user["discriminator"]
@@ -54,6 +58,7 @@ def callback(request, code: str):
         django_user.username = user["username"]
         django_user.save()
     else:
+        logger.info("User does not exist. Creating user...")
         django_user = User.objects.create(username=user["username"])
         django_user.username = user["username"]
         django_user.save()
@@ -74,11 +79,16 @@ def callback(request, code: str):
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
-    return redirect(
-        request.session["authentication_redirect_url"]
-        + "?token="
-        + encoded_jwt_token
-    )
+    logger.info("Signed JWT Token: %s", encoded_jwt_token)
+    redirect_url = "https://my.minmatar.org/auth/login"
+    try:
+        redirect_url = request.session["authentication_redirect_url"]
+    except KeyError:
+        logger.warning("No redirect URL found in session")
+
+    redirect_url = redirect_url + "?token=" + encoded_jwt_token
+    logger.info("Redirecting to authentication URL... %s", redirect_url)
+    return redirect(redirect_url)
 
 
 @router.get(

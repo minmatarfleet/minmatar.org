@@ -1,13 +1,12 @@
 import discord
+import requests
 from discord import app_commands
-from app.api import (
-    get_timers,
-    submit_timer,
-    EveStructureTimerRequest,
-    EveStructureTimerResponse,
-)
+from discord.ext import tasks
 
-import traceback
+from app.settings import settings
+
+from .standing_api import STANDING_URL, CreateStandingFleetTrackingRequest
+from .timer_form import TimerForm
 
 # The guild in which this slash command will be registered.
 # It is recommended to have a test guild to separate from your "production" bot
@@ -21,6 +20,9 @@ class MyClient(discord.Client):
         # We don't need a `commands.Bot` instance because we are not
         # creating text-based commands.
         intents = discord.Intents.default()
+        intents.guilds = True
+        intents.voice_states = True  # Needed to access voice state information
+        intents.members = True  # Needed to access member information
         super().__init__(intents=intents)
 
         # We need an `discord.app_commands.CommandTree` instance
@@ -30,120 +32,13 @@ class MyClient(discord.Client):
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print("------")
+        check_standing_fleet_channel.start()
 
     async def setup_hook(self) -> None:
         # Sync the application command with Discord.
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
             await self.tree.sync(guild=guild)
-
-
-class TimerForm(discord.ui.Modal, title="Timer"):
-    # Our modal classes MUST subclass `discord.ui.Modal`,
-    # but the title can be whatever you want.
-
-    # This is a longer, paragraph style input, where user can submit feedback
-    # Unlike the name, it is not required. If filled out, however, it will
-    # only accept a maximum of 300 characters, as denoted by the
-    # `max_length=300` kwarg.
-    timer = discord.ui.TextInput(
-        label="Paste the timer from the selected item window",
-        style=discord.TextStyle.long,
-        placeholder="Sosala - WATERMELLON\n0\nReinforced until forever",
-        required=True,
-        max_length=300,
-    )
-
-    corporation_name = discord.ui.TextInput(
-        label="Affiliated group",
-        style=discord.TextStyle.short,
-        placeholder="corporation that owns structure",
-        required=False,
-        max_length=64,
-    )
-
-    structure_type = discord.ui.TextInput(
-        label="Structure type",
-        style=discord.TextStyle.short,
-        placeholder="Keepstar, Raitaru, Azbel, skyhook, drill, etc.",
-        required=True,
-        max_length=32,
-    )
-
-    structure_state = discord.ui.TextInput(
-        label="Structure state",
-        style=discord.TextStyle.short,
-        placeholder="anchor, armor, hull, unanchor",
-        required=True,
-        max_length=32,
-    )
-
-    async def on_submit(self, interaction: discord.Interaction):
-        # lazy matching for structure state
-        structure_state = self.structure_state.value.lower()
-        if "anchor" in structure_state:
-            structure_state = "anchoring"
-        elif "armor" in structure_state:
-            structure_state = "armor"
-        elif "hull" in structure_state:
-            structure_state = "hull"
-        elif "unanchor" in structure_state:
-            structure_state = "unanchoring"
-        else:
-            await interaction.response.send_message("Invalid state provided")
-            return
-
-        # lazy matching for structure type
-        structure_type = self.structure_type.value.lower()
-        if "keep" in structure_type:
-            structure_type = "keepstar"
-        elif "fort" in structure_type:
-            structure_type = "fortizar"
-        elif "astra" in structure_type:
-            structure_type = "astrahus"
-        elif "rait" in structure_type:
-            structure_type = "raitaru"
-        elif "azbel" in structure_type:
-            structure_type = "azbel"
-        elif "sot" in structure_type:
-            structure_type = "sotiyo"
-        elif "ath" in structure_type:
-            structure_type = "athanor"
-        elif "tat" in structure_type:
-            structure_type = "tatara"
-        elif "jam" in structure_type:
-            structure_type = "tenebrex_cyno_jammer"
-        elif "cyno" in structure_type or "beacon" in structure_type:
-            structure_type = "pharolux_cyno_beacon"
-        elif "gate" in structure_type or "jb" in structure_type:
-            structure_type = "ansiblex_jump_gate"
-        elif "drill" in structure_type or "moon" in structure_type:
-            structure_type = "metenox_moon_drill"
-        elif "skyhook" in structure_type:
-            structure_type = "orbital_skyhook"
-        else:
-            await interaction.response.send_message("Invalid type provided")
-            return
-
-        submit_timer(
-            EveStructureTimerRequest(
-                selected_item_window=self.timer.value,
-                corporation_name=self.corporation_name.value,
-                state=structure_state,
-                type=structure_type,
-            )
-        )
-        await interaction.response.send_message("Timer submitted!")
-
-    async def on_error(
-        self, interaction: discord.Interaction, error: Exception
-    ) -> None:
-        await interaction.response.send_message(
-            "Oops! Something went wrong.", ephemeral=True
-        )
-
-        # Make sure we know what the error actually is
-        traceback.print_exception(type(error), error, error.__traceback__)
 
 
 client = MyClient()
@@ -155,3 +50,44 @@ async def timer(interaction: discord.Interaction):
     # Since modals require an interaction, they cannot be done as a response to a text command.
     # They can only be done as a response to either an application command or a button press.
     await interaction.response.send_modal(TimerForm())
+
+
+@tasks.loop(seconds=60)
+async def check_standing_fleet_channel():
+    """
+    Fetches the members in standing fleet voice channel and submits
+    to the API for tracking
+    """
+
+    voice_channel_id = 1306515072650313728
+    guild = client.get_guild(1041384161505722368)
+    if guild:
+        voice_channel = guild.get_channel(voice_channel_id)
+        if not voice_channel:
+            print(f"Channel with ID {voice_channel_id} not found.")
+            return
+        if not isinstance(voice_channel, discord.VoiceChannel):
+            print(f"Channel with ID {voice_channel_id} is not a voice channel.")
+            return
+        if not voice_channel.members:
+            print(f"No members in {voice_channel.name} currently.")
+            return
+        members = voice_channel.members
+        usernames = [member.name for member in members]
+        print("Submitting standing fleet tracking for %s users" % len(usernames))
+        response = requests.post(
+            STANDING_URL,
+            json=CreateStandingFleetTrackingRequest(
+                minutes=1, usernames=usernames
+            ).model_dump(),
+            headers={"Authorization": f"Bearer {settings.MINMATAR_API_TOKEN}"},
+            timeout=2,
+        )
+        print(response.json())
+        print("Submitted standing fleet tracking")
+
+
+@check_standing_fleet_channel.before_loop
+async def before_check():
+    """Wait until the bot is ready before starting the task."""
+    await client.wait_until_ready()

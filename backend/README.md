@@ -28,5 +28,30 @@ user.is_staff = True
 user.save()
 ```
 
+## Making a standalone test user
+It is also possible to make and use a standalone test
+user that doesn't use Discord for authentication.
+
+```
+python manage.py shell_plus
+```
+Then...
+```
+from authentication import make_test_user
+make_test_user(101, "Tester 1", True)
+```
+replacing parameters (user ID, user name, is SuperUser) as appropriate.
+
+Copy the JWT bearer token.
+
+Run the backend server, and browse to the API documentation page. Click the Authorize button,
+paste the token you copied above, and click Authorize.
+
+You should now be able to test the APIs as if you were logged in as that user.
+
+Note that this only works if you have access to the server's secret key.
+
+Also note that some APIs require Discord for correct operation regardless of authentication.
+
 ## Commands
 - `for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done` set local environment variables

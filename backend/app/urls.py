@@ -37,6 +37,7 @@ from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
+from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
 
@@ -58,6 +59,7 @@ api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
 api.add_router("moon_paste", moons_paste_router)
 api.add_router("market", market_router)
+api.add_router("standingfleet", standingfleet_router)
 
 
 @api.exception_handler(UnauthorizedError)
