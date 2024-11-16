@@ -48,7 +48,10 @@ class LogAnalysis(BaseModel):
     times: List[DamageAnalysis] = []
     start: str = ""
     end: str = ""
-    db_id: int = 0
+    db_id: int = None
+    user_id: int = None
+    fitting_id: int = None
+    fleet_id: int = None
 
 
 def parse_line(line: str) -> LogEvent:
