@@ -62,10 +62,12 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('contracts.page_title')
+const page_description = t('contracts.leading_text')
 ---
 
 <Viewport
     title={page_title}
+    meta_description={page_description}
     components={{
         alert_dialog: true,
         confirm_dialog: true,

@@ -107,7 +107,7 @@ export const ui = {
         'intel.leading_text': 'Structures are the largest conflict driver in EVE Online. They are the primary target during all wars, and lead to all of those large fleet battles that you see in the news.',
         'intel.meta_description': 'Learn more about intel at Minmatar Fleet Alliance, and report various timers.',
         'intel.cover_alt': 'A Probe spacecraft scanning an Athanor station, set against the backdrop of a moon mining site.',
-        'intel.description': 'Inspect active structure timers and submit new ones and moon scans',
+        'intel.description': 'Inspect active structure timers and submit new ones and moon scans. Explore why you lost your ship with our combat log analyzer.',
 
         'intel.tutrial.page_title': 'How to scan structures?',
         'intel.tutrial.leading_text': 'In this course, you will learn how to obtain structures information and provide it to a fleet commander. Through this activity, you might just be the small spark that creates a war!',
@@ -145,7 +145,7 @@ export const ui = {
         'market.leading_text': 'Minmatar Republic loses nearly half a trillion ISK per month in faction warfare engagements. A large percentage of this has large margins.(10-20%). [FL33T] is in a unique position. We know all of the staging systems, all of the common modules and ships, and are the main driver of fleet content (losses).',
         'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
-        'market.description': 'Request alliance freight service',
+        'market.description': 'Request alliance freight service and check for opportunities with our contract service',
 
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Minmatar Fleet is supplied by individuals like YOU rather than a tight knit cartel of leadership. Learn more about our available contracts, and become a supplier!',

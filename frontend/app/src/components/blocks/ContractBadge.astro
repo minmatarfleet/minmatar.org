@@ -156,20 +156,23 @@ import Square from '@components/blocks/Square.astro';
                     <FlexInline gap='var(--space-3xs)'>
                         <small>{contract.responsabilities.length !== 1 ? t('seeders') : t('seeder')}</small>
                         {contract.responsabilities.map(entity =>
-                            entity.entity_type === 'character' ?
-                                <CharacterPicture
-                                    character_id={entity.entity_id}
-                                    character_name={entity.entity_name}
-                                    size={16}
-                                    icon_quality={32}
-                                />
-                                :
-                                <CorporationPicture
-                                    corporation_id={entity.entity_id}
-                                    corporation_name={entity.entity_name}
-                                    size={16}
-                                    icon_quality={32}
-                                />
+                            <div data-tippy-content={entity.entity_name} x-init="tippy($el, tippy_options)">
+                                {entity.entity_type === 'character' ?
+                                    <CharacterPicture
+                                        character_id={entity.entity_id}
+                                        character_name={entity.entity_name}
+                                        size={16}
+                                        icon_quality={32}
+                                    />
+                                    :
+                                    <CorporationPicture
+                                        corporation_id={entity.entity_id}
+                                        corporation_name={entity.entity_name}
+                                        size={16}
+                                        icon_quality={32}
+                                    />
+                                }
+                            </div>
                         )}
                     </FlexInline>
                     :
