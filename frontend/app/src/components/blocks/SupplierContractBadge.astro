@@ -199,14 +199,16 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
                     </Flexblock>
     
                     <FlexInline justification='flex-end'>
-                        <Button
-                            size='sm'
-                            x-on:click="close_dialog()"
-                            type="submit"
-                            x-bind:disabled="disabled_submit"
-                        >
-                            {t('accept')}
-                        </Button>
+                        {(characters_options.length > 0 || corporations_options.length > 0) &&
+                            <Button
+                                size='sm'
+                                x-on:click="close_dialog()"
+                                type="submit"
+                                x-bind:disabled="disabled_submit"
+                            >
+                                {t('accept')}
+                            </Button>
+                        }
                         <Button
                             type="button"
                             size='sm'

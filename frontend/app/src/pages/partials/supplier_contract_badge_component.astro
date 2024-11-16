@@ -46,8 +46,8 @@ if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
         expectation_id = parseInt(data.get('expectation_id') as string)
-        const character_id = parseInt(data.get('character_id') as string)
-        const corporation_id = parseInt(data.get('corporation_id') as string)
+        const character_id = parseInt(data.get('character') as string)
+        const corporation_id = parseInt(data.get('corporation') as string)
         const entity_id = character_id ? character_id : corporation_id
 
         api_contract = await create_market_contract_responsability(auth_token as string, expectation_id, entity_id)
@@ -58,9 +58,11 @@ if (Astro.request.method === "POST") {
         claim_contract_error = prod_error_messages() ? t('claim_contract_error') : error.message
     }
 
-    alert = {
-        title: t('claim_contract_dialog_title'),
-        content: claim_contract_error,
+    if (claim_contract_error) {
+        alert = {
+            title: t('claim_contract_dialog_title'),
+            content: claim_contract_error,
+        }
     }
 }
 
