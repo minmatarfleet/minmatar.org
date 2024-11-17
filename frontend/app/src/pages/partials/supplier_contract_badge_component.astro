@@ -26,7 +26,7 @@ if (!is_supplier)
     return HTTP_404_Not_Found()
 
 import { create_market_contract_responsability, get_market_contract_by_id } from '@helpers/api.minmatar.org/market'
-import type { Alert, ContractUI, SelectOptions } from '@dtypes/layout_components'
+import type { Alert, ContractUI, SelectOptions, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
 import type { Contract } from '@dtypes/api.minmatar.org'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import { get_ship_info } from '@helpers/sde/ships'
@@ -39,6 +39,9 @@ let contract:ContractUI | null = null
 let alert:Alert | false = false
 let characters_options:SelectOptions[] = []
 let corporations_options:SelectOptions[] = []
+let claimed_by_user_characters:CharacterBasic[] = []
+let claimed_by_user_corporations:CorporationBasic[] = []
+let is_claimed:boolean = false
 
 let expectation_id = parseInt(Astro.url.searchParams.get('expectation_id') ?? '0')
 
@@ -91,6 +94,9 @@ try {
         entities: api_contract.responsibilities.length,
     }
 
+    if (!contract)
+        throw new Error(t('invalid_contract'))
+
     const market_characters = await get_market_characters(auth_token as string)
     characters_options = market_characters.map(character => {
         return {
@@ -106,11 +112,31 @@ try {
             label: corporation.corporation_name,
         } as SelectOptions
     })
+
+    characters_options.forEach(characters_option => {
+        if ((contract as ContractUI).responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
+            claimed_by_user_characters.push({
+                character_id: characters_option.value as number,
+                character_name: characters_option.label,
+            })
+        }
+    })
+
+    corporations_options.forEach(corporations_option => {
+        if ((contract as ContractUI).responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
+            claimed_by_user_corporations.push({
+                id: corporations_option.value as number,
+                name: corporations_option.label,
+            })
+        }
+    })
+
+    is_claimed = claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0
 } catch (error) {
     data_fetching_error = prod_error_messages() ? t('fetch_contract_error') : error.message
 }
 
-const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?expectation_id=${expectation_id}`
+const SUPPLIER_CONTRACT_BADGE_PARTIAL_URL = `${translatePath(`/partials/supplier_contract_badge_component`)}?expectation_id=${expectation_id}`
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -121,17 +147,28 @@ import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astr
 {data_fetching_error ?
     <ErrorRefetch
         args={{
-            partial: CONTRACTS_PARTIAL_URL,
+            partial: SUPPLIER_CONTRACT_BADGE_PARTIAL_URL,
             message: data_fetching_error,
             delay: delay,
         }}
     />
     :
-    <SupplierContractBadge
-        contract={contract as ContractUI}
-        characters_options={characters_options}
-        corporations_options={corporations_options}
-    />
+    <div
+        class="[ contract-badge-container ]"
+        x-show={`show_item($el) && (${JSON.stringify(is_claimed)} ? true : show_all)`}
+        x-bind:id="id"
+        x-data={`{
+            id: $id('contract-badge-container'),
+        }`}
+    >
+        <SupplierContractBadge
+            contract={contract as ContractUI}
+            characters_options={characters_options}
+            corporations_options={corporations_options}
+            claimed_by_user_characters={claimed_by_user_characters}
+            claimed_by_user_corporations={claimed_by_user_corporations}
+        />
+    </div>
 }
 
 {alert &&
