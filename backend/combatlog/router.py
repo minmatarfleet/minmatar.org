@@ -3,7 +3,9 @@ import io
 import logging
 import zipfile
 
+from typing import List
 from ninja import Router
+from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
@@ -108,6 +110,42 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     update_combat_time(dmg_events, analysis)
 
     return analysis
+
+
+class LogSummary(BaseModel):
+    id: int
+    uploaded_at: str
+    user_id: int = None
+    fleet_id: int = None
+    fitting_id: int = None
+
+
+@router.get(
+    "",
+    response={200: List[LogSummary], 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def query_saved_logs(request, user_id: int):
+    if request.user.id != user_id:
+        return 403, ErrorResponse(
+            detail="Not currently possible to see logs of others"
+        )
+
+    results = []
+    for record in CombatLog.objects.filter(created_by_id=user_id):
+        summary = LogSummary(
+            id=record.id,
+            uploaded_at=record.created_at.strftime("%m/%d/%Y, %H:%M:%S"),
+        )
+        if record.created_by:
+            summary.user_id = record.created_by_id
+        if record.fleet_id:
+            summary.fleet_id = record.fleet_id
+        if record.fitting_id:
+            summary.fitting_id = record.fitting_id
+        results.append(summary)
+
+    return results
 
 
 @router.get(
