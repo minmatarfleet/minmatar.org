@@ -90,6 +90,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                     }
                                 })
 
+                                const filtered_characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
+
                                 let claimed_by_user_corporations:CorporationBasic[] = []
                                 corporations_options.forEach(corporations_option => {
                                     if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
@@ -99,6 +101,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                         })
                                     }
                                 })
+
+                                const filtered_corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
 
                                 const is_claimed = claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0
 
@@ -114,8 +118,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                         {is_supplier ?
                                             <SupplierContractBadge
                                                 contract={contract}
-                                                characters_options={characters_options}
-                                                corporations_options={corporations_options}
+                                                characters_options={filtered_characters_options}
+                                                corporations_options={filtered_corporations_options}
                                                 claimed_by_user_characters={claimed_by_user_characters}
                                                 claimed_by_user_corporations={claimed_by_user_corporations}
                                             /> :
