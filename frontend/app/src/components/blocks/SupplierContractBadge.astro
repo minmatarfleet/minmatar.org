@@ -5,38 +5,20 @@ const { t, translatePath } = i18n(Astro.url)
 import type { ContractUI, SelectOptions, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
 
 interface Props {
-    contract:               ContractUI;
-    characters_options:     SelectOptions[];
-    corporations_options:   SelectOptions[];
+    contract:                       ContractUI;
+    characters_options:             SelectOptions[];
+    corporations_options:           SelectOptions[];
+    claimed_by_user_characters:     CharacterBasic[];
+    claimed_by_user_corporations:   CorporationBasic[];
 }
 
 let {
     contract,
     characters_options,
     corporations_options,
+    claimed_by_user_characters,
+    claimed_by_user_corporations,
 } = Astro.props
-
-let claimed_by_user_characters:CharacterBasic[] = []
-characters_options.forEach(characters_option => {
-    if (contract.responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
-        claimed_by_user_characters.push({
-            character_id: characters_option.value as number,
-            character_name: characters_option.label,
-        })
-    }
-})
-
-characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
-
-let claimed_by_user_corporations:CorporationBasic[] = []
-corporations_options.forEach(corporations_option => {
-    if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
-        claimed_by_user_corporations.push({
-            id: corporations_option.value as number,
-            name: corporations_option.label,
-        })
-    }
-})
 
 corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
 
@@ -63,9 +45,7 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
 
 <div
     class="[ supplier-contract-badge w-full ]"
-    x-bind:id="id"
     x-data={`{
-        id: $id('supplier-contract-badge'),
         character: '-1',
         corporation: '-1',
         disabled_submit: true,
@@ -107,7 +87,7 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
                 hx-trigger="submit"
                 x-bind:hx-target="`#${id}`"
                 hx-indicator=".loader"
-                hx-swap="innerHTML transition:true"
+                hx-swap="outerHTML transition:true"
                 x-ref="combatlog_form"
             >
                 <Flexblock gap="var(--space-l)">

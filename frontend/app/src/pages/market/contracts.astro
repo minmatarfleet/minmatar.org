@@ -58,6 +58,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ContractsList from '@components/blocks/ContractsList.astro'
 import Input from '@components/blocks/Input.astro'
 import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
+import Button from '@components/blocks/Button.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -76,13 +77,14 @@ const page_description = t('contracts.leading_text')
     <PageWide
         cover={{
             image: "/images/contracts-cover.jpg",
-            image_990: "/images/contracts-cover-900.jpg",
+            image_990: "/images/contracts-cover-990.jpg",
             alt: t('contracts.cover_alt'),
             animated: false,
             scrollable: true,
             overlay: true
         }}
         x-data={`{
+            show_all: $persist(true),
             contracts_count: ${contracts_count},
             item_name_filter: '',
             countVisibleElements(selector, parent = document) {
@@ -128,6 +130,14 @@ const page_description = t('contracts.leading_text')
         {user &&
             <FlexInline slot="subheader">
                 <AddSupplierButton />
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="show_all = !show_all"
+                    x-text={`show_all ? '${t('show_owned_contracts')}' : '${t('show_all_contracts')}'`}
+                >
+                    {t('show_owned_contracts')}
+                </Button>
             </FlexInline>
         }
     

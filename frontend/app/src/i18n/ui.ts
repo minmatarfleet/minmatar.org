@@ -1126,5 +1126,7 @@ export const ui = {
         'invalid_contract': 'Invalid contract',
         'claimed_by_user_characters': 'Your following entities has already claimed this contract:',
         'add_supplier_note': 'You need to add additional entitities to claim this contract.',
+        'show_owned_contracts': 'Show owned contracts',
+        'show_all_contracts': 'Show all contracts',
     },
 } as const;
