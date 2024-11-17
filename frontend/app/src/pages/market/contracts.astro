@@ -84,7 +84,7 @@ const page_description = t('contracts.leading_text')
             overlay: true
         }}
         x-data={`{
-            show_all: $persist(true),
+            show_all: true,
             contracts_count: ${contracts_count},
             item_name_filter: '',
             countVisibleElements(selector, parent = document) {
@@ -133,7 +133,7 @@ const page_description = t('contracts.leading_text')
                 <Button
                     type="button"
                     size='sm'
-                    x-on:click="show_all = !show_all"
+                    x-on:click="show_all = !show_all; setTimeout(() => { contracts_count = countVisibleElements('.title') }, 50)"
                     x-text={`show_all ? '${t('show_owned_contracts')}' : '${t('show_all_contracts')}'`}
                 >
                     {t('show_owned_contracts')}
