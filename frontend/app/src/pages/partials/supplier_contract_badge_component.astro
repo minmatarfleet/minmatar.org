@@ -39,6 +39,8 @@ let contract:ContractUI | null = null
 let alert:Alert | false = false
 let characters_options:SelectOptions[] = []
 let corporations_options:SelectOptions[] = []
+let filtered_characters_options:SelectOptions[] = []
+let filtered_corporations_options:SelectOptions[] = []
 let claimed_by_user_characters:CharacterBasic[] = []
 let claimed_by_user_corporations:CorporationBasic[] = []
 let is_claimed:boolean = false
@@ -122,6 +124,8 @@ try {
         }
     })
 
+    filtered_characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
+
     corporations_options.forEach(corporations_option => {
         if ((contract as ContractUI).responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
             claimed_by_user_corporations.push({
@@ -130,6 +134,8 @@ try {
             })
         }
     })
+
+    filtered_corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
 
     is_claimed = claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0
 } catch (error) {
@@ -163,8 +169,8 @@ import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astr
     >
         <SupplierContractBadge
             contract={contract as ContractUI}
-            characters_options={characters_options}
-            corporations_options={corporations_options}
+            characters_options={filtered_characters_options}
+            corporations_options={filtered_corporations_options}
             claimed_by_user_characters={claimed_by_user_characters}
             claimed_by_user_corporations={claimed_by_user_corporations}
         />
