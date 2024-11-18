@@ -18,6 +18,9 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     Creates a market contract from ESI data while trusting
     the issuer_id from upstream filtering
     """
+    logger.info(
+        f"Processing contract {contract['contract_id']}, {contract['title']}"
+    )
     if contract["acceptor_id"] == issuer_id:
         logger.info(
             f"Skipping {contract['contract_id']}, issuer is also acceptor."
