@@ -1128,5 +1128,7 @@ export const ui = {
         'add_supplier_note': 'You need to add additional entitities to claim this contract.',
         'show_owned_contracts': 'Show owned contracts',
         'show_all_contracts': 'Show all contracts',
+        'invalid_entity': 'Invalid entity',
+        'invalid_expectation': 'Invalid expectation',
     },
 } as const;
