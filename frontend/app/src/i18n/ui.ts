@@ -1130,5 +1130,7 @@ export const ui = {
         'show_all_contracts': 'Show all contracts',
         'invalid_entity': 'Invalid entity',
         'invalid_expectation': 'Invalid expectation',
+        'contracts_sold': 'Monthly sales',
+        'desired_quantity': 'Desired quantity on stock',
     },
 } as const;
