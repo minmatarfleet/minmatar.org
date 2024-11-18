@@ -7,6 +7,8 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
+from fleets.models import EveFleet
+
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 
@@ -125,14 +127,25 @@ class LogSummary(BaseModel):
     response={200: List[LogSummary], 403: ErrorResponse},
     auth=AuthBearer(),
 )
-def query_saved_logs(request, user_id: int):
-    if request.user.id != user_id:
-        return 403, ErrorResponse(
-            detail="Not currently possible to see logs of others"
-        )
+def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
+
+    if fleet_id:
+        fc_id = EveFleet.objects.get(id=fleet_id).created_by_id
+        is_fc = fc_id == user_id
+        combat_logs = CombatLog.objects.filter(fleet_id=fleet_id)
+    else:
+        if request.user.id != user_id:
+            return 403, ErrorResponse(
+                detail="Not currently possible to see other's logs"
+            )
+        is_fc = False
+        combat_logs = CombatLog.objects.filter(created_by_id=user_id)
 
     results = []
-    for record in CombatLog.objects.filter(created_by_id=user_id):
+    for record in combat_logs:
+        if not (record.created_by_id == user_id or is_fc):
+            continue
+
         summary = LogSummary(
             id=record.id,
             uploaded_at=record.created_at.strftime("%m/%d/%Y, %H:%M:%S"),
@@ -143,6 +156,7 @@ def query_saved_logs(request, user_id: int):
             summary.fleet_id = record.fleet_id
         if record.fitting_id:
             summary.fitting_id = record.fitting_id
+
         results.append(summary)
 
     return results
