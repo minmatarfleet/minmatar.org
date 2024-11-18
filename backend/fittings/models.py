@@ -28,6 +28,9 @@ class EveFitting(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
     tags = models.ManyToManyField(EveFittingTag, blank=True)
+    # comma separated list of aliases
+    # e.g [FL33T] Tornado, [NVY-30] Tornado
+    aliases = models.TextField(blank=True, null=True)
 
     # fitting info
     eft_format = models.TextField()
