@@ -7,6 +7,7 @@ from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
 from market.models import EveMarketContract, EveMarketLocation
+from django.db.models import Q
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -34,7 +35,9 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         logger.info(f"Skipping {contract['contract_id']}, location not found.")
         return
 
-    if not EveFitting.objects.filter(name=contract["title"]).exists():
+    if not EveFitting.objects.filter(
+        Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+    ).exists():
         logger.info(f"Skipping {contract['contract_id']}, fitting not found.")
         return
 
@@ -42,7 +45,9 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     location = EveMarketLocation.objects.get(
         location_id=contract["start_location_id"]
     )
-    fitting = EveFitting.objects.get(name=contract["title"])
+    fitting = EveFitting.objects.get(
+        Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+    )
     if contract["status"] == "outstanding":
         status = "outstanding"
     elif contract["status"] == "finished":
