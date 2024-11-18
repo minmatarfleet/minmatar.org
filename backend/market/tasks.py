@@ -2,6 +2,7 @@ import logging
 
 from esi.clients import EsiClientProvider
 
+from app.celery import app
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.helpers import (
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
 
+@app.task()
 def fetch_eve_market_contracts():
     characters = EveCharacter.objects.filter(
         token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
