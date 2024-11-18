@@ -6,6 +6,7 @@ import moment from 'moment';
 const datetime_options = JSON.parse(import.meta.env.DATETIME_FORMAT)
 const date_options = JSON.parse(import.meta.env.DATE_FORMAT ?? '{"weekday":"short","year":"numeric","month":"short","day":"numeric"}')
 const date_short_options = JSON.parse(import.meta.env.DATE_FORMAT_SHORT ?? '{"year":"numeric","month":"short","day":"numeric"}')
+const date_shortest_options = JSON.parse(import.meta.env.DATE_FORMAT_SHORTEST ?? '{"year":"numeric","month":"long"}')
 
 export const format_date_time = (locale, date):string => {
     return new Date(date).toLocaleDateString(locale, datetime_options)
@@ -17,6 +18,10 @@ export const format_date = (locale, date):string => {
 
 export const format_date_short = (locale, date):string => {
     return new Date(date).toLocaleDateString(locale, date_short_options)
+}
+
+export const format_date_shortest = (locale, date):string => {
+    return new Date(date).toLocaleDateString(locale, date_shortest_options)
 }
 
 export const days_diff_text = (locale:Locales = 'en', from:Date, to:Date):string => {
