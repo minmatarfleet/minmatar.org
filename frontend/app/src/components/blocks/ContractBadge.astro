@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { lang, i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { ContractUI } from '@dtypes/layout_components'
@@ -17,6 +17,7 @@ const {
 const low_amount = (contract.current_quantity <= (20 * contract.desired_quantity)/100)
 
 import { get_item_icon } from '@helpers/eve_image_server'
+import { format_date_shortest } from '@helpers/date'
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -59,24 +60,28 @@ import Square from '@components/blocks/Square.astro';
                         gradient.addColorStop(0, '${low_amount ? 'rgba(255, 110, 110, 0.5)' : 'rgba(110, 233, 255, 0.5)'}')
                         gradient.addColorStop(1, '${low_amount ? 'rgba(255, 110, 110, 0)' : 'rgba(110, 233, 255, 0)'}')
 
+                        Chart.defaults.font.family = 'Montserrat Variable';
+
                         const myChart = new Chart(ctx, {
                             type: 'line',
                             data: {
-                                labels: ${JSON.stringify(contract.trend_x_axis)},
+                                labels: ${JSON.stringify(contract.trend_x_axis.reverse().map(x => format_date_shortest(lang, x)))},
                                 datasets: [{
-                                    data: ${JSON.stringify(contract.trend_y_axis)},
+                                    label: "${t('contracts_sold')}",
+                                    data: ${JSON.stringify(contract.trend_y_axis.reverse())},
                                     fill: true,
                                     backgroundColor: gradient,
                                     borderColor: '${low_amount ? '#ff6e6e' : '#6ee9ff'}',
                                     borderWidth: 2,
-                                    pointRadius: 0
+                                    pointRadius: 1
                                 },
                                 {
+                                    label: "${t('desired_quantity')}",
                                     data: ${JSON.stringify(Array(contract.trend_x_axis.length).fill(contract.desired_quantity))},
                                     fill: true,
                                     borderColor: 'rgba(241, 217, 160, 0.2)',
                                     borderWidth: 1,
-                                    pointRadius: 0
+                                    pointRadius: 1
                                 }]
                             },
                             options: {
@@ -95,9 +100,6 @@ import Square from '@components/blocks/Square.astro';
                                     glow: {
                                         consoleText: 'testText'
                                     },
-                                    tooltip: {
-                                        enabled: false
-                                    }
                                 },
                                 scales: {
                                     x: {
