@@ -44,6 +44,17 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         logger.info(f"Skipping {contract['contract_id']}, fitting not found.")
         return
 
+    if (
+        not EveFitting.objects.filter(
+            Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+        ).count()
+        > 1
+    ):
+        logger.info(
+            f"Skipping {contract['contract_id']}, unable to determine fitting."
+        )
+        return
+
     # Data massaging
     location = EveMarketLocation.objects.get(
         location_id=contract["start_location_id"]
