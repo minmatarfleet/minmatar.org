@@ -74,18 +74,36 @@ class MarketContractResponse(BaseModel):
 
 
 def _get_entity_ids(request):
-    characters = EveCharacter.objects.filter(
-        token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-        token__user=request.user,
-    ).distinct()
-    corporations = EveCorporation.objects.filter(
-        ceo__token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-        ceo__token__user=request.user,
-        alliance__name__in=[
-            "Minmatar Fleet Alliance",
-            "Minmatar Fleet Associates",
-        ],
-    ).distinct()
+    characters = (
+        EveCharacter.objects.annotate(
+            matching_scopes=Count(
+                "token__scopes",
+                filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+            token__user=request.user,
+        )
+        .distinct()
+    )
+    corporations = (
+        EveCorporation.objects.annotate(
+            matching_scopes=Count(
+                "ceo__token__scopes",
+                filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+            ceo__token__user=request.user,
+            alliance__name__in=[
+                "Minmatar Fleet Alliance",
+                "Minmatar Fleet Associates",
+            ],
+        )
+        .distinct()
+    )
     return [character.character_id for character in characters] + [
         corporation.corporation_id for corporation in corporations
     ]

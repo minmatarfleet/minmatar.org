@@ -9,6 +9,7 @@ from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
 )
+from django.db.models import Count, Q
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +18,16 @@ esi = EsiClientProvider()
 
 @app.task()
 def fetch_eve_market_contracts():
-    characters = EveCharacter.objects.filter(
-        token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-    ).distinct()
+    characters = (
+        EveCharacter.objects.annotate(
+            matching_scopes=Count(
+                "token__scopes",
+                filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(matching_scopes=len(MARKET_CHARACTER_SCOPES))
+        .distinct()
+    )
 
     for character in characters:
         logger.info(f"Fetching character contracts {character.character_id}")
@@ -30,13 +38,22 @@ def fetch_eve_market_contracts():
                 f"Failed to fetch character contracts {character.character_id}: {e}"
             )
 
-    corporations = EveCorporation.objects.filter(
-        ceo__token__scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-        alliance__name__in=[
-            "Minmatar Fleet Alliance",
-            "Minmatar Fleet Associates",
-        ],
-    ).distinct()
+    corporations = (
+        EveCorporation.objects.annotate(
+            matching_scopes=Count(
+                "ceo__token__scopes",
+                filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+            alliance__name__in=[
+                "Minmatar Fleet Alliance",
+                "Minmatar Fleet Associates",
+            ],
+        )
+        .distinct()
+    )
 
     for corporation in corporations:
         logger.info(
