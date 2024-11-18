@@ -53,7 +53,13 @@ if (Astro.request.method === "POST") {
         expectation_id = parseInt(data.get('expectation_id') as string)
         const character_id = parseInt(data.get('character') as string)
         const corporation_id = parseInt(data.get('corporation') as string)
-        const entity_id = character_id ? character_id : corporation_id
+        const entity_id = character_id > 0 ? character_id : corporation_id
+
+        if (entity_id < 1)
+            throw new Error(t('invalid_entity'))
+
+        if (expectation_id < 1)
+            throw new Error(t('invalid_expectation'))
 
         api_contract = await create_market_contract_responsability(auth_token as string, expectation_id, entity_id)
 
