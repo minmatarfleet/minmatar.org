@@ -10,7 +10,7 @@ def main():
     try:
         import dotenv  # noqa
 
-        dotenv.load_dotenv(
+        dotenv.read_dotenv(
             os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
                 "./backend/.env.local",
