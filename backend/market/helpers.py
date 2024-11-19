@@ -45,7 +45,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         return
 
     if (
-        not EveFitting.objects.filter(
+        EveFitting.objects.filter(
             Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
         ).count()
         > 1
