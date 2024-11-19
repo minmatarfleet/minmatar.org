@@ -102,6 +102,7 @@ def create_character_market_contracts(character_id: int):
         character_id=character_id, token=token.valid_access_token()
     ).results()
 
+    known_contract_ids = []
     for contract in contracts:
         if (
             contract["for_corporation"]
@@ -109,6 +110,12 @@ def create_character_market_contracts(character_id: int):
         ):
             continue
         create_market_contract(contract, character_id)
+        known_contract_ids.append(contract["contract_id"])
+
+    # Clean up contracts that are no longer in the list
+    EveMarketContract.objects.filter(issuer_external_id=character_id).exclude(
+        id__in=known_contract_ids
+    ).update(status="expired")
     return
 
 
@@ -133,6 +140,7 @@ def create_corporation_market_contracts(corporation_id: int):
         corporation_id=corporation_id, token=token.valid_access_token()
     ).results()
 
+    known_contract_ids = []
     for contract in contracts:
         if (
             not contract["for_corporation"]
@@ -140,4 +148,10 @@ def create_corporation_market_contracts(corporation_id: int):
         ):
             continue
         create_market_contract(contract, corporation_id)
+        known_contract_ids.append(contract["contract_id"])
+
+    # Clean up contracts that are no longer in the list
+    EveMarketContract.objects.filter(
+        issuer_external_id=corporation_id
+    ).exclude(id__in=known_contract_ids).update(status="expired")
     return
