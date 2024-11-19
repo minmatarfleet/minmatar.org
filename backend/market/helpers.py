@@ -23,6 +23,10 @@ class MarketContractHistoricalQuantity:
     date: str
     quantity: int
 
+    def __init__(self, date: str, quantity: int):
+        self.date = date
+        self.quantity = quantity
+
 
 def create_market_contract(contract: dict, issuer_id: int) -> None:
     """
