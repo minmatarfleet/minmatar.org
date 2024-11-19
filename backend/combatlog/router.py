@@ -20,6 +20,8 @@ from .combatlog import (
     total_damage,
     update_combat_time,
     weapon_analysis,
+    character_name,
+    max_damage,
 )
 from .models import CombatLog
 
@@ -99,6 +101,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 
     analysis = LogAnalysis()
     analysis.logged_events = len(events)
+    analysis.character_name = character_name(events)
 
     dmg_events = damage_events(events)
 
@@ -107,6 +110,9 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     analysis.enemies = enemy_analysis(dmg_events)
     analysis.weapons = weapon_analysis(dmg_events)
     analysis.times = time_analysis(dmg_events)
+
+    analysis.max_from = max_damage(dmg_events, "from")
+    analysis.max_to = max_damage(dmg_events, "to")
 
     update_combat_time(dmg_events, analysis)
 

@@ -7,17 +7,19 @@ class LogEvent:
     raw_log: str
     event_time: str
     event_type: str
+    location: str
     text: str
 
 
-class DamageEvent:
-    event_time: str
+class DamageEvent(BaseModel):
+    event_time: str = ""
     damage: int = 0
-    direction: str
-    entity: str
-    weapon: str
-    outcome: str
-    text: str
+    direction: str = ""
+    entity: str  = ""
+    weapon: str = ""
+    outcome: str = ""
+    location: str = ""
+    text: str = ""
 
 
 class DamageAnalysis(BaseModel):
@@ -35,6 +37,7 @@ class DamageAnalysis(BaseModel):
     avg_to: int = 0
     first: str = ""
     last: str = ""
+    location: str = ""
 
 
 class LogAnalysis(BaseModel):
@@ -52,6 +55,9 @@ class LogAnalysis(BaseModel):
     user_id: int = None
     fitting_id: int = None
     fleet_id: int = None
+    character_name: str = None
+    max_from: DamageEvent = None
+    max_to: DamageEvent = None
 
 
 def parse_line(line: str) -> LogEvent:
@@ -82,13 +88,35 @@ def parse_line(line: str) -> LogEvent:
     return event
 
 
+def update_location(event: LogEvent, previous_location: str) -> str:
+    if event.text.find("Jumping from ") >= 0:
+        split = event.text.find(" to ")
+        event.location = event.text[split + 4 :]
+    elif event.text.find("Undocking from ") >= 0:
+        split = event.text.find(" to ")
+        event.location = event.text[split + 4 :].replace(" solar system.", "")
+    else:
+        event.location = previous_location
+    return event.location
+
+
 def parse(text: str) -> List[LogEvent]:
+    location = "{unknown}"
     events = []
     for line in text.splitlines():
         event = parse_line(line)
+        location = update_location(event, location)
         events.append(event)
 
     return events
+
+
+def character_name(events: List[LogEvent]) -> str:
+    for event in events:
+        split = event.text.find("Listener: ")
+        if split >= 0:
+            return event.text[split+10 :]
+    return ""
 
 
 def strip_html(text):
@@ -121,6 +149,7 @@ def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
 
         damage_event = DamageEvent()
         damage_event.event_time = event.event_time
+        damage_event.location = event.location
 
         pos = text.find(" to ")
         if pos >= 0:
@@ -225,6 +254,9 @@ def time_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
 
         update_damage_analysis(times[time_bucket], event)
 
+        if event.location != "":
+            times[time_bucket].location = event.location
+
     results = []
     for _, value in times.items():
         results.append(value)
@@ -255,3 +287,12 @@ def update_combat_time(events: List[DamageEvent], analysis: LogAnalysis):
     for event in events:
         analysis.start = min(analysis.start, event.event_time)
         analysis.end = max(analysis.end, event.event_time)
+
+def max_damage(events: List[DamageEvent], direction: str) -> DamageEvent:
+    max = -1
+    max_event = None
+    for event in events:
+        if event.direction == direction and event.damage > max:
+            max_event = event
+            max = event.damage
+    return max_event

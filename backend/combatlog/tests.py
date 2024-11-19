@@ -8,6 +8,8 @@ from .combatlog import (
     parse_line,
     strip_html,
     total_damage,
+    update_location,
+    character_name,
 )
 
 
@@ -47,6 +49,44 @@ class ParseCombatLogTest(TestCase):
         logs = ""
         events = parse(logs)
         self.assertEqual(0, len(events))
+
+    def test_undock_location(self):
+        event = parse_line(
+            "[ 2024.01.01 09:00:00 ] (None) Undocking from Sys I - Moon 1 - SuperStation to Sys solar system."
+        )
+        location = update_location(event, "nowhere")
+        self.assertEqual("Sys", location)
+        self.assertEqual(location, event.location)
+
+    def test_jump_location(self):
+        event = parse_line(
+            "[ 2024.01.01 09:00:00 ] (None) Jumping from Sys to Anywhere"
+        )
+        location = update_location(event, "Somewhere")
+        self.assertEqual("Anywhere", location)
+        self.assertEqual(location, event.location)
+
+    def test_combat_location(self):
+        event = parse_line(
+            "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits"
+        )
+        location = update_location(event, "Somewhere")
+        self.assertEqual("Somewhere", location)
+        self.assertEqual(location, event.location)
+
+    def test_character_name(self):
+        log = "------------------------------------------------------------\n" \
+            "Gamelog\n" \
+            "Listener: EvePlayer 123\n" \
+            "Session Started: 2024.01.01 09:00:00\n" \
+            "------------------------------------------------------------\n" \
+            "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
+        events = parse(log)
+
+        self.assertEqual(6, len(events))
+        self.assertEqual("EvePlayer 123", character_name(events))
+        
+
 
 
 class StripHtmlTest(TestCase):
@@ -139,3 +179,4 @@ class DamageParseTest(TestCase):
         self.assertEqual("to", event.direction)
         self.assertEqual("Inferno Rage Compiler Error", event.weapon)
         self.assertEqual("[P-1]Bad Guy", event.entity)
+
