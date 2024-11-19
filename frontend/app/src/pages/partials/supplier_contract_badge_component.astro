@@ -14,9 +14,6 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
-
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
