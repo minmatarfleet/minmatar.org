@@ -3,14 +3,26 @@ import logging
 from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from datetime import datetime, timedelta
 
 from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
-from market.models import EveMarketContract, EveMarketLocation
+from market.models import (
+    EveMarketContract,
+    EveMarketLocation,
+    EveMarketContractExpectation,
+)
+
+import pytz
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
+
+
+class MarketContractHistoricalQuantity:
+    date: str
+    quantity: int
 
 
 def create_market_contract(contract: dict, issuer_id: int) -> None:
@@ -155,3 +167,32 @@ def create_corporation_market_contracts(corporation_id: int):
         issuer_external_id=corporation_id
     ).exclude(id__in=known_contract_ids).update(status="expired")
     return
+
+
+def get_historical_quantity(
+    expectation: EveMarketContractExpectation,
+) -> MarketContractHistoricalQuantity:
+    """
+    Returns the historical quantity for an expectation
+    """
+    historical_quantity = []
+    today = datetime.today()
+    utc = pytz.UTC
+    for i in range(12):
+        month_start = (
+            today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
+        ).replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        historical_quantity.append(
+            MarketContractHistoricalQuantity(
+                date=month_start.strftime("%Y-%m-%d"),
+                quantity=EveMarketContract.objects.filter(
+                    fitting=expectation.fitting,
+                    status="finished",
+                    completed_at__gte=month_start,
+                    completed_at__lt=month_end,
+                ).count(),
+            )
+        )
+
+    return historical_quantity
