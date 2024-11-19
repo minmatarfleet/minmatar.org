@@ -2,15 +2,14 @@ import gzip
 import io
 import logging
 import zipfile
-
 from typing import List
+
 from ninja import Router
 from pydantic import BaseModel
 
-from fleets.models import EveFleet
-
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
+from fleets.models import EveFleet
 
 from .combatlog import (
     LogAnalysis,

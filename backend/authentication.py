@@ -1,10 +1,11 @@
-import jwt
 import logging
+from typing import Any, Optional
+
+import jwt
 from django.conf import settings
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from ninja.security import HttpBearer
-from typing import Any, Optional
 
 logger = logging.getLogger("authentication")
 
