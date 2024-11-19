@@ -75,18 +75,18 @@ class ParseCombatLogTest(TestCase):
         self.assertEqual(location, event.location)
 
     def test_character_name(self):
-        log = "------------------------------------------------------------\n" \
-            "Gamelog\n" \
-            "Listener: EvePlayer 123\n" \
-            "Session Started: 2024.01.01 09:00:00\n" \
-            "------------------------------------------------------------\n" \
+        log = (
+            "------------------------------------------------------------\n"
+            "Gamelog\n"
+            "Listener: EvePlayer 123\n"
+            "Session Started: 2024.01.01 09:00:00\n"
+            "------------------------------------------------------------\n"
             "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
+        )
         events = parse(log)
 
         self.assertEqual(6, len(events))
         self.assertEqual("EvePlayer 123", character_name(events))
-        
-
 
 
 class StripHtmlTest(TestCase):
@@ -179,4 +179,3 @@ class DamageParseTest(TestCase):
         self.assertEqual("to", event.direction)
         self.assertEqual("Inferno Rage Compiler Error", event.weapon)
         self.assertEqual("[P-1]Bad Guy", event.entity)
-

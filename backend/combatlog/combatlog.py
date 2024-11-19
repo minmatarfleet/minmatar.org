@@ -3,19 +3,19 @@ from typing import Dict, List
 from pydantic import BaseModel
 
 
-class LogEvent:
-    raw_log: str
-    event_time: str
-    event_type: str
-    location: str
-    text: str
+class LogEvent(BaseModel):
+    raw_log: str = None
+    event_time: str = None
+    event_type: str = None
+    location: str = None
+    text: str = None
 
 
 class DamageEvent(BaseModel):
     event_time: str = ""
     damage: int = 0
     direction: str = ""
-    entity: str  = ""
+    entity: str = ""
     weapon: str = ""
     outcome: str = ""
     location: str = ""
@@ -115,7 +115,7 @@ def character_name(events: List[LogEvent]) -> str:
     for event in events:
         split = event.text.find("Listener: ")
         if split >= 0:
-            return event.text[split+10 :]
+            return event.text[split + 10 :]
     return ""
 
 
@@ -288,11 +288,12 @@ def update_combat_time(events: List[DamageEvent], analysis: LogAnalysis):
         analysis.start = min(analysis.start, event.event_time)
         analysis.end = max(analysis.end, event.event_time)
 
+
 def max_damage(events: List[DamageEvent], direction: str) -> DamageEvent:
-    max = -1
+    max_dmg = -1
     max_event = None
     for event in events:
-        if event.direction == direction and event.damage > max:
+        if event.direction == direction and event.damage > max_dmg:
             max_event = event
-            max = event.damage
+            max_dmg = event.damage
     return max_event
