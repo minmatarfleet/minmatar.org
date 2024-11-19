@@ -34,6 +34,9 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     Creates a market contract from ESI data while trusting
     the issuer_id from upstream filtering
     """
+    # Need to add comma for ships that contain same name
+    # e.g Exequror and Exequror Navy Issue
+    alias_title_lookup = f"{contract.title},"
     logger.info(
         f"Processing contract {contract['contract_id']}, {contract['title']}"
     )
@@ -55,14 +58,14 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         return
 
     if not EveFitting.objects.filter(
-        Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+        Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
     ).exists():
         logger.info(f"Skipping {contract['contract_id']}, fitting not found.")
         return
 
     if (
         EveFitting.objects.filter(
-            Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+            Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
         ).count()
         > 1
     ):
@@ -76,7 +79,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         location_id=contract["start_location_id"]
     )
     fitting = EveFitting.objects.get(
-        Q(name=contract["title"]) | Q(aliases__contains=contract["title"])
+        Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
     )
     if contract["status"] == "outstanding":
         status = "outstanding"
