@@ -11,6 +11,8 @@ from market.helpers import (
 )
 from django.db.models import Count, Q
 
+from market.models import EveMarketContract
+
 logger = logging.getLogger(__name__)
 
 esi = EsiClientProvider()
@@ -18,6 +20,7 @@ esi = EsiClientProvider()
 
 @app.task()
 def fetch_eve_market_contracts():
+    known_entity_ids = []
     characters = (
         EveCharacter.objects.annotate(
             matching_scopes=Count(
@@ -33,6 +36,7 @@ def fetch_eve_market_contracts():
         logger.info(f"Fetching character contracts {character.character_id}")
         try:
             create_character_market_contracts(character.character_id)
+            known_entity_ids.append(character.character_id)
         except Exception as e:
             logger.error(
                 f"Failed to fetch character contracts {character.character_id}: {e}"
@@ -61,10 +65,18 @@ def fetch_eve_market_contracts():
         )
         try:
             create_corporation_market_contracts(corporation.corporation_id)
+            known_entity_ids.append(corporation.corporation_id)
         except Exception as e:
             logger.error(
                 f"Failed to fetch corporation contracts {corporation.corporation_id}: {e}"
             )
+
+    # Expire any outstanding contracts that are not associated with known entities
+    (
+        EveMarketContract.objects.filter(status="outstanding")
+        .exclude(Q(entity_id__in=known_entity_ids) | Q(entity_id__isnull=True))
+        .update(status="expired")
+    )
 
 
 def fetch_eve_market_orders():
