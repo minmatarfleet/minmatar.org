@@ -58,10 +58,9 @@ class MarketContractResponsibilityResponse(BaseModel):
     entity_name: str
 
 
-class MarketContractHistoricalQuantityResponse(
-    MarketContractHistoricalQuantity, BaseModel
-):
-    pass
+class MarketContractHistoricalQuantityResponse(BaseModel):
+    date: str
+    quantity: int
 
 
 class MarketContractResponse(BaseModel):
