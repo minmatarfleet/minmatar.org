@@ -1,20 +1,19 @@
 import logging
+from datetime import datetime, timedelta
 
+import pytz
 from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from datetime import datetime, timedelta
 
 from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
 from market.models import (
     EveMarketContract,
-    EveMarketLocation,
     EveMarketContractExpectation,
+    EveMarketLocation,
 )
-
-import pytz
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)

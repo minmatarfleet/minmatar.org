@@ -1,8 +1,6 @@
 import logging
-from datetime import datetime, timedelta
 from typing import List
 
-import pytz
 from django.db.models import Count, Q
 from ninja import Router
 from pydantic import BaseModel
@@ -11,14 +9,14 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
+from market.helpers import (
+    MarketContractHistoricalQuantity,
+    get_historical_quantity,
+)
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
-)
-from market.helpers import (
-    get_historical_quantity,
-    MarketContractHistoricalQuantity,
 )
 
 logger = logging.getLogger(__name__)
