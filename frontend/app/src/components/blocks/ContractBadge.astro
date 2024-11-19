@@ -45,7 +45,7 @@ import Square from '@components/blocks/Square.astro';
                 </div>
             </FlexInline>
         </Wrapper>
-        <div class="[ h-[64px] ]">
+        <div class="[ h-[64px] mb-[-7px] ]">
             <canvas
                 x-data={`{
                     init() {
@@ -70,6 +70,7 @@ import Square from '@components/blocks/Square.astro';
                                 datasets: [{
                                     label: "${t('contracts_sold')}",
                                     data: ${JSON.stringify(contract.trend_y_axis.reverse())},
+                                    pointStyle: 'rect',
                                     fill: true,
                                     backgroundColor: gradient,
                                     borderColor: '${low_amount ? '#ff6e6e' : '#6ee9ff'}',
@@ -79,6 +80,7 @@ import Square from '@components/blocks/Square.astro';
                                 {
                                     label: "${t('desired_quantity')}",
                                     data: ${JSON.stringify(Array(contract.trend_x_axis.length).fill(contract.desired_quantity))},
+                                    pointStyle: 'rect',
                                     backgroundColor: 'rgba(241, 217, 160, 0.2)',
                                     borderColor: 'rgba(241, 217, 160, 0.2)',
                                     borderWidth: 1,
