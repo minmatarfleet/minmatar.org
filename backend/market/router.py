@@ -304,7 +304,7 @@ def fetch_eve_market_contracts(request):
                     entity_name=entity_name,
                 )
             )
-        historical_quantity: MarketContractHistoricalQuantity = (
+        historical_quantity: List[MarketContractHistoricalQuantity] = (
             get_historical_quantity(expectation)
         )
 
@@ -323,10 +323,12 @@ def fetch_eve_market_contracts(request):
                 current_quantity=EveMarketContract.objects.filter(
                     fitting=expectation.fitting, status="outstanding"
                 ).count(),
-                historical_quantity=MarketContractHistoricalQuantityResponse(
-                    date=historical_quantity.date,
-                    quantity=historical_quantity.quantity,
-                ),
+                historical_quantity=[
+                    MarketContractHistoricalQuantityResponse(
+                        date=entry.date, quantity=entry.quantity
+                    )
+                    for entry in historical_quantity
+                ],
                 responsibilities=responsibilities,
             )
         )
@@ -397,9 +399,11 @@ def fetch_eve_market_contract(request, expectation_id: int):
         current_quantity=EveMarketContract.objects.filter(
             fitting=expectation.fitting, status="outstanding"
         ).count(),
-        historical_quantity=MarketContractHistoricalQuantityResponse(
-            date=historical_quantity.date,
-            quantity=historical_quantity.quantity,
-        ),
+        historical_quantity=[
+            MarketContractHistoricalQuantityResponse(
+                date=entry.date, quantity=entry.quantity
+            )
+            for entry in historical_quantity
+        ],
         responsibilities=responsibilities,
     )

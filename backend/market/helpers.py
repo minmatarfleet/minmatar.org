@@ -14,6 +14,7 @@ from market.models import (
     EveMarketContractExpectation,
     EveMarketLocation,
 )
+from typing import List
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -174,7 +175,7 @@ def create_corporation_market_contracts(corporation_id: int):
 
 def get_historical_quantity(
     expectation: EveMarketContractExpectation,
-) -> MarketContractHistoricalQuantity:
+) -> List[MarketContractHistoricalQuantity]:
     """
     Returns the historical quantity for an expectation
     """
