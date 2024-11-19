@@ -34,6 +34,30 @@ class EveMarketContractExpectation(models.Model):
     def __str__(self):
         return str(f"{self.fitting.name} - {self.location}")
 
+    @property
+    def current_quantity(self):
+        return EveMarketContract.objects.filter(
+            fitting=self.fitting,
+            location=self.location,
+            status="outstanding",
+        ).count()
+
+    @property
+    def desired_quantity(self):
+        return self.quantity
+
+    @property
+    def is_fulfilled(self):
+        return self.current_quantity >= self.desired_quantity
+
+    @property
+    def is_understocked(self):
+        understocked_percentage = 0.5
+        return (
+            self.current_quantity
+            < self.desired_quantity * understocked_percentage
+        )
+
 
 class EveMarketContractResponsibility(models.Model):
     """Model for tracking who is responsible for a fitting"""

@@ -10,11 +10,15 @@ from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
 )
-from market.models import EveMarketContract
+from market.models import EveMarketContract, EveMarketContractExpectation
+from discord.client import DiscordClient
 
 logger = logging.getLogger(__name__)
 
 esi = EsiClientProvider()
+discord = DiscordClient()
+
+NOTIFICATION_CHANNEL = 1174095138197340300
 
 
 @app.task()
@@ -87,3 +91,13 @@ def fetch_eve_market_orders():
 
 def fetch_eve_market_transactions():
     pass
+
+
+@app.task()
+def notify_eve_market_contract_warnings():
+    message = "The following contracts are understocked:\n"
+    for expectation in EveMarketContractExpectation.objects.all():
+        if expectation.is_understocked:
+            message += f"**{expectation.fitting.name}** | *{expectation.location}* ({expectation.current_quantity}/{expectation.desired_quantity})\n"
+
+    discord.create_message(channel_id=NOTIFICATION_CHANNEL, message=message)
