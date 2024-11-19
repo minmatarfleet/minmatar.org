@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Count, Q
 from esi.clients import EsiClientProvider
 
 from app.celery import app
@@ -9,8 +10,6 @@ from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
 )
-from django.db.models import Count, Q
-
 from market.models import EveMarketContract
 
 logger = logging.getLogger(__name__)

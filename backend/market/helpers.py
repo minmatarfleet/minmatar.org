@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Token
 
@@ -7,7 +8,6 @@ from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
 from market.models import EveMarketContract, EveMarketLocation
-from django.db.models import Q
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
