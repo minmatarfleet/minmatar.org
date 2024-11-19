@@ -73,7 +73,10 @@ def fetch_eve_market_contracts():
     # Expire any outstanding contracts that are not associated with known entities
     (
         EveMarketContract.objects.filter(status="outstanding")
-        .exclude(Q(entity_id__in=known_entity_ids) | Q(entity_id__isnull=True))
+        .exclude(
+            Q(issuer_external_id__in=known_entity_ids)
+            | Q(issuer_external_id__isnull=True)
+        )
         .update(status="expired")
     )
 
