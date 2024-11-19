@@ -61,6 +61,7 @@ import Square from '@components/blocks/Square.astro';
                         gradient.addColorStop(1, '${low_amount ? 'rgba(255, 110, 110, 0)' : 'rgba(110, 233, 255, 0)'}')
 
                         Chart.defaults.font.family = 'Montserrat Variable';
+                        Chart.defaults.backgroundColor = 'rgba(0, 0, 0, 0)';
 
                         const myChart = new Chart(ctx, {
                             type: 'line',
