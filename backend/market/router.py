@@ -1,8 +1,6 @@
 import logging
-from datetime import datetime, timedelta
 from typing import List
 
-import pytz
 from django.db.models import Count, Q
 from ninja import Router
 from pydantic import BaseModel
@@ -11,6 +9,10 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
+from market.helpers import (
+    MarketContractHistoricalQuantity,
+    get_historical_quantity,
+)
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -56,9 +58,10 @@ class MarketContractResponsibilityResponse(BaseModel):
     entity_name: str
 
 
-class MarketContractHistoricalQuantityResponse(BaseModel):
-    date: str
-    quantity: int
+class MarketContractHistoricalQuantityResponse(
+    MarketContractHistoricalQuantity, BaseModel
+):
+    pass
 
 
 class MarketContractResponse(BaseModel):
@@ -301,27 +304,10 @@ def fetch_eve_market_contracts(request):
                     entity_name=entity_name,
                 )
             )
-        # build historical quantity data by grouping by last 6 months
-        # and counting the number of contracts
-        historical_quantity = []
-        today = datetime.today()
-        utc = pytz.UTC
-        for i in range(12):
-            month_start = (
-                today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
-            ).replace(day=1)
-            month_end = (month_start + timedelta(days=32)).replace(day=1)
-            historical_quantity.append(
-                MarketContractHistoricalQuantityResponse(
-                    date=month_start.strftime("%Y-%m-%d"),
-                    quantity=EveMarketContract.objects.filter(
-                        fitting=expectation.fitting,
-                        status="outstanding",
-                        created_at__gte=month_start,
-                        created_at__lt=month_end,
-                    ).count(),
-                )
-            )
+        historical_quantity: MarketContractHistoricalQuantity = (
+            get_historical_quantity(expectation)
+        )
+
         response.append(
             MarketContractResponse(
                 expectation_id=expectation.id,
@@ -337,7 +323,10 @@ def fetch_eve_market_contracts(request):
                 current_quantity=EveMarketContract.objects.filter(
                     fitting=expectation.fitting, status="outstanding"
                 ).count(),
-                historical_quantity=historical_quantity,
+                historical_quantity=MarketContractHistoricalQuantityResponse(
+                    date=historical_quantity.date,
+                    quantity=historical_quantity.quantity,
+                ),
                 responsibilities=responsibilities,
             )
         )
@@ -393,27 +382,7 @@ def fetch_eve_market_contract(request, expectation_id: int):
                 entity_name=entity_name,
             )
         )
-    # build historical quantity data by grouping by last 6 months
-    # and counting the number of contracts
-    historical_quantity = []
-    today = datetime.today()
-    utc = pytz.UTC
-    for i in range(12):
-        month_start = (
-            today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
-        ).replace(day=1)
-        month_end = (month_start + timedelta(days=32)).replace(day=1)
-        historical_quantity.append(
-            MarketContractHistoricalQuantityResponse(
-                date=month_start.strftime("%Y-%m-%d"),
-                quantity=EveMarketContract.objects.filter(
-                    fitting=expectation.fitting,
-                    status="outstanding",
-                    created_at__gte=month_start,
-                    created_at__lt=month_end,
-                ).count(),
-            )
-        )
+    historical_quantity = get_historical_quantity(expectation)
     return MarketContractResponse(
         expectation_id=expectation.id,
         title=expectation.fitting.name,
@@ -428,6 +397,9 @@ def fetch_eve_market_contract(request, expectation_id: int):
         current_quantity=EveMarketContract.objects.filter(
             fitting=expectation.fitting, status="outstanding"
         ).count(),
-        historical_quantity=historical_quantity,
+        historical_quantity=MarketContractHistoricalQuantityResponse(
+            date=historical_quantity.date,
+            quantity=historical_quantity.quantity,
+        ),
         responsibilities=responsibilities,
     )
