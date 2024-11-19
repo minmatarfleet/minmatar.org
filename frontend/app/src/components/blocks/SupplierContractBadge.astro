@@ -203,3 +203,22 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
     </div>
 
 </div>
+
+<style lang="scss" is:global>
+    .supplier-contract-badge {
+        canvas {
+            opacity: 0.6;
+            transition: var(--fast-transition);
+        }
+
+        button:focus-visible,
+        button:focus-within,
+        button:hover {
+            outline: none;
+
+            canvas {
+                opacity: 1;
+            }
+        }
+    }
+</style>
