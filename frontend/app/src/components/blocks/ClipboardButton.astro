@@ -33,6 +33,8 @@ const Textarea = 'textarea';
         button_text: '${t('copy')}',
     }`}
     x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', ${COPIED_LABEL_TIME_MS})`}
+    x-init="$el.removeAttribute('disabled')"
+    disabled
 >
     <ClipboardIcon slot="icon" />
     <span x-text="button_text">{t('copy')}</span>

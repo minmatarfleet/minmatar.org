@@ -10,6 +10,7 @@ import Button from '@components/blocks/Button.astro'
 <Button
     size='sm'
     color='green'
+    href={ADD_SUPPLIER_TOKEN_INIT_PARTIAL_URL}
     x-data={`{
         redirect(accepted) {
             if (accepted) window.location.href = "${ADD_SUPPLIER_TOKEN_INIT_PARTIAL_URL}"
@@ -21,7 +22,7 @@ import Button from '@components/blocks/Button.astro'
             }).then( (accepted) => this.redirect(accepted) )
         }
     }`}
-    x-on:click="show_become_supplier_disclaimer"
-    >
+    x-on:click.prevent="show_become_supplier_disclaimer"
+>
     {t('add_supplier')}
 </Button>

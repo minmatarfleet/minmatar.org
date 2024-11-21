@@ -53,6 +53,7 @@ import Button from '@components/blocks/Button.astro';
     color={color}
     size={size}
     narrow={narrow}
+    href={ADD_CEO_TOKEN_INIT_PARTIAL_URL}
     x-data={`{
         add_ceo_token(accepted) {
             if (accepted) window.location.href = "${ADD_CEO_TOKEN_INIT_PARTIAL_URL}"
@@ -64,7 +65,7 @@ import Button from '@components/blocks/Button.astro';
             }).then( (accepted) => this.add_ceo_token(accepted) )
         }
     }`}
-    x-on:click="show_add_ceo_disclaimer"
+    x-on:click.prevent="show_add_ceo_disclaimer"
 >
     <slot />
 </Button>
