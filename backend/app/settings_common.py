@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     "combatlog",
     # Standing fleet
     "standingfleet",
+    # Referral links,
+    "referrals",
 ]
 
 # Discord Login
