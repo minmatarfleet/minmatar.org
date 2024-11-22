@@ -48,6 +48,9 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     thumb_image={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
     thumb_image_small={get_item_icon(structure_timer.structure_type_id, 512)}
     thumb_image_alt={t(structure_timer.structure_type as any) ?? structure_timer.structure_type}
+    thumb_title={t('corporation')}
+    thumb_name={structure_timer.corporation_name}
+    thumb_tooltip={t(structure_timer.structure_type as any)}
     items_width='200px'
     x-data={`{
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
