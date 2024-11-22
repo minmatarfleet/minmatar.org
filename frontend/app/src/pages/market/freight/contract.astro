@@ -27,7 +27,7 @@ try {
     
     route = data.get("route") as string
     contract_size = parseInt(data.get("contract_size") as string)
-    collateral = parseFloat((data.get("collateral") as string).replaceAll(',', ''));
+    collateral = parseInt((data.get("collateral") as string).replaceAll(',', ''));
     const route_id = freight_routes_data.route_translation[route]
 
     const route_cost = await get_route_cost(route_id, contract_size, collateral)
