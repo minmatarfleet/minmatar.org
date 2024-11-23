@@ -94,7 +94,7 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
     Check if a character is valid for reimbursement
     """
     if not EveFleetInstanceMember.objects.filter(
-        fleet_instance__fleet_id=fleet.id,
+        eve_fleet_instance__eve_fleet__id=fleet.id,
         character_id=killmail.victim_character.character_id,
     ).exists():
         return False
