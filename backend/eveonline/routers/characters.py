@@ -23,6 +23,7 @@ from eveonline.scopes import (
     ADVANCED_SCOPES,
     BASIC_SCOPES,
     CEO_SCOPES,
+    EXECUTOR_CHARACTER_SCOPES,
     FREIGHT_CHARACTER_SCOPES,
     MARKET_CHARACTER_SCOPES,
 )
@@ -39,6 +40,7 @@ class TokenType(Enum):
     ADVANCED = "Advanced"
     MARKET = "Market"
     FREIGHT = "Freight"
+    EXECUTOR = "Executor"
 
 
 class BasicCharacterResponse(BaseModel):
@@ -336,6 +338,8 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             scopes = MARKET_CHARACTER_SCOPES
         case TokenType.FREIGHT:
             scopes = FREIGHT_CHARACTER_SCOPES
+        case TokenType.EXECUTOR:
+            scopes = EXECUTOR_CHARACTER_SCOPES
 
     @login_required()
     @token_required(scopes=scopes, new=True)

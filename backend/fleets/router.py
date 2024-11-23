@@ -118,6 +118,21 @@ class UpdateEveFleetRequest(BaseModel):
     disable_motd: bool = False
 
 
+class CreateEveFleetReimbursementRequest(BaseModel):
+    external_killmail_link: str
+
+
+class EveFleetReimbursementResponse(BaseModel):
+    id: int
+    fleet_id: int
+    external_killmail_link: str
+    status: str
+    character_id: int
+    primary_character_id: int
+    killmail_id: int
+    amount: int
+
+
 @router.get(
     "/types",
     auth=AuthBearer(),

@@ -3,13 +3,13 @@ from django.test import TestCase
 from .combatlog import (
     DamageEvent,
     LogEvent,
+    character_name,
     damage_events,
     parse,
     parse_line,
     strip_html,
     total_damage,
     update_location,
-    character_name,
 )
 
 
