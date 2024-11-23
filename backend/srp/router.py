@@ -13,6 +13,7 @@ from srp.helpers import (
     get_killmail_details,
     get_reimbursement_amount,
     is_valid_for_reimbursement,
+    send_decision_notification,
 )
 
 from .models import EveFleetShipReimbursement
@@ -132,5 +133,7 @@ def update_fleet_srp(
     reimbursement = EveFleetShipReimbursement.objects.get(id=reimbursement_id)
     reimbursement.status = payload.status
     reimbursement.save()
+
+    send_decision_notification(reimbursement)
 
     return 200
