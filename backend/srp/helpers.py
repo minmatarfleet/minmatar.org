@@ -147,7 +147,7 @@ def send_decision_notification(reimbursement: EveFleetShipReimbursement):
 
     mail_body += "\nBest,\nMr. ThatCares"
 
-    esi.client.Mail.send_mail(
+    esi.client.Mail.characters_character_id_mail(
         character_id=mail_character_id,
         subject=mail_subject,
         body=mail_body,

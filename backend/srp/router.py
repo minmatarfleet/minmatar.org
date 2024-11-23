@@ -44,7 +44,11 @@ class EveFleetReimbursementResponse(BaseModel):
 @router.post(
     "",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
+    response={
+        200: EveFleetReimbursementResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
     description="Request SRP for a fleet, must be a member of the fleet",
 )
 def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
@@ -76,6 +80,16 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         primary_character_id=details.victim_primary_character.character_id,
         killmail_id=details.killmail_id,
         ship_name=details.ship.name,
+        amount=reimbursement_amount,
+    )
+
+    return EveFleetReimbursementResponse(
+        fleet_id=fleet.id,
+        external_killmail_link=payload.external_killmail_link,
+        status="pending",
+        character_id=details.victim_character.character_id,
+        primary_character_id=details.victim_primary_character.character_id,
+        killmail_id=details.killmail_id,
         amount=reimbursement_amount,
     )
 
@@ -111,6 +125,8 @@ def get_fleet_srp(request, fleet_id: int = None, status: str = None):
                 "amount": reimbursement.amount,
             }
         )
+
+    return response
 
 
 @router.patch(
