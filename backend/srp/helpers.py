@@ -13,7 +13,9 @@ from fleets.srp_table import (
 )
 
 from .models import EveFleetShipReimbursement
+import logging
 
+logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
 
@@ -97,6 +99,9 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
     if not EveFleetInstance.objects.filter(
         eve_fleet=fleet,
     ).exists():
+        logger.info(
+            f"Killmail {killmail.killmail_id} not eligible for SRP, no fleet instance"
+        )
         return False
 
     fleet_instance = EveFleetInstance.objects.get(
@@ -107,15 +112,27 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         eve_fleet_instance=fleet_instance,
         character_id=killmail.victim_character.character_id,
     ).exists():
+        logger.info(
+            f"Killmail {killmail.killmail_id} not eligible for SRP, character not in fleet"
+        )
         return False
 
     if fleet_instance.end_time is None:
+        logger.info(
+            f"Killmail {killmail.killmail_id} not eligible for SRP, fleet not finished"
+        )
         return False
 
     if fleet_instance.end_time < killmail.timestamp:
+        logger.info(
+            f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
+        )
         return False
 
     if fleet_instance.start_time > killmail.timestamp:
+        logger.info(
+            f"Killmail {killmail.killmail_id} not eligible for SRP, lost before fleet started"
+        )
         return False
 
     return True
