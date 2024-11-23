@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     "combatlog",
     # Standing fleet
     "standingfleet",
+    # SRP
+    "srp",
 ]
 
 # Discord Login

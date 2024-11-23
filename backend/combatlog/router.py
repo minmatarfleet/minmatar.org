@@ -13,15 +13,15 @@ from fleets.models import EveFleet
 
 from .combatlog import (
     LogAnalysis,
+    character_name,
     damage_events,
     enemy_analysis,
+    max_damage,
     parse,
     time_analysis,
     total_damage,
     update_combat_time,
     weapon_analysis,
-    character_name,
-    max_damage,
 )
 from .models import CombatLog
 

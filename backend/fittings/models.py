@@ -1,8 +1,9 @@
+import uuid
+
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from groups.models import Sig
-from django.core.exceptions import ValidationError
-import uuid
 
 # Create your models here.
 
@@ -49,7 +50,7 @@ class EveFitting(models.Model):
             raise ValidationError(
                 f"Name '{self.name}' does not match EFT name '{fitting_name}'"
             )
-        super(EveFitting, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class EveDoctrine(models.Model):

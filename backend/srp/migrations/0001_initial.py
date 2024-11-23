@@ -6,8 +6,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ("fleets", "0017_evefleet_disable_motd"),
+        ("fleets", "0018_evefleetshipreimbursement"),
     ]
 
     operations = [
@@ -44,6 +46,7 @@ class Migration(migrations.Migration):
                     "fleet",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
+                        related_name="reimbursements",
                         to="fleets.evefleet",
                     ),
                 ),

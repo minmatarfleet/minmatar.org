@@ -1,14 +1,18 @@
+from datetime import datetime
+
+from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
 from eveuniverse.models import EveType
 from pydantic import BaseModel
+
+from eveonline.models import EveCharacter, EvePrimaryCharacter
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from fleets.srp_table import (
     reimbursement_class_lookup,
     reimbursement_ship_lookup,
 )
-from fleets.models import EveFleetInstanceMember, EveFleet, EveFleetInstance
-from eveonline.models import EveCharacter, EvePrimaryCharacter
-from django.contrib.auth.models import User
-from datetime import datetime
+
+from .models import EveFleetShipReimbursement
 
 esi = EsiClientProvider()
 
@@ -114,3 +118,25 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         return False
 
     return True
+
+
+def send_decision_notification(reimbursement: EveFleetShipReimbursement):
+    mail_character_id = 2116116149
+    mail_subject = "SRP Reimbursement Decision"
+    mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} has been {reimbursement.status}.\n"
+    if reimbursement.status == "approved":
+        mail_body += f" You have been reimbursed {reimbursement.amount} ISK."
+
+    mail_body += "\nBest,\nMr. ThatCares"
+
+    esi.client.Mail.send_mail(
+        character_id=mail_character_id,
+        subject=mail_subject,
+        body=mail_body,
+        recipients=[
+            {
+                "recipient_id": reimbursement.primary_character_id,
+                "recipient_type": "character",
+            }
+        ],
+    )
