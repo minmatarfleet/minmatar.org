@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
-from fleets.srp_table import (
+from srp.srp_table import (
     reimbursement_class_lookup,
     reimbursement_ship_lookup,
 )
@@ -123,13 +123,13 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         )
         return False, "Fleet not finished"
 
-    if fleet_instance.end_time < killmail.timestamp:
+    if fleet_instance.end_time + timedelta(hours=2) < killmail.timestamp:
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
         )
         return False, "Lost after fleet ended"
 
-    if fleet_instance.start_time > killmail.timestamp:
+    if fleet_instance.start_time - timedelta(hours=1) > killmail.timestamp:
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, lost before fleet started"
         )
