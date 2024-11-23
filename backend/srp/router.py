@@ -76,6 +76,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         primary_character_id=details.victim_primary_character.character_id,
         killmail_id=details.killmail_id,
         ship_name=details.ship.name,
+        amount=reimbursement_amount,
     )
 
 
