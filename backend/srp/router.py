@@ -60,8 +60,9 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     except UserCharacterMismatch:
         return 403, {"detail": "Character does not belong to user"}
 
-    if not is_valid_for_reimbursement(details, fleet):
-        return 403, {"detail": "Killmail not eligible for SRP"}
+    valid, reason = is_valid_for_reimbursement(details, fleet)
+    if not valid:
+        return 403, {"detail": f"Killmail not eligible for SRP, {reason}"}
 
     reimbursement_amount = get_reimbursement_amount(details.ship)
     if reimbursement_amount == 0:

@@ -102,7 +102,7 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, no fleet instance"
         )
-        return False
+        return False, "No fleet instance"
 
     fleet_instance = EveFleetInstance.objects.get(
         eve_fleet=fleet,
@@ -115,27 +115,27 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, character not in fleet"
         )
-        return False
+        return False, "Character not in fleet"
 
     if fleet_instance.end_time is None:
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, fleet not finished"
         )
-        return False
+        return False, "Fleet not finished"
 
     if fleet_instance.end_time < killmail.timestamp:
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
         )
-        return False
+        return False, "Lost after fleet ended"
 
     if fleet_instance.start_time > killmail.timestamp:
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, lost before fleet started"
         )
-        return False
+        return False, "Lost before fleet started"
 
-    return True
+    return True, None
 
 
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
