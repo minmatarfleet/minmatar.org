@@ -12,6 +12,7 @@ interface Props {
     thumb_image: string;
     thumb_image_small: string;
     items_width?: string;
+    thumb_tooltip?: string;
     logo?: string;
     [propName: string]: any;
 }
@@ -23,6 +24,7 @@ const {
     thumb_image,
     thumb_image_small,
     items_width = '270px',
+    thumb_tooltip = false,
     logo,
     ...attributes
 } = Astro.props
@@ -44,7 +46,7 @@ const optional_attributes = {
     breakpoint='60%'
     width='220px'
 >
-    <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small}>
+    <FullBodyCard {...optional_attributes} thumb_image={thumb_image} thumb_image_small={thumb_image_small} thumb_tooltip={thumb_tooltip ? thumb_tooltip : undefined}>
         <slot name="absolute" slot="absolute" />
     </FullBodyCard>
 
