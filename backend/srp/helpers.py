@@ -11,9 +11,12 @@ from srp.srp_table import (
     reimbursement_class_lookup,
     reimbursement_ship_lookup,
 )
+from esi.models import Token
 
 from .models import EveFleetShipReimbursement
+from reminders.messages.rat_quotes import rat_quotes
 import logging
+from random import randint
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -141,20 +144,41 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
     mail_character_id = 2116116149
     mail_subject = "SRP Reimbursement Decision"
-    mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} has been {reimbursement.status}.\n"
+    mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} ({reimbursement.ship_name}) has been {reimbursement.status}."
     if reimbursement.status == "approved":
         mail_body += f" You have been reimbursed {reimbursement.amount} ISK."
 
-    mail_body += "\nBest,\nMr. ThatCares"
+    # get random rat quote
+    rat_quote_index = randint(0, len(rat_quotes) - 1)
+    rat_quote = rat_quotes[rat_quote_index]
 
-    esi.client.Mail.characters_character_id_mail(
+    mail_body += f"\n\n\n{rat_quote}\n\n\n"
+
+    mail_body += "Best,\nMr. ThatCares"
+
+    token = Token.objects.filter(
+        character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
+    ).first()
+    if not token:
+        logger.error("Missing token for mail")
+        return
+
+    result = esi.client.Mail.post_characters_character_id_mail(
+        mail={
+            "subject": mail_subject,
+            "body": mail_body,
+            "recipients": [
+                {
+                    "recipient_id": reimbursement.primary_character_id,
+                    "recipient_type": "character",
+                }
+            ],
+        },
         character_id=mail_character_id,
-        subject=mail_subject,
-        body=mail_body,
-        recipients=[
-            {
-                "recipient_id": reimbursement.primary_character_id,
-                "recipient_type": "character",
-            }
-        ],
+        token=token.valid_access_token(),
+    ).result()
+
+    logger.info(
+        f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
     )
+    return result
