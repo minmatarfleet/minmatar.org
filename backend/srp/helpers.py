@@ -95,12 +95,12 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
     """
 
     if not EveFleetInstance.objects.filter(
-        fleet_id=fleet.id,
+        eve_fleet=fleet,
     ).exists():
         return False
 
     fleet_instance = EveFleetInstance.objects.get(
-        fleet_id=fleet.id,
+        eve_fleet=fleet,
     )
 
     if not EveFleetInstanceMember.objects.filter(
