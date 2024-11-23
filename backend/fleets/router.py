@@ -11,6 +11,15 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EvePrimaryCharacter
 from fittings.models import EveDoctrine
+from fleets.helpers import (
+    get_killmail_details,
+    get_reimbursement_amount,
+    is_valid_for_reimbursement,
+    CharacterDoesNotExist,
+    PrimaryCharacterDoesNotExist,
+    UserCharacterMismatch,
+)
+
 
 from .models import (
     EveFleet,
@@ -19,6 +28,7 @@ from .models import (
     EveFleetInstanceMember,
     EveFleetLocation,
     EveStandingFleet,
+    EveFleetShipReimbursement,
 )
 
 router = Router(tags=["Fleets"])
@@ -116,6 +126,21 @@ class UpdateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: int
     disable_motd: bool = False
+
+
+class CreateEveFleetReimbursementRequest(BaseModel):
+    external_killmail_link: str
+
+
+class EveFleetReimbursementResponse(BaseModel):
+    id: int
+    fleet_id: int
+    external_killmail_link: str
+    status: str
+    character_id: int
+    primary_character_id: int
+    killmail_id: int
+    amount: int
 
 
 @router.get(
@@ -540,3 +565,76 @@ def delete_fleet(request, fleet_id: int):
         }
     fleet.delete()
     return 200, None
+
+
+@router.post(
+    "/{fleet_id}/srp",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
+    description="Request SRP for a fleet, must be a member of the fleet",
+)
+def create_fleet_srp(
+    request, fleet_id: int, payload: CreateEveFleetReimbursementRequest
+):
+    fleet = EveFleet.objects.get(id=fleet_id)
+    try:
+        details = get_killmail_details(
+            payload.external_killmail_link, request.user
+        )
+    except PrimaryCharacterDoesNotExist:
+        return 404, {"detail": "Primary character does not exist"}
+    except CharacterDoesNotExist:
+        return 404, {"detail": "Character does not exist"}
+    except UserCharacterMismatch:
+        return 403, {"detail": "Character does not belong to user"}
+
+    if not is_valid_for_reimbursement(
+        details.victim_character.character_id, fleet_id
+    ):
+        return 403, {"detail": "Killmail not eligible for SRP"}
+
+    reimbursement_amount = get_reimbursement_amount(details.ship)
+    if reimbursement_amount == 0:
+        return 404, {"detail": "Ship not eligible for SRP"}
+
+    EveFleetShipReimbursement.objects.create(
+        fleet=fleet,
+        external_killmail_link=payload.external_killmail_link,
+        status="pending",
+        character_id=details.victim_character.character_id,
+        primary_character_id=details.victim_primary_character.character_id,
+        ship_type_id=details.ship.id,
+        killmail_id=details.killmail_id,
+    )
+
+
+@router.get(
+    "/srp",
+    auth=AuthBearer(),
+    response={200: List[EveFleetReimbursementResponse], 403: ErrorResponse},
+    description="Get SRP requests, must have fleets.view_evefleet permission",
+)
+def get_fleet_srp(request, fleet_id: int = None, status: str = None):
+    if not request.user.has_perm("fleets.view_evefleet"):
+        return 403, {"detail": "User missing permission fleets.view_evefleet"}
+
+    reimbursements = EveFleetShipReimbursement.objects.all()
+    if fleet_id:
+        reimbursements = reimbursements.filter(fleet_id=fleet_id)
+    if status:
+        reimbursements = reimbursements.filter(status=status)
+
+    response = []
+    for reimbursement in reimbursements:
+        response.append(
+            {
+                "id": reimbursement.id,
+                "fleet_id": reimbursement.fleet_id,
+                "external_killmail_link": reimbursement.external_killmail_link,
+                "status": reimbursement.status,
+                "character_id": reimbursement.character_id,
+                "primary_character_id": reimbursement.primary_character_id,
+                "killmail_id": reimbursement.killmail_id,
+                "amount": reimbursement.amount,
+            }
+        )
