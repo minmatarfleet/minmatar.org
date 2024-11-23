@@ -74,7 +74,6 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         status="pending",
         character_id=details.victim_character.character_id,
         primary_character_id=details.victim_primary_character.character_id,
-        ship_type_id=details.ship.id,
         killmail_id=details.killmail_id,
     )
 
