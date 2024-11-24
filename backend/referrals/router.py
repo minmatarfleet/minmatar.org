@@ -1,4 +1,5 @@
 import logging
+import hashlib
 
 from typing import List
 from ninja import Router
@@ -16,8 +17,29 @@ log = logging.getLogger(__name__)
 
 
 class LinkInfo(BaseModel):
-    page: str
-    link: str
+    name: str
+    link: str = ""
+    target: str = ""
+
+
+links = [
+    LinkInfo(
+        name="Freight",
+        target="https://my.minmatar.org/market/freight/standard/",
+    ),
+    LinkInfo(
+        name="Plexing",
+        target="https://wiki.minmatar.org/alliance/Academy/Faction_Warfare_Plexing",
+    ),
+    LinkInfo(
+        name="Advantage",
+        target="https://wiki.minmatar.org/alliance/Academy/faction-warfare-advantage",
+    ),
+    LinkInfo(
+        name="Battlefields",
+        target="https://wiki.minmatar.org/guides/battlefields",
+    ),
+]
 
 
 def get_client_ip(request):
@@ -33,32 +55,37 @@ def get_client_ip(request):
 def referral_redirect(request, page: str, code: str):
 
     # Very rudimentary masking of the user id.
-    # User ID to code algorithm: user_id * 83 + 7
+    # The prefix (currently "Q") specifies the algorithm to use.
+    # User ID to code algorithm: user_id * 83 + 7.
     prefix = code[0:1]
-    log.info("prefix %s", prefix)
     suffix = int(code[1:])
     user_id = (suffix - 7) / 83
-    log.info("user id %d", user_id)
 
-    ReferralClick.objects.create(
-        page=page, user_id=user_id, identifier=get_client_ip(request)
+    hasher = hashlib.sha256()
+    hasher.update(str.encode(get_client_ip(request)))
+    client_id = hasher.hexdigest()
+
+    log.info(
+        "Referral prefix=%s, user=%d, page=%s, client=%s",
+        prefix,
+        user_id,
+        page,
+        client_id,
     )
 
-    match page:
-        case "freight":
-            return redirect("https://my.minmatar.org/market/freight/standard/")
-        case "plexing":
-            return redirect(
-                "https://wiki.minmatar.org/alliance/Academy/Faction_Warfare_Plexing"
-            )
-        case "advantage":
-            return redirect(
-                "https://wiki.minmatar.org/alliance/Academy/faction-warfare-advantage"
-            )
-        case "battlefield":
-            return redirect("https://wiki.minmatar.org/guides/battlefields")
-        case _:
-            return redirect("https://my.minmatar.org/badreferral")
+    target = ""
+    for link in links:
+        if page.lower() == link.name.lower():
+            target = link.target
+
+    if target == "":
+        log.info("Could not find target for %s", page)
+        return redirect("https://my.minmatar.org/badreferral")
+    else:
+        ReferralClick.objects.create(
+            page=page, user_id=user_id, identifier=client_id
+        )
+        return redirect(target)
 
 
 @router.get(
@@ -72,21 +99,16 @@ def referral_redirect(request, page: str, code: str):
 )
 def get_user_links(request) -> List[LinkInfo]:
     code = "Q" + str(request.user.id * 83 + 7)
-    return [
-        LinkInfo(
-            page="Freight",
-            link=f"https://api.minmatar.org/api/referrals?page=freight&code={code}",
-        ),
-        LinkInfo(
-            page="Plexing",
-            link=f"https://api.minmatar.org/api/referrals?page=plexing&code={code}",
-        ),
-        LinkInfo(
-            page="Advantage",
-            link=f"https://api.minmatar.org/api/referrals?page=advantage&code={code}",
-        ),
-        LinkInfo(
-            page="Battlefields",
-            link=f"https://api.minmatar.org/api/referrals?page=battlefield&code={code}",
-        ),
-    ]
+    userlinks = []
+    for link in links:
+        userlink = LinkInfo(
+            name=link.name,
+            link=request.build_absolute_uri("/api/referrals")
+            + "?page="
+            + link.name
+            + "&code="
+            + code,
+        )
+
+        userlinks.append(userlink)
+    return userlinks
