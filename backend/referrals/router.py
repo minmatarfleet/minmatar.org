@@ -24,6 +24,10 @@ class LinkInfo(BaseModel):
 
 links = [
     LinkInfo(
+        name="Corps",
+        target="https://my.minmatar.org/alliance/corporations/list/",
+    ),
+    LinkInfo(
         name="Freight",
         target="https://my.minmatar.org/market/freight/standard/",
     ),
@@ -104,10 +108,11 @@ def get_user_links(request) -> List[LinkInfo]:
         userlink = LinkInfo(
             name=link.name,
             link=request.build_absolute_uri("/api/referrals")
-            + "?page="
-            + link.name
-            + "&code="
-            + code,
+            + "?code="
+            + code
+            + "&page="
+            + link.name,
+            target=link.target,
         )
 
         userlinks.append(userlink)
