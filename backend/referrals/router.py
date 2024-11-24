@@ -22,6 +22,12 @@ class LinkInfo(BaseModel):
     target: str = ""
 
 
+class LinkStats(BaseModel):
+    name: str
+    user_id: int = 0
+    referrals: int = 0
+
+
 links = [
     LinkInfo(
         name="Corps",
@@ -117,3 +123,29 @@ def get_user_links(request) -> List[LinkInfo]:
 
         userlinks.append(userlink)
     return userlinks
+
+
+@router.get(
+    "/stats",
+    response={
+        200: List[LinkStats],
+        403: ErrorResponse,
+    },
+    description="Show referral stats for user",
+    auth=AuthBearer(),
+)
+def get_link_stats(request) -> List[LinkStats]:
+    stats_map = {}
+
+    for referral in ReferralClick.objects.filter(user_id=request.user.id):
+        if referral.page not in stats_map:
+            stats_map[referral.page] = LinkStats(
+                name=referral.page, referrals=0
+            )
+        stats_map[referral.page].referrals += 1
+
+    stats = []
+    for stat in stats_map.values():
+        stats.append(stat)
+
+    return stats
