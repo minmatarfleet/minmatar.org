@@ -82,7 +82,7 @@ export async function get_all_corporations_applications(access_token:string, rec
             try {
                 character = await get_user_character(application.user_id)
             } catch (error) {
-                character_error = error
+                character_error = error.message
             }
 
             return {

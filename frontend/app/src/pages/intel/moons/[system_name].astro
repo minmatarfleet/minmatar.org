@@ -28,7 +28,7 @@ let data_fetching_error
 try {
     system_moons_data = await get_system_moons_data(auth_token as string, system_name, lang)
 } catch (error) {
-    data_fetching_error = error
+    data_fetching_error = error.message
 }
 
 const {

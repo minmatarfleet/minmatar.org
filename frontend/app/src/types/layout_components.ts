@@ -924,3 +924,16 @@ export interface ContractUI {
     responsabilities:       Responsability[];
     entities:               number;
 }
+
+import type { SRPStatus } from '@dtypes/api.minmatar.org'
+
+export interface SRPUI {
+    id:                         number;
+    fleet_id:                   number;
+    external_killmail_link:     string;
+    status:                     SRPStatus;
+    character_id:               number;
+    primary_character_id:       number;
+    killmail_id:                number;
+    amount:                     number;
+}

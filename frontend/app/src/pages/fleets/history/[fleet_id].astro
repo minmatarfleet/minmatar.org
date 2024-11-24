@@ -28,18 +28,21 @@ const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI } from '@dtypes/layout_components'
+import type { FleetUI, SRPUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_user_character } from '@helpers/fetching/characters'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI | null = null
+let fleet_srps:SRPUI[] | null = []
 let user_character:EveCharacterProfile | null = null
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
+    fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return Astro.redirect(translatePath('/403'))
@@ -68,10 +71,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-const page_title = `${t('fleet')} ${fleet?.id}`;
+const page_title = `${t('fleet')} ${fleet_id}`;
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
     <PageDefault
         cover={{
             image: "/images/fleets-cover.jpg",
@@ -113,6 +122,7 @@ const page_title = `${t('fleet')} ${fleet?.id}`;
                 fleet={fleet as FleetUI }
                 history={true}
                 can_remove_fleet={can_remove_fleet}
+                fleet_srps={fleet_srps}
             />
         }
     </PageDefault>
