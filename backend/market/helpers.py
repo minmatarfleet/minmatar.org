@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import List
 
 import pytz
 from django.db.models import Q
@@ -14,7 +15,6 @@ from market.models import (
     EveMarketContractExpectation,
     EveMarketLocation,
 )
-from typing import List
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)

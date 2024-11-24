@@ -4,6 +4,7 @@ from django.db.models import Count, Q
 from esi.clients import EsiClientProvider
 
 from app.celery import app
+from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.helpers import (
@@ -11,7 +12,6 @@ from market.helpers import (
     create_corporation_market_contracts,
 )
 from market.models import EveMarketContract, EveMarketContractExpectation
-from discord.client import DiscordClient
 
 logger = logging.getLogger(__name__)
 

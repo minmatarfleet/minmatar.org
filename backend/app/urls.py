@@ -38,6 +38,7 @@ from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from referrals.router import router as referrals_router
+from srp.router import router as srp_router
 from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
@@ -62,6 +63,7 @@ api.add_router("moon_paste", moons_paste_router)
 api.add_router("market", market_router)
 api.add_router("standingfleet", standingfleet_router)
 api.add_router("referrals", referrals_router)
+api.add_router("srp", srp_router)
 
 
 @api.exception_handler(UnauthorizedError)

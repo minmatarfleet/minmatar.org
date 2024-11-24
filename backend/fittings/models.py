@@ -1,3 +1,6 @@
+import uuid
+
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from groups.models import Sig
@@ -34,10 +37,20 @@ class EveFitting(models.Model):
 
     # fitting info
     eft_format = models.TextField()
-    latest_version = models.CharField(max_length=255)
+    latest_version = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return str(self.name)
+
+    def save(self, *args, **kwargs):
+        self.latest_version = str(uuid.uuid4())
+        fitting_name = self.eft_format.split("\n")[0].split(",")[1].strip()
+        fitting_name = fitting_name[:-1].strip()
+        if self.name != fitting_name:
+            raise ValidationError(
+                f"Name '{self.name}' does not match EFT name '{fitting_name}'"
+            )
+        super().save(*args, **kwargs)
 
 
 class EveDoctrine(models.Model):
