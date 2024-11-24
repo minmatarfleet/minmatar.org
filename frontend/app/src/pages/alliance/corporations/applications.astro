@@ -28,7 +28,7 @@ let data_fetching_error
 try {
     applications_data = await get_applications_data(auth_token as string, lang)
 } catch (error) {
-    data_fetching_error = error
+    data_fetching_error = error.message
 }
 
 const {

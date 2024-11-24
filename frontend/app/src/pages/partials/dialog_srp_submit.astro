@@ -1,0 +1,47 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Input from '@components/blocks/Input.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+---
+
+<Flexblock
+    x-data={`{
+        external_killmail_link: '',
+        update_status() {
+            confirm_dialog_hx.vals = JSON.stringify(this.external_killmail_link)
+            confirm_dialog_set_accept_disable(!this.external_killmail_link)
+        }
+    }`}
+    x-init="update_status"
+    x-effect="update_status"
+>
+    <p>{t('srp_submit_dialog_text')}</p>
+    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+        <label for="srp-url">{t('external_killmail_link')}</label>
+        <Input id="srp-url" x-model="external_killmail_link" type="text" autocomplete="off" />
+        <CollapsibleBlock padding_inline='0'>
+            <FixedFluid
+                width='48'
+                breakpoint='70%'
+                slot="head"
+                class="[ w-full items-center ]"
+            >
+                <picture class="[ hidden sm:block ]">
+                    <TutorialIcon />
+                </picture>
+                <p>{t('paste_above_tutorial_string')}</p>
+            </FixedFluid>
+
+            <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
+                <source src="/videos/srp-tutorial.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </CollapsibleBlock>
+    </Flexblock>
+</Flexblock>

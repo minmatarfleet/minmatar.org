@@ -18,7 +18,7 @@ let data_fetching_error:string | null = null
 try {
     associates_data = await get_associates_data(auth_token, lang, user_id)
 } catch (error) {
-    data_fetching_error = error
+    data_fetching_error = error.message
 }
 
 const {

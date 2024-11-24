@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI } from '@dtypes/layout_components'
 
 interface Props {
     fleet:                  FleetUI;
@@ -11,6 +11,7 @@ interface Props {
     is_fleet_commander?:    boolean;
     fleet_composition?:     FleetCompositionUI[];
     fleet_radar?:           FleetRadarUI[];
+    fleet_srps?:            SRPUI[];
 }
 
 const {
@@ -20,6 +21,7 @@ const {
     is_fleet_commander = false,
     fleet_composition,
     fleet_radar,
+    fleet_srps,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -42,6 +44,7 @@ import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
+import SRPTable from '@components/blocks/SRPTable.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -69,20 +72,22 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         size={32}
                     />
                 </Flexblock>
-                {!history && can_remove_fleet &&
+                {can_remove_fleet &&
                     <FlexInline>
-                        <Button
-                            size='sm'
-                            href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
-                        >
-                            {t('edit')}
-                        </Button>
+                        {!history &&
+                            <Button
+                                size='sm'
+                                href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
+                            >
+                                {t('edit')}
+                            </Button>
+                        }
 
-                        {fleet.tracking === null &&
+                        {(!history && fleet.tracking === null) &&
                             <Button
                                 size='sm'
                                 x-data={`{
-                                    show_set_main_dialog() {
+                                    show_remove_fleet_dialog() {
                                         show_confirm_dialog({
                                             title: '${t('remove_fleet_dialog_title')}',
                                             content: '${t('remove_fleet_dialog_text')}',
@@ -96,7 +101,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                         })
                                     }
                                 }`}
-                                x-on:click="show_set_main_dialog"
+                                x-on:click="show_remove_fleet_dialog"
                             >
                                 {t('remove')}
                             </Button>
@@ -190,4 +195,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <DoctrineItem doctrine={fleet.doctrine} />
         </ComponentBlock>
     }
+
+    <ComponentBlock>
+        <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
+    </ComponentBlock>
 </Flexblock>

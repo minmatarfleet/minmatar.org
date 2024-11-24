@@ -27,7 +27,7 @@ let data_fetching_error
 try {
     contracts_data = await get_contracts_data(auth_token, lang)
 } catch (error) {
-    data_fetching_error = error
+    data_fetching_error = error.message
 }
 
 import { query_string } from '@helpers/string';

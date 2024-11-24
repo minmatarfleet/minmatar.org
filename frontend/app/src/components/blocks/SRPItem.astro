@@ -1,0 +1,136 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SRPUI } from '@dtypes/layout_components'
+
+interface Props {
+    srp:        SRPUI;
+    readonly:  boolean;
+}
+
+const {
+    srp,
+    readonly,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+<FlexInline justification='space-between' class="[ srp-item ][ w-full ]">
+    <FlexInline class="[ grow ]">
+        <PilotBadge
+            character_id={srp.character_id}
+            character_name=""
+            class="[ basis-[250px] ]"
+        >
+            <h3 slot="title">{srp.amount.toLocaleString()} {t('isk')}</h3>
+            <FlexInline gap='var(--space-3xs)' class="[ grow ]">
+                {srp.character_id === srp.primary_character_id ?
+                    <small>{t('is_main_character')}</small> :
+                    <small>{t('main_character')}</small>
+                    <CharacterPicture
+                        character_id={srp.primary_character_id}
+                        size={16}
+                        icon_quality={32}
+                    />
+                }
+            </FlexInline>
+        </PilotBadge>
+        <ClipboardButton id={`srp-${srp.id}`}>{`${srp.amount}`}</ClipboardButton>
+    </FlexInline>
+
+    {!readonly &&
+        <FlexInline class="[ show-on-hover ]">
+            <Button
+                size='sm'
+                type="button"
+                color='green'
+                x-data={`{
+                    show_approve_srp_dialog() {
+                        show_confirm_dialog({
+                            title: '${t('accept_srp_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
+                                character_id: JSON.stringify(srp.character_id),
+                                primary_character_id: JSON.stringify(srp.primary_character_id),
+                                amount: JSON.stringify(srp.amount),
+                                type: 'accept',
+                                message: t('accept_srp_dialog_text'),
+                            })}',
+                            hx: {
+                                method: 'patch',
+                                url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
+                                    fleet_id : JSON.stringify(srp.fleet_id),
+                                    reimbursement_id : JSON.stringify(srp.id),
+                                    status: 'approved'
+                                })}',
+                                target: '#srp-table',
+                                swap: 'outerHTML transition:true'
+                            }
+                        })
+                    }
+                }`}
+                x-on:click="show_approve_srp_dialog()"
+            >
+                {t('approve')}
+            </Button>
+            
+            <Button
+                size='sm'
+                x-data={`{
+                    show_reject_srp_dialog() {
+                        show_confirm_dialog({
+                            title: '${t('reject_srp_dialog_title')}',
+                            partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
+                                character_id: JSON.stringify(srp.character_id),
+                                primary_character_id: JSON.stringify(srp.primary_character_id),
+                                amount: JSON.stringify(srp.amount),
+                                type: 'reject',
+                                message: t('deny_srp_dialog_text'),
+                            })}',
+                            hx: {
+                                method: 'patch',
+                                url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
+                                    fleet_id : JSON.stringify(srp.fleet_id),
+                                    reimbursement_id : JSON.stringify(srp.id),
+                                    status: 'rejected'
+                                })}',
+                                target: '#srp-table',
+                                swap: 'outerHTML transition:true'
+                            }
+                        })
+                    }
+                }`}
+                x-on:click="show_reject_srp_dialog()"
+            >
+                {t('reject')}
+            </Button>
+        </FlexInline>
+    }
+</FlexInline>
+
+<style lang="scss">
+    .srp-item {
+        @media (hover: hover) {
+            .show-on-hover {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .show-on-hover {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+</style>

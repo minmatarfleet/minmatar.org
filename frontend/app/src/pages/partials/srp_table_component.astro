@@ -1,0 +1,133 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+import { fetch_fleet_srps } from '@helpers/fetching/srp'
+import { create_fleet_srp, update_fleet_srp } from '@helpers/api.minmatar.org/srp'
+import type { SRPStatus, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import { srp_status } from '@dtypes/api.minmatar.org'
+import type { SRPUI, Alert, FleetUI } from '@dtypes/layout_components'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { get_user_character } from '@helpers/fetching/characters'
+import { is_valid_http_url } from '@helpers/string';
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+let data_fetching_error:string | false = false
+let update_fleet_srp_error:string | false = false
+let fleet_srps:SRPUI[] | null = []
+let alert:Alert | false = false
+let user_character:EveCharacterProfile | false = false
+let fleet:FleetUI | false = false
+
+if (Astro.request.method === "POST") {
+    let submit_srp_error:string | false = false
+
+    try {
+        const data = await Astro.request.formData()
+        const external_killmail_link = JSON.parse(JSON.parse( data.get("data")?.valueOf() as string ))
+
+        if (!is_valid_http_url(external_killmail_link))
+            throw new Error(t('invalid_srp_url'))
+
+        await create_fleet_srp(auth_token as string, fleet_id, external_killmail_link)
+
+        alert = {
+            title: t('srp_submit_dialog_title'),
+            content: t('srp_submit_success'),
+        }
+    } catch (error) {
+        submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
+
+        alert = {
+            title: t('srp_submit_dialog_title'),
+            content: submit_srp_error as string,
+        }
+    }
+}
+
+if (Astro.request.method === "PATCH") {
+    const reimbursement_id = parseInt(Astro.url.searchParams.get('reimbursement_id') ?? '0')
+    const status = Astro.url.searchParams.get('status') as SRPStatus
+
+    try {
+        if (!(reimbursement_id > 0))
+            throw new Error(t('invalid_reimbursement_id'))
+
+        if (!srp_status.includes(status))
+            throw new Error(t('invalid_reimbursement_status'))
+
+        await update_fleet_srp(auth_token as string, status, reimbursement_id)
+    } catch (error) {
+        const TRANSLATE_ACTION = {
+            'approved': t('approving'),
+            'rejected': t('rejecting'),
+        }
+
+        console.log(error)
+        update_fleet_srp_error = prod_error_messages() ? t('update_fleet_srp_error').replace('ACTION', TRANSLATE_ACTION[status]) : error.message
+        console.log(update_fleet_srp_error)
+
+        alert = {
+            title: t('srp_submit_dialog_title'),
+            content: update_fleet_srp_error as string,
+        }
+    }
+}
+
+let is_fleet_commander:boolean = false
+
+try {
+    if (!(fleet_id > 0))
+        throw new Error(t('invalid_fleet_id'))
+
+    fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    user_character = await get_user_character(user.user_id)
+    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const can_remove_fleet = is_superuser ||
+                        user_permissions.includes('fleets.delete_evefleet') ||
+                        is_fleet_commander
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}`
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import SRPTable from '@components/blocks/SRPTable.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+---
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: SRP_TABLE_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
+}
+
+{alert && <ShowAlert alert={alert} /> }

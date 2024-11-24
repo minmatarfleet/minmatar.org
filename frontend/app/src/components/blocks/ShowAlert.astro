@@ -1,0 +1,13 @@
+---
+import type { Alert } from '@dtypes/layout_components'
+
+interface Props {
+    alert:  Alert;
+}
+
+const {
+    alert = false
+} = Astro.props
+---
+
+<div x-init={`show_alert_dialog(${JSON.stringify(alert)}); $el.remove()`} />

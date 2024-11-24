@@ -432,3 +432,17 @@ export interface MarketExpectation {
     location_name:      string;
     quantity:           number;
 }
+
+export const srp_status = [ 'pending', 'approved', 'rejected' ] as const
+export type SRPStatus = typeof srp_status[number]
+
+export interface SRP {
+    id:                         number;
+    fleet_id:                   number;
+    external_killmail_link:     string;
+    status:                     SRPStatus;
+    character_id:               number;
+    primary_character_id:       number;
+    killmail_id:                number;
+    amount:                     number;
+}

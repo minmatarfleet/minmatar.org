@@ -1,0 +1,42 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    fleet_id:   number;
+}
+
+const {
+    fleet_id,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}`
+const DIALOG_SRP_PARTIAL_URL = translatePath('/partials/dialog_srp_submit')
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    size='sm'
+    color='green'
+    x-data={`{
+        show_srp_submit_dialog() {
+            show_confirm_dialog({
+                title: '${t('srp_submit_dialog_title')}',
+                content: '${t('srp_submit_dialog_text')}',
+                partial: '${DIALOG_SRP_PARTIAL_URL}',
+                hx: {
+                    method: 'post',
+                    url: '${SRP_TABLE_PARTIAL_URL}',
+                    target: '#srp-table',
+                    swap: 'outerHTML transition:true'
+                }
+            })
+        }
+    }`}
+    x-on:click="show_srp_submit_dialog"
+>
+    {t('add_killmail')}
+</Button>
