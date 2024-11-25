@@ -72,7 +72,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     if reimbursement_amount == 0:
         return 404, {"detail": "Ship not eligible for SRP"}
 
-    EveFleetShipReimbursement.objects.create(
+    reimbursement = EveFleetShipReimbursement.objects.create(
         fleet=fleet,
         external_killmail_link=payload.external_killmail_link,
         status="pending",
@@ -84,6 +84,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     )
 
     return EveFleetReimbursementResponse(
+        id=reimbursement.id,
         fleet_id=fleet.id,
         external_killmail_link=payload.external_killmail_link,
         status="pending",
