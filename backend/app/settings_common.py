@@ -72,6 +72,8 @@ INSTALLED_APPS = [
     "standingfleet",
     # SRP
     "srp",
+    # Referral links,
+    "referrals",
 ]
 
 # Discord Login
