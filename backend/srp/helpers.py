@@ -1,22 +1,19 @@
+import logging
 from datetime import datetime, timedelta
+from random import randint
 
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
+from esi.models import Token
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
-from srp.srp_table import (
-    reimbursement_class_lookup,
-    reimbursement_ship_lookup,
-)
-from esi.models import Token
+from reminders.messages.rat_quotes import rat_quotes
+from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 
 from .models import EveFleetShipReimbursement
-from reminders.messages.rat_quotes import rat_quotes
-import logging
-from random import randint
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()

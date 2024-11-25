@@ -18,8 +18,10 @@ def update_fleet_instances():
     """
     Update fleet instances
     """
-    for fleet_instance in EveFleetInstance.objects.filter(end_time=None):
-        logger.debug("Updating fleet instance %s", fleet_instance.id)
+    active_fleet_instances = EveFleetInstance.objects.filter(end_time=None)
+    logger.info("Updating status of %s fleets", active_fleet_instances.count())
+    for fleet_instance in active_fleet_instances:
+        logger.info("Updating fleet instance %s", fleet_instance.id)
         try:
             fleet_instance.update_is_registered_status()
             fleet_instance.update_fleet_members()
@@ -29,9 +31,17 @@ def update_fleet_instances():
                 fleet_instance.id,
                 e,
             )
-            logger.info("Assuming fleet is closed")
-            fleet_instance.end_time = timezone.now()
-            fleet_instance.save()
+
+            closed_message = (
+                "The fleet does not exist or you don't have access to it!"
+            )
+
+            if closed_message in str(e):
+                fleet_instance.end_time = timezone.now()
+                fleet_instance.save()
+                continue
+
+            raise e
 
 
 @app.task()
