@@ -33,7 +33,7 @@ import Button from '@components/blocks/Button.astro';
                     target: '#srp-table',
                     swap: 'outerHTML transition:true'
                 }
-            })
+            }).then(accepted => document.getElementById('srp-url').value = '')
         }
     }`}
     x-on:click="show_srp_submit_dialog"

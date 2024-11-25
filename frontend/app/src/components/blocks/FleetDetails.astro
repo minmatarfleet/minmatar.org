@@ -133,14 +133,12 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 </div>
             </FlexInline>
 
-            <TextGroup
-                title={t('description')}
-                class="[ sentence-cap ]"
-            >
+            <Flexblock gap='var(--space-3xs)'>
+                <h4 class="[ sentence-cap ]">{t('description')}</h4>
                 <TextBox max_width='40rem'>
                     <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
                 </TextBox>
-            </TextGroup>
+            </Flexblock>
 
             <!--<VerticalCenter>
                 <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
