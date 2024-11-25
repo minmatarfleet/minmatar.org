@@ -1,6 +1,7 @@
 import logging
 
 import jwt
+from typing import List
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
@@ -13,7 +14,7 @@ from discord.models import DiscordUser
 from discord.tasks import sync_discord_user
 from groups.tasks import update_affiliation
 
-from .helpers import get_user_profile
+from .helpers import get_user_profile, get_user_profiles
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)
@@ -115,11 +116,40 @@ def get_user_by_id(request, user_id: int):
         404: ErrorResponse,
     },
 )
-def get_user_by_username(request, username: str):
+def query_users(request, username: str):
     if not User.objects.filter(username=username).exists():
         return 404, {"detail": "User not found."}
     user = User.objects.get(username=username)
     return get_user_profile(user.id)
+
+
+@router.get(
+    "/profiles",
+    summary="Search for user profiles",
+    description="This will search for users based on the query provided.",
+    response={
+        200: List[UserProfileSchema],
+        404: ErrorResponse,
+    },
+)
+def query_multiple_users(
+    request, username: str = "", ids: str = ""
+) -> List[UserProfileSchema]:
+    if username:
+        # Backwards compatibility with original `query_users()`
+        if not User.objects.filter(username=username).exists():
+            return 404, {"detail": "User not found."}
+        user = User.objects.get(username=username)
+        return [get_user_profile(user.id)]
+
+    if ids:
+        user_ids = []
+        ids = ids.split(",")
+        for user_id in ids:
+            user_ids.append(int(user_id))
+        return get_user_profiles(user_ids)
+
+    return []
 
 
 @router.delete(

@@ -1,3 +1,5 @@
+import logging
+from typing import List
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
@@ -5,6 +7,8 @@ from discord.models import DiscordUser
 from eveonline.models import EvePrimaryCharacter
 
 from .schemas import UserProfileSchema
+
+logger = logging.getLogger(__name__)
 
 
 def offboard_user(user_id: int):
@@ -72,3 +76,18 @@ def get_user_profile(user_id: int) -> UserProfileSchema:
     }
 
     return UserProfileSchema(**payload)
+
+
+def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
+    users = User.objects.filter(id__in=user_ids)
+    return expand_user_profiles(users)
+
+
+def expand_user_profiles(users: List[User]) -> List[UserProfileSchema]:
+    # Initial brute-force implementation, to be replaced with an optimised version in a following update.
+    results = []
+    logger.info("Expanding %d profiles", len(users))
+    for user in users:
+        logger.info("Expanding user profile %d", user.id)
+        results.append(get_user_profile(user.id))
+    return results
