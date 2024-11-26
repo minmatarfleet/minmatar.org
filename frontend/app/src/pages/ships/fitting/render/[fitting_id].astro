@@ -102,6 +102,8 @@ const page_description = await strip_markdown(fitting?.description ?? '')
         fullscreen={true}
         wide={true}
         x-data={`{
+            ship_loaded: false,
+            scene_loaded: false,
             render_enabled: $persist(true),
             show_rendering_options: $persist(true),
             rotation_x: -0.317,
@@ -178,9 +180,19 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                     scene.setSunDirection([-1, 0, 0.7]);
                     
                     ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
+                        ship_loaded = true
                         camera.focus(this, ${CAMERA_ZOOM})
                         animation_timer = setTimeout(enter_siege_mode, 50000)
                     });
+
+                    function check_scene_load() {
+                        scene_loaded = !ccpwgl.isLoading()
+                        
+                        if (!scene_loaded)
+                            setTimeout(check_scene_load, 1000)
+                    }
+
+                    setTimeout(check_scene_load, 1000)
 
                     function enter_siege_mode() {
                         console.log('Entering siege mode...')
@@ -332,6 +344,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
 
         <FittingCustom
             fitting={fitting_parsed}
+            text={!ship_dna ? t('ship_preview_not_available') : undefined}
         />
 
         {(user_is_superadmin && show_controls) &&
