@@ -27,6 +27,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import ContractBadge from '@components/blocks/ContractBadge.astro';
 import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astro';
@@ -60,9 +61,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
     {trade_hubs.map((trade_hub) =>
         trade_hub.name === active_hub &&
-            <Flexblock class="[ doctrine-groups ]" gap='var(--space-2xl)'>        
+            <BlockList class="[ doctrine-groups ]" gap='var(--space-2xl)'>        
                 {trade_hub.contract_groups.map(contract_group =>
-                    <Flexblock class="[ doctrine-contract-group ]" gap='var(--space-m)'>
+                    <BlockList class="[ doctrine-contract-group ]" gap='var(--space-m)'>
                         <FlexInline gap='var(--space-2xs)'>
                             <picture>
                                 <img
@@ -129,9 +130,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                 )
                             })}
                         </Grid>
-                    </Flexblock>
+                    </BlockList>
                 )}
-            </Flexblock>
+            </BlockList>
     )}
 </Flexblock>
 
