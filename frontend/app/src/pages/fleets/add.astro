@@ -85,10 +85,15 @@ let audiences:Audience[] = []
 
 try {
     const user_profile = await get_user_character((user as User).user_id)
+
+    if (!user_profile)
+        throw new Error(t('not_valid_character'))
+
     fleet_commander = {
         character_id: user_profile.character_id,
         character_name: user_profile.character_name,
     }
+
     doctrines = await fetch_doctrines()
     locations = await get_locations(auth_token as string)
     audiences = await get_audiences(auth_token as string)

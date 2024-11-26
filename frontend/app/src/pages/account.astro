@@ -24,7 +24,7 @@ if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
 import type { Character, Corporation, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { NotificationSubscription, CorporationObject } from '@dtypes/layout_components'
+import type { NotificationSubscription } from '@dtypes/layout_components'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_user_subscriptions } from '@helpers/push_notification_subscriptions'
@@ -33,7 +33,7 @@ import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 let pilots:Character[] = []
 let get_characters_error:string | false = false
 let alliance_corporations:Corporation[]
-let user_character:EveCharacterProfile
+let user_character:EveCharacterProfile | null = null
 let is_fleet_pilot = false
 let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
@@ -42,8 +42,10 @@ try {
     pilots = await get_characters(auth_token)
     alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
-    const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character.corporation_id) : undefined
-    is_fleet_pilot = (user_corporation !== undefined)
+    if (user_character) {
+        const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character?.corporation_id) : undefined
+        is_fleet_pilot = (user_corporation !== undefined)
+    }
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true

@@ -148,7 +148,7 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
 }
 
 const get_member = async (user_id:number) => {
-    let character_profile:EveCharacterProfile
+    let character_profile:EveCharacterProfile | null = null
     
     try {
         character_profile = await get_user_character(user_id)

@@ -20,7 +20,7 @@ import type { StaggeringType } from '@dtypes/layout_components'
 
 let character_assets:AssetsUI
 let get_character_assets_error:string | false = false
-let user_character:EveCharacterProfile
+let user_character:EveCharacterProfile | null = null
 
 const station = Astro.url.searchParams.get('station')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
@@ -29,6 +29,10 @@ let station_assets
 
 try {
     user_character = await get_user_character(user.user_id)
+
+    if (!user_character)
+        throw new Error(t('not_valid_character'))
+
     character_assets = await get_assets(auth_token, user_character.character_id)
 
     location_assets = character_assets?.location_icons.find( (i) => i.location_name === station )

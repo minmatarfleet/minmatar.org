@@ -1161,5 +1161,6 @@ export const ui = {
         'first_page': 'First page',
         'last_page': 'Last page',
         'ship_preview_not_available': 'Ship preview not available for this ship model.',
+        'not_valid_character': 'Character is not valid',
     },
 } as const;
