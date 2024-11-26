@@ -1160,5 +1160,6 @@ export const ui = {
         'no_posts': 'No posts found.',
         'first_page': 'First page',
         'last_page': 'Last page',
+        'ship_preview_not_available': 'Ship preview not available for this ship model.',
     },
 } as const;

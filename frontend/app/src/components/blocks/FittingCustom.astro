@@ -1,12 +1,17 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
 import type { ShipFitting, Module } from '@dtypes/layout_components';
 
 interface Props {
-    fitting: ShipFitting;
+    fitting:    ShipFitting;
+    text?:      string;
 }
 
 const {
     fitting,
+    text,
 } = Astro.props
 
 let low_slots:Module[] = []
@@ -89,7 +94,15 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
         </Flexblock>
     </div>
 
-    <div class="[ empty ]"></div>
+    <div class="[ empty ]">
+        <small
+            class="[ animate-fade-in-up animate-delay-1000 ]"
+            x-show="scene_loaded && !ship_loaded"
+            style="display: none"
+        >
+            {t('ship_preview_not_available')}
+        </small>
+    </div>
 
     <div class="[ med ]">
         <Flexblock>
@@ -169,6 +182,9 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
 
         .empty {
             grid-area: empty;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .med {
