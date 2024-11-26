@@ -45,7 +45,7 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
     fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
-    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+    is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 
     if (is_fleet_commander && upcoming) {
         const staggering_solar_system = fleet.location.split(' - ')[0]

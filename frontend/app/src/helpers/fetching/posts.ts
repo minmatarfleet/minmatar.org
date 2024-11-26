@@ -5,9 +5,9 @@ import { get_posts, get_post, get_posts_tags } from '@helpers/api.minmatar.org/p
 import { get_users_character, get_user_character } from '@helpers/fetching/characters'
 import { paginate, unique_values } from '@helpers/array'
 
-export async function fetch_posts(post_request:PostRequestUI) {
-    const t = useTranslations('en');
+const t = useTranslations('en');
 
+export async function fetch_posts(post_request:PostRequestUI) {
     const { user_id, tag_id } = post_request
 
     const api_post_request = {
@@ -73,8 +73,8 @@ export async function fetch_post(post_id:number) {
         content: api_post.content,
         state: api_post.state,
         author: {
-            character_id: author.character_id,
-            character_name: author.character_name,
+            character_id: author?.character_id ?? 0,
+            character_name: author?.character_name ?? t('unknown_character'),
         },
     } as PostUI
 }

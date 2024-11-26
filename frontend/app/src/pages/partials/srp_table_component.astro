@@ -33,7 +33,7 @@ let data_fetching_error:string | false = false
 let update_fleet_srp_error:string | false = false
 let fleet_srps:SRPUI[] | null = []
 let alert:Alert | false = false
-let user_character:EveCharacterProfile | false = false
+let user_character:EveCharacterProfile | null = null
 let fleet:FleetUI | false = false
 
 if (Astro.request.method === "POST") {
@@ -100,7 +100,7 @@ try {
     fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+    is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 } catch (error) {
     data_fetching_error = error.message
 }

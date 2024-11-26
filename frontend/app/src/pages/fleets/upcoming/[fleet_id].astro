@@ -38,7 +38,7 @@ import { get_system_id } from '@helpers/sde/map'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI | false = false
-let user_character:EveCharacterProfile | false = false
+let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let fleet_srps:SRPUI[] | null = []
@@ -48,7 +48,7 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
     fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
-    is_fleet_commander = (user_character.character_id === fleet.fleet_commander_id)
+    is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 
     if (is_fleet_commander) {
         const staggering_solar_system = fleet.location.split(' - ')[0]

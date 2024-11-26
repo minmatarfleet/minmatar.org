@@ -23,16 +23,15 @@ export async function get_all_applications(access_token:string) {
         const api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
 
         applications = (await Promise.all(api_applications.map(async (application) => {
-            let character:EveCharacterProfile
-            character = await get_user_character(application.user_id)
+            const character = await get_user_character(application.user_id)
 
             return {
                 id: application.application_id,
                 applied_corporation: application.corporation_id, // django corporation id
                 status: application.status,
-                corporation_id: character.corporation_id,
-                character_name: character.character_name,
-                corporation_name: character.corporation_name,
+                corporation_id: character?.corporation_id ?? 0,
+                character_name: character?.character_name ?? t('unknown_character'),
+                corporation_name: character?.corporation_name ?? t('unknown_corporation'),
             } as ApplicationOld
         })))
 
@@ -113,13 +112,13 @@ export async function get_application_by_id(access_token:string, corporation_id:
         id: api_application.application_id,
         applied_corporation: api_application.corporation_id,
         status: api_application.status as CorporationStatusType,
-        character_id: character.character_id,
-        character_name: character.character_name,
-        corporation_id: character.corporation_id,
-        corporation_name: character.corporation_name,
+        character_id: character?.character_id ?? 0,
+        character_name: character?.character_name ?? t('unknown_character'),
+        corporation_id: character?.corporation_id ?? 0,
+        corporation_name: character?.corporation_name ?? t('unknown_corporation'),
         description: api_application.description,
         created_at: api_application.created_at,
         updated_at: api_application.updated_at,
-        alts: api_application.characters.filter( (i) => i.character_id !== character.character_id )
+        alts: api_application.characters.filter( (i) => i.character_id !== character?.character_id )
     } as ApplicationDetail
 }
