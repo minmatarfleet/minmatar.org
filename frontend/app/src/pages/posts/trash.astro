@@ -31,7 +31,9 @@ let posts:PostListUI[] = []
 let fetch_user_posts_error:string | false = false
 
 try {
-    posts = await fetch_user_posts(user.user_id)
+    posts = await fetch_user_posts({
+        user_id: user.user_id,
+    })
     posts = posts.filter(post => post.state === 'trash')
 } catch (error) {
     fetch_user_posts_error = prod_error_messages() ? t('get_all_corporations_error') : error.message

@@ -937,3 +937,15 @@ export interface SRPUI {
     killmail_id:                number;
     amount:                     number;
 }
+
+export interface PostRequestUI {
+    user_id?:       number;
+    tag_id?:        number;
+    page?:          number;
+    page_length?:   number;
+}
+
+export interface Posts {
+    total:      number;
+    chunk:      PostListUI[];
+}

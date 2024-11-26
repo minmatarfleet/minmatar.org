@@ -1,12 +1,14 @@
-import type { Post, PostParams, PostTag } from '@dtypes/api.minmatar.org'
+import type { Post, PostParams, PostTag, PostRequest } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/blog`
 
-export async function get_posts(user_id:number | null = null, tag_id:number | null = null) {
+export async function get_posts(post_request:PostRequest) {
     const headers = {
         'Content-Type': 'application/json',
     }
+
+    const { user_id, tag_id } = post_request
 
     const query_params = {
         ...(user_id && { user_id }),

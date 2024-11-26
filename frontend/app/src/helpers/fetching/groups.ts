@@ -159,6 +159,7 @@ const get_member = async (user_id:number) => {
             corporation_id: 0,
             corporation_name: t('unknown_corporation'),
             scopes: [],
+            user_id: user_id,
         }
     }
 

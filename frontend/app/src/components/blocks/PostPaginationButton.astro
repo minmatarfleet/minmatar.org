@@ -1,0 +1,31 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    page:       number;
+    text:       string;
+    active?:    boolean;
+}
+
+const {
+    page,
+    text,
+    active = false,
+} = Astro.props
+
+const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component')}`
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    color={active ? 'transparent' : undefined}
+    size='sm'
+    hx-get={`${POSTS_LIST_PARTIAL_URL}?page=${page}`}
+    hx-swap="outerHTML transition:true"
+    hx-target="#posts-list"
+    hx-indicator=".loader"
+>
+    {text}
+</Button>

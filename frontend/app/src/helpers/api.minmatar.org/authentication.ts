@@ -32,6 +32,35 @@ export async function get_user_by_id(user_id:number) {
     }
 }
 
+export async function get_users_by_id(user_ids:number[]) {
+    const headers = {
+        'Content-Type': 'application/json'
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/profiles?ids=${user_ids.join(',')}`
+    
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+        
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as UserProfile[];
+    } catch (error) {
+        throw new Error(`Error fetching user profile: ${error.message}`);
+    }
+}
+
 export async function get_user_by_name(user_name:string) {
     const headers = {
         'Content-Type': 'application/json'
