@@ -1,4 +1,6 @@
 main .post {
+    font-size: var(--normal-font-size);
+
     * {
         line-height: 1.5;
     }
@@ -34,5 +36,13 @@ main .post {
         font-size: var(--step--2);
         line-height: 1.1;
         font-weight: 600;
+    }
+
+    * + h2 {
+        margin-block-start: var(--space-xl) !important;
+    }
+
+    li + li {
+        margin-block-start: var(--space-m) !important;
     }
 }
