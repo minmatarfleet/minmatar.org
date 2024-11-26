@@ -116,7 +116,7 @@ code {
 }
 
 .rifter-modal {
-    min-height: 80vh;
+    min-height: min(750px, 88vh);
 }
 
 .eve-html {
