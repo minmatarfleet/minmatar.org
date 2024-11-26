@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
+import { prod_error_messages } from '@helpers/env'
 import { query_string } from '@helpers/string';
 
 import type { User } from '@dtypes/jwt'
@@ -12,7 +13,6 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
-import { format_date } from '@helpers/date'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
 
@@ -25,12 +25,25 @@ const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
 let posts:PostListUI[] = []
+let total_posts:number = 0
+const PAGE_LENGTH = 9
+let total_pages:number = 0
+let post_fetching_error:string | false = false
 
 try {
-    posts = await fetch_posts();
+    const paginated_posts = await fetch_posts({
+        page: 1,
+        page_length: PAGE_LENGTH,
+    })
+
+    posts = paginated_posts.chunk
+    total_posts = paginated_posts.total
+    total_pages = Math.ceil(total_posts/PAGE_LENGTH)
 } catch (error) {
-    console.log(error)
+    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
+
+const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component')}?page=1`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -40,13 +53,10 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import BlockList from '@components/compositions/BlockList.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import AllianceReel from '@components/blocks/AllianceReel.astro';
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import Tag from '@components/blocks/Tag.astro';
+import PostsList from '@components/blocks/PostsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('alliance.page_title');
 const leading_text = t('alliance.leading_text');
@@ -89,35 +99,25 @@ const leading_text = t('alliance.leading_text');
                 is_superuser={is_superuser}
             />
 
-            {posts.length > 0 &&
-                <Flexblock gap='var(--space-l)'>
-                    <h2>{t('news_timeline')}</h2>
-                    <TextBox>
-                        <p>{t('news_timeline_description')}</p>
-                    </TextBox>
-                </Flexblock>
-        
-                <Wrapper padding_inline='0' padding_block='0' max_width='48rem'>
-                    <BlockList gap='var(--space-2xl)'>
-                        {posts.map(post =>
-                            <FixedFluid width='64px'>
-                                <CharacterPicture
-                                    character_id={post.author.character_id}
-                                    character_name={post.author.character_name}
-                                />
-                                <Flexblock gap='var(--space-xs)'>
-                                    <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
-                                    <FlexInline>
-                                        {post.tags.map(tag =>
-                                            <Tag text={tag} />
-                                        )}
-                                        <small>{format_date(lang, post.date_posted)}</small>
-                                    </FlexInline>
-                                </Flexblock>
-                            </FixedFluid>
-                        )}
-                    </BlockList>
-                </Wrapper>
+            
+            <Flexblock gap='var(--space-l)'>
+                <h2>{t('news_timeline')}</h2>
+                <TextBox>
+                    <p>{t('news_timeline_description')}</p>
+                </TextBox>
+            </Flexblock>
+            {post_fetching_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: POSTS_LIST_PARTIAL_URL,
+                        message: post_fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                posts.length > 0 ?
+                    <PostsList posts={posts} total_pages={total_pages} current_page={1} /> :
+                    t('no_posts')
             }
         </Flexblock>
 

@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { PostListUI, Posts } from '@dtypes/layout_components'
+import { fetch_posts } from '@helpers/fetching/posts'
+
+let posts:PostListUI[] = []
+let total_posts:number = 0
+const PAGE_LENGTH = 9
+let total_pages:number = 0
+let post_fetching_error:string | false = false
+
+const page = parseInt(Astro.url.searchParams.get('page') ?? '1')
+
+try {
+    const paginated_posts = await fetch_posts({
+        page: page,
+        page_length: PAGE_LENGTH,
+    })
+
+    posts = paginated_posts.chunk
+    total_posts = paginated_posts.total
+    total_pages = Math.ceil(total_posts/PAGE_LENGTH)
+} catch (error) {
+    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+}
+
+const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component')}?page=${page}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import PostsList from '@components/blocks/PostsList.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{post_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: POSTS_LIST_PARTIAL_URL,
+            message: post_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    posts.length > 0 ?
+        <PostsList posts={posts} total_pages={total_pages} current_page={page} /> :
+        t('no_posts')
+}

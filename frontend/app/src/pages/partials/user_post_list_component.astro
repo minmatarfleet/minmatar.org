@@ -83,7 +83,9 @@ if (Astro.request.method === "PATCH") {
 }
 
 try {
-    posts = await fetch_user_posts(user.user_id)
+    posts = await fetch_user_posts({
+        user_id: user.user_id,
+    })
     if (state === 'trash')
         posts = posts.filter(post => post.state === 'trash')
     else

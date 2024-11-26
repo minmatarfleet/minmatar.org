@@ -122,11 +122,12 @@ export interface DiscordUserProfile {
 }
 
 export interface EveCharacterProfile {
-    character_id:     number;
-    character_name:   string;
-    corporation_id:   number;
-    corporation_name: string;
-    scopes:           string[];
+    user_id:            number;
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number;
+    corporation_name:   string;
+    scopes:             string[];
 }
 
 export interface CharacterSkillset {
@@ -445,4 +446,9 @@ export interface SRP {
     primary_character_id:       number;
     killmail_id:                number;
     amount:                     number;
+}
+
+export interface PostRequest {
+    user_id?:   number;
+    tag_id?:    number;
 }

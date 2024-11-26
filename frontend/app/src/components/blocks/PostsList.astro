@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Porps {
+    posts:          PostListUI[];
+    total_pages:    number;
+    current_page:   number;
+}
+
+const {
+    posts,
+    total_pages,
+    current_page,
+} = Astro.props
+
+const pages:number[] = []
+if (current_page - 2 > 0 && current_page + 1 > total_pages)
+    pages.push(current_page - 2)
+if (current_page - 1 > 0)
+    pages.push(current_page - 1)
+
+pages.push(current_page)
+
+if (current_page + 1 <= total_pages)
+    pages.push(current_page + 1)
+if (current_page - 1 < 1 && current_page + 2 <= total_pages)
+    pages.push(current_page + 2)
+
+import { format_date } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import Tag from '@components/blocks/Tag.astro';
+import PostPaginationButton from './PostPaginationButton.astro';
+---
+
+<Flexblock id="posts-list" gap='var(--space-xl)'>
+    <Grid class="[ w-full grid-fill ]" row_gap='var(--space-2xl)' column_gap='var(--space-2xl)' min_item_width='500px'>
+        {posts.map(post =>
+            <FixedFluid width='64px'>
+                <CharacterPicture
+                    character_id={post.author.character_id}
+                    character_name={post.author.character_name}
+                />
+                <Flexblock gap='var(--space-xs)'>
+                    <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
+                    <FlexInline>
+                        {post.tags.map(tag =>
+                            <Tag text={tag} />
+                        )}
+                        <small>{format_date(lang, post.date_posted)}</small>
+                    </FlexInline>
+                </Flexblock>
+            </FixedFluid>
+        )}
+    </Grid>
+
+    <FlexInline justification='center'>
+        {total_pages > 4 &&
+            <PostPaginationButton page={1} text={t('first_page')} active={current_page === 1 ? true : undefined} />
+        }
+        {pages.map(page =>
+            <PostPaginationButton page={page} text={page.toString()} active={page === current_page ? true : undefined} />
+        )}
+        {total_pages > 4 &&
+            <PostPaginationButton page={total_pages} text={t('last_page')} active={current_page === total_pages ? true : undefined} />
+        }
+    </FlexInline>
+</Flexblock>

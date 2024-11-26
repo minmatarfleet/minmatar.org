@@ -99,6 +99,7 @@ const get_group_request_ui = async (group:Group, api_request:SigRequest | TeamRe
                 corporation_id: 0,
                 corporation_name: t('unknown_corporation'),
                 scopes: [],
+                user_id: api_request.user,
             },
             discord_user_profile: null,
         }

@@ -10,12 +10,24 @@ import type {
     AssetGroup,
 } from '@dtypes/layout_components'
 import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters } from '@helpers/api.minmatar.org/characters'
-import { get_user_by_id } from '@helpers/api.minmatar.org/authentication'
+import { get_user_by_id, get_users_by_id } from '@helpers/api.minmatar.org/authentication'
 
-export async function get_user_character(user_id: number) {
-    let user_profile:UserProfile
-    user_profile = await get_user_by_id(user_id)
-    return user_profile.eve_character_profile as EveCharacterProfile
+export async function get_user_character(user_id:number) {
+    const user_profile = await get_user_by_id(user_id)
+    const character_profile = user_profile.eve_character_profile as EveCharacterProfile
+    character_profile.user_id = user_id
+
+    return character_profile
+}
+
+export async function get_users_character(user_id:number[]) {
+    const users_profile = await get_users_by_id(user_id)
+    return users_profile.map(profile => {
+        const character_profile = profile.eve_character_profile as EveCharacterProfile
+        character_profile.user_id = profile.user_id
+
+        return character_profile
+    }) as EveCharacterProfile[]
 }
 
 export async function get_skillsets(access_token:string, character_id: number) {

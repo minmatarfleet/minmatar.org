@@ -1157,5 +1157,8 @@ export const ui = {
         'invalid_reimbursement_id': 'Reimbursement ID is not valid.',
         'invalid_reimbursement_status': 'Reimbursement status is not valid.',
         'invalid_fleet_id': 'Fleet ID is not valid.',
+        'no_posts': 'No posts found.',
+        'first_page': 'First page',
+        'last_page': 'Last page',
     },
 } as const;
