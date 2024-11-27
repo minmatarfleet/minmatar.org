@@ -35,7 +35,17 @@ def get_user_permissions(user_id: int) -> list[str]:
 
 def get_user_profile(user_id: int) -> UserProfileSchema:
     user = User.objects.get(id=user_id)
-    discord_user = DiscordUser.objects.get(user=user)
+    return expand_user_profile(user, True, True)
+
+
+def expand_user_profile(
+    user: User, include_permissions: bool, include_discord: bool
+) -> UserProfileSchema:
+    if include_discord:
+        discord_user = DiscordUser.objects.get(user=user)
+    else:
+        discord_user = None
+
     primary_character = EvePrimaryCharacter.objects.filter(
         character__token__user=user
     ).first()
@@ -53,41 +63,49 @@ def get_user_profile(user_id: int) -> UserProfileSchema:
                 if hasattr(primary_character.character, "corporation")
                 else None
             ),
-            "scopes": [
+        }
+        if include_permissions:
+            scopes = [
                 scope.name
                 for scope in primary_character.character.token.scopes.all()
-            ],
-        }
+            ]
+        else:
+            scopes = []
+        eve_character_profile["scopes"] = scopes
     else:
         eve_character_profile = None
 
     payload = {
         "user_id": user.id,
         "username": user.username,
-        "avatar": discord_user.avatar,
-        "permissions": get_user_permissions(user_id),
         "is_superuser": user.is_superuser,
         "eve_character_profile": eve_character_profile,
-        "discord_user_profile": {
+    }
+
+    if include_permissions:
+        payload["permissions"] = get_user_permissions(user.id)
+    else:
+        payload["permissions"] = []
+
+    if discord_user:
+        payload["avatar"] = (discord_user.avatar,)
+        payload["discord_user_profile"] = {
             "id": discord_user.id,
             "discord_tag": discord_user.discord_tag,
             "avatar": f"https://cdn.discordapp.com/avatars/{discord_user.id}/{discord_user.avatar}.png",
-        },
-    }
+        }
+    else:
+        payload["discord_user_profile"] = None
 
     return UserProfileSchema(**payload)
 
 
 def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
-    users = User.objects.filter(id__in=user_ids)
-    return expand_user_profiles(users)
-
-
-def expand_user_profiles(users: List[User]) -> List[UserProfileSchema]:
-    # Initial brute-force implementation, to be replaced with an optimised version in a following update.
     results = []
-    logger.info("Expanding %d profiles", len(users))
+    users = User.objects.filter(id__in=user_ids)
     for user in users:
-        logger.info("Expanding user profile %d", user.id)
-        results.append(get_user_profile(user.id))
+        try:
+            results.append(expand_user_profile(user, False, False))
+        except Exception:
+            logger.error("Error expanding profile for user %d", user.id)
     return results
