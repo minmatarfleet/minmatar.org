@@ -1,4 +1,14 @@
-<div class="[ swiper-slide ]" style="margin-right: 40px">
+---
+interface Props {
+    gap:    number;
+}
+
+const {
+    gap,
+} = Astro.props
+---
+
+<div class="[ swiper-slide ]" style={`margin-right: ${gap}px`}>
     <slot />      
 </div>
 
