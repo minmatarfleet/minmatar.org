@@ -846,6 +846,7 @@ export const ui = {
         'l34rn_description_fallback': 'Enjoy a tailored learning experience while contibruting to one of the most active PvP alliances in the game.',
         'soltech_armada_description_fallback': 'Fly dangerous! Die gloriously! Reship!',
         'exitstrategy_description_fallback': 'Over a decade of experience in wormhole space, operating when most of the universe is asleep.',
+        'protean_description_fallback': 'Be the dog that catches the car. Driven by relentless aggression, quick pivots, and a versatile toolkit, AD4PT turns impossible situations into victories.',
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',

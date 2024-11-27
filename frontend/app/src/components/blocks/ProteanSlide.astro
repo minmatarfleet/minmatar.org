@@ -1,0 +1,148 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const MOREPOWER_ID = 1342819338
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="protean-slide"
+    ceo_image='/images/corporations/protean/ceo.png'
+    ceo_character_id={MOREPOWER_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <img slot="ships" class="[ nightmare ]" src="/images/corporations/protean/nightmare.png" />
+    <img slot="ships" class="[ astrate ]" src="/images/corporations/protean/astrate.png" />
+    <img slot="ships" class="[ crow ]" src="/images/corporations/protean/crow.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('protean_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .nightmare {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 58%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .astrate {
+        position: absolute;
+        top: 48%;
+        left: -40%;
+        width: 72%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .crow {
+        position: absolute;
+        left: -25%;
+        top: 34%;
+        width: 49%;
+        height: auto;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    @keyframes nightmare {
+        from {
+            transform: scale(0);
+            top: 47%;
+            left: -45%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 0%;
+            left: 22%;
+        }
+    }
+
+    @keyframes astrate {
+        from {
+            transform: scale(0);
+            top: 36%;
+            left: -60%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 31%;
+            left: 15%;
+        }
+    }
+
+    @keyframes crow {
+        from {
+            transform: scale(0);
+            left: -36%;
+            top: 37%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 49%;
+            left: 19%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #protean-slide .ceo {
+        left: 0%;
+    }
+
+    .swiper-slide-active {
+        .nightmare {
+            animation: nightmare cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .astrate {
+            animation: astrate cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .crow {
+            animation: crow cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
