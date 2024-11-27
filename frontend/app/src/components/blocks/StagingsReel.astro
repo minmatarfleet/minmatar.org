@@ -1,4 +1,12 @@
 ---
+interface Props {
+    gap:    number;
+}
+
+const {
+    gap,
+} = Astro.props
+
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
@@ -14,7 +22,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         class="[ swiper ][ w-full ]"
         id="corporations-list"
     >
-        <LandingSwiper pagination={false}>
+        <LandingSwiper pagination={false} gap={gap}>
             <slot />
         </LandingSwiper>
     </div>

@@ -34,12 +34,14 @@ import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astr
 import StagingsReel from '@components/blocks/StagingsReel.astro';
 import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
+
+const REEL_GAP = 20
 ---
 
 <Flexblock role="list" gap='var(--space-xl)'>
-    <StagingsReel>
+    <StagingsReel gap={REEL_GAP}>
         {trade_hubs.map(trade_hub =>
-            <StagingReelSlide>
+            <StagingReelSlide gap={REEL_GAP}>
                 <Wrapper padding_block='0' padding_inline='0' max_width='350px'>
                     {active_hub === trade_hub.name ?
                         <Flexblock gap="var(--space-3xs)">

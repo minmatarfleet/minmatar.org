@@ -1,10 +1,12 @@
 ---
 interface Props {
     pagination?:    boolean;
+    gap?:           number;
 }
 
 const {
     pagination = true,
+    gap = 40,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -21,7 +23,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         init() {
             this.swiper = new Swiper('.swiper', {
                 slidesPerView: "auto",
-                spaceBetween: 40,
+                spaceBetween: ${gap},
                 pagination: ${pagination ? JSON.stringify({
                     clickable: true,
                     dynamicBullets: true,
