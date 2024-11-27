@@ -18,7 +18,8 @@ import {
     get_group_by_id as get_team_by_id
 } from '@helpers/api.minmatar.org/teams'
 
-import { get_user_character } from '@helpers/fetching/characters'
+import { get_users_character } from '@helpers/fetching/characters'
+import { unique_values } from '@helpers/array'
 
 export async function get_groups_auth(access_token:string, user_id: number, group_type:GroupItemType) {
     let api_groups:Group[]
@@ -130,9 +131,20 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
     groups_members = await Promise.all(groups.map(async (group) => {
         let members:MemberUI[]
 
-        members = await Promise.all(group.members.map(async (member_id) => {
-            return await get_member(member_id)
-        }))
+        const members_ids = unique_values(group.members)
+        const members_characters = await get_users_character(members_ids)
+
+        members = group.members.map(member_id => {
+            const character_profile = members_characters.find(character => character.user_id === member_id)
+
+            return {
+                user_id: user_id,
+                character_id: character_profile?.character_id ?? 0,
+                character_name: character_profile?.character_name ?? t('unknown_character'),
+                corporation_id: character_profile?.corporation_id ?? 0,
+                corporation_name: character_profile?.corporation_name ?? t('unknown_corporation'),
+            } as MemberUI
+        })
 
         return {
             id: group.id,
@@ -142,34 +154,9 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
             officers: group?.officers ?? group.directors,
             members: members,
         } as GroupMembersUI
-    }));
+    }))
 
     return groups_members
-}
-
-const get_member = async (user_id:number) => {
-    let character_profile:EveCharacterProfile | null = null
-    
-    try {
-        character_profile = await get_user_character(user_id)
-    } catch (error) {
-        character_profile = {
-            character_id: 0,
-            character_name: t('unknown_character'),
-            corporation_id: 0,
-            corporation_name: t('unknown_corporation'),
-            scopes: [],
-            user_id: user_id,
-        }
-    }
-
-    return {
-        user_id: user_id,
-        character_id: character_profile?.character_id ?? 0,
-        character_name: character_profile?.character_name ?? t('unknown_character'),
-        corporation_id: character_profile?.corporation_id ?? 0,
-        corporation_name: character_profile?.corporation_name ?? t('unknown_corporation'),
-    } as MemberUI
 }
 
 export async function is_director(access_token:string, user_id:number) {

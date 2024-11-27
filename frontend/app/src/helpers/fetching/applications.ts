@@ -8,8 +8,9 @@ import {
     get_corporation_applications,
     get_corporation_applications_by_id,
 } from '@helpers/api.minmatar.org/applications'
-import { get_user_character } from '@helpers/fetching/characters'
+import { get_user_character, get_users_character } from '@helpers/fetching/characters'
 import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
+import { unique_values } from '@helpers/array'
 
 export async function get_all_applications(access_token:string) {
     let api_corporations:Corporation[]
@@ -18,12 +19,18 @@ export async function get_all_applications(access_token:string) {
     api_corporations = await get_all_corporations('alliance')
 
     applications = (await Promise.all(api_corporations.map(async (corporation) => {
-        let applications:ApplicationOld[]
+        let applications:ApplicationOld[] = []
 
         const api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
+        
+        if (!api_applications || api_applications?.length === 0)
+            return applications
 
-        applications = (await Promise.all(api_applications.map(async (application) => {
-            const character = await get_user_character(application.user_id)
+        const users_ids = unique_values(api_applications.map(api_application => api_application.user_id))
+        const character_profiles = await get_users_character(users_ids)
+
+        applications = api_applications.map(application => {
+            const character = character_profiles.find(character => character.user_id === application.user_id)
 
             return {
                 id: application.application_id,
@@ -33,7 +40,7 @@ export async function get_all_applications(access_token:string) {
                 character_name: character?.character_name ?? t('unknown_character'),
                 corporation_name: character?.corporation_name ?? t('unknown_corporation'),
             } as ApplicationOld
-        })))
+        })
 
         return applications
     }))).flat()
@@ -64,6 +71,7 @@ export async function get_all_corporations_applications(access_token:string, rec
         }
 
         let api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
+
         api_applications = api_applications.filter(application => {
             if (records && (application.status === 'accepted' || application.status === 'rejected'))
                 return true
@@ -74,15 +82,16 @@ export async function get_all_corporations_applications(access_token:string, rec
             return false
         })
 
-        application.applications = (await Promise.all(api_applications.map(async (application) => {
-            let character:EveCharacterProfile | null = null
-            let character_error:string | null = null
+        let character_profiles:EveCharacterProfile[] = []
+        if (api_applications?.length > 0) {
+            const not_null_applications = api_applications.filter(api_application => api_application)
+            const users_ids = unique_values(not_null_applications.map(api_application => api_application?.user_id))
+            character_profiles = users_ids.length > 0 ? await get_users_character(users_ids) : []
+            character_profiles = character_profiles.filter(profile => profile)
+        }
 
-            try {
-                character = await get_user_character(application.user_id)
-            } catch (error) {
-                character_error = error.message
-            }
+        application.applications = api_applications.map(application => {
+            const character = character_profiles.find(character => character.user_id === application?.user_id)
 
             return {
                 id: application.application_id,
@@ -90,10 +99,10 @@ export async function get_all_corporations_applications(access_token:string, rec
                 character_id: character?.character_id ?? 0,
                 character_name: character?.character_name ?? t('unknown_character'),
                 corporation_id: character?.corporation_id ?? 0,
-                corporation_name: character_error ?? character?.corporation_name ?? t('unknown_corporation'),
+                corporation_name: character?.corporation_name ?? t('unknown_corporation'),
                 status: application.status,
             } as ApplicationBasic
-        })))
+        })
 
         return application
     })))
