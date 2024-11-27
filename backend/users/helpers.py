@@ -87,7 +87,7 @@ def expand_user_profile(
     else:
         payload["permissions"] = []
 
-    if include_discord:
+    if discord_user:
         payload["avatar"] = (discord_user.avatar,)
         payload["discord_user_profile"] = {
             "id": discord_user.id,
@@ -104,5 +104,8 @@ def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
     results = []
     users = User.objects.filter(id__in=user_ids)
     for user in users:
-        results.append(expand_user_profile(user, False, False))
+        try:
+            results.append(expand_user_profile(user, False, False))
+        except Exception:
+            logger.error("Error expanding profile for user %d", user.id)
     return results
