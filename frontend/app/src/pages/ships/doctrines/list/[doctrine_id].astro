@@ -42,9 +42,10 @@ import DoctrineDetails from '@components/blocks/DoctrineDetails.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 const page_title = `${doctrine?.name} ${t('doctrine')}`;
+const page_description = doctrine?.description
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={page_description}>
     <PageWide
         cover={{
             image: "/images/doctrines-cover.jpg",
