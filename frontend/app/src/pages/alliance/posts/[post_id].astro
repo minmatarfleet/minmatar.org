@@ -52,6 +52,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
 const page_title = post?.title ?? t('new_post')
 const page_description = post?.excerpt ?? page_title
@@ -79,14 +80,25 @@ const page_description = post?.excerpt ?? page_title
                 <TextBox>
                     <h1>{post?.title}</h1>
                 </TextBox>
-                {is_user_post &&
-                    <Button
-                        type="button"
-                        href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post?.post_id}` })}`}
+                <FlexInline class="[ !items-start ]">
+                    <ClipboardButton
+                        id="share-post-button"
+                        size='lg'
+                        text={t('share_post')}
+                        copied_text={t('post_url_copied')}
+                        iconed={false}
                     >
-                        {t('edit_post')}
-                    </Button>
-                }
+                        {Astro.url}
+                    </ClipboardButton>
+                    {is_user_post &&
+                        <Button
+                            type="button"
+                            href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post?.post_id}` })}`}
+                        >
+                            {t('edit_post')}
+                        </Button>
+                    }
+                </FlexInline>
             </FlexInline>
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
