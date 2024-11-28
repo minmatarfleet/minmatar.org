@@ -755,6 +755,7 @@ export const ui = {
         'auga_hq_description': 'Minmatar Fleet Alliance former HQ',
         'yishinoon_hq_description': 'Minmatar Fleet Alliance FOB',
         'nakah_hq_description': 'Minmatar Fleet Alliance FOB',
+        'vard_hq_description': 'The Tips Must Touch - Tip I',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
         'fetching_assets': 'Fetching assets',
