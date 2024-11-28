@@ -36,9 +36,7 @@ import FeedSwiper from '@components/blocks/FeedSwiper.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
-<div
-    x-show="show_fleet_feeds"
->
+<div x-show="show_fleet_feeds">
     <div
         class="[ fleet-feed swiper ][ animate-fade-in-up !hidden 2xl:!block ]"
         hx-get={FLEET_FEED_PARTIAL_URL}

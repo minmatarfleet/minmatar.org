@@ -1166,6 +1166,6 @@ export const ui = {
         'not_valid_character': 'Character is not valid',
         'share_post': 'Share post',
         'post_url_copied': 'Post URL copied!',
-        'view_station_market_contracts': 'There are contracts available on this station',
+        'view_station_market_contracts': 'Contract service available on this station',
     },
 } as const;

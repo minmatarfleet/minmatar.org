@@ -16,16 +16,16 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 import type { StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
-import { fetch_market_contracts } from '@helpers/fetching/market'
+import { get_market_locations } from '@helpers/api.minmatar.org/market'
 
-let contracts_with_staging:string[] = []
+let contracts_service_staging:string[] = []
 let posts:PostListUI[] = []
 const PAGE_LENGTH = 3
 let post_fetching_error:string | false = false
 
 try {
-    const contracts_trade_hubs = await fetch_market_contracts()
-	contracts_with_staging = contracts_trade_hubs.map(contracts_trade_hub => contracts_trade_hub.name)
+    const market_locations = await get_market_locations()
+	contracts_service_staging = market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
 
     const paginated_posts = await fetch_posts({
         page: 1,
@@ -205,7 +205,7 @@ const page_description = t('index.leading_text');
 				>
 					<MapEvEIcon />
 				</a>
-				{contracts_with_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
+				{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
 					<a
 						class="[ w-[32px] neocom-button ]"
 						data-tippy-content={t('view_station_market_contracts')}
