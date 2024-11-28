@@ -42,7 +42,7 @@ export const ui = {
 
         '500.page_title': '500 Server Error',
         '500.content_title': '500',
-        '500.leading_text': 'A watermelon deployed in our system is jamming our routines.',
+        '500.leading_text': 'A WATERMELLON deployed in our system is jamming our routines.',
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'alliance.page_title': 'Alliance',
@@ -1065,7 +1065,7 @@ export const ui = {
         'remove_post_dialog_text': 'Continue removing this post out of existence? This action cannot be undone.',
         'patch_post_error': 'An error occurred while patching the post.',
         'invalid_system_id': 'Not a valid solar system',
-        'invalid_staggering_solar_system': 'Not a valid staging solar system',
+        'invalid_staging_solar_system': 'Not a valid staging solar system',
         'invalid_module': 'Invalid module',
         'invalid_fitting': 'Invalid fitting',
         'home_system_not_found': 'Home system not found',
@@ -1166,5 +1166,6 @@ export const ui = {
         'not_valid_character': 'Character is not valid',
         'share_post': 'Share post',
         'post_url_copied': 'Post URL copied!',
+        'view_station_market_contracts': 'There are contracts available on this station',
     },
 } as const;

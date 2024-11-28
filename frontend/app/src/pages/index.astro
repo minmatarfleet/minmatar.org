@@ -12,14 +12,21 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
+
+import type { StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
+import { fetch_market_contracts } from '@helpers/fetching/market'
 
+let contracts_with_staging:string[] = []
 let posts:PostListUI[] = []
 const PAGE_LENGTH = 3
 let post_fetching_error:string | false = false
 
 try {
+    const contracts_trade_hubs = await fetch_market_contracts()
+	contracts_with_staging = contracts_trade_hubs.map(contracts_trade_hub => contracts_trade_hub.name)
+
     const paginated_posts = await fetch_posts({
         page: 1,
         page_length: PAGE_LENGTH,
@@ -29,8 +36,7 @@ try {
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
-
-import type { StaggeringType } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string';
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -62,6 +68,7 @@ import NewsFed from '@components/blocks/NewsFed.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
+import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 
 import {
 	WatermellonXData,
@@ -77,11 +84,31 @@ import {
 } from '@components/partials/HomepageRenders.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
+type StagingTranslation = {
+	[key in StagingType]: string;
+}
+
+const STAGINGS_STATIONS:StagingTranslation = {
+	auga: 'Auga - Minmatar Militia HQ',
+	yishinoon: 'Yishinoon - Space Invaders',
+	nakah: 'Nakah - Banana',
+	vard: 'Vard - RUN FORREST, RUN',
+	watermellon: 'Sosala - WATERMELLON',
+}
+
+const STAGINGS_SYSTEMS:StagingTranslation = {
+	auga: 'Auga',
+	yishinoon: 'Yishinoon',
+	nakah: 'Nakah',
+	vard: 'Vard',
+	watermellon: 'Sosala',
+}
+
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
 const BALLS_DEEP_ID = 98252708
 
-const staggering = Astro.cookies.has('staggering') ? Astro.cookies.get('staggering')?.value as StaggeringType : 'watermellon'
+const staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : 'watermellon'
 
 const page_title = t('index.page_title');
 const page_description = t('index.leading_text');
@@ -90,15 +117,15 @@ const page_description = t('index.leading_text');
 <Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
-            image: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
-					staggering === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
-					staggering === 'nakah' ? '/images/home-nakah-cover.jpg' :
-					staggering === 'vard' ? '/images/home-vard-cover.jpg' :
+            image: staging === 'auga' ? '/images/home-auga-cover.jpg' :
+					staging === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
+					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					staging === 'vard' ? '/images/home-vard-cover.jpg' :
 					'/images/home-cover.jpg',
-            image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
-					   staggering === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
-					   staggering === 'nakah' ? '/images/home-nakah-cover.jpg' :
-					   staggering === 'vard' ? '/images/home-vard-cover.jpg' :
+            image_990: staging === 'auga' ? '/images/home-auga-cover.jpg' :
+					   staging === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
+					   staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					   staging === 'vard' ? '/images/home-vard-cover.jpg' :
 					   '/images/home-cover.jpg',
             alt: t('index.cover_alt'),
             animated: false,
@@ -107,10 +134,10 @@ const page_description = t('index.leading_text');
         wide={true}
 		x-data={`{
 			show_fleet_feeds: true,
-            ${staggering === 'auga' ? AugaMilitiaHQCameraXData :
-				staggering === 'yishinoon' ? SpaceInvadersCameraXData :
-				staggering === 'nakah' ? BananaCameraXData :
-				staggering === 'vard' ? RunForrestCameraXData :
+            ${staging === 'auga' ? AugaMilitiaHQCameraXData :
+				staging === 'yishinoon' ? SpaceInvadersCameraXData :
+				staging === 'nakah' ? BananaCameraXData :
+				staging === 'vard' ? RunForrestCameraXData :
 				WatermellonCameraXData
 			}
         }`}
@@ -124,10 +151,10 @@ const page_description = t('index.leading_text');
 			x-on:scroll.stop
 			x-on:mousewheel.stop
             x-data={`{
-				${staggering === 'auga' ? AugaMilitiaHQXData :
-					staggering === 'yishinoon' ? SpaceInvadersXData :
-					staggering === 'nakah' ? BananaXData :
-					staggering === 'vard' ? RunForrestXData :
+				${staging === 'auga' ? AugaMilitiaHQXData :
+					staging === 'yishinoon' ? SpaceInvadersXData :
+					staging === 'nakah' ? BananaXData :
+					staging === 'vard' ? RunForrestXData :
 					WatermellonXData
 				}
             }`}
@@ -139,26 +166,26 @@ const page_description = t('index.leading_text');
 			class="[ station-info ][ !hidden xl:!block ]"
 			gap='0'
 		>
-			{staggering === 'auga' ? <AugaInfo /> :
-				staggering === 'yishinoon' ? <YishinoonInfo /> :
-				staggering === 'nakah' ? <NakahInfo /> :
-				staggering === 'vard' ? <VardInfo /> :
+			{staging === 'auga' ? <AugaInfo /> :
+				staging === 'yishinoon' ? <YishinoonInfo /> :
+				staging === 'nakah' ? <NakahInfo /> :
+				staging === 'vard' ? <VardInfo /> :
 				<WatermellonInfo />
 			}
 			<FlexInline gap='var(--space-3xs)'>
 				{user &&
 					<StationAssets
 						corporation={
-							staggering === 'auga' ? {
+							staging === 'auga' ? {
 								id: RATTINI_TRIBE_ID,
 								name: 'Rattini Tribe',
-							} : staggering === 'yishinoon' ? {
+							} : staging === 'yishinoon' ? {
 								id: RATTINI_TRIBE_ID,
 								name: 'Rattini Tribe',
-							} : staggering === 'nakah' ? {
+							} : staging === 'nakah' ? {
 								id: BALLS_DEEP_ID,
 								name: 'Balls Deep Inc.',
-							} : staggering === 'vard' ? {
+							} : staging === 'vard' ? {
 								id: BALLS_DEEP_ID,
 								name: 'Balls Deep Inc.',
 							}: {
@@ -166,24 +193,29 @@ const page_description = t('index.leading_text');
 								name: 'Black Omega Security'
 							}
 						}
-						station={
-							staggering === 'auga' ? 'Auga - Minmatar Militia HQ' :
-							staggering === 'yishinoon' ? 'Yishinoon - Space Invaders' :
-							staggering === 'nakah' ? 'Nakah - Banana' :
-							staggering === 'vard' ? 'Vard - RUN FORREST, RUN' :
-							'Sosala - WATERMELLON'
-						}
+						station={STAGINGS_STATIONS[staging] ?? 'Sosala - WATERMELLON'}
 					/>
 				}
 				<a
 					class="[ w-[32px] neocom-button ]"
 					data-tippy-content={t('view_on_dotlan')}
-					href={`https://evemaps.dotlan.net/system/${staggering === 'auga' ? 'Auga' : staggering === 'yishinoon' ? 'Yishinoon' : staggering === 'nakah' ? 'Nakah' : staggering === 'vard' ? 'Vard' : 'Sosala'}`}
+					href={`https://evemaps.dotlan.net/system/${STAGINGS_SYSTEMS[staging] ?? 'Sosala'}`}
 					target="_blank"
 					rel="nofollow noopener noreferrer"
 				>
 					<MapEvEIcon />
 				</a>
+				{contracts_with_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
+					<a
+						class="[ w-[32px] neocom-button ]"
+						data-tippy-content={t('view_station_market_contracts')}
+						href={translatePath(`/market/contracts?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
+						target="_blank"
+						rel="nofollow noopener noreferrer"
+					>
+						<ContractsServiceEvEIcon />
+					</a>
+				}
 			</FlexInline>
 		</Flexblock>
 
