@@ -116,12 +116,12 @@ export function group_members_by_ship(members:FleetMember[]):FleetCompositionUI[
     })
 }
 
-export async function group_members_by_location(members:FleetMember[], staggering_solar_system_id:number = DEFAULT_STAGGERING_SYSTEM) {
+export async function group_members_by_location(members:FleetMember[], staging_solar_system_id:number = DEFAULT_STAGGERING_SYSTEM) {
     const solar_system_ids = [...new Set(members.map(member => member.solar_system_id))];
 
     return await Promise.all(solar_system_ids.map(async (solar_system_id) => {
         const filtered_members = members.filter((member) => member.solar_system_id === solar_system_id)
-        const route = await get_route(solar_system_id, staggering_solar_system_id)
+        const route = await get_route(solar_system_id, staging_solar_system_id)
 
         return {
             solar_system_id: solar_system_id,

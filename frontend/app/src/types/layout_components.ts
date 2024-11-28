@@ -644,8 +644,8 @@ export interface FittingGroup {
     modules:    CargoItem[];
 }
 
-export const staggerings = ['auga', 'watermelon', 'yishinoon', 'nakah', 'vard'] as const
-export type StaggeringType = typeof staggerings[number]
+export const stagings = ['auga', 'watermellon', 'yishinoon', 'nakah', 'vard'] as const
+export type StagingType = typeof stagings[number]
 
 import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
 

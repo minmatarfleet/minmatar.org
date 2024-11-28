@@ -5,7 +5,7 @@ const { translatePath } = i18n(Astro.url)
 const tag = Astro.url.searchParams.get('tag')
 
 if (tag)
-    Astro.cookies.set('staggering', tag, { path: '/' })
+    Astro.cookies.set('staging', tag, { path: '/' })
 
 const redirect = translatePath('/')
 ---
