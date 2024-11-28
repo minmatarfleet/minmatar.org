@@ -26,6 +26,7 @@ import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import YishinoonInfo from '@components/blocks/YishinoonInfo.astro';
 import NakahInfo from '@components/blocks/NakahInfo.astro';
+import VardInfo from '@components/blocks/VardInfo.astro';
 import Input from '@components/blocks/Input.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
@@ -50,6 +51,8 @@ import {
 	SpaceInvadersXData,
 	BananaCameraXData,
 	BananaXData,
+	RunForrestCameraXData,
+	RunForrestXData,
 } from '@components/partials/HomepageRenders.astro';
 
 const RATTINI_TRIBE_ID = 98726134
@@ -68,10 +71,12 @@ const page_description = t('index.leading_text');
             image: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
 					staggering === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
 					staggering === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					staggering === 'vard' ? '/images/home-vard-cover.jpg' :
 					'/images/home-cover.jpg',
             image_990: staggering === 'auga' ? '/images/home-auga-cover.jpg' :
 					   staggering === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
 					   staggering === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					   staggering === 'vard' ? '/images/home-vard-cover.jpg' :
 					   '/images/home-cover.jpg',
             alt: t('index.cover_alt'),
             animated: false,
@@ -83,6 +88,7 @@ const page_description = t('index.leading_text');
             ${staggering === 'auga' ? AugaMilitiaHQCameraXData :
 				staggering === 'yishinoon' ? SpaceInvadersCameraXData :
 				staggering === 'nakah' ? BananaCameraXData :
+				staggering === 'vard' ? RunForrestCameraXData :
 				WatermellonCameraXData
 			}
         }`}
@@ -99,6 +105,7 @@ const page_description = t('index.leading_text');
 				${staggering === 'auga' ? AugaMilitiaHQXData :
 					staggering === 'yishinoon' ? SpaceInvadersXData :
 					staggering === 'nakah' ? BananaXData :
+					staggering === 'vard' ? RunForrestXData :
 					WatermellonXData
 				}
             }`}
@@ -113,6 +120,7 @@ const page_description = t('index.leading_text');
 			{staggering === 'auga' ? <AugaInfo /> :
 				staggering === 'yishinoon' ? <YishinoonInfo /> :
 				staggering === 'nakah' ? <NakahInfo /> :
+				staggering === 'vard' ? <VardInfo /> :
 				<WatermellonInfo />
 			}
 			<FlexInline gap='var(--space-3xs)'>
@@ -128,7 +136,10 @@ const page_description = t('index.leading_text');
 							} : staggering === 'nakah' ? {
 								id: BALLS_DEEP_ID,
 								name: 'Balls Deep Inc.',
-							} : {
+							} : staggering === 'vard' ? {
+								id: BALLS_DEEP_ID,
+								name: 'Balls Deep Inc.',
+							}: {
 								id: BLACK_OMEGA_SECUTIRY_ID,
 								name: 'Black Omega Security'
 							}
@@ -137,6 +148,7 @@ const page_description = t('index.leading_text');
 							staggering === 'auga' ? 'Auga - Minmatar Militia HQ' :
 							staggering === 'yishinoon' ? 'Yishinoon - Space Invaders' :
 							staggering === 'nakah' ? 'Nakah - Banana' :
+							staggering === 'vard' ? 'Vard - RUN FORREST, RUN' :
 							'Sosala - WATERMELLON'
 						}
 					/>
@@ -144,7 +156,7 @@ const page_description = t('index.leading_text');
 				<a
 					class="[ w-[32px] neocom-button ]"
 					data-tippy-content={t('view_on_dotlan')}
-					href={`https://evemaps.dotlan.net/system/${staggering === 'auga' ? 'Auga' : staggering === 'yishinoon' ? 'Yishinoon' : staggering === 'nakah' ? 'Nakah' : 'Sosala'}`}
+					href={`https://evemaps.dotlan.net/system/${staggering === 'auga' ? 'Auga' : staggering === 'yishinoon' ? 'Yishinoon' : staggering === 'nakah' ? 'Nakah' : staggering === 'vard' ? 'Vard' : 'Sosala'}`}
 					target="_blank"
 					rel="nofollow noopener noreferrer"
 				>

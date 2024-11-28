@@ -1,0 +1,22 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Dropdown from '@components/blocks/Dropdown.astro';
+import StationInfo from '@components/blocks/StationInfo.astro';
+import StationsSelector from '@components/blocks/StationsSelector.astro';
+---
+
+<Dropdown>
+    <StationInfo
+        system="Vard"
+        security="0.4"
+        constellation="Hed"
+        region="Heimatar"
+        station_name="Vard - RUN FORREST, RUN"
+        station_description={t('vard_hq_description')}
+        slot="button"
+    />
+    
+    <StationsSelector selected='vard'>
+</Dropdown>

@@ -671,6 +671,140 @@ export const BananaXData = `init_ccpwgl() {
     // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
 }`
 
+export const RunForrestCameraXData = `
+    rotation_x: 1.97,
+    rotation_y: 0.89,
+    camera: null,
+    resize_canvas: null,
+    rotation_angle: 0,
+    resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
+        // Lookup the size the browser is displaying the canvas in CSS pixels.
+        const displayWidth  = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        
+        // Check if the canvas is not the same size.
+        const needResize = canvas.width  !== displayWidth ||
+                            canvas.height !== displayHeight;
+        
+        if (needResize) {
+            // Make the canvas the same size
+            canvas.width  = displayWidth;
+            canvas.height = displayHeight;
+
+            ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
+        }
+        
+        return needResize;
+    },
+    update() {
+        if (!this.camera) return
+
+        this.camera.rotationX = this.rotation_x
+        this.camera.rotationY = this.rotation_y
+    }`
+
+export const RunForrestXData = `init_ccpwgl() {
+    let minmatar_hq
+    let canvas
+    let scene
+    const mat4 = ccpwgl_int.math.mat4
+
+    canvas = document.getElementById('mainCanvas');
+    
+    ccpwgl.initialize(canvas, fitting.options);
+    ccpwgl_context = canvas.getContext("webgl");
+    
+    camera = ccpwgl.createCamera(canvas, undefined, true);
+    camera.rotationX = rotation_x
+    camera.rotationY = rotation_y
+    camera.minDistance = 2300
+    camera.maxDistance = 9000
+    camera.fov = 40
+    camera.shift = 100.92
+
+    scene = ccpwgl.loadScene('res:/dx9/scene/universe/m02_cube.red');
+    
+    scene.loadSun('res:/fisfx/lensflare/blue_sun.red');
+    scene.setSunDirection([-8.95, 1.71, 6.98]);
+
+    const planet = scene.loadPlanet(
+        40161533,
+        'res:/dx9/model/WorldObject/Planet/Template/Moon/p_moon_80.red',        
+        undefined,
+        'res:/dx9/model/worldobject/planet/Moon/Moon03_H.dds.0.png',
+        'res:/dx9/model/worldobject/planet/Moon/Moon01_H.dds.0.png'
+    );
+
+    var angle = 4.8;
+    const distance = 400000
+    planet.setTransform(mat4.fromValues(
+        100000, 0, 0, 0,
+        0, 100000, 0, 0,
+        0, 0, 100000, 0,
+        distance * Math.cos(angle), 30000, distance * Math.sin(angle), 1
+    ));
+
+    window.planets = [];
+    window.planets.push(planet);
+    
+    minmatar_hq = scene.loadShip('cm1_t1:upwell:sleeper', function() {
+        camera.focus(this, 2)
+
+        let matrix = mat4.fromValues(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        )
+
+        let rotationMatrix = mat4.fromYRotation(matrix, 0.05)        
+        rotationMatrix[15] = 1
+        
+        this.setTransform(rotationMatrix)
+        this.setTransform(matrix)
+        
+        setColor(83, 16, 107, 'Mtl2Gloss')
+        setColor(56, 12, 102, 'Mtl4Gloss')
+    })
+
+    ccpwgl.enablePostprocessing(true);
+
+    function setColor(r, g, b, material) {
+        for (var i = 0; i < minmatar_hq.wrappedObjects[0].mesh.opaqueAreas.length; i++)
+        {
+            for (var param in minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters) {
+                if (minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].name.indexOf(material) > -1) {
+
+                    minmatar_hq.wrappedObjects[0].mesh.opaqueAreas[i].effect.parameters[param].SetValue([r/255, g/255, b/255, 1]);
+                }
+            }
+
+        }
+    }
+
+    const rotation_timer = setInterval(function () {
+        const distance = 400000
+        let model = mat4.fromValues(
+            100000, 0, 0, 0,
+            0, 100000, 0, 0,
+            0, 0, 100000, 0,
+            distance * Math.cos(angle), 30000, distance * Math.sin(angle), 1
+        )
+
+        let out = mat4.create()
+        mat4.rotateY(model, model, rotation_angle += 0.0001);
+        planet.setTransform(model)  
+    }, 50)
+
+    document.addEventListener('astro:after-swap', () => {
+        clearTimeout(rotation_timer)
+    })
+
+    resize_canvas = ccpwgl_context.canvas
+    resizeCanvasToDisplaySize(resize_canvas)
+    // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
+}`
+
 export const OurzadCameraXData = `
     rotation_x: -1.22,
     rotation_y: 0.54,
