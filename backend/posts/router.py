@@ -3,6 +3,7 @@ from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
+from django.core.paginator import Paginator
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -57,7 +58,13 @@ class UpdateEvePostRequest(BaseModel):
 
 
 @router.get("/posts", response=List[EvePostListResponse])
-def get_posts(request, user_id: int = None, tag_id: int = None):
+def get_posts(
+    request,
+    user_id: int = None,
+    tag_id: int = None,
+    page_size: int = 20,
+    page_num: int = None,
+):
     posts = EvePost.objects.all().order_by("-date_posted")
 
     if user_id:
@@ -65,6 +72,10 @@ def get_posts(request, user_id: int = None, tag_id: int = None):
 
     if tag_id:
         posts = posts.filter(eveposttag__tag_id=tag_id)
+
+    if page_num:
+        paginator = Paginator(posts, per_page=page_size)
+        posts = paginator.get_page(page_num)
 
     response = []
     for post in posts:
