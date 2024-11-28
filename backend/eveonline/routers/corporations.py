@@ -217,6 +217,7 @@ def get_corporation_by_id(request, corporation_id: int):
             ).first()
             if (
                 primary_character
+                and primary_character.character
                 and primary_character.character.character_id
                 != character.character_id
             ):
