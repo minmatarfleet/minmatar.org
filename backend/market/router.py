@@ -79,7 +79,9 @@ class MarketContractResponse(BaseModel):
 class MarketLocationSummary(BaseModel):
     id: int
     name: str
+    system_name: str = ""
     contracts: int = 0
+    expectations: int = 0
     structure_id: Optional[int] = None
 
 
@@ -425,14 +427,20 @@ def get_market_locations(request) -> List[MarketLocationSummary]:
     locations = []
     for location in EveMarketLocation.objects.all():
         contract_count = EveMarketContract.objects.filter(
+            location=location,
+            status="outstanding",
+        ).count()
+        expectation_count = EveMarketContractExpectation.objects.filter(
             location=location
         ).count()
         locations.append(
             MarketLocationSummary(
                 id=location.location_id,
                 name=location.location_name,
+                system_name=location.solar_system_name,
                 structure_id=location.structure_id,
                 contracts=contract_count,
+                expectations=expectation_count,
             )
         )
     return locations
