@@ -2,6 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import type { ButtonSizes } from '@dtypes/layout_components';
+
 import Button from '@components/blocks/Button.astro';
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 
@@ -9,6 +11,10 @@ interface Props {
     id:                 string;
     alert_prefix?:      string;
     narrow?:            boolean;
+    size?:              ButtonSizes;
+    text?:              string;
+    copied_text?:       string;
+    iconed?:            boolean;
     [propName: string]: any;
 }
 
@@ -16,6 +22,10 @@ const {
     id,
     alert_prefix,
     narrow = false,
+    size = 'sm',
+    text = t('copy'),
+    copied_text = t('copied'),
+    iconed = true,
     ...attributes
 } = Astro.props
 
@@ -27,17 +37,17 @@ const Textarea = 'textarea';
 <Button
     narrow={narrow}
     x-on:click.stop.prevent={`copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`}
-    size='sm'
+    size={size}
     {...attributes}
     x-data={`{
-        button_text: '${t('copy')}',
+        button_text: '${text}',
     }`}
-    x-on:click.throttle.750ms={`button_text = '${t('copied')}'; setTimeout(() => button_text = '${t('copy')}', ${COPIED_LABEL_TIME_MS})`}
+    x-on:click.throttle.750ms={`button_text = '${copied_text}'; setTimeout(() => button_text = '${text}', ${COPIED_LABEL_TIME_MS})`}
     x-init="$el.removeAttribute('disabled')"
     disabled
 >
-    <ClipboardIcon slot="icon" />
-    <span x-text="button_text">{t('copy')}</span>
+    {iconed && <ClipboardIcon slot="icon" />}
+    <span x-text="button_text">{text}</span>
 </Button>
 
 <Textarea class="[ hidden ]" id={id} readonly><slot /></Textarea>

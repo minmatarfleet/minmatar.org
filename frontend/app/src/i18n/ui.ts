@@ -1163,5 +1163,7 @@ export const ui = {
         'last_page': 'Last page',
         'ship_preview_not_available': 'Ship preview not available for this ship model.',
         'not_valid_character': 'Character is not valid',
+        'share_post': 'Share post',
+        'post_url_copied': 'Post URL copied!',
     },
 } as const;
