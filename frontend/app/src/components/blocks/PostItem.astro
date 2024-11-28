@@ -1,0 +1,39 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    post:   PostListUI;
+}
+
+const {
+    post,
+} = Astro.props
+
+import { format_date } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import Tag from '@components/blocks/Tag.astro';
+---
+
+<FixedFluid width='64px'>
+    <CharacterPicture
+        character_id={post.author.character_id}
+        character_name={post.author.character_name}
+    />
+    <Flexblock gap='var(--space-xs)'>
+        <h3><a href={translatePath(`/alliance/posts/${post.post_id}`)}>{post.title}</a></h3>
+        <FlexInline>
+            {post.tags.map(tag =>
+                <Tag text={tag} />
+            )}
+            <small>{format_date(lang, post.date_posted)}</small>
+        </FlexInline>
+    </Flexblock>
+</FixedFluid>

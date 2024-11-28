@@ -1,6 +1,8 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -9,6 +11,24 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+import type { PostListUI } from '@dtypes/layout_components'
+import { fetch_posts } from '@helpers/fetching/posts'
+
+let posts:PostListUI[] = []
+const PAGE_LENGTH = 3
+let post_fetching_error:string | false = false
+
+try {
+    const paginated_posts = await fetch_posts({
+        page: 1,
+        page_length: PAGE_LENGTH,
+    })
+
+    posts = paginated_posts.chunk
+} catch (error) {
+    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+}
 
 import type { StaggeringType } from '@dtypes/layout_components'
 
@@ -38,6 +58,7 @@ import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
+import NewsFed from '@components/blocks/NewsFed.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
@@ -54,6 +75,7 @@ import {
 	RunForrestCameraXData,
 	RunForrestXData,
 } from '@components/partials/HomepageRenders.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
@@ -255,11 +277,18 @@ const page_description = t('index.leading_text');
 					class="[ !items-start ]"
 				>
 					<MetaGuideWidget />
-					<RatBibbleWidget						
-						padding_block='0'
-						padding_inline='var(--space-s)'
-						class="[ basis-[50%] shrink ]"
-					/>
+					<Flexblock gap='var(--space-3xs)'>
+						{posts?.length > 0 &&
+							<ComponentBlock max_width='656px' padding_inline='var(--space-s)'>
+								<NewsFed posts={posts} />
+							</ComponentBlock>
+						}
+						<RatBibbleWidget						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+							class="[ basis-[50%] shrink ]"
+						/>
+					</Flexblock>
 				</FluidFixed>
 			</Flexblock>
 
