@@ -32,7 +32,7 @@ rat_quotes = [
     "Rat Cheesinthians 6:19 - 'Do you not know that your bodies are temples of the Rat who dwells within you?'",
     "Ratah 4:6 - 'My people are destroyed from lack of cheese. Because you have rejected knowledge, I also reject you as my rats; because you have ignored the nibbles, I will ignore you as my cheese-gatherers.'",
     "Ratmans 3:23 - 'For all have nibbled and fallen short of the glory of Rat.'",
-    "Ratah 2:23 - 'From there Elisha went up to Bethel. As he was walking along the road, some rats came out of the town and jeered at him. 'Go on up, you baldhead!' they said. 'Go on up, you baldhead!' He turned around, looked at them and called down a curse on them in the name of the Rat. Then two bears came out of the woods and mauled the rats.'",
+    "Ratah 2:23 - 'From there Elisha went up to Bethel. As he was walking along the road, some rats came out of the town and jeered at him. 'Go on up, you baldhead!' they said. 'Go on up, you baldhead!' He turned around, looked at them and called down a curse on them in the name of the Rat. Then two bears came out of the woods and mauled the disbelievers of the Rat.'",
     "Squeek Chronicles 4:10 - 'Then Rat said to Job, 'Put your nibble under the cheese, and I will make it shine like cheddar; all the dark corners will become as light as day.''",
     "Ratah 4:2 - 'But for you who revere my name, the Rat of righteousness will rise with healing in its whiskers, and you will go out and frolic like well-fed rats.'",
     "Ratthew 16:26 - 'What good will it be for someone to gain the whole world, yet forfeit their nibbles? Or what can anyone give in exchange for their nibbles?'",
