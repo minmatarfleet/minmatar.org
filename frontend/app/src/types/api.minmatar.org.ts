@@ -434,6 +434,13 @@ export interface MarketExpectation {
     quantity:           number;
 }
 
+export interface MarketLocation {
+    id:             number;
+    name:           string;
+    contracts:      number;
+    structure_id:   number;
+}
+
 export const srp_status = [ 'pending', 'approved', 'rejected' ] as const
 export type SRPStatus = typeof srp_status[number]
 
