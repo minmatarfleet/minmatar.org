@@ -17,8 +17,9 @@ const page = parseInt(Astro.url.searchParams.get('page') ?? '1')
 
 try {
     const paginated_posts = await fetch_posts({
-        page: page,
-        page_length: PAGE_LENGTH,
+        page_num: page,
+        page_size: PAGE_LENGTH,
+        status: 'published',
     })
 
     posts = paginated_posts.chunk

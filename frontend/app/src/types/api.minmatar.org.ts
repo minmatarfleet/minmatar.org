@@ -456,6 +456,9 @@ export interface SRP {
 }
 
 export interface PostRequest {
-    user_id?:   number;
-    tag_id?:    number;
+    user_id?:       number;
+    tag_id?:        number;
+    page_size?:     number;
+    page_num?:      number;
+    status?:        PostStates;
 }

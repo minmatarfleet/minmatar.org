@@ -28,8 +28,9 @@ try {
 	contracts_service_staging = market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
 
     const paginated_posts = await fetch_posts({
-        page: 1,
-        page_length: PAGE_LENGTH,
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
     })
 
     posts = paginated_posts.chunk
@@ -196,6 +197,15 @@ const page_description = t('index.leading_text');
 						station={STAGINGS_STATIONS[staging] ?? 'Sosala - WATERMELLON'}
 					/>
 				}
+				{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
+					<a
+						class="[ w-[32px] neocom-button ]"
+						data-tippy-content={t('view_station_market_contracts')}
+						href={translatePath(`/market/contracts?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
+					>
+						<ContractsServiceEvEIcon />
+					</a>
+				}
 				<a
 					class="[ w-[32px] neocom-button ]"
 					data-tippy-content={t('view_on_dotlan')}
@@ -205,17 +215,6 @@ const page_description = t('index.leading_text');
 				>
 					<MapEvEIcon />
 				</a>
-				{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
-					<a
-						class="[ w-[32px] neocom-button ]"
-						data-tippy-content={t('view_station_market_contracts')}
-						href={translatePath(`/market/contracts?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
-						target="_blank"
-						rel="nofollow noopener noreferrer"
-					>
-						<ContractsServiceEvEIcon />
-					</a>
-				}
 			</FlexInline>
 		</Flexblock>
 
