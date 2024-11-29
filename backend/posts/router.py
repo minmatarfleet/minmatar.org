@@ -3,6 +3,7 @@ from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
+from django.http import HttpRequest, HttpResponse
 from django.core.paginator import Paginator
 
 from app.errors import ErrorResponse
@@ -59,7 +60,8 @@ class UpdateEvePostRequest(BaseModel):
 
 @router.get("/posts", response=List[EvePostListResponse])
 def get_posts(
-    request,
+    request: HttpRequest,
+    response: HttpResponse,
     user_id: int = None,
     tag_id: int = None,
     page_size: int = 20,
@@ -76,6 +78,7 @@ def get_posts(
     if page_num:
         paginator = Paginator(posts, per_page=page_size)
         posts = paginator.get_page(page_num)
+        response["x-total-count"] = EvePost.objects.count()
 
     response = []
     for post in posts:
