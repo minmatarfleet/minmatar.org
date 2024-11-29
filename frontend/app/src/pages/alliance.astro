@@ -32,8 +32,9 @@ let post_fetching_error:string | false = false
 
 try {
     const paginated_posts = await fetch_posts({
-        page: 1,
-        page_length: PAGE_LENGTH,
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
     })
 
     posts = paginated_posts.chunk
