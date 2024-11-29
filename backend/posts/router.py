@@ -64,6 +64,7 @@ def get_posts(
     response: HttpResponse,
     user_id: int = None,
     tag_id: int = None,
+    status: str = None,
     page_size: int = 20,
     page_num: int = None,
 ):
@@ -74,6 +75,9 @@ def get_posts(
 
     if tag_id:
         posts = posts.filter(eveposttag__tag_id=tag_id)
+
+    if status:
+        posts = posts.filter(state=status)
 
     if page_num:
         paginator = Paginator(posts, per_page=page_size)
