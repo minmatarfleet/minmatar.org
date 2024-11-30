@@ -1,8 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
 
 interface Props {
     corporation:            CorporationObject;
@@ -18,19 +20,37 @@ const {
 } = Astro.props
 
 const TWAN_MOLENAAR_ID = 2114993571
+const SCOTT_AUSCENT_ID = 92000736
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 ---
 
 <CorporationSlide
     id="ballsdeep-slide"
     ceo_image='/images/corporations/ballsdeep/ceo.png'
-    ceo_character_id={TWAN_MOLENAAR_ID}
+    ceo_character_id={SCOTT_AUSCENT_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ vedmak ]" src="/images/corporations/ballsdeep/vedmak.png" />
+    <StylessButton
+        class="[ co-ceo ]"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: TWAN_MOLENAAR_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/ballsdeep/co-ceo.png" height="496" width="940" />
+    </StylessButton>
+
+    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/ballsdeep/ikitursa.png" />
     <img slot="ships" class="[ tengu ]" src="/images/corporations/ballsdeep/tengu.png" />
     <img slot="ships" class="[ orthrus ]" src="/images/corporations/ballsdeep/orthrus.png" />
 
@@ -42,12 +62,40 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         image-rendering: pixelated;
     }
 
-    .vedmak {
+    .co-ceo {
+        z-index: 9;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: 0%;
+        top: 0;
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
+    }
+
+    .ikitursa {
         position: absolute;
         top: 40%;
         left: 5%;
         height: auto;
-        width: 27%;
+        width: 49%;
         z-index: 1;
         transform: scale(0);
     }
@@ -56,7 +104,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         position: absolute;
         top: 35%;
         left: -40%;
-        width: 65%;
+        width: 83%;
         height: auto;
         z-index: 2;
         transform: scale(0);
@@ -66,36 +114,36 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         position: absolute;
         left: -38%;
         top: 39%;
-        width: 61%;
+        width: 72%;
         height: auto;
         z-index: 1;
         transform: scale(0);
     }
 
-    @keyframes vedmak {
+    @keyframes ikitursa_ballsdep {
         from {
             transform: scale(0);
-            top: 40%;
-            left: 5%;
+            top: 30%;
+            left: -21%;
         }
 
         to {
             transform: scale(1);
-            top: 0%;
-            left: 36%;
+            top: 13%;
+            left: 35%;
         }
     }
 
     @keyframes tengu {
         from {
             transform: scale(0);
-            top: 35%;
-            left: -40%;
+            top: 40%;
+            left: -44%;
         }
 
         to {
             transform: scale(1);
-            top: 30%;
+            top: 25%;
             left: 26%;
         }
     }
@@ -103,14 +151,26 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     @keyframes orthrus {
         from {
             transform: scale(0);
-            left: -38%;
+            left: -43%;
             top: 39%;
         }
 
         to {
             transform: scale(1);
-            top: 49%;
-            left: 23%;
+            top: 44%;
+            left: 34%;
+        }
+    }
+
+    @keyframes coceo {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
         }
     }
 </style>
@@ -121,8 +181,8 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     .swiper-slide-active {
-        .vedmak {
-            animation: vedmak cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        #ballsdeep-slide .ikitursa {
+            animation: ikitursa_ballsdep cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
@@ -142,6 +202,14 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+
+        #ballsdeep-slide .co-ceo {
+            animation: coceo ease-out 1.5s;
+            animation-delay: 1s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
             animation-fill-mode: forwards;
         }
     }
