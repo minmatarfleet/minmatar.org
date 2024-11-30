@@ -26,8 +26,8 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
         min: 0,
         max: 0,
         timeline_time: ${JSON.stringify(timeline_time)},
-        damage_in: ${JSON.stringify(damage_in)},
-        damage_out: ${JSON.stringify(damage_out)},
+        damage_in: ${JSON.stringify(damage_in.map(damage => damage/10))},
+        damage_out: ${JSON.stringify(damage_out.map(damage => damage/10))},
         init() {
             const ctx = document.getElementById("damage-log-chart").getContext("2d")
 
@@ -41,7 +41,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                     labels: this.timeline_time,
                     datasets: [
                         {
-                            label: "${t('damage_taken')}",
+                            label: "${t('dps_taken')}",
                             data: this.damage_in,
                             pointStyle: 'rect',
                             backgroundColor: '#b53620',
@@ -53,7 +53,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             }
                         },
                         {
-                            label: "${t('damage_done')}",
+                            label: "${t('dps_done')}",
                             data: this.damage_out,
                             pointStyle: 'rect',
                             backgroundColor: '#198754',
@@ -86,7 +86,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: "${t('damage')}"
+                                text: "${t('damage_per_second')}"
                             },
                             grid: {
                                 display: false

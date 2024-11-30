@@ -377,7 +377,36 @@ export interface CombatLog {
     times:          CombatLogItem[];
     start:          Date;
     end:            Date;
+    db_id:          number;
+    user_id:        number;
+    fitting_id:     number;
+    fleet_id:       number;
+    character_name: string;
+    max_from:       CombatLogMax;
+    max_to:         CombatLogMax;
 }
+
+export interface SavedCombatLog {
+    id:             number;
+    uploaded_at:    string;
+    user_id:        number;
+    fleet_id:       number;
+    fitting_id:     number;
+}
+
+export interface CombatLogMax {
+    event_time:     string;
+    damage:         number;
+    direction:      DamageDirection;
+    entity:         string;
+    weapon:         string;
+    outcome:        string;
+    location:       string;
+    text:           string;
+}
+
+export const damage_direction = [ 'from', 'to' ] as const
+export type DamageDirection = typeof damage_direction[number]
 
 export const combatlog_item_category = [ 'Weapon', 'Enemy', 'TimeBucket' ] as const
 export type CombatlogItemCategory = typeof combatlog_item_category[number]

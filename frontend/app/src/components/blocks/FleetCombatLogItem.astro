@@ -1,0 +1,98 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { SavedCombatLog } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    log:        SavedCombatLog;
+}
+
+const {
+    log,
+} = Astro.props
+
+import { format_date_short } from '@helpers/date'
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
+---
+
+<ComponentBlock class="[ fleet-combatlog-card card-animated ]" padding_block='0' padding_inline='0'>
+    <Flexblock gap="0">
+        <picture class="animated">
+            <img
+                class="[ mask ]"
+                loading="lazy"
+                height="256"
+                width="256"
+                src="/images/combatlog-fleet-card.jpg"
+            />
+        </picture>
+        <div class="[ fleet-icon ]"><FleetEvEIcon /></div>
+        <Wrapper class="[ fleet-combatlog-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <Flexblock gap='0'>
+                <h4>{t('fleet')} {log.fleet_id}</h4>
+                <small>{format_date_short(lang, log.uploaded_at)}</small>
+            </Flexblock>
+        </Wrapper>
+        <Wrapper class="[ fleet-combatlog-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <ClipboardButton text={t('share')} narrow={true} id={log.fleet_id.toString()}>{translatePath(`${Astro.url}/${log.id}`)}</ClipboardButton>
+        </Wrapper>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fleet-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .fleet-combatlog-card {
+        position: relative;
+
+        &:hover {
+            .fleet-combatlog-card-actions {
+                opacity: 1;
+            }
+        }
+
+        .fleet-combatlog-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .fleet-combatlog-card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+    }
+
+    h4 {
+        font-weight: 400;
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+
+    img {
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .mask {
+        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
+        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
+    }
+</style>

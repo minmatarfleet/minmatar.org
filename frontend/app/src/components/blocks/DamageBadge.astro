@@ -31,7 +31,7 @@ import Square from '@components/blocks/Square.astro'
                     x-init="tippy($el, tippy_options)"
                     data-tippy-content={t('damage_to_enemy')}
                 />
-                <small>{damage.total_to.toLocaleString()} ({damage.dps_to.toLocaleString()} dps) - {damage.volleys_to.toLocaleString()} {t('volleys')}</small>
+                <small>{damage.total_to.toLocaleString()} ({damage.dps_to.toLocaleString()} {t('per_volley')}) - {damage.volleys_to.toLocaleString()} {t('volleys')}</small>
             </FlexInline>
         }
         {damage.volleys_from > 0 &&
@@ -41,7 +41,7 @@ import Square from '@components/blocks/Square.astro'
                     x-init="tippy($el, tippy_options)"
                     data-tippy-content={t('damage_from_enemy')}
                 />
-                <small>{damage.total_from.toLocaleString()} ({damage.dps_from.toLocaleString()} dps) - {damage.volleys_from.toLocaleString()} {t('volleys')}</small>
+                <small>{damage.total_from.toLocaleString()} ({damage.dps_from.toLocaleString()} {t('per_volley')}) - {damage.volleys_from.toLocaleString()} {t('volleys')}</small>
             </FlexInline>
         }
     </Flexblock>
