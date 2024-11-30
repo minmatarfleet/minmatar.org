@@ -42,7 +42,7 @@ def expand_user_profile(
     user: User, include_permissions: bool, include_discord: bool
 ) -> UserProfileSchema:
     if include_discord:
-        discord_user = DiscordUser.objects.get(user=user)
+        discord_user = DiscordUser.objects.filter(user=user).first()
     else:
         discord_user = None
 

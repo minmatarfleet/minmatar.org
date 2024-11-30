@@ -1,0 +1,89 @@
+---
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    posts:  PostListUI[];
+}
+
+const {
+    posts,
+} = Astro.props
+
+import PostItem from '@components/blocks/PostItem.astro';
+---
+
+<div class="[ swiper news-swiper ][ w-full ]">
+    <div
+        class="[ swiper-wrapper ][ select-none w-full ]"
+        x-data={`{
+            swiper: null,
+            init() {
+                this.swiper = new Swiper('.news-swiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    pagination: {
+                        clickable: true,
+                        dynamicBullets: true,
+                        el: ".news-swiper-pagination",
+                    },
+                    loop: true,
+                    autoplay: {
+                        delay: 10000,
+                    },
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                });
+            }
+        }`}
+    >
+        {posts.map((post) =>
+            <div class="[ swiper-slide ]">
+                <PostItem post={post} />
+            </div>
+        )}
+    </div>
+</div>
+
+<div class="swiper-pagination news-swiper-pagination"></div>
+
+<style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+
+    .swiper-pagination-bullets.swiper-pagination-horizontal {
+        bottom: 30px;
+    }
+
+    .news-swiper {
+        opacity: 0;
+        transition: var(--fast-transition);
+        //mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+
+        &.swiper-initialized {
+            opacity: 1;
+        }
+    }
+
+    .news-swiper {
+        max-width: 656px;
+        max-height: 369px;
+    }
+
+    .swiper-slide {
+        width: 100% !important;
+        min-height: 92px;
+    }
+</style>

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { query_string } from '@helpers/string';
@@ -32,8 +32,9 @@ let post_fetching_error:string | false = false
 
 try {
     const paginated_posts = await fetch_posts({
-        page: 1,
-        page_length: PAGE_LENGTH,
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
     })
 
     posts = paginated_posts.chunk

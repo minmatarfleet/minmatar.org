@@ -48,15 +48,15 @@ try {
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 
     if (is_fleet_commander && upcoming) {
-        const staggering_solar_system = fleet.location.split(' - ')[0]
-        const staggering_solar_system_id = await get_system_id(staggering_solar_system)
+        const staging_solar_system = fleet.location.split(' - ')[0]
+        const staging_solar_system_id = await get_system_id(staging_solar_system)
 
-        if (!staggering_solar_system_id)
-            throw new Error(t('invalid_staggering_solar_system'))
+        if (!staging_solar_system_id)
+            throw new Error(t('invalid_staging_solar_system'))
 
         const members = await get_fleet_members(auth_token as string, fleet_id)
         fleet_composition = await group_members_by_ship(members)
-        fleet_radar = await group_members_by_location(members, staggering_solar_system_id)
+        fleet_radar = await group_members_by_location(members, staging_solar_system_id)
     }
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')

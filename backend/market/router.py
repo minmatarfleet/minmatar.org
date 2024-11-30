@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from django.db.models import Count, Q
 from ninja import Router
@@ -17,6 +17,7 @@ from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
+    EveMarketLocation,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,15 @@ class MarketContractResponse(BaseModel):
     current_quantity: int
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
     responsibilities: List[MarketContractResponsibilityResponse]
+
+
+class MarketLocationSummary(BaseModel):
+    id: int
+    name: str
+    system_name: str = ""
+    contracts: int = 0
+    expectations: int = 0
+    structure_id: Optional[int] = None
 
 
 def _get_entity_ids(request):
@@ -406,3 +416,31 @@ def fetch_eve_market_contract(request, expectation_id: int):
         ],
         responsibilities=responsibilities,
     )
+
+
+@router.get(
+    "/locations",
+    description="Fetch summaries of all market locations",
+    response={200: List[MarketLocationSummary]},
+)
+def get_market_locations(request) -> List[MarketLocationSummary]:
+    locations = []
+    for location in EveMarketLocation.objects.all():
+        contract_count = EveMarketContract.objects.filter(
+            location=location,
+            status="outstanding",
+        ).count()
+        expectation_count = EveMarketContractExpectation.objects.filter(
+            location=location
+        ).count()
+        locations.append(
+            MarketLocationSummary(
+                id=location.location_id,
+                name=location.location_name,
+                system_name=location.solar_system_name,
+                structure_id=location.structure_id,
+                contracts=contract_count,
+                expectations=expectation_count,
+            )
+        )
+    return locations

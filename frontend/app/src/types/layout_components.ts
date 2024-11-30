@@ -644,8 +644,8 @@ export interface FittingGroup {
     modules:    CargoItem[];
 }
 
-export const staggerings = ['auga', 'watermelon', 'yishinoon', 'nakah'] as const
-export type StaggeringType = typeof staggerings[number]
+export const stagings = ['auga', 'watermellon', 'yishinoon', 'nakah', 'vard'] as const
+export type StagingType = typeof stagings[number]
 
 import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
 
@@ -936,13 +936,6 @@ export interface SRPUI {
     primary_character_id:       number;
     killmail_id:                number;
     amount:                     number;
-}
-
-export interface PostRequestUI {
-    user_id?:       number;
-    tag_id?:        number;
-    page?:          number;
-    page_length?:   number;
 }
 
 export interface Posts {
