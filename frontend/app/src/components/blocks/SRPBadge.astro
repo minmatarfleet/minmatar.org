@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SRPUI } from '@dtypes/layout_components'
+
+interface Props {
+    srp:    SRPUI;
+}
+
+const {
+    srp,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+---
+
+<FixedFluid
+    width='64px'
+    gap='var(--space-s)'
+    class="[ basis-[250px] !items-center ]"
+>
+    <CharacterPicture
+        character_id={srp.character_id}
+        character_name={srp.character_name}
+        size={64}
+        icon_quality={64}
+        tooltip={srp.character_name}
+    />
+    <Flexblock gap='var(--space-3xs)'>
+        <h3>{srp.amount.toLocaleString()} {t('isk')}</h3>
+
+        <Flexblock gap='0'>
+            <FlexInline gap='var(--space-3xs)' class="[ grow ]">
+                {srp.character_id !== srp.primary_character_id &&
+                    <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
+                    <small>{srp.primary_character_name}</small>
+                }
+            </FlexInline>
+            <FlexInline gap='var(--space-3xs)' class="[ grow ]">
+                <ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} />
+                <small>{srp.ship_name}</small>
+            </FlexInline>
+        </Flexblock>
+    </Flexblock>
+</FixedFluid>
