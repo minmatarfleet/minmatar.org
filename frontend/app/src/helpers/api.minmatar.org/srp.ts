@@ -1,15 +1,24 @@
-import { get_error_message, parse_error_message } from '@helpers/string'
-import type { SRP, SRPStatus } from '@dtypes/api.minmatar.org'
+import { get_error_message, query_string, parse_error_message } from '@helpers/string'
+import type { SRP, SRPStatus, SRPRequest } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
 
-export async function get_fleet_srp(access_token:string, fleet_id:number, status:SRPStatus) {
+export async function get_fleet_srp(access_token:string, srp_request:SRPRequest) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
+    
+    const { fleet_id, status } = srp_request
 
-    const ENDPOINT = `${API_ENDPOINT}?fleet_id=${fleet_id}&status=${status}`
+    const query_params = {
+        ...(fleet_id && { fleet_id }),
+        ...(status && { status }),
+    };
+
+    const query = query_string(query_params)
+
+    const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : ''}`
 
     console.log(`Requesting GET: ${ENDPOINT}`)
 

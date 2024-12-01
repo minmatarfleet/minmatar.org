@@ -4,10 +4,12 @@ const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
     fleet_id:   number;
+    target?:    string;
 }
 
 const {
     fleet_id,
+    target = '#srp-table',
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -30,7 +32,7 @@ import Button from '@components/blocks/Button.astro';
                 hx: {
                     method: 'post',
                     url: '${SRP_TABLE_PARTIAL_URL}',
-                    target: '#srp-table',
+                    target: '${target}',
                     swap: 'outerHTML transition:true'
                 }
             }).then(accepted => document.getElementById('srp-url').value = '')

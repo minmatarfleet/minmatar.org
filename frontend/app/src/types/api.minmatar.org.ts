@@ -455,6 +455,12 @@ export interface SRP {
     amount:                     number;
 }
 
+export interface SRPRequest {
+    fleet_id?:  number;
+    status?:    SRPStatus;
+}
+
+
 export interface PostRequest {
     user_id?:       number;
     tag_id?:        number;
