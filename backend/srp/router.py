@@ -31,6 +31,10 @@ class UpdateEveFleetReimbursementRequest(BaseModel):
 
 
 class EveFleetReimbursementResponse(BaseModel):
+    """
+    Represents a SRP request
+    """
+
     id: int
     fleet_id: int
     external_killmail_link: str
