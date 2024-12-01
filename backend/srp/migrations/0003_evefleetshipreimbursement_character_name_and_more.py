@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="evefleetshipreimbursement",
             name="ship_type_id",
-            field=models.BigIntegerField(default="Unknown"),
+            field=models.BigIntegerField(default=1),
             preserve_default=False,
         ),
     ]
