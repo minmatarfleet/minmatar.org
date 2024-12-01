@@ -6,12 +6,14 @@ import type { SRPUI } from '@dtypes/layout_components'
 
 interface Props {
     srp:        SRPUI;
-    readonly:  boolean;
+    readonly:   boolean;
+    target?:    string;
 }
 
 const {
     srp,
     readonly,
+    target = '#srp-table',
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -72,7 +74,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                                     reimbursement_id : JSON.stringify(srp.id),
                                     status: 'approved'
                                 })}',
-                                target: '#srp-table',
+                                target: '${target}',
                                 swap: 'outerHTML transition:true'
                             }
                         })
@@ -103,7 +105,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                                     reimbursement_id : JSON.stringify(srp.id),
                                     status: 'rejected'
                                 })}',
-                                target: '#srp-table',
+                                target: '${target}',
                                 swap: 'outerHTML transition:true'
                             }
                         })

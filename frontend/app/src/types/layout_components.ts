@@ -938,6 +938,11 @@ export interface SRPUI {
     amount:                     number;
 }
 
+export interface FleetSRPUI {
+    fleet_id:   number;
+    srps:       SRPUI[];
+}
+
 export interface Posts {
     total:      number;
     chunk:      PostListUI[];

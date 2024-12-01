@@ -127,6 +127,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
         }}
     />
     :
+    <div x-init="typeof update_srp_count === 'function' && update_srp_count(); $el.remove()" />
     <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
 }
 
