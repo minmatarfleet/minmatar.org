@@ -3,18 +3,18 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
-    fleet_id:   number;
-    target?:    string;
+    fleet_id:       number;
+    target?:        string;
+    remove_table?:  boolean;
 }
 
 const {
     fleet_id,
     target = '#srp-table',
+    remove_table = false,
 } = Astro.props
 
-import { query_string } from '@helpers/string';
-
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}`
 const DIALOG_SRP_PARTIAL_URL = translatePath('/partials/dialog_srp_submit')
 
 import Button from '@components/blocks/Button.astro';

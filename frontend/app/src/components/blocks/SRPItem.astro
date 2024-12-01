@@ -5,15 +5,17 @@ const { t, translatePath } = i18n(Astro.url)
 import type { SRPUI } from '@dtypes/layout_components'
 
 interface Props {
-    srp:        SRPUI;
-    readonly:   boolean;
-    target?:    string;
+    srp:            SRPUI;
+    readonly:       boolean;
+    target?:        string;
+    remove_table?:  boolean;
 }
 
 const {
     srp,
     readonly,
     target = '#srp-table',
+    remove_table = false,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -54,6 +56,7 @@ import SRPBadge from '@components/blocks/SRPBadge.astro';
                                 url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
                                     fleet_id : JSON.stringify(srp.fleet_id),
                                     reimbursement_id : JSON.stringify(srp.id),
+                                    remove_table: JSON.stringify(remove_table),
                                     status: 'approved'
                                 })}',
                                 target: '${target}',
@@ -83,6 +86,7 @@ import SRPBadge from '@components/blocks/SRPBadge.astro';
                                 url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
                                     fleet_id : JSON.stringify(srp.fleet_id),
                                     reimbursement_id : JSON.stringify(srp.id),
+                                    remove_table: JSON.stringify(remove_table),
                                     status: 'rejected'
                                 })}',
                                 target: '${target}',

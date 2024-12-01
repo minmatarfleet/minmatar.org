@@ -48,7 +48,12 @@ import SRPItem from '@components/blocks/SRPItem.astro';
     <Flexblock gap='var(--space-3xs)'>
         {fleet_srps.length === 0 && t('no_pending_srp') }
         {fleet_srps.map(srp =>
-            <SRPItem srp={srp} readonly={readonly} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
+            <SRPItem
+                srp={srp}
+                readonly={readonly}
+                target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
+                remove_table={fleet_title ? true : undefined}
+            />
         )}
     </Flexblock>
 </Flexblock>
