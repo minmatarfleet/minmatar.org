@@ -28,6 +28,7 @@ import { get_user_character } from '@helpers/fetching/characters'
 import { is_valid_http_url } from '@helpers/string';
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
 
 let data_fetching_error:string | false = false
 let update_fleet_srp_error:string | false = false
@@ -111,12 +112,15 @@ const can_remove_fleet = is_superuser ||
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 ---
+
+{alert && <ShowAlert alert={alert} /> }
+<div x-init="typeof update_srp_count === 'function' && update_srp_count(); $el.remove()" class="[ hidden ]" />
 
 {data_fetching_error ?
     <ErrorRefetch
@@ -127,8 +131,9 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
         }}
     />
     :
-    <div x-init="typeof update_srp_count === 'function' && update_srp_count(); $el.remove()" />
-    <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
+    fleet_srps.length > 0 ?
+        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} /> :
+        !remove_table ?
+        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} /> :
+        <div x-init="$el.closest('.component').remove()" class="[ hidden ]" />
 }
-
-{alert && <ShowAlert alert={alert} /> }
