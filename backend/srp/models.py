@@ -25,6 +25,9 @@ class EveFleetShipReimbursement(models.Model):
     # populated
     killmail_id = models.BigIntegerField()
     character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
     primary_character_id = models.BigIntegerField()
+    primary_character_name = models.CharField(max_length=255)
     amount = models.BigIntegerField()
     ship_name = models.CharField(max_length=255)
+    ship_type_id = models.BigIntegerField()

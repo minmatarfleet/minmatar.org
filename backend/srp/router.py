@@ -36,7 +36,11 @@ class EveFleetReimbursementResponse(BaseModel):
     external_killmail_link: str
     status: str
     character_id: int
+    character_name: str
     primary_character_id: int
+    primary_character_name: str
+    ship_type_id: int
+    ship_name: str
     killmail_id: int
     amount: int
 
@@ -77,8 +81,11 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         external_killmail_link=payload.external_killmail_link,
         status="pending",
         character_id=details.victim_character.character_id,
+        character_name=details.victim_character.character_name,
         primary_character_id=details.victim_primary_character.character_id,
+        primary_character_name=details.victim_primary_character.character_name,
         killmail_id=details.killmail_id,
+        ship_type_id=details.ship.id,
         ship_name=details.ship.name,
         amount=reimbursement_amount,
     )
@@ -89,7 +96,11 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         external_killmail_link=payload.external_killmail_link,
         status="pending",
         character_id=details.victim_character.character_id,
+        character_name=details.victim_character.character_name,
         primary_character_id=details.victim_primary_character.character_id,
+        primary_character_name=details.victim_primary_character.character_name,
+        ship_type_id=details.ship.id,
+        ship_name=details.ship.name,
         killmail_id=details.killmail_id,
         amount=reimbursement_amount,
     )
@@ -121,7 +132,11 @@ def get_fleet_srp(request, fleet_id: int = None, status: str = None):
                 "external_killmail_link": reimbursement.external_killmail_link,
                 "status": reimbursement.status,
                 "character_id": reimbursement.character_id,
+                "character_name": reimbursement.character_name,
                 "primary_character_id": reimbursement.primary_character_id,
+                "primary_character_name": reimbursement.primary_character_name,
+                "ship_type_id": reimbursement.ship_type_id,
+                "ship_name": reimbursement.ship_name,
                 "killmail_id": reimbursement.killmail_id,
                 "amount": reimbursement.amount,
             }
