@@ -17,8 +17,7 @@ import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import { get_fleets } from '@helpers/api.minmatar.org/fleets'
 import { get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 
-let fitting_logs:SavedCombatLog[] = []
-let fleet_logs:SavedCombatLog[] = []
+let saved_logs:SavedCombatLog[] = []
 let fittings:Fitting[] = []
 let fitting_options:SelectOptions[] = []
 let combatlog_selects_error:string | false = false
@@ -47,10 +46,7 @@ try {
 }
 
 try {
-    const saved_logs = user ? await get_saved_logs(auth_token as string, user.user_id) : []
-    fitting_logs = saved_logs.filter(log => log?.fitting_id > 0)
-    fleet_logs = saved_logs.filter(log => log?.fleet_id > 0)
-    console.log(fleet_logs)
+    saved_logs = user ? await get_saved_logs(auth_token as string, user.user_id) : []
 } catch (error) {
     combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
     console.log(combatlog_selects_error)
@@ -118,53 +114,31 @@ const page_description = t('intel.combatlog.leading_text');
         
         <div id="combatlog">
             <BlockList gap='var(--space-2xl)'>
-                {fitting_logs.length > 0 &&
-                    <Flexblock gap='var(--space-m)'>
-                        <h2>{t('fitting_logs')}</h2>
-                        <Grid
-                            role="list"
-                            class="[ w-full grid-fill ]"
-                            min_item_width='240px'
-                            row_gap='var(--space-3xs)'
-                            column_gap='var(--space-3xs)'
-                        >
-                            {fitting_logs.map(log =>
-                                <a
-                                    class="[ items-center flex ]"
-                                    role="listitem"
-                                    href={translatePath(`/intel/combatlog/${log.id}`)}
-                                >
-                                    <FittingCombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} />
-                                </a>
-                            )}
-                        </Grid>
-                    </Flexblock>
-                }
-                {fleet_logs.length > 0 &&
-                    <Flexblock gap='var(--space-m)'>
-                        <h2>{t('fleet_logs')}</h2>
-                        <Grid
-                            role="list"
-                            class="[ w-full grid-fill ]"
-                            min_item_width='240px'
-                            row_gap='var(--space-3xs)'
-                            column_gap='var(--space-3xs)'
-                        >
-                            {fleet_logs.map(log =>
-                                <a
-                                    class="[ items-center flex ]"
-                                    role="listitem"
-                                    href={translatePath(`/intel/combatlog/${log.id}`)}
-                                >
+                {saved_logs.length > 0 &&
+                    <Grid
+                        role="list"
+                        class="[ w-full grid-fill ]"
+                        min_item_width='240px'
+                        row_gap='var(--space-3xs)'
+                        column_gap='var(--space-3xs)'
+                    >
+                        {saved_logs.map(log =>
+                            <a
+                                class="[ items-center flex ]"
+                                role="listitem"
+                                href={translatePath(`/intel/combatlog/${log.id}`)}
+                            >
+                                {log.fitting_id > 0 ?
+                                    <FittingCombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
                                     <FleetCombatLogItem log={log} />
-                                </a>
-                            )}
-                        </Grid>
-                    </Flexblock>
+                                }
+                            </a>
+                        )}
+                    </Grid>
                 }
             </BlockList>
 
-            {(fitting_logs.length === 0 && fleet_logs.length === 0) &&
+            {saved_logs.length === 0 &&
                 <Flexblock
                     centered={true}
                     x-data={`{
