@@ -1,37 +1,18 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+import type { SRPUI } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import PilotBadge from '@components/blocks/PilotBadge.astro';
+import SRPBadge from '@components/blocks/SRPBadge.astro';
 
-const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
-const primary_character_id = parseInt(Astro.url.searchParams.get('primary_character_id') as string)
 const message = Astro.url.searchParams.get('message')
-const amount = parseInt(Astro.url.searchParams.get('amount') as string ?? '0')
+const srp = JSON.parse(Astro.url.searchParams.get('srp') as string) as SRPUI
 ---
 
 <Flexblock>
     <p set:html={message} />
-    <PilotBadge
-        character_id={character_id}
-        character_name=""
-        class="[ grow ]"
-    >
-        <h3 slot="title">{amount.toLocaleString()} {t('isk')}</h3>
-        <FlexInline gap='var(--space-3xs)'>
-            {character_id === primary_character_id ?
-                <small>{t('is_main_character')}</small> :
-                <small>{t('main_character')}</small>
-                <CharacterPicture
-                    character_id={primary_character_id}
-                    size={16}
-                    icon_quality={32}
-                />
-            }
-        </FlexInline>
-    </PilotBadge>
+    <FlexInline>
+        <SRPBadge srp={srp} />
+    </FlexInline>
 </Flexblock>

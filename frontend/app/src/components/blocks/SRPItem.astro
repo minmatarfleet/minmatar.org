@@ -20,46 +20,15 @@ import { query_string } from '@helpers/string';
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
 
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
-import ItemPicture from '@components/blocks/ItemPicture.astro';
+import SRPBadge from '@components/blocks/SRPBadge.astro';
 ---
 
 <FlexInline justification='space-between' class="[ srp-item ][ w-full ]">
     <FlexInline class="[ grow ]">
-        <FixedFluid
-            width='64px'
-            gap='var(--space-s)'
-            class="[ basis-[250px] !items-center ]"
-        >
-            <CharacterPicture
-                character_id={srp.character_id}
-                character_name={srp.character_name}
-                size={64}
-                icon_quality={64}
-                tooltip={srp.character_name}
-            />
-            <Flexblock gap='var(--space-3xs)'>
-                <h3>{srp.amount.toLocaleString()} {t('isk')}</h3>
-
-                <Flexblock gap='0'>
-                    <FlexInline gap='var(--space-3xs)' class="[ grow ]">
-                        {srp.character_id !== srp.primary_character_id &&
-                            <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
-                            <small>{srp.primary_character_name}</small>
-                        }
-                    </FlexInline>
-                    <FlexInline gap='var(--space-3xs)' class="[ grow ]">
-                        <ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} />
-                        <small>{srp.ship_name}</small>
-                    </FlexInline>
-                </Flexblock>
-            </Flexblock>
-        </FixedFluid>
+        <SRPBadge srp={srp} />
         <FlexInline>
             <ClipboardButton id={`srp-name-${srp.id}`}>{`${srp.primary_character_name} ${srp.amount}`}</ClipboardButton>
         </FlexInline>
@@ -76,9 +45,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
                         show_confirm_dialog({
                             title: '${t('accept_srp_dialog_title')}',
                             partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
-                                character_id: JSON.stringify(srp.character_id),
-                                primary_character_id: JSON.stringify(srp.primary_character_id),
-                                amount: JSON.stringify(srp.amount),
+                                srp: JSON.stringify(srp),
                                 type: 'accept',
                                 message: t('accept_srp_dialog_text'),
                             })}',
@@ -107,9 +74,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
                         show_confirm_dialog({
                             title: '${t('reject_srp_dialog_title')}',
                             partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
-                                character_id: JSON.stringify(srp.character_id),
-                                primary_character_id: JSON.stringify(srp.primary_character_id),
-                                amount: JSON.stringify(srp.amount),
+                                srp: JSON.stringify(srp),
                                 type: 'reject',
                                 message: t('deny_srp_dialog_text'),
                             })}',
