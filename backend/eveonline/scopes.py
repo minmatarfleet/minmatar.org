@@ -47,6 +47,11 @@ MARKET_CHARACTER_SCOPES = [
     "esi-contracts.read_corporation_contracts.v1",
 ] + CEO_SCOPES
 
-EXECUTOR_CHARACTER_SCOPES = [
-    "esi-mail.send_mail.v1",
-] + CEO_SCOPES
+EXECUTOR_CHARACTER_SCOPES = (
+    [
+        "esi-mail.send_mail.v1",
+    ]
+    + CEO_SCOPES
+    + FREIGHT_CHARACTER_SCOPES
+    + MARKET_CHARACTER_SCOPES
+)
