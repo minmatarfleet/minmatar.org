@@ -762,9 +762,21 @@ export const RunForrestXData = `init_ccpwgl() {
         
         this.setTransform(rotationMatrix)
         this.setTransform(matrix)
+
+        setColor(163, 103, 0, 'Mtl1DiffuseColor')
+        setColor(5, 5, 5, 'Mtl2DiffuseColor')
+        setColor(15, 15, 15, 'Mtl3DiffuseColor')
+        setColor(10, 10, 10, 'Mtl4DiffuseColor')
+
+        setColor(0, 0, 0, 'Mtl1Gloss')
+        setColor(0, 0, 0, 'Mtl2Gloss')
+        setColor(0, 0, 0, 'Mtl3Gloss')
+        setColor(0, 0, 0, 'Mtl4Gloss')
         
-        setColor(83, 16, 107, 'Mtl2Gloss')
-        setColor(56, 12, 102, 'Mtl4Gloss')
+        setColor(0, 0, 0, 'Mtl1FresnelColor')
+        setColor(0, 0, 0, 'Mtl2FresnelColor')
+        setColor(0, 0, 0, 'Mtl3FresnelColor')
+        setColor(0, 0, 0, 'Mtl4FresnelColor')
     })
 
     ccpwgl.enablePostprocessing(true);
