@@ -147,6 +147,9 @@ def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
         if text[0] < "0" or text[0] > "9":
             continue
 
+        if text.find("remote armor repaired") >= 0:
+            continue
+
         damage_event = DamageEvent()
         damage_event.event_time = event.event_time
         damage_event.location = event.location
