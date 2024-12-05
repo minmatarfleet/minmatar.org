@@ -18,6 +18,7 @@ const damage_out = combat_log_analysis?.damage_out
 const timeline_time = timeline.map(datetime => datetime.split(' ')[1])
 
 import { format_date_time } from '@helpers/date'
+import { get_item_icon } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -26,19 +27,63 @@ import TextGroup from '@components/blocks/TextGroup.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import DamageBadge from '@components/blocks/DamageBadge.astro';
 import CombatLogChart from '@components/blocks/CombatLogChart.astro';
+import Badge from '@components/blocks/Badge.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
-    <Grid
-        class="[ component w-full grid-fill ]"
-        row_gap="var(--space-3xs)"
-        column_gap="var(--space-3xs)"
-        min_item_width="300px"
-    >
-        <TextGroup title={t('log_start')}>{format_date_time(lang, combat_log_analysis?.start)}</TextGroup>
-        <TextGroup title={t('log_end')}>{format_date_time(lang, combat_log_analysis?.end)}</TextGroup>
-        <TextGroup title={t('logged_events')}>{combat_log_analysis?.logged_events.toLocaleString()}</TextGroup>
-    </Grid>
+    <Flexblock gap='var(--space-m)'>
+        <Grid
+            class="[ component w-full grid-fill ]"
+            row_gap="var(--space-m)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+        >
+            <TextGroup title={t('log_start')}>{format_date_time(lang, combat_log_analysis?.start)}</TextGroup>
+            <TextGroup title={t('log_end')}>{format_date_time(lang, combat_log_analysis?.end)}</TextGroup>
+            <TextGroup title={t('logged_events')}>{combat_log_analysis?.logged_events.toLocaleString()}</TextGroup>
+            <TextGroup title={t('character_name')}>{combat_log_analysis?.character_name}</TextGroup>
+            {combat_log_analysis?.fitting &&
+                <TextGroup title={t('fitting')}>
+                    <Badge
+                        gap='var(--space-3xs)'
+                        title={combat_log_analysis.fitting.name}
+                        image={get_item_icon(combat_log_analysis.fitting.ship_id, 32)}
+                        size={16}
+                        highlight={false}
+                    />
+                </TextGroup>
+            }
+            {(combat_log_analysis?.fleet_id ?? 0 > 0) &&
+                <TextGroup title={t('fleet')}>{combat_log_analysis.fleet_id}</TextGroup>
+            }
+        </Grid>
+
+        {(combat_log_analysis?.max_to || combat_log_analysis?.max_from) &&
+            <Grid
+                class="[ component w-full grid-fill ]"
+                row_gap="var(--space-m)"
+                column_gap="var(--space-3xs)"
+                min_item_width="300px"
+            >
+                {combat_log_analysis?.max_to &&
+                    <TextGroup title={t('max_damage_inflicted')}>
+                        <Flexblock gap='0'>
+                            <span><b class="[ text-green ]">{combat_log_analysis?.max_to.damage}</b> - <small>{combat_log_analysis?.max_to.weapon} - {combat_log_analysis?.max_to.outcome}</small></span>
+                            <small>To {combat_log_analysis?.max_to.entity}</small>
+                        </Flexblock>
+                    </TextGroup>
+                }
+                {combat_log_analysis?.max_from &&
+                    <TextGroup title={t('max_damage_received')}>
+                        <Flexblock gap='0'>
+                            <span><b class="[ text-red ]">{combat_log_analysis?.max_from.damage}</b> - <small>{combat_log_analysis?.max_from.weapon} - {combat_log_analysis?.max_from.outcome}</small></span>
+                            <small>From {combat_log_analysis?.max_from.entity}</small>
+                        </Flexblock>
+                    </TextGroup>
+                }
+            </Grid>
+        }
+    </Flexblock>
 
     <Flexblock>
         {(combat_log_analysis?.weapons?.length ?? 0) > 0 &&

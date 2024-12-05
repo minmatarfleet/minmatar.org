@@ -883,6 +883,25 @@ export interface CombatLogAnalysis {
     timeline:               string[];
     damage_in:              number[];
     damage_out:             number[];
+    character_name:         string;
+    fitting?:               Fitting;
+    fleet_id?:              number;
+    max_from?:              CombatLogMaxUI;
+    max_to?:                CombatLogMaxUI;
+}
+
+export interface CombatLogMaxUI {
+    damage:         number;
+    entity:         string;
+    weapon:         string;
+    outcome:        string;
+}
+
+export interface FleetCombatLog {
+    id:             number;
+    uploaded_at:    Date;
+    user_id:        number;
+    logger:         CharacterBasic;
 }
 
 export interface Damage {

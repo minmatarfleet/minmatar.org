@@ -1,0 +1,53 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+import { prod_error_messages } from '@helpers/env'
+
+import { fetch_combatlog_by_id } from '@helpers/fetching/combatlog'
+import type { CombatLogAnalysis } from '@dtypes/layout_components'
+
+let get_combatlog_error:string | false = false
+let combat_log_analysis:CombatLogAnalysis  | null = null
+
+const log_id = parseInt(Astro.url.searchParams.get('log_id') ?? '0')
+
+try {
+    if (!(log_id > 0))
+        throw new Error(t('invalid_combatlog'))
+
+    combat_log_analysis = await fetch_combatlog_by_id(auth_token, log_id)
+} catch (error) {
+    get_combatlog_error = prod_error_messages() ? t('get_combatlog_error') : error.message
+    console.log(get_combatlog_error)
+}
+
+const COMBAT_LOG_PARTIAL_URL = translatePath(`/partials/combatlog_component?log_id=${log_id}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import CombatLogAnalysisComponent from '@components/blocks/CombatLogAnalysisComponent.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{get_combatlog_error ?
+    <ErrorRefetch
+        args={{
+            partial: COMBAT_LOG_PARTIAL_URL,
+            message: get_combatlog_error,
+            delay: delay,
+        }}
+    />
+    :
+    <CombatLogAnalysisComponent combat_log_analysis={combat_log_analysis as CombatLogAnalysis} />
+}

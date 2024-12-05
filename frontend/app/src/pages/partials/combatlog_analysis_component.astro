@@ -1,6 +1,13 @@
 ---
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 import { prod_error_messages } from '@helpers/env'
 import { b64_to_Uint8Array } from '@helpers/string'
@@ -19,7 +26,9 @@ if (Astro.request.method === "POST") {
         const base64_gziped_combatlog = form_data.get("gziped_combatlog")?.valueOf()
         const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 
-        combat_log_analysis = await fetch_combatlog_analysis(gziped_combatlog, true, fitting_id, fleet_id)
+        combat_log_analysis = auth_token ?
+            await fetch_combatlog_analysis(gziped_combatlog, true, auth_token, fitting_id, fleet_id) :
+            await fetch_combatlog_analysis(gziped_combatlog, true)
     } catch (error) {
         combatlog_analysis_error = prod_error_messages() ? t('combatlog_analysis_error') : error.message
     }

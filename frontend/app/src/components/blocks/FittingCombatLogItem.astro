@@ -1,0 +1,83 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { SavedCombatLog, Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    log:        SavedCombatLog;
+    fitting:    Fitting | undefined;
+}
+
+const {
+    log,
+    fitting,
+} = Astro.props
+
+const CAPSULE_TYPE_ID = 670
+
+import { format_date_short } from '@helpers/date'
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+---
+
+<ComponentBlock class="[ fitting-combatlog-card card-animated ]" padding_block='0' padding_inline='0'>
+    <Flexblock gap="0">
+        <ItemPicture
+            item_id={fitting?.ship_id ? fitting?.ship_id : CAPSULE_TYPE_ID}
+            size={256}
+            icon_quality={512}
+            mask={true}
+        />
+        <Wrapper class="[ fitting-combatlog-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <Flexblock gap='0'>
+                <h4>{fitting?.name ?? t('unknown_fitting_name')}</h4>
+                <small>{format_date_short(lang, log.uploaded_at)}</small>
+            </Flexblock>
+        </Wrapper>
+        {fitting &&
+            <Wrapper class="[ fitting-combatlog-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+                <ClipboardButton text={t('share')} narrow={true} id={fitting.id.toString()}>{translatePath(`${Astro.url}/${log.id}`)}</ClipboardButton>
+            </Wrapper>
+        }
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fitting-combatlog-card {
+        position: relative;
+
+        &:hover {
+            .fitting-combatlog-card-actions {
+                opacity: 1;
+            }
+        }
+
+        .fitting-combatlog-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .fitting-combatlog-card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+    }
+
+    h4 {
+        font-weight: 400;
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+</style>
