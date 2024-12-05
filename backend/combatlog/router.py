@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 @router.post(
     "",
     description="Process an Eve combat log",
-    response={200: LogAnalysis, 400: ErrorResponse},
+    response={200: LogAnalysis, 400: ErrorResponse, 500: ErrorResponse},
     auth=AuthOptional(),
     openapi_extra={
         "requestBody": {
@@ -87,6 +87,11 @@ def analyze_logs(
             combat_log.fitting_id = fitting_id
         if request.user.id:
             combat_log.created_by_id = request.user.id
+        else:
+            return 500, ErrorResponse(
+                status=500,
+                detail="Could not determine user ID",
+            )
 
         combat_log.save()
 

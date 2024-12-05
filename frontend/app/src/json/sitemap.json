@@ -196,6 +196,18 @@
         }
     },
     {
+        "slug": "fleets.srp",
+        "alt": "icon.kill_report.alt",
+        "path": "/fleets/srp/",
+        "publish": true,
+        "icon": "/images/icons/48px-Killreport.png",
+        "description": "page_finder.fleets.srp.description",
+        "keywords": [ "srp", "ship", "replacement", "program" ],
+        "permissions" : {
+            "user": [ "srp.change_evefleetshipreimbursement" ]
+        }
+    },
+    {
         "slug": "market",
         "alt": "icon.market.alt",
         "path": "/market/",

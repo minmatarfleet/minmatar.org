@@ -484,10 +484,20 @@ export interface SRP {
     external_killmail_link:     string;
     status:                     SRPStatus;
     character_id:               number;
+    character_name:             string;
     primary_character_id:       number;
+    primary_character_name:     string;
+    ship_type_id:               number;
+    ship_name:                  string;
     killmail_id:                number;
     amount:                     number;
 }
+
+export interface SRPRequest {
+    fleet_id?:  number;
+    status?:    SRPStatus;
+}
+
 
 export interface PostRequest {
     user_id?:       number;

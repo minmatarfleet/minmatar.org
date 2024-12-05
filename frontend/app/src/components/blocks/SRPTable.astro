@@ -8,6 +8,7 @@ interface Props {
     fleet_id:           number;
     fleet_srps:         SRPUI[];
     readonly:           boolean;
+    fleet_title?:       boolean;
     [propName: string]: any;
 }
 
@@ -15,6 +16,7 @@ const {
     fleet_id,
     fleet_srps,
     readonly,
+    fleet_title = false,
     ...attributes
 } = Astro.props
 
@@ -29,21 +31,29 @@ import SRPItem from '@components/blocks/SRPItem.astro';
     {...attributes}
     class="[ w-full ]"
     gap='var(--space-m)'
-    id="srp-table"
+    id={fleet_title ? `srp-table-${fleet_id}` : 'srp-table'}
 >
     <FlexInline justification='space-between'>
         <FlexInline>
             <Flexblock gap='var(--space-3xs)'>
-                <h2>{t('ship_replacement_program')}</h2>
+                {fleet_title ?
+                    <h2>{t('fleet')} {fleet_id}</h2> :
+                    <h2>{t('ship_replacement_program')}</h2>
+                }
                 <small>{fleet_srps.length} {fleet_srps.length !== 1 ? t('pending_ships') : t('pending_ship')}</small>
             </Flexblock>
         </FlexInline>
-        <SubmitSRPButton fleet_id={fleet_id} />
+        <SubmitSRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
     </FlexInline>
     <Flexblock gap='var(--space-3xs)'>
         {fleet_srps.length === 0 && t('no_pending_srp') }
         {fleet_srps.map(srp =>
-            <SRPItem srp={srp} readonly={readonly} />
+            <SRPItem
+                srp={srp}
+                readonly={readonly}
+                target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
+                remove_table={fleet_title ? true : undefined}
+            />
         )}
     </Flexblock>
 </Flexblock>

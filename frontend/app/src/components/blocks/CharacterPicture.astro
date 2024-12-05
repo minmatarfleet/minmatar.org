@@ -11,6 +11,7 @@ interface Props {
     x_character_name?:  string | false;
     size?:              ImageSize;
     icon_quality?:      EvEImageServiceSize;
+    tooltip?:           string;
 }
 
 const {
@@ -20,12 +21,16 @@ const {
     x_character_name = false,
     size = 64,
     icon_quality = 64,
+    tooltip,
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
 ---
 
-<picture>
+<picture
+    data-tippy-content={tooltip ? tooltip : undefined}
+    x-init={tooltip ? 'tippy($el, tippy_options)' : undefined}
+>
     <img
         loading="lazy"
         height={size}

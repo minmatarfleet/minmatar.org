@@ -59,6 +59,11 @@ export const ui = {
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
         'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE',
+        
+        'fleets.srp.page_title': 'Ship Replacement Program',
+        'fleets.srp.leading_text': 'Designed to minimize downtime, SRP rewards participation in fleet operations by covering a portion or all of the lost ship’s cost.',
+        'fleets.srp.cover_alt': 'Basilisk spawned on the landing pad of a player station.',
+        'page_finder.fleets.srp.description': 'List of all pending SRP',
 
         'fitting.page_title': 'Fitting',
         'fitting.leading_text': 'Fittings are the atom of fleet warfare, and typically will be combined to make up doctrines. However, you will find much more than doctrine fittings here- take a look at our solo and small gang fittings.',
@@ -304,6 +309,7 @@ export const ui = {
         'icon.map.alt': 'EVE Online Map Icon',
         'icon.calendar.alt': 'EVE Online Calendar Icon',
         'icon.log.alt': 'EVE Online Log Icon',
+        'icon.kill_report.alt': 'EVE Kill Report Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -1185,5 +1191,10 @@ export const ui = {
         'combat_logs': 'Combat Logs',
         'logs_recorded': 'logs recorded',
         'log_recorded': 'log recorded',
+        'fetch_srp_error': 'An error ocurred fetching SRPs',
+        'copy_name': 'Copy name',
+        'copy_amount': 'Copy amount',
+        'corp_wallet_is_safe': 'Corp wallet is safe ...',
+        'for_now': 'for now',
     },
 } as const;
