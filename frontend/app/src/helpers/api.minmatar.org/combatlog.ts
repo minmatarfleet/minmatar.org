@@ -1,16 +1,19 @@
-import type { CombatLog, SavedCombatLog } from '@dtypes/api.minmatar.org'
+import type { CombatLog, SavedCombatLog, SavedLogsRequest } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/combatlog`
 
-export async function get_saved_logs(access_token:string, user_id:number) {
+export async function get_saved_logs(access_token:string, saved_logs_request:SavedLogsRequest) {
     const headers = {
         'Content-Type': 'text/plain',
         'Authorization': `Bearer ${access_token}`
     }
 
+    const { user_id, fleet_id } = saved_logs_request
+
     const query_params = {
         ...(user_id && { user_id }),
+        ...(fleet_id && { fleet_id }),
     };
 
     const query = query_string(query_params)

@@ -1,8 +1,14 @@
-import type { CombatLogAnalysis, CombatLogMaxUI } from '@dtypes/layout_components'
-import { analize_log, analize_zipped_log, get_log_by_id } from '@helpers/api.minmatar.org/combatlog'
+import { useTranslations } from '@i18n/utils';
+
+const t = useTranslations('en');
+
+import type { CombatLogAnalysis, CombatLogMaxUI, FleetCombatLog } from '@dtypes/layout_components'
+import { analize_log, analize_zipped_log, get_log_by_id, get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 import { generate_timeline } from '@helpers/date'
 import { parse_damage_from_logs } from '@helpers/eve'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
+import { unique_values } from '@helpers/array'
+import { get_users_character } from '@helpers/fetching/characters'
 
 export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gzipped:boolean, access_token?:string, fitting_id?:number, fleet_id?:number) {
     const analysis = gzipped ? await analize_zipped_log(combatlog as Uint8Array, access_token, fitting_id, fleet_id) : await analize_log(combatlog as string)
@@ -124,4 +130,32 @@ export async function fetch_combatlog_by_id(access_token:string, log_id:number) 
         ...(max_from && { max_from }),
         ...(max_to && { max_to }),
     } as CombatLogAnalysis
+}
+
+export async function get_fleet_combatlogs(access_token:string, fleet_id:number) {
+    const fleet_logs = await get_saved_logs(access_token as string, { fleet_id: fleet_id })
+    const not_null_applications = fleet_logs.filter(fleet_log => fleet_log)
+    const user_ids = unique_values(not_null_applications.map(log => log.user_id))
+    const loggers = user_ids.length > 0 ? await get_users_character(user_ids) : []
+
+    return fleet_logs.map(log => {
+        const logger = loggers.find(log => log.user_id === log.user_id)
+
+        return {
+            id: log.id,
+            uploaded_at: log.uploaded_at,
+            user_id: log.user_id,
+            logger: logger !== undefined ? {
+                character_id: logger.character_id,
+                character_name: logger.character_name,
+                corporation: {
+                    id: logger.corporation_id,
+                    name: logger.corporation_name,
+                }
+            } : {
+                character_id: 0,
+                character_name: t('unknown_character')
+            }
+        } as FleetCombatLog
+    })
 }

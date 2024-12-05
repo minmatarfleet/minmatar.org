@@ -28,16 +28,18 @@ const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, SRPUI } from '@dtypes/layout_components'
+import type { FleetUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_user_character } from '@helpers/fetching/characters'
+import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI | null = null
 let fleet_srps:SRPUI[] | null = []
 let user_character:EveCharacterProfile | null = null
+let saved_logs:FleetCombatLog[] = []
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
@@ -49,6 +51,12 @@ try {
         // return HTTP_403_Forbidden()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
+}
+
+try {
+    saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
+} catch (error) {
+    console.log(error)
 }
 
 const can_remove_fleet = is_superuser ||
@@ -123,6 +131,7 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 history={true}
                 can_remove_fleet={can_remove_fleet}
                 fleet_srps={fleet_srps}
+                saved_logs={saved_logs}
             />
         }
     </PageDefault>

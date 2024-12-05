@@ -897,6 +897,13 @@ export interface CombatLogMaxUI {
     outcome:        string;
 }
 
+export interface FleetCombatLog {
+    id:             number;
+    uploaded_at:    Date;
+    user_id:        number;
+    logger:         CharacterBasic;
+}
+
 export interface Damage {
     name:           string;
     item_type:      number;

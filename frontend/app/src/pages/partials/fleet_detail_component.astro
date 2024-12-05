@@ -23,13 +23,14 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_system_id } from '@helpers/sde/map'
+import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
 let fetch_fleets_error:string | false = false
 let fleet:FleetUI | null = null
@@ -38,6 +39,7 @@ let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let fleet_srps:SRPUI[] | null = []
 let is_fleet_commander = false
+let saved_logs:FleetCombatLog[] = []
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
@@ -63,6 +65,12 @@ try {
         return HTTP_404_Not_Found()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
+}
+
+try {
+    saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
+} catch (error) {
+    console.log(error)
 }
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
@@ -94,5 +102,6 @@ import FleetDetails from '@components/blocks/FleetDetails.astro';
         fleet_radar={fleet_radar}
         history={!upcoming}
         fleet_srps={fleet_srps}
+        saved_logs={saved_logs}
     />
 }

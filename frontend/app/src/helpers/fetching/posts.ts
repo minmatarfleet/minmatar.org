@@ -3,7 +3,7 @@ import type { PostListUI, PostUI, Posts } from '@dtypes/layout_components'
 import type { PostRequest } from '@dtypes/api.minmatar.org'
 import { get_posts, get_post, get_posts_tags } from '@helpers/api.minmatar.org/posts'
 import { get_users_character, get_user_character } from '@helpers/fetching/characters'
-import { paginate, unique_values } from '@helpers/array'
+import { unique_values } from '@helpers/array'
 
 const t = useTranslations('en');
 

@@ -388,7 +388,7 @@ export interface CombatLog {
 
 export interface SavedCombatLog {
     id:             number;
-    uploaded_at:    string;
+    uploaded_at:    Date;
     user_id:        number;
     fleet_id:       number;
     fitting_id:     number;
@@ -424,6 +424,11 @@ export interface CombatLogItem {
     avg_to:         number;
     first:          Date;
     last:           Date;
+}
+
+export interface SavedLogsRequest {
+    user_id?:   number;
+    fleet_id?:  number;
 }
 
 export interface Contract {

@@ -46,7 +46,7 @@ try {
 }
 
 try {
-    saved_logs = user ? await get_saved_logs(auth_token as string, user.user_id) : []
+    saved_logs = user ? await get_saved_logs(auth_token as string, { user_id: user.user_id }) : []
 } catch (error) {
     combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
     console.log(combatlog_selects_error)

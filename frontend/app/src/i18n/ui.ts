@@ -1181,5 +1181,9 @@ export const ui = {
         'get_combatlog_selects_error': 'An error occurred while fetching fleet and fitting options.',
         'get_combatlog_error': 'An error occurred while fetching the combatlog.',
         'invalid_combatlog': 'The Combat Log is not valid',
+        'uploaded_at': 'Uploaded at',
+        'combat_logs': 'Combat Logs',
+        'logs_recorded': 'logs recorded',
+        'log_recorded': 'log recorded',
     },
 } as const;

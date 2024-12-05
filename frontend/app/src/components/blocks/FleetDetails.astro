@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 
 interface Props {
     fleet:                  FleetUI;
@@ -12,6 +12,7 @@ interface Props {
     fleet_composition?:     FleetCompositionUI[];
     fleet_radar?:           FleetRadarUI[];
     fleet_srps?:            SRPUI[];
+    saved_logs?:            FleetCombatLog[];
 }
 
 const {
@@ -22,6 +23,7 @@ const {
     fleet_composition,
     fleet_radar,
     fleet_srps,
+    saved_logs = [],
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -36,6 +38,7 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 import Button from '@components/blocks/Button.astro';
@@ -45,6 +48,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
+import FleetCombatLogListItem from '@components/blocks/FleetCombatLogListItem.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -197,4 +201,20 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     <ComponentBlock>
         <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
     </ComponentBlock>
+
+    {saved_logs?.length > 0 &&
+        <ComponentBlock>
+            <Flexblock  class="[ w-full ]" gap='var(--space-m)'>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h2>{t('fleet_logs')}</h2>
+                    <small>{saved_logs.length} {saved_logs.length !== 1 ? t('logs_recorded') : t('log_recorded')}</small>
+                </Flexblock>
+                <Grid class="[ w-full grid-fill ]" row_gap='var(--space-m)' column_gap='var(--space-m)' min_item_width='310px'>
+                    {saved_logs.map(log =>
+                        <FleetCombatLogListItem log={log} />
+                    )}
+                </Grid>
+            </Flexblock>
+        </ComponentBlock>
+    }
 </Flexblock>
