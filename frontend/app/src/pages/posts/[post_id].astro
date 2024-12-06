@@ -127,8 +127,8 @@ const page_title = post?.title ?? t('new_post')
     <form
         method="POST"
         x-data={`{
-            title: '${title}',
-            excerpt: '${seo_description}',
+            title: \`${title}\`,
+            excerpt: \`${seo_description}\`,
             state: '${state}',
             disabled_draft: true,
             disabled_publish: true,
