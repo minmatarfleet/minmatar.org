@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from ninja import Router
@@ -86,7 +87,7 @@ def get_route_cost(
     route_option = EveFreightRouteOption.objects.get(id=route_option_id)
     if route_option.route.id != route_id:
         return 404, {"detail": "Route option not found."}
-    cost = route_option.base_cost + (
+    cost = route_option.base_cost + math.ceil(
         route_option.collateral_modifier * collateral
     )
     return EveFreightRouteCostResponse(route_id=route_option_id, cost=cost)
