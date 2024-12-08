@@ -38,6 +38,7 @@ try {
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
+import { strip_markdown } from '@helpers/string';
 import { format_date } from '@helpers/date'
 
 import Viewport from '@layouts/Viewport.astro';
@@ -60,7 +61,7 @@ const page_description = post?.excerpt ?? page_title
 
 <Viewport
     title={page_title}
-    meta_description={page_description}
+    meta_description={await strip_markdown(page_description)}
     components={{
         alert_dialog: true
     }}
@@ -107,7 +108,7 @@ const page_description = post?.excerpt ?? page_title
                     </PilotBadge>
 
                     {post?.excerpt &&
-                        <p class="[ excerpt ]">{post?.excerpt}</p>
+                        <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post?.excerpt as string, { renderer })}></Flexblock>
                     }
 
                     {((post?.tags?.length ?? 0) > 0) &&
