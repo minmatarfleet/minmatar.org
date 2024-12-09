@@ -151,24 +151,23 @@ class LogSummary(BaseModel):
 )
 def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
 
+    if request.user.id:
+        user_id = request.user.id
+
     if fleet_id:
         fc_id = EveFleet.objects.get(id=fleet_id).created_by_id
-        is_fc = fc_id == user_id
         combat_logs = CombatLog.objects.filter(fleet_id=fleet_id)
     else:
         if request.user.id != user_id:
             return 403, ErrorResponse(
                 detail="Not currently possible to see other's logs"
             )
-        is_fc = False
         combat_logs = CombatLog.objects.filter(created_by_id=user_id)
+        fc_id = None
 
     results = []
     for record in combat_logs:
-        if not record.created_by:
-            # Strip out older logs that were stored without a user ID
-            continue
-        if not (record.created_by_id == user_id or is_fc):
+        if not can_view(record, user_id, fc_id):
             continue
 
         summary = LogSummary(
@@ -200,7 +199,12 @@ def get_saved_log(request, log_id: int):
     try:
         db_log = CombatLog.objects.get(id=log_id)
 
-        if db_log.created_by_id != request.user.id:
+        if db_log.fleet:
+            fc_id = db_log.fleet.created_by_id
+        else:
+            fc_id = None
+
+        if not can_view(db_log, request.user.id, fc_id):
             return 403, ErrorResponse(
                 detail="Not authorised to see this combat log"
             )
@@ -225,3 +229,15 @@ def set_ids(analysis, db_rec):
         analysis.fitting_id = db_rec.fitting_id
     if db_rec.fleet_id:
         analysis.fleet_id = db_rec.fleet_id
+
+
+def can_view(combat_log: CombatLog, user_id: int, fc_id: int) -> bool:
+    if not combat_log.created_by:
+        return False
+    if not user_id or fc_id:
+        return False
+    if combat_log.created_by_id == user_id:
+        return True
+    if user_id == fc_id:
+        return True
+    return False
