@@ -1027,7 +1027,7 @@ export const ui = {
         '10ly': '10 light-years',
         'same_as_home_system': 'Same as home system',
         'any_region': 'Any region',
-        'run_filters': 'Run filters',
+        'run_filters': 'Apply filters',
         'system_security': 'System security',
         'null_sec': 'Null-sec',
         'low_sec': 'Low-sec',
@@ -1204,5 +1204,6 @@ export const ui = {
         'srp': 'SRP',
         'approved': 'Approved',
         'rejected': 'Rejected',
+        'registered_during': 'Registered during',
     },
 } as const;
