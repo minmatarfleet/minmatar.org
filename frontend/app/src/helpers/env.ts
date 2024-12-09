@@ -22,8 +22,8 @@ export const get_api_url = () => {
     return API_URL
 }
 
-export const get_app_url = () => {
-    return APP_URL
+export const get_app_url = (path:string = '') => {
+    return `${APP_URL}${path}`
 }
 
 export const prod_error_messages = () => {

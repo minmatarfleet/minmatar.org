@@ -31,11 +31,10 @@ export async function get_fleet_srp(access_token:string, srp_request:SRPRequest)
         // console.log(response)
 
         if (!response.ok) {
-            let error = await response.json()
-            const error_msg = parse_error_message(error.detail)
-            error = error_msg ? error_msg : error?.detail
-
-            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
         }
         
         return await response.json() as SRP[]
@@ -69,11 +68,10 @@ export async function create_fleet_srp(access_token:string, fleet_id:number, ext
         // console.log(response)
 
         if (!response.ok) {
-            let error = await response.json()
-            const error_msg = parse_error_message(error.detail)
-            error = error_msg ? error_msg : error?.detail
-
-            throw new Error(error ? error : get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
         }
         
         return (response.status === 200);
@@ -106,11 +104,10 @@ export async function update_fleet_srp(access_token:string, status:SRPStatus, re
         // console.log(response)
 
         if (!response.ok) {
-            let error = await response.json()
-            const error_msg = parse_error_message(error.detail)
-            error = error_msg ? error_msg : error?.detail
-
-            throw new Error(error ? error : get_error_message(response.status, `PATCH ${ENDPOINT}`))
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
         }
         
         return (response.status === 200);

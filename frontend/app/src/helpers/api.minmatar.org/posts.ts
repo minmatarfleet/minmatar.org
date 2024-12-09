@@ -170,14 +170,13 @@ export async function delete_post(access_token:string, post_id:number) {
         // console.log(response)
 
         if (!response.ok) {
-            let error = await response.json()
-            const error_msg = parse_error_message(error.detail)
-            error = error_msg ? error_msg : error?.detail
-
-            throw new Error(error ? error : get_error_message(response.status, `DELETE ${ENDPOINT}`))
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
         }
 
-        return await response.json() as Post;
+        return (response.status === 200);
     } catch (error) {
         throw new Error(`Error deleting post: ${error.message}`);
     }

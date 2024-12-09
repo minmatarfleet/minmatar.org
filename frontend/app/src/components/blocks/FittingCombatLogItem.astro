@@ -16,7 +16,7 @@ const {
 
 const CAPSULE_TYPE_ID = 670
 
-import { format_date_short } from '@helpers/date'
+import { format_date_time } from '@helpers/date'
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from "@components/compositions/Wrapper.astro";
@@ -37,7 +37,7 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
         <Wrapper class="[ fitting-combatlog-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='0'>
                 <h4>{fitting?.name ?? t('unknown_fitting_name')}</h4>
-                <small>{format_date_short(lang, log.uploaded_at)}</small>
+                <small>{format_date_time(lang, log.uploaded_at)}</small>
             </Flexblock>
         </Wrapper>
         {fitting &&

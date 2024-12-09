@@ -12,7 +12,7 @@ const {
     log,
 } = Astro.props
 
-import { format_date_short } from '@helpers/date'
+import { format_date_time } from '@helpers/date'
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from "@components/compositions/Wrapper.astro";
@@ -37,7 +37,7 @@ import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
         <Wrapper class="[ fleet-combatlog-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='0'>
                 <h4>{t('fleet')} {log.fleet_id}</h4>
-                <small>{format_date_short(lang, log.uploaded_at)}</small>
+                <small>{format_date_time(lang, log.uploaded_at)}</small>
             </Flexblock>
         </Wrapper>
         <Wrapper class="[ fleet-combatlog-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
