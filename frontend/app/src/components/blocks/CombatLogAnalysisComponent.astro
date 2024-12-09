@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
 
@@ -54,7 +54,7 @@ import Badge from '@components/blocks/Badge.astro';
                 </TextGroup>
             }
             {(combat_log_analysis?.fleet_id ?? 0 > 0) &&
-                <TextGroup title={t('fleet')}>{combat_log_analysis.fleet_id}</TextGroup>
+                <TextGroup title={t('registered_during')}><a href={translatePath(`/fleets/history/${combat_log_analysis.fleet_id}`)}>{t('fleet')} {combat_log_analysis.fleet_id}</a></TextGroup>
             }
         </Grid>
 
