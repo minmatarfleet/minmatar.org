@@ -392,6 +392,8 @@ export interface SavedCombatLog {
     user_id:        number;
     fleet_id:       number;
     fitting_id:     number;
+    character_name: string;
+    system_name:    string;
 }
 
 export interface CombatLogMax {

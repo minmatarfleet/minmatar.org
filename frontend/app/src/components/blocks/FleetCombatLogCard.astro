@@ -37,9 +37,14 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
             {translatePath(`${get_app_url(`/intel/combatlog/${log.id}`)}`)}
         </ClipboardButton>
         
-        <Flexblock gap='0'>
+        <Flexblock gap='var(--space-3xs)'>
             <h4>{log.logger.character_name}</h4>
-            <small>{format_date_time(lang, log.uploaded_at)}</small>
+            <Flexblock gap='0'>
+                <small>{format_date_time(lang, log.uploaded_at)}</small>
+                {log.character_name &&
+                    <small>On {`${log.character_name} @ ${log.system_name}`}</small>
+                }
+            </Flexblock>
         </Flexblock>
     </Card>
 </StylessButton>
