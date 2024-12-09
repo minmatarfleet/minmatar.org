@@ -44,6 +44,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -52,7 +53,6 @@ import SRPTable from '@components/blocks/SRPTable.astro';
 
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 const page_title = t('fleets.srp.page_title');
 ---
@@ -86,8 +86,8 @@ const page_title = t('fleets.srp.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${srps_count} \${srps_count != 1 ? '${t('pending_ships').toLowerCase()}' : '${t('pending_ship').toLowerCase()}'}\``}>
-                        {srps_count} {srps_count != 1 ? t('pending_ships').toLowerCase() : t('pending_ship').toLowerCase()}
+                    <small x-text={`\`\${srps_count} \${srps_count != 1 ? '${t('killmails_pending').toLowerCase()}' : '${t('killmail_pending').toLowerCase()}'}\``}>
+                        {srps_count} {srps_count != 1 ? t('killmails_pending').toLowerCase() : t('killmail_pending').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -112,19 +112,17 @@ const page_title = t('fleets.srp.page_title');
                 }}
             />
             :
-            <Flexblock class="[ w-full ]">
+            <BlockList class="[ w-full ]" gap='var(--space-2xl)'>
                 {fleets_srps.length === 0 &&
                     <p class="[ text-center ]">{t('corp_wallet_is_safe')} <span class="[ inline-block animate-fade-in-up animate-delay-1000 ]">{t('for_now')}</span></p>
                 }
                 {fleets_srps.length > 0 &&
-                    <p x-show="srps_count === 0" class="[ text-center ]">{t('corp_wallet_is_safe')} <span class="[ inline-block animate-fade-in-up animate-delay-1000 ]">{t('for_now')}</span></p>
+                    <p x-show="srps_count === 0" class="[ text-center ]" style="display: none">{t('corp_wallet_is_safe')} <span class="[ inline-block animate-fade-in-up animate-delay-1000 ]">{t('for_now')}</span></p>
                 }
                 {fleets_srps.map(fleet_srps =>
-                    <ComponentBlock width='narrow'>
-                        <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={false} fleet_title={true} />
-                    </ComponentBlock>
+                    <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={false} fleet_title={true} />
                 )}
-            </Flexblock>
+            </BlockList>
         }
 	</PageWide>
 </Viewport>

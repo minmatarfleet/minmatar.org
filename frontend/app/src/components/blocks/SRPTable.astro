@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { SRPUI } from '@dtypes/layout_components'
 
@@ -22,9 +22,11 @@ const {
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import SubmitSRPButton from '@components/blocks/SubmitSRPButton.astro';
 import SRPItem from '@components/blocks/SRPItem.astro';
+import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
 ---
 
 <Flexblock 
@@ -35,25 +37,37 @@ import SRPItem from '@components/blocks/SRPItem.astro';
 >
     <FlexInline justification='space-between'>
         <FlexInline>
+            {!fleet_title &&
+                <KillReportEVEIcon />
+            }
             <Flexblock gap='var(--space-3xs)'>
                 {fleet_title ?
-                    <h2>{t('fleet')} {fleet_id}</h2> :
+                    <h2><a href={translatePath(`/fleets/history/${fleet_id}`)}>{t('fleet')} {fleet_id}</a></h2> :
                     <h2>{t('ship_replacement_program')}</h2>
                 }
-                <small>{fleet_srps.length} {fleet_srps.length !== 1 ? t('pending_ships') : t('pending_ship')}</small>
+                <small>{fleet_srps.length} {fleet_srps.length !== 1 ? t('killmails_pending') : t('killmail_pending')}</small>
             </Flexblock>
         </FlexInline>
-        <SubmitSRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
+        {!fleet_title &&
+            <SubmitSRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
+        }
     </FlexInline>
-    <Flexblock gap='var(--space-3xs)'>
-        {fleet_srps.length === 0 && t('no_pending_srp') }
-        {fleet_srps.map(srp =>
-            <SRPItem
-                srp={srp}
-                readonly={readonly}
-                target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
-                remove_table={fleet_title ? true : undefined}
-            />
-        )}
-    </Flexblock>
+    {fleet_srps.length > 0 &&
+        <Grid
+            role="list"
+            class="[ w-full grid-fill ]"
+            min_item_width='240px'
+            row_gap='var(--space-3xs)'
+            column_gap='var(--space-3xs)'
+        >
+            {fleet_srps.map(srp =>
+                <SRPItem
+                    srp={srp}
+                    readonly={readonly}
+                    target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
+                    remove_table={fleet_title ? true : undefined}
+                />
+            )}
+        </Grid>
+    }
 </Flexblock>

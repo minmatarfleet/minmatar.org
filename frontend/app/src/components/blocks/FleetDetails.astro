@@ -39,6 +39,7 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 import Button from '@components/blocks/Button.astro';
@@ -48,14 +49,16 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import FleetCombatLogListItem from '@components/blocks/FleetCombatLogListItem.astro';
+import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
 <Flexblock
-    gap="var(--space-3xs)"
+    gap="var(--space-2xl)"
     x-data={`{
         tracking_started: false,
         local_time: new Date('${eve_time} UTC').toLocaleDateString(
@@ -65,156 +68,157 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }`}
     @tracking_started="tracking_started = true"
 >
-    <ComponentBlock>
-        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-            <FlexInline class="[ grow !items-start ]" justification='space-between'>
-                <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
-                    <h4>{t('fleet_commander')}</h4>
-                    <PilotBadge
-                        character_id={fleet.fleet_commander_id}
-                        character_name={fleet.fleet_commander_name}
-                        size={32}
-                    />
-                </Flexblock>
-                {can_remove_fleet &&
-                    <FlexInline>
-                        {!history &&
-                            <Button
-                                size='sm'
-                                href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
-                            >
-                                {t('edit')}
-                            </Button>
-                        }
-
-                        {(!history && fleet.tracking === null) &&
-                            <Button
-                                size='sm'
-                                x-data={`{
-                                    show_remove_fleet_dialog() {
-                                        show_confirm_dialog({
-                                            title: '${t('remove_fleet_dialog_title')}',
-                                            content: '${t('remove_fleet_dialog_text')}',
-                                            hx: {
-                                                method: 'delete',
-                                                url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
-                                                    fleet_id: fleet.id,
-                                                })}',
-                                                swap: 'outerHTML transition:true'
-                                            }
-                                        })
-                                    }
-                                }`}
-                                x-on:click="show_remove_fleet_dialog"
-                            >
-                                {t('remove')}
-                            </Button>
-                        }
-                    </FlexInline>
-                }
-            </FlexInline>
-
-            <FlexInline class="[ !items-start ]">
-                <div class="[ basis-[250px] ]">
-                    <Flexblock class="[ basis-[250px] ]">
-                        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                            {eve_time_text}
-                        </TextGroup>
-                        <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
-                            <span class="[ loading ]">{t('calculating')}</span>
-                        </TextGroup>
-                    </Flexblock>
-                </div>
-                <div class="[ basis-[250px] ]">
-                    <Flexblock class="[ basis-[250px] ]">
-                        <TextGroup title={t('location')} class="[ sentence-cap ]">
-                            {fleet.location}
-                        </TextGroup>
-                        <TextGroup title={t('type')} class="[ sentence-cap ]">
-                            {t(fleet.type as any)}
-                        </TextGroup>
-                    </Flexblock>
-                </div>
-            </FlexInline>
-
-            <Flexblock gap='var(--space-3xs)'>
-                <h4 class="[ sentence-cap ]">{t('description')}</h4>
-                <TextBox max_width='40rem'>
-                    <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
-                </TextBox>
-            </Flexblock>
-
-            <!--<VerticalCenter>
-                <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
-                    {fleet.tracking}
-                </TextGroup>
-            </VerticalCenter> -->
-        </Flexblock>
-    </ComponentBlock>
-
-    <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} />
-
-    {is_fleet_commander &&
-        <div
-            x-data={`{
-                global_collapse: $persist(false),
-            }`}
-        >
-            {fleet?.tracking &&
-                <ComponentBlock>
-                    <FleetCompositionBlock
-                        composition={fleet_composition ?? []}
-                        fleet_radar={fleet_radar ?? []}
-                        fleet_id={fleet.id}
-                    />
-                </ComponentBlock>
-            }
-
-            {!fleet?.tracking &&
-                <template
-                    x-if="tracking_started"
-                >
-                    <ComponentBlock
-                        x-data={`{
-                            init() {
-                                htmx.process($el)
-                            }
-                        }`}
-                        hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                        hx-trigger="load delay:30s once"
-                        hx-indicator=".loader"
-                        hx-swap="innerHTML transition:true"
-                    >
-                        <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                    </ComponentBlock>
-                </template>
-            }
-        </div>
-    }
-
-    {fleet.doctrine !== null &&
+    <Flexblock gap="var(--space-3xs)">
         <ComponentBlock>
-            <DoctrineItem doctrine={fleet.doctrine} />
-        </ComponentBlock>
-    }
+            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                <FlexInline class="[ grow !items-start ]" justification='space-between'>
+                    <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
+                        <h4>{t('fleet_commander')}</h4>
+                        <PilotBadge
+                            character_id={fleet.fleet_commander_id}
+                            character_name={fleet.fleet_commander_name}
+                            size={32}
+                        />
+                    </Flexblock>
+                    {can_remove_fleet &&
+                        <FlexInline>
+                            {!history &&
+                                <Button
+                                    size='sm'
+                                    href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
+                                >
+                                    {t('edit')}
+                                </Button>
+                            }
 
-    <ComponentBlock>
-        <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
-    </ComponentBlock>
+                            {(!history && fleet.tracking === null) &&
+                                <Button
+                                    size='sm'
+                                    x-data={`{
+                                        show_remove_fleet_dialog() {
+                                            show_confirm_dialog({
+                                                title: '${t('remove_fleet_dialog_title')}',
+                                                content: '${t('remove_fleet_dialog_text')}',
+                                                hx: {
+                                                    method: 'delete',
+                                                    url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
+                                                        fleet_id: fleet.id,
+                                                    })}',
+                                                    swap: 'outerHTML transition:true'
+                                                }
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_remove_fleet_dialog"
+                                >
+                                    {t('remove')}
+                                </Button>
+                            }
+                        </FlexInline>
+                    }
+                </FlexInline>
+
+                <FlexInline class="[ !items-start ]">
+                    <div class="[ basis-[250px] ]">
+                        <Flexblock class="[ basis-[250px] ]">
+                            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                                {eve_time_text}
+                            </TextGroup>
+                            <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
+                                <span class="[ loading ]">{t('calculating')}</span>
+                            </TextGroup>
+                        </Flexblock>
+                    </div>
+                    <div class="[ basis-[250px] ]">
+                        <Flexblock class="[ basis-[250px] ]">
+                            <TextGroup title={t('location')} class="[ sentence-cap ]">
+                                {fleet.location}
+                            </TextGroup>
+                            <TextGroup title={t('type')} class="[ sentence-cap ]">
+                                {t(fleet.type as any)}
+                            </TextGroup>
+                        </Flexblock>
+                    </div>
+                </FlexInline>
+
+                <Flexblock gap='var(--space-3xs)'>
+                    <h4 class="[ sentence-cap ]">{t('description')}</h4>
+                    <TextBox max_width='40rem'>
+                        <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
+                    </TextBox>
+                </Flexblock>
+
+                <!--<VerticalCenter>
+                    <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
+                        {fleet.tracking}
+                    </TextGroup>
+                </VerticalCenter> -->
+            </Flexblock>
+        </ComponentBlock>
+
+        <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} />
+
+        {is_fleet_commander &&
+            <div
+                x-data={`{
+                    global_collapse: $persist(false),
+                }`}
+            >
+                {fleet?.tracking &&
+                    <ComponentBlock>
+                        <FleetCompositionBlock
+                            composition={fleet_composition ?? []}
+                            fleet_radar={fleet_radar ?? []}
+                            fleet_id={fleet.id}
+                        />
+                    </ComponentBlock>
+                }
+
+                {!fleet?.tracking &&
+                    <template
+                        x-if="tracking_started"
+                    >
+                        <ComponentBlock
+                            x-data={`{
+                                init() {
+                                    htmx.process($el)
+                                }
+                            }`}
+                            hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                            hx-trigger="load delay:30s once"
+                            hx-indicator=".loader"
+                            hx-swap="innerHTML transition:true"
+                        >
+                            <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                        </ComponentBlock>
+                    </template>
+                }
+            </div>
+        }
+
+        {fleet.doctrine !== null &&
+            <ComponentBlock>
+                <DoctrineItem doctrine={fleet.doctrine} />
+            </ComponentBlock>
+        }
+    </Flexblock>
+
+    <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
 
     {saved_logs?.length > 0 &&
-        <ComponentBlock>
-            <Flexblock  class="[ w-full ]" gap='var(--space-m)'>
+        <Flexblock  class="[ w-full ]" gap='var(--space-m)'>
+            <FlexInline>
+                <ZkillboardEvEIcon />
                 <Flexblock gap='var(--space-3xs)'>
                     <h2>{t('fleet_logs')}</h2>
                     <small>{saved_logs.length} {saved_logs.length !== 1 ? t('logs_recorded') : t('log_recorded')}</small>
                 </Flexblock>
-                <Grid class="[ w-full grid-fill ]" row_gap='var(--space-m)' column_gap='var(--space-m)' min_item_width='310px'>
-                    {saved_logs.map(log =>
-                        <FleetCombatLogListItem log={log} />
-                    )}
-                </Grid>
-            </Flexblock>
-        </ComponentBlock>
+            </FlexInline>
+            <Grid class="[ w-full grid-fill ]" row_gap='var(--space-m)' column_gap='var(--space-m)' min_item_width='240px'>
+                {saved_logs.map(log =>
+                    <FleetCombatLogCard log={log} />
+                )}
+            </Grid>
+        </Flexblock>
     }
 </Flexblock>

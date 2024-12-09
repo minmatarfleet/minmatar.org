@@ -43,9 +43,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-
 import SRPTable from '@components/blocks/SRPTable.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 ---
         
 {fetch_srp_error ?
@@ -58,11 +56,9 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
     />
     :
     <div x-data={`{ srps_count: ${srps_count} }`} x-init="el.remove()"></div>
-    <Flexblock class="[ w-full ]">
+    <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
         {fleets_srps.map(fleet_srps =>
-            <ComponentBlock width='narrow'>
-                <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={false} fleet_title={true} />
-            </ComponentBlock>
+            <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={false} fleet_title={true} />
         )}
     </Flexblock>
 }

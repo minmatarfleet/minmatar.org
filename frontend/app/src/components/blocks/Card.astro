@@ -1,0 +1,98 @@
+---
+type CardType = 'item' | 'character'
+
+interface Props {
+    item_id:    number;
+    item_name:  string;
+    type:       CardType;
+    inert?:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    item_id,
+    item_name,
+    type,
+    inert = false,
+    ...attributes
+} = Astro.props
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import CharacterPicture from "@components/blocks/CharacterPicture.astro";
+---
+
+<ComponentBlock class="[ card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
+    <Flexblock gap="0">
+        {type === 'character' ?
+            <CharacterPicture
+                character_id={item_id}
+                character_name={item_name}
+                size={256}
+                icon_quality={512}
+                mask={true}
+                inert={inert}
+            />
+            :
+            <ItemPicture
+                item_id={item_id}
+                item_name={item_name}
+                size={256}
+                icon_quality={512}
+                mask={true}
+            />
+        }
+        <Wrapper class="[ card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <slot />
+        </Wrapper>
+        <Wrapper
+            class="[ card-header ]"
+            padding_block="var(--space-2xs)"
+            padding_inline="var(--space-2xs)"
+        >
+            <slot name="header" />
+        </Wrapper>
+        <Wrapper class="[ card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <slot name="actions" />
+        </Wrapper>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .card {
+        position: relative;
+
+        &:hover {
+            .card-actions {
+                opacity: 1;
+            }
+        }
+
+        .card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .card-header {
+            position: absolute;
+            top: var(--space-3xs);
+            left: var(--space-3xs);
+        }
+
+        .card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+</style>

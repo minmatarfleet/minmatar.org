@@ -48,11 +48,6 @@ if (Astro.request.method === "POST") {
             throw new Error(t('invalid_srp_url'))
 
         await create_fleet_srp(auth_token as string, fleet_id, external_killmail_link)
-
-        alert = {
-            title: t('srp_submit_dialog_title'),
-            content: t('srp_submit_success'),
-        }
     } catch (error) {
         submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
 
@@ -81,12 +76,10 @@ if (Astro.request.method === "PATCH") {
             'rejected': t('rejecting'),
         }
 
-        console.log(error)
         update_fleet_srp_error = prod_error_messages() ? t('update_fleet_srp_error').replace('ACTION', TRANSLATE_ACTION[status]) : error.message
-        console.log(update_fleet_srp_error)
 
         alert = {
-            title: t('srp_submit_dialog_title'),
+            title: t('process_srp_dialog_title'),
             content: update_fleet_srp_error as string,
         }
     }
@@ -133,7 +126,6 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
     :
     fleet_srps.length > 0 ?
         <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} /> :
-        !remove_table ?
-        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} /> :
-        <div x-init="$el.closest('.component').remove()" class="[ hidden ]" />
+        !remove_table &&
+        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
 }

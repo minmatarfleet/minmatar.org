@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { SRPUI } from '@dtypes/layout_components'
 
@@ -18,6 +18,7 @@ const {
     remove_table = false,
 } = Astro.props
 
+import { number_name } from '@helpers/numbers.ts';
 import { query_string } from '@helpers/string';
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
 
@@ -25,98 +26,228 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
-import SRPBadge from '@components/blocks/SRPBadge.astro';
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import CharacterPicture from "@components/blocks/CharacterPicture.astro";
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import Dialog from "@components/blocks/Dialog.astro";
+import PilotBadge from "@components/blocks/PilotBadge.astro";
+import StylessButton from '@components/blocks/StylessButton.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
+import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
 ---
 
-<FlexInline justification='space-between' class="[ srp-item ][ w-full ]">
-    <FlexInline class="[ grow ]">
-        <SRPBadge srp={srp} />
-        <FlexInline>
-            <ClipboardButton id={`srp-name-${srp.id}`}>{`${srp.primary_character_name} ${srp.amount}`}</ClipboardButton>
-        </FlexInline>
-    </FlexInline>
+<div
+    class="[ srp-item w-full ]"
+    x-data={`{
+        srp_process_dialog_open: false,
+        action: 'approve',
+        open_dialog() {
+            this.srp_process_dialog_open = true
+        },
+        close_dialog() {
+            this.srp_process_dialog_open = false
+        },
+    }`}
+>
+    <StylessButton
+        class={readonly ? '!cursor-default w-full' : 'w-full'}
+        x-on:click.prevent={readonly ? undefined : 'open_dialog'}
+    >
+        <ComponentBlock
+            class="[ srp-card card-animated ]"
+            padding_block='0'
+            padding_inline='0'
+        >
+            <Flexblock gap="0">
+                <CharacterPicture
+                    character_id={srp.character_id}
+                    character_name={srp.character_name}
+                    size={256}
+                    icon_quality={512}
+                    mask={true}
+                    inert={true}
+                />
+                <Wrapper class="[ srp-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h3>{srp.amount.toLocaleString()} {t('isk')}</h3>
+                        <FlexInline gap='var(--space-3xs)' class="[ !items-center ]">
+                            <ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} />
+                            <small>{srp.character_name}’s {srp.ship_name}</small>
+                        </FlexInline>
+                    </Flexblock>
+                </Wrapper>
+                {srp.character_id !== srp.primary_character_id &&
+                    <FlexInline gap='var(--space-3xs)' class="[ main-character !items-center ][ grow ]">
+                        <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
+                        <small>{srp.primary_character_name}</small>
+                    </FlexInline>
+                }
+            </Flexblock>
+        </ComponentBlock>
+    </StylessButton>
 
-    {!readonly &&
-        <FlexInline class="[ show-on-hover ]">
-            <Button
-                size='sm'
-                type="button"
-                color='green'
-                x-data={`{
-                    show_approve_srp_dialog() {
-                        show_confirm_dialog({
-                            title: '${t('accept_srp_dialog_title')}',
-                            partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
-                                srp: JSON.stringify(srp),
-                                type: 'accept',
-                                message: t('accept_srp_dialog_text'),
-                            })}',
-                            hx: {
-                                method: 'patch',
-                                url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
-                                    fleet_id : JSON.stringify(srp.fleet_id),
-                                    reimbursement_id : JSON.stringify(srp.id),
-                                    remove_table: JSON.stringify(remove_table),
-                                    status: 'approved'
-                                })}',
-                                target: '${target}',
-                                swap: 'outerHTML transition:true'
-                            }
-                        })
-                    }
-                }`}
-                x-on:click="show_approve_srp_dialog()"
-            >
-                {t('approve')}
-            </Button>
-            
-            <Button
-                size='sm'
-                x-data={`{
-                    show_reject_srp_dialog() {
-                        show_confirm_dialog({
-                            title: '${t('reject_srp_dialog_title')}',
-                            partial: '${translatePath('/partials/dialog_with_srp/')}?${query_string({
-                                srp: JSON.stringify(srp),
-                                type: 'reject',
-                                message: t('deny_srp_dialog_text'),
-                            })}',
-                            hx: {
-                                method: 'patch',
-                                url: '${SRP_TABLE_PARTIAL_URL}?${query_string({
-                                    fleet_id : JSON.stringify(srp.fleet_id),
-                                    reimbursement_id : JSON.stringify(srp.id),
-                                    remove_table: JSON.stringify(remove_table),
-                                    status: 'rejected'
-                                })}',
-                                target: '${target}',
-                                swap: 'outerHTML transition:true'
-                            }
-                        })
-                    }
-                }`}
-                x-on:click="show_reject_srp_dialog()"
-            >
-                {t('reject')}
-            </Button>
-        </FlexInline>
-    }
-</FlexInline>
+    <div class="[ srp-process-dialog ]">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            class="[ w-full max-w-[600px] component ]"
+            x-bind:class="(srp_process_dialog_open ? 'open' : '')"
+            x-bind:aria-hidden="srp_process_dialog_open == false"
+            x-trap="srp_process_dialog_open"
+            x-bind:inert="!srp_process_dialog_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
+        >
+            <Flexblock gap="var(--space-l)">
+                <h3>{t('process_srp_dialog_title')}</h3>
+
+                <Flexblock>
+                    <FlexInline gap='var(--space-3xs)' class="[ !items-center ]">
+                        <p>{t('process_srp_dialog_text')}</p>
+                        <p><CharacterPicture character_id={srp.character_id} character_name={srp.character_name} size={16} icon_quality={32} /></p>
+                        <p>{srp.character_name}’s</p>
+                        <p><ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} /></p>
+                        <p>{srp.ship_name}</p>
+                        <p>{t('srp')}.</p>
+                    </FlexInline>
+                    <Flexblock gap='var(--space-2xs)'>
+                        <FlexInline>
+                            <FlexInline class="[ basis-[250px] ]">
+                                <picture class="[ bordered ]">
+                                    <WalletEVEIcon />
+                                </picture>
+                                <p class="[ highlight ]"><span data-tippy-content={number_name(srp.amount, lang)}>{srp.amount.toLocaleString()}</span> {t('isk')}</p>
+                            </FlexInline>
+                            <ClipboardButton id={`srp-dialog-copy-amount-${srp.id}`}>{srp.amount}</ClipboardButton>
+                        </FlexInline>
+                        <Wrapper
+                            padding_block='0'
+                            padding_inline='23px'
+                            max_width='64px'
+                        >
+                            <div class="[ deny ][ flex items-center animate-rubber-band animate-duration-500 ]" x-show="action === 'reject'">
+                                <TrashIcon />
+                            </div>
+                            <div class="[ accept ][ flex items-center animate-rubber-band animate-duration-500 min-h-[24px] ]" x-show="action !== 'reject'">
+                                <ArrowDown />
+                            </div>
+                        </Wrapper>
+                        <FlexInline>
+                            <PilotBadge
+                                class="[ main-character basis-[250px] ]"
+                                character_id={srp.primary_character_id}
+                                character_name={srp.primary_character_name}
+                            />
+                            <ClipboardButton id={`srp-dialog-copy-name-${srp.id}`}>{srp.primary_character_name}</ClipboardButton>
+                        </FlexInline>
+                    </Flexblock>
+                </Flexblock>
+
+                <FlexInline justification='space-between'>
+                    <ClipboardButton text={t('copy_all')} id={`srp-dialog-copy-${srp.id}`}>{`${srp.primary_character_name} ${srp.amount}`}</ClipboardButton>
+                    <FlexInline>
+                        <Button
+                            size='sm'
+                            color='green'
+                            x-on:click="close_dialog()"
+                            x-on:mouseenter="action = 'approve'"
+                            hx-patch={`${SRP_TABLE_PARTIAL_URL}?${query_string({
+                                fleet_id : JSON.stringify(srp.fleet_id),
+                                reimbursement_id : JSON.stringify(srp.id),
+                                remove_table: JSON.stringify(remove_table),
+                                status: 'approved'
+                            })}`}
+                            hx-target={target}
+                            hx-swap="outerHTML transition:true"
+                            hx-indicator=".loader"
+                        >
+                            {t('approved')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size='sm'
+                            x-on:click="close_dialog()"
+                            x-on:mouseenter="action = 'reject'"
+                            hx-patch={`${SRP_TABLE_PARTIAL_URL}?${query_string({
+                                fleet_id : JSON.stringify(srp.fleet_id),
+                                reimbursement_id : JSON.stringify(srp.id),
+                                remove_table: JSON.stringify(remove_table),
+                                status: 'rejected'
+                            })}`}
+                            hx-target={target}
+                            hx-swap="outerHTML transition:true"
+                            hx-indicator=".loader"
+                        >
+                            {t('rejected')}
+                        </Button>
+                    </FlexInline>
+            </Flexblock>
+        </Dialog>
+    </div>
+</div>
 
 <style lang="scss">
-    .srp-item {
-        @media (hover: hover) {
-            .show-on-hover {
-                transition: var(--fast-transition);
-                opacity: 0;
-            }
+    .accept {
+        color: var(--green);
+    }
 
-            &:hover,
-            &:focus-within {
-                .show-on-hover {
-                    opacity: 1;
-                }
+    .deny {
+        color: var(--fleet-red);
+    }
+
+    .srp-card {
+        position: relative;
+
+        &:hover {
+            .srp-card-actions {
+                opacity: 1;
             }
+        }
+
+        .srp-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .main-character {
+            position: absolute;
+            top: var(--space-2xs);
+            left: var(--space-2xs);
+        }
+
+        .srp-card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+
+        .srp-card-filters {
+            display: none;
+        }
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+    
+    picture {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        aspect-ratio: 1/1;
+        width: 64px;
+
+        &.bordered {
+            border: solid 1px var(--border-color)
         }
     }
 </style>
