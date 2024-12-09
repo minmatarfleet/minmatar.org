@@ -145,6 +145,8 @@ export async function get_fleet_combatlogs(access_token:string, fleet_id:number)
             id: log.id,
             uploaded_at: log.uploaded_at,
             user_id: log.user_id,
+            character_name: log.character_name,
+            system_name: log.system_name,
             logger: logger !== undefined ? {
                 character_id: logger.character_id,
                 character_name: logger.character_name,

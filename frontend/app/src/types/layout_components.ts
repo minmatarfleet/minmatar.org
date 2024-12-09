@@ -902,6 +902,8 @@ export interface FleetCombatLog {
     uploaded_at:    Date;
     user_id:        number;
     logger:         CharacterBasic;
+    character_name: string;
+    system_name:    string;
 }
 
 export interface Damage {
