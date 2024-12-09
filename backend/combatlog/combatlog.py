@@ -303,7 +303,8 @@ def max_damage(events: List[DamageEvent], direction: str) -> DamageEvent:
     return max_event
 
 
-def final_system_name(events: List[LogEvent]) -> str:
+def last_combat_system(events: List[DamageEvent]) -> str:
+    """Returns the last system in which damage was inflicted or received"""
     system = ""
     for event in events:
         if event.location:

@@ -22,7 +22,7 @@ from .combatlog import (
     total_damage,
     update_combat_time,
     weapon_analysis,
-    final_system_name,
+    last_combat_system,
 )
 from .models import CombatLog
 
@@ -115,9 +115,10 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     analysis = LogAnalysis()
     analysis.logged_events = len(events)
     analysis.character_name = character_name(events)
-    analysis.final_system = final_system_name(events)
 
     dmg_events = damage_events(events)
+
+    analysis.final_system = last_combat_system(dmg_events)
 
     (analysis.damage_done, analysis.damage_taken) = total_damage(dmg_events)
 
@@ -164,6 +165,9 @@ def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
 
     results = []
     for record in combat_logs:
+        if not record.created_by:
+            # Strip out older logs that were stored without a user ID
+            continue
         if not (record.created_by_id == user_id or is_fc):
             continue
 
