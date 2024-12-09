@@ -25,3 +25,6 @@ class CombatLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     log_text = models.TextField()
+
+    character_name = models.CharField(max_length=255, blank=True)
+    solar_system_name = models.CharField(max_length=255, blank=True)

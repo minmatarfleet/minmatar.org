@@ -56,6 +56,7 @@ class LogAnalysis(BaseModel):
     fitting_id: int = None
     fleet_id: int = None
     character_name: str = None
+    final_system: str = None
     max_from: DamageEvent = None
     max_to: DamageEvent = None
 
@@ -300,3 +301,11 @@ def max_damage(events: List[DamageEvent], direction: str) -> DamageEvent:
             max_event = event
             max_dmg = event.damage
     return max_event
+
+
+def final_system_name(events: List[LogEvent]) -> str:
+    system = ""
+    for event in events:
+        if event.location:
+            system = event.location
+    return system

@@ -22,6 +22,7 @@ from .combatlog import (
     total_damage,
     update_combat_time,
     weapon_analysis,
+    final_system_name,
 )
 from .models import CombatLog
 
@@ -33,7 +34,7 @@ log = logging.getLogger(__name__)
 @router.post(
     "",
     description="Process an Eve combat log",
-    response={200: LogAnalysis, 400: ErrorResponse, 500: ErrorResponse},
+    response={200: LogAnalysis, 400: ErrorResponse, 403: ErrorResponse},
     auth=AuthOptional(),
     openapi_extra={
         "requestBody": {
@@ -51,6 +52,7 @@ log = logging.getLogger(__name__)
 )
 def analyze_logs(
     request,
+    store: bool = False,
     fleet_id: int = 0,
     fitting_id: int = 0,
     start_time: str = "",
@@ -59,6 +61,14 @@ def analyze_logs(
     log.info("User = %s", str(request.user))
     log.info("Combat log fleet ID = %d, fitting ID = %d", fleet_id, fitting_id)
     log.info("Combat log time range = %s to %s", start_time, end_time)
+
+    store = store or fleet_id > 0 or fitting_id > 0
+
+    if store and not request.user.id:
+        return 403, ErrorResponse(
+            status=403,
+            detail="Cannot store without user ID",
+        )
 
     if request.content_type == "text/plain":
         content = request.body.decode("utf-8")
@@ -79,19 +89,17 @@ def analyze_logs(
 
     analysis = analyze_parsed_log(content)
 
-    if fleet_id > 0 or fitting_id > 0:
-        combat_log = CombatLog(log_text=content)
+    if store:
+        combat_log = CombatLog(
+            log_text=content,
+            created_by_id=request.user.id,
+            character_name=analysis.character_name,
+            solar_system_name=analysis.final_system,
+        )
         if fleet_id > 0:
             combat_log.fleet_id = fleet_id
         if fitting_id > 0:
             combat_log.fitting_id = fitting_id
-        if request.user.id:
-            combat_log.created_by_id = request.user.id
-        else:
-            return 500, ErrorResponse(
-                status=500,
-                detail="Could not determine user ID",
-            )
 
         combat_log.save()
 
@@ -107,6 +115,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     analysis = LogAnalysis()
     analysis.logged_events = len(events)
     analysis.character_name = character_name(events)
+    analysis.final_system = final_system_name(events)
 
     dmg_events = damage_events(events)
 
@@ -130,6 +139,8 @@ class LogSummary(BaseModel):
     user_id: int = None
     fleet_id: int = None
     fitting_id: int = None
+    character_name: str = None
+    system_name: str = None
 
 
 @router.get(
@@ -166,6 +177,10 @@ def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
             summary.fleet_id = record.fleet_id
         if record.fitting_id:
             summary.fitting_id = record.fitting_id
+        if record.character_name:
+            summary.character_name = record.character_name
+        if record.solar_system_name:
+            summary.system_name = record.solar_system_name
 
         results.append(summary)
 
