@@ -232,9 +232,9 @@ def set_ids(analysis, db_rec):
 
 
 def can_view(combat_log: CombatLog, user_id: int, fc_id: int) -> bool:
-    if not combat_log.created_by:
+    if combat_log.created_by is None:
         return False
-    if not user_id or fc_id:
+    if user_id is None and fc_id is None:
         return False
     if combat_log.created_by_id == user_id:
         return True
