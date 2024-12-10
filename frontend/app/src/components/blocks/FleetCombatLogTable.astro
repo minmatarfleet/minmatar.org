@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetCombatLog } from '@dtypes/layout_components'
+
+interface Props {
+    saved_logs:     FleetCombatLog[];
+    fleet_id:       number;
+}
+
+const {
+    saved_logs,
+    fleet_id,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
+import AnalizeCombatLogButton from '@components/blocks/AnalizeCombatLogButton.astro';
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+---
+
+<Flexblock id="fleet-combat-log-table" class="[ w-full ]" gap='var(--space-m)'>
+    <FlexInline class="[ w-full ]" justification='space-between'>
+        <FlexInline>
+            <ZkillboardEvEIcon />
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>{t('combat_logs')}</h2>
+                <small>{saved_logs.length} {saved_logs.length !== 1 ? t('logs_recorded') : t('log_recorded')}</small>
+            </Flexblock>
+        </FlexInline>
+        <AnalizeCombatLogButton
+            color={'green'}
+            target="#fleet-combat-log-table"
+            fleet_id={fleet_id}
+            size='sm'
+        >
+            {t('paste_combatlog')}
+        </AnalizeCombatLogButton>
+    </FlexInline>
+    <Grid class="[ w-full grid-fill ]" row_gap='var(--space-3xs)' column_gap='var(--space-3xs)' min_item_width='240px'>
+        {saved_logs.map(log =>
+            <FleetCombatLogCard log={log} />
+        )}
+    </Grid>
+</Flexblock>

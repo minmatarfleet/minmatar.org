@@ -1,0 +1,40 @@
+---
+import type { ImageSize } from '@dtypes/layout_components'
+
+interface Props {
+    src:    string;
+    alt?:   string;
+    size?:  ImageSize;
+    mask?:  boolean;
+}
+
+const {
+    src,
+    alt,
+    size = 64,
+    mask = false,
+} = Astro.props
+---
+
+<picture class="animated">
+    <img
+        class:list={{ mask }}
+        loading="lazy"
+        height={size}
+        width={size}
+        src={src}
+        alt={alt ? alt : undefined}
+    />
+</picture>
+
+<style lang="scss">
+    img {
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .mask {
+        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
+        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
+    }
+</style>

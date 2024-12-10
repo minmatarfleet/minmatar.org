@@ -61,15 +61,11 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import AnalizeCombatLogButton from '@components/blocks/AnalizeCombatLogButton.astro';
-import CollapsableButton from '@components/blocks/CollapsableButton.astro';
-import FittingCombatLogItem from '@components/blocks/FittingCombatLogItem.astro';
-import FleetCombatLogItem from '@components/blocks/FleetCombatLogItem.astro';
-
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import Button from '@components/blocks/Button.astro';
+import CombatLogItem from '@components/blocks/CombatLogItem.astro';
 
 const page_title = t('intel.combatlog.page_title');
 const page_description = t('intel.combatlog.leading_text');
@@ -102,16 +98,21 @@ const page_description = t('intel.combatlog.leading_text');
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <AnalizeCombatLogButton
-                    color={'green'}
-                    target="#combatlog"
-                    fitting_options={fitting_options}
-                    fleets_options={fleets_options}
-                >
-                    {t('paste_combatlog')}
-                </AnalizeCombatLogButton>
+                <Button color='green' x-on:click="document.getElementById('analize-combatlog-button').click()">
+                    {t('analyze_combatlog')}
+                </Button>
             </FlexInline>
         </FlexInline>
+
+        <AnalizeCombatLogButton
+            color={'green'}
+            target="#combatlog"
+            fitting_options={fitting_options}
+            fleets_options={fleets_options}
+            hidden={true}
+        >
+            {t('paste_combatlog')}
+        </AnalizeCombatLogButton>
         
         <div id="combatlog">
             <BlockList gap='var(--space-2xl)'>
@@ -129,9 +130,10 @@ const page_description = t('intel.combatlog.leading_text');
                                 role="listitem"
                                 href={translatePath(`/intel/combatlog/${log.id}`)}
                             >
-                                {log.fitting_id > 0 ?
-                                    <FittingCombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
-                                    <FleetCombatLogItem log={log} />
+                                {
+                                    log.fitting_id > 0 ?
+                                        <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
+                                        <CombatLogItem log={log} />
                                 }
                             </a>
                         )}
@@ -150,31 +152,7 @@ const page_description = t('intel.combatlog.leading_text');
                     }`}
                     gap='var(--space-3xs)'
                 >
-                    <p class="[ text-center ]">{t('paste_combatlog_hint')}</p>
-
-                    <CollapsableButton x-on:click="toggle_collapse()" class="[ !w-full !max-w-[450px] ]">
-                        <FixedFluid
-                            width='48'
-                            breakpoint='70%'
-                            class="[ w-full items-center ]"
-                        >
-                            <picture class="[ hidden sm:block ]">
-                                <TutorialIcon />
-                            </picture>
-                            <small>{t('paste_combatlog_tutorial')}</small>
-                        </FixedFluid>
-                    </CollapsableButton>
-                
-                    <div
-                        x-show="expanded"
-                        x-collapse.duration.0ms
-                        style="display: none"
-                    >
-                        <video autoplay controls loop class="[ mt-[var(--space-xs)] w-full ]">
-                            <source src="/videos/combatlog-tutorial.mp4" type="video/mp4" />
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
+                    <p class="[ text-center ]">{t('no_combatlog')}</p>
                 </Flexblock>
             }
         </div>

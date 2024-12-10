@@ -1,0 +1,30 @@
+---
+interface Props {
+    src:    string;
+    alt?:   string;
+    [propName: string]: any;
+}
+
+const {
+    src,
+    alt,
+    ...attributes
+} = Astro.props
+
+import Picture from "@components/blocks/Picture.astro";
+import Card from "@components/blocks/Card.astro";
+---
+
+<Card {...attributes}>
+    <Picture
+        slot="cover"
+        src={src}
+        alt={alt ? alt : undefined}
+        size={256}
+        mask={true}
+    />
+
+    <slot name="header" slot="header" />
+    <slot name="actions" slot="actions" />
+    <slot />
+</Card>

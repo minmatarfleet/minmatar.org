@@ -23,11 +23,16 @@ if (Astro.request.method === "POST") {
         const form_data = await Astro.request.formData()
         const fleet_id = parseInt(form_data.get("fleet")?.valueOf() as string ?? '-1')
         const fitting_id = parseInt(form_data.get("fitting")?.valueOf() as string ?? '-1')
+        const store = (form_data.get('store')?.valueOf() === 'on')
         const base64_gziped_combatlog = form_data.get("gziped_combatlog")?.valueOf()
         const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 
-        combat_log_analysis = auth_token ?
-            await fetch_combatlog_analysis(gziped_combatlog, true, auth_token, fitting_id, fleet_id) :
+        combat_log_analysis = auth_token && store ?
+            await fetch_combatlog_analysis(gziped_combatlog, true, {
+                access_token: auth_token,
+                fitting_id: fitting_id,
+                fleet_id: fleet_id
+            }) :
             await fetch_combatlog_analysis(gziped_combatlog, true)
     } catch (error) {
         combatlog_analysis_error = prod_error_messages() ? t('combatlog_analysis_error') : error.message

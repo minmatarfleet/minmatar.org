@@ -1,0 +1,80 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { prod_error_messages } from '@helpers/env'
+import { b64_to_Uint8Array } from '@helpers/string'
+
+import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
+import type { CombatLogAnalysis, Alert } from '@dtypes/layout_components'
+
+let combatlog_analysis_error:string  | null = null
+let alert:Alert | false = false
+let fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (Astro.request.method === "POST") {
+    try {
+        const form_data = await Astro.request.formData()
+        fleet_id = parseInt(form_data.get("fleet")?.valueOf() as string ?? '-1')
+        const store = (form_data.get('store')?.valueOf() === 'on')
+        const base64_gziped_combatlog = form_data.get("gziped_combatlog")?.valueOf()
+        const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
+
+        auth_token && store ? await fetch_combatlog_analysis(gziped_combatlog, true, {
+            access_token: auth_token,
+            fleet_id: fleet_id
+        }) : await fetch_combatlog_analysis(gziped_combatlog, true)
+    } catch (error) {
+        combatlog_analysis_error = prod_error_messages() ? t('combatlog_analysis_error') : error.message
+
+        alert = {
+            title: t('add_fleet_combatlog_dialog_title'),
+            content: combatlog_analysis_error as string,
+        }
+    }
+}
+
+const COMBAT_LOG_FLEET_LOGS_PARTIAL_URL = translatePath('/partials/combatlog_fleet_logs_component/')
+
+let delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import type { FleetCombatLog } from '@dtypes/layout_components'
+import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
+
+let fetch_fleets_error:string | false = false
+let saved_logs:FleetCombatLog[] = []
+let fetch_fleet_combatlogs_error:string  | null = null
+
+try {
+    saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
+} catch (error) {
+    fetch_fleet_combatlogs_error = prod_error_messages() ? t('fetch_fleet_combatlogs_error') : error.message
+}
+
+import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_fleet_combatlogs_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${COMBAT_LOG_FLEET_LOGS_PARTIAL_URL}?fleet_id=${fleet_id}`,
+            message: fetch_fleet_combatlogs_error,
+            delay: delay,
+            target: '#fleet-combat-log-table',
+        }}
+    />
+    :
+    <FleetCombatLogTable saved_logs={saved_logs} fleet_id={fleet_id} />
+}
+
+{alert && <ShowAlert alert={alert} /> }

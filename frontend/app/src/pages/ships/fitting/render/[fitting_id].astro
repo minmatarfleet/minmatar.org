@@ -15,16 +15,26 @@ import { prod_error_messages } from '@helpers/env'
 const { fitting_id } = Astro.params;
 const show_controls = Astro.url.searchParams.get('controls') ?? null
 
+import type { FleetCombatLog } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
+import { get_fitting_combatlogs } from '@helpers/fetching/combatlog'
 
 let fitting:Fitting | null = null
 let get_fitting_error:string | false = false
+let fetch_fleets_error:string | false = false
+let saved_logs:FleetCombatLog[] = []
 
 try {
     fitting = await get_fitting_by_id(parseInt(fitting_id ?? '0'))
 } catch (error) {
     get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
+}
+
+try {
+    saved_logs = [] // user && !fetch_fleets_error ? await get_fitting_combatlogs(auth_token as string, parseInt(fitting_id ?? '0')) : []
+} catch (error) {
+    console.log(error)
 }
 
 import { marked } from 'marked';
@@ -65,6 +75,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import FittingCustom from '@components/blocks/FittingCustom.astro';
 import Button from '@components/blocks/Button.astro';
@@ -77,6 +88,9 @@ import Input from '@components/blocks/Input.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
+import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 
@@ -316,6 +330,23 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                         </Cargohold>
                     }
                 </Flexblock>
+
+                {saved_logs?.length > 0 &&
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <FlexInline>
+                            <ZkillboardEvEIcon />
+                            <Flexblock gap='var(--space-3xs)'>
+                                <h2>{t('combat_logs')}</h2>
+                                <small>{saved_logs.length} {saved_logs.length !== 1 ? t('logs_recorded') : t('log_recorded')}</small>
+                            </Flexblock>
+                        </FlexInline>
+                        <Grid class="[ w-full grid-fill ]" row_gap='var(--space-3xs)' column_gap='var(--space-3xs)' min_item_width='240px'>
+                            {saved_logs.map(log =>
+                                <FleetCombatLogCard log={log} />
+                            )}
+                        </Grid>
+                    </Flexblock>
+                }
 
                 <Flexblock
                     class="[ animate-fade-in-up ]"
