@@ -1,6 +1,6 @@
 import type { Locales, CharacterRaces, Damage } from '@dtypes/layout_components'
 import * as cheerio from 'cheerio';
-import { decode_unicode_escapes, get_parenthesis_content } from '@helpers/string'
+import { decode_unicode_escapes, get_parenthesis_content_last } from '@helpers/string'
 import type { CombatLogItem } from '@dtypes/api.minmatar.org'
 import { get_item_id } from '@helpers/sde/items'
 
@@ -256,7 +256,7 @@ const CAPSULE_TYPE_ID = 670
 
 export const parse_damage_from_logs = async (enemies:CombatLogItem[]) => {
     const damage = await Promise.all(enemies.map(async enemy => {
-        const player_ship = await get_parenthesis_content(enemy.name)
+        const player_ship = await get_parenthesis_content_last(enemy.name)
         const enemy_name = player_ship ? player_ship : enemy.name
 
         return {
