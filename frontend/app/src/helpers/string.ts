@@ -74,6 +74,17 @@ export const get_parenthesis_content = (str:string) => {
     return match ? match[1] : ''
 }
 
+export const get_parenthesis_content_last = (str:string) => {
+    const matches = str.match(/\(([^)]+)\)/g)
+
+    if (matches) {
+        const last_match = matches[matches.length - 1]
+        return last_match.slice(1, -1)
+    }
+
+    return null
+}
+
 export const b64_to_Uint8Array = (b64encoded_string:string):Uint8Array => {
     const binaryString = atob(b64encoded_string)
 
