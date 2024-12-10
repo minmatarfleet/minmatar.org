@@ -112,167 +112,172 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         {fleet_id ? t('add_combatlog') : t('analyze_combatlog')}
     </Button>
 
-    <div class="[ system-finder-dialog ]">
-        <Dialog
-            breakout={true}
-            non_centered={true}
-            class="[ w-full max-w-[700px] component ]"
-            x-bind:class="(combatlog_dialog_open ? 'open' : '')"
-            x-bind:aria-hidden="combatlog_dialog_open == false"
-            x-trap="combatlog_dialog_open"
-            x-bind:inert="!combatlog_dialog_open"
-            @keyup.escape.window="close_dialog()"
-            @mousedown.outside="open && close_dialog()"
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        class="[ combat-log-dialog ][ w-full max-w-[700px] component overflow-y-auto ]"
+        x-bind:class="(combatlog_dialog_open ? 'open' : '')"
+        x-bind:aria-hidden="combatlog_dialog_open == false"
+        x-trap="combatlog_dialog_open"
+        x-bind:inert="!combatlog_dialog_open"
+        @keyup.escape.window="close_dialog()"
+        @mousedown.outside="open && close_dialog()"
+    >
+        <form
+            hx-post={fleet_id ? COMBAT_LOG_FLEET_LOGS_PARTIAL_URL : COMBAT_LOG_ANALYSIS_PARTIAL_URL}
+            enctype="multipart/form-data"
+            hx-trigger="submit"
+            hx-target={target}
+            hx-indicator=".loader"
+            hx-swap={fleet_id ? 'outerHTML transition:true' : 'innerHTML transition:true'}
+            x-ref="combatlog_form"
         >
-            <form
-                hx-post={fleet_id ? COMBAT_LOG_FLEET_LOGS_PARTIAL_URL : COMBAT_LOG_ANALYSIS_PARTIAL_URL}
-                enctype="multipart/form-data"
-                hx-trigger="submit"
-                hx-target={target}
-                hx-indicator=".loader"
-                hx-swap={fleet_id ? 'outerHTML transition:true' : 'innerHTML transition:true'}
-                x-ref="combatlog_form"
-            >
-                <Flexblock gap="var(--space-l)">
-                    <h3>{fleet_id ? t('add_fleet_combatlog_dialog_title') : t('analize_combatlog_dialog_title')}</h3>
+            <Flexblock gap="var(--space-l)">
+                <h3>{fleet_id ? t('add_fleet_combatlog_dialog_title') : t('analize_combatlog_dialog_title')}</h3>
 
-                    <Flexblock
-                        x-data={`{
-                            save_log: false,
-                            method: 'paste',
-                        }`}
-                    >
-                        <Flexblock>
-                            <p>{t('analize_combatlog_dialog_text')}</p>
+                <Flexblock
+                    x-data={`{
+                        save_log: false,
+                        method: 'paste',
+                    }`}
+                >
+                    <Flexblock>
+                        <p>{t('analize_combatlog_dialog_text')}</p>
 
-                            <FlexInline>
-                                <UnstyledRadioCheckButton
-                                    type='radio'
-                                    label={t('paste_combat_log')}
-                                    value="paste"
-                                    x-model="method"
-                                    checked
-                                />
-                                <UnstyledRadioCheckButton
-                                    type='radio'
-                                    label={t('combat_log_file')}
-                                    value="file"
-                                    x-model="method"
-                                />
-                            </FlexInline>
-
-                            <BlockList class="[ w-full ]">
-                                <Flexblock
-                                    class="[ w-full ]"
-                                    gap="var(--space-3xs)"
-                                    x-show="method === 'paste'"
-                                    x-data={`{
-                                        expanded: false,
-                                        toggle_collapse() {
-                                            this.expanded = !this.expanded
-                                        }
-                                    }`}
-                                >
-                                    <Textarea id="combatlog-texarea" x-model="combatlog" x-on:change="update_status()" rows="5" />
-                                    
-                                    <CollapsableButton x-on:click="toggle_collapse()" class="[ !w-full ]">
-                                        <FixedFluid
-                                            width='48'
-                                            breakpoint='70%'
-                                            class="[ w-full items-center ]"
-                                        >
-                                            <picture class="[ hidden sm:block ]">
-                                                <TutorialIcon />
-                                            </picture>
-                                            <small>{t('paste_combatlog_tutorial')}</small>
-                                        </FixedFluid>
-                                    </CollapsableButton>
-
-                                    <div
-                                        x-show="expanded"
-                                        x-collapse.duration.0ms
-                                        style="display: none"
-                                    >
-                                        <video autoplay controls loop class="[ mt-[var(--space-xs)] w-full ]">
-                                            <source src="/videos/combatlog-tutorial.mp4" type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    </div>
-                                </Flexblock>
-                                <Flexblock
-                                    class="[ w-full ]"
-                                    gap="var(--space-3xs)"
-                                    x-show="method === 'file'"
-                                >
-                                    <Input
-                                        x-model="combatlogfile"
-                                        type="file"
-                                        id="combat_log_file"
-                                        x-on:change="update_status($el)"
-                                    />
-                                    <small>{t('combat_log_file_text')}</small>
-                                </Flexblock>
-                                <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
-                            </BlockList>
-                        </Flexblock>
-
-                        {!fleet_id && user &&
-                            <SwitchSquare
-                                class="[ w-full ]"
-                                name="store"
-                                label={t('save_log_for_future')}
-                                description={t('save_log_for_future_description')}
-                                x-model="save_log"
+                        <FlexInline>
+                            <UnstyledRadioCheckButton
+                                type='radio'
+                                label={t('paste_combat_log')}
+                                value="paste"
+                                x-model="method"
+                                checked
                             />
+                            <UnstyledRadioCheckButton
+                                type='radio'
+                                label={t('combat_log_file')}
+                                value="file"
+                                x-model="method"
+                            />
+                        </FlexInline>
 
-                            <Flexblock  x-show="save_log"> 
-                                <p>{t('combatlog_analizer_store_notice')}</p>
+                        <BlockList class="[ w-full ]">
+                            <Flexblock
+                                class="[ w-full ]"
+                                gap="var(--space-3xs)"
+                                x-show="method === 'paste'"
+                                x-data={`{
+                                    expanded: false,
+                                    toggle_collapse() {
+                                        this.expanded = !this.expanded
+                                    }
+                                }`}
+                            >
+                                <Textarea id="combatlog-texarea" x-model="combatlog" x-on:change="update_status()" rows="5" />
+                                
+                                <CollapsableButton x-on:click="toggle_collapse()" class="[ !w-full ]">
+                                    <FixedFluid
+                                        width='48'
+                                        breakpoint='70%'
+                                        class="[ w-full items-center ]"
+                                    >
+                                        <picture class="[ hidden sm:block ]">
+                                            <TutorialIcon />
+                                        </picture>
+                                        <small>{t('paste_combatlog_tutorial')}</small>
+                                    </FixedFluid>
+                                </CollapsableButton>
 
-                                <Grid min_item_width="250px">
-                                    <SelectFinder
-                                        name="fitting"
-                                        model="fitting"
-                                        placeholder={t('combatlog_fitting_placeholder')}
-                                        options="fitting_options"
-                                        value = '-1'
-                                    />
-                                    <SelectFinder
-                                        name="fleet"
-                                        model="fleet"
-                                        placeholder={t('combatlog_fleet_placeholder')}
-                                        options="fleets_options"
-                                        value = '-1'
-                                    />
-                                </Grid>
+                                <div
+                                    x-show="expanded"
+                                    x-collapse.duration.0ms
+                                    style="display: none"
+                                >
+                                    <video autoplay controls loop class="[ mt-[var(--space-xs)] w-full ]">
+                                        <source src="/videos/combatlog-tutorial.mp4" type="video/mp4" />
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
                             </Flexblock>
-                        }
-                        {fleet_id && user &&
-                            <input type="checkbox" checked name="store" class="[ hidden ]" />
-                            <input type="hidden" value={fleet_id ? fleet_id : -1} name="fleet" />
-                            <input type="hidden" value={fitting_id ? fitting_id : -1} name="fitting" />
-                        }
+                            <Flexblock
+                                class="[ w-full ]"
+                                gap="var(--space-3xs)"
+                                x-show="method === 'file'"
+                            >
+                                <Input
+                                    x-model="combatlogfile"
+                                    type="file"
+                                    id="combat_log_file"
+                                    x-on:change="update_status($el)"
+                                />
+                                <small>{t('combat_log_file_text')}</small>
+                            </Flexblock>
+                            <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
+                        </BlockList>
                     </Flexblock>
 
-                    <FlexInline justification='flex-end'>
-                        <Button
-                            size='sm'
-                            x-on:click="close_dialog()"
-                            type="submit"
-                        >
-                            {t('submit')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size='sm'
-                            x-on:click="close_dialog()"
-                        >
-                            {t('close')}
-                        </Button>
-                    </FlexInline>
+                    {!fleet_id && user &&
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="store"
+                            label={t('save_log_for_future')}
+                            description={t('save_log_for_future_description')}
+                            x-model="save_log"
+                        />
+
+                        <Flexblock  x-show="save_log"> 
+                            <p>{t('combatlog_analizer_store_notice')}</p>
+
+                            <Grid min_item_width="250px">
+                                <SelectFinder
+                                    name="fitting"
+                                    model="fitting"
+                                    placeholder={t('combatlog_fitting_placeholder')}
+                                    options="fitting_options"
+                                    value = '-1'
+                                />
+                                <SelectFinder
+                                    name="fleet"
+                                    model="fleet"
+                                    placeholder={t('combatlog_fleet_placeholder')}
+                                    options="fleets_options"
+                                    value = '-1'
+                                />
+                            </Grid>
+                        </Flexblock>
+                    }
+                    {fleet_id && user &&
+                        <input type="checkbox" checked name="store" class="[ hidden ]" />
+                        <input type="hidden" value={fleet_id ? fleet_id : -1} name="fleet" />
+                        <input type="hidden" value={fitting_id ? fitting_id : -1} name="fitting" />
+                    }
                 </Flexblock>
-            </form>
-        </Dialog>
-    </div>
+
+                <FlexInline justification='flex-end'>
+                    <Button
+                        size='sm'
+                        x-on:click="close_dialog()"
+                        type="submit"
+                    >
+                        {t('submit')}
+                    </Button>
+                    <Button
+                        type="button"
+                        size='sm'
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </form>
+    </Dialog>
 </div>
 
 <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+
+<style lang="scss">
+    .combat-log-dialog {
+        max-width: 60rem;
+        max-height: min(750px, 88vh);
+    }
+</style>
