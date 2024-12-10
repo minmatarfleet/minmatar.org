@@ -16,16 +16,15 @@ const {
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import Card from '@components/blocks/Card.astro';
+import CharacterCard from '@components/blocks/CharacterCard.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 ---
 
 <StylessButton href={translatePath(`/intel/combatlog/${log.id}`)}>
-    <Card
-        item_id={log.logger.character_id}
-        item_name={log.logger.character_name}
-        type='character'
+    <CharacterCard
+        character_id={log.logger.character_id}
+        character_name={log.logger.character_name}
         inert={true}
     >
         <ClipboardButton
@@ -46,7 +45,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                 }
             </Flexblock>
         </Flexblock>
-    </Card>
+    </CharacterCard>
 </StylessButton>
 
 <style lang="scss">

@@ -1,0 +1,34 @@
+---
+interface Props {
+    character_id:   number;
+    character_name: string;
+    inert?:         boolean;
+    [propName: string]: any;
+}
+
+const {
+    character_id,
+    character_name,
+    inert = false,
+    ...attributes
+} = Astro.props
+
+import CharacterPicture from "@components/blocks/CharacterPicture.astro";
+import Card from "@components/blocks/Card.astro";
+---
+
+<Card {...attributes}>
+    <CharacterPicture
+        slot="cover"
+        character_id={character_id}
+        character_name={character_name}
+        size={256}
+        icon_quality={512}
+        mask={true}
+        inert={inert}
+    />
+
+    <slot name="header" slot="header" />
+    <slot name="actions" slot="actions" />
+    <slot />
+</Card>

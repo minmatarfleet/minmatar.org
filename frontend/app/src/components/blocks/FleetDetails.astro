@@ -38,8 +38,6 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Grid from '@components/compositions/Grid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 import Button from '@components/blocks/Button.astro';
@@ -49,9 +47,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
-
-import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -205,20 +201,5 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
     <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
 
-    {saved_logs?.length > 0 &&
-        <Flexblock  class="[ w-full ]" gap='var(--space-m)'>
-            <FlexInline>
-                <ZkillboardEvEIcon />
-                <Flexblock gap='var(--space-3xs)'>
-                    <h2>{t('fleet_logs')}</h2>
-                    <small>{saved_logs.length} {saved_logs.length !== 1 ? t('logs_recorded') : t('log_recorded')}</small>
-                </Flexblock>
-            </FlexInline>
-            <Grid class="[ w-full grid-fill ]" row_gap='var(--space-m)' column_gap='var(--space-m)' min_item_width='240px'>
-                {saved_logs.map(log =>
-                    <FleetCombatLogCard log={log} />
-                )}
-            </Grid>
-        </Flexblock>
-    }
+    <FleetCombatLogTable saved_logs={saved_logs} fleet_id={fleet.id} />
 </Flexblock>

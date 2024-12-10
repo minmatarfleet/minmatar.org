@@ -1,4 +1,4 @@
-import type { CombatLog, SavedCombatLog, SavedLogsRequest } from '@dtypes/api.minmatar.org'
+import type { CombatLog, SavedCombatLog, SavedLogsRequest, CombatLogStoreOptions } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/combatlog`
@@ -9,11 +9,12 @@ export async function get_saved_logs(access_token:string, saved_logs_request:Sav
         'Authorization': `Bearer ${access_token}`
     }
 
-    const { user_id, fleet_id } = saved_logs_request
+    const { user_id, fleet_id, fitting_id } = saved_logs_request
 
     const query_params = {
         ...(user_id && { user_id }),
         ...(fleet_id && { fleet_id }),
+        ...(fitting_id && { fitting_id }),
     };
 
     const query = query_string(query_params)
@@ -74,52 +75,30 @@ export async function get_log_by_id(access_token:string, log_id:number) {
     }
 }
 
-export async function analize_log(combatlog:string) {
+export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean = false, store_options?:CombatLogStoreOptions) {
     const headers = {
-        'Content-Type': 'text/plain'
+        'Content-Type': gzipped ? 'application/gzip' : 'text/plain'
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/`
+    let query = ''
 
-    console.log(`Requesting POST: ${ENDPOINT}`)
+    if (store_options) {
+        const {
+            access_token,
+            fitting_id,
+            fleet_id,
+        } = store_options
 
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: combatlog,
-            method: 'POST'
-        })
+        headers['Authorization'] = `Bearer ${access_token}`
 
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ))
+        const optional_attributes = {
+            ...((fitting_id !== undefined && fitting_id > 0) && { "fitting_id": fitting_id }),
+            ...((fleet_id !== undefined && fleet_id > 0) && { "fleet_id": fleet_id }),
+            store: true,
         }
 
-        return await response.json() as CombatLog;
-    } catch (error) {
-        throw new Error(`Error analizing log: ${error.message}`);
+        query = query_string(optional_attributes)
     }
-}
-
-export async function analize_zipped_log(combatlog:Uint8Array, access_token?:string, fitting_id?:number, fleet_id?:number) {
-    const headers = {
-        'Content-Type': 'application/gzip'
-    }
-
-    if (access_token)
-        headers['Authorization'] = `Bearer ${access_token}`
-    console.log(headers)
-
-    const optional_attributes = {
-        ...((fitting_id !== undefined && fitting_id > 0) && { "fitting_id": fitting_id }),
-        ...((fleet_id !== undefined && fleet_id > 0) && { "fleet_id": fleet_id }),
-    }
-
-    const query = query_string(optional_attributes)
 
     const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : query}`
 

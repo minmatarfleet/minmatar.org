@@ -906,6 +906,15 @@ export interface FleetCombatLog {
     system_name:    string;
 }
 
+export interface FittingCombatLog {
+    id:             number;
+    uploaded_at:    Date;
+    user_id:        number;
+    logger:         CharacterBasic;
+    character_name: string;
+    system_name:    string;
+}
+
 export interface Damage {
     name:           string;
     item_type:      number;

@@ -1,0 +1,66 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { SavedCombatLog, Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    log:        SavedCombatLog;
+    fitting?:   Fitting | undefined;
+}
+
+const {
+    log,
+    fitting,
+} = Astro.props
+
+import { format_date_time } from '@helpers/date'
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+
+import PictureCard from '@components/blocks/PictureCard.astro';
+import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+
+import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import MemberEVEIcon from '@components/icons/MemberEVEIcon.astro';
+---
+
+<PictureCard src="/images/combatlog-card.jpg">
+    {log.fleet_id > 0 ?
+        <div class="[ icon ]" slot="header"><FleetEvEIcon /></div> :
+        log.fitting_id > 0 ?
+        <div class="[ icon ]" slot="header"><FitsEvEIcon /></div> :
+        <div class="[ icon ]" slot="header"><MemberEVEIcon /></div>
+    }
+
+    <ClipboardButton
+        text={t('share')}
+        narrow={true}
+        id={log.id.toString()}
+        slot="actions"
+    >
+        {translatePath(`${Astro.url}/${log.id}`)}
+    </ClipboardButton>
+
+    <Flexblock gap='var(--space-3xs)'>
+        {log.fleet_id > 0 ?
+            <h4>{t('fleet')} {log.fleet_id}</h4> :
+        log.fitting_id > 0 ?
+            <h4>{fitting?.name ?? t('unknown_fitting_name')}</h4> :
+            <h4>{log.character_name}</h4>
+        }
+        <small>{format_date_time(lang, log.uploaded_at)}</small>
+    </Flexblock>
+</PictureCard>
+
+<style lang="scss">
+    .icon {
+        margin-top: -15px;
+        margin-left: -15px;
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+</style>

@@ -407,6 +407,12 @@ export interface CombatLogMax {
     text:           string;
 }
 
+export interface CombatLogStoreOptions {
+    access_token:   string;
+    fitting_id?:    number;
+    fleet_id?:      number;
+}
+
 export const damage_direction = [ 'from', 'to' ] as const
 export type DamageDirection = typeof damage_direction[number]
 
@@ -431,6 +437,7 @@ export interface CombatLogItem {
 export interface SavedLogsRequest {
     user_id?:   number;
     fleet_id?:  number;
+    fitting_id?:  number;
 }
 
 export interface Contract {
