@@ -1,6 +1,9 @@
 from typing import Dict, List
+import logging
 
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 
 class LogEvent(BaseModel):
@@ -18,6 +21,16 @@ class DamageEvent(BaseModel):
     entity: str = ""
     weapon: str = ""
     outcome: str = ""
+    location: str = ""
+    text: str = ""
+
+
+class RepairEvent(BaseModel):
+    event_time: str = ""
+    repaired: int = 0
+    direction: str = ""
+    rep_type: str = ""
+    entity: str = ""
     location: str = ""
     text: str = ""
 
@@ -57,6 +70,8 @@ class LogAnalysis(BaseModel):
     fleet_id: int = None
     character_name: str = None
     final_system: str = None
+    armor_repaired: int = None
+    shield_repaired: int = None
     max_from: DamageEvent = None
     max_to: DamageEvent = None
 
@@ -105,9 +120,12 @@ def parse(text: str) -> List[LogEvent]:
     location = "{unknown}"
     events = []
     for line in text.splitlines():
-        event = parse_line(line)
-        location = update_location(event, location)
-        events.append(event)
+        try:
+            event = parse_line(line)
+            location = update_location(event, location)
+            events.append(event)
+        except Exception:
+            log.error("Error parsing combat log entry: %s", line)
 
     return events
 
@@ -134,8 +152,9 @@ def strip_html(text):
     return text
 
 
-def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
-    dmg_events = []
+def repair_events(events: List[LogEvent]) -> List[RepairEvent]:
+    rep_events = []
+
     for event in events:
         if event.event_type != "combat":
             continue
@@ -148,7 +167,46 @@ def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
         if text[0] < "0" or text[0] > "9":
             continue
 
+        repair_event = RepairEvent()
+        repair_event.event_time = event.event_time
+        repair_event.location = event.location
+
+        pos = text.find(" remote armor repaired")
+        if pos >= 0:
+            repair_event.repaired = int(text[0:pos])
+            repair_event.direction = "to"
+            repair_event.rep_type = "armor"
+            text = text[pos + 20 :]
+
+        pos = text.find(" remote shield boosted")
+        if pos >= 0:
+            log.info(text)
+            repair_event.repaired = int(text[0:pos])
+            repair_event.direction = "to"
+            repair_event.rep_type = "shield"
+            text = text[pos + 20 :]
+
+        if repair_event.repaired > 0:
+            rep_events.append(repair_event)
+
+    return rep_events
+
+
+def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
+    dmg_events = []
+    for event in events:
+        if event.event_type != "combat":
+            continue
+
+        text = event.text
+
+        if len(text) == 0:
+            continue
+        if text[0] < "0" or text[0] > "9":
+            continue
         if text.find("remote armor repaired") >= 0:
+            continue
+        if text.find("remote shield boosted") >= 0:
             continue
 
         damage_event = DamageEvent()
@@ -286,6 +344,8 @@ def update_damage_analysis(analysis: DamageAnalysis, event: DamageEvent):
 
 
 def update_combat_time(events: List[DamageEvent], analysis: LogAnalysis):
+    if len(events) == 0:
+        return
     analysis.start = events[0].event_time
     analysis.end = analysis.start
     for event in events:
@@ -310,3 +370,16 @@ def last_combat_system(events: List[DamageEvent]) -> str:
         if event.location:
             system = event.location
     return system
+
+
+def total_repaired(events: List[RepairEvent], rep_type: str) -> int:
+    total = 0
+
+    for event in events:
+        if event.rep_type == rep_type:
+            total += event.repaired
+
+    if total == 0:
+        return None
+    else:
+        return total

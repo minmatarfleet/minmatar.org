@@ -23,6 +23,8 @@ from .combatlog import (
     update_combat_time,
     weapon_analysis,
     last_combat_system,
+    repair_events,
+    total_repaired,
 )
 from .models import CombatLog
 
@@ -128,6 +130,10 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 
     analysis.max_from = max_damage(dmg_events, "from")
     analysis.max_to = max_damage(dmg_events, "to")
+
+    repairs = repair_events(events)
+    analysis.armor_repaired = total_repaired(repairs, "armor")
+    analysis.shield_repaired = total_repaired(repairs, "shield")
 
     update_combat_time(dmg_events, analysis)
 
