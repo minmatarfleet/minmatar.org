@@ -1215,5 +1215,6 @@ export const ui = {
         'add_combatlog': 'Add Combat Log',
         'add_fleet_combatlog_dialog_title': 'Add fleet Combat Log',
         'no_combatlog': 'No stored combat log found',
+        'quite_a_log': 'What a fight you must have had 😅',
     },
 } as const;
