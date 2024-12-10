@@ -148,6 +148,8 @@ class LogSummary(BaseModel):
     fitting_id: int = None
     character_name: str = None
     system_name: str = None
+    fitting_name: str = None
+    fitting_ship: int = None
 
 
 @router.get(
@@ -171,6 +173,8 @@ def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
         combat_logs = CombatLog.objects.filter(created_by_id=user_id)
         fc_id = None
 
+    combat_logs = combat_logs.select_related("fitting")
+
     results = []
     for record in combat_logs:
         if not can_view(record, user_id, fc_id):
@@ -186,6 +190,8 @@ def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
             summary.fleet_id = record.fleet_id
         if record.fitting_id:
             summary.fitting_id = record.fitting_id
+            summary.fitting_name = record.fitting.name
+            summary.fitting_ship = record.fitting.ship_id
         if record.character_name:
             summary.character_name = record.character_name
         if record.solar_system_name:
