@@ -115,31 +115,29 @@ const page_description = t('intel.combatlog.leading_text');
         </AnalizeCombatLogButton>
         
         <div id="combatlog">
-            <BlockList gap='var(--space-2xl)'>
-                {saved_logs.length > 0 &&
-                    <Grid
-                        role="list"
-                        class="[ w-full grid-fill ]"
-                        min_item_width='240px'
-                        row_gap='var(--space-3xs)'
-                        column_gap='var(--space-3xs)'
-                    >
-                        {saved_logs.map(log =>
-                            <a
-                                class="[ items-center flex ]"
-                                role="listitem"
-                                href={translatePath(`/intel/combatlog/${log.id}`)}
-                            >
-                                {
-                                    log.fitting_id > 0 ?
-                                        <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
-                                        <CombatLogItem log={log} />
-                                }
-                            </a>
-                        )}
-                    </Grid>
-                }
-            </BlockList>
+            {saved_logs.length > 0 &&
+                <Grid
+                    role="list"
+                    class="[ w-full grid-fill ]"
+                    min_item_width='240px'
+                    row_gap='var(--space-3xs)'
+                    column_gap='var(--space-3xs)'
+                >
+                    {saved_logs.map(log =>
+                        <a
+                            class="[ w-full items-center ]"
+                            role="listitem"
+                            href={translatePath(`/intel/combatlog/${log.id}`)}
+                        >
+                            {
+                                log.fitting_id > 0 ?
+                                    <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
+                                    <CombatLogItem log={log} />
+                            }
+                        </a>
+                    )}
+                </Grid>
+            }
 
             {saved_logs.length === 0 &&
                 <Flexblock
