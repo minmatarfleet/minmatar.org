@@ -122,12 +122,15 @@ import Badge from '@components/blocks/Badge.astro';
             </ComponentBlock>
         }
 
-        <ComponentBlock>
-            <CombatLogChart
-                damage_in={damage_in}
-                damage_out={damage_out}
-                timeline_time={timeline_time}
-            />
-        </ComponentBlock>
+        {timeline_time.length > 0 ?
+            <ComponentBlock>
+                <CombatLogChart
+                    damage_in={damage_in}
+                    damage_out={damage_out}
+                    timeline_time={timeline_time}
+                />
+            </ComponentBlock> :
+            <p>{t('quite_a_log')}</p>
+        }
     </Flexblock>
 </Flexblock>

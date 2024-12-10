@@ -75,8 +75,8 @@ export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gz
 export async function fetch_combatlog_by_id(access_token:string, log_id:number) {
     const analysis = await get_log_by_id(access_token, log_id)
 
-    const start_time = analysis.times[0].name
-    const end_time = analysis.times[analysis.times.length - 1].name
+    const start_time = analysis.times[0]?.name ?? analysis.start
+    const end_time = analysis.times[analysis.times.length - 1]?.name ?? analysis.end
 
     const timeline = generate_timeline(start_time, end_time)
     const damage_in:number[] = []
