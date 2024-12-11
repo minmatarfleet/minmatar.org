@@ -10,6 +10,7 @@ from .combatlog import (
     strip_html,
     total_damage,
     update_location,
+    repair_events,
 )
 
 
@@ -179,3 +180,36 @@ class DamageParseTest(TestCase):
         self.assertEqual("to", event.direction)
         self.assertEqual("Inferno Rage Compiler Error", event.weapon)
         self.assertEqual("[P-1]Bad Guy", event.entity)
+
+
+class RemoteRepsParseTest(TestCase):
+
+    def test_parse_armor_rep(self):
+        logs = "[ 2024.09.07 14:58:50 ] (combat) 220 remote armor repaired to Big Duck - Tankface - Small Remote Armor Repairer II"
+
+        events = parse(logs)
+        rep_events = repair_events(events)
+
+        self.assertEqual(1, len(rep_events))
+        event = rep_events[0]
+        self.assertEqual(220, event.repaired)
+        self.assertEqual("armor", event.rep_type)
+        self.assertEqual("Big Duck", event.entity)
+        self.assertEqual("Tankface", event.ship)
+        self.assertEqual("Small Remote Armor Repairer II", event.module)
+
+    def test_parse_shield_rep(self):
+        logs = "[ 2024.09.07 14:58:50 ] (combat) 50 remote shield boosted to Red Muppet - Wolf NANO - Small Asymmetric Enduring Remote Shield Booster"
+
+        events = parse(logs)
+        rep_events = repair_events(events)
+
+        self.assertEqual(1, len(rep_events))
+        event = rep_events[0]
+        self.assertEqual(50, event.repaired)
+        self.assertEqual("shield", event.rep_type)
+        self.assertEqual("Red Muppet", event.entity)
+        self.assertEqual("Wolf NANO", event.ship)
+        self.assertEqual(
+            "Small Asymmetric Enduring Remote Shield Booster", event.module
+        )
