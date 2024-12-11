@@ -25,6 +25,7 @@ from .combatlog import (
     last_combat_system,
     repair_events,
     total_repaired,
+    repair_analysis,
 )
 from .models import CombatLog
 
@@ -60,10 +61,6 @@ def analyze_logs(
     start_time: str = "",
     end_time: str = "",
 ):
-    log.info("User = %s", str(request.user))
-    log.info("Combat log fleet ID = %d, fitting ID = %d", fleet_id, fitting_id)
-    log.info("Combat log time range = %s to %s", start_time, end_time)
-
     store = store or fleet_id > 0 or fitting_id > 0
 
     if store and not request.user.id:
@@ -134,6 +131,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     repairs = repair_events(events)
     analysis.armor_repaired = total_repaired(repairs, "armor")
     analysis.shield_repaired = total_repaired(repairs, "shield")
+    analysis.repairs = repair_analysis(repairs)
 
     update_combat_time(dmg_events, analysis)
 

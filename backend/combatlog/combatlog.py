@@ -31,6 +31,8 @@ class RepairEvent(BaseModel):
     direction: str = ""
     rep_type: str = ""
     entity: str = ""
+    ship: str = ""
+    module: str = ""
     location: str = ""
     text: str = ""
 
@@ -51,6 +53,19 @@ class DamageAnalysis(BaseModel):
     first: str = ""
     last: str = ""
     location: str = ""
+
+
+class RepairAnalysis(BaseModel):
+    """Analysis of repairs to another ship"""
+
+    name: str
+    category: str
+    cycles_to: int = 0
+    repairs_to: int = 0
+    max_to: int = 0
+    avg_to: int = 0
+    first: str = ""
+    last: str = ""
 
 
 class LogAnalysis(BaseModel):
@@ -74,6 +89,7 @@ class LogAnalysis(BaseModel):
     shield_repaired: int = None
     max_from: DamageEvent = None
     max_to: DamageEvent = None
+    repairs: List[RepairAnalysis] = []
 
 
 def parse_line(line: str) -> LogEvent:
@@ -176,17 +192,25 @@ def repair_events(events: List[LogEvent]) -> List[RepairEvent]:
             repair_event.repaired = int(text[0:pos])
             repair_event.direction = "to"
             repair_event.rep_type = "armor"
-            text = text[pos + 20 :]
+            text = text[pos + 26 :]
 
         pos = text.find(" remote shield boosted")
         if pos >= 0:
-            log.info(text)
             repair_event.repaired = int(text[0:pos])
             repair_event.direction = "to"
             repair_event.rep_type = "shield"
-            text = text[pos + 20 :]
+            text = text[pos + 26 :]
 
         if repair_event.repaired > 0:
+            parts = text.split(" - ")
+
+            if len(parts) >= 1:
+                repair_event.entity = parts[0].strip()
+            if len(parts) >= 2:
+                repair_event.ship = parts[1].strip()
+            if len(parts) >= 3:
+                repair_event.module = parts[2].strip()
+
             rep_events.append(repair_event)
 
     return rep_events
@@ -383,3 +407,34 @@ def total_repaired(events: List[RepairEvent], rep_type: str) -> int:
         return None
     else:
         return total
+
+
+def repair_analysis(events: List[RepairEvent]) -> List[RepairAnalysis]:
+    repairs: Dict[str, RepairAnalysis] = {}
+
+    for event in events:
+        if event.entity not in repairs:
+            repairs[event.entity] = RepairAnalysis(
+                category="Entity",
+                name=event.entity,
+                first=event.event_time,
+                last=event.event_time,
+            )
+
+        update_repair_analysis(repairs[event.entity], event)
+
+    results = []
+    for _, value in repairs.items():
+        results.append(value)
+
+    return results
+
+
+def update_repair_analysis(analysis: RepairAnalysis, event: RepairEvent):
+    analysis.cycles_to += 1
+    analysis.repairs_to += event.repaired
+    analysis.avg_to = round(analysis.repairs_to / analysis.cycles_to)
+    analysis.max_to = max(analysis.max_to, event.repaired)
+
+    analysis.first = min(analysis.first, event.event_time)
+    analysis.last = max(analysis.last, event.event_time)
