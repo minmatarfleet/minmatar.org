@@ -15,7 +15,8 @@ import type { PostUI } from '@dtypes/layout_components'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 const param = Astro.params.post_id
-const post_id = param === 'new' ? 0 : parseInt(param ?? '')
+const slug = param?.split('-') ?? ''
+const post_id = parseInt(slug[slug.length - 1])
 
 if (isNaN(post_id))
     return Astro.redirect(translatePath('/alliance/'))
