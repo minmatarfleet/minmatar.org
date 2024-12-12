@@ -61,6 +61,7 @@ class RepairAnalysis(BaseModel):
     name: str
     category: str
     ship: str = None
+    rep_type: str = None
     cycles_to: int = 0
     repairs_to: int = 0
     max_to: int = 0
@@ -91,6 +92,7 @@ class LogAnalysis(BaseModel):
     max_from: DamageEvent = None
     max_to: DamageEvent = None
     repairs: List[RepairAnalysis] = []
+    rep_modules: List[RepairAnalysis] = []
 
 
 def parse_line(line: str) -> LogEvent:
@@ -432,11 +434,34 @@ def repair_analysis(events: List[RepairEvent]) -> List[RepairAnalysis]:
                 category="Entity",
                 name=event.entity,
                 ship=event.ship,
+                rep_type=event.rep_type,
                 first=event.event_time,
                 last=event.event_time,
             )
 
         update_repair_analysis(repairs[event.entity], event)
+
+    results = []
+    for _, value in repairs.items():
+        results.append(value)
+
+    return results
+
+
+def rep_module_analysis(events: List[RepairEvent]) -> List[RepairAnalysis]:
+    repairs: Dict[str, RepairAnalysis] = {}
+
+    for event in events:
+        if event.module not in repairs:
+            repairs[event.module] = RepairAnalysis(
+                category="Module",
+                name=event.module,
+                rep_type=event.rep_type,
+                first=event.event_time,
+                last=event.event_time,
+            )
+
+        update_repair_analysis(repairs[event.module], event)
 
     results = []
     for _, value in repairs.items():
@@ -480,6 +505,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     analysis.armor_repaired = total_repaired(repairs, "armor")
     analysis.shield_repaired = total_repaired(repairs, "shield")
     analysis.repairs = repair_analysis(repairs)
+    analysis.rep_modules = rep_module_analysis(repairs)
 
     update_combat_time(dmg_events, repairs, analysis)
 
