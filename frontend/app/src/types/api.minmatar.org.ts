@@ -387,11 +387,15 @@ export interface CombatLog {
     max_from:           CombatLogMax;
     max_to:             CombatLogMax;
     repairs:            Repairs[];
+    rep_modules:        Repairs[];
 }
+
+export type RepairTypes = 'shield' | 'armor' | 'hull'
 
 export interface Repairs {
     name:       string;
     category:   string;
+    rep_type:   RepairTypes;
     cycles_to:  number;
     repairs_to: number;
     max_to:     number;
@@ -442,6 +446,7 @@ export interface CombatLogItem {
     avg_from:       number;
     volleys_to:     number;
     damage_to:      number;
+    reps_to:        number;
     max_to:         number;
     avg_to:         number;
     first:          Date;

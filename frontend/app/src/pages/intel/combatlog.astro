@@ -53,19 +53,21 @@ try {
     console.log(combatlog_selects_error)
 }
 
+const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_component/')
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import AnalizeCombatLogButton from '@components/blocks/AnalizeCombatLogButton.astro';
 import Button from '@components/blocks/Button.astro';
 import CombatLogItem from '@components/blocks/CombatLogItem.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('intel.combatlog.page_title');
 const page_description = t('intel.combatlog.leading_text');
@@ -115,43 +117,52 @@ const page_description = t('intel.combatlog.leading_text');
         </AnalizeCombatLogButton>
         
         <div id="combatlog">
-            {saved_logs.length > 0 &&
-                <Grid
-                    role="list"
-                    class="[ w-full grid-fill ]"
-                    min_item_width='240px'
-                    row_gap='var(--space-3xs)'
-                    column_gap='var(--space-3xs)'
-                >
-                    {saved_logs.map(log =>
-                        <a
-                            class="[ w-full items-center ]"
-                            role="listitem"
-                            href={translatePath(`/intel/combatlog/${log.id}`)}
-                        >
-                            {
-                                log.fitting_id > 0 ?
-                                    <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
-                                    <CombatLogItem log={log} />
+            {combatlog_selects_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: COMBATLOG_LIST_PARTIAL_URL,
+                        message: combatlog_selects_error,
+                        delay: 0,
+                        target: '#pilots-list',
+                    }}
+                />
+                :
+                saved_logs.length > 0 ?
+                    <Grid
+                        role="list"
+                        class="[ w-full grid-fill ]"
+                        min_item_width='240px'
+                        row_gap='var(--space-3xs)'
+                        column_gap='var(--space-3xs)'
+                    >
+                        {saved_logs.map(log =>
+                            <a
+                                class="[ w-full items-center ]"
+                                role="listitem"
+                                href={translatePath(`/intel/combatlog/${log.id}`)}
+                            >
+                                {
+                                    log.fitting_id > 0 ?
+                                        <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
+                                        <CombatLogItem log={log} />
+                                }
+                            </a>
+                        )}
+                    </Grid>
+                    :
+                    <Flexblock
+                        centered={true}
+                        x-data={`{
+                            expanded: false,
+                            toggle_collapse() {
+                                this.expanded = !this.expanded
                             }
-                        </a>
-                    )}
-                </Grid>
-            }
-
-            {saved_logs.length === 0 &&
-                <Flexblock
-                    centered={true}
-                    x-data={`{
-                        expanded: false,
-                        toggle_collapse() {
-                            this.expanded = !this.expanded
-                        }
-                    }`}
-                    gap='var(--space-3xs)'
-                >
-                    <p class="[ text-center ]">{t('no_combatlog')}</p>
-                </Flexblock>
+                        }`}
+                        gap='var(--space-3xs)'
+                    >
+                        <p class="[ text-center ]">{t('no_combatlog')}</p>
+                    </Flexblock>
+                
             }
         </div>
 	</PageWide>

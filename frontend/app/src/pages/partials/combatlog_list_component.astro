@@ -1,0 +1,112 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { Alert } from '@dtypes/layout_components'
+import type { Fitting, SavedCombatLog } from '@dtypes/api.minmatar.org'
+import { get_saved_logs, delete_log } from '@helpers/api.minmatar.org/combatlog'
+
+let saved_logs:SavedCombatLog[] = []
+let fittings:Fitting[] = []
+let combatlog_selects_error:string | false = false
+let alert:Alert | false = false
+let delete_log_error:string | false = false
+
+if (Astro.request.method === "DELETE") {
+    try {
+        const log_id = parseInt(Astro.url.searchParams.get('id') as string)
+
+        if (!auth_token)
+            throw new Error('unauthenticated_error')
+
+        if (isNaN(log_id))
+            throw new Error('invalid_log_id')
+
+        await delete_log(auth_token, log_id)
+    } catch (error) {
+        delete_log_error = (prod_error_messages() ? t('delete_log_error') : error.message)
+
+        alert = {
+            title: t('remove_log_dialog_title'),
+            content: delete_log_error as string,
+        }
+    }
+}
+
+try {
+    saved_logs = user ? await get_saved_logs(auth_token as string, { user_id: user.user_id }) : []
+} catch (error) {
+    combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
+}
+
+const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_component/')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import CombatLogItem from '@components/blocks/CombatLogItem.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+---
+
+<div id="combatlog">
+    {combatlog_selects_error ?
+        <ErrorRefetch
+            args={{
+                partial: COMBATLOG_LIST_PARTIAL_URL,
+                message: combatlog_selects_error,
+                delay: delay,
+                target: '#combatlog',
+            }}
+        />
+        :
+        saved_logs.length > 0 ?
+            <Grid
+                role="list"
+                class="[ w-full grid-fill ]"
+                min_item_width='240px'
+                row_gap='var(--space-3xs)'
+                column_gap='var(--space-3xs)'
+            >
+                {saved_logs.map(log =>
+                    <a
+                        class="[ w-full items-center ]"
+                        role="listitem"
+                        href={translatePath(`/intel/combatlog/${log.id}`)}
+                    >
+                        {
+                            log.fitting_id > 0 ?
+                                <CombatLogItem log={log} fitting={fittings.find(fitting => fitting.id === log.fitting_id)} /> :
+                                <CombatLogItem log={log} />
+                        }
+                    </a>
+                )}
+            </Grid>
+            :
+            <Flexblock
+                centered={true}
+                x-data={`{
+                    expanded: false,
+                    toggle_collapse() {
+                        this.expanded = !this.expanded
+                    }
+                }`}
+                gap='var(--space-3xs)'
+            >
+                <p class="[ text-center ]">{t('no_combatlog')}</p>
+            </Flexblock>
+        
+    }
+</div>
+
+{alert && <ShowAlert alert={alert} /> }
