@@ -48,6 +48,7 @@ class DamageAnalysis(BaseModel):
     avg_from: int = 0
     volleys_to: int = 0
     damage_to: int = 0
+    reps_to: int = 0
     max_to: int = 0
     avg_to: int = 0
     first: str = ""
@@ -287,20 +288,13 @@ def enemy_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
 
     for event in dmg_events:
         if event.entity not in enemies:
-            enemies[event.entity] = DamageAnalysis(
-                category="Enemy",
-                name=event.entity,
-                first=event.event_time,
-                last=event.event_time,
+            enemies[event.entity] = make_damage_analysis(
+                "Enemy", event.entity, event
             )
 
         update_damage_analysis(enemies[event.entity], event)
 
-    results = []
-    for _, value in enemies.items():
-        results.append(value)
-
-    return results
+    return list(enemies.values())
 
 
 def weapon_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
@@ -311,46 +305,55 @@ def weapon_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
             continue
 
         if event.weapon not in weapons:
-            weapons[event.weapon] = DamageAnalysis(
-                category="Weapon",
-                name=event.weapon,
-                first=event.event_time,
-                last=event.event_time,
+            weapons[event.weapon] = make_damage_analysis(
+                "Weapon", event.weapon, event
             )
 
         update_damage_analysis(weapons[event.weapon], event)
 
-    results = []
-    for _, value in weapons.items():
-        results.append(value)
-
-    return results
+    return list(weapons.values())
 
 
-def time_analysis(dmg_events: List[DamageEvent]) -> List[DamageAnalysis]:
+def time_analysis(
+    damage: List[DamageEvent], reps: List[RepairEvent]
+) -> List[DamageAnalysis]:
     times: Dict[str, DamageAnalysis] = {}
 
-    for event in dmg_events:
+    for event in damage:
         time_bucket = event.event_time[0:-1] + "0"
 
         if time_bucket not in times:
-            times[time_bucket] = DamageAnalysis(
-                category="TimeBucket",
-                name=time_bucket,
-                first=event.event_time,
-                last=event.event_time,
+            times[time_bucket] = make_damage_analysis(
+                "TimeBucket", time_bucket, event
             )
 
         update_damage_analysis(times[time_bucket], event)
 
-        if event.location != "":
-            times[time_bucket].location = event.location
+    for event in reps:
+        time_bucket = event.event_time[0:-1] + "0"
 
-    results = []
-    for _, value in times.items():
-        results.append(value)
+        if time_bucket not in times:
+            times[time_bucket] = make_damage_analysis(
+                "TimeBucket", time_bucket, event
+            )
 
-    return results
+        times[time_bucket].reps_to += event.repaired
+
+    return list(times.values())
+
+
+def make_damage_analysis(category: str, name: str, event) -> DamageAnalysis:
+    da = DamageAnalysis(
+        category=category,
+        name=name,
+        first=event.event_time,
+        last=event.event_time,
+    )
+
+    if event.location not in ("", "{unknown}"):
+        da.location = event.location
+
+    return da
 
 
 def update_damage_analysis(analysis: DamageAnalysis, event: DamageEvent):
@@ -496,12 +499,14 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 
     analysis.enemies = enemy_analysis(dmg_events)
     analysis.weapons = weapon_analysis(dmg_events)
-    analysis.times = time_analysis(dmg_events)
+
+    repairs = repair_events(events)
+
+    analysis.times = time_analysis(dmg_events, repairs)
 
     analysis.max_from = max_damage(dmg_events, "from")
     analysis.max_to = max_damage(dmg_events, "to")
 
-    repairs = repair_events(events)
     analysis.armor_repaired = total_repaired(repairs, "armor")
     analysis.shield_repaired = total_repaired(repairs, "shield")
     analysis.repairs = repair_analysis(repairs)
