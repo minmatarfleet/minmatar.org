@@ -11,22 +11,8 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from fleets.models import EveFleet
 
-from .combatlog import (
-    LogAnalysis,
-    character_name,
-    damage_events,
-    enemy_analysis,
-    max_damage,
-    parse,
-    time_analysis,
-    total_damage,
-    update_combat_time,
-    weapon_analysis,
-    last_combat_system,
-    repair_events,
-    total_repaired,
-    repair_analysis,
-)
+from .combatlog import LogAnalysis, analyze_parsed_log
+
 from .models import CombatLog
 
 router = Router(tags=["Combat Logs"])
@@ -103,37 +89,6 @@ def analyze_logs(
         combat_log.save()
 
         set_ids(analysis, combat_log)
-
-    return analysis
-
-
-def analyze_parsed_log(content: str) -> LogAnalysis:
-
-    events = parse(content)
-
-    analysis = LogAnalysis()
-    analysis.logged_events = len(events)
-    analysis.character_name = character_name(events)
-
-    dmg_events = damage_events(events)
-
-    analysis.final_system = last_combat_system(dmg_events)
-
-    (analysis.damage_done, analysis.damage_taken) = total_damage(dmg_events)
-
-    analysis.enemies = enemy_analysis(dmg_events)
-    analysis.weapons = weapon_analysis(dmg_events)
-    analysis.times = time_analysis(dmg_events)
-
-    analysis.max_from = max_damage(dmg_events, "from")
-    analysis.max_to = max_damage(dmg_events, "to")
-
-    repairs = repair_events(events)
-    analysis.armor_repaired = total_repaired(repairs, "armor")
-    analysis.shield_repaired = total_repaired(repairs, "shield")
-    analysis.repairs = repair_analysis(repairs)
-
-    update_combat_time(dmg_events, analysis)
 
     return analysis
 
@@ -227,6 +182,37 @@ def get_saved_log(request, log_id: int):
         return 404, ErrorResponse(
             status=404,
             detail="Combat log details not found",
+        )
+
+
+class DeleteStatus(BaseModel):
+    deleted: bool
+    message: str
+
+
+@router.delete(
+    "/{log_id}",
+    description="Delete a stored combat log if you created it",
+    response={200: DeleteStatus, 404: ErrorResponse, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def delete_saved_log(request, log_id: int):
+    try:
+        db_log = CombatLog.objects.get(id=log_id)
+        if db_log.created_by_id != request.user.id:
+            return 403, ErrorResponse(
+                status=403,
+                detail="You did not create this combat log",
+            )
+        db_log.delete()
+        log.info(f"Combat log {log_id} deleted by creator ({request.user})")
+        return 200, DeleteStatus(
+            deleted=True, message=f"Combat log {log_id} deleted."
+        )
+    except CombatLog.DoesNotExist:
+        return 404, ErrorResponse(
+            status=404,
+            detail=f"Combat log {log_id} not found",
         )
 
 
