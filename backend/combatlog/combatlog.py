@@ -60,6 +60,7 @@ class RepairAnalysis(BaseModel):
 
     name: str
     category: str
+    ship: str = None
     cycles_to: int = 0
     repairs_to: int = 0
     max_to: int = 0
@@ -430,6 +431,7 @@ def repair_analysis(events: List[RepairEvent]) -> List[RepairAnalysis]:
             repairs[event.entity] = RepairAnalysis(
                 category="Entity",
                 name=event.entity,
+                ship=event.ship,
                 first=event.event_time,
                 last=event.event_time,
             )
