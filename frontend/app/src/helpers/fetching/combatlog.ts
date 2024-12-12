@@ -2,7 +2,7 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import type { CombatLogAnalysis, CombatLogMaxUI, FleetCombatLog, FittingCombatLog } from '@dtypes/layout_components'
+import type { CombatLogAnalysis, CombatLogMaxUI, FleetCombatLog, FittingCombatLog, RepairsUI } from '@dtypes/layout_components'
 import type { CombatLogStoreOptions } from '@dtypes/api.minmatar.org'
 import { analize_log, get_log_by_id, get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 import { generate_timeline } from '@helpers/date'
@@ -10,6 +10,9 @@ import { parse_damage_from_logs } from '@helpers/eve'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import { unique_values } from '@helpers/array'
 import { get_users_character } from '@helpers/fetching/characters'
+import { get_item_id } from '@helpers/sde/items'
+
+const CAPSULE_TYPE_ID = 670
 
 export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gzipped:boolean, store_options?:CombatLogStoreOptions) {
     const analysis = await analize_log(combatlog, gzipped, store_options)
@@ -52,6 +55,19 @@ export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gz
 
     const fitting = analysis?.fitting_id > 0 ? await get_fitting_by_id(analysis?.fitting_id) : null
     const fleet_id = analysis?.fleet_id > 0 ? analysis?.fleet_id : null
+    const repairs = await Promise.all(analysis.repairs.map(async repair => {
+        const effective_reps = (repair.repairs_to * 100) / (repair.max_to * repair.cycles_to)
+        
+        return {
+            name: repair.name,
+            cycles: repair.cycles_to,
+            amount_repaired: repair.repairs_to,
+            avg_cycle: repair.avg_to,
+            max_cycle: repair.max_to,
+            effective_reps: effective_reps,
+            ship_type: await get_item_id(repair.name.split(' [')[0]) ?? CAPSULE_TYPE_ID,
+        } as RepairsUI
+    }))
     
     return {
         logged_events: analysis.logged_events,
@@ -65,6 +81,9 @@ export async function fetch_combatlog_analysis(combatlog:string | Uint8Array, gz
         enemies: enemies,
         weapons: weapons,
         character_name: analysis.character_name,
+        armor_repaired: analysis.armor_repaired,
+        shield_repaired: analysis.shield_repaired,
+        repairs: repairs,
         ...(fitting && { fitting }),
         ...(fleet_id && { fleet_id }),
         ...(max_from && { max_from }),
@@ -113,6 +132,20 @@ export async function fetch_combatlog_by_id(access_token:string, log_id:number) 
 
     const fitting = analysis?.fitting_id > 0 ? await get_fitting_by_id(analysis?.fitting_id) : null
     const fleet_id = analysis?.fleet_id > 0 ? analysis?.fleet_id : null
+    const repairs = await Promise.all(analysis.repairs.map(async repair => {
+        const effective_reps = (repair.repairs_to * 100) / (repair.max_to * repair.cycles_to)
+console.log(repair.name.split(' [')[0])
+console.log(await get_item_id(repair.name.split(' [')[0]) ?? CAPSULE_TYPE_ID)
+        return {
+            name: repair.name,
+            cycles: repair.cycles_to,
+            amount_repaired: repair.repairs_to,
+            avg_cycle: repair.avg_to,
+            max_cycle: repair.max_to,
+            effective_reps: effective_reps,
+            ship_type: await get_item_id(repair.name.split(' [')[0]) ?? CAPSULE_TYPE_ID,
+        } as RepairsUI
+    }))
     
     return {
         logged_events: analysis.logged_events,
@@ -125,7 +158,10 @@ export async function fetch_combatlog_by_id(access_token:string, log_id:number) 
         timeline: timeline,
         enemies: enemies,
         weapons: weapons,
+        repairs: repairs,
         character_name: analysis.character_name,
+        armor_repaired: analysis.armor_repaired,
+        shield_repaired: analysis.shield_repaired,
         ...(fitting && { fitting }),
         ...(fleet_id && { fleet_id }),
         ...(max_from && { max_from }),

@@ -28,6 +28,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import DamageBadge from '@components/blocks/DamageBadge.astro';
 import CombatLogChart from '@components/blocks/CombatLogChart.astro';
 import Badge from '@components/blocks/Badge.astro';
+import RepairBadge from '@components/blocks/RepairBadge.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
@@ -67,7 +68,7 @@ import Badge from '@components/blocks/Badge.astro';
             >
                 {combat_log_analysis?.max_to &&
                     <TextGroup title={t('max_damage_inflicted')}>
-                        <Flexblock gap='0'>
+                        <Flexblock gap='0' slot="outside">
                             <span><b class="[ text-green ]">{combat_log_analysis?.max_to.damage}</b> - <small>{combat_log_analysis?.max_to.weapon} - {combat_log_analysis?.max_to.outcome}</small></span>
                             <small>To {combat_log_analysis?.max_to.entity}</small>
                         </Flexblock>
@@ -75,11 +76,17 @@ import Badge from '@components/blocks/Badge.astro';
                 }
                 {combat_log_analysis?.max_from &&
                     <TextGroup title={t('max_damage_received')}>
-                        <Flexblock gap='0'>
+                        <Flexblock gap='0' slot="outside">
                             <span><b class="[ text-red ]">{combat_log_analysis?.max_from.damage}</b> - <small>{combat_log_analysis?.max_from.weapon} - {combat_log_analysis?.max_from.outcome}</small></span>
                             <small>From {combat_log_analysis?.max_from.entity}</small>
                         </Flexblock>
                     </TextGroup>
+                }
+                {combat_log_analysis.armor_repaired > 0 &&
+                    <TextGroup title={t('armor_repaired')}>{combat_log_analysis.armor_repaired}</TextGroup>
+                }
+                {combat_log_analysis.shield_repaired > 0 &&
+                    <TextGroup title={t('shield_repaired')}>{combat_log_analysis.shield_repaired}</TextGroup>
                 }
             </Grid>
         }
@@ -122,15 +129,32 @@ import Badge from '@components/blocks/Badge.astro';
             </ComponentBlock>
         }
 
-        {timeline_time.length > 0 ?
+        {timeline_time.length > 0 &&
             <ComponentBlock>
                 <CombatLogChart
                     damage_in={damage_in}
                     damage_out={damage_out}
                     timeline_time={timeline_time}
                 />
-            </ComponentBlock> :
-            <p>{t('quite_a_log')}</p>
+            </ComponentBlock>
         }
-    </Flexblock>
+    </Flexblock>    
+
+    {(combat_log_analysis?.repairs?.length ?? 0) > 0 &&
+        <ComponentBlock>
+            <Flexblock gap='var(--space-l)'>
+                <h3>{t('repairs')}</h3>
+                <Grid
+                    class="[ component w-full grid-fill ]"
+                    row_gap="var(--space-m)"
+                    column_gap="var(--space-3xs)"
+                    min_item_width="350px"
+                >
+                    {combat_log_analysis?.repairs.map(repair =>
+                        <RepairBadge repair={repair} />
+                    )}
+                </Grid>
+            </Flexblock>
+        </ComponentBlock>
+    }
 </Flexblock>

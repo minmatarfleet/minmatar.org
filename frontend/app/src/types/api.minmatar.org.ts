@@ -369,21 +369,35 @@ export interface MoonSummarySystem {
 }
 
 export interface CombatLog {
-    logged_events:  number;
-    damage_done:    number;
-    damage_taken:   number;
-    weapons:        CombatLogItem[];
-    enemies:        CombatLogItem[];
-    times:          CombatLogItem[];
-    start:          Date;
-    end:            Date;
-    db_id:          number;
-    user_id:        number;
-    fitting_id:     number;
-    fleet_id:       number;
-    character_name: string;
-    max_from:       CombatLogMax;
-    max_to:         CombatLogMax;
+    logged_events:      number;
+    damage_done:        number;
+    damage_taken:       number;
+    weapons:            CombatLogItem[];
+    enemies:            CombatLogItem[];
+    times:              CombatLogItem[];
+    start:              Date;
+    end:                Date;
+    db_id:              number;
+    user_id:            number;
+    fitting_id:         number;
+    fleet_id:           number;
+    character_name:     string;
+    armor_repaired:     number;
+    shield_repaired:    number;
+    max_from:           CombatLogMax;
+    max_to:             CombatLogMax;
+    repairs:            Repairs[];
+}
+
+export interface Repairs {
+    name:       string;
+    category:   string;
+    cycles_to:  number;
+    repairs_to: number;
+    max_to:     number;
+    avg_to:     number
+    first:      Date;
+    last:       Date;
 }
 
 export interface SavedCombatLog {

@@ -20,7 +20,9 @@ const {
     {title &&
         <h4>{title}</h4>
     }
-    <p {...attributes}><slot /></p>
+    <slot name="outside">
+        <p {...attributes}><slot /></p>
+    </slot>
 </Flexblock>
 
 <style lang="scss">

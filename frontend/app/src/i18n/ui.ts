@@ -1216,5 +1216,11 @@ export const ui = {
         'add_fleet_combatlog_dialog_title': 'Add fleet Combat Log',
         'no_combatlog': 'No stored combat log found',
         'quite_a_log': 'What a fight you must have had 😅',
+        'effective_repairs': 'Effective repairs',
+        'per_cycle_out_of': 'per cycle out of',
+        'cycles': 'cycles',
+        'repairs': 'Repairs',
+        'armor_repaired': 'Armor repaired',
+        'shield_repaired': 'Shield repaired',
     },
 } as const;
