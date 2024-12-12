@@ -15,6 +15,7 @@ const {
 const timeline = combat_log_analysis?.timeline
 const damage_in = combat_log_analysis?.damage_in
 const damage_out = combat_log_analysis?.damage_out
+const reps_out = combat_log_analysis?.reps_out
 const timeline_time = timeline.map(datetime => datetime.split(' ')[1])
 
 import { format_date_time } from '@helpers/date'
@@ -129,32 +130,51 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
             </ComponentBlock>
         }
 
+        {(combat_log_analysis?.repairs_modules?.length ?? 0) > 0 &&
+            <ComponentBlock>
+                <Flexblock gap='var(--space-l)'>
+                    <h3>{t('remote_boosters')}</h3>
+                    <Grid
+                        class="[ component w-full grid-fill ]"
+                        row_gap="var(--space-m)"
+                        column_gap="var(--space-3xs)"
+                        min_item_width="350px"
+                    >
+                        {combat_log_analysis?.repairs_modules.map(repair =>
+                            <RepairBadge repair={repair} />
+                        )}
+                    </Grid>
+                </Flexblock>
+            </ComponentBlock>
+        }
+
+        {(combat_log_analysis?.repairs?.length ?? 0) > 0 &&
+            <ComponentBlock>
+                <Flexblock gap='var(--space-l)'>
+                    <h3>{t('repairs')}</h3>
+                    <Grid
+                        class="[ component w-full grid-fill ]"
+                        row_gap="var(--space-m)"
+                        column_gap="var(--space-3xs)"
+                        min_item_width="350px"
+                    >
+                        {combat_log_analysis?.repairs.map(repair =>
+                            <RepairBadge repair={repair} rep_icon={true} />
+                        )}
+                    </Grid>
+                </Flexblock>
+            </ComponentBlock>
+        }
+
         {timeline_time.length > 0 &&
             <ComponentBlock>
                 <CombatLogChart
                     damage_in={damage_in}
                     damage_out={damage_out}
+                    reps_out={reps_out}
                     timeline_time={timeline_time}
                 />
             </ComponentBlock>
         }
-    </Flexblock>    
-
-    {(combat_log_analysis?.repairs?.length ?? 0) > 0 &&
-        <ComponentBlock>
-            <Flexblock gap='var(--space-l)'>
-                <h3>{t('repairs')}</h3>
-                <Grid
-                    class="[ component w-full grid-fill ]"
-                    row_gap="var(--space-m)"
-                    column_gap="var(--space-3xs)"
-                    min_item_width="350px"
-                >
-                    {combat_log_analysis?.repairs.map(repair =>
-                        <RepairBadge repair={repair} />
-                    )}
-                </Grid>
-            </Flexblock>
-        </ComponentBlock>
-    }
+    </Flexblock>
 </Flexblock>

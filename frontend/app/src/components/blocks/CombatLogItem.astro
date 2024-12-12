@@ -14,16 +14,21 @@ const {
     fitting,
 } = Astro.props
 
+const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_component/')
+
 import { format_date_time } from '@helpers/date'
 
 import Flexblock from "@components/compositions/Flexblock.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
 
 import PictureCard from '@components/blocks/PictureCard.astro';
 import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+import Button from "@components/blocks/Button.astro";
 
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import MemberEVEIcon from '@components/icons/MemberEVEIcon.astro';
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
 <PictureCard src="/images/combatlog-card.jpg">
@@ -34,14 +39,38 @@ import MemberEVEIcon from '@components/icons/MemberEVEIcon.astro';
         <div class="[ icon ]" slot="header"><MemberEVEIcon /></div>
     }
 
-    <ClipboardButton
-        text={t('share')}
-        narrow={true}
-        id={log.id.toString()}
-        slot="actions"
-    >
-        {translatePath(`${Astro.url}/${log.id}`)}
-    </ClipboardButton>
+    <FlexInline slot="actions" gap='var(--space-3xs)'>
+        <ClipboardButton
+            text={t('share')}
+            narrow={true}
+            id={log.id.toString()}
+        >
+            {translatePath(`${Astro.url}/${log.id}`)}
+        </ClipboardButton>
+
+        <Button
+            size='sm'
+            type="button"
+            narrow={true}
+            x-data={`{
+                show_remove_log_dialog() {
+                    show_confirm_dialog({
+                        title: '${t('remove_log_dialog_title')}',
+                        content: '${t('remove_log_dialog_text')}',
+                        hx: {
+                            method: 'delete',
+                            url: '${COMBATLOG_LIST_PARTIAL_URL}?id=${log.id}',
+                            target: '#combatlog',
+                            swap: 'outerHTML transition:true'
+                        }
+                    })
+                }
+            }`}
+            x-on:click.stop.prevent="show_remove_log_dialog()"
+        >
+            <TrashIcon slot="icon" />
+        </Button>
+    </FlexInline>
 
     <Flexblock gap='var(--space-3xs)'>
         {log.fleet_id > 0 ?

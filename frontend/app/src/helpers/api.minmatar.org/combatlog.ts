@@ -125,3 +125,34 @@ export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean
         throw new Error(`Error analizing log: ${error.message}`);
     }
 }
+
+export async function delete_log(access_token:string, log_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${log_id}`
+
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            method: 'DELETE'
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
+        }
+
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error deleting combat log: ${error.message}`);
+    }
+}

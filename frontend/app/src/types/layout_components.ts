@@ -883,24 +883,29 @@ export interface CombatLogAnalysis {
     timeline:               string[];
     damage_in:              number[];
     damage_out:             number[];
+    reps_out:               number[];
     character_name:         string;
-    armor_repaired:     number;
-    shield_repaired:    number;
+    armor_repaired:         number;
+    shield_repaired:        number;
     fitting?:               Fitting;
     fleet_id?:              number;
     max_from?:              CombatLogMaxUI;
     max_to?:                CombatLogMaxUI;
     repairs:                RepairsUI[];
+    repairs_modules:        RepairsUI[];
 }
+
+import type { RepairTypes } from '@dtypes/api.minmatar.org'
 
 export interface RepairsUI {
     name:               string;
+    rep_type:           RepairTypes;
     cycles:             number;
     amount_repaired:    number;
     max_cycle:          number;
     avg_cycle:          number;
     effective_reps:     number;
-    ship_type:          number;
+    item_id:            number;
 }
 
 export interface CombatLogMaxUI {

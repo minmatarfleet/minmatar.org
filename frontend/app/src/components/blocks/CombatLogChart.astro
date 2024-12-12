@@ -6,12 +6,14 @@ interface Props {
     timeline_time:  string[];
     damage_in:      number[];
     damage_out:     number[];
+    reps_out:       number[];
 }
 
 const {
     timeline_time,
     damage_in,
     damage_out,
+    reps_out,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -28,6 +30,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
         timeline_time: ${JSON.stringify(timeline_time)},
         damage_in: ${JSON.stringify(damage_in.map(damage => damage/10))},
         damage_out: ${JSON.stringify(damage_out.map(damage => damage/10))},
+        reps_out: ${JSON.stringify(reps_out.map(rep => rep/10))},
         init() {
             const ctx = document.getElementById("damage-log-chart").getContext("2d")
 
@@ -63,6 +66,18 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                                 const value = context.raw
                                 return value === 0 ? 0 : 2
                             }
+                        },
+                        {
+                            label: "${t('reps_done')}",
+                            data: this.reps_out,
+                            pointStyle: 'rect',
+                            backgroundColor: '#2051B5',
+                            borderColor: '#2051B5',
+                            borderWidth: 0,
+                            pointRadius: function(context) {
+                                const value = context.raw
+                                return value === 0 ? 0 : 2
+                            }
                         }
                     ]
                 },
@@ -86,7 +101,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: "${t('damage_per_second')}"
+                                text: "${t('damage_reps_per_second')}"
                             },
                             grid: {
                                 display: false

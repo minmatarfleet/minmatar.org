@@ -6,11 +6,21 @@ import type { RepairsUI } from '@dtypes/layout_components'
 
 interface Porps {
     repair:     RepairsUI;
+    rep_icon?:  boolean;
 }
 
 const {
     repair,
+    rep_icon = false,
 } = Astro.props
+
+const REP_ICON = {
+    'armor': '/images/icons/1_64_9.png',
+    'hull': '/images/icons/2_64_12.png',
+    'shield': '/images/icons/1_64_13.png',
+}
+
+const image = rep_icon ? REP_ICON[repair.rep_type] : get_item_icon(repair.item_id)
 
 import { get_item_icon } from '@helpers/eve_image_server';
 
@@ -23,7 +33,7 @@ import Progress from '@components/blocks/Progress.astro'
 <Flexblock gap='0'>
     <Badge
         title={repair.name}
-        image={get_item_icon(repair.ship_type)}
+        image={image}
     >
         <Flexblock gap='var(--space-3xs)'>
             <small>{`${repair.amount_repaired} (${repair.avg_cycle} ${t('per_cycle_out_of')} ${repair.max_cycle}) - ${repair.cycles} ${t('cycles')}`}</small>
