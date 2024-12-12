@@ -194,12 +194,11 @@ class RemoteRepsParseTest(TestCase):
         event = rep_events[0]
         self.assertEqual(220, event.repaired)
         self.assertEqual("armor", event.rep_type)
-        self.assertEqual("Big Duck", event.entity)
-        self.assertEqual("Tankface", event.ship)
+        self.assertEqual("Big Duck - Tankface", event.entity)
         self.assertEqual("Small Remote Armor Repairer II", event.module)
 
     def test_parse_shield_rep(self):
-        logs = "[ 2024.09.07 14:58:50 ] (combat) 50 remote shield boosted to Red Muppet - Wolf NANO - Small Asymmetric Enduring Remote Shield Booster"
+        logs = "[ 2024.09.07 14:58:50 ] (combat) 50 remote shield boosted to Red Muppet - Wolf NANO - Small Remote Shield Booster II"
 
         events = parse(logs)
         rep_events = repair_events(events)
@@ -208,8 +207,20 @@ class RemoteRepsParseTest(TestCase):
         event = rep_events[0]
         self.assertEqual(50, event.repaired)
         self.assertEqual("shield", event.rep_type)
-        self.assertEqual("Red Muppet", event.entity)
-        self.assertEqual("Wolf NANO", event.ship)
+        self.assertEqual("Red Muppet - Wolf NANO", event.entity)
+        self.assertEqual("Small Remote Shield Booster II", event.module)
+
+    def test_parse_shield_rep_2(self):
+        logs = "[ 2024.12.12 02:57:43 ] (combat) 488 remote shield boosted to Scythe [NANO] [ABC]  [Big Duck] - - Medium S95a Scoped Remote Shield Booster"
+
+        events = parse(logs)
+        rep_events = repair_events(events)
+
+        self.assertEqual(1, len(rep_events))
+        event = rep_events[0]
+        self.assertEqual(488, event.repaired)
+        self.assertEqual("shield", event.rep_type)
+        self.assertEqual("Scythe [NANO] [ABC]  [Big Duck] -", event.entity)
         self.assertEqual(
-            "Small Asymmetric Enduring Remote Shield Booster", event.module
+            "Medium S95a Scoped Remote Shield Booster", event.module
         )
