@@ -453,3 +453,34 @@ def update_repair_analysis(analysis: RepairAnalysis, event: RepairEvent):
 
     analysis.first = min(analysis.first, event.event_time)
     analysis.last = max(analysis.last, event.event_time)
+
+
+def analyze_parsed_log(content: str) -> LogAnalysis:
+
+    events = parse(content)
+
+    analysis = LogAnalysis()
+    analysis.logged_events = len(events)
+    analysis.character_name = character_name(events)
+
+    dmg_events = damage_events(events)
+
+    analysis.final_system = last_combat_system(dmg_events)
+
+    (analysis.damage_done, analysis.damage_taken) = total_damage(dmg_events)
+
+    analysis.enemies = enemy_analysis(dmg_events)
+    analysis.weapons = weapon_analysis(dmg_events)
+    analysis.times = time_analysis(dmg_events)
+
+    analysis.max_from = max_damage(dmg_events, "from")
+    analysis.max_to = max_damage(dmg_events, "to")
+
+    repairs = repair_events(events)
+    analysis.armor_repaired = total_repaired(repairs, "armor")
+    analysis.shield_repaired = total_repaired(repairs, "shield")
+    analysis.repairs = repair_analysis(repairs)
+
+    update_combat_time(dmg_events, repairs, analysis)
+
+    return analysis
