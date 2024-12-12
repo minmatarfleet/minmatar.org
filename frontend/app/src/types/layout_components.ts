@@ -884,10 +884,23 @@ export interface CombatLogAnalysis {
     damage_in:              number[];
     damage_out:             number[];
     character_name:         string;
+    armor_repaired:     number;
+    shield_repaired:    number;
     fitting?:               Fitting;
     fleet_id?:              number;
     max_from?:              CombatLogMaxUI;
     max_to?:                CombatLogMaxUI;
+    repairs:                RepairsUI[];
+}
+
+export interface RepairsUI {
+    name:               string;
+    cycles:             number;
+    amount_repaired:    number;
+    max_cycle:          number;
+    avg_cycle:          number;
+    effective_reps:     number;
+    ship_type:          number;
 }
 
 export interface CombatLogMaxUI {

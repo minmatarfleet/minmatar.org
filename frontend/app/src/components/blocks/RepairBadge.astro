@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RepairsUI } from '@dtypes/layout_components'
+
+interface Porps {
+    repair:     RepairsUI;
+}
+
+const {
+    repair,
+} = Astro.props
+
+import { get_item_icon } from '@helpers/eve_image_server';
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Badge from '@components/blocks/Badge.astro'
+import Progress from '@components/blocks/Progress.astro'
+---
+
+<Flexblock gap='0'>
+    <Badge
+        title={repair.name}
+        image={get_item_icon(repair.ship_type)}
+    >
+        <Flexblock gap='var(--space-3xs)'>
+            <small>{`${repair.amount_repaired} (${repair.avg_cycle} ${t('per_cycle_out_of')} ${repair.max_cycle}) - ${repair.cycles} ${t('cycles')}`}</small>
+
+            <div class="[ effective-reps ]">
+                <Progress
+                    max="100"
+                    value={repair.effective_reps}
+                    data-tippy-content={`${t('effective_repairs')} ${repair.effective_reps.toFixed(0)}%`}
+                    x-init="tippy($el, tippy_options)"
+                >
+                    {`${repair.effective_reps.toFixed(2)}%`}
+                </Progress>
+            </div>
+        </Flexblock>
+    </Badge>
+</Flexblock>
+
+<style lang="scss">
+    .effective-reps {
+        background-color: var(--border-color);
+    }
+</style>
