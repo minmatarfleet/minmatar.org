@@ -133,7 +133,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
     analysis.shield_repaired = total_repaired(repairs, "shield")
     analysis.repairs = repair_analysis(repairs)
 
-    update_combat_time(dmg_events, analysis)
+    update_combat_time(dmg_events, repairs, analysis)
 
     return analysis
 

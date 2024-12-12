@@ -367,12 +367,25 @@ def update_damage_analysis(analysis: DamageAnalysis, event: DamageEvent):
     analysis.last = max(analysis.last, event.event_time)
 
 
-def update_combat_time(events: List[DamageEvent], analysis: LogAnalysis):
-    if len(events) == 0:
+def update_combat_time(
+    damage: List[DamageEvent],
+    repairs: List[RepairEvent],
+    analysis: LogAnalysis,
+):
+    if len(damage) > 0:
+        analysis.start = damage[0].event_time
+    elif len(repairs) > 0:
+        analysis.start = repairs[0].event_time
+    else:
         return
-    analysis.start = events[0].event_time
+
     analysis.end = analysis.start
-    for event in events:
+
+    for event in damage:
+        analysis.start = min(analysis.start, event.event_time)
+        analysis.end = max(analysis.end, event.event_time)
+
+    for event in repairs:
         analysis.start = min(analysis.start, event.event_time)
         analysis.end = max(analysis.end, event.event_time)
 
