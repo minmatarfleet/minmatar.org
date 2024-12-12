@@ -185,6 +185,37 @@ def get_saved_log(request, log_id: int):
         )
 
 
+class DeleteStatus(BaseModel):
+    deleted: bool
+    message: str
+
+
+@router.delete(
+    "/{log_id}",
+    description="Delete a stored combat log if you created it",
+    response={200: DeleteStatus, 404: ErrorResponse, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def delete_saved_log(request, log_id: int):
+    try:
+        db_log = CombatLog.objects.get(id=log_id)
+        if db_log.created_by_id != request.user.id:
+            return 403, ErrorResponse(
+                status=403,
+                detail="You did not create this combat log",
+            )
+        db_log.delete()
+        log.info(f"Combat log {log_id} deleted by creator ({request.user})")
+        return 200, DeleteStatus(
+            deleted=True, message=f"Combat log {log_id} deleted."
+        )
+    except CombatLog.DoesNotExist:
+        return 404, ErrorResponse(
+            status=404,
+            detail=f"Combat log {log_id} not found",
+        )
+
+
 def set_ids(analysis, db_rec):
     if db_rec.id:
         analysis.db_id = db_rec.id
