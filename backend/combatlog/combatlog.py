@@ -205,15 +205,17 @@ def repair_events(events: List[LogEvent]) -> List[RepairEvent]:
             repair_event.rep_type = "shield"
             text = text[pos + 26 :]
 
-        if repair_event.repaired > 0:
-            parts = text.split(" - ")
+        if repair_event.rep_type != "":
+            mod_split = text.rfind(" - ")
+            repair_event.entity = text[0:mod_split]
+            repair_event.module = text[mod_split + 3 :]
 
-            if len(parts) >= 1:
-                repair_event.entity = parts[0].strip()
-            if len(parts) >= 2:
-                repair_event.ship = parts[1].strip()
-            if len(parts) >= 3:
-                repair_event.module = parts[2].strip()
+            # if len(parts) >= 1:
+            #     repair_event.entity = parts[0].strip()
+            # if len(parts) >= 2:
+            #     repair_event.ship = parts[1].strip()
+            # if len(parts) >= 3:
+            #     repair_event.module = parts[2].strip()
 
             rep_events.append(repair_event)
 
