@@ -31,7 +31,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ rifter ]" src="/images/corporations/rattini/rifter.png" />
+    <img slot="ships" class="[ wolf ]" src="/images/corporations/rattini/wolf.png" />
     <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />
     <img slot="ships" class="[ sleipnir ]" src="/images/corporations/rattini/sleipnir.png" />
 
@@ -43,13 +43,13 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         image-rendering: pixelated;
     }
 
-    .rifter {
+    .wolf {
         position: absolute;
         top: 40%;
         left: 5%;
         height: auto;
-        width: 32%;
-        z-index: 1;
+        width: 69%;
+        z-index: 3;
         transform: scale(0);
     }
 
@@ -57,7 +57,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         position: absolute;
         top: 48%;
         left: -40%;
-        width: 53%;
+        width: 65%;
         height: auto;
         z-index: 2;
         transform: scale(0);
@@ -67,51 +67,51 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         position: absolute;
         left: -25%;
         top: 34%;
-        width: 61%;
+        width: 72%;
         height: auto;
         z-index: 1;
         transform: scale(0);
     }
 
-    @keyframes rifter {
+    @keyframes wolf {
         from {
             transform: scale(0);
-            top: 50%;
-            left: 5%;
+            top: 28%;
+            left: -45%;
         }
 
         to {
             transform: scale(1);
-            top: 12%;
-            left: 43%;
+            top: 27%;
+            left: 35%;
         }
     }
 
     @keyframes scimitar {
         from {
             transform: scale(0);
-            top: 48%;
+            top: 36%;
             left: -40%;
         }
 
         to {
             transform: scale(1);
-            top: 26%;
-            left: 42%;
+            top: 6%;
+            left: 37%;
         }
     }
 
     @keyframes sleipnir {
         from {
             transform: scale(0);
-            left: -25%;
-            top: 34%;
+            left: -50%;
+            top: 25%;
         }
 
         to {
             transform: scale(1);
-            top: 43%;
-            left: 31%;
+            top: 36%;
+            left: 27%;
         }
     }
 </style>
@@ -122,9 +122,9 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     .swiper-slide-active {
-        .rifter {
-            animation: rifter cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
-            animation-delay: 2s;
+        .wolf {
+            animation: wolf cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
@@ -132,7 +132,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         
         .scimitar {
             animation: scimitar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
-            animation-delay: 2.2s;
+            animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
@@ -140,7 +140,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         
         .sleipnir {
             animation: sleipnir cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
-            animation-delay: 2.4s;
+            animation-delay: 2.2s;
             animation-iteration-count: 1;
             transform-origin: top right;
             animation-fill-mode: forwards;
