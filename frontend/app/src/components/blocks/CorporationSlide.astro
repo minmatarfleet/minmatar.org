@@ -9,8 +9,8 @@ interface Props {
     ceo_image:              string;
     ceo_character_id:       number;
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean,
-    picture_placement:      'left' | 'right',
+    is_user_corporation?:   boolean;
+    picture_placement:      'left' | 'right';
 }
 
 const {
@@ -19,7 +19,7 @@ const {
     ceo_character_id,
     corporation,
     is_user_corporation = false,
-    picture_placement = 'left'
+    picture_placement = 'left',
 } = Astro.props
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
@@ -37,7 +37,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 ---
 <FixedFluid
     id={id}
-    class="[ corporation-intro ][ w-full items-center ]"
+    class=" [ corporation-intro ][ w-full items-center ]"
     width='650px'
     breakpoint='30%'
     fluid_first={picture_placement === 'left'}

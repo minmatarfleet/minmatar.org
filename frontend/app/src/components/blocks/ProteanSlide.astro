@@ -8,7 +8,6 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
-    
 }
 
 const {
@@ -24,7 +23,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
 <CorporationSlide
     id="protean-slide"
-    ceo_image='/images/corporations/protean/ceo.png'
+    ceo_image={picture_placement === 'right' ? '/images/corporations/protean/ceo-flipped.png' : '/images/corporations/protean/ceo.png'}
     ceo_character_id={MOREPOWER_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
@@ -44,73 +43,70 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
     .nightmare {
         position: absolute;
-        top: 40%;
-        left: 5%;
         height: auto;
         width: 58%;
         z-index: 1;
         transform: scale(0);
+        transform-origin: center;
     }
 
     .astrate {
         position: absolute;
-        top: 48%;
-        left: -40%;
         width: 72%;
         height: auto;
         z-index: 2;
         transform: scale(0);
+        transform-origin: center;
     }
 
     .crow {
         position: absolute;
-        left: -25%;
-        top: 34%;
         width: 49%;
         height: auto;
         z-index: 3;
         transform: scale(0);
+        transform-origin: center;
     }
 
     @keyframes nightmare {
         from {
             transform: scale(0);
-            top: 47%;
-            left: -45%;
+            top: 0%;
+            right: -25%;
         }
 
         to {
-            transform: scale(1);
+            transform: scale(-1, 1);
             top: 0%;
-            left: 22%;
+            right: 22%;
         }
     }
 
     @keyframes astrate {
         from {
             transform: scale(0);
-            top: 36%;
-            left: -60%;
+            top: 16%;
+            right: -30%;
         }
 
         to {
-            transform: scale(1);
+            transform: scale(-1, 1);
             top: 31%;
-            left: 15%;
+            right: 15%;
         }
     }
 
     @keyframes crow {
         from {
             transform: scale(0);
-            left: -36%;
-            top: 37%;
+            right: -16%;
+            top: 17%;
         }
 
         to {
-            transform: scale(1);
+            transform: scale(-1, 1);
             top: 49%;
-            left: 19%;
+            right: 19%;
         }
     }
 </style>
