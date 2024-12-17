@@ -10,6 +10,14 @@ class StructureResponse(BaseModel):
     timer: datetime
 
 
+def get_generic_details(structure_name: str, location: str, timer: datetime):
+    return StructureResponse(
+        structure_name=structure_name,
+        location=location,
+        timer=timer,
+    )
+
+
 def get_skyhook_details(selected_item_window: str):
     """
     Orbital Skyhook (KBP7-G III) [Sukanan Inititive]
