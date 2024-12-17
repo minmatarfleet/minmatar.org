@@ -10,6 +10,7 @@ interface Props {
     thumb_image: string;
     thumb_image_small: string;
     thumb_tooltip?: string;
+    thumb_sub?: string;
 }
 
 const {
@@ -20,6 +21,7 @@ const {
     thumb_image_small,
     logo,
     thumb_tooltip,
+    thumb_sub,
 } = Astro.props
 
 const image_alt = {
@@ -37,12 +39,17 @@ const image_alt = {
         <figcaption>
             <Flexblock gap={(thumb_title ? 'var(--space-3xs)' : '0')}>
                 <h4>{thumb_title}</h4>
-                <FixedFluid width={(logo ? '32px' : '0')} gap={(logo ? 'var(--space-3xs)' : '0')} class="[ items-center ]">
-                    {logo &&
-                        <img loading="lazy" src={logo} width="32" height="32" />
+                <Flexblock gap='0'>
+                    <FixedFluid width={(logo ? '32px' : '0')} gap={(logo ? 'var(--space-3xs)' : '0')} class="[ items-center ]">
+                        {logo &&
+                            <img loading="lazy" src={logo} width="32" height="32" />
+                        }
+                        <p>{thumb_name}</p>
+                    </FixedFluid>
+                    {thumb_sub &&
+                        <small>{thumb_sub}</small>
                     }
-                    <p>{thumb_name}</p>
-                </FixedFluid>
+                </Flexblock>
             </Flexblock>
         </figcaption>
     }
@@ -66,10 +73,6 @@ const image_alt = {
             bottom: -1px;
             inset-inline: 0;
             padding: var(--space-2xs) var(--space-xs) var(--space-2xs);
-
-            p {
-                line-height: 1.1;
-            }
         }
     }
 </style>
