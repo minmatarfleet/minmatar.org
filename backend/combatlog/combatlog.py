@@ -225,23 +225,14 @@ def repair_events(events: List[LogEvent]) -> List[RepairEvent]:
 def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
     dmg_events = []
     for event in events:
-        if event.event_type != "combat":
-            continue
-
-        text = event.text
-
-        if len(text) == 0:
-            continue
-        if text[0] < "0" or text[0] > "9":
-            continue
-        if text.find("remote armor repaired") >= 0:
-            continue
-        if text.find("remote shield boosted") >= 0:
+        if not is_damage_event(event):
             continue
 
         damage_event = DamageEvent()
         damage_event.event_time = event.event_time
         damage_event.location = event.location
+
+        text = event.text
 
         pos = text.find(" to ")
         if pos >= 0:
@@ -270,6 +261,26 @@ def damage_events(events: List[LogEvent]) -> List[DamageEvent]:
             dmg_events.append(damage_event)
 
     return dmg_events
+
+
+def is_damage_event(event: LogEvent) -> bool:
+    if event.event_type != "combat":
+        return False
+
+    text = event.text
+
+    if len(text) == 0:
+        return False
+    if text[0] < "0" or text[0] > "9":
+        return False
+    if text.find("remote armor repaired") >= 0:
+        return False
+    if text.find("remote shield boosted") >= 0:
+        return False
+    if text.find("remote capacitor transmitted") >= 0:
+        return False
+
+    return True
 
 
 def total_damage(dmg_events):
