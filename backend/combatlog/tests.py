@@ -181,6 +181,15 @@ class DamageParseTest(TestCase):
         self.assertEqual("Inferno Rage Compiler Error", event.weapon)
         self.assertEqual("[P-1]Bad Guy", event.entity)
 
+    def test_parse_cap_xfer_ignored(self):
+        logs = "[ 2024.09.07 14:58:50 ] (combat) 567 remote capacitor transmitted to YourFriend"
+
+        events = parse(logs)
+        self.assertEqual(1, len(events))
+
+        dmg_events = damage_events(events)
+        self.assertEqual(0, len(dmg_events))
+
 
 class RemoteRepsParseTest(TestCase):
 
