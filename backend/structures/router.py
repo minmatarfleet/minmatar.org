@@ -8,7 +8,11 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from structures.helpers import get_skyhook_details, get_structure_details
+from structures.helpers import (
+    get_skyhook_details,
+    get_structure_details,
+    get_generic_details,
+)
 
 from .models import EveStructure, EveStructureTimer
 
@@ -43,6 +47,7 @@ class EveStructureType(Enum):
     METENOX_MOON_DRILL = "metenox_moon_drill"
     PLAYER_OWNED_CUSTOMS_OFFICE = "player_owned_customs_office"
     PLAYER_OWNED_STARBASE = "player_owned_starbase"
+    MERCENARY_DEN = "mercenary_den"
 
 
 class StructureResponse(BaseModel):
@@ -57,10 +62,13 @@ class StructureResponse(BaseModel):
 class EveStructureTimerRequest(BaseModel):
     """Request model for structure timer API"""
 
-    selected_item_window: str
     corporation_name: str
     state: EveStructureState
     type: EveStructureType
+
+    structure_name: str = None
+    location: str = None
+    timer: datetime = None
 
 
 class EveStructureTimerVerificationRequest(BaseModel):
@@ -147,6 +155,7 @@ def get_structure_timers(request, active: bool = True):
 @router.post(
     "/timers",
     auth=AuthBearer(),
+    description="If structure_name is not provided, selected_item_window will be parsed for values.",
     response={
         200: EveStructureTimerResponse,
         403: ErrorResponse,
@@ -172,7 +181,13 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
 
     # Parse the request
     try:
-        if "Orbital Skyhook" in payload.selected_item_window:
+        if payload.structure_name:
+            structure_response = get_generic_details(
+                payload.structure_name,
+                payload.location,
+                payload.timer,
+            )
+        elif "Orbital Skyhook" in payload.selected_item_window:
             structure_response = get_skyhook_details(
                 payload.selected_item_window
             )
@@ -181,9 +196,7 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
                 payload.selected_item_window
             )
     except ValueError:
-        return 400, ErrorResponse(
-            detail=f"Invalid request: {payload.selected_item_window}"
-        )
+        return 400, ErrorResponse(detail="Invalid request")
 
     # Create the structure timer
     timer = EveStructureTimer.objects.create(

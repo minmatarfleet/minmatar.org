@@ -77,6 +77,7 @@ class EveStructureTimer(models.Model):
         ("metenox_moon_drill", "Metenox Moon Drill"),
         ("player_owned_customs_office", "Player Owned Customs Office"),
         ("player_owned_starbase", "Player Owned Starbase"),
+        ("mercenary_den", "Mercenary Den"),
     )
 
     name = models.CharField(max_length=255)
