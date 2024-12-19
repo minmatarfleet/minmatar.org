@@ -62,6 +62,7 @@ class StructureResponse(BaseModel):
 class EveStructureTimerRequest(BaseModel):
     """Request model for structure timer API"""
 
+    selected_item_window: str
     corporation_name: str
     state: EveStructureState
     type: EveStructureType
