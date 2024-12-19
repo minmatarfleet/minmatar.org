@@ -42,6 +42,15 @@ main .post {
         margin-block-start: var(--space-xl) !important;
     }
 
+    ol,
+    ul {
+        padding-left: 19px;
+
+        > li::marker {
+            color: var(--highlight);
+        }
+    }
+
     li + li {
         margin-block-start: var(--space-m) !important;
     }
