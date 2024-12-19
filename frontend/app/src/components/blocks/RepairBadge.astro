@@ -36,7 +36,7 @@ import Progress from '@components/blocks/Progress.astro'
         image={image}
     >
         <Flexblock gap='var(--space-3xs)'>
-            <small>{`${repair.amount_repaired} (${repair.avg_cycle} ${t('per_cycle_out_of')} ${repair.max_cycle}) - ${repair.cycles} ${t('cycles')}`}</small>
+            <small>{`${repair.amount_repaired.toLocaleString()} (${repair.avg_cycle.toLocaleString()} ${t('per_cycle_out_of')} ${repair.max_cycle.toLocaleString()}) - ${repair.cycles.toLocaleString()} ${t('cycles')}`}</small>
 
             <div class="[ effective-reps ]">
                 <Progress
