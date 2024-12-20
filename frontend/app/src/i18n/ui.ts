@@ -195,7 +195,7 @@ export const ui = {
 
         'account.page_title': 'Account details',
         'account.cover_alt': 'Capsule in the background of a dark ambience',
-        'account.description': 'Register you pilots and manage your account',
+        'account.description': 'Register your pilots and manage your account',
 
         'groups.add.page_title': 'Add group',
 
@@ -899,6 +899,8 @@ export const ui = {
         'ansiblex_jump_gate': 'Ansiblex Jump Gate',
         'orbital_skyhook': 'Orbital Skyhook',
         'metenox_moon_drill': 'Metenox Moon Drill',
+        'mercenary_den': 'Mercenary Den',
+        'player_owned_customs_office': 'Customs Office',
         'structure_timers_error': 'An error occurred while fetching structure timers.',
         'structure_timers': 'Structure timers',
         'structure_timer': 'Structure timer',
@@ -1230,5 +1232,6 @@ export const ui = {
         'remove_log_dialog_text': 'Continue removing combat log?',
         'unauthenticated_error': 'Authentication is required',
         'invalid_log_id': 'Log is not valid',
+        'uknown_structure_type': 'Uknown structure type',
     },
 } as const;
