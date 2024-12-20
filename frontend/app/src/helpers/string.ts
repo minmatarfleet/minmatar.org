@@ -68,6 +68,12 @@ export const parse_error_message = (error_details:string) => {
     }
 }
 
+export const get_brackets_content = (str:string) => {
+    const match = str.match(/\[(.*?)\]/g);
+
+    return match ? match[1] : ''
+}
+
 export const get_parenthesis_content = (str:string) => {
     const match = str.match(/\(([^)]+)\)/);
 

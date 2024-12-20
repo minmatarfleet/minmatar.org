@@ -274,6 +274,8 @@ export const structure_types = [
     'ansiblex_jump_gate',
     'orbital_skyhook',
     'metenox_moon_drill',
+    'mercenary_den',
+    'player_owned_customs_office',
 ] as const
 export type StructureType = typeof structure_types[number]
 

@@ -22,8 +22,11 @@ if (!is_superuser && !user_permissions.includes('structures.add_evestructuretime
 const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
 
 import { create_structure_timer, verify_structure_timer } from '@helpers/api.minmatar.org/structures'
+import { structure_type_with_translations } from '@helpers/eve'
+import type { StructureTypeWithTranslation } from '@helpers/eve'
+import { get_selected_item_translation } from '@helpers/eve'
 import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
-import type { StructureTimerRequest } from '@dtypes/api.minmatar.org'
+import type { StructureTimerRequest, StructureType } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 
 let create_structure_timer_error
@@ -33,11 +36,21 @@ if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
 
+        const structure_type = data.get('structure_type') as StructureType
+        const selected_item_window = data.get('selected_item_window') as string
+        
+        let translated_selected_item_window = ''
+        if (structure_type_with_translations.includes(structure_type as any)) {
+            const timer = new Date(`${data.get('timer_date')} ${data.get('timer_time')}`)
+            const system = data.get('system') as string
+            translated_selected_item_window = get_selected_item_translation(structure_type as StructureTypeWithTranslation, system, timer)
+        }
+
         const timer_data = {
             corporation_name: data.get('corporation_name') as string,
             state: data.get('state') as string,
-            selected_item_window: data.get('selected_item_window') as string,
-            type: data.get('structure_type') as string,
+            selected_item_window: structure_type_with_translations.includes(structure_type as any) ? translated_selected_item_window : selected_item_window,
+            type: structure_type,
         } as StructureTimerRequest
 
         const new_timer = await create_structure_timer(auth_token as string, timer_data)
@@ -82,26 +95,30 @@ structure_types.forEach((type) => STRUCTURE_ICONS[type] = get_item_icon(get_stru
 
 const DEFAULT_STRUCTURE_TYPE = structure_types.find((i) => true)
 
-const SELECTER_ITEM_PLACEHOLDER = `Sosala - code minmatar at markeedragon
+const DEFAULT_SELECTED_ITEM_TEXT = `Sosala - code minmatar at markeedragon
 48 km
 Reinforced until 2024.06.30 00:04:16`
 
+import Viewport from '@layouts/Viewport.astro';
+
+import PageTitle from '@components/page/PageTitle.astro';
 import PageDefault from '@components/page/PageDefault.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Viewport from '@layouts/Viewport.astro';
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-
-import PageTitle from '@components/page/PageTitle.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import Input from '@components/blocks/Input.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Select from '@components/blocks/Select.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import FlatPicker from '@components/blocks/FlatPicker.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
 const page_title = t('intel.timers.add.page_title');
@@ -124,6 +141,10 @@ const page_title = t('intel.timers.add.page_title');
         }}
         x-data={`{
             structure_type: 'astrahus',
+            timer_date: '',
+            timer_time: '',
+            time_required_structures: [ 'player_owned_customs_office', 'mercenary_den' ],
+            default_placeholder: \`${DEFAULT_SELECTED_ITEM_TEXT}\`,
             get_structure_icon(name) {
                 const structure_ids = ${JSON.stringify(STRUCTURE_ICONS)}
 
@@ -189,6 +210,59 @@ const page_title = t('intel.timers.add.page_title');
                                 </FixedFluid>
                             </FixedFluid>
 
+                            <div 
+                                x-show="time_required_structures.includes(structure_type)"
+                                style="display: none;"
+                            >
+                                <FixedFluid
+                                    class="[ w-full items-center ]"
+                                    gap="var(--space-3xs)"
+                                    width="250px"
+                                    breakpoint="60%"
+                                >
+                                    <label for="timer_date">{t('timer')}</label>
+                                    <Grid min_item_width="150px">
+                                        <FlatPicker
+                                            id="timer_date"
+                                            type="date"
+                                            x-model="timer_date"
+                                            name="timer_date"
+                                            x-bind:required="time_required_structures.includes(structure_type)"
+                                            options={{
+                                                minDate: "today",
+                                            } as any}
+                                        />
+                                        <FlatPicker
+                                            id="timer_time"
+                                            x-model="timer_time"
+                                            name="timer_time"
+                                            x-bind:required="time_required_structures.includes(structure_type)"
+                                            options={{
+                                                enableTime: true,
+                                                noCalendar: true,
+                                                dateFormat: "H:i",
+                                                time_24hr: true,
+                                            } as any}
+                                        />
+                                    </Grid>
+                                </FixedFluid>
+                            </div>
+
+                            <div 
+                                x-show="time_required_structures.includes(structure_type)"
+                                style="display: none;"
+                            >
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="system">{t('system')}</label>
+                                    <Input
+                                        id="system"
+                                        name="system"
+                                        type="text"
+                                        x-bind:required="time_required_structures.includes(structure_type)"
+                                    />
+                                </FixedFluid>
+                            </div>
+
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                 <label for="corporation_name">{t('corporation_name')}</label>
                                 <Input id="corporation_name" name="corporation_name" type="text" required />
@@ -203,36 +277,38 @@ const page_title = t('intel.timers.add.page_title');
                                 </Select>
                             </FixedFluid>
 
-                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                <label for="timer_string">{t('selected_item_window')}</label>
-                                <Textarea
-                                    id="selected_item_window"
-                                    name="selected_item_window"
-                                    type="text"
-                                    placeholder={SELECTER_ITEM_PLACEHOLDER}
-                                    rows="3"
-                                    required
-                                ></Textarea>
-                            </Flexblock>
+                            <div x-show="!time_required_structures.includes(structure_type)">
+                                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                    <label for="timer_string">{t('selected_item_window')}</label>
+                                    <Textarea
+                                        id="selected_item_window"
+                                        name="selected_item_window"
+                                        type="text"
+                                        placeholder={DEFAULT_SELECTED_ITEM_TEXT}
+                                        rows="3"
+                                        x-bind:required="!time_required_structures.includes(structure_type)"
+                                    ></Textarea>
+                                </Flexblock>
 
-                            <CollapsibleBlock padding_inline='0'>
-                                <FixedFluid
-                                    width='48'
-                                    breakpoint='70%'
-                                    slot="head"
-                                    class="[ w-full items-center ]"
-                                >
-                                    <picture class="[ hidden sm:block ]">
-                                        <TutorialIcon />
-                                    </picture>
-                                    <p set:html={marked.parseInline(t('paste_above_tutorial_string'))} />
-                                </FixedFluid>
+                                <CollapsibleBlock padding_inline='0'>
+                                    <FixedFluid
+                                        width='48'
+                                        breakpoint='70%'
+                                        slot="head"
+                                        class="[ w-full items-center ]"
+                                    >
+                                        <picture class="[ hidden sm:block ]">
+                                            <TutorialIcon />
+                                        </picture>
+                                        <p set:html={marked.parseInline(t('paste_above_tutorial_string'))} />
+                                    </FixedFluid>
 
-                                <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
-                                    <source src="/videos/structure-timers-tutorial.mp4" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            </CollapsibleBlock>
+                                    <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
+                                        <source src="/videos/structure-timers-tutorial.mp4" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </CollapsibleBlock>
+                            </div>
                         </Flexblock>
                     </Flexblock>
                 </ComponentBlock>

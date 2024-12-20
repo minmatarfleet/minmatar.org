@@ -81,6 +81,8 @@ export const get_structure_id = (structure_type:string):number => {
         'ansiblex_jump_gate': 35841,
         'orbital_skyhook': 81080,
         'metenox_moon_drill': 81826,
+        'mercenary_den': 85230,
+        'player_owned_customs_office': 2233,
     }
 
     return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
@@ -275,4 +277,46 @@ export const parse_damage_from_logs = async (enemies:CombatLogItem[]) => {
     }))
 
     return damage
+}
+
+import { get_parenthesis_content } from '@helpers/string'
+
+export const parse_customs_office_selected_item_text =  (selected_item_text:string, timer:Date) => {
+    // Customs Office (Sosala I) [Black Omega Security]
+    // 99 km
+
+    // into
+
+    // Sosala - code minmatar at markeedragon
+    // 48 km
+    // Reinforced until 2024.06.30 00:04:16
+
+    const system = get_parenthesis_content(selected_item_text)
+
+    return `${system} - Customs Office\n0 km\nReinforced until ${format_selected_item_date(timer)}`
+}
+
+import { useTranslations } from '@i18n/utils';
+
+const t = useTranslations('en')
+
+export const structure_type_with_translations = [ 'player_owned_customs_office', 'mercenary_den' ] as const
+export type StructureTypeWithTranslation = typeof structure_type_with_translations[number]
+
+export const get_selected_item_translation = (structure_type: StructureTypeWithTranslation, system:string, timer:Date) => {
+    return `${system} - ${t(structure_type as any) ?? t('uknown_structure_type')}\r\n`+
+            `0 km\r\n`+
+            `Reinforced until ${format_selected_item_date(timer)}`
+}
+
+function format_selected_item_date(date:Date) {
+    const pad = num => String(num).padStart(2, '0')
+    const year = date.getFullYear()
+    const month = pad(date.getMonth() + 1)
+    const day = pad(date.getDate())
+    const hours = pad(date.getHours())
+    const minutes = pad(date.getMinutes())
+    const seconds = pad(date.getSeconds())
+
+    return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`
 }
