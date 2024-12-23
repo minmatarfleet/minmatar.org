@@ -44,7 +44,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                     labels: this.timeline_time,
                     datasets: [
                         {
-                            label: "${t('dps_taken')}",
+                            label: "${t('damage_taken')}",
                             data: this.damage_in,
                             pointStyle: 'rect',
                             backgroundColor: '#b53620',
@@ -56,7 +56,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             }
                         },
                         {
-                            label: "${t('dps_done')}",
+                            label: "${t('damage_done')}",
                             data: this.damage_out,
                             pointStyle: 'rect',
                             backgroundColor: '#198754',
@@ -127,7 +127,13 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
 
                         ctx.save()
 
-                        chart.data.datasets.forEach(dataset => {
+                        const SHADE_COLOR = [
+                            'rgba(181, 54, 32, 0.25)',
+                            'rgba(25, 135, 84, 0.25)',
+                            'rgba(32, 81, 181, 0.25)',
+                        ]
+
+                        chart.data.datasets.forEach((dataset, dataset_index) => {
                             dataset.data.forEach((value, index) => {
                                 const x = xScale.getPixelForValue(index)
                                 const y = yScale.getPixelForValue(value)
@@ -136,7 +142,7 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                                 ctx.beginPath()
                                 ctx.moveTo(x, y)
                                 ctx.lineTo(x, yScale.getPixelForValue(0))
-                                ctx.strokeStyle = 'rgba(241, 217, 160, 0.25)'
+                                ctx.strokeStyle = SHADE_COLOR[dataset_index]
                                 ctx.lineWidth = 1
                                 ctx.stroke()
                             })
