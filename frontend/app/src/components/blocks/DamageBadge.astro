@@ -27,7 +27,7 @@ import Square from '@components/blocks/Square.astro'
         {damage.volleys_to > 0 &&
             <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'>
                 <Square
-                    color='green'
+                    color='alliance-blue'
                     x-init="tippy($el, tippy_options)"
                     data-tippy-content={t('damage_to_enemy')}
                 />
