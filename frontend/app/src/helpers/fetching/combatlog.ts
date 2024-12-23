@@ -25,6 +25,7 @@ export async function fetch_combatlog_by_id(access_token:string, log_id:number) 
 }
 
 async function process_analysis(analysis:CombatLog) {
+    analysis.times = analysis.times.sort((a, b) => a.name.localeCompare(b.name))
     const start_time = analysis.times[0]?.name ?? analysis.start
     const end_time = analysis.times[analysis.times.length - 1]?.name ?? analysis.end
 
@@ -69,7 +70,6 @@ async function process_analysis(analysis:CombatLog) {
     const fleet_id = analysis?.fleet_id > 0 ? analysis?.fleet_id : null
     const repairs = await Promise.all(analysis.repairs.map(async repair => {
         const effective_reps = (repair.repairs_to * 100) / (repair.max_to * repair.cycles_to)
-        console.log(repair)
 
         return {
             name: repair.name,

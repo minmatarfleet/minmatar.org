@@ -1233,5 +1233,7 @@ export const ui = {
         'unauthenticated_error': 'Authentication is required',
         'invalid_log_id': 'Log is not valid',
         'uknown_structure_type': 'Uknown structure type',
+        'repair_targets': 'Repair targets',
+        'damage_to_and_from': 'Damage to and from',
     },
 } as const;

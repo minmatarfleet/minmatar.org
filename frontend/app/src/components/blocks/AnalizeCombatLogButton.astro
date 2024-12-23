@@ -66,10 +66,8 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         combatlogfile: '',
         async update_status(combatlogfileinput) {
             let array_buffer = this.str2ab(this.combatlog)
-            console.log(this.combatlogfile)
 
             if (combatlogfileinput) {
-                console.log(combatlogfileinput)
                 const file = combatlogfileinput.files[0]
                 array_buffer = await file.arrayBuffer()
             }
@@ -77,7 +75,6 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
             const compressed_data = pako.gzip(new Uint8Array(array_buffer))
             const b64encoded_string = btoa(String.fromCharCode.apply(null, compressed_data))
             this.gziped_combatlog = b64encoded_string
-            console.log(b64encoded_string)
         },
         str2ab(str) {
             const encoder = new TextEncoder()
