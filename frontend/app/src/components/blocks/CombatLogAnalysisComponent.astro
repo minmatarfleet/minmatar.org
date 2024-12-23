@@ -17,6 +17,7 @@ const damage_in = combat_log_analysis?.damage_in
 const damage_out = combat_log_analysis?.damage_out
 const reps_out = combat_log_analysis?.reps_out
 const timeline_time = timeline.map(datetime => datetime.split(' ')[1])
+console.log(timeline_time)
 
 import { format_date_time } from '@helpers/date'
 import { get_item_icon } from '@helpers/eve_image_server'
@@ -70,7 +71,7 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
                 {combat_log_analysis?.max_to &&
                     <TextGroup title={t('max_damage_inflicted')}>
                         <Flexblock gap='0' slot="outside">
-                            <span><b class="[ text-green ]">{combat_log_analysis?.max_to.damage}</b> - <small>{combat_log_analysis?.max_to.weapon} - {combat_log_analysis?.max_to.outcome}</small></span>
+                            <span><b class="[ text-green ]">{combat_log_analysis?.max_to.damage.toLocaleString()}</b> - <small>{combat_log_analysis?.max_to.weapon} - {combat_log_analysis?.max_to.outcome}</small></span>
                             <small>To {combat_log_analysis?.max_to.entity}</small>
                         </Flexblock>
                     </TextGroup>
@@ -78,16 +79,16 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
                 {combat_log_analysis?.max_from &&
                     <TextGroup title={t('max_damage_received')}>
                         <Flexblock gap='0' slot="outside">
-                            <span><b class="[ text-red ]">{combat_log_analysis?.max_from.damage}</b> - <small>{combat_log_analysis?.max_from.weapon} - {combat_log_analysis?.max_from.outcome}</small></span>
+                            <span><b class="[ text-red ]">{combat_log_analysis?.max_from.damage.toLocaleString()}</b> - <small>{combat_log_analysis?.max_from.weapon} - {combat_log_analysis?.max_from.outcome}</small></span>
                             <small>From {combat_log_analysis?.max_from.entity}</small>
                         </Flexblock>
                     </TextGroup>
                 }
                 {combat_log_analysis.armor_repaired > 0 &&
-                    <TextGroup title={t('armor_repaired')}>{combat_log_analysis.armor_repaired}</TextGroup>
+                    <TextGroup title={t('armor_repaired')}>{combat_log_analysis.armor_repaired.toLocaleString()}</TextGroup>
                 }
                 {combat_log_analysis.shield_repaired > 0 &&
-                    <TextGroup title={t('shield_repaired')}>{combat_log_analysis.shield_repaired}</TextGroup>
+                    <TextGroup title={t('shield_repaired')}>{combat_log_analysis.shield_repaired.toLocaleString()}</TextGroup>
                 }
             </Grid>
         }
