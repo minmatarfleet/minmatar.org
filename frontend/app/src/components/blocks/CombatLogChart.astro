@@ -116,7 +116,35 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             display: false,
                         }
                     }
-                }
+                },
+                plugins: [{
+                    // Plugin to draw vertical lines
+                    id: 'verticalLines',
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx
+                        const xScale = chart.scales.x
+                        const yScale = chart.scales.y
+
+                        ctx.save()
+
+                        chart.data.datasets.forEach(dataset => {
+                            dataset.data.forEach((value, index) => {
+                                const x = xScale.getPixelForValue(index)
+                                const y = yScale.getPixelForValue(value)
+
+                                // Draw a vertical line
+                                ctx.beginPath()
+                                ctx.moveTo(x, y)
+                                ctx.lineTo(x, yScale.getPixelForValue(0))
+                                ctx.strokeStyle = 'rgba(241, 217, 160, 0.25)'
+                                ctx.lineWidth = 1
+                                ctx.stroke()
+                            })
+                        })
+
+                        ctx.restore()
+                    }
+                }]
             })
 
             const set_axis_button = document.querySelector('.set-x-axis')

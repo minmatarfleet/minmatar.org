@@ -17,7 +17,6 @@ const damage_in = combat_log_analysis?.damage_in
 const damage_out = combat_log_analysis?.damage_out
 const reps_out = combat_log_analysis?.reps_out
 const timeline_time = timeline.map(datetime => datetime.split(' ')[1])
-console.log(timeline_time)
 
 import { format_date_time } from '@helpers/date'
 import { get_item_icon } from '@helpers/eve_image_server'
@@ -116,7 +115,7 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
         {(combat_log_analysis?.enemies?.length ?? 0) > 0 &&
             <ComponentBlock>
                 <Flexblock gap='var(--space-l)'>
-                    <h3>{t('enemies')}</h3>
+                    <h3>{t('damage_to_and_from')}</h3>
                     <Grid
                         class="[ component w-full grid-fill ]"
                         row_gap="var(--space-m)"
@@ -152,7 +151,7 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
         {(combat_log_analysis?.repairs?.length ?? 0) > 0 &&
             <ComponentBlock>
                 <Flexblock gap='var(--space-l)'>
-                    <h3>{t('repairs')}</h3>
+                    <h3>{t('repair_targets')}</h3>
                     <Grid
                         class="[ component w-full grid-fill ]"
                         row_gap="var(--space-m)"
