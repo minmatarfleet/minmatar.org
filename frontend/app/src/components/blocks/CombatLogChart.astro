@@ -27,6 +27,9 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
     x-data={`{
         min: 0,
         max: 0,
+        INC_DAMAGE_COLOR: '#b53620',
+        OUT_DAMAGE_COLOR: '#2051b5',
+        REPS_COLOR: '#198754',
         timeline_time: ${JSON.stringify(timeline_time)},
         damage_in: ${JSON.stringify(damage_in.map(damage => damage/10))},
         damage_out: ${JSON.stringify(damage_out.map(damage => damage/10))},
@@ -47,8 +50,8 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             label: "${t('damage_taken')}",
                             data: this.damage_in,
                             pointStyle: 'rect',
-                            backgroundColor: '#b53620',
-                            borderColor: '#b53620',
+                            backgroundColor: this.INC_DAMAGE_COLOR,
+                            borderColor: this.INC_DAMAGE_COLOR,
                             borderWidth: 0,
                             pointRadius: function(context) {
                                 const value = context.raw
@@ -59,8 +62,8 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             label: "${t('damage_done')}",
                             data: this.damage_out,
                             pointStyle: 'rect',
-                            backgroundColor: '#198754',
-                            borderColor: '#198754',
+                            backgroundColor: this.OUT_DAMAGE_COLOR,
+                            borderColor: this.OUT_DAMAGE_COLOR,
                             borderWidth: 0,
                             pointRadius: function(context) {
                                 const value = context.raw
@@ -71,8 +74,8 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
                             label: "${t('reps_done')}",
                             data: this.reps_out,
                             pointStyle: 'rect',
-                            backgroundColor: '#2051B5',
-                            borderColor: '#2051B5',
+                            backgroundColor: this.REPS_COLOR,
+                            borderColor: this.REPS_COLOR,
                             borderWidth: 0,
                             pointRadius: function(context) {
                                 const value = context.raw
@@ -129,8 +132,8 @@ import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
 
                         const SHADE_COLOR = [
                             'rgba(181, 54, 32, 0.25)',
-                            'rgba(25, 135, 84, 0.25)',
                             'rgba(32, 81, 181, 0.25)',
+                            'rgba(25, 135, 84, 0.25)',
                         ]
 
                         chart.data.datasets.forEach((dataset, dataset_index) => {
