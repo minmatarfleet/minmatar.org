@@ -1235,5 +1235,11 @@ export const ui = {
         'uknown_structure_type': 'Uknown structure type',
         'repair_targets': 'Repair targets',
         'damage_to_and_from': 'Damage to and from',
+        'fetch_planets_error': 'An error ocurred fetching planets',
+        'select_planet': 'Select planet',
+        'fetch_planets_dialog_title': 'Fetch planets',
+        'planet': 'Planet',
+        'system_and_planet': 'System and planet',
+        'select_state': 'Select state',
     },
 } as const;

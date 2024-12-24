@@ -23,7 +23,6 @@ const can_verify_timer = is_superuser || user_permissions.includes('structures.c
 
 import { create_structure_timer, verify_structure_timer } from '@helpers/api.minmatar.org/structures'
 import { structure_type_with_translations } from '@helpers/eve'
-import type { StructureTypeWithTranslation } from '@helpers/eve'
 import { get_selected_item_translation } from '@helpers/eve'
 import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
 import type { StructureTimerRequest, StructureType } from '@dtypes/api.minmatar.org'
@@ -43,7 +42,9 @@ if (Astro.request.method === "POST") {
         if (structure_type_with_translations.includes(structure_type as any)) {
             const timer = new Date(`${data.get('timer_date')} ${data.get('timer_time')}`)
             const system = data.get('system') as string
-            translated_selected_item_window = get_selected_item_translation(structure_type as StructureTypeWithTranslation, system, timer)
+            const planet = data.get('planet') as string
+            
+            translated_selected_item_window = get_selected_item_translation(system, planet, timer)
         }
 
         const timer_data = {
@@ -98,6 +99,8 @@ const DEFAULT_STRUCTURE_TYPE = structure_types.find((i) => true)
 const DEFAULT_SELECTED_ITEM_TEXT = `Sosala - code minmatar at markeedragon
 48 km
 Reinforced until 2024.06.30 00:04:16`
+
+const PLANET_SELECT_OPTIONS_PARTIAL_URL = translatePath('/partials/planets_select_options/')
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -253,13 +256,27 @@ const page_title = t('intel.timers.add.page_title');
                                 style="display: none;"
                             >
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="system">{t('system')}</label>
-                                    <Input
-                                        id="system"
-                                        name="system"
-                                        type="text"
-                                        x-bind:required="time_required_structures.includes(structure_type)"
-                                    />
+                                    <label for="system">{t('system_and_planet')}</label>
+                                    <Grid min_item_width="150px">
+                                        <Input
+                                            id="system"
+                                            name="system"
+                                            type="text"
+                                            x-bind:required="time_required_structures.includes(structure_type)"
+                                            hx-get={PLANET_SELECT_OPTIONS_PARTIAL_URL}
+                                            hx-target="#planet"
+                                            hx-indicator=".loader"
+                                            hx-swap="innerHTML"
+                                        />
+                                        <Select
+                                            id="planet"
+                                            name="planet"
+                                            type="text"
+                                            x-bind:required="time_required_structures.includes(structure_type)"
+                                        >
+                                            <option value="">{t('select_planet')}</option>
+                                        </Select>
+                                    </Grid>
                                 </FixedFluid>
                             </div>
 
@@ -271,6 +288,7 @@ const page_title = t('intel.timers.add.page_title');
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                 <label for="state">{t('state')}</label>
                                 <Select id="state" name="state" required>
+                                    <option value="">{t('select_state')}</option>
                                     {structure_states.map(state =>
                                         <option value={state}>{t(state)}</option>    
                                     )}
