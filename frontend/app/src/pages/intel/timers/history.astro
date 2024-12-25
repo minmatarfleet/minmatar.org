@@ -31,7 +31,7 @@ const MAX_TIMERS_COUNT = 50
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, false)
     structure_timers.sort(function(a, b) {
-        return new Date(a.timer).getTime() - new Date(b.timer).getTime();
+        return new Date(b.timer).getTime() - new Date(a.timer).getTime();
     });
 
     structure_timers = get_unique_by_key(structure_timers, 'timer')
