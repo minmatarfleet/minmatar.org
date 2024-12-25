@@ -120,6 +120,7 @@ import Textarea from '@components/blocks/Textarea.astro';
 import Select from '@components/blocks/Select.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
+import InputError from '@components/blocks/InputError.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -186,7 +187,9 @@ const page_title = t('intel.timers.add.page_title');
         <form
             method="POST"
             x-data={`{
-                'submitted': false
+                submitted: false,
+                invalid_planet: false,
+                invalid_planet_error: '',
             }`}
             x-on:submit="submitted = true;"
         >
@@ -258,16 +261,18 @@ const page_title = t('intel.timers.add.page_title');
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                     <label for="system">{t('system_and_planet')}</label>
                                     <Grid min_item_width="150px">
-                                        <Input
-                                            id="system"
-                                            name="system"
-                                            type="text"
-                                            x-bind:required="time_required_structures.includes(structure_type)"
-                                            hx-get={PLANET_SELECT_OPTIONS_PARTIAL_URL}
-                                            hx-target="#planet"
-                                            hx-indicator=".loader"
-                                            hx-swap="innerHTML"
-                                        />
+                                        <InputError show_prop="invalid_planet" error_prop="invalid_planet_error">
+                                            <Input
+                                                id="system"
+                                                name="system"
+                                                type="text"
+                                                x-bind:required="time_required_structures.includes(structure_type)"
+                                                hx-get={PLANET_SELECT_OPTIONS_PARTIAL_URL}
+                                                hx-target="#planet"
+                                                hx-indicator=".loader"
+                                                hx-swap="innerHTML"
+                                            />
+                                        </InputError>
                                         <Select
                                             id="planet"
                                             name="planet"

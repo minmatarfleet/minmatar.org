@@ -12,7 +12,6 @@ console.log(system)
 
 let planets:PlanetBasic[] = []
 let fetch_planets_error = ''
-let alert:Alert | false = false
 
 try {
     const system_id = await get_system_id(system)
@@ -23,14 +22,9 @@ try {
     planets = await find_system_planets(system_id)
 } catch (error) {
     fetch_planets_error = prod_error_messages() ? t('fetch_planets_error') : error.message
-    
-    alert = {
-        title: t('fetch_planets_dialog_title'),
-        content: fetch_planets_error as string,
-    }
 }
 
-import ShowAlert from '@components/blocks/ShowAlert.astro'
+const invalid_planet = Boolean(fetch_planets_error)
 ---
 
 <option value="">{t('select_planet')}</option>
@@ -38,4 +32,4 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
     <option value={planet.name.split(' ').pop()}>{planet.name}</option>
 )}
 
-{alert && <ShowAlert alert={alert} /> }
+<div x-init={`invalid_planet = ${JSON.stringify(invalid_planet)}; invalid_planet_error = '${fetch_planets_error}'; $el.remove()`} class="[ hidden ]" />
