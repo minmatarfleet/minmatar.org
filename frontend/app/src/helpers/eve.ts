@@ -303,8 +303,8 @@ const t = useTranslations('en')
 export const structure_type_with_translations = [ 'player_owned_customs_office', 'mercenary_den' ] as const
 export type StructureTypeWithTranslation = typeof structure_type_with_translations[number]
 
-export const get_selected_item_translation = (structure_type: StructureTypeWithTranslation, system:string, timer:Date) => {
-    return `${system} - ${t(structure_type as any) ?? t('uknown_structure_type')}\r\n`+
+export const get_selected_item_translation = (system:string, planet: string, timer:Date) => {
+    return `${system} - ${t('planet')} ${planet}\r\n`+
             `0 km\r\n`+
             `Reinforced until ${format_selected_item_date(timer)}`
 }

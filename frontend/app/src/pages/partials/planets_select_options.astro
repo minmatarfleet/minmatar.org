@@ -1,0 +1,41 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { PlanetBasic, Alert } from '@dtypes/layout_components'
+import { find_system_planets, get_system_id } from '@helpers/sde/map'
+
+const system = Astro.url.searchParams.get('system') as string
+console.log(system)
+
+let planets:PlanetBasic[] = []
+let fetch_planets_error = ''
+let alert:Alert | false = false
+
+try {
+    const system_id = await get_system_id(system)
+
+    if (!system_id)
+        throw new Error(t('invalid_system_id'))
+
+    planets = await find_system_planets(system_id)
+} catch (error) {
+    fetch_planets_error = prod_error_messages() ? t('fetch_planets_error') : error.message
+    
+    alert = {
+        title: t('fetch_planets_dialog_title'),
+        content: fetch_planets_error as string,
+    }
+}
+
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+---
+
+<option value="">{t('select_planet')}</option>
+{planets.map(planet =>
+    <option value={planet.name.split(' ').pop()}>{planet.name}</option>
+)}
+
+{alert && <ShowAlert alert={alert} /> }
