@@ -362,6 +362,62 @@ const page_description = t('index.leading_text');
     </PageLanding>
 </Viewport>
 
+<script is:inline>
+	let skew = 1
+	let tick = 0
+
+	function randomInRange(min, max) {
+		return Math.random() * (max - min) + min
+	}
+
+	(function frame() {
+		skew = 0.8
+		tick += 1
+
+		const DEFAULTS = {
+			particleCount: 1,
+			startVelocity: 0,
+			origin: {
+				x: Math.random(),
+				y: Math.random() * skew - 0.2,
+			},
+			colors: ["#ffffff"],
+			shapes: ["image"],
+			shapeOptions: {
+				image: {
+					src: "/images/snowflake.svg",
+					replaceColor: true,
+					width: 21,
+					height: 24,
+				},
+			},
+			gravity: randomInRange(0.4, 0.6),
+			scalar: randomInRange(0.4, 1),
+			drift: randomInRange(-0.4, 0.4),
+		}
+
+		tick % 100 === 0 && confetti({
+			...DEFAULTS,
+			scalar: randomInRange(2, 4),
+			ticks: 200,
+		})
+
+		tick % 30 === 0 && confetti({
+			...DEFAULTS,
+			scalar: randomInRange(1, 1.5),
+			ticks: 200,
+		})
+
+		confetti({
+			...DEFAULTS,
+			scalar: randomInRange(0.3, 0.6),
+			ticks: 200,
+		})
+
+		if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
+	})();
+</script>
+
 <style lang="scss">
 	.station-info {
 		position: fixed;
