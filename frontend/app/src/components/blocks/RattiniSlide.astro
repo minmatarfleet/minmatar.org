@@ -31,7 +31,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
-    <img slot="ships" class="[ wolf ]" src="/images/corporations/rattini/wolf.png" />
+    <img slot="ships" class="[ jaguar ]" src="/images/corporations/rattini/jaguar.png" />
     <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />
     <img slot="ships" class="[ sleipnir ]" src="/images/corporations/rattini/sleipnir.png" />
 
@@ -43,13 +43,13 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         image-rendering: pixelated;
     }
 
-    .wolf {
+    .jaguar {
         position: absolute;
         top: 40%;
         left: 5%;
         height: auto;
-        width: 69%;
-        z-index: 3;
+        width: 71%;
+        z-index: 2;
         transform: scale(0);
     }
 
@@ -57,9 +57,9 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         position: absolute;
         top: 48%;
         left: -40%;
-        width: 65%;
+        width: 72%;
         height: auto;
-        z-index: 2;
+        z-index: 3;
         transform: scale(0);
     }
 
@@ -73,7 +73,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         transform: scale(0);
     }
 
-    @keyframes wolf {
+    @keyframes jaguar {
         from {
             transform: scale(0);
             top: 28%;
@@ -82,22 +82,22 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
         to {
             transform: scale(1);
-            top: 27%;
-            left: 35%;
+            top: 33%;
+            left: 31%;
         }
     }
 
     @keyframes scimitar {
         from {
             transform: scale(0);
-            top: 36%;
+            top: 30%;
             left: -40%;
         }
 
         to {
             transform: scale(1);
-            top: 6%;
-            left: 37%;
+            top: 2%;
+            left: 30%;
         }
     }
 
@@ -122,8 +122,8 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     .swiper-slide-active {
-        .wolf {
-            animation: wolf cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .jaguar {
+            animation: jaguar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
