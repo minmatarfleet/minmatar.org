@@ -12,16 +12,17 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user)
+    return HTTP_404_Not_Found()
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
-
-if (!can_view_srp)
-    return HTTP_404_Not_Found()
+const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
+import { get_user_character } from '@helpers/fetching/characters'
 
 let fetch_srp_error:string | false = false
 let fleets_srps:FleetSRPUI[] | null = []
@@ -29,6 +30,19 @@ let srps_count:number = 0
 
 try {
     fleets_srps = await fetch_srps(auth_token as string)
+
+    if (!can_view_all_srp) {
+        const user_character = await get_user_character(user.user_id)
+
+        fleets_srps = fleets_srps.map(fleet_srps => {
+            return {
+                fleet_id: fleet_srps.fleet_id,
+                srps: fleet_srps.srps.filter(srp => srp.primary_character_id === user_character?.character_id)
+            } as FleetSRPUI
+        })
+
+        fleets_srps = fleets_srps.filter(fleet_srps => fleet_srps.srps.length > 0)
+    }
 
     srps_count = fleets_srps.reduce((c, v) => c + v.srps.length, 0)
 } catch (error) {
@@ -114,13 +128,13 @@ const page_title = t('fleets.srp.page_title');
             :
             <BlockList class="[ w-full ]" gap='var(--space-2xl)'>
                 {fleets_srps.length === 0 &&
-                    <p class="[ text-center ]">{t('corp_wallet_is_safe')} <span class="[ inline-block animate-fade-in-up animate-delay-1000 ]">{t('for_now')}</span></p>
+                    <p class="[ text-center ]">{t('no_srp_found')}</p>
                 }
                 {fleets_srps.length > 0 &&
-                    <p x-show="srps_count === 0" class="[ text-center ]" style="display: none">{t('corp_wallet_is_safe')} <span class="[ inline-block animate-fade-in-up animate-delay-1000 ]">{t('for_now')}</span></p>
+                    <p x-show="srps_count === 0" class="[ text-center ]" style="display: none">{t('no_srp_found')}</p>
                 }
                 {fleets_srps.map(fleet_srps =>
-                    <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={false} fleet_title={true} />
+                    <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={!can_view_all_srp} fleet_title={true} />
                 )}
             </BlockList>
         }
