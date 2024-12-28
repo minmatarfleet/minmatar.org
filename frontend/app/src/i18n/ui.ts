@@ -1241,5 +1241,6 @@ export const ui = {
         'planet': 'Planet',
         'system_and_planet': 'System and planet',
         'select_state': 'Select state',
+        'happy_bd': 'Happy birthday!',
     },
 } as const;

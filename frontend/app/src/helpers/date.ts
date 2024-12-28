@@ -112,3 +112,19 @@ export const generate_timeline = (start_date, end_date) => {
 
     return dates.map(date => date.toISOString().replace('T', ' ').replace('.000Z', '').replaceAll('-', '.'))
 }
+
+export const is_birthday = (date:Date) => {
+    const birthdate = new Date(date)
+    const today = new Date()
+
+    if (!(birthdate instanceof Date) || birthdate.toString() === 'Invalid Date')
+        return false
+
+    const birth_month = birthdate.getMonth()
+    const birthday = birthdate.getDate()
+
+    const today_month = today.getMonth()
+    const today_day = today.getDate()
+
+    return (birth_month === today_month && birthday === today_day)
+}
