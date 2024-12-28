@@ -20,7 +20,7 @@ const {
 import { get_player_icon } from '@helpers/eve_image_server';
 import { prod_error_messages } from '@helpers/env'
 import type { CharacterEvE } from '@dtypes/api.eveonline'
-import { format_date_time, humanize_date_diff } from '@helpers/date'
+import { format_date_time, humanize_date_diff, is_birthday } from '@helpers/date'
 import { get_character_by_id } from '@helpers/api.eveonline/characters'
 import { get_character_faction, get_race_cover_image, parse_eve_html } from '@helpers/eve'
 import { is_html } from '@helpers/string'
@@ -42,6 +42,8 @@ try {
 } catch (error) {
     get_character_error = (prod_error_messages() ? t('get_eve_character_error') : error.message)
 }
+
+const birthday = is_birthday(character?.birthday as Date)
 
 const CHARACTER_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
@@ -104,9 +106,63 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                 <div class="[ fluid-fixed-l ]" class="[ w-full ]" style='--fluid-fixed--width: 32px'>
                     <VerticalCenter>
                         <Flexblock gap='var(--space-xs)' class="[ w-full ]">
-                            <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
+                            <Flexblock gap='var(--space-3xs)' class="[ w-full relative ]">
                                 <span class="[ text-[var(--highlight)] ]">{character?.name}</span>
-                                <small>Born: <span data-tippy-content={humanize_date_diff(lang, character?.birthday as Date, new Date())}>{format_date_time(lang, character?.birthday)}</span></small>
+                                <small>
+                                    Born: 
+                                    <span data-tippy-content={humanize_date_diff(lang, character?.birthday as Date, new Date())}>{format_date_time(lang, character?.birthday)}</span> 
+                                    {birthday &&
+                                        <span>- </span><span class="[ blink-animation ]">{t('happy_bd')}</span>
+                                    }
+                                </small>
+                                {birthday &&
+                                    <canvas
+                                        id={`fireworks-${character_id}`}
+                                        width="300"
+                                        height="300"
+                                        class="[ fireworks ]"
+                                        x-data={`{
+                                            DEFAULTS: {
+                                                startVelocity: 7,
+                                                spread: 90,
+                                                ticks: 60,
+                                                scalar: 0.25,
+                                                gravity: 1,
+                                                zIndex: 0
+                                            },
+                                            randomInRange(min, max) {
+                                                return Math.random() * (max - min) + min
+                                            },
+                                            async init() {
+                                                const canvas = document.getElementById("fireworks-${character_id}")
+                                                console.log(canvas.confetti)
+                                                canvas.confetti =
+                                                    canvas.confetti || (await confetti.create(canvas));
+
+                                                const duration = 10 * 1000
+                                                animation_end = Date.now() + duration
+
+                                                const interval = setInterval((canvas) => {
+                                                    const timeLeft = animation_end - Date.now()
+
+                                                    if (timeLeft <= 0)
+                                                        return clearInterval(interval)
+
+                                                    const particleCount = 100
+                                                    const x = this.randomInRange(0.3, 0.7)
+                                                    const y = this.randomInRange(0.2, 0.4)
+
+                                                    canvas.confetti(
+                                                        Object.assign({}, this.DEFAULTS, {
+                                                            particleCount,
+                                                            origin: { x: x, y: y },
+                                                        })
+                                                    )
+                                                }, 1000, canvas)
+                                            }
+                                        }`}
+                                    ></canvas>
+                                }
                                 <small>Security Status: {character?.security_status.toFixed(1)}</small>
                             </Flexblock>
                             <Flexblock gap='var(--space-3xs)' class="[ w-full ]">
@@ -232,5 +288,14 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
             object-fit: cover;
             z-index: -1;
         }*/
+    }
+
+    .fireworks {
+        position: absolute;
+        z-index: var(--tooltips-z-index);
+        width: 300px !important;
+        height: 300px !important;
+        right: 0;
+        pointer-events: none;
     }
 </style>

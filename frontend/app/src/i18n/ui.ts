@@ -1242,5 +1242,6 @@ export const ui = {
         'system_and_planet': 'System and planet',
         'select_state': 'Select state',
         'no_srp_found': 'No pending SRP',
+        'happy_bd': 'Happy birthday!',
     },
 } as const;
