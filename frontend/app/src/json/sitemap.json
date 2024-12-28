@@ -204,7 +204,7 @@
         "description": "page_finder.fleets.srp.description",
         "keywords": [ "srp", "ship", "replacement", "program" ],
         "permissions" : {
-            "user": [ "srp.change_evefleetshipreimbursement" ]
+            "auth": true
         }
     },
     {
