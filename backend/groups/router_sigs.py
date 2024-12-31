@@ -182,6 +182,7 @@ def approve_sig_request(request, sig_id: int, request_id: int):
         return 404, {"detail": "Request does not exist."}
     sig_request.approved = True
     sig_request.approved_by = request.user
+    sig_request.approved_at = timezone.now()
     sig_request.save()
     return SigRequestSchema(
         id=sig_request.id,
