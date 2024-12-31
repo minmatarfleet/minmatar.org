@@ -4,6 +4,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import type { VerifyStructureTimerRequest } from '@dtypes/api.minmatar.org'
+import { remove_line_breaks } from '@helpers/string'
 
 interface Props {
     structure_timer:    StructureTimerUI;
@@ -35,8 +36,12 @@ import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 const ITEM_ID = `structure-timer-${structure_timer.id}`
 
 import { query_string } from '@helpers/string';
-import Tag from './Tag.astro';
+
 import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Tag from '@components/blocks/Tag.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
 const eve_time = new Date(structure_timer.timer);
@@ -58,37 +63,47 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             ${import.meta.env.DATETIME_FORMAT}
         )
     }`}
+    class="[ timer-item ]"
     {...attributes}
 >
     <FlexInline
         slot="absolute"
-        class="[ absolute !w-auto top-[var(--space-3xs)] right-[var(--space-3xs)] ]"
-        gap='0px'
+        class="[ absolute !w-auto top-[var(--space-3xs)] right-[var(--space-3xs)] left-[var(--space-3xs)] !items-start ]"
+        justification='space-between'
     >
-        {create_fleet &&
+        <ClipboardButton
+            id={`structure-timer-copy-${structure_timer.id}`}
+            class="[ copy-button ]"
+            iconed={false}
+        >
+            {`${structure_timer.timer}: ${t(structure_timer.structure_type as any)} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
+        </ClipboardButton>
+        <FlexInline class="[ !w-auto item ]" gap='0px'>
+            {create_fleet &&
+                <a
+                    class="[ w-[32px] neocom-button ]"
+                    data-tippy-content={t('create_fleet_from_timer')}
+                    href={`${translatePath('/fleets/add/')}?${query_string({
+                        timer: structure_timer.timer,
+                    })}`}
+                    target="_blank"
+                    rel="nofollow noopener noreferrer"
+                    x-init="tippy($el, tippy_options)"
+                >
+                    <FleetEvEIcon />
+                </a>
+            }
             <a
                 class="[ w-[32px] neocom-button ]"
-                data-tippy-content={t('create_fleet_from_timer')}
-                href={`${translatePath('/fleets/add/')}?${query_string({
-                    timer: structure_timer.timer,
-                })}`}
+                data-tippy-content={t('view_on_dotlan')}
+                href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
                 target="_blank"
                 rel="nofollow noopener noreferrer"
                 x-init="tippy($el, tippy_options)"
             >
-                <FleetEvEIcon />
+                <MapEvEIcon />
             </a>
-        }
-        <a
-            class="[ w-[32px] neocom-button ]"
-            data-tippy-content={t('view_on_dotlan')}
-            href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
-            target="_blank"
-            rel="nofollow noopener noreferrer"
-            x-init="tippy($el, tippy_options)"
-        >
-            <MapEvEIcon />
-        </a>
+        </FlexInline>
     </FlexInline>
     
     <VerticalCenter>
@@ -188,5 +203,21 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+    }
+
+    .timer-item {
+        @media (hover: hover) {
+            .copy-button {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .copy-button {
+                    opacity: 1;
+                }
+            }
+        }
     }
 </style>
