@@ -37,6 +37,10 @@ try {
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
+
+const SNOW_DECORATION = false
+const FIREWORKS_DECORATION = true
+
 import { query_string } from '@helpers/string';
 
 import Viewport from '@layouts/Viewport.astro';
@@ -356,69 +360,129 @@ const page_description = t('index.leading_text');
 			</Wrapper>
 		</Wrapper>
 
+		{(SNOW_DECORATION || FIREWORKS_DECORATION) &&
+			<canvas id="decoration-overlay" />
+		}
+
 		{user &&
 			<FleetFeed />
 		}
     </PageLanding>
 </Viewport>
 
-<script is:inline>
-	let skew = 1
-	let tick = 0
+{SNOW_DECORATION && (
+	<script is:inline>
+		(async () => {
+			const canvas = document.getElementById("decoration-overlay")
+			console.log(canvas)
 
-	function randomInRange(min, max) {
-		return Math.random() * (max - min) + min
-	}
+			canvas.confetti =
+				canvas.confetti || (await confetti.create(canvas, { resize: true }))
+		
+			let skew = 1
+			let tick = 0
 
-	(function frame() {
-		skew = 0.8
-		tick += 1
+			function randomInRange(min, max) {
+				return Math.random() * (max - min) + min
+			}
 
-		const DEFAULTS = {
-			particleCount: 1,
-			startVelocity: 0,
-			origin: {
-				x: Math.random(),
-				y: Math.random() * skew - 0.2,
-			},
-			colors: ["#ffffff"],
-			shapes: ["image"],
-			shapeOptions: {
-				image: {
-					src: "/images/snowflake.svg",
-					replaceColor: true,
-					width: 21,
-					height: 24,
-				},
-			},
-			gravity: randomInRange(0.4, 0.6),
-			scalar: randomInRange(0.4, 1),
-			drift: randomInRange(-0.4, 0.4),
-		}
+			(function frame() {
+				skew = 0.8
+				tick += 1
 
-		tick % 100 === 0 && confetti({
-			...DEFAULTS,
-			scalar: randomInRange(2, 4),
-			ticks: 200,
-		})
+				const DEFAULTS = {
+					particleCount: 1,
+					startVelocity: 0,
+					origin: {
+						x: Math.random(),
+						y: Math.random() * skew - 0.2,
+					},
+					colors: ["#ffffff"],
+					shapes: ["image"],
+					shapeOptions: {
+						image: {
+							src: "/images/snowflake.svg",
+							replaceColor: true,
+							width: 21,
+							height: 24,
+						},
+					},
+					gravity: randomInRange(0.4, 0.6),
+					scalar: randomInRange(0.4, 1),
+					drift: randomInRange(-0.4, 0.4),
+				}
 
-		tick % 30 === 0 && confetti({
-			...DEFAULTS,
-			scalar: randomInRange(1, 1.5),
-			ticks: 200,
-		})
+				tick % 100 === 0 && canvas.confetti({
+					...DEFAULTS,
+					scalar: randomInRange(2, 4),
+					ticks: 200,
+				})
 
-		confetti({
-			...DEFAULTS,
-			scalar: randomInRange(0.3, 0.6),
-			ticks: 200,
-		})
+				tick % 30 === 0 && canvas.confetti({
+					...DEFAULTS,
+					scalar: randomInRange(1, 1.5),
+					ticks: 200,
+				})
 
-		if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
-	})();
-</script>
+				canvas.confetti({
+					...DEFAULTS,
+					scalar: randomInRange(0.3, 0.6),
+					ticks: 200,
+				})
+
+				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
+			})();
+		})();
+	</script>
+)}
+
+{FIREWORKS_DECORATION && (
+	<script is:inline>
+		(async () => {
+			const canvas = document.getElementById("decoration-overlay")
+
+			canvas.confetti =
+				canvas.confetti || (await confetti.create(canvas, { resize: true }))
+
+			let tick = 0
+
+			function randomInRange(min, max) {
+				return Math.random() * (max - min) + min
+			}
+
+			(function frame() {
+				skew = 0.8
+				tick += 1
+
+				const DEFAULTS = {
+					startVelocity: 30,
+					spread: 360,
+					ticks: 60,
+					particleCount: 50,
+					zIndex: 0,
+				}
+
+				tick % 150 === 0 && canvas.confetti({
+					...DEFAULTS,
+					scalar: randomInRange(0.5, 2),
+					origin: { x: randomInRange(0.1, 0.9), y: randomInRange(0.1, 0.6) },
+					ticks: 200,
+				})
+
+				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
+			})();
+		})();
+	</script>
+)}
 
 <style lang="scss">
+	#decoration-overlay {
+		position: absolute;
+		inset: 0;
+		height: 100%;
+		width: 100%;
+	}
+
 	.station-info {
 		position: fixed;
 		top: var(--space-l);
