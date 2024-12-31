@@ -68,7 +68,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 >
     <FlexInline
         slot="absolute"
-        class="[ absolute !w-auto top-[var(--space-3xs)] right-[var(--space-3xs)] left-[var(--space-3xs)] !items-start ]"
+        class="[ absolute !w-auto top-[var(--space-2xs)] right-[var(--space-2xs)] left-[var(--space-2xs)] !items-start ]"
         justification='space-between'
     >
         <ClipboardButton
@@ -78,7 +78,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         >
             {`${structure_timer.timer}: ${t(structure_timer.structure_type as any)} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
         </ClipboardButton>
-        <FlexInline class="[ !w-auto item ]" gap='0px'>
+        <FlexInline class="[ !w-auto item ]" gap='var(--space-3xs)'>
             {create_fleet &&
                 <a
                     class="[ w-[32px] neocom-button ]"
@@ -203,6 +203,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+    }
+
+    .neocom-button {
+        margin-top: calc(-1 * var(--space-3xs));
+        margin-right: calc(-1 * var(--space-3xs));
     }
 
     .timer-item {
