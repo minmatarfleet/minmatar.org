@@ -38,7 +38,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             mask={true}
         />
         <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <Flexblock gap='0'>
+            <Flexblock gap='var(--space-3xs)'>
                 <h4>{title ? title : doctrine.name}</h4>
                 {subtitle && <small>{subtitle}</small>}
             </Flexblock>
