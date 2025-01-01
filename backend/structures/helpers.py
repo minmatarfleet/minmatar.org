@@ -33,7 +33,7 @@ def get_skyhook_details(selected_item_window: str):
     # regex pattern for structure name, location, and owner
     structure_pattern = re.compile(r"(.*) \((.*)\) \[(.*)\]")
     # get the entire timer out
-    timer_pattern = re.compile(r"Reinforced until (.*)")
+    timer_pattern = re.compile(r" until (.*)")
 
     # parse the structure name, location, and owner
     structure_match = structure_pattern.match(selected_item_window)
@@ -64,7 +64,7 @@ def get_structure_details(selected_item_window: str):
     # regex pattern for system name and structure name
     structure_pattern = re.compile(r"(.*) - (.*)")
     # get the entire timer out
-    timer_pattern = re.compile(r"Reinforced until (.*)")
+    timer_pattern = re.compile(r" until (.*)")
 
     # parse the structure name, location, and owner
     structure_match = structure_pattern.match(selected_item_window)
