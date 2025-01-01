@@ -36,7 +36,7 @@ import Progress from '@components/blocks/Progress.astro';
         />
         <Flexblock class="[ system-card-body ]" gap='0'>
             <Wrapper padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-                <Flexblock gap='0'>
+                <Flexblock gap='var(--space-3xs)'>
                     <FlexInline gap='var(--space-3xs)'>
                         <h4>
                             {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
@@ -93,7 +93,6 @@ import Progress from '@components/blocks/Progress.astro';
 
     h4 {
         font-weight: 400;
-        line-height: 1.5;
     }
 
     small {

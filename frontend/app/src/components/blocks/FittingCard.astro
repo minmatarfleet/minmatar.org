@@ -37,7 +37,7 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
             mask={true}
         />
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <Flexblock gap='0'>
+            <Flexblock gap='var(--space-3xs)'>
                 <h4>{title ? title : fitting.fitting_name}</h4>
                 {subtitle && <small>{subtitle}</small>}
             </Flexblock>
