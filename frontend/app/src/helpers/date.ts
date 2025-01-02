@@ -128,3 +128,22 @@ export const is_birthday = (date:Date) => {
 
     return (birth_month === today_month && birthday === today_day)
 }
+
+export const is_seasonal_date = (start_date:string, end_date:string) => {
+    const today = new Date()
+    const [startMonth, startDay] = start_date.split("-").map(Number)
+    const [endMonth, endDay] = end_date.split("-").map(Number)
+
+    const start = new Date(today.getFullYear(), startMonth - 1, startDay)
+    const end = new Date(today.getFullYear(), endMonth - 1, endDay)
+
+    if (end < start) {
+        if (today >= start || today <= new Date(today.getFullYear() + 1, endMonth - 1, endDay))
+            return true
+    } else {
+        if (today >= start && today <= end)
+            return true
+    }
+
+    return false
+}

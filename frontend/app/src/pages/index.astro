@@ -17,6 +17,7 @@ import type { StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
 import { get_market_locations } from '@helpers/api.minmatar.org/market'
+import { is_seasonal_date } from '@helpers/date'
 
 let contracts_service_staging:string[] = []
 let posts:PostListUI[] = []
@@ -38,8 +39,9 @@ try {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const SNOW_DECORATION = false
-const FIREWORKS_DECORATION = false
+const NEY_YEAR_EVE_DECORATION = is_seasonal_date('12-31', '01-01')
+const WINTER_NEXUS_DECORATION = !NEY_YEAR_EVE_DECORATION ? is_seasonal_date('12-05', '01-04') : false
+const CRIMSON_HARVEST_DECORATION = is_seasonal_date('10-03', '11-05')
 
 import { query_string } from '@helpers/string';
 
@@ -360,8 +362,8 @@ const page_description = t('index.leading_text');
 			</Wrapper>
 		</Wrapper>
 
-		{(SNOW_DECORATION || FIREWORKS_DECORATION) &&
-			<canvas id="decoration-overlay" />
+		{(WINTER_NEXUS_DECORATION || NEY_YEAR_EVE_DECORATION || CRIMSON_HARVEST_DECORATION) &&
+			<canvas id="decoration_overlay" />
 		}
 
 		{user &&
@@ -370,10 +372,10 @@ const page_description = t('index.leading_text');
     </PageLanding>
 </Viewport>
 
-{SNOW_DECORATION && (
+{WINTER_NEXUS_DECORATION && (
 	<script is:inline>
 		(async () => {
-			const canvas = document.getElementById("decoration-overlay")
+			const canvas = document.getElementById("decoration_overlay")
 			console.log(canvas)
 
 			canvas.confetti =
@@ -436,10 +438,10 @@ const page_description = t('index.leading_text');
 	</script>
 )}
 
-{FIREWORKS_DECORATION && (
+{NEY_YEAR_EVE_DECORATION && (
 	<script is:inline>
 		(async () => {
-			const canvas = document.getElementById("decoration-overlay")
+			const canvas = document.getElementById("decoration_overlay")
 
 			canvas.confetti =
 				canvas.confetti || (await confetti.create(canvas, { resize: true }))
@@ -470,13 +472,86 @@ const page_description = t('index.leading_text');
 				})
 
 				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
-			})();
-		})();
+			})()
+		})()
+	</script>
+)}
+
+{CRIMSON_HARVEST_DECORATION && (
+	<script is:inline>
+		tsParticles.load(
+			"decoration_overlay", {
+				fpsLimit: 60,
+				emitters: {
+					autoPlay: true,
+					rate: {
+						delay: 1,
+						quantity: 1
+					},
+					size: {
+						mode: "percent",
+						height: 100,
+						width: 100
+					},
+				},
+  				particles: {
+					number: {
+						value: 0
+					},
+					shape: {
+						type: [
+							"image"
+						],
+						options: {
+							image: [
+								{
+									src: "/images/jack_o_lantern.svg",
+									width: 32,
+									height: 32,
+									particles: {
+										size: {
+											value: 30
+										}
+									}
+								}
+							]
+						},
+					},
+					opacity: {
+						value: 1,
+						animation: {
+							enable: true,
+							startValue: "max",
+							speed: 1,
+							decay: 0.5,
+							destroy: "min"
+						},
+					},
+					size: {
+						value: 60,
+						animation: {
+							enable: true,
+							startValue: "min",
+							speed: 1
+						},
+					},
+					move: {
+						enable: false
+					},
+					life: {
+						duration: {
+							sync: false,
+							value: 20
+						},
+						count: 1
+					},
+				},
+		})
 	</script>
 )}
 
 <style lang="scss">
-	#decoration-overlay {
+	#decoration_overlay {
 		position: absolute;
 		inset: 0;
 		height: 100%;
@@ -540,5 +615,14 @@ const page_description = t('index.leading_text');
         height:100%;
 		/*z-index: -1;*/
     }
+
+	#tsparticles {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: none; /* Ensures no conflicting background */
+	}
 
 </style>
