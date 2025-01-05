@@ -17,6 +17,7 @@ const {
 const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_component/')
 
 import { format_date_time } from '@helpers/date'
+import { remove_trailing_slash } from '@helpers/string'
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import FlexInline from "@components/compositions/FlexInline.astro";
@@ -45,7 +46,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
             narrow={true}
             id={log.id.toString()}
         >
-            {translatePath(`${Astro.url}/${log.id}`)}
+            {translatePath(`${remove_trailing_slash(Astro.url.toString())}/${log.id}`)}
         </ClipboardButton>
 
         <Button

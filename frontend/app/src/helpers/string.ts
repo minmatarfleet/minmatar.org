@@ -101,3 +101,7 @@ export const b64_to_Uint8Array = (b64encoded_string:string):Uint8Array => {
 
     return uint8Array
 }
+
+export const remove_trailing_slash = (str:string) => {
+    return str.replace(/\/$/, '')
+}
