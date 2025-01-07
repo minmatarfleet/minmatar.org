@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { prod_error_messages } from '@helpers/env'
 
 const is_friend = JSON.parse(Astro.url.searchParams.get('is_friend') ?? 'false') as boolean
@@ -15,7 +15,7 @@ const auth_token = Astro.cookies.has(token_name) ? (Astro.cookies.get(token_name
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 import { sync_user_with_discord } from '@helpers/api.minmatar.org/authentication'
 

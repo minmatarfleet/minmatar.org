@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -12,7 +12,7 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
 
@@ -52,7 +52,7 @@ try {
     user_character = await get_user_character(user.user_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
-        return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }

@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -15,7 +15,7 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 let system_name = Astro.params.system_name ?? ''
 

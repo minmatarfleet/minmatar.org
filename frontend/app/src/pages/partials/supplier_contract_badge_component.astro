@@ -4,7 +4,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import { is_prod_mode } from '@helpers/env'
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -20,7 +20,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 const is_supplier = user_is_superadmin || user_permissions.includes('market.add_evemarketcontractresponsibility')
 
 if (!is_supplier)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 import { create_market_contract_responsability, get_market_contract_by_id } from '@helpers/api.minmatar.org/market'
 import type { Alert, ContractUI, SelectOptions, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'

@@ -21,7 +21,7 @@ const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url
 const HOME_REDIRECT_URL = `${translatePath('/')}`
 
 if (!user)
-    return Astro.redirect(!is_discord_bot ? AUTH_REDIRECT_URL : HOME_REDIRECT_URL)
+    return HTTP_403_Forbidden()
 
 const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 
@@ -47,8 +47,7 @@ try {
     fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
-        return Astro.redirect(translatePath('/403'))
-        // return HTTP_403_Forbidden()
+        return HTTP_403_Forbidden()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
