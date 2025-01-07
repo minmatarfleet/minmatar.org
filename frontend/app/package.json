@@ -15,10 +15,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/alpinejs": "0.4.0",
     "@astrojs/check": "0.5.7",
     "@astrojs/node": "8.2.3",
-    "@astrojs/svelte": "5.2.0",
     "@astrojs/tailwind": "5.1.0",
     "@fontsource-variable/montserrat": "^5.0.17",
     "@fontsource/norwester": "^5.0.7",
