@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -13,13 +13,13 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 const is_superuser = (user ? user?.is_superuser : false)
 
 if (!auth_token || !user)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 import { is_director } from '@helpers/fetching/groups'
 const can_view_page = is_superuser || (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
 if (!can_view_page)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 import type { GroupRequestListUI } from '@dtypes/layout_components'
 import { get_all_groups_requests } from '@helpers/fetching/group_requests'

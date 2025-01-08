@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -12,7 +12,7 @@ const auth_token = Astro.cookies.has('guest_auth_token') ? (Astro.cookies.get('g
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 if (!user)
-    return HTTP_404_Not_Found()
+    return HTTP_403_Forbidden()
 
 import type { Alert } from '@dtypes/layout_components'
 import type { Character } from '@dtypes/api.minmatar.org'
