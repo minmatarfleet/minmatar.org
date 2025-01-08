@@ -45,7 +45,7 @@ import Square from '@components/blocks/Square.astro';
                 </div>
             </FlexInline>
         </Wrapper>
-        <div class="[ h-[64px] mb-[-7px] ]">
+        <div class="h-[64px] mb-[-7px]">
             <canvas
                 x-data={`{
                     init() {
@@ -159,8 +159,9 @@ import Square from '@components/blocks/Square.astro';
             ></canvas>
         </div>
 
+        <hr class:list={[ 'border', { 'mb-[var(--space-2xs)]': !is_supplier } ]} />
+
         {is_supplier &&
-            <hr class="[ border ]" />
             <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-2xs)'>
                 {contract.responsabilities.length > 0 ?
                     <FlexInline gap='var(--space-3xs)'>
