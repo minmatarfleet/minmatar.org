@@ -4,6 +4,10 @@ const { t } = i18n(Astro.url)
 
 import type { ShipFitting, Module } from '@dtypes/layout_components';
 
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+
 interface Props {
     fitting:    ShipFitting;
     text?:      string;
@@ -97,10 +101,10 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
     <div class="[ empty ]">
         <small
             class="[ animate-fade-in-up animate-delay-1000 ]"
-            x-show="scene_loaded && !ship_loaded"
-            style="display: none"
+            x-show={!DISABLED_CCPWGL ? 'scene_loaded && !ship_loaded' : 'true' }
+            style={!DISABLED_CCPWGL ? "display: none" : undefined}
         >
-            {t('ship_preview_not_available')}
+            {!DISABLED_CCPWGL ? t('ship_preview_not_available_for_ship') : t('ship_preview_not_available')}
         </small>
     </div>
 
