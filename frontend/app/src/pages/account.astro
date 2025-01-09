@@ -72,6 +72,7 @@ import Context from '@components/layout/Context.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import TextGroup from '@components/blocks/TextGroup.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
@@ -87,6 +88,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
+import RifterIcon from '@components/icons/RifterIcon.astro';
 
 const page_title = t('account.page_title');
 ---
@@ -229,6 +231,55 @@ const page_title = t('account.page_title');
                 </ComponentBlock>
             }
 
+            <ComponentBlock
+                width='narrow'
+            >
+                <Flexblock gap='var(--space-l)' class="[ w-full ]">
+                    <h2>{t('reset_suppress_message_settings')}</h2>
+
+                    <FlexInline x-init="$el.remove()" class="[ items-center py-[var(--space-s)] ]" gap='var(--space-3xs)'>
+                        <RifterIcon class="small" />
+                        <p class="[ loading ]">{t('loading')}</p>
+                    </FlexInline>
+
+                    <div
+                        x-data={`{ show: false }`}
+                        x-show="show"
+                        x-init="show = true"
+                        style="display: none;"
+                    >
+                        <BlockList
+                            gap='var(--space-l)'
+                            class="[ w-full ]"
+                        >
+                            <div 
+                                x-data={`{
+                                    show_rendering_options: $persist(),
+                                }`}
+                                x-show="!show_rendering_options"
+                            >
+                                <FlexInline
+                                    justification='space-between'
+                                    width='100px'
+                                >
+                                    <TextGroup title={t('disable_ships_renders_prompt')}>
+                                        <small>{t('disable_ships_renders_prompt_description')}</small>
+                                    </TextGroup>
+                                    
+                                    <Button
+                                        size='sm'
+                                        x-on:click=`show_rendering_options = true`
+                                    >
+                                        {t('reset')}
+                                    </Button>
+                                </FlexInline>
+                            </div>
+                            <p class="[ no-options-text ]">{t('no_options_to_reset')}</p>
+                        </BlockList>
+                    </div>
+                </Flexblock>
+            </ComponentBlock>
+
             <Context>
                 <ComponentBlock
                     width='narrow'
@@ -273,8 +324,8 @@ const page_title = t('account.page_title');
                                     }
                                 }`}
                             >
-                                <TextGroup title={t('unregister_account')} gap='0'>
-                                    {t('unregister_account_description')}
+                                <TextGroup title={t('unregister_account')}>
+                                    <small>{t('unregister_account_description')}</small>
                                 </TextGroup>
                                 <Button
                                     type="button"
@@ -303,5 +354,9 @@ const page_title = t('account.page_title');
 <style lang="scss">
     h3 {
         margin-block-start: var(--space-l);
+    }
+
+    :not([style="display: none;"]) + .no-options-text {
+        display: none;
     }
 </style>

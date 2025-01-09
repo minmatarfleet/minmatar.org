@@ -76,11 +76,10 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
     gap='var(--space-l)'
 >
     <h2>{t('push_notifications')}</h2>
-    <FlexInline x-ref="notifications_loading" class="[ items-center py-[var(--space-s)] ]">
-        <RifterIcon/>
+    <FlexInline x-ref="notifications_loading" class="[ items-center py-[var(--space-s)] ]" gap='var(--space-3xs)'>
+        <RifterIcon class="small" />
         <p class="[ loading ]">{t('loading')}</p>
     </FlexInline>
-    
 
     <template x-if="notifications_support">
         <div class="[ w-full ]">

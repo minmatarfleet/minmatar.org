@@ -30,7 +30,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             <a href="https://www.mumble.info/downloads/" target="_blank" rel="nofollow noopener noreferrer">
                 <MumbleIcon />
             </a>
-            <Flexblock gap='0'>
+            <Flexblock gap='var(--space-3xs)'>
                 <p set:html={marked.parseInline(t('mumble_details'), { renderer })} />
                 <small set:html={marked.parseInline(t('mumble_tutorial'), { renderer })} />
             </Flexblock>
