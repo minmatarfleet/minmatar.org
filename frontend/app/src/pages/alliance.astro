@@ -121,22 +121,6 @@ const leading_text = t('alliance.leading_text');
                     t('no_posts')
             }
         </Flexblock>
-
-        <small class="[ cover-credits ][ hidden lg:block ]">
-            {t('alliance.cover_credits')}
-            <span
-                x-data={`{
-                    show_character_modal() {
-                        show_modal({
-                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                character_id: '2120834555',
-                            })}',
-                        })
-                    }
-                }`}
-                x-on:click="show_character_modal()"
-            >Faye Vaelent</span>.
-        </small>
     </PageLanding>
 </Viewport>
 
