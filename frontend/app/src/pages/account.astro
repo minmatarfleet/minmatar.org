@@ -237,7 +237,7 @@ const page_title = t('account.page_title');
                 <Flexblock gap='var(--space-l)' class="[ w-full ]">
                     <h2>{t('reset_suppress_message_settings')}</h2>
 
-                    <FlexInline x-init="$el.remove()" class="[ items-center py-[var(--space-s)] ]" gap='var(--space-3xs)'>
+                    <FlexInline x-init="$el.remove()" class="[ items-center ]" gap='var(--space-3xs)'>
                         <RifterIcon class="small" />
                         <p class="[ loading ]">{t('loading')}</p>
                     </FlexInline>
@@ -258,13 +258,12 @@ const page_title = t('account.page_title');
                                 }`}
                                 x-show="!show_rendering_options"
                             >
-                                <FlexInline
-                                    justification='space-between'
-                                    width='100px'
-                                >
-                                    <TextGroup title={t('disable_ships_renders_prompt')}>
-                                        <small>{t('disable_ships_renders_prompt_description')}</small>
-                                    </TextGroup>
+                                <FlexInline>
+                                    <div class="basis-[450px]">
+                                        <TextGroup title={t('disable_ships_renders_prompt')}>
+                                            <small>{t('disable_ships_renders_prompt_description')}</small>
+                                        </TextGroup>
+                                    </div>
                                     
                                     <Button
                                         size='sm'

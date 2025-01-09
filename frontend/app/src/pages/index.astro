@@ -44,6 +44,9 @@ const WINTER_NEXUS_DECORATION = !NEY_YEAR_EVE_DECORATION ? is_seasonal_date('12-
 const CRIMSON_HARVEST_DECORATION = is_seasonal_date('10-03', '11-05')
 
 import { query_string } from '@helpers/string';
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -57,7 +60,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
-import YishinoonInfo from '@components/blocks/YishinoonInfo.astro';
 import NakahInfo from '@components/blocks/NakahInfo.astro';
 import VardInfo from '@components/blocks/VardInfo.astro';
 import Input from '@components/blocks/Input.astro';
@@ -82,8 +84,6 @@ import {
 	WatermellonCameraXData,
 	AugaMilitiaHQCameraXData,
 	AugaMilitiaHQXData,
-	SpaceInvadersCameraXData,
-	SpaceInvadersXData,
 	BananaCameraXData,
 	BananaXData,
 	RunForrestCameraXData,
@@ -97,7 +97,6 @@ type StagingTranslation = {
 
 const STAGINGS_STATIONS:StagingTranslation = {
 	auga: 'Auga - Minmatar Militia HQ',
-	yishinoon: 'Yishinoon - Space Invaders',
 	nakah: 'Nakah - Banana',
 	vard: 'Vard - DONG OF WAR',
 	watermellon: 'Sosala - WATERMELLON',
@@ -105,7 +104,6 @@ const STAGINGS_STATIONS:StagingTranslation = {
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
 	auga: 'Auga',
-	yishinoon: 'Yishinoon',
 	nakah: 'Nakah',
 	vard: 'Vard',
 	watermellon: 'Sosala',
@@ -124,16 +122,14 @@ const page_description = t('index.leading_text');
 <Viewport title={page_title} meta_description={page_description}>
     <PageLanding
         cover={{
-            image: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					staging === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
-					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
-					staging === 'vard' ? '/images/home-vard-cover.jpg' :
-					'/images/home-cover.jpg',
-            image_990: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					   staging === 'yishinoon' ? '/images/home-yishinoon-cover.jpg' :
-					   staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
-					   staging === 'vard' ? '/images/home-vard-cover.jpg' :
-					   '/images/home-cover.jpg',
+            image: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					`/images/home-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}`,
+            image_990: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					   staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					   staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}` :
+					   `/images/home-cover${DISABLED_CCPWGL ? '-eve.png' : '.jpg'}`,
             alt: t('index.cover_alt'),
             animated: false,
         }}
@@ -142,7 +138,6 @@ const page_description = t('index.leading_text');
 		x-data={`{
 			show_fleet_feeds: true,
             ${staging === 'auga' ? AugaMilitiaHQCameraXData :
-				staging === 'yishinoon' ? SpaceInvadersCameraXData :
 				staging === 'nakah' ? BananaCameraXData :
 				staging === 'vard' ? RunForrestCameraXData :
 				WatermellonCameraXData
@@ -150,31 +145,31 @@ const page_description = t('index.leading_text');
         }`}
         x-effect="update"
     >
-        <canvas
-            slot="cover"
-            id="mainCanvas"
-            width="500"
-            height="500"
-			x-on:scroll.stop
-			x-on:mousewheel.stop
-            x-data={`{
-				${staging === 'auga' ? AugaMilitiaHQXData :
-					staging === 'yishinoon' ? SpaceInvadersXData :
-					staging === 'nakah' ? BananaXData :
-					staging === 'vard' ? RunForrestXData :
-					WatermellonXData
-				}
-            }`}
-			x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
-            x-init="$nextTick(() => init_ccpwgl())"
-        />
+		{!DISABLED_CCPWGL &&
+			<canvas
+				slot="cover"
+				id="mainCanvas"
+				width="500"
+				height="500"
+				x-on:scroll.stop
+				x-on:mousewheel.stop
+				x-data={`{
+					${staging === 'auga' ? AugaMilitiaHQXData :
+						staging === 'nakah' ? BananaXData :
+						staging === 'vard' ? RunForrestXData :
+						WatermellonXData
+					}
+				}`}
+				x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
+				x-init="$nextTick(() => init_ccpwgl())"
+			/>
+		}
 
 		<Flexblock 
 			class="[ station-info ][ !hidden xl:!block ]"
 			gap='0'
 		>
 			{staging === 'auga' ? <AugaInfo /> :
-				staging === 'yishinoon' ? <YishinoonInfo /> :
 				staging === 'nakah' ? <NakahInfo /> :
 				staging === 'vard' ? <VardInfo /> :
 				<WatermellonInfo />
@@ -184,9 +179,6 @@ const page_description = t('index.leading_text');
 					<StationAssets
 						corporation={
 							staging === 'auga' ? {
-								id: RATTINI_TRIBE_ID,
-								name: 'Rattini Tribe',
-							} : staging === 'yishinoon' ? {
 								id: RATTINI_TRIBE_ID,
 								name: 'Rattini Tribe',
 							} : staging === 'nakah' ? {
