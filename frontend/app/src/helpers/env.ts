@@ -29,3 +29,7 @@ export const get_app_url = (path:string = '') => {
 export const prod_error_messages = () => {
     return PROD_ERROR_MESSAGES === 'true'
 }
+
+export const is_disabled_ccpwgl = () => {
+    return import.meta.env.DISABLED_CCPWGL ?? true
+}

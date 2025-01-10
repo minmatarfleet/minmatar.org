@@ -67,6 +67,10 @@ const ship_dna = await get_ship_dna(ship_id ?? 0, fitting_parsed?.subsystem_slot
 
 const CAMERA_ZOOM = (fitting_parsed?.subsystem_slots?.length ?? 0) > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
 
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -153,131 +157,133 @@ const page_description = await strip_markdown(fitting?.description ?? '')
             },
         }`}
     >
-        <canvas
-            slot="cover"
-            id="mainCanvas"
-            width="500"
-            height="500"
-            x-effect="update"
-            x-data={`{
-                init_ccpwgl() {
-                    if (${ship_dna === null})
-                        return;
+        {!DISABLED_CCPWGL &&
+            <canvas
+                slot="cover"
+                id="mainCanvas"
+                width="500"
+                height="500"
+                x-effect="update"
+                x-data={`{
+                    init_ccpwgl() {
+                        if (${ship_dna === null})
+                            return;
 
-                    let ship
-                    let canvas
-                    let scene
-                    let siege_state = ccpwgl.ShipSiegeState.SIEGE
-                    let animation_timer
-            		const mat4 = ccpwgl_int.math.mat4
+                        let ship
+                        let canvas
+                        let scene
+                        let siege_state = ccpwgl.ShipSiegeState.SIEGE
+                        let animation_timer
+                        const mat4 = ccpwgl_int.math.mat4
 
-                    canvas = document.getElementById('mainCanvas');
-                    
-                    ccpwgl.initialize(canvas, fitting.options);
-                    ccpwgl_context = canvas.getContext("webgl");
-                    
-                    camera = ccpwgl.createCamera(canvas, undefined, true);
-                    camera.rotationX = rotation_x
-                    camera.rotationY = rotation_y
-                    camera.shift = 0.25
+                        canvas = document.getElementById('mainCanvas');
+                        
+                        ccpwgl.initialize(canvas, fitting.options);
+                        ccpwgl_context = canvas.getContext("webgl");
+                        
+                        camera = ccpwgl.createCamera(canvas, undefined, true);
+                        camera.rotationX = rotation_x
+                        camera.rotationY = rotation_y
+                        camera.shift = 0.25
 
-                    scene = ccpwgl.loadScene('res:/dx9/scene/universe/m10_cube.red'); // Minmatar skybox
-                    
-                    scene.loadSun('res:/fisfx/lensflare/blue_small.red', function () {
-                        scene.wrappedScene.lensflares.forEach(lensflare=> {
-                            lensflare.mesh.additiveAreas
-                            .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
-                            .forEach(meshArea => meshArea.display = false);
+                        scene = ccpwgl.loadScene('res:/dx9/scene/universe/m10_cube.red'); // Minmatar skybox
+                        
+                        scene.loadSun('res:/fisfx/lensflare/blue_small.red', function () {
+                            scene.wrappedScene.lensflares.forEach(lensflare=> {
+                                lensflare.mesh.additiveAreas
+                                .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
+                                .forEach(meshArea => meshArea.display = false);
+                            })
+                        });
+
+                        scene.setSunDirection([-1, 0, 0.7]);
+                        
+                        ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
+                            ship_loaded = true
+                            camera.focus(this, ${CAMERA_ZOOM})
+                            animation_timer = setTimeout(enter_siege_mode, 50000)
+                        });
+
+                        function check_scene_load() {
+                            scene_loaded = !ccpwgl.isLoading()
+                            
+                            if (!scene_loaded)
+                                setTimeout(check_scene_load, 1000)
+                        }
+
+                        setTimeout(check_scene_load, 1000)
+
+                        function enter_siege_mode() {
+                            console.log('Entering siege mode...')
+                            ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
+                            animation_timer = setTimeout(auto_fire_guns, 15000)
+                        }
+
+                        function auto_fire_guns() {
+                            fire_guns()
+                            animation_timer = setTimeout(leave_siege_mode, 5000)
+                        }
+                        
+                        function fire_guns() {
+                            console.log('firing...')
+
+                            pt = {
+                                0: 15219.994140625,
+                                1: -897.7669067382812,
+                                2: -10204.6015625,
+                                3: 0.00005102222348796204,
+                            }
+                            
+                            for (let i = 0; i < ${turrets.length}; i++) {
+                                ship.setTurretTargetPosition(i + 1, pt);
+                                ship.setTurretState(i + 1, ccpwgl.TurretState.FIRING);
+                            }
+                        }
+
+                        function leave_siege_mode() {
+                            console.log('Leaving siege mode...')
+
+                            ship.setSiegeState(ccpwgl.ShipSiegeState.NORMAL)
+                            animation_timer = setTimeout(enter_siege_mode, 50000)
+                        }
+
+                        function fit_turret(ship, res, slot) {
+                            if (res)
+                                ship.mountTurret(slot, res)
+                            else
+                                ship.removeTurret(slot)
+                        }
+
+                        ${JSON.stringify(turrets)}.map((res, index) => {
+                            fit_turret(ship, res, index + 1)
                         })
-                    });
 
-                    scene.setSunDirection([-1, 0, 0.7]);
-                    
-                    ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
-                        ship_loaded = true
-                        camera.focus(this, ${CAMERA_ZOOM})
-                        animation_timer = setTimeout(enter_siege_mode, 50000)
-                    });
+                        ccpwgl.enablePostprocessing(true);
 
-                    function check_scene_load() {
-                        scene_loaded = !ccpwgl.isLoading()
-                        
-                        if (!scene_loaded)
-                            setTimeout(check_scene_load, 1000)
+                        document.addEventListener('astro:after-swap', () => {
+                            clearTimeout(animation_timer)
+                        })
+
+                        canvas.addEventListener('mousedown', function (event)
+                        {
+                            if (event.button !== 2)
+                                return
+                            
+                            fire_guns(ship)
+
+                            event.preventDefault();
+                        });
+                        canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+
+                        resize_canvas = ccpwgl_context.canvas
+                        resizeCanvasToDisplaySize(ccpwgl_context.canvas, ccpwgl_context)
+                        // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
                     }
-
-                    setTimeout(check_scene_load, 1000)
-
-                    function enter_siege_mode() {
-                        console.log('Entering siege mode...')
-                        ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
-                        animation_timer = setTimeout(auto_fire_guns, 15000)
-                    }
-
-                    function auto_fire_guns() {
-                        fire_guns()
-                        animation_timer = setTimeout(leave_siege_mode, 5000)
-                    }
-                    
-                    function fire_guns() {
-                        console.log('firing...')
-
-                        pt = {
-                            0: 15219.994140625,
-                            1: -897.7669067382812,
-                            2: -10204.6015625,
-                            3: 0.00005102222348796204,
-                        }
-                        
-                        for (let i = 0; i < ${turrets.length}; i++) {
-                            ship.setTurretTargetPosition(i + 1, pt);
-                            ship.setTurretState(i + 1, ccpwgl.TurretState.FIRING);
-                        }
-                    }
-
-                    function leave_siege_mode() {
-                        console.log('Leaving siege mode...')
-
-                        ship.setSiegeState(ccpwgl.ShipSiegeState.NORMAL)
-                        animation_timer = setTimeout(enter_siege_mode, 50000)
-                    }
-
-                    function fit_turret(ship, res, slot) {
-                        if (res)
-                            ship.mountTurret(slot, res)
-                        else
-                            ship.removeTurret(slot)
-                    }
-
-                    ${JSON.stringify(turrets)}.map((res, index) => {
-                        fit_turret(ship, res, index + 1)
-                    })
-
-                    ccpwgl.enablePostprocessing(true);
-
-                    document.addEventListener('astro:after-swap', () => {
-                        clearTimeout(animation_timer)
-                    })
-
-                    canvas.addEventListener('mousedown', function (event)
-                    {
-                        if (event.button !== 2)
-                            return
-                        
-                        fire_guns(ship)
-
-                        event.preventDefault();
-                    });
-                    canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
-
-                    resize_canvas = ccpwgl_context.canvas
-					resizeCanvasToDisplaySize(ccpwgl_context.canvas, ccpwgl_context)
-					// ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
-                }
-            }`}
-            x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
-            x-init="$nextTick(() => init_ccpwgl())"
-        />
+                }`}
+                x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
+                x-init="$nextTick(() => init_ccpwgl())"
+            />
+        }
 
         <Wrapper
             class="[ left-panel ]"
@@ -350,7 +356,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
 
                 <Flexblock
                     class="[ animate-fade-in-up ]"
-                    x-show="show_rendering_options"
+                    x-show={!DISABLED_CCPWGL ? 'show_rendering_options' : false }
                     style="display: none"
                 >
                     <small>{t('rendering_issues_message')}</small>
