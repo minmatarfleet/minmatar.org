@@ -9,6 +9,7 @@
     "introspectsde": "drizzle-kit introspect --config=sde.drizzle.config.ts",
     "start": "astro dev",
     "build": "export $(cat .env.BUILDONLY) && astro check && astro build",
+    "prodbuild": "export $(cat .env.BUILDONLY) && astro check --minimumSeverity error && astro build",
     "generate": "drizzle-kit generate --config=drizzle.config.ts",
     "push": "drizzle-kit push",
     "preview": "astro preview",
