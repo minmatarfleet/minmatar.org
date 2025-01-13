@@ -10,8 +10,6 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
-
-import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
 ---
 
 <ComponentBlock
@@ -31,10 +29,7 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
             padding_block='var(--space-s)'
         >
             <Flexblock>
-                <FlexInline gap='var(--space-2xs)'>
-                    <CorporationEvEIcon />
-                    <h2>{t('corporations')}</h2>
-                </FlexInline>
+                <h2>{t('corporations')}</h2>
 
                 <p>Meet the backbone of our alliance. We are recruiting</p>
                 

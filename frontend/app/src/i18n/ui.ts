@@ -1174,7 +1174,7 @@ export const ui = {
         'first_page': 'First page',
         'last_page': 'Last page',
         'ship_preview_not_available_for_ship': 'Ship preview not available for this ship model.',
-        'ship_preview_not_available': 'Ship preview not available.',
+        'ship_preview_not_available': 'Ship preview is not currently available.',
         'not_valid_character': 'Character is not valid',
         'share_post': 'Share post',
         'post_url_copied': 'Post URL copied!',
