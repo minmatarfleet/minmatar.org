@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 
 @app.task
 def update_character_affilliations():
-    character_ids = EveCharacter.objects.values_list("character_id", flat=True)
+    character_ids = EveCharacter.objects.exclude(token=None).values_list(
+        "character_id", flat=True
+    )
 
     character_id_batches = []
     # batch in groups of 1000
