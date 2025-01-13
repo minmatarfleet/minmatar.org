@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 
 @app.task
 def update_character_affilliations():
-    character_ids = EveCharacter.objects.values_list("character_id", flat=True)
+    character_ids = EveCharacter.objects.exclude(token=None).values_list(
+        "character_id", flat=True
+    )
 
     character_id_batches = []
     # batch in groups of 1000
@@ -75,7 +77,7 @@ def update_alliance_character_assets():
     counter = 0
     for character in EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
-    ):
+    ).exclude(token=None):
         logger.info("Updating assets for character %s", character.character_id)
         update_character_assets.apply_async(
             args=[character.character_id], countdown=counter % 3600
@@ -88,7 +90,7 @@ def update_alliance_character_skills():
     counter = 0
     for character in EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
-    ):
+    ).exclude(token=None):
         logger.info("Updating skills for character %s", character.character_id)
         update_character_skills.apply_async(
             args=[character.character_id], countdown=counter % 3600
@@ -101,7 +103,7 @@ def update_alliance_character_killmails():
     counter = 0
     for character in EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
-    ):
+    ).exclude(token=None):
         logger.info(
             "Updating killmails for character %s", character.character_id
         )
