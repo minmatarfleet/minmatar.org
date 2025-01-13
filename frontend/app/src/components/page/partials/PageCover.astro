@@ -12,7 +12,7 @@ interface Props {
 const {
     image,
     image_990,
-    alt,
+    alt = '',
     animated = true,
     scrollable = false,
     overlay = false,
@@ -26,7 +26,7 @@ const optional_attributes = {
 
 <picture class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]} class="[ viewport-cover ]">
     <source srcset={image_990} media="(max-width: 990px)">
-    <img src={image} {...optional_attributes} />
+    <img src={image} {...optional_attributes} role={!alt ? 'presentation' : undefined} />
 </picture>
 
 <style lang="scss" is:global>
