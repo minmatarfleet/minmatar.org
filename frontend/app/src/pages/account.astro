@@ -253,7 +253,7 @@ const page_title = t('account.page_title');
                         >
                             <div 
                                 x-data={`{
-                                    show_rendering_options: $persist(),
+                                    show_rendering_options: $persist(true),
                                 }`}
                                 x-show="!show_rendering_options"
                             >
@@ -348,6 +348,15 @@ const page_title = t('account.page_title');
         </Flexblock>
     </PageDefault>
 </Viewport>
+
+<script is:inline>
+    const show_rendering_options = localStorage.getItem('_x_show_rendering_options')
+    
+    if (show_rendering_options === 'undefined') {
+        localStorage.setItem('_x_show_rendering_options', 'true')
+        location.reload()
+    }
+</script>
 
 <style lang="scss">
     h3 {
