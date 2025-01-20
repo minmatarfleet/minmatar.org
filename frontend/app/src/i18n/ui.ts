@@ -1253,7 +1253,7 @@ export const ui = {
         'flash_form_dialog_text': 'Call to arms your **alliance members**. This action will instantly initiate a fleet. Make sure having one created in-game with an advert.',
         'start_formation': 'Start formation',
         'flash_form_error': 'An error occurred while initializing the flash form.',
-        'flash_form_hint_title': 'No question ask Flash Form',
-        'flash_form_hint': 'You may start a flash form (no questions ask) by clicking the link above or through a bookmark previously created with it',
+        'flash_form_hint_title': 'Flash Form Express',
+        'flash_form_hint': 'You may instantly start a Flash Form by clicking this link or through a bookmark previously created with it',
     },
 } as const;
