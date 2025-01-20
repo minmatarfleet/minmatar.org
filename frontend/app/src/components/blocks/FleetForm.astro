@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience } from '@dtypes/api.minmatar.org'
+import type { Audience, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
@@ -393,13 +393,13 @@ import Grid from '@components/compositions/Grid.astro';
                         />
                     </Flexblock>
 
-                        <SwitchSquare
-                            class="[ w-full ]"
-                            name="disable_motd"
-                            label={t('disable_motd')}
-                            description={t('disable_motd_description')}
-                            checked={disable_motd}
-                        />
+                    <SwitchSquare
+                        class="[ w-full ]"
+                        name="disable_motd"
+                        label={t('disable_motd')}
+                        description={t('disable_motd_description')}
+                        checked={disable_motd}
+                    />
                     
                     <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
                 </Flexblock>

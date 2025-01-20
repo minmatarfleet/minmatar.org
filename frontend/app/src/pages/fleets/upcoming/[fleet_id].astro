@@ -107,7 +107,7 @@ const page_title = `${t('fleet')} ${fleet_id}`;
             scrollable: true,
             overlay: true
         }}
-        x-init={`${fleet_tracking_error !== false ? `show_alert_dialog(${JSON.stringify(fleet_tracking_error)})` : ''}`}
+        x-init={fleet_tracking_error ? `show_alert_dialog( ${JSON.stringify({ title: t('start_fleet_tracking'), content: fleet_tracking_error })} )` : undefined}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>

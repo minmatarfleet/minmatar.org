@@ -1,0 +1,174 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Location } from '@dtypes/api.minmatar.org'
+import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_components';
+
+import { get_app_url } from '@helpers/env'
+
+interface Porps {
+    size?:              ButtonSizes;
+    color?:             ButtonColors;
+    locations:          Location[];
+    hidden?:            boolean;
+}
+
+const {
+    size = 'lg',
+    color = 'green',
+    locations,
+    hidden = false,
+} = Astro.props
+
+let FLEET_LOCATIONS = {}
+const locations_select_options = locations.map( (i):SelectOptions => {
+    FLEET_LOCATIONS[i.location_id] = i.location_name
+    return {value: i.location_id, label: i.location_name} 
+} )
+
+const default_location = locations_select_options[0]?.value ?? '-1'
+
+import { marked } from 'marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import Button from '@components/blocks/Button.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Select from '@components/blocks/Select.astro';
+
+import FlashIcon from '@components/icons/buttons/FlashIcon.astro';
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+---
+
+<div
+    class="[ flash-form-dialog ]"
+    x-data={`{
+        flash_form_dialog_open: false,
+        description: '',
+        location: ${default_location},
+        open_dialog() {
+            this.description = ''
+            this.location = ${default_location}
+
+            $nextTick(() => {
+                this.flash_form_dialog_open = true
+            })
+        },
+        close_dialog() {
+            this.flash_form_dialog_open = false
+        }
+    }`}
+>
+    <Button
+        size={size}
+        type="button"
+        color={color}
+        x-on:click.stop.prevent="open_dialog()"
+        type="button"
+        id="flash-form-button"
+        class={hidden ? '[ !hidden ]' : undefined}
+    >
+        <FlashIcon slot="icon" />
+        {t('flash_form')}
+    </Button>
+
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        class="[ flash-form-dialog ][ w-full max-w-[450px] component overflow-y-auto ]"
+        x-bind:class="(flash_form_dialog_open ? 'open' : '')"
+        x-bind:aria-hidden="flash_form_dialog_open == false"
+        x-trap="flash_form_dialog_open"
+        x-bind:inert="!flash_form_dialog_open"
+        @keyup.escape.window="close_dialog()"
+        @mousedown.outside="open && close_dialog()"
+    >
+        <form
+            method="POST"
+            action={translatePath('/fleets/add')}
+            x-on:submit="close_dialog()"
+        >
+            <Flexblock gap="var(--space-l)">
+                <h3>{t('flash_form')}</h3>
+
+                <Flexblock>
+                    <p set:html={marked.parseInline(t('flash_form_dialog_text'))} />
+
+                    <BlockList class="[ w-full ]">
+                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                            <label for="location">{t('location')}</label>
+                            <Select id="location" x-model="location" name="location" required>
+                                {locations_select_options.map((option) => 
+                                    <option value={option.value}>{option.label}</option>
+                                )}
+                            </Select>
+                        </Flexblock>
+                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                            <label for="description">{t('description')}</label>
+                            <Textarea id="description" name="description" x-model="description" rows="5" required></Textarea>
+                        </Flexblock>
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="disable_motd"
+                            label={t('disable_motd')}
+                            description={t('disable_motd_description')}
+                        />
+                        <Wrapper padding_block='var(--space-2xs)' padding_inline='0'>
+                            <FixedFluid
+                                width='48'
+                                breakpoint='70%'
+                                class="[ w-full items-center ]"
+                            >
+                                <picture class="[ hidden sm:block ]">
+                                    <TutorialIcon />
+                                </picture>
+                                <Flexblock gap='var(--space-3xs)'>
+                                    <p><a href={translatePath('/fleets/flash_form')}>{t('flash_form_hint_title')}</a></p>
+                                    <small set:html={marked.parseInline(t('flash_form_hint').replaceAll('APP_URL', get_app_url()))} />
+                                </Flexblock>
+                            </FixedFluid>
+                        </Wrapper>
+                        <input type="hidden" name="audience_id" value="1" />
+                        <input type="hidden" name="doctrine_id" value="-1" />
+                        <input type="hidden" name="fleet_type" value="non_strategic" />
+                        <input type="hidden" name="flash_form" value="1" />
+                        <input type="hidden" name="start_tracking" value="on" />
+                    </BlockList>
+                </Flexblock>
+
+                <FlexInline justification='flex-end'>
+                    <Button
+                        size='sm'
+                        type="submit"
+                        color='green'
+                    >
+                        {t('start_formation')}
+                    </Button>
+                    <Button
+                        type="button"
+                        size='sm'
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </form>
+    </Dialog>
+</div>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+
+<style lang="scss">
+    .flash-form-dialog {
+        max-width: 40rem;
+        max-height: min(750px, 88vh);
+    }
+</style>

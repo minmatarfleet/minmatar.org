@@ -17,7 +17,7 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
 const can_view_srp = (user !== false)
 
-import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetItem, Alert } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
@@ -30,6 +30,25 @@ try {
     });
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
+}
+
+const flash_form_error = Astro.cookies.has('flash_form_error') ? Astro.cookies.get('flash_form_error')?.value : false
+if (Astro.cookies.has('flash_form_error')) Astro.cookies.delete('flash_form_error', { path: '/' })
+
+const alert = !flash_form_error ? false : {
+    title: t('flash_form'),
+    content: flash_form_error
+} as Alert
+
+import { get_locations } from '@helpers/api.minmatar.org/fleets'
+import type { Location } from '@dtypes/api.minmatar.org'
+let locations:Location[] = []
+let fetch_doctrines_error:string | null = null
+
+try {
+    locations = await get_locations(auth_token as string)
+} catch (error) {
+    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
@@ -53,16 +72,22 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FleetList from '@components/blocks/FleetList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+import FlashFormButton from '@components/blocks/FlashFormButton.astro'
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import FlashIcon from '@components/icons/buttons/FlashIcon.astro';
 
 const page_title = t('fleets.upcoming.page_title');
 ---
+
+{alert && <ShowAlert alert={alert} /> }
 
 <Viewport
     title={page_title}
     meta_description={t('page_finder.fleets.upcoming.meta_description')}
     components={{
+        alert_dialog: true,
         confirm_dialog: true
     }}
 >
@@ -84,7 +109,7 @@ const page_title = t('fleets.upcoming.page_title');
                         {page_title}
                     </PageTitle>
                     <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('on_schedule').toLowerCase()}\``}>
-                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('on_schedule').toLowerCase()}
+                        {`${fleets.length} ${fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} ${t('on_schedule').toLowerCase()}`}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -93,6 +118,10 @@ const page_title = t('fleets.upcoming.page_title');
                     <Button color={'green'} href={translatePath('/fleets/add')}>
                         <AddIcon slot="icon" />
                         {t('schedule_fleet')}
+                    </Button>
+                    <Button x-on:click="document.getElementById('flash-form-button').click()">
+                        <FlashIcon slot="icon" />
+                        {t('flash_form')}
                     </Button>
                 }
             </FlexInline>
@@ -115,6 +144,8 @@ const page_title = t('fleets.upcoming.page_title');
                 </Button>
             }
         </FlexInline>
+
+        <FlashFormButton locations={locations} hidden={true} />
         
         {fetch_fleets_error ?
             <ErrorRefetch
