@@ -30,16 +30,21 @@ let create_fleet_error
 let alert:Alert | false = false
 
 if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData()
+    const is_flash_form = data.get('flash_form')
+    
     try {
-        const data = await Astro.request.formData()
         const doctrine = data.get('doctrine_id') as string
         const doctrine_id = doctrine !== '-1' ? parseInt(doctrine) : null
+        const start_time = is_flash_form ?
+            new Date(new Date().getTime()) :
+            new Date(`${data.get('eve_date')} ${data.get('eve_time')}`)
 
         const fleet_data = {
             doctrine_id: doctrine_id,
             description: data.get('description') as string,
             location_id: parseInt(data.get('location') as string),
-            start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
+            start_time: start_time,
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
@@ -47,9 +52,14 @@ if (Astro.request.method === "POST") {
         
         const new_fleet = await create_fleet(auth_token as string, fleet_data)
 
-        if (!new_fleet?.id)
+        if (!new_fleet?.id) {
+            if (is_flash_form) {
+                Astro.cookies.set('flash_form_error', t('flash_form_error'), { path: '/' })
+                return Astro.redirect(translatePath('/fleets/upcoming'))
+            }
+
             create_fleet_error = t('create_fleet_error')
-        else {
+        } else {
             try {
                 let tracking_started = false
                 
@@ -65,6 +75,11 @@ if (Astro.request.method === "POST") {
             return Astro.redirect(translatePath(`/fleets/upcoming/${new_fleet?.id}`))
         }
     } catch (error) {
+        if (is_flash_form) {
+            Astro.cookies.set('flash_form_error', t('flash_form_error'), { path: '/' })
+            return Astro.redirect(translatePath('/fleets/upcoming'))
+        }
+
         create_fleet_error = prod_error_messages() ? t('create_fleet_error') : error.message
     }
 

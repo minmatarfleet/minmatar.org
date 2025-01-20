@@ -1,0 +1,64 @@
+---
+
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page)
+    return HTTP_403_Forbidden()
+
+import { create_fleet, start_fleet } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRequest } from '@dtypes/api.minmatar.org'
+import { send_active_fleet_notification } from '@helpers/notifications'
+
+const WATERMELON = 1043817963096
+
+const fleet_data = {
+    doctrine_id: null,
+    description: 'FLASH FORM - More details in-game and voice chat',
+    location_id: WATERMELON,
+    start_time: new Date(),
+    type: 'non_strategic',
+    audience_id: 1,
+    disable_motd: false,
+} as FleetRequest
+
+try {
+    const new_fleet = await create_fleet(auth_token as string, fleet_data)
+
+    if (!new_fleet?.id) {
+        Astro.cookies.set('flash_form_error', t('flash_form_error'), { path: '/' })
+        return Astro.redirect(translatePath('/fleets/upcoming'))
+    } else {
+        try {
+            let tracking_started = false
+            
+            tracking_started = await start_fleet(auth_token as string, new_fleet?.id)
+
+            if (tracking_started) send_active_fleet_notification(auth_token as string, new_fleet?.id)
+        } catch (error) {
+            const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+            Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
+        }
+
+        return Astro.redirect(translatePath(`/fleets/upcoming/${new_fleet?.id}`))
+    }
+} catch (error) {
+    Astro.cookies.set('flash_form_error', t('flash_form_error'), { path: '/' })
+    return Astro.redirect(translatePath('/fleets/upcoming'))
+}
+---

@@ -202,7 +202,7 @@ export interface FleetRequest {
     type:           FleetTypes;
     description:    string;
     start_time:     Date;
-    doctrine_id:    number;
+    doctrine_id:    number | null;
     location_id:    number;
     audience_id:    number;
     disable_motd:   boolean;
