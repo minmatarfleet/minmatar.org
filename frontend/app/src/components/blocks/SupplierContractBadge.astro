@@ -24,10 +24,15 @@ corporations_options = corporations_options.filter(option => claimed_by_user_cor
 
 const SUPPLIER_CONTRACT_BADGE_PARTIAL_URL = translatePath('/partials/supplier_contract_badge_component/')
 
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
 import { get_item_icon, get_corporation_logo } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import ContractBadge from '@components/blocks/ContractBadge.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -41,6 +46,8 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
 import PilotBadge from './PilotBadge.astro';
 import Grid from '@components/compositions/Grid.astro';
 import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
+
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
 
 <div
@@ -176,6 +183,21 @@ import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
 
                     <input type="hidden" name="expectation_id" value={contract.expectation_id} />
                 </Flexblock>
+
+                <Wrapper padding_block='var(--space-2xs)' padding_inline='0'>
+                    <FixedFluid
+                        width='48'
+                        breakpoint='70%'
+                        class="[ w-full items-center ]"
+                    >
+                        <picture class="[ hidden sm:block ]">
+                            <TutorialIcon />
+                        </picture>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <small set:html={marked.parseInline(t('responsability_unclaim_tip'), { renderer })} />
+                        </Flexblock>
+                    </FixedFluid>
+                </Wrapper>
 
                 <FlexInline justification='flex-end'>
                     {(characters_options.length > 0 || corporations_options.length > 0) &&
