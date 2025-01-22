@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const ALESIS_WICKED_ID = 2114830095
+const ROFLRAZZI_ID = 1654509865
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+---
+
+<div class="[ banner ]">
+    <img src="/images/structure_debris.png" height="238" width="452" />
+    <Wrapper padding_block='0' padding_inline='var(--space-s)' max_width='360px' class="[ relative ]">
+        <Flexblock>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>Rats with gats</h2>
+                <h3>{t('rats_with_gats_subheading')} <span class="[ blink-animation ]">[ {t('recruiting')} ]</span></h3>
+            </Flexblock>
+
+            <FlexInline>
+                <FlexInline gap='var(--space-3xs)'>
+                    <CharacterPicture
+                        character_id={ALESIS_WICKED_ID}
+                        character_name='Alesis Wicked'
+                        size={16}
+                        icon_quality={32}
+                    />
+                    <small>Alesis Wicked</small>
+                </FlexInline>
+                <FlexInline gap='var(--space-3xs)'>
+                    <CharacterPicture
+                        character_id={ROFLRAZZI_ID}
+                        character_name='Roflrazzi'
+                        size={16}
+                        icon_quality={32}
+                    />
+                    <small>Roflrazzi</small>
+                </FlexInline>
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    .banner {
+        position: relative;
+        min-height: 172px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        background-color: var(--fleet-red);
+
+        img {
+            position: absolute;
+            right: -20px;
+
+            animation: debris ease both 30s;
+            animation-iteration-count: infinite;
+        }
+
+        h2 {
+            font-size: var(--step-2);
+        }
+
+        h3 {
+            font-size: var(--step--1);
+        }
+
+        h2, h3 {
+            color: var(--background);
+        }
+    }
+
+    @keyframes debris {
+        0% {
+            bottom: -30px;
+        }
+
+        50% {
+            bottom: 0px;
+        }
+
+        100% {
+            bottom: -30px;
+        }
+    }
+</style>
