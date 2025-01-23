@@ -6,7 +6,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 <button {...Astro.props} type="button">
     <FluidFixed width="20px" gap="var(--space-l)" class="[ items-center ]">
         <slot />
-        <CaretIcon :class="expanded ? '' : 'collapsed'" />
+        <CaretIcon :class="expanded ? 'expanded' : 'collapsed'" />
     </FluidFixed>
 </button>
 
@@ -23,8 +23,12 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             color: var(--highlight);
         }
 
-        .collapsed {
+        .expanded {
             transform: rotate(180deg);
+        }
+
+        .collapsed {
+            transform: rotate(0);
         }
 
         &:focus-visible {
