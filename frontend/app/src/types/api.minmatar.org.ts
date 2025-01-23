@@ -144,15 +144,17 @@ export interface CharacterAsset {
 }
 
 export interface Fitting {
-    id:             number;
-    name:           string;
-    ship_id:        number;
-    description:    string;
-    created_at:     Date;
-    updated_at:     Date;
-    tags:           string[];
-    eft_format:     string;
-    latest_version: string;
+    id:                 number;
+    name:               string;
+    ship_id:            number;
+    description:        string;
+    created_at:         Date;
+    updated_at:         Date;
+    tags:               string[];
+    eft_format:         string;
+    minimum_pod:        string;
+    recommended_pod:    string,
+    latest_version:     string;
 }
 
 export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'

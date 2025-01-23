@@ -49,7 +49,7 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
                     gap={gap}
                     size={32}
                     highlight={false}
-                    title={`${item.amount} x ${item.name}`}
+                    title={item?.amount ? `${item.amount} x ${item.name}` : item.name}
                 >
                     <ItemPicture item_id={item.id} slot="picture" size={32} icon_quality={32} />
                 </Badge>

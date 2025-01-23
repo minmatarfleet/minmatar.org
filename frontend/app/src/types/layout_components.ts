@@ -568,9 +568,9 @@ export interface ShipFittingCapabilities {
 }
 
 export interface CargoItem {
-    id:     number;
-    name:   string;
-    amount: number;
+    id:         number;
+    name:       string;
+    amount?:    number;
 }
 
 export interface ShipFitting {

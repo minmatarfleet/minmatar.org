@@ -15,7 +15,7 @@ import { prod_error_messages } from '@helpers/env'
 const { fitting_id } = Astro.params;
 const show_controls = Astro.url.searchParams.get('controls') ?? null
 
-import type { FleetCombatLog } from '@dtypes/layout_components'
+import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 import { get_fitting_combatlogs } from '@helpers/fetching/combatlog'
@@ -45,7 +45,7 @@ import { get_ship_dna } from '@helpers/ccpwgl'
 import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
-import { parse_eft } from '@helpers/fit_parser.ts';
+import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
 
 const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
 
@@ -59,6 +59,9 @@ await Promise.all((fitting_parsed?.high_slots ?? []).map(async (module, index) =
     if (res && ccpwgl_turrets.includes(module.module_type))
         turrets.push(res)
 }))
+
+const minimun_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
+const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
 
 const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
@@ -95,6 +98,7 @@ import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
 
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 
@@ -312,7 +316,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                     <CollapsibleBlock padding_inline='var(--space-xl)'>
                         <FlexInline slot="head" gap='var(--space-2xs)'>
                             <FitsEvEIcon />
-                            <h3>{t('fitting')}</h3>
+                            <h3>{t('eft_format')}</h3>
                         </FlexInline>
                         <pre class="[ eve-html ]" set:html={fitting?.eft_format} />
                     </CollapsibleBlock>
@@ -331,6 +335,24 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                             <FlexInline gap='var(--space-2xs)'>
                                 <CargoHoldEvEIcon />
                                 <h3>{t('cargo_hold')}</h3>
+                            </FlexInline>
+                        </Cargohold>
+                    }
+
+                    {minimun_pod.length > 0 &&
+                        <Cargohold cargo={minimun_pod}>
+                            <FlexInline gap='var(--space-2xs)'>
+                                <AugmentationEvEIcon />
+                                <h3>{t('minimun_pod')}</h3>
+                            </FlexInline>
+                        </Cargohold>
+                    }
+
+                    {recommended_pod.length > 0 &&
+                        <Cargohold cargo={recommended_pod}>
+                            <FlexInline gap='var(--space-2xs)'>
+                                <AugmentationEvEIcon />
+                                <h3>{t('recommended_pod')}</h3>
                             </FlexInline>
                         </Cargohold>
                     }

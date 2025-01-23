@@ -1,7 +1,7 @@
 import { get_module_props } from '@helpers/sde/modules'
 import { get_item_id, get_item_category } from '@helpers/sde/items'
 
-import type { Module, ShipFitting } from '@dtypes/layout_components';
+import type { Module, ShipFitting, CargoItem } from '@dtypes/layout_components';
 import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
 // import { cachePromise } from '@helpers/cache'
 
@@ -135,6 +135,20 @@ export async function parse_eft(fitting_eft: string) {
     }
 
     return ship_fitting
+}
+
+export async function parse_pod(pod:string) {
+    if (pod === '')
+        return []
+
+    const implants = pod.split('\r\n')    
+
+    return await Promise.all(implants.map(async implant => {
+        return {
+            id: await get_item_id(implant),
+            name: implant,
+        } as CargoItem
+    }))
 }
 
 /*const cached_get_module_props = cachePromise(get_module_props)
