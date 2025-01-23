@@ -104,13 +104,13 @@ if (fitting_parsed?.cargohold?.length ?? 0 > 0) {
     })
 }
 
-const minimun_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
+const minimum_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
 const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
 
-if (minimun_pod.length > 0) {
+if (minimum_pod.length > 0) {
     fitting_groups.push({
-        name: t('minimun_pod'),
-        modules: minimun_pod ?? []
+        name: t('minimum_pod'),
+        modules: minimum_pod ?? []
     })
 }
 
