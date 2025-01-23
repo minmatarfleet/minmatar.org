@@ -66,17 +66,6 @@ def get_doctrines(request):
         for doctrine_fitting in fittings:
             fitting = doctrine_fitting.fitting
             fitting_response = make_fitting_response(fitting)
-            # fitting_response = FittingResponse(
-            #     id=fitting.id,
-            #     name=fitting.name,
-            #     ship_id=fitting.ship_id,
-            #     description=fitting.description,
-            #     created_at=fitting.created_at,
-            #     updated_at=fitting.updated_at,
-            #     tags=[tag.name for tag in fitting.tags.all()],
-            #     eft_format=fitting.eft_format,
-            #     latest_version=fitting.latest_version,
-            # )
             if doctrine_fitting.role == "primary":
                 primary_fittings.append(fitting_response)
             elif doctrine_fitting.role == "secondary":
@@ -117,17 +106,6 @@ def get_doctrine(request, doctrine_id: int):
     for doctrine_fitting in fittings:
         fitting = doctrine_fitting.fitting
         fitting_response = make_fitting_response(fitting)
-        # fitting_response = FittingResponse(
-        #     id=fitting.id,
-        #     name=fitting.name,
-        #     ship_id=fitting.ship_id,
-        #     description=fitting.description,
-        #     created_at=fitting.created_at,
-        #     updated_at=fitting.updated_at,
-        #     tags=[tag.name for tag in fitting.tags.all()],
-        #     eft_format=fitting.eft_format,
-        #     latest_version=fitting.latest_version,
-        # )
         if doctrine_fitting.role == "primary":
             primary_fittings.append(fitting_response)
         elif doctrine_fitting.role == "secondary":
@@ -171,17 +149,6 @@ def get_doctrine_composition(request, doctrine_id: int):
         fitting = doctrine_fitting.fitting
         composition_item = DoctrineCompositionItemResponse(
             fitting=make_fitting_response(fitting),
-            # fitting=FittingResponse(
-            #     id=fitting.id,
-            #     name=fitting.name,
-            #     ship_id=fitting.ship_id,
-            #     description=fitting.description,
-            #     created_at=fitting.created_at,
-            #     updated_at=fitting.updated_at,
-            #     tags=[tag.name for tag in fitting.tags.all()],
-            #     eft_format=fitting.eft_format,
-            #     latest_version=fitting.latest_version,
-            # ),
             ideal_ship_count=doctrine_fitting.ideal_ship_count,
         )
         doctrine_items.append(composition_item)
@@ -214,18 +181,6 @@ def get_fittings(request):
     response = []
     for fitting in fittings:
         fitting_response = make_fitting_response(fitting)
-        #     id=fitting.id,
-        #     name=fitting.name,
-        #     ship_id=fitting.ship_id,
-        #     description=fitting.description,
-        #     created_at=fitting.created_at,
-        #     updated_at=fitting.updated_at,
-        #     tags=[tag.name for tag in fitting.tags.all()],
-        #     eft_format=fitting.eft_format,
-        #     minimum_pod=fitting.minimum_pod,
-        #     recommended_pod=fitting.recommended_pod,
-        #     latest_version=fitting.latest_version,
-        # )
         response.append(fitting_response)
     return response
 
@@ -241,17 +196,4 @@ def get_fitting(request, fitting_id: int):
         )
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = make_fitting_response(fitting)
-    # FittingResponse(
-    #     id=fitting.id,
-    #     name=fitting.name,
-    #     ship_id=fitting.ship_id,
-    #     description=fitting.description,
-    #     created_at=fitting.created_at,
-    #     updated_at=fitting.updated_at,
-    #     tags=[tag.name for tag in fitting.tags.all()],
-    #     eft_format=fitting.eft_format,
-    #     minimum_pod=fitting.minimum_pod,
-    #     recommended_pod=fitting.recommended_pod,
-    #     latest_version=fitting.latest_version,
-    # )
     return fitting_response
