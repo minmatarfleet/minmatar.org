@@ -1259,5 +1259,6 @@ export const ui = {
         'rats_with_gats_subheading': 'Fl33t’s highsec wardec corp',
         'contact': 'Contact',
         'recruiting': 'recruiting',
+        'read_more': 'Read more',
     },
 } as const;
