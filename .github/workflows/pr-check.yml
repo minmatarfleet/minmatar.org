@@ -34,3 +34,13 @@ jobs:
           pip install pipenv
           pipenv install --dev
           pipenv run python3 manage.py test
+  frontend-check:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v2
+      - name: List files
+      run: |
+        ls -l
