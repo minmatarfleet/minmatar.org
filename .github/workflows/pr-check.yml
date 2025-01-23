@@ -48,4 +48,4 @@ jobs:
       - name: NPM install
         run: npm install
       - name: NPM build (Astro check)
-        run: npm run build
+        run: npm run check
