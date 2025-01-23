@@ -23,7 +23,7 @@ if (!fitting)
     throw new Error(t('invalid_fitting'))
 
 import { get_item_icon } from '@helpers/eve_image_server';
-import { parse_eft } from '@helpers/fit_parser.ts';
+import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
 import { get_item_id } from '@helpers/sde/items'
 import { strip_markdown } from '@helpers/string'
 import { format_date_short } from '@helpers/date';
@@ -39,7 +39,7 @@ function transform_into_cargohold(input: Module[]): CargoItem[] {
 
         const existingItem = output.find(i => i.name === item.name);
 
-        if (existingItem) {
+        if (existingItem && existingItem.amount) {
             existingItem.amount++;
         } else {
             output.push({
@@ -101,6 +101,23 @@ if (fitting_parsed?.cargohold?.length ?? 0 > 0) {
     fitting_groups.push({
         name: t('cargo_hold'),
         modules: fitting_parsed?.cargohold ?? []
+    })
+}
+
+const minimun_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
+const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
+
+if (minimun_pod.length > 0) {
+    fitting_groups.push({
+        name: t('minimun_pod'),
+        modules: minimun_pod ?? []
+    })
+}
+
+if (recommended_pod.length > 0) {
+    fitting_groups.push({
+        name: t('recommended_pod'),
+        modules: recommended_pod ?? []
     })
 }
 

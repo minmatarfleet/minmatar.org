@@ -17,7 +17,7 @@ import Badge from '@components/blocks/Badge.astro';
 ---
 
 <Badge
-    title={`${fittable.amount} x ${fittable.name}`}
+    title={fittable?.amount ? `${fittable.amount} x ${fittable.name}`: fittable.name}
     image={get_item_icon(fittable.id)}
     highlight={false}
     {...attributes}
