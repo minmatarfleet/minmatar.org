@@ -39,6 +39,9 @@ class EveFitting(models.Model):
     eft_format = models.TextField()
     latest_version = models.CharField(max_length=255, blank=True)
 
+    minimum_pod = models.TextField(blank=True)
+    recommended_pod = models.TextField(blank=True)
+
     def __str__(self):
         return str(self.name)
 
