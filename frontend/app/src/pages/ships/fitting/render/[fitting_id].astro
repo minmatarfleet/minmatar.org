@@ -60,7 +60,7 @@ await Promise.all((fitting_parsed?.high_slots ?? []).map(async (module, index) =
         turrets.push(res)
 }))
 
-const minimun_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
+const minimum_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
 const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
 
 const DEFAULT_ZOOM = 3
@@ -339,11 +339,11 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                         </Cargohold>
                     }
 
-                    {minimun_pod.length > 0 &&
-                        <Cargohold cargo={minimun_pod}>
+                    {minimum_pod.length > 0 &&
+                        <Cargohold cargo={minimum_pod}>
                             <FlexInline gap='var(--space-2xs)'>
                                 <AugmentationEvEIcon />
-                                <h3>{t('minimun_pod')}</h3>
+                                <h3>{t('minimum_pod')}</h3>
                             </FlexInline>
                         </Cargohold>
                     }

@@ -1263,7 +1263,7 @@ export const ui = {
         'select_moon': 'Select moon',
         'system_and_moon': 'System and moon',
         'read_more': 'Read more',
-        'minimun_pod': 'Minimun pod',
+        'minimum_pod': 'Minimum pod',
         'recommended_pod': 'Recommended pod',
         'eft_format': 'EFT format',
     },
