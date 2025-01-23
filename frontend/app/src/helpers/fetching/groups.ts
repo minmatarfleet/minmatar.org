@@ -2,7 +2,7 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import type { Group, SigRequest, TeamRequest, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { Group, SigRequest, TeamRequest } from '@dtypes/api.minmatar.org'
 import type { GroupItemType, GroupItemUI, GroupMembersUI, MemberUI, CharacterBasic } from '@dtypes/layout_components'
 
 import {
@@ -138,7 +138,7 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
             const character_profile = members_characters.find(character => character.user_id === member_id)
 
             return {
-                user_id: user_id,
+                user_id: member_id,
                 character_id: character_profile?.character_id ?? 0,
                 character_name: character_profile?.character_name ?? t('unknown_character'),
                 corporation_id: character_profile?.corporation_id ?? 0,
