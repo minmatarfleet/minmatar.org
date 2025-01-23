@@ -23,6 +23,9 @@ class FittingResponse(BaseModel):
     updated_at: datetime
     tags: List[str]
     eft_format: str
+    minimum_pod: str
+    recommended_pod: str
+
     latest_version: str
 
 
@@ -200,6 +203,8 @@ def get_fittings(request):
             updated_at=fitting.updated_at,
             tags=[tag.name for tag in fitting.tags.all()],
             eft_format=fitting.eft_format,
+            minimum_pod=fitting.minimum_pod,
+            recommended_pod=fitting.recommended_pod,
             latest_version=fitting.latest_version,
         )
         response.append(fitting_response)
@@ -225,6 +230,8 @@ def get_fitting(request, fitting_id: int):
         updated_at=fitting.updated_at,
         tags=[tag.name for tag in fitting.tags.all()],
         eft_format=fitting.eft_format,
+        minimum_pod=fitting.minimum_pod,
+        recommended_pod=fitting.recommended_pod,
         latest_version=fitting.latest_version,
     )
     return fitting_response
