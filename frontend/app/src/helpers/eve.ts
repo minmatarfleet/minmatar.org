@@ -83,6 +83,7 @@ export const get_structure_id = (structure_type:string):number => {
         'metenox_moon_drill': 81826,
         'mercenary_den': 85230,
         'player_owned_customs_office': 2233,
+        'player_owned_starbase': 20059,
     }
 
     return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
@@ -300,7 +301,7 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en')
 
-export const structure_type_with_translations = [ 'player_owned_customs_office', 'mercenary_den' ] as const
+export const structure_type_with_translations = [ 'player_owned_customs_office', 'mercenary_den', 'player_owned_starbase' ] as const
 export type StructureTypeWithTranslation = typeof structure_type_with_translations[number]
 
 export const get_selected_item_translation = (system:string, planet: string, timer:Date) => {

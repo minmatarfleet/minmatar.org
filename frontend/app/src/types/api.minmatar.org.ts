@@ -276,6 +276,7 @@ export const structure_types = [
     'metenox_moon_drill',
     'mercenary_den',
     'player_owned_customs_office',
+    'player_owned_starbase',
 ] as const
 export type StructureType = typeof structure_types[number]
 
