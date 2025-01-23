@@ -43,8 +43,9 @@ if (Astro.request.method === "POST") {
             const timer = new Date(`${data.get('timer_date')} ${data.get('timer_time')}`)
             const system = data.get('system') as string
             const planet = data.get('planet') as string
+            const moon = data.get('moon') as string
             
-            translated_selected_item_window = get_selected_item_translation(system, planet, timer)
+            translated_selected_item_window = get_selected_item_translation(system, planet ?? moon, timer)
         }
 
         const timer_data = {
@@ -146,7 +147,7 @@ const page_title = t('intel.timers.add.page_title');
             structure_type: 'astrahus',
             timer_date: '',
             timer_time: '',
-            time_required_structures: [ 'player_owned_customs_office', 'mercenary_den' ],
+            time_required_structures: [ 'player_owned_customs_office', 'mercenary_den', 'player_owned_starbase' ],
             default_placeholder: \`${DEFAULT_SELECTED_ITEM_TEXT}\`,
             get_structure_icon(name) {
                 const structure_ids = ${JSON.stringify(STRUCTURE_ICONS)}
@@ -207,7 +208,13 @@ const page_title = t('intel.timers.add.page_title');
                                     breakpoint="60%"
                                 >
                                     <img loading="lazy" height="64" width="64" src={STRUCTURE_ICONS[DEFAULT_STRUCTURE_TYPE as any]} x-bind:src={`get_structure_icon(structure_type)`} alt={DEFAULT_STRUCTURE_TYPE} />
-                                    <Select id="structure_type" x-model="structure_type" name="structure_type" required>
+                                    <Select
+                                        id="structure_type"
+                                        x-model="structure_type"
+                                        name="structure_type"
+                                        required
+                                        x-on:change="$nextTick( () => { htmx.process($refs.system); $refs.system.value !== '' && $refs.system.dispatchEvent(new Event('change')) } )"
+                                    >
                                         {structure_types.map(type =>
                                             <option value={type}>{t(type)}</option>    
                                         )}
@@ -258,7 +265,12 @@ const page_title = t('intel.timers.add.page_title');
                                 style="display: none;"
                             >
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="system">{t('system_and_planet')}</label>
+                                    <label
+                                        for="system"
+                                        x-text={`structure_type === 'player_owned_starbase' ? '${t('system_and_moon')}' : '${t('system_and_planet')}'`}
+                                    >
+                                        {t('system_and_planet')}
+                                    </label>
                                     <Grid min_item_width="150px">
                                         <InputError show_prop="invalid_planet" error_prop="invalid_planet_error">
                                             <Input
@@ -267,18 +279,25 @@ const page_title = t('intel.timers.add.page_title');
                                                 type="text"
                                                 x-bind:required="time_required_structures.includes(structure_type)"
                                                 hx-get={PLANET_SELECT_OPTIONS_PARTIAL_URL}
+                                                x-bind:hx-get={`\`${PLANET_SELECT_OPTIONS_PARTIAL_URL}?fetch=\$\{structure_type === 'player_owned_starbase' ? 'moon' : 'planet'\}\``}
                                                 hx-target="#planet"
                                                 hx-indicator=".loader"
                                                 hx-swap="innerHTML"
+                                                x-ref="system"
                                             />
                                         </InputError>
                                         <Select
                                             id="planet"
-                                            name="planet"
+                                            x-bind:name={`structure_type === 'player_owned_starbase' ? 'moon' : 'planet'`}
                                             type="text"
                                             x-bind:required="time_required_structures.includes(structure_type)"
                                         >
-                                            <option value="">{t('select_planet')}</option>
+                                            <option
+                                                value=""
+                                                x-text={`structure_type === 'player_owned_starbase' ? '${t('select_moon')}' : '${t('select_planet')}'`}
+                                            >
+                                                {t('select_planet')}
+                                            </option>
                                         </Select>
                                     </Grid>
                                 </FixedFluid>

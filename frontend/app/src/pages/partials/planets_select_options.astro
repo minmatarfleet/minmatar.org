@@ -4,13 +4,12 @@ const { t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
-import type { PlanetBasic, Alert } from '@dtypes/layout_components'
-import { find_system_planets, get_system_id } from '@helpers/sde/map'
+import { find_system_planets, find_systems_moons, get_system_id } from '@helpers/sde/map'
 
 const system = Astro.url.searchParams.get('system') as string
-console.log(system)
+const fetch = Astro.url.searchParams.get('fetch') as string
 
-let planets:PlanetBasic[] = []
+let celestials:string[] = []
 let fetch_planets_error = ''
 
 try {
@@ -19,7 +18,9 @@ try {
     if (!system_id)
         throw new Error(t('invalid_system_id'))
 
-    planets = await find_system_planets(system_id)
+    celestials = fetch === 'moon' ?
+        (await find_systems_moons([ system_id ])).map(moon => moon.name) :
+        (await find_system_planets(system_id)).map(planet => planet.name)
 } catch (error) {
     fetch_planets_error = prod_error_messages() ? t('fetch_planets_error') : error.message
 }
@@ -27,9 +28,14 @@ try {
 const invalid_planet = Boolean(fetch_planets_error)
 ---
 
-<option value="">{t('select_planet')}</option>
-{planets.map(planet =>
-    <option value={planet.name.split(' ').pop()}>{planet.name}</option>
+<option
+    value=""
+    x-text={`structure_type === 'player_owned_starbase' ? '${t('select_moon')}' : '${t('select_planet')}'`}
+>
+    {t('select_planet')}
+</option>
+{celestials.map(celestial =>
+    <option value={fetch === 'moon' ? celestial.replace(system, '').trim() : celestial.split(' ').pop()}>{celestial}</option>
 )}
 
 <div x-init={`invalid_planet = ${JSON.stringify(invalid_planet)}; invalid_planet_error = '${fetch_planets_error}'; $el.remove()`} class="[ hidden ]" />

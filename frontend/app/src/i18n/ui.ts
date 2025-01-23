@@ -901,6 +901,7 @@ export const ui = {
         'metenox_moon_drill': 'Metenox Moon Drill',
         'mercenary_den': 'Mercenary Den',
         'player_owned_customs_office': 'Customs Office',
+        'player_owned_starbase': 'Player Owned Starbase',
         'structure_timers_error': 'An error occurred while fetching structure timers.',
         'structure_timers': 'Structure timers',
         'structure_timer': 'Structure timer',
@@ -1259,6 +1260,8 @@ export const ui = {
         'rats_with_gats_subheading': 'Fl33t’s highsec wardec corp',
         'contact': 'Contact',
         'recruiting': 'recruiting',
+        'select_moon': 'Select moon',
+        'system_and_moon': 'System and moon',
         'read_more': 'Read more',
     },
 } as const;
