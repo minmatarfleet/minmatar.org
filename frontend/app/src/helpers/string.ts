@@ -43,6 +43,23 @@ export async function parse_markdown(text:string) {
     return await marked.parseInline(text)
 }
 
+export async function throw_response_error(response:Response, endpoint:string) {
+    let error = '🤯'
+
+    try {
+        const parsed_error = await response.json()
+        const error_msg = parse_error_message(parsed_error.detail)
+        error = error_msg ? error_msg : parsed_error?.detail
+    } catch (e) {
+        error = get_error_message(
+            response.status,
+            endpoint
+        )
+    }
+
+    throw new Error(error ? error : get_error_message(response.status, endpoint))
+}
+
 export function get_error_message(status:number, endpoint:string) {
     return `HTTP error! Status — ${status}<br><pre style="width: fit-content"><code>${endpoint}</code></pre>`
 }
