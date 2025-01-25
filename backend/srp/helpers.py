@@ -117,13 +117,9 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         )
         return False, "Character not in fleet"
 
-    if fleet_instance.end_time is None:
-        logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, fleet not finished"
-        )
-        return False, "Fleet not finished"
-
-    if fleet_instance.end_time + timedelta(hours=2) < killmail.timestamp:
+    if fleet_instance.end_time and (
+        fleet_instance.end_time + timedelta(hours=2) < killmail.timestamp
+    ):
         logger.info(
             f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
         )
