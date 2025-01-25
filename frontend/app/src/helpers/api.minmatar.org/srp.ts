@@ -1,4 +1,4 @@
-import { throw_response_error, get_error_message, query_string } from '@helpers/string'
+import { parse_response_error, query_string } from '@helpers/string'
 import type { SRP, SRPStatus, SRPRequest } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
@@ -31,7 +31,7 @@ export async function get_fleet_srp(access_token:string, srp_request:SRPRequest)
         // console.log(response)
 
         if (!response.ok)
-            throw_response_error(response, `GET ${ENDPOINT}`)
+            throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
         
         return await response.json() as SRP[]
     } catch (error) {
@@ -64,7 +64,7 @@ export async function create_fleet_srp(access_token:string, fleet_id:number, ext
         // console.log(response)
 
         if (!response.ok)
-            throw_response_error(response, `POST ${ENDPOINT}`)
+            throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
                 
         return (response.status === 200)
     } catch (error) {
@@ -96,7 +96,7 @@ export async function update_fleet_srp(access_token:string, status:SRPStatus, re
         // console.log(response)
 
         if (!response.ok)
-            throw_response_error(response, `PATCH ${ENDPOINT}`)
+            throw new Error(await parse_response_error(response, `PATCH ${ENDPOINT}`))
         
         return (response.status === 200);
     } catch (error) {
