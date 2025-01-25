@@ -54,6 +54,7 @@ class EveFleetReimbursementResponse(BaseModel):
     auth=AuthBearer(),
     response={
         200: EveFleetReimbursementResponse,
+        400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
     },
@@ -71,6 +72,8 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         return 404, {"detail": "Character does not exist"}
     except UserCharacterMismatch:
         return 403, {"detail": "Character does not belong to user"}
+    except Exception:
+        return 400, {"detail": "Unexpected error processing killmail"}
 
     valid, reason = is_valid_for_reimbursement(details, fleet)
     if not valid:
