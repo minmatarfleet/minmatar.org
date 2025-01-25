@@ -1266,5 +1266,8 @@ export const ui = {
         'minimum_pod': 'Minimum pod',
         'recommended_pod': 'Recommended pod',
         'eft_format': 'EFT format',
+        'daytime': 'Daytime',
+        'nighttime': 'Nighttime',
+        'sleeptime': 'Sleeptime',
     },
 } as const;
