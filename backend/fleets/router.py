@@ -343,7 +343,7 @@ def get_fleet(request, fleet_id: int):
         "type": fleet.type,
         "description": fleet.description,
         "start_time": fleet.start_time,
-        "fleet_commander": fleet.created_by.id,
+        "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
         "location": (
             fleet.location.location_name if fleet.location else "Ask FC"
         ),
