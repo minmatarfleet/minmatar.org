@@ -244,6 +244,62 @@ def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
     return response
 
 
+class EveFleetFilter(str, Enum):
+    ACTIVE = "active"
+    UPCOMING = "upcoming"
+    RECENT = "recent"
+
+
+@router.get(
+    "/v3",
+    response={
+        200: List[EveFleetResponse],
+        401: ErrorResponse,
+        403: ErrorResponse,
+    },
+    auth=AuthBearer(),
+    description="Get full details of fleets matching the specified filter.",
+)
+def get_v3_fleets(
+    request, fleet_filter: EveFleetFilter = EveFleetFilter.RECENT
+) -> List[EveFleetResponse]:
+    if fleet_filter == EveFleetFilter.ACTIVE:
+        fleets = (
+            EveFleet.objects.filter(evefleetinstance__end_time=None)
+            .filter(start_time__gte=timezone.now() - timedelta(hours=1))
+            .order_by("-start_time")
+        )
+    elif fleet_filter == EveFleetFilter.UPCOMING:
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now()
+        ).order_by("-start_time")
+    else:
+        # get fleets from past 30 days
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now() - timedelta(days=30)
+        ).order_by("-start_time")
+    response = []
+    for fleet in fleets:
+        response.append(make_fleet_response(fleet))
+    return response
+
+
+def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
+    return {
+        "id": fleet.id,
+        "type": fleet.type,
+        "description": fleet.description,
+        "start_time": fleet.start_time,
+        "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
+        "location": (
+            fleet.location.location_name if fleet.location else "Ask FC"
+        ),
+        "audience": fleet.audience.name,
+        "tracking": None,
+        "disable_motd": fleet.disable_motd,
+    }
+
+
 @router.get("/standingfleets", response={200: List[EveStandingFleetResponse]})
 def get_standing_fleets(request, active: bool = True):
     standing_fleets = EveStandingFleet.objects.filter(end_time=None)
