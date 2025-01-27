@@ -49,3 +49,12 @@ class EveCharacterAdmin(admin.ModelAdmin):
             return EvePrimaryCharacter.objects.filter(
                 character__token__user=user
             ).first()
+
+
+@admin.register(EvePrimaryCharacter)
+class EvePrimaryCharacterAdmin(admin.ModelAdmin):
+    """
+    Custom admin to allow fixing of primary character data.
+    """
+
+    pass
