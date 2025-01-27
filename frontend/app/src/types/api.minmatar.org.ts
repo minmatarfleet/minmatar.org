@@ -172,6 +172,9 @@ export interface Doctrine {
     sig_ids:            number[];
 }
 
+export const fleet_status = ['active', 'upcoming', 'recent'] as const
+export type FleetStatus = typeof fleet_status[number]
+
 export const fleet_types = ['strategic', 'non_strategic', 'training'] as const
 export type FleetTypes = typeof fleet_types[number]
 
