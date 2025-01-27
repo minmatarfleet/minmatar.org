@@ -49,6 +49,11 @@ class EveFleetReimbursementResponse(BaseModel):
     amount: int
 
 
+class SrpPatchResult(BaseModel):
+    database_update_status: str
+    evemail_status: str
+
+
 @router.post(
     "",
     auth=AuthBearer(),
@@ -155,7 +160,7 @@ def get_fleet_srp(request, fleet_id: int = None, status: str = None):
 @router.patch(
     "/{reimbursement_id}",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
+    response={200: SrpPatchResult, 403: ErrorResponse, 404: ErrorResponse},
     description="Update a SRP request, must have fleets.manage_evefleet permission",
 )
 def update_fleet_srp(
@@ -175,6 +180,13 @@ def update_fleet_srp(
     reimbursement.status = payload.status
     reimbursement.save()
 
-    send_decision_notification(reimbursement)
+    try:
+        send_decision_notification(reimbursement)
+        mail_result = "Success"
+    except Exception as err:
+        mail_result = f"Error sending mail: {err}"
 
-    return 200
+    return 200, SrpPatchResult(
+        database_update_status="Success",
+        evemail_status=mail_result,
+    )
