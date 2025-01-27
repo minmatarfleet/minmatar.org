@@ -95,7 +95,7 @@ def get_doctrine(request, doctrine_id: int):
     if not EveDoctrine.objects.filter(id=doctrine_id).exists():
         return ErrorResponse(
             status=404,
-            message="Doctrine not found",
+            detail="Doctrine not found",
         )
 
     doctrine = EveDoctrine.objects.get(id=doctrine_id)
@@ -192,7 +192,7 @@ def get_fitting(request, fitting_id: int):
     if not EveFitting.objects.filter(id=fitting_id).exists():
         return ErrorResponse(
             status=404,
-            message="Fitting not found",
+            detail="Fitting not found",
         )
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = make_fitting_response(fitting)

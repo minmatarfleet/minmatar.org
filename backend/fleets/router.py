@@ -8,7 +8,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
+from authentication import AuthBearer, AuthOptional
 from eveonline.models import EvePrimaryCharacter
 from fittings.models import EveDoctrine
 
@@ -60,7 +60,7 @@ class EveFleetResponse(BaseModel):
     type: EveFleetType
     audience: str
     description: str
-    start_time: datetime
+    start_time: Optional[datetime] = None
     fleet_commander: int
     doctrine_id: Optional[int] = None
     location: str
@@ -257,7 +257,7 @@ class EveFleetFilter(str, Enum):
         401: ErrorResponse,
         403: ErrorResponse,
     },
-    auth=AuthBearer(),
+    auth=AuthOptional(),
     description="Get full details of fleets matching the specified filter.",
 )
 def get_v3_fleets(
@@ -280,11 +280,33 @@ def get_v3_fleets(
         ).order_by("-start_time")
     response = []
     for fleet in fleets:
-        response.append(make_fleet_response(fleet))
+        if can_see_fleet(fleet, request.user):
+            response.append(make_fleet_response(fleet))
+        else:
+            response.append(make_fleet_shadow(fleet))
     return response
 
 
+def can_see_fleet(fleet: EveFleet, user) -> bool:
+    if not user.id:
+        return False
+    if user.has_perm("fleets.view_evefleet"):
+        return True
+    if user == fleet.created_by:
+        return True
+    for group in fleet.audience.groups.all():
+        if group in user.groups.all():
+            return True
+    return False
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
+    tracking = None
+    if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
+        tracking = EveFleetTrackingResponse.model_validate(
+            EveFleetInstance.objects.get(eve_fleet=fleet)
+        )
+
     return {
         "id": fleet.id,
         "type": fleet.type,
@@ -295,8 +317,23 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
             fleet.location.location_name if fleet.location else "Ask FC"
         ),
         "audience": fleet.audience.name,
-        "tracking": None,
+        "tracking": tracking,
         "disable_motd": fleet.disable_motd,
+    }
+
+
+def make_fleet_shadow(fleet: EveFleet) -> EveFleetResponse:
+    """Makes a shadow response with no fleet details"""
+    return {
+        "id": fleet.id,
+        "type": "non_strategic",
+        "description": "Unavailable",
+        "start_time": None,
+        "fleet_commander": 0,
+        "location": "Unavailable",
+        "audience": fleet.audience.name,
+        "tracking": None,
+        "disable_motd": False,
     }
 
 
