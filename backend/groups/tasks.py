@@ -37,15 +37,17 @@ def update_affiliations():
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
     logger.debug("Checking affiliations for user %s", user)
-    if not EvePrimaryCharacter.objects.filter(
+    primaries = EvePrimaryCharacter.objects.filter(
         character__token__user=user
-    ).exists():
+    )
+    if not primaries.exists():
         logger.warning("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
-    primary_character = EvePrimaryCharacter.objects.get(
-        character__token__user=user
-    )
+    if primaries.count() > 0:
+        logger.warning("%d primary characters found for user %s", primaries.count(), user)
+
+    primary_character = primaries.first()
 
     # loop through affiliations in priority to find highest qualifying
     for affiliation in AffiliationType.objects.order_by("-priority"):
