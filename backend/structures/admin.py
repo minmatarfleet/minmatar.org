@@ -8,5 +8,3 @@ admin.site.register(EveStructure)
 @admin.register(EveStructureTimer)
 class StructureTimerAdmin(admin.ModelAdmin):
     list_display = ("name", "state")
-    search_fields = {"name"}
-    ordering = ("name",)
