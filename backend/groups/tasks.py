@@ -37,15 +37,15 @@ def update_affiliations():
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
     logger.debug("Checking affiliations for user %s", user)
-    primaries = EvePrimaryCharacter.objects.filter(
-        character__token__user=user
-    )
+    primaries = EvePrimaryCharacter.objects.filter(character__token__user=user)
     if not primaries.exists():
         logger.warning("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
     if primaries.count() > 0:
-        logger.warning("%d primary characters found for user %s", primaries.count(), user)
+        logger.warning(
+            "%d primary characters found for user %s", primaries.count(), user
+        )
 
     primary_character = primaries.first()
 
