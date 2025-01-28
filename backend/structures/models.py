@@ -109,4 +109,7 @@ class EveStructureTimer(models.Model):
     )
 
     def __str__(self):
-        return str(f"{self.structure.name} - {self.state}")
+        if self.structure:
+            return str(f"{self.structure.name} - {self.state}")
+        else:
+            return "Timer without structure"
