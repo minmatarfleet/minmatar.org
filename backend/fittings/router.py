@@ -190,9 +190,9 @@ def get_fittings(request):
 )
 def get_fitting(request, fitting_id: int):
     if not EveFitting.objects.filter(id=fitting_id).exists():
-        return ErrorResponse(
+        return 404, ErrorResponse(
             status=404,
-            detail="Fitting not found",
+            detail=f"Fitting not found: {fitting_id}",
         )
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = make_fitting_response(fitting)
