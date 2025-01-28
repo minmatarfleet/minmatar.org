@@ -74,7 +74,7 @@ class ErrorResponse(BaseModel):
     "",
     summary="Get characters",
     auth=AuthBearer(),
-    response=List[BasicCharacterResponse],
+    response={200: List[BasicCharacterResponse], 404: ErrorResponse},
 )
 def get_characters(request, primary_character_id: int = None):
     if primary_character_id:

@@ -51,6 +51,9 @@ class EveCharacter(models.Model):
     )
     exempt = models.BooleanField(default=False)
 
+    # True if ESI API calls should not be made for this character
+    esi_suspended = models.BooleanField(default=False)
+
     # data
     skills_json = models.TextField(blank=True, default="{}")
     assets_json = models.TextField(blank=True, default="{}")
