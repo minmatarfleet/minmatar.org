@@ -53,6 +53,9 @@ def update_character_affilliations():
             faction_id = result.get("faction_id")
 
             character = EveCharacter.objects.get(character_id=character_id)
+            if character.esi_suspended:
+                continue
+
             create_or_update_affiliation_entities(
                 corporation_id=corporation_id,
                 alliance_id=alliance_id,
@@ -115,6 +118,13 @@ def update_alliance_character_killmails():
 
 @app.task
 def update_character_skills(eve_character_id):
+    character = EveCharacter.objects.get(character_id=eve_character_id)
+    if character.esi_suspended:
+        logger.info(
+            "Skipping skills update for character %s", eve_character_id
+        )
+        return
+
     logger.info("Updating skills for character %s", eve_character_id)
     upsert_character_skills(eve_character_id)
     # update skillsets
@@ -124,6 +134,8 @@ def update_character_skills(eve_character_id):
 
 @app.task
 def update_character_assets(eve_character_id):
+    character = EveCharacter.objects.get(character_id=eve_character_id)
+
     logger.info("Updating assets for character %s", eve_character_id)
     required_scopes = [
         "esi-assets.read_assets.v1",
@@ -131,13 +143,13 @@ def update_character_assets(eve_character_id):
     token = Token.objects.filter(
         character_id=eve_character_id, scopes__name__in=required_scopes
     ).first()
-    if token is None:
+    if token is None or character.esi_suspended:
         logger.info("Skipping asset update for character %s", eve_character_id)
         return
     esi_assets = esi.client.Assets.get_characters_character_id_assets(
         character_id=eve_character_id, token=token.valid_access_token()
     ).results()
-    character = EveCharacter.objects.get(character_id=eve_character_id)
+
     character.assets_json = json.dumps(esi_assets)
     character.save()
     create_character_assets(character)
@@ -145,6 +157,8 @@ def update_character_assets(eve_character_id):
 
 @app.task(rate_limit="10/m")
 def update_character_killmails(eve_character_id):
+    character = EveCharacter.objects.get(character_id=eve_character_id)
+
     logger.info("Updating killmails for character %s", eve_character_id)
     required_scopes = [
         "esi-killmails.read_killmails.v1",
@@ -152,7 +166,7 @@ def update_character_killmails(eve_character_id):
     token = Token.objects.filter(
         character_id=eve_character_id, scopes__name__in=required_scopes
     ).first()
-    if token is None:
+    if token is None or character.esi_suspended:
         logger.info(
             "Skipping killmail update for character %s", eve_character_id
         )
@@ -162,7 +176,7 @@ def update_character_killmails(eve_character_id):
             character_id=eve_character_id, token=token.valid_access_token()
         ).results()
     )
-    character = EveCharacter.objects.get(character_id=eve_character_id)
+
     for killmail in esi_killmails:
         details = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
             killmail_id=killmail["killmail_id"],
