@@ -93,7 +93,7 @@ def get_doctrines(request):
 )
 def get_doctrine(request, doctrine_id: int):
     if not EveDoctrine.objects.filter(id=doctrine_id).exists():
-        return ErrorResponse(
+        return 404, ErrorResponse(
             status=404,
             detail="Doctrine not found",
         )
@@ -139,7 +139,7 @@ def get_doctrine_composition(request, doctrine_id: int):
         doctrine = EveDoctrine.objects.get(id=doctrine_id)
         fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
     except EveDoctrine.DoesNotExist:
-        return ErrorResponse(
+        return 404, ErrorResponse(
             status=404,
             message="Doctrine details not found",
         )
