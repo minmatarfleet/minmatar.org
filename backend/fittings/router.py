@@ -141,7 +141,7 @@ def get_doctrine_composition(request, doctrine_id: int):
     except EveDoctrine.DoesNotExist:
         return 404, ErrorResponse(
             status=404,
-            message="Doctrine details not found",
+            detail="Doctrine details not found",
         )
 
     doctrine_items = []
