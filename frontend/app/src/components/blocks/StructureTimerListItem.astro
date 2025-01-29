@@ -40,6 +40,7 @@ import { query_string } from '@helpers/string';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Tag from '@components/blocks/Tag.astro';
+import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
@@ -57,12 +58,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     thumb_name={structure_timer.corporation_name}
     thumb_sub={t(structure_timer.structure_type as any)}
     items_width='200px'
-    x-data={`{
-        local_time: new Date('${eve_time} UTC').toLocaleDateString(
-            '${lang}',
-            ${import.meta.env.DATETIME_FORMAT}
-        )
-    }`}
     class="[ timer-item ]"
     {...attributes}
 >
@@ -122,9 +117,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
                 {eve_time_text}
             </TextGroup>
-            <TextGroup title={t('local_time')} class="[ sentence-cap ]" x-text="local_time">
-                <span class="[ loading ]">{t('calculating')}</span>
-            </TextGroup>
+            <LocalTimeGroup eve_time={eve_time} />
         </Flexblock>
     </VerticalCenter>
     

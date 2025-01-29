@@ -480,7 +480,7 @@ export const ui = {
         'main': 'Main',
         'alt': 'Alt',
         'clear_account_cache': 'Clear cache',
-        'calculating': 'Calculating',
+        'calculating': 'Localizing',
         'fun_fleet': 'Fun fleet',
         'courier': 'Courier',
         'private': 'Private',
