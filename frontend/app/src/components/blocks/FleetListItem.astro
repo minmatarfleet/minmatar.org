@@ -32,19 +32,19 @@ const APPLY_HINT_TEXT = (marked.parseInline(t('apply_hint')) as string)
     )
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
 import ThumbCard from '@components/blocks/ThumbCard.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
+import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Tag from './Tag.astro'
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -56,60 +56,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     thumb_image_small={get_player_icon(fleet.fleet_commander_id, 512)}
     thumb_image_alt={fleet.fleet_commander_name}
     thumb_title={t('fleet_commander')}
-    x-data={`{
-        time_class: '',
-        time_tooltip: false,
-        set_time_class() {
-            const date = new Date('${eve_time} UTC')
-            const hour = date.getHours()
-
-            if (hour >= 0 && hour < 1) {
-                this.timer_class = 'text-status-point-1'
-                this.time_tooltip = '${t('sleeptime')}'
-            } else if (hour >= 1 && hour < 7) {
-                this.time_class = 'text-status-point-2'
-                this.time_tooltip = '${t('sleeptime')}'
-            } else if (hour >= 7 && hour < 8) {
-                this.time_class = 'text-status-point-3'
-                this.time_tooltip = '${t('sleeptime')}'
-            } else if (hour >= 8 && hour < 9) {
-                this.time_class = 'text-status-point-4'
-                this.time_tooltip = '${t('daytime')}'
-            } else if (hour >= 9 && hour < 19) {
-                this.time_class = 'text-status-point-5'
-                this.time_tooltip = '${t('daytime')}'
-            } else if (hour >= 19 && hour < 20) {
-                this.time_class = 'text-status-point-6'
-                this.time_tooltip = '${t('nighttime')}'
-            } else if (hour >= 20 && hour < 21) {
-                this.time_class = 'text-status-point-7'
-                this.time_tooltip = '${t('nighttime')}'
-            } else if (hour >= 21 && hour < 22) {
-                this.time_class = 'text-status-point-8'
-                this.time_tooltip = '${t('nighttime')}'
-            } else if (hour >= 22 && hour < 23) {
-                this.time_class = 'text-status-point-9'
-                this.time_tooltip = '${t('nighttime')}'
-            } else if (hour >= 23) {
-                this.time_class = 'text-status-null'
-                this.time_tooltip = '${t('sleeptime')}'
-            } else {
-                this.time_class = 'text-yellow'
-                this.time_tooltip = '${t('daytime')}'
-            }
-        },
-        local_time: new Date('${eve_time} UTC').toLocaleDateString(
-            '${lang}',
-            ${import.meta.env.DATETIME_FORMAT}
-        ),
-        tippy_options: {
-            delay: [ 100, 200 ],
-            arrow: true,
-        },
-        init() {
-            this.set_time_class()
-        }
-    }`}
     {...attributes}
 >
     <div
@@ -166,17 +112,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
                     {eve_time_text}
                 </TextGroup>
-                <TextGroup title={t('local_time')}>
-                    <span
-                        class="[ sentence-cap ]"
-                        x-bind:class="time_class"
-                        x-text="local_time"
-                        x-bind:data-tippy-content="time_tooltip"
-                        x-init="tippy($el, this.tippy_options)"
-                    >
-                        <span class="[ loading ]">{t('calculating')}</span>
-                    </span>
-                </TextGroup>
+                <LocalTimeGroup eve_time={eve_time} />
             </Flexblock>
         </VerticalCenter>
     }
