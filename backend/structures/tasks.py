@@ -28,22 +28,18 @@ def update_structures():
 def update_corporation_structures(corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     logger.info("Updating structures for corporation %s", corporation)
-    if corporation.ceo and corporation.ceo.token:
+    if (
+        corporation.ceo
+        and corporation.ceo.token
+        and not corporation.ceo.esi_suspended
+    ):
         logger.info(
             "Corporation %s has token for CEO: %s",
             corporation,
             corporation.ceo,
         )
-        required_scopes = ["esi-corporations.read_structures.v1"]
 
-        # if Token.objects.filter(
-        #     character_id=corporation.ceo.character_id,
-        #     scopes__name__in=required_scopes,
-        # ).exists():
-        #     token = Token.objects.filter(
-        #         character_id=corporation.ceo.character_id,
-        #         scopes__name__in=required_scopes,
-        #     ).first()
+        required_scopes = ["esi-corporations.read_structures.v1"]
 
         token = Token.get_token(corporation.ceo.character_id, required_scopes)
         if token:
@@ -113,6 +109,6 @@ def update_corporation_structures(corporation_id: int):
             logger.warning("No CEO token with structure access scope")
     else:
         logger.info(
-            "Corporation %s does not have CEO token",
+            "Corporation %s does not have valid CEO token",
             corporation,
         )
