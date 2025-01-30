@@ -143,11 +143,17 @@ def create_corporation_market_contracts(corporation_id: int):
     if not corporation.ceo:
         logger.error(f"Corporation {corporation_id} does not have a CEO.")
         return
+    if corporation.ceo.esi_suspended:
+        logger.error(f"Corporation {corporation_id} CEO has ESI suspended.")
+        return
 
-    token = Token.objects.filter(
-        character_id=corporation.ceo.character_id,
-        scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-    ).first()
+    # token = Token.objects.filter(
+    #     character_id=corporation.ceo.character_id,
+    #     scopes__name__in=set(MARKET_CHARACTER_SCOPES),
+    # ).first()
+    token = Token.get_token(
+        corporation.ceo.character_id, MARKET_CHARACTER_SCOPES
+    )
 
     if not token:
         logger.error(
