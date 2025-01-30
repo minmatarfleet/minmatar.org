@@ -44,16 +44,36 @@ def upsert_character_skills(character_id: int):
     ).results()["skills"]
 
     for skill in esi_skills:
-        skill_type, _ = EveType.objects.get_or_create_esi(id=skill["skill_id"])
+        skill_id = skill["skill_id"]
+        skill_type, _ = EveType.objects.get_or_create_esi(id=skill_id)
+
+        if duplicate_skill(character, skill_id):
+            continue
+
         EveCharacterSkill.objects.update_or_create(
             character=character,
-            skill_id=skill["skill_id"],
+            skill_id=skill_id,
             defaults={
                 "skill_name": skill_type.name,
                 "skill_points": skill["skillpoints_in_skill"],
                 "skill_level": skill["trained_skill_level"],
             },
         )
+
+
+def duplicate_skill(char: EveCharacter, skill_id: int) -> bool:
+    skills = EveCharacterSkill.objects.filter(
+        character=char, skill_id=skill_id
+    )
+    if skills.count() > 1:
+        logger.error(
+            "Duplicate skill %d for character %d",
+            skill_id,
+            char.character_id,
+        )
+        return True
+
+    return False
 
 
 def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
