@@ -28,9 +28,7 @@ def update_affiliations():
         try:
             update_affiliation(user.id)
         except Exception as e:
-            logger.error(
-                "Error updating affiliations for user %s: %s", user, e
-            )
+            log_affiliation_update_error(user, e)
 
 
 @app.task
@@ -137,6 +135,16 @@ def update_affiliation(user_id: int):
                     affiliation,
                 )
                 continue
+
+
+def log_affiliation_update_error(user: User, e):
+    pc = EvePrimaryCharacter.objects.filter(character__token__user=user)
+    if pc.exists():
+        logger.error("Error updating affiliations for user %s: %s", user, e)
+    else:
+        # If user has no primary character then assume it isn't important.
+        # We were ignoring these anyway, so no point logging them as errors.
+        logger.debug("Couldn't update affiliations for unlinked user %s", user)
 
 
 @app.task
