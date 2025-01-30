@@ -144,7 +144,7 @@ def create_corporation_market_contracts(corporation_id: int):
         logger.error(f"Corporation {corporation_id} does not have a CEO.")
         return
     if corporation.ceo.esi_suspended:
-        logger.error(f"Corporation {corporation_id} CEO has ESI suspended.")
+        logger.warning(f"Corporation {corporation_id} CEO has ESI suspended.")
         return
 
     # token = Token.objects.filter(
