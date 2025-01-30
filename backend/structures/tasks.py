@@ -35,14 +35,18 @@ def update_corporation_structures(corporation_id: int):
             corporation.ceo,
         )
         required_scopes = ["esi-corporations.read_structures.v1"]
-        if Token.objects.filter(
-            character_id=corporation.ceo.character_id,
-            scopes__name__in=required_scopes,
-        ).exists():
-            token = Token.objects.filter(
-                character_id=corporation.ceo.character_id,
-                scopes__name__in=required_scopes,
-            ).first()
+
+        # if Token.objects.filter(
+        #     character_id=corporation.ceo.character_id,
+        #     scopes__name__in=required_scopes,
+        # ).exists():
+        #     token = Token.objects.filter(
+        #         character_id=corporation.ceo.character_id,
+        #         scopes__name__in=required_scopes,
+        #     ).first()
+
+        token = Token.get_token(corporation.ceo.character_id, required_scopes)
+        if token:
             logger.info("Fetching structures for corporation %s", corporation)
             response = esi.client.Corporation.get_corporations_corporation_id_structures(
                 corporation_id=corporation.corporation_id,
@@ -105,6 +109,8 @@ def update_corporation_structures(corporation_id: int):
                 if structure.id not in known_structure_ids:
                     logger.info("Deleting structure %s", structure.name)
                     structure.delete()
+        else:
+            logger.warning("No CEO token with structure access scope")
     else:
         logger.info(
             "Corporation %s does not have CEO token",
