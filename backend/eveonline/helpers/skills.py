@@ -53,7 +53,7 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
         character=character, skill_id=esi_skill["skill_id"]
     ).order_by("-skill_points")
 
-    logger.info("Query count %d",qry.count())
+    logger.info("Query count %d", qry.count())
 
     if qry.count() == 0:
         skill = EveCharacterSkill(
