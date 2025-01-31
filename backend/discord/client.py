@@ -115,6 +115,9 @@ class DiscordBaseClient:
         )
         if response.status_code == 429:
             raise RateLimitException
+        if response.status_code == 404:
+            # Don't throw exception for failing to delete if it doesn't exist
+            return response
         response.raise_for_status()
         return response
 
