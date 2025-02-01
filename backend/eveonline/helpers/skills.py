@@ -11,6 +11,7 @@ from eveonline.models import (
     EveCharacterSkill,
     EveCharacterSkillset,
     EveSkillset,
+    Token,
 )
 
 esi = EsiClientProvider()
@@ -32,11 +33,9 @@ def upsert_character_skills(character_id: int):
     logger.info("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
     required_scopes = ["esi-skills.read_skills.v1"]
-    token = character.tokens.filter(scopes__name__in=required_scopes).first()
-    if token is None:
-        logger.info(
-            "Skipping skills update for character %s", character.character_id
-        )
+    token = Token.get_token(character.character_id, required_scopes)
+    if not token:
+        logger.info("Skipping skills update for %s", character.character_id)
         return
 
     esi_skills = esi.client.Skills.get_characters_character_id_skills(
@@ -44,36 +43,41 @@ def upsert_character_skills(character_id: int):
     ).results()["skills"]
 
     for skill in esi_skills:
-        skill_id = skill["skill_id"]
-        skill_type, _ = EveType.objects.get_or_create_esi(id=skill_id)
+        upsert_character_skill(character, skill)
 
-        if duplicate_skill(character, skill_id):
-            continue
 
-        EveCharacterSkill.objects.update_or_create(
+def upsert_character_skill(character: EveCharacter, esi_skill):
+    skill_type, _ = EveType.objects.get_or_create_esi(id=esi_skill["skill_id"])
+
+    qry = EveCharacterSkill.objects.filter(
+        character=character, skill_id=esi_skill["skill_id"]
+    ).order_by("-skill_points")
+
+    logger.info("Query count %d", qry.count())
+
+    if qry.count() == 0:
+        skill = EveCharacterSkill(
             character=character,
-            skill_id=skill_id,
-            defaults={
-                "skill_name": skill_type.name,
-                "skill_points": skill["skillpoints_in_skill"],
-                "skill_level": skill["trained_skill_level"],
-            },
+            skill_id=esi_skill["skill_id"],
+            skill_name=skill_type.name,
+            skill_points=esi_skill["skillpoints_in_skill"],
+            skill_level=esi_skill["trained_skill_level"],
         )
+    else:
+        skill = qry.first()
+        skill.skill_points = esi_skill["skillpoints_in_skill"]
+        skill.skill_level = esi_skill["trained_skill_level"]
 
+    skill.save()
 
-def duplicate_skill(char: EveCharacter, skill_id: int) -> bool:
-    skills = EveCharacterSkill.objects.filter(
-        character=char, skill_id=skill_id
-    )
-    if skills.count() > 1:
-        logger.error(
-            "Duplicate skill %d for character %d",
-            skill_id,
-            char.character_id,
+    if qry.count() > 1:
+        logger.warning(
+            "Duplicate skill %d for character %d, deleting one",
+            esi_skill["skill_id"],
+            character.character_id,
         )
-        return True
-
-    return False
+        # If more than 2, eventually all but 1 will be removed
+        qry.last().delete()
 
 
 def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):

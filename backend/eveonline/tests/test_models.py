@@ -5,6 +5,7 @@ from django.db.models import signals
 from django.contrib.auth.models import User
 
 from app.test import TestCase
+from eveuniverse.models import EveType
 from eveonline.models import (
     EveCharacter,
     EveCharacterSkill,
@@ -12,6 +13,7 @@ from eveonline.models import (
     Token,
     Scope,
 )
+from eveonline.helpers.skills import upsert_character_skill
 
 
 logger = logging.getLogger("test.models")
@@ -207,3 +209,62 @@ class TokenScopeTestCase(TestCase):
 
         token = Token.get_token(123, ["scope1", "scope_unused"])
         self.assertFalse(token)
+
+
+class SkillsUpdateTestCase(TestCase):
+    """
+    Tests methods of EveCharacterSkills update
+    """
+
+    def test_update_character_skills(self):
+        char = EveCharacter.objects.create(
+            character_id=123, character_name="Test Character 1"
+        )
+        EveType.objects.create(
+            id=234,
+            name="Skill 234",
+            published=True,
+            eve_group_id=1,
+        )
+        esi_skill = {
+            "skill_id": 234,
+            "skill_name": "Skill 234",
+            "skillpoints_in_skill": 1000,
+            "trained_skill_level": 2,
+        }
+
+        # First update will create the skill
+
+        self.assertEqual(0, EveCharacterSkill.objects.count())
+
+        upsert_character_skill(char, esi_skill)
+
+        self.assertEqual(1, EveCharacterSkill.objects.count())
+
+        # Second update will update the skill
+
+        esi_skill["skillpoints_in_skill"] = 2000
+
+        upsert_character_skill(char, esi_skill)
+
+        self.assertEqual(1, EveCharacterSkill.objects.count())
+
+        # Manually create a duplicate
+
+        EveCharacterSkill.objects.create(
+            character=char,
+            skill_id=234,
+            skill_name="Duplicate",
+            skill_points=0,
+            skill_level=0,
+        )
+
+        self.assertEqual(2, EveCharacterSkill.objects.count())
+
+        esi_skill["skillpoints_in_skill"] = 3000
+
+        # Update with duplicate will delete a copy
+
+        upsert_character_skill(char, esi_skill)
+
+        self.assertEqual(1, EveCharacterSkill.objects.count())
