@@ -140,7 +140,7 @@ def update_character_assets(eve_character_id):
     required_scopes = [
         "esi-assets.read_assets.v1",
     ]
-    token = Token.get_token(character.eve_character_id, required_scopes)
+    token = Token.get_token(character.character_id, required_scopes)
     if character.esi_suspended or not token:
         logger.info("Skipping asset update for character %s", eve_character_id)
         return
