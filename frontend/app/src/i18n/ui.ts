@@ -856,6 +856,7 @@ export const ui = {
         'soltech_armada_description_fallback': 'Fly dangerous! Die gloriously! Reship!',
         'exitstrategy_description_fallback': 'Over a decade of experience in wormhole space, operating when most of the universe is asleep.',
         'protean_description_fallback': 'Be the dog that catches the car. Driven by relentless aggression, quick pivots, and a versatile toolkit, AD4PT turns impossible situations into victories.',
+        'criterion_expeditionary_description_fallback': 'Just a bunch of homies collecting tears for 13 years now.',
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',

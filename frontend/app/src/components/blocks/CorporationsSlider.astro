@@ -23,6 +23,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Exit-Strategy',
     'Soltech Armada',
     'Protean Concept',
+    'Criterion.',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -77,6 +78,7 @@ import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import ExitStrategySlide from '@components/blocks/ExitStrategySlide.astro';
 import ProteanSlide from '@components/blocks/ProteanSlide.astro';
+import CriterionSlide from '@components/blocks/CriterionSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -143,6 +145,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Protean Concept' &&
                         <ProteanSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Criterion.' &&
+                        <CriterionSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}

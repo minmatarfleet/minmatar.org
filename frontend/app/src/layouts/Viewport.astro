@@ -199,9 +199,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<PageFinder transition:persist />
 
 		{middleware_error &&
-			<div class="toast">
-				{middleware_error}
-			</div>
+			<div class="toast" set:html={middleware_error} x-on:click="$el.remove()"></div>
 		}
 
 		<div class="[ hidden ]">
@@ -224,6 +222,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		background-color: var(--fleet-red);
 		color: var(--foreground);
 		padding: var(--space-2xs) var(--space-2xs);
+		z-index: var(--tooltips-z-index);
+		cursor: pointer;
 	}
 
 	#confetti-canvas {

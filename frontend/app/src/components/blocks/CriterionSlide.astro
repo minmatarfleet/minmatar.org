@@ -1,0 +1,216 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const NCC_1701E_ID = 1771780065
+const BLAZING_BUNNY_ID = 558112852
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<CorporationSlide
+    id="criterion-slide"
+    ceo_image='/images/corporations/criterion/ceo.png'
+    ceo_character_id={BLAZING_BUNNY_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement={picture_placement}
+>
+    <StylessButton
+        class="[ co-ceo ]"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: NCC_1701E_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/criterion/co-ceo.png" height="496" width="940" />
+    </StylessButton>
+
+    <img slot="ships" class="[ aligator ]" src="/images/corporations/criterion/aligator.png" />
+    <img slot="ships" class="[ orthrus_criterion ]" src="/images/corporations/criterion/orthrus.png" />
+    <img slot="ships" class="[ keres ]" src="/images/corporations/criterion/keres.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('criterion_expeditionary_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .co-ceo {
+        z-index: 11;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: 0%;
+        top: 0;
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
+    }
+
+    .aligator {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 78%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .orthrus_criterion {
+        position: absolute;
+        top: 35%;
+        left: -40%;
+        width: 77%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .keres {
+        position: absolute;
+        left: -38%;
+        top: 39%;
+        width: 42%;
+        height: auto;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    @keyframes aligator {
+        from {
+            transform: scale(0);
+            top: 24%;
+            left: -50%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 7%;
+            left: 28%;
+        }
+    }
+
+    @keyframes orthrus_criterion {
+        from {
+            transform: scale(0);
+            top: 23%;
+            left: -53%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 23%;
+            left: 31%;
+        }
+    }
+
+    @keyframes keres {
+        from {
+            transform: scale(0);
+            left: -20%;
+            top: 25%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 25%;
+            left: 32%;
+        }
+    }
+
+    @keyframes coceo {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #criterion-slide .ceo {
+        left: 7%;
+    }
+
+    .swiper-slide-active {
+        #criterion-slide .aligator {
+            animation: aligator cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .orthrus_criterion {
+            animation: orthrus_criterion cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .keres {
+            animation: keres cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+
+        #criterion-slide .co-ceo {
+            animation: coceo ease-out 1.5s;
+            animation-delay: 0.25s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
