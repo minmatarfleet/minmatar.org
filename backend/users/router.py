@@ -1,5 +1,6 @@
 import logging
 
+import datetime
 import jwt
 from typing import List
 from django.conf import settings
@@ -76,6 +77,9 @@ def callback(request, code: str):
         "username": user["username"],
         "avatar": f"https://cdn.discordapp.com/avatars/{django_user.discord_user.id}/{django_user.discord_user.avatar}.png",
         "is_superuser": django_user.is_superuser,
+        "sub": user["username"],
+        "iss": request.get_host(),
+        "iat": datetime.datetime.now(),
     }
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
