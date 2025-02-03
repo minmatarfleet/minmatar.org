@@ -113,9 +113,11 @@ class UserAffiliation(models.Model):
 
 
 class EveCorporationGroup(models.Model):
-    """Model for a group of corporations"""
+    """Represents a Discord group corresponding to an EveCorporation"""
 
+    # group is the Django authorization group that corresponds to this entity
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
+
     corporation = models.ForeignKey(EveCorporation, on_delete=models.CASCADE)
 
     def __str__(self):
