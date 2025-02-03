@@ -39,6 +39,7 @@ class TeamRequest(models.Model):
         related_name="approved_team_requests",
     )
     approved_at = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return f"{self.user} - {self.team}"
@@ -77,6 +78,7 @@ class SigRequest(models.Model):
         related_name="approved_sig_requests",
     )
     approved_at = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return f"{self.user} - {self.sig}"

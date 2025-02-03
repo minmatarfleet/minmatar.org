@@ -76,6 +76,7 @@ class EveCharacterLog(models.Model):
 
     username = models.CharField(max_length=255)
     character_name = models.CharField(max_length=255)
+    added = models.DateTimeField(auto_now_add=True, null=True)
 
 
 class EveCharacterSkill(models.Model):
