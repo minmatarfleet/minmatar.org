@@ -27,6 +27,7 @@ from eveonline.scopes import (
     FREIGHT_CHARACTER_SCOPES,
     MARKET_CHARACTER_SCOPES,
 )
+from discord.models import DiscordUser
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,19 @@ class CharacterAssetResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class UserCharacter(BaseModel):
+    character_id: int
+    character_name: str
+    is_primary: bool
+
+
+class UserCharacterResponse(BaseModel):
+    user_id: int
+    user_name: str
+    discord_id: str = None
+    characters: List[UserCharacter]
 
 
 @router.get(
@@ -419,3 +433,66 @@ def add_character(request, redirect_url: str, token_type: TokenType):
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
+
+
+@router.get(
+    "/summary",
+    summary="Returns a summary of character information for a user",
+    auth=AuthBearer(),
+    response={
+        200: UserCharacterResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_user_characters(
+    request, discord_id: str = None, character_name: str = None
+) -> UserCharacterResponse:
+    if not (request.user.is_superuser or request.user.id == 164):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    if discord_id and character_name:
+        return 400, ErrorResponse(
+            detail="Only one query parameter can be provided"
+        )
+
+    if character_name:
+        char = EveCharacter.objects.filter(
+            character_name=character_name
+        ).first()
+
+        if not char:
+            return 404, ErrorResponse(detail="No matching character found")
+
+        if not char.token:
+            return 400, ErrorResponse(detail="Character not linked to a user")
+
+        char_user = char.token.user
+
+        discord_user = DiscordUser.objects.filter(user=char_user).first()
+    else:
+        return 400, ErrorResponse(detail="A character name must be specified")
+
+    response = UserCharacterResponse(
+        user_id=char_user.id,
+        user_name=char_user.user_name,
+        discord_id=discord_user.id,
+        characters=[],
+    )
+
+    primary = EvePrimaryCharacter.objects.filter(
+        character__token__user=char_user
+    ).first()
+
+    chars = EveCharacter.objects.filter(token__user=char_user)
+    for char in chars.all():
+        response.characters.append(
+            UserCharacter(
+                character_id=char.character_id,
+                character_name=char.character_name,
+                is_primary=(primary and char == primary.character),
+            )
+        )
+
+    return response
