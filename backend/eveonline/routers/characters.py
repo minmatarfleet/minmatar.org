@@ -476,7 +476,7 @@ def get_user_characters(
 
     response = UserCharacterResponse(
         user_id=char_user.id,
-        user_name=char_user.user_name,
+        user_name=char_user.username,
         discord_id=discord_user.id,
         characters=[],
     )
