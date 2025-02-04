@@ -189,8 +189,9 @@ def sync_eve_corporation_groups():
                     continue
 
                 if not eve_primary_character.character.corporation:
-                    logger.error(
-                        "Character %s has no corporation",
+                    # Characters might have moved into an NPC corp, not recorded in database
+                    logger.info(
+                        "Character %s has no recorded corporation",
                         eve_primary_character.character.character_name,
                     )
                     continue
