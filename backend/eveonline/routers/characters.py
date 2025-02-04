@@ -80,7 +80,7 @@ class UserCharacter(BaseModel):
 class UserCharacterResponse(BaseModel):
     user_id: int
     user_name: str
-    discord_id: str = None
+    discord_id: int
     characters: List[UserCharacter]
 
 
