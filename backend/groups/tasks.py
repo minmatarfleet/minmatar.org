@@ -150,6 +150,11 @@ def log_affiliation_update_error(user: User, e):
 @app.task
 def sync_eve_corporation_groups():
     for corporation_group in EveCorporationGroup.objects.all():
+        if not corporation_group.corporation:
+            logger.error(
+                "Corporation group found with no corporation",
+            )
+
         for user in User.objects.all():
             try:
                 group = corporation_group.group
@@ -181,6 +186,14 @@ def sync_eve_corporation_groups():
                         group,
                     )
                     user.groups.remove(group)
+                    continue
+
+                if not eve_primary_character.character.corporation:
+                    # Characters might have moved into an NPC corp, not recorded in database
+                    logger.info(
+                        "Character %s has no recorded corporation",
+                        eve_primary_character.character.character_name,
+                    )
                     continue
 
                 if (
