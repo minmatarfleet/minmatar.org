@@ -80,7 +80,7 @@ class UserCharacter(BaseModel):
 class UserCharacterResponse(BaseModel):
     user_id: int
     user_name: str
-    discord_id: int
+    discord_id: str
     characters: List[UserCharacter]
 
 
@@ -486,7 +486,7 @@ def get_user_characters(
     response = UserCharacterResponse(
         user_id=char_user.id,
         user_name=char_user.username,
-        discord_id=discord_user.id,
+        discord_id=str(discord_user.id),
         characters=[],
     )
 
