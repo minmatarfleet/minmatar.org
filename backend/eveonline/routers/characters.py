@@ -447,7 +447,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
     },
 )
 def get_user_characters(
-    request, discord_id: str = None, character_name: str = None
+    request, discord_id: int = None, character_name: str = None
 ) -> UserCharacterResponse:
     if not (request.user.is_superuser or request.user.id == 164):
         return 403, ErrorResponse(detail="Not authorised")
@@ -471,8 +471,17 @@ def get_user_characters(
         char_user = char.token.user
 
         discord_user = DiscordUser.objects.filter(user=char_user).first()
+    elif discord_id:
+        discord_user = DiscordUser.objects.filter(id=discord_id).first()
+
+        if not discord_user:
+            return 404, ErrorResponse(detail="No matching discord user found")
+
+        char_user = discord_user.user
     else:
-        return 400, ErrorResponse(detail="A character name must be specified")
+        return 400, ErrorResponse(
+            detail="A character name or discord ID must be specified"
+        )
 
     response = UserCharacterResponse(
         user_id=char_user.id,
