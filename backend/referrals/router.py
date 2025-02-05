@@ -28,6 +28,12 @@ class LinkStats(BaseModel):
     referrals: int = 0
 
 
+class ReferralRecord(BaseModel):
+    page: str
+    user_id: int
+    client_ip: str
+
+
 links = [
     LinkInfo(
         name="Corps",
@@ -71,9 +77,8 @@ def referral_redirect(request, page: str, code: str):
     suffix = int(code[1:])
     user_id = (suffix - 7) / 83
 
-    hasher = hashlib.sha256()
-    hasher.update(str.encode(get_client_ip(request)))
-    client_id = hasher.hexdigest()
+    client_ip = get_client_ip(request)
+    client_id = hash_client_ip(client_ip)
 
     log.info(
         "Referral prefix=%s, user=%d, page=%s, client=%s",
@@ -92,10 +97,29 @@ def referral_redirect(request, page: str, code: str):
         log.info("Could not find target for %s", page)
         return redirect("https://my.minmatar.org/badreferral")
     else:
-        ReferralClick.objects.create(
+        ReferralClick.objects.get_or_create(
             page=page, user_id=user_id, identifier=client_id
         )
         return redirect(target)
+
+
+def hash_client_ip(client_ip):
+    hasher = hashlib.sha256()
+    hasher.update(str.encode(client_ip))
+    client_id = hasher.hexdigest()
+    return client_id
+
+
+@router.post(
+    "", description="Record use of a referral link", response={201: str}
+)
+def record_referral(request, referral: ReferralRecord) -> str:
+    ReferralClick.objects.get_or_create(
+        page=referral.page,
+        user_id=referral.user_id,
+        identifier=hash_client_ip(referral.client_ip),
+    )
+    return 201, "OK"
 
 
 @router.get(
