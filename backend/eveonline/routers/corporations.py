@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 from typing import List, Optional
 
+from django.contrib.auth.models import User
 from eveuniverse.models import EveFaction
 from ninja import Router, Schema
 
@@ -13,6 +14,7 @@ from eveonline.models import (
     EveCorporation,
     EvePrimaryCharacter,
 )
+from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +84,20 @@ class CorporationApplicationResponse(Schema):
 
 class CreateCorporationRequest(Schema):
     corporation_id: int
+
+
+class CorporationMemberDetails(Schema):
+    """Similar to CorporationMemberResponse but for member management"""
+
+    character_id: int
+    character_name: str
+    user_name: Optional[str] = None
+    primary_character_id: Optional[int] = None
+    primary_character_name: Optional[str] = None
+    registered: bool = False
+    exempt: bool = False
+    esi_suspended: bool = False
+    token_count: int = 0
 
 
 @router.get(
@@ -283,3 +299,47 @@ def get_corporation_info(request, corporation_id: int):
         response["faction_id"] = faction.id
         response["faction_name"] = faction.name
     return response
+
+
+@router.get(
+    "/corporations/{corporation_id}/members",
+    response={200: List[CorporationMemberDetails], 403: ErrorResponse},
+    auth=AuthBearer(),
+    summary="Get corporation member details (leadership only)",
+)
+def get_corp_member_details(request, corporation_id: int):
+    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
+
+    if not corp_member_access_authorised(request.user, corporation):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    response = []
+
+    for character in EveCharacter.objects.filter(
+        corporation__corporation=corporation
+    ):
+        char = CorporationMemberDetails(
+            character_id=character.character_id,
+            character_name=character.character_name,
+            esi_suspended=character.esi_suspended,
+            exempt=character.exempt,
+            token_count=character.tokens.count(),
+        )
+        if character.token:
+            char.user_name = character.token.user.username
+
+        response.append(char)
+
+    return response
+
+
+def corp_member_access_authorised(
+    user: User, corporation: EveCorporation
+) -> bool:
+    if corporation.ceo.token.user == user:
+        return True
+    if user_in_team(user, PEOPLE_TEAM):
+        return True
+    if user_in_team(user, TECH_TEAM):
+        return True
+    return False
