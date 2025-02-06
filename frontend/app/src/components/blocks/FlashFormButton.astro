@@ -92,7 +92,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     >
         <form
             method="POST"
-            action={translatePath('/fleets/add')}
+            action={translatePath('/fleets/add/')}
             x-on:submit="close_dialog()"
         >
             <Flexblock gap="var(--space-l)">
@@ -130,7 +130,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                                     <TutorialIcon />
                                 </picture>
                                 <Flexblock gap='var(--space-3xs)'>
-                                    <p><a href={translatePath('/fleets/flash_form')}>{t('flash_form_hint_title')}</a></p>
+                                    <p><a href={translatePath('/fleets/flash_form/')}>{t('flash_form_hint_title')}</a></p>
                                     <small set:html={marked.parseInline(t('flash_form_hint').replaceAll('APP_URL', get_app_url()))} />
                                 </Flexblock>
                             </FixedFluid>
