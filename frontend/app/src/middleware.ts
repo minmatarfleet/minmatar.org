@@ -9,6 +9,12 @@ const ONE_DAY_IN_MS = 24*60*60*1000
 export const onRequest = async ({ locals, cookies, request }, next) => {
     const { t, translatePath } = i18n(new URL(request.url))
 
+    locals.clientIP =
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("cf-connecting-ip") ||
+        request.headers.get("remote-addr") ||
+        ''
+
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
 
     const url = new URL(request.url)

@@ -1,9 +1,8 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { query_string } from '@helpers/string';
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -49,6 +48,7 @@ const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component'
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -86,7 +86,7 @@ const leading_text = t('alliance.leading_text');
                 padding_block="0"
             >
                 <Flexblock gap='var(--space-xl)'>
-                    <h1>{page_title}</h1>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p>{leading_text}</p>
                 </Flexblock>
             </Wrapper>

@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    user_id?:   number;
+    pathname?:  string;
+    link?:      string;
+    id?:        string;
+}
+
+const {
+    user_id,
+    pathname = translatePath(Astro.url.pathname),
+    link,
+    id = 'referral-link',
+} = Astro.props
+
+const COPIED_LABEL_TIME_MS = 2000
+
+import { get_app_url } from '@helpers/env'
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Tippy from '@components/blocks/Tippy.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+
+import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
+
+---
+
+<Wrapper
+    class="[ referral-link ]"
+    max_width='32px'
+    padding_block='0'
+    padding_inline='0'
+>
+    <Tippy
+        class="[ flex ]"
+        data-tippy-placement="right"
+        partial={`${translatePath('/partials/normal_tooltip')}?title=referral_link&description=referral_page`}
+        height='70px'
+        width='340px'
+        element='div'
+        show_delay={0}
+    >
+        <StylessButton
+            class="[ !pointer-events-auto ]"
+            x-bind:class="click_class"
+            x-on:click.stop.prevent={`copyFitToClipboard('${id}')`}
+            x-data={`{
+                click_class: '',
+            }`}
+            x-on:click.throttle.750ms={`click_class = 'glow'; setTimeout(() => click_class = '', ${COPIED_LABEL_TIME_MS})`}
+            x-init="$el.removeAttribute('disabled')"
+            disabled
+        >
+            <BrowserEVEIcon />
+        </StylessButton>
+        <Textarea class="[ hidden ]" id={id} readonly>{`${link ? link : get_app_url(pathname)}?ref=${user_id}`}</Textarea>
+    </Tippy>
+</Wrapper>
+
+<style lang="scss">
+    .glow {
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+    }
+</style>

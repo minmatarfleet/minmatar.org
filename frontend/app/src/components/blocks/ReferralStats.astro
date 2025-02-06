@@ -1,0 +1,38 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
+
+interface Props {
+    referral_stats: ReferralLinkStatsUI[];
+}
+
+const {
+    referral_stats,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock>
+    {(referral_stats as ReferralLinkStatsUI[]).map((stat) =>
+        <Flexblock gap='var(--space-3xs)'>
+            {stat.target ?
+                <span>
+                    <a
+                        href={stat.target?.startsWith('http') ? stat.target : translatePath(stat.target)}
+                        target={stat.target?.startsWith('http') ? '_blank' : undefined}
+                    >
+                        {stat.title}
+                    </a>
+                </span> :
+                <span>{stat.title} ({t('deprecated')})</span>
+            }
+            <small>{stat.count !== 1 ? t('number_clicks').replace('NUMBER', stat.count.toString()) : t('one_click')}</small>
+        </Flexblock>
+    )}
+    {referral_stats.length === 0 &&
+        <span>{t('no_referrals')}</span>
+    }
+</Flexblock>

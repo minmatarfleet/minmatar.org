@@ -999,3 +999,9 @@ export interface Posts {
     total:      number;
     chunk:      PostListUI[];
 }
+
+export interface ReferralLinkStatsUI {
+    title:      string;
+    count:      number;
+    target?:    string;
+}

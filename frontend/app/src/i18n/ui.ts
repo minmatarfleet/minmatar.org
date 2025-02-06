@@ -197,6 +197,9 @@ export const ui = {
         'account.cover_alt': 'Capsule in the background of a dark ambience',
         'account.description': 'Register your pilots and manage your account',
 
+        'account.referral.page_title': 'Referral links',
+        'account.referral.description': 'Copy referral links for external pages and share it with others. Review your statistics.',
+
         'groups.add.page_title': 'Add group',
 
         'groups.list.page_title': 'Special Interest Groups',
@@ -312,6 +315,7 @@ export const ui = {
         'icon.calendar.alt': 'EVE Online Calendar Icon',
         'icon.log.alt': 'EVE Online Log Icon',
         'icon.kill_report.alt': 'EVE Kill Report Icon',
+        'icon.browser.alt': 'EVE Browser Icon',
 
         'alliance_doctrines': 'Alliance Doctrines',
         'militia_doctrines': 'Militia Doctrines',
@@ -653,6 +657,7 @@ export const ui = {
         'page_finder.corporations.members.mains.description': 'List of alliance mains characters with its alts',
         'page_finder.corporations.applications.records.description': 'List of processed corporation applications',
         'page_finder.account.description': 'Your profile management page',
+        'page_finder.account.referral.description': 'Find external referral links and inspect your statistics',
         'page_finder.ships.description': 'Ships landing page',
         'page_finder.index.description': 'Minmatar.org landing page',
         'page_finder.ships.fitting.list.description': 'List of fittings',
@@ -1270,5 +1275,18 @@ export const ui = {
         'daytime': 'Daytime',
         'nighttime': 'Nighttime',
         'sleeptime': 'Sleeptime',
+        'referral_link': 'Referral link',
+        'referral_page': 'Click this icon to copy a referral link for this page and share it with others.',
+        'referral_links': 'Referral links',
+        'account_details': 'Account details',
+        'external_referrals': 'External referrals',
+        'get_referral_stats_error': 'An error occurred while fetching referral statistics.',
+        'number_clicks': 'NUMBER clicks',
+        'one_click': '1 click',
+        'total_number_clicks': 'NUMBER clicks total',
+        'total_one_click': '1 click total',
+        'deprecated': 'Deprecated',
+        'referral_stats': 'Referral stats',
+        'no_referrals': 'No referral from you clicked yet',
     },
 } as const;

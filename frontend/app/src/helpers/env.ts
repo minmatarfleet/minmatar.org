@@ -33,3 +33,7 @@ export const prod_error_messages = () => {
 export const is_disabled_ccpwgl = () => {
     return import.meta.env.DISABLED_CCPWGL ?? true
 }
+
+export const get_prod_url = () => {
+    return import.meta.env.PROD_URL ?? 'https://my.minmatar.org';
+}

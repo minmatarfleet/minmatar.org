@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -19,6 +19,8 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 import type { PageFinderUI } from '@dtypes/layout_components'
 import sitemap from '@json/sitemap.json'
+
+import { is_referral_url } from '@helpers/fetching/referrals'
 
 interface Props {
     [propName: string]: any;
@@ -59,10 +61,13 @@ const filter_pages = pages.map( (page) => {
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro'
 
 import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
 import Input from '@components/blocks/Input.astro';
+import ReferralLink from '@components/blocks/ReferralLink.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
@@ -163,28 +168,37 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                     }
                                 }`}
                             >
-                                <FlexInline
+                                <FixedFluid
                                     class="[ items-center ]"
                                     gap='var(--space-2xs)'
+                                    width='48px'
                                 >
                                     <picture>
                                         {page.icon &&
                                             <img loading="lazy" src={page.icon} height="48" width="48" alt={t(page.alt as any)} />
                                         }
                                     </picture>
-                                    <Flexblock gap='0' class="[ items-start ]">
-                                        <span class="[ truncate ]">
-                                            {t(`${page.slug}.page_title` as any)}
-                                            <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
-                                        </span>
-                                        {page?.description &&
-                                            <small>{t(page.description as any)}</small>
+                                    <FluidFixed width='32px' class="[ items-center grow ]">
+                                        <Flexblock gap='0' class="[ items-start ]">
+                                            <span class="[ truncate ]">
+                                                {t(`${page.slug}.page_title` as any)}
+                                                <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
+                                            </span>
+                                            {page?.description &&
+                                                <small>{t(page.description as any)}</small>
+                                            }
+                                            {page.path && page.path !== '/' &&
+                                                <small><code class="[ p-0 ]">{page.path}</code></small>
+                                            }
+                                        </Flexblock>
+                                        
+                                        {user && is_referral_url(page.path, lang) &&
+                                            <div>
+                                                <ReferralLink id={page.slug} user_id={user.user_id} pathname={page.path} />
+                                            </div>
                                         }
-                                        {page.path &&
-                                            <small><code class="[ p-0 ]">{page.path}</code></small>
-                                        }
-                                    </Flexblock>
-                                </FlexInline>
+                                    </FluidFixed>
+                                </FixedFluid>
                             </a>
                         )}
                     </Flexblock>

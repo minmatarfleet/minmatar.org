@@ -1,10 +1,45 @@
-<h1 {...Astro.props}>
-    <slot />
-</h1>
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+interface Props {
+    is_landing?:    boolean;
+}
+
+const {
+    is_landing = false,
+} = Astro.props
+
+import { is_referral_url } from '@helpers/fetching/referrals'
+const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ReferralLink from '@components/blocks/ReferralLink.astro';
+---
+
+<FlexInline class="[ !items-center ]" gap='var(--space-xs)'>
+    <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
+        <slot />
+    </h1>
+    {is_referral_page && user &&
+        <ReferralLink user_id={user.user_id} />
+    }
+</FlexInline>
 
 <style lang="scss">
     h1 {
         font-size: var(--step-1);
         transition: var(--fast-transition);
+
+        &.is-landing {
+            font-size: var(--step-5);
+        }
     }
 </style>

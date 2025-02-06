@@ -21,6 +21,9 @@ try {
     data_fetching_error = error.message
 }
 
+import { is_referral_url } from '@helpers/fetching/referrals'
+const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
+
 const {
     corporations = [],
     user_corporation_id = null,
@@ -35,6 +38,7 @@ import PageLanding from '@components/page/PageLanding.astro';
 import CorporationsSlider from '@components/blocks/CorporationsSlider.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import ReferralLink from '@components/blocks/ReferralLink.astro';
 
 const page_title = t('corporations.list.page_title');
 ---
@@ -61,6 +65,12 @@ const page_title = t('corporations.list.page_title');
             corporation_name: '',
         }`}
     >
+        {is_referral_page && user &&
+            <div class="[ fixed top-[var(--space-2xs)] left-[var(--space-xl)] ]">
+                <ReferralLink user_id={user.user_id} />
+            </div>
+        }
+
         <VerticalCenter class="[ min-h-[90vh] ]" gap="var(--space-xl)">
             {data_fetching_error ?
                 <ErrorRefetch

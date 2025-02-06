@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 const middleware_error = Astro.cookies.has('middleware_error') ? (Astro.cookies.get('middleware_error')?.value as string) : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
@@ -15,6 +15,15 @@ import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+import { check_referral_url } from '@helpers/fetching/referrals'
+await check_referral_url(
+	user ? user.user_id : 0,
+	Astro.url.pathname,
+	Astro.url.searchParams,
+	(Astro.locals as any)?.clientIP,
+	lang
+)
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])

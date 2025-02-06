@@ -5,6 +5,7 @@ const { t } = i18n(Astro.url)
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -32,7 +33,7 @@ const page_description = t('ships.leading_text');
                 padding_block="0"
             >
                 <Flexblock gap='var(--space-xl)'>
-                    <h1>{page_title}</h1>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p>{page_description}</p>
                 </Flexblock>
             </Wrapper>
