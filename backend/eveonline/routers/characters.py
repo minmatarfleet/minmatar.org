@@ -547,7 +547,7 @@ def get_character_tokens(request, character_id: int):
             continue
 
         scopes = []
-        for scope in token.scopes:
+        for scope in token.scopes.all():
             scopes.append(scope.name)
 
         response.append(
