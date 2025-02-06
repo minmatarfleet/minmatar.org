@@ -92,7 +92,7 @@ const page_title = t('intel.timers.history.page_title');
             </FlexInline>
             <FlexInline>
                 {can_add_timers &&
-                    <Button color={'green'} href={translatePath('/intel/timers/add')}>
+                    <Button color={'green'} href={translatePath('/intel/timers/add/')}>
                         <AddIcon slot="icon" />
                         {t('add_structure_timer')}
                     </Button>
@@ -102,7 +102,7 @@ const page_title = t('intel.timers.history.page_title');
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/intel/timers/active')}
+                href={translatePath('/intel/timers/active/')}
                 size='sm'
             >
                 {t('active_timers')}

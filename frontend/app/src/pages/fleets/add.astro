@@ -171,11 +171,11 @@ let eve_time = `${eve_datetime.getHours().toString().padStart(2, '0')}:${(timer 
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming')}>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming/')}>
                     <FleetIcon slot="icon" />
                     {t('upcoming_fleets')}
                 </Button>
-                <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history')}>
+                <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history/')}>
                     <HistoryIcon slot="icon" />
                     {t('fleet_history')}
                 </Button>

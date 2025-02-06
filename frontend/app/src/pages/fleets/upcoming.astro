@@ -115,7 +115,7 @@ const page_title = t('fleets.upcoming.page_title');
             </FlexInline>
             <FlexInline>
                 {can_add_fleets &&
-                    <Button color={'green'} href={translatePath('/fleets/add')}>
+                    <Button color={'green'} href={translatePath('/fleets/add/')}>
                         <AddIcon slot="icon" />
                         {t('schedule_fleet')}
                     </Button>
@@ -129,7 +129,7 @@ const page_title = t('fleets.upcoming.page_title');
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/fleets/history')}
+                href={translatePath('/fleets/history/')}
                 size='sm'
             >
                 {t('fleet_history')}
@@ -137,7 +137,7 @@ const page_title = t('fleets.upcoming.page_title');
 
             {can_view_srp &&
                 <Button
-                    href={translatePath('/fleets/srp')}
+                    href={translatePath('/fleets/srp/')}
                     size='sm'
                 >
                     {t('ship_replacement_program')}
