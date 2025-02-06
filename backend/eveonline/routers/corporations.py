@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 router = Router(tags=["Corporations"])
 
+FL33T_ID = 99011978
+BUILD_ID = 99012009
+
 
 class CorporationType(str, Enum):
     ALLIANCE = "alliance"
@@ -326,6 +329,31 @@ def get_corp_member_details(request, corporation_id: int):
             char.user_name = character.token.user.username
 
         response.append(char)
+
+    return response
+
+
+@router.get(
+    "/corporations/managed",
+    response=List[int],
+    auth=AuthBearer(),
+    summary="Get IDs of corporations the current user can manage",
+)
+def get_managed_corp_ids(request) -> List[int]:
+    response = []
+
+    user = request.user
+    team_access = user_in_team(user, PEOPLE_TEAM) or user_in_team(
+        user, TECH_TEAM
+    )
+
+    corporations = EveCorporation.objects.filter(
+        alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
+    ).prefetch_related("ceo__token__user")
+
+    for corp in corporations:
+        if team_access or corp.ceo.token.user == user:
+            response.append(corp.id)
 
     return response
 
