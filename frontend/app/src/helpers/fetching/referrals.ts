@@ -8,7 +8,6 @@ import type { PageFinderUI, ReferralLinkStatsUI } from '@dtypes/layout_component
 
 import sitemap from '@json/sitemap.json'
 import external_referrals from '@json/external-referrals.json'
-import { is_prod_mode } from '@helpers/env'
 
 export function is_referral_url(pathname:string, lang:'en') {
     const translatePath = useTranslatedPath(lang)
@@ -122,7 +121,7 @@ export const get_external_referrals = (user_id: number, lang:'en') => {
 
 export const get_referrable_pages = () => {
     const pages = sitemap.filter( (page:PageFinderUI) => {
-        if (!page.publish || is_prod_mode())
+        if (!page.publish)
             return false
 
         if (!page?.permissions)
