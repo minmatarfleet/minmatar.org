@@ -2,6 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+interface Props {
+    thin?:  boolean;
+}
+
+const {
+    thin = false,
+} = Astro.props
+
 const ALESIS_WICKED_ID = 2114830095
 const ROFLRAZZI_ID = 1654509865
 
@@ -12,7 +20,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 ---
 
-<div class="[ banner ]">
+<div class:list={[ 'banner', { thin } ]}>
     <img src="/images/structure_debris.png" height="238" width="452" />
     <Wrapper padding_block='0' padding_inline='var(--space-s)' max_width='360px' class="[ relative ]">
         <Flexblock>
@@ -53,6 +61,10 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
         display: flex;
         align-items: center;
         background-color: var(--fleet-red);
+
+        &.thin {
+            min-height: 142px;
+        }
 
         img {
             position: absolute;
