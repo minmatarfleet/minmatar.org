@@ -28,6 +28,7 @@ from eveonline.scopes import (
     FREIGHT_CHARACTER_SCOPES,
     MARKET_CHARACTER_SCOPES,
 )
+from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
 
 logger = logging.getLogger(__name__)
@@ -526,37 +527,31 @@ def get_user_characters(
     },
 )
 def get_character_tokens(request, character_id: int):
-    if character_id == 0:
-        return [
-            CharacterTokenInfo(
-                created=datetime.datetime.now(),
-                expires=datetime.datetime.now(),
-                can_refresh=True,
-                scopes=["one", "two"],
-            )
-        ]
-
     char = EveCharacter.objects.filter(character_id=character_id).first()
     if not char:
         return 404, ErrorResponse(detail="Character not found")
 
+    is_admin = (
+        request.user.is_superuser
+        or user_in_team(request.user, PEOPLE_TEAM)
+        or user_in_team(request.user, TECH_TEAM)
+    )
+
     response = []
 
     for token in char.tokens:
-        if token.user != request.user:
-            continue
+        if is_admin or token.user is request.user:
+            scopes = []
+            for scope in token.scopes.all():
+                scopes.append(scope.name)
 
-        scopes = []
-        for scope in token.scopes.all():
-            scopes.append(scope.name)
-
-        response.append(
-            CharacterTokenInfo(
-                created=token.created,
-                expires=token.expires,
-                can_refresh=token.can_refresh,
-                scopes=scopes,
+            response.append(
+                CharacterTokenInfo(
+                    created=token.created,
+                    expires=token.expires,
+                    can_refresh=token.can_refresh,
+                    scopes=scopes,
+                )
             )
-        )
 
     return response
