@@ -16,10 +16,14 @@ const {
     is_landing = false,
 } = Astro.props
 
+import { is_referral_url_debug } from '@helpers/fetching/referrals'
+const debug = is_referral_url_debug(Astro.url.pathname, lang)
+
 import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
@@ -28,6 +32,16 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
         <slot />
     </h1>
+    <div class="[ hidden ]">
+        <Flexblock>
+            <code>is_referral_page: {JSON.stringify(is_referral_page)}</code>
+            <code>user: {JSON.stringify(user)}</code>
+            <code>{debug !== undefined ? JSON.stringify(debug[0]) : 'undefined'}</code>
+            <code>{debug !== undefined ? JSON.stringify(debug[1]) : 'undefined'}</code>
+            <code>{debug !== undefined ? JSON.stringify(debug[2]) : 'undefined'}</code>
+            <code>{debug !== undefined ? JSON.stringify(debug[3]) : 'undefined'}</code>
+        </Flexblock>
+    </div>
     {is_referral_page && user &&
         <ReferralLink user_id={user.user_id} />
     }
