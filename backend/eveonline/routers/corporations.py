@@ -334,7 +334,7 @@ def get_corp_member_details(request, corporation_id: int):
 
 
 @router.get(
-    "/corporations/managed",
+    "/managed",
     response=List[int],
     auth=AuthBearer(),
     summary="Get IDs of corporations the current user can manage",
