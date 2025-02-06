@@ -1,24 +1,15 @@
-import { parse_response_error, query_string } from '@helpers/string'
-import type { SRP, SRPStatus, SRPRequest } from '@dtypes/api.minmatar.org'
+import { parse_response_error } from '@helpers/string'
+import type { ReferralLinkStats, ReferralLink } from '@dtypes/api.minmatar.org'
 
-const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
+const API_ENDPOINT = `${import.meta.env.API_URL}/api/referrals`
 
-export async function get_fleet_srp(access_token:string, srp_request:SRPRequest) {
+export async function get_link_stats(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
-    
-    const { fleet_id, status } = srp_request
 
-    const query_params = {
-        ...(fleet_id && { fleet_id }),
-        ...(status && { status }),
-    };
-
-    const query = query_string(query_params)
-
-    const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : ''}`
+    const ENDPOINT = `${API_ENDPOINT}/stats`
     const METHOD = 'GET'
 
     console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
@@ -30,25 +21,27 @@ export async function get_fleet_srp(access_token:string, srp_request:SRPRequest)
         })
 
         // console.log(response)
-
+        
         if (!response.ok)
             throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
         
-        return await response.json() as SRP[]
+        return await response.json() as ReferralLinkStats[]
     } catch (error) {
-        throw new Error(`Error fetching fleet SRPs: ${error.message}`);
+        throw new Error(`Error fetching links stats: ${error.message}`);
     }
 }
 
-export async function create_fleet_srp(access_token:string, fleet_id:number, external_killmail_link:string) {
+export async function record_referral(page:string, user_id:number, client_ip:string) {
     const data = JSON.stringify({
-        fleet_id: fleet_id,
-        external_killmail_link: external_killmail_link,
+        page: page,
+        user_id: user_id,
+        client_ip: client_ip,
     })
+
+    console.log(data)
 
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
     }
 
     const ENDPOINT = API_ENDPOINT
@@ -67,25 +60,21 @@ export async function create_fleet_srp(access_token:string, fleet_id:number, ext
 
         if (!response.ok)
             throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
-                
-        return (response.status === 200)
+        
+        return (response.status === 201)
     } catch (error) {
-        throw new Error(`Error creating fleet SRP: ${error.message}`);
+        throw new Error(`Error recording referral: ${error.message}`);
     }
 }
 
-export async function update_fleet_srp(access_token:string, status:SRPStatus, reimbursement_id:number) {
-    const data = JSON.stringify({
-        status: status,
-    })
-
+export async function get_links(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/${reimbursement_id}`
-    const METHOD = 'PATCH'
+    const ENDPOINT = `${API_ENDPOINT}/links`
+    const METHOD = 'GET'
 
     console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
 
@@ -93,7 +82,6 @@ export async function update_fleet_srp(access_token:string, status:SRPStatus, re
         const response = await fetch(ENDPOINT, {
             headers: headers,
             method: METHOD,
-            body: data,
         })
 
         // console.log(response)
@@ -101,8 +89,8 @@ export async function update_fleet_srp(access_token:string, status:SRPStatus, re
         if (!response.ok)
             throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
         
-        return (response.status === 200);
+        return await response.json() as ReferralLink[]
     } catch (error) {
-        throw new Error(`Error updating fleet SRP: ${error.message}`);
+        throw new Error(`Error fetching links stats: ${error.message}`);
     }
 }

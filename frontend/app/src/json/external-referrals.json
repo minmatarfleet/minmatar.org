@@ -1,0 +1,74 @@
+[
+    {
+        "name": "wiki_fw_plexing",
+        "title": "Faction Warfare Plexing",
+        "target": "https://wiki.minmatar.org/alliance/Academy/Faction_Warfare_Plexing",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_fw_advantage",
+        "title": "Advantage Guide",
+        "target": "https://wiki.minmatar.org/alliance/Academy/faction-warfare-advantage",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_bf_guide",
+        "title": "Battlefield Guide",
+        "target": "https://wiki.minmatar.org/guides/battlefields",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_rendezvouz",
+        "title": "Rendezvous sites in an AC Wolf",
+        "target": "https://wiki.minmatar.org/guides/rendezvous-wolf",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_fleet_guide",
+        "title": "New Player Fleet Guide",
+        "target": "https://wiki.minmatar.org/alliance/Academy/new-player-fleet-guide",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_mumble",
+        "title": "Mumble Setup",
+        "target": "https://wiki.minmatar.org/guides/Mumble-Setup",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_abyssals",
+        "title": "Abyssals",
+        "target": "https://wiki.minmatar.org/guides/Abyss",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_pochven",
+        "title": "Pochven Standings",
+        "target": "https://wiki.minmatar.org/guides/pochven-standings",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_angel_hunting",
+        "title": "Zohar's Chosen Angel Hunting",
+        "target": "https://wiki.minmatar.org/guides/zohar-hunting",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_lvl_5_missions",
+        "title": "Level 5 Mission Farming",
+        "target": "https://wiki.minmatar.org/guides/level5s",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_overview_guide",
+        "title": "Overview Guide",
+        "target": "https://wiki.minmatar.org/guides/Alesis-Overview-Guide",
+        "description": "Wiki guide"
+    },
+    {
+        "name": "wiki_bookmarks",
+        "title": "Bookmarks",
+        "target": "https://wiki.minmatar.org/alliance/Academy/Bookmarks",
+        "description": "Wiki guide"
+    }
+]

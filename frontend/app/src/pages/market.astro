@@ -12,6 +12,7 @@ const is_superuser = (user ? user?.is_superuser : false)
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -42,7 +43,7 @@ const leading_text = t('market.leading_text');
                 padding_block="0"
             >
                 <Flexblock gap='var(--space-xl)'>
-                    <h1>{page_title}</h1>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p>{leading_text}</p>
                 </Flexblock>
             </Wrapper>

@@ -1,4 +1,3 @@
-
 import { getLangFromUrl, useTranslations, useTranslatedPath } from '@i18n/utils';
 
 export function i18n(url:URL) {

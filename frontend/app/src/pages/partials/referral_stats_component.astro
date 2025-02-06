@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import { prod_error_messages } from '@helpers/env'
+import { get_referral_stats } from '@helpers/fetching/referrals'
+import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
+
+let referral_stats:ReferralLinkStatsUI[] = []
+let get_referral_stats_error:string | false = false
+
+try {
+    referral_stats = await get_referral_stats(auth_token, user.user_id, lang)
+} catch (error) {
+    get_referral_stats_error = prod_error_messages() ? t('get_referral_stats_error') : error.message
+}
+
+const total_clicks = referral_stats.reduce((c, stat) => c + stat.count, 0)
+
+const REFERRAL_STATS_PARTIAL_URL = translatePath('/partials/referral_stats_component/')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ReferralStats from '@components/blocks/ReferralStats.astro';
+---
+
+<div x-init={`total_clicks = ${total_clicks}; $el.remove()`} />
+
+{get_referral_stats_error ?
+    <ErrorRefetch
+        args={{
+            partial: REFERRAL_STATS_PARTIAL_URL,
+            message: get_referral_stats_error,
+            delay: delay,
+        }}
+    />
+    :
+    <ReferralStats referral_stats={referral_stats} />
+}

@@ -1,7 +1,7 @@
 [
     {
         "slug": "index",
-        "path": "",
+        "path": "/",
         "icon": "/images/fleet-logo-square.svg",
         "publish": true,
         "description": "page_finder.index.description",
@@ -12,6 +12,15 @@
         "path": "/account/",
         "publish": true,
         "description": "page_finder.account.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
+        "slug": "account.referral",
+        "path": "/account/referrals",
+        "publish": true,
+        "description": "page_finder.account.referral.description",
         "permissions" : {
             "auth": true
         }
@@ -326,6 +335,9 @@
         "path": "/character/assets/user/",
         "publish": true,
         "icon": "/images/icons/48px-Assets.png",
-        "description": "page_finder.assets.user.description"
+        "description": "page_finder.assets.user.description",
+        "permissions" : {
+            "auth": true
+        }
     }
 ]

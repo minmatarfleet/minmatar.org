@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -43,6 +43,9 @@ const NEY_YEAR_EVE_DECORATION = is_seasonal_date('12-31', '12-31')
 const WINTER_NEXUS_DECORATION = !NEY_YEAR_EVE_DECORATION ? is_seasonal_date('12-05', '01-06') : false
 const CRIMSON_HARVEST_DECORATION = is_seasonal_date('10-03', '11-05')
 
+import { is_referral_url } from '@helpers/fetching/referrals'
+const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
+
 import { query_string } from '@helpers/string';
 import { is_disabled_ccpwgl } from '@helpers/env';
 
@@ -75,6 +78,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
 import NewsFed from '@components/blocks/NewsFed.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ReferralLink from '@components/blocks/ReferralLink.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
@@ -162,6 +166,12 @@ const page_description = t('index.leading_text');
 				x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
 				x-init="$nextTick(() => init_ccpwgl())"
 			/>
+		}
+
+		{is_referral_page && user &&
+			<div class="[ fixed top-[var(--space-2xs)] left-[var(--space-xl)] ]">
+				<ReferralLink user_id={user.user_id} />
+			</div>
 		}
 
 		<Flexblock 

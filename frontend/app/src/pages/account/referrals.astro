@@ -1,0 +1,138 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+import { prod_error_messages } from '@helpers/env'
+import { get_external_referrals, get_referral_stats } from '@helpers/fetching/referrals'
+import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
+
+let referral_stats:ReferralLinkStatsUI[] = []
+const external_referrals_pages = get_external_referrals(user.user_id, lang)
+let get_referral_stats_error:string | false = false
+
+try {
+    referral_stats = await get_referral_stats(auth_token, user.user_id, lang)
+} catch (error) {
+    get_referral_stats_error = prod_error_messages() ? t('get_referral_stats_error') : error.message
+}
+
+const total_clicks = referral_stats.reduce((c, stat) => c + stat.count, 0)
+
+const REFERRAL_STATS_PARTIAL_URL = translatePath('/partials/referral_stats_component/')
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Button from '@components/blocks/Button.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ReferralStats from '@components/blocks/ReferralStats.astro';
+
+const page_title = t('account.referral.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true
+    }}
+>
+    <PageDefault
+        cover={{
+            image: "/images/account-cover.jpg",
+            image_990: "/images/account-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <FlexInline>
+                <Button class="[ !hidden md:!flex ]" href={translatePath('/account/')}>
+                    {t('account_details')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+        
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('account.referral.description')}</p>
+            </TextBox>
+
+            <Flexblock>
+                <ComponentBlock width='narrow'>
+                    <Flexblock gap='var(--space-l)' class="[ w-full ]">
+                        <h2>{t('external_referrals')}</h2>
+                        
+                        <Flexblock>
+                            {external_referrals_pages.map(page =>
+                                <FlexInline class="[ items-center ]">
+                                    <Flexblock class="basis-[450px]" gap='var(--space-3xs)'>
+                                        <a href={page.target} target="_blank">{page.name}</a>
+                                        <small>{page.decription}</small>
+                                    </Flexblock>
+                                    
+                                    <div>
+                                        <ClipboardButton id={page.slug} size='sm'>{page.link}</ClipboardButton>
+                                    </div>
+                                </FlexInline>
+                            )}
+                        </Flexblock>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock
+                        gap='var(--space-l)'
+                        class="[ w-full ]"
+                        x-data={`{
+                            total_clicks: ${total_clicks}
+                        }`}
+                    >
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h2>{t('referral_stats')}</h2>
+                            <small x-text={`total_clicks !== 1 ? '${t('total_number_clicks')}'.replace('NUMBER', total_clicks.toString()) : '${t('total_one_click')}'`}>
+                                {total_clicks !== 1 ? t('total_number_clicks').replace('NUMBER', total_clicks.toString()) : t('total_one_click')}
+                            </small>
+                        </Flexblock>
+
+                        {get_referral_stats_error ?
+                            <ErrorRefetch
+                                args={{
+                                    partial: REFERRAL_STATS_PARTIAL_URL,
+                                    message: get_referral_stats_error,
+                                    delay: 0,
+                                }}
+                            />
+                            :
+                            <ReferralStats referral_stats={referral_stats} />
+                        }
+                    </Flexblock>
+                </ComponentBlock>
+            </Flexblock>
+        </Flexblock>
+    </PageDefault>
+</Viewport>

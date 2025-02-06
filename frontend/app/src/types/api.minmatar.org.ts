@@ -534,11 +534,29 @@ export interface SRPRequest {
     status?:    SRPStatus;
 }
 
-
 export interface PostRequest {
     user_id?:       number;
     tag_id?:        number;
     page_size?:     number;
     page_num?:      number;
     status?:        PostStates;
+}
+
+export interface ReferralLinkStats {
+    name:       string;
+    user_id:    number;
+    referrals:  number;
+}
+
+export interface ReferralLink {
+    name:       string;
+    link:       string;
+}
+
+export interface ExternalReferralLink {
+    name:       string;
+    slug:       string;
+    link:       string;
+    target:     string;
+    decription: string;
 }
