@@ -215,11 +215,7 @@ def get_corporation_by_id(request, corporation_id: int):
         response["faction_id"] = faction.id
         response["faction_name"] = faction.name
 
-    # populate members
-    characters = EveCharacter.objects.filter(
-        corporation__corporation_id=corporation_id
-    )
-    for character in characters:
+    for character in corp_members(corporation):
         payload = {
             "character_id": character.character_id,
             "character_name": character.character_name,
@@ -310,14 +306,12 @@ def get_corporation_info(request, corporation_id: int):
 def get_corp_member_details(request, corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
 
-    if not corp_member_access_authorised(request.user, corporation):
+    if not can_manage_corp_members(request.user, corporation):
         return 403, ErrorResponse(detail="Not authorised")
 
     response = []
 
-    for character in EveCharacter.objects.filter(
-        corporation__corporation=corporation
-    ):
+    for character in corp_members(corporation):
         char = CorporationMemberDetails(
             character_id=character.character_id,
             character_name=character.character_name,
@@ -333,9 +327,7 @@ def get_corp_member_details(request, corporation_id: int):
     return response
 
 
-def corp_member_access_authorised(
-    user: User, corporation: EveCorporation
-) -> bool:
+def can_manage_corp_members(user: User, corporation: EveCorporation) -> bool:
     if corporation.ceo.token.user == user:
         return True
     if user_in_team(user, PEOPLE_TEAM):
@@ -343,3 +335,7 @@ def corp_member_access_authorised(
     if user_in_team(user, TECH_TEAM):
         return True
     return False
+
+
+def corp_members(corp: EveCorporation) -> List[EveCharacter]:
+    return EveCharacter.objects.filter(corporation__corporation_id=corp.id)
