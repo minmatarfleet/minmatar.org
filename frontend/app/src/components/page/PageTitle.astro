@@ -28,6 +28,7 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
         <slot />
     </h1>
+    <div class="[ hidden ]">{Astro.url.pathname}</div>
     {is_referral_page && user &&
         <ReferralLink user_id={user.user_id} />
     }
