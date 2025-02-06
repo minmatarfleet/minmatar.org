@@ -353,7 +353,7 @@ def get_managed_corp_ids(request) -> List[int]:
 
     for corp in corporations:
         if team_access or corp.ceo.token.user == user:
-            response.append(corp.id)
+            response.append(corp.corporation_id)
 
     return response
 
