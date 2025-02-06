@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -82,6 +83,13 @@ class UserCharacterResponse(BaseModel):
     user_name: str
     discord_id: str
     characters: List[UserCharacter]
+
+
+class CharacterTokenInfo(BaseModel):
+    created: datetime.datetime
+    expires: datetime.datetime
+    can_refresh: bool
+    scopes: List[str]
 
 
 @router.get(
@@ -449,7 +457,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
 def get_user_characters(
     request, discord_id: int = None, character_name: str = None
 ) -> UserCharacterResponse:
-    if not (request.user.is_superuser or request.user.id == 164):
+    if not request.user.is_superuser:
         return 403, ErrorResponse(detail="Not authorised")
 
     if discord_id and character_name:
@@ -501,6 +509,53 @@ def get_user_characters(
                 character_id=char.character_id,
                 character_name=char.character_name,
                 is_primary=(primary and char == primary.character),
+            )
+        )
+
+    return response
+
+
+@router.get(
+    "/{int:character_id}/tokens",
+    summary="Get ESI tokens for character by ID",
+    auth=AuthBearer(),
+    response={
+        200: List[CharacterTokenInfo],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_character_tokens(request, character_id: int):
+    if character_id == 0:
+        return [
+            CharacterTokenInfo(
+                created=datetime.datetime.now(),
+                expires=datetime.datetime.now(),
+                can_refresh=True,
+                scopes=["one", "two"],
+            )
+        ]
+
+    char = EveCharacter.objects.filter(character_id=character_id).first()
+    if not char:
+        return 404, ErrorResponse(detail="Character not found")
+
+    response = []
+
+    for token in char.tokens:
+        if token.user != request.user:
+            continue
+
+        scopes = []
+        for scope in token.scopes:
+            scopes.append(scope.name)
+
+        response.append(
+            CharacterTokenInfo(
+                created=token.created,
+                expires=token.expires,
+                can_refresh=token.can_refresh,
+                scopes=scopes,
             )
         )
 
