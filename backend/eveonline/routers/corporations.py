@@ -215,7 +215,10 @@ def get_corporation_by_id(request, corporation_id: int):
         response["faction_id"] = faction.id
         response["faction_name"] = faction.name
 
-    for character in corp_members(corporation):
+    characters = EveCharacter.objects.filter(
+        corporation__corporation_id=corporation_id
+    )
+    for character in characters:
         payload = {
             "character_id": character.character_id,
             "character_name": character.character_name,
@@ -311,7 +314,7 @@ def get_corp_member_details(request, corporation_id: int):
 
     response = []
 
-    for character in corp_members(corporation):
+    for character in corp_members(corporation_id):
         char = CorporationMemberDetails(
             character_id=character.character_id,
             character_name=character.character_name,
@@ -337,5 +340,5 @@ def can_manage_corp_members(user: User, corporation: EveCorporation) -> bool:
     return False
 
 
-def corp_members(corp: EveCorporation) -> List[EveCharacter]:
-    return EveCharacter.objects.filter(corporation__corporation_id=corp.id)
+def corp_members(corp_id: int):
+    return EveCharacter.objects.filter(corporation__corporation_id=corp_id)
