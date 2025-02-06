@@ -18,7 +18,7 @@
     },
     {
         "slug": "account.referral",
-        "path": "/account/referrals",
+        "path": "/account/referrals/",
         "publish": true,
         "description": "page_finder.account.referral.description",
         "permissions" : {
@@ -132,7 +132,7 @@
     },
     {
         "slug": "corporations.members.unregistered",
-        "path": "/alliance/corporations/members/unregistered",
+        "path": "/alliance/corporations/members/unregistered/",
         "description": "page_finder.corporations.members.unregistered.description",
         "publish": true,
         "keywords": [ "corporations" ],
@@ -142,7 +142,7 @@
     },
     {
         "slug": "corporations.members.mains",
-        "path": "/alliance/corporations/members/mains",
+        "path": "/alliance/corporations/members/mains/",
         "description": "page_finder.corporations.members.mains.description",
         "publish": true,
         "keywords": [ "corporations", "alts" ],
@@ -161,7 +161,7 @@
     {
         "slug": "fitting.list",
         "alt": "icon.fits.alt",
-        "path": "/ships/fitting/list",
+        "path": "/ships/fitting/list/",
         "publish": true,
         "icon": "/images/icons/48px-Fitting.png",
         "description": "page_finder.ships.fitting.list.description"
@@ -169,7 +169,7 @@
     {
         "slug": "doctrines",
         "alt": "icon.doctrines.alt",
-        "path": "/ships/doctrines/list",
+        "path": "/ships/doctrines/list/",
         "publish": true,
         "icon": "/images/icons/48px-Shiphangar.png",
         "description": "page_finder.ships.doctrines.description"
@@ -254,7 +254,7 @@
     {
         "slug": "intel.timers",
         "alt": "icon.timers.alt",
-        "path": "/intel/timers/active",
+        "path": "/intel/timers/active/",
         "publish": true,
         "icon": "/images/icons/48px-Calendaricon.png",
         "description": "page_finder.intel.timers.active.description",
@@ -264,7 +264,7 @@
     },
     {
         "slug": "intel.timers.history",
-        "path": "/intel/timers/history",
+        "path": "/intel/timers/history/",
         "publish": true,
         "description": "page_finder.intel.timers.history.description",
         "permissions" : {
@@ -273,7 +273,7 @@
     },
     {
         "slug": "intel.timers.add",
-        "path": "/intel/timers/add",
+        "path": "/intel/timers/add/",
         "publish": true,
         "description": "page_finder.intel.timers.add.description",
         "permissions" : {
@@ -293,7 +293,7 @@
     {
         "slug": "intel.moon_tracking",
         "alt": "icon.planet.alt",
-        "path": "/intel/moons",
+        "path": "/intel/moons/",
         "publish": true,
         "icon": "/images/icons/48px-Planets.png",
         "description": "page_finder.intel.moon_tracking.description",
@@ -304,7 +304,7 @@
     {
         "slug": "intel.combatlog",
         "alt": "icon.log.alt",
-        "path": "/intel/combatlog",
+        "path": "/intel/combatlog/",
         "publish": true,
         "icon": "/images/icons/48px-Log.png",
         "description": "page_finder.intel.combatlog.description"
