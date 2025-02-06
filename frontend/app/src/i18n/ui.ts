@@ -1287,6 +1287,6 @@ export const ui = {
         'total_one_click': '1 click total',
         'deprecated': 'Deprecated',
         'referral_stats': 'Referral stats',
-        'no_referrals': 'No referral from you clicked yet',
+        'no_referrals': 'No referrals from you have been clicked yet.',
     },
 } as const;
