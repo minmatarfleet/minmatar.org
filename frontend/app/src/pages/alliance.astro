@@ -58,6 +58,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import AllianceReel from '@components/blocks/AllianceReel.astro';
 import PostsList from '@components/blocks/PostsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
 
 const page_title = t('alliance.page_title');
 const leading_text = t('alliance.leading_text');
@@ -119,6 +120,10 @@ const leading_text = t('alliance.leading_text');
                     <PostsList posts={posts} total_pages={total_pages} current_page={1} /> :
                     t('no_posts')
             }
+
+            <Wrapper class="[ w-full ]" max_width="656px" padding_inline="0" padding_block="0" centered={true}>
+                <RatsWithGatsBanner />
+            </Wrapper>
         </Flexblock>
     </PageLanding>
 </Viewport>
