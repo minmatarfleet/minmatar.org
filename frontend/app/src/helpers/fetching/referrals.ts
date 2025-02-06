@@ -8,7 +8,6 @@ import type { PageFinderUI, ReferralLinkStatsUI } from '@dtypes/layout_component
 
 import sitemap from '@json/sitemap.json'
 import external_referrals from '@json/external-referrals.json'
-import { is_prod_mode } from '@helpers/env'
 
 export function is_referral_url(pathname:string, lang:'en') {
     const translatePath = useTranslatedPath(lang)
@@ -24,19 +23,6 @@ export function is_referral_url(pathname:string, lang:'en') {
     }
 }
 
-export function is_referral_url_debug(pathname:string, lang:'en') {
-    const translatePath = useTranslatedPath(lang)
-
-    try {
-        const referrable_pages = get_referrable_pages()
-        
-        const referral = referrable_pages.find( page => translatePath(page.link ?? '') === pathname)
-
-        return [ translatePath(referrable_pages[2].link ?? ''), pathname, referral, referrable_pages ]
-    } catch (error) {
-        return [ error.message ]
-    }
-}
 export async function check_referral_url(current_user_id:number, pathname:string, searchParams:URLSearchParams, clientIP:string, lang:'en') {
     const translatePath = useTranslatedPath(lang)
 
@@ -122,7 +108,7 @@ export const get_external_referrals = (user_id: number, lang:'en') => {
 
 export const get_referrable_pages = () => {
     const pages = sitemap.filter( (page:PageFinderUI) => {
-        if (!page.publish || is_prod_mode())
+        if (!page.publish)
             return false
 
         if (!page?.permissions)
