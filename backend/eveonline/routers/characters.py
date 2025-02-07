@@ -91,6 +91,7 @@ class CharacterTokenInfo(BaseModel):
     created: datetime.datetime
     expires: datetime.datetime
     can_refresh: bool
+    owner_hash: str
     scopes: List[str]
 
 
@@ -552,6 +553,7 @@ def get_character_tokens(request, character_id: int):
                     created=token.created,
                     expires=token.expires,
                     can_refresh=token.can_refresh,
+                    owner_hash=token.character_owner_hash,
                     scopes=scopes,
                 )
             )
