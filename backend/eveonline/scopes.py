@@ -44,14 +44,12 @@ MARKET_CHARACTER_SCOPES = [
     "esi-markets.read_corporation_orders.v1",
     "esi-markets.read_character_orders.v1",
     "esi-contracts.read_character_contracts.v1",
-    "esi-contracts.read_corporation_contracts.v1",
-] + CEO_SCOPES
+] + FREIGHT_CHARACTER_SCOPES
 
 EXECUTOR_CHARACTER_SCOPES = (
     [
         "esi-mail.send_mail.v1",
     ]
     + CEO_SCOPES
-    + FREIGHT_CHARACTER_SCOPES
     + MARKET_CHARACTER_SCOPES
 )

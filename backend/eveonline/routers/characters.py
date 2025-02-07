@@ -359,10 +359,10 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             scopes = ["publicData"]
         case TokenType.CEO:
             scopes = CEO_SCOPES
-        case TokenType.MARKET:
-            scopes = MARKET_CHARACTER_SCOPES
         case TokenType.FREIGHT:
             scopes = FREIGHT_CHARACTER_SCOPES
+        case TokenType.MARKET:
+            scopes = MARKET_CHARACTER_SCOPES
         case TokenType.EXECUTOR:
             scopes = EXECUTOR_CHARACTER_SCOPES
 
@@ -404,6 +404,24 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                     token.character_id,
                 )
                 token.delete()
+
+            token_count = Token.objects.filter(
+                character_id=character.character_id
+            ).count()
+            if token_count != 1:
+                logger.error(
+                    "Character %d (%s) has %d tokens after update",
+                    character.character_id,
+                    character.character_name,
+                    token_count,
+                )
+
+            if not character.token:
+                logger.error(
+                    "Character %d (%s) has no token set after update",
+                    character.character_id,
+                    character.character_name,
+                )
         else:
             logger.info(
                 "Creating new character %s with token",
