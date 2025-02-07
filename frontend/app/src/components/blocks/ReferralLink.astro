@@ -1,12 +1,13 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
     user_id?:   number;
     pathname?:  string;
     link?:      string;
     id?:        string;
+    position?:  'left' | 'right';
 }
 
 const {
@@ -14,6 +15,7 @@ const {
     pathname = translatePath(Astro.url.pathname),
     link,
     id = 'referral-link',
+    position = 'right',
 } = Astro.props
 
 const COPIED_LABEL_TIME_MS = 2000
@@ -31,10 +33,13 @@ import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
 ---
 
 <Wrapper
-    class="[ referral-link ]"
+    class:list={[ 'referral-link', 'relative', position ]}
     max_width='32px'
     padding_block='0'
     padding_inline='0'
+    x-data={`{
+        click_class: '',
+    }`}
 >
     <Tippy
         class="[ flex ]"
@@ -49,9 +54,6 @@ import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
             class="[ !pointer-events-auto ]"
             x-bind:class="click_class"
             x-on:click.stop.prevent={`copyFitToClipboard('${id}')`}
-            x-data={`{
-                click_class: '',
-            }`}
             x-on:click.throttle.750ms={`click_class = 'glow'; setTimeout(() => click_class = '', ${COPIED_LABEL_TIME_MS})`}
             x-init="$el.removeAttribute('disabled')"
             disabled
@@ -60,10 +62,26 @@ import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
         </StylessButton>
         <Textarea class="[ hidden ]" id={id} readonly>{`${link ? link : get_app_url(pathname)}?ref=${user_id}`}</Textarea>
     </Tippy>
+    <small class="[ animate-fade-in-up ]" x-show="click_class === 'glow'" style="display: none">{t('referral_copied')}</small>
 </Wrapper>
 
 <style lang="scss">
     .glow {
         filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+    }
+
+    .left small {
+        right: 40px;
+    }
+
+    .right small {
+        left: 40px;
+    }
+
+    small {
+        position: absolute;
+        top: 7px;
+        white-space: nowrap;
+        color: var(--fleet-yellow);
     }
 </style>
