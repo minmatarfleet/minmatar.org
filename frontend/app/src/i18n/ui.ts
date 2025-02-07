@@ -1288,5 +1288,6 @@ export const ui = {
         'deprecated': 'Deprecated',
         'referral_stats': 'Referral stats',
         'no_referrals': 'No referrals from you have been clicked yet.',
+        'referral_copied': 'Referral copied!',
     },
 } as const;
