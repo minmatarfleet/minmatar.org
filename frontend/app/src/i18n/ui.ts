@@ -975,7 +975,7 @@ export const ui = {
         'wyswyg_placeholder': 'Write your story on the right [Markdown](https://www.markdownguide.org/) compatible **WYSWYG** editor and review it with the preview on the left.\r\rHola Macaco',
         'visit_rat_bible': 'Visit The Rat Bible',
         'holy_rat_quotes': 'Holy Rat quotes',
-        'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community',
+        'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community.',
         'rat_quote': 'Rat Genesis 1:1 - ‘In the beginning, Rat created the holes and the cheese.’',
         'fetch_freight_routes_error': 'An error occurred while fetching freight routes.',
         'fetch_freight_cost_error': 'An error occurred while calculating freight cost.',
@@ -1289,5 +1289,6 @@ export const ui = {
         'referral_stats': 'Referral stats',
         'no_referrals': 'No referrals from you have been clicked yet.',
         'referral_copied': 'Referral copied!',
+        'corporations_descriptions': 'Meet the backbone of our alliance. We are recruiting.',
     },
 } as const;
