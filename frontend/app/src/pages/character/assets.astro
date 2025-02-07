@@ -11,8 +11,7 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-if (!auth_token || !user)
-    return HTTP_403_Forbidden()
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -35,7 +34,7 @@ let character_assets:AssetsUI = {
 }
 let get_character_assets_error:string | false = false
 try {
-    character_assets = await get_assets(auth_token, character_id)
+    character_assets = await get_assets(auth_token as string, character_id)
     
     const location_icons_sorted = character_assets.location_icons.map((i) => {
         i.assets = i.assets.sort((a, b) => a.name.localeCompare(b.name))

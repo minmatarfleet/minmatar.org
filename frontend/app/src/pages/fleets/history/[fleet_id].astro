@@ -17,11 +17,7 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
-const HOME_REDIRECT_URL = `${translatePath('/')}`
-
-if (!user)
-    return HTTP_403_Forbidden()
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 
