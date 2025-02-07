@@ -87,6 +87,7 @@ class UserCharacterResponse(BaseModel):
 
 
 class CharacterTokenInfo(BaseModel):
+    id: str
     created: datetime.datetime
     expires: datetime.datetime
     can_refresh: bool
@@ -527,8 +528,8 @@ def get_user_characters(
     },
 )
 def get_character_tokens(request, character_id: int):
-    char = EveCharacter.objects.filter(character_id=character_id).first()
-    if not char:
+    character = EveCharacter.objects.filter(character_id=character_id).first()
+    if not character:
         return 404, ErrorResponse(detail="Character not found")
 
     is_admin = (
@@ -539,7 +540,7 @@ def get_character_tokens(request, character_id: int):
 
     response = []
 
-    for token in char.tokens:
+    for token in character.tokens:
         if is_admin or token.user is request.user:
             scopes = []
             for scope in token.scopes.all():
@@ -547,6 +548,7 @@ def get_character_tokens(request, character_id: int):
 
             response.append(
                 CharacterTokenInfo(
+                    id=str(token.pk),
                     created=token.created,
                     expires=token.expires,
                     can_refresh=token.can_refresh,

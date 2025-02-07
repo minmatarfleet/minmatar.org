@@ -162,10 +162,8 @@ def update_character_killmails(eve_character_id):
     required_scopes = [
         "esi-killmails.read_killmails.v1",
     ]
-    token = Token.objects.filter(
-        character_id=eve_character_id, scopes__name__in=required_scopes
-    ).first()
-    if token is None or character.esi_suspended:
+    token = Token.get_token(character.character_id, required_scopes)
+    if character.esi_suspended or not token:
         logger.info(
             "Skipping killmail update for character %s", eve_character_id
         )
@@ -262,10 +260,11 @@ def update_corporation(corporation_id):
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        token = Token.objects.filter(
-            character_id=corporation.ceo.character_id,
-            scopes__name__in=required_scopes,
-        ).first()
+        token = Token.get_token(corporation.ceo.character_id, required_scopes)
+        if not token:
+            logger.warning("No valid CEO token for %s", corporation.name)
+            return
+        
         logger.info("Updating corporation members for %s", corporation.name)
         esi_members = (
             esi.client.Corporation.get_corporations_corporation_id_members(
