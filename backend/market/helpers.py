@@ -106,11 +106,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
 
 
 def create_character_market_contracts(character_id: int):
-    token = Token.objects.filter(
-        character_id=character_id,
-        scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-    ).first()
-
+    token = Token.get_token(character_id, MARKET_CHARACTER_SCOPES)
     if not token:
         logger.error(
             f"Character {character_id} does not have required scopes to fetch market contracts."
@@ -147,10 +143,6 @@ def create_corporation_market_contracts(corporation_id: int):
         logger.warning(f"Corporation {corporation_id} CEO has ESI suspended.")
         return
 
-    # token = Token.objects.filter(
-    #     character_id=corporation.ceo.character_id,
-    #     scopes__name__in=set(MARKET_CHARACTER_SCOPES),
-    # ).first()
     token = Token.get_token(
         corporation.ceo.character_id, MARKET_CHARACTER_SCOPES
     )

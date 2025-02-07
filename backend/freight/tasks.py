@@ -18,10 +18,12 @@ def update_contracts():
     """Update freight contracts."""
     logger.info("Updating contracts")
     required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
-    token = Token.objects.get(
-        scopes__name__in=required_scopes,
-        character_id=EveFreightContract.supported_ceo_id,
+    token = Token.get_token(
+        EveFreightContract.supported_ceo_id, required_scopes
     )
+    if not token:
+        logger.error("Unable to get valid EveFreightContract CEO token")
+        return
 
     contracts_data = (
         esi.client.Contracts.get_corporations_corporation_id_contracts(
