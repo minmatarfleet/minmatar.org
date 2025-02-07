@@ -11,8 +11,7 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-if (!auth_token || !user)
-    return HTTP_403_Forbidden()
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -30,7 +29,7 @@ import { get_skillsets } from '@helpers/fetching/characters'
 let character_skillsets:SkillsetsUI | null = null
 let get_character_skillsets_error:string | false = false
 try {
-    character_skillsets = await get_skillsets(auth_token, character_id)
+    character_skillsets = await get_skillsets(auth_token as string, character_id)
 } catch (error) {
     get_character_skillsets_error = prod_error_messages() ? t('get_character_skillsets_error') : error.message
 }

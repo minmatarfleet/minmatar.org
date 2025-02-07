@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -11,10 +10,7 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 import { semantic_list } from '@helpers/array';
 
@@ -39,7 +35,7 @@ let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
 
 try {
-    pilots = await get_characters(auth_token)
+    pilots = await get_characters(auth_token as string)
     alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
     if (user_character) {
