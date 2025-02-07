@@ -264,7 +264,7 @@ def update_corporation(corporation_id):
         if not token:
             logger.warning("No valid CEO token for %s", corporation.name)
             return
-        
+
         logger.info("Updating corporation members for %s", corporation.name)
         esi_members = (
             esi.client.Corporation.get_corporations_corporation_id_members(
