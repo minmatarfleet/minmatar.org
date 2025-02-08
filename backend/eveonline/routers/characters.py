@@ -382,7 +382,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 )
                 old_token = character.token
                 character.token = token
-                character.esi_token_level = token_type
+                character.esi_token_level = token_type.value
                 character.save()
                 old_token.delete()
             elif not character.token:
@@ -391,7 +391,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                     token.character_id,
                 )
                 character.token = token
-                character.esi_token_level = token_type
+                character.esi_token_level = token_type.value
                 character.save()
             elif token != character.token:
                 logger.info(
