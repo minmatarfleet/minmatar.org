@@ -54,6 +54,9 @@ class EveCharacter(models.Model):
     # True if ESI API calls should not be made for this character
     esi_suspended = models.BooleanField(default=False)
 
+    # The level of access to Eve Swagger Interface APIs granted by this character
+    esi_token_level = models.CharField(max_length=40, null=True, blank=True)
+
     # data
     skills_json = models.TextField(blank=True, default="{}")
     assets_json = models.TextField(blank=True, default="{}")
