@@ -16,6 +16,7 @@ from .helpers.skills import (
     create_eve_character_skillset,
     upsert_character_skills,
 )
+from .routers.characters import scope_group
 from .models import (
     EveCharacter,
     EveCharacterKillmail,
@@ -282,3 +283,25 @@ def update_corporation(corporation_id):
                     corporation.name,
                 )
                 EveCharacter.objects.create(character_id=member_id)
+
+
+@app.task
+def fixup_character_tokens():
+    """Fix incorrectly linked or identified ESI tokens."""
+    for character in EveCharacter.objects.all():
+        updated = False
+
+        tokens = Token.objects.filter(character_id=character.character_id)
+
+        if tokens.count() == 1 and not character.token:
+            # Character has a single tokem but it isn't linked
+            # so link it
+            character.token = tokens.first()
+            updated = True
+
+        if character.token and not character.esi_token_level:
+            character.esi_token_level = scope_group(character.token)
+            updated = True
+
+        if updated:
+            character.save()
