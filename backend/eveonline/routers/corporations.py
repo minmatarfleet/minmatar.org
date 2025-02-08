@@ -325,7 +325,7 @@ def get_corp_member_details(request, corporation_id: int):
             esi_suspended=character.esi_suspended,
             exempt=character.exempt,
             token_count=character.tokens.count(),
-            token_level=character.esi_token_level,
+            token_level=character.esi_token_level or "",
         )
         if character.token:
             char.user_name = character.token.user.username
