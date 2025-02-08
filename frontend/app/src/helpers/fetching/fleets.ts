@@ -22,7 +22,7 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
     const fleet_commanders = unique_values(api_fleets_id.map(api_fleet => api_fleet.fleet_commander))
     const fleet_commanders_profiles = await get_users_character(fleet_commanders)
 
-    return api_fleets_id.map( fleet => add_fleet_info(fleet, fleet_commanders_profiles.find(profile => profile.user_id === fleet?.fleet_commander)) )
+    return api_fleets_id.map( fleet => add_fleet_info(fleet, fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander)) )
 }
 
 export async function fetch_fleets(upcoming:boolean = true) {
