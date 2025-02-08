@@ -382,6 +382,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 )
                 old_token = character.token
                 character.token = token
+                character.esi_token_level = token_type
                 character.save()
                 old_token.delete()
             elif not character.token:
@@ -390,6 +391,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                     token.character_id,
                 )
                 character.token = token
+                character.esi_token_level = token_type
                 character.save()
             elif token != character.token:
                 logger.info(
@@ -415,6 +417,8 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                     character.character_id,
                     character.character_name,
                 )
+
+            fixup_character_token_level(character, token_count)
         else:
             logger.info(
                 "Creating new character %s with token",
@@ -456,6 +460,17 @@ def add_character(request, redirect_url: str, token_type: TokenType):
         return redirect(request.session["redirect_url"])
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
+
+
+def fixup_character_token_level(character, token_count):
+    if not character.esi_token_level:
+        if token_count == 1 and not character.token:
+            character.token = Token.objects.filter(
+                character_id=character.character_id
+            ).first()
+        if character.token:
+            character.esi_token_level = scope_group(character.token)
+            character.save()
 
 
 @router.get(
