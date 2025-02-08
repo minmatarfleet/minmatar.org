@@ -1,7 +1,6 @@
 import json
 import logging
 import datetime
-from enum import Enum
 from typing import List, Optional
 
 from django.contrib.auth.decorators import login_required
@@ -21,12 +20,15 @@ from eveonline.models import (
     EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import (
-    ADVANCED_SCOPES,
-    BASIC_SCOPES,
-    CEO_SCOPES,
-    EXECUTOR_CHARACTER_SCOPES,
-    FREIGHT_CHARACTER_SCOPES,
-    MARKET_CHARACTER_SCOPES,
+    # ADVANCED_SCOPES,
+    # BASIC_SCOPES,
+    # CEO_SCOPES,
+    # EXECUTOR_CHARACTER_SCOPES,
+    # FREIGHT_CHARACTER_SCOPES,
+    # MARKET_CHARACTER_SCOPES,
+    TokenType,
+    scopes_for,
+    scope_group,
 )
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
@@ -34,16 +36,6 @@ from discord.models import DiscordUser
 logger = logging.getLogger(__name__)
 
 router = Router(tags=["Characters"])
-
-
-class TokenType(Enum):
-    CEO = "CEO"
-    PUBLIC = "Public"
-    BASIC = "Basic"
-    ADVANCED = "Advanced"
-    MARKET = "Market"
-    FREIGHT = "Freight"
-    EXECUTOR = "Executor"
 
 
 class BasicCharacterResponse(BaseModel):
@@ -93,6 +85,7 @@ class CharacterTokenInfo(BaseModel):
     can_refresh: bool
     owner_hash: str
     scopes: List[str]
+    level: str
 
 
 @router.get(
@@ -349,22 +342,22 @@ def get_primary_character(request):
 @router.get("/add", summary="Add character using EVE Online SSO")
 def add_character(request, redirect_url: str, token_type: TokenType):
     request.session["redirect_url"] = redirect_url
-    scopes = None
-    match token_type:
-        case TokenType.BASIC:
-            scopes = BASIC_SCOPES
-        case TokenType.ADVANCED:
-            scopes = ADVANCED_SCOPES
-        case TokenType.PUBLIC:
-            scopes = ["publicData"]
-        case TokenType.CEO:
-            scopes = CEO_SCOPES
-        case TokenType.FREIGHT:
-            scopes = FREIGHT_CHARACTER_SCOPES
-        case TokenType.MARKET:
-            scopes = MARKET_CHARACTER_SCOPES
-        case TokenType.EXECUTOR:
-            scopes = EXECUTOR_CHARACTER_SCOPES
+    scopes = scopes_for(token_type)
+    # match token_type:
+    #     case TokenType.BASIC:
+    #         scopes = BASIC_SCOPES
+    #     case TokenType.ADVANCED:
+    #         scopes = ADVANCED_SCOPES
+    #     case TokenType.PUBLIC:
+    #         scopes = ["publicData"]
+    #     case TokenType.CEO:
+    #         scopes = CEO_SCOPES
+    #     case TokenType.FREIGHT:
+    #         scopes = FREIGHT_CHARACTER_SCOPES
+    #     case TokenType.MARKET:
+    #         scopes = MARKET_CHARACTER_SCOPES
+    #     case TokenType.EXECUTOR:
+    #         scopes = EXECUTOR_CHARACTER_SCOPES
 
     @login_required()
     @token_required(scopes=scopes, new=True)
@@ -430,6 +423,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             character = EveCharacter.objects.create(
                 character_id=token.character_id,
                 character_name=token.character_name,
+                esi_token_level=token_type,
                 token=token,
             )
         EveCharacterLog.objects.create(
@@ -573,6 +567,7 @@ def get_character_tokens(request, character_id: int):
                     can_refresh=token.can_refresh,
                     owner_hash=token.character_owner_hash,
                     scopes=scopes,
+                    level=scope_group(token),
                 )
             )
 

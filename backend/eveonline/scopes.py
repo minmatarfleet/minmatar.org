@@ -1,3 +1,8 @@
+from enum import Enum
+from typing import List
+
+from esi.models import Token
+
 BASIC_SCOPES = [
     "esi-corporations.read_structures.v1",
     "esi-fleets.read_fleet.v1",
@@ -53,3 +58,64 @@ EXECUTOR_CHARACTER_SCOPES = (
     + CEO_SCOPES
     + MARKET_CHARACTER_SCOPES
 )
+
+
+class TokenType(Enum):
+    CEO = "CEO"
+    PUBLIC = "Public"
+    BASIC = "Basic"
+    ADVANCED = "Advanced"
+    MARKET = "Market"
+    FREIGHT = "Freight"
+    EXECUTOR = "Executor"
+
+
+def scopes_for(token_type: TokenType):
+    """Returns the list of scopes for the specified token type"""
+    scopes = None
+    match token_type:
+        case TokenType.BASIC:
+            scopes = BASIC_SCOPES
+        case TokenType.ADVANCED:
+            scopes = ADVANCED_SCOPES
+        case TokenType.PUBLIC:
+            scopes = ["publicData"]
+        case TokenType.CEO:
+            scopes = CEO_SCOPES
+        case TokenType.FREIGHT:
+            scopes = FREIGHT_CHARACTER_SCOPES
+        case TokenType.MARKET:
+            scopes = MARKET_CHARACTER_SCOPES
+        case TokenType.EXECUTOR:
+            scopes = EXECUTOR_CHARACTER_SCOPES
+    return scopes
+
+
+def scope_group(token: Token) -> str | None:
+    """Returns the widest scope group that the token matches"""
+    if not Token:
+        return None
+
+    token_scopes = scope_names(token)
+
+    if token_scopes == sorted(EXECUTOR_CHARACTER_SCOPES):
+        return TokenType.EXECUTOR.value
+    if token_scopes == sorted(MARKET_CHARACTER_SCOPES):
+        return TokenType.MARKET.value
+    if token_scopes == sorted(FREIGHT_CHARACTER_SCOPES):
+        return TokenType.FREIGHT.value
+    if token_scopes == sorted(CEO_SCOPES):
+        return TokenType.CEO.value
+    if token_scopes == sorted(ADVANCED_SCOPES):
+        return TokenType.ADVANCED.value
+    if token_scopes == sorted(BASIC_SCOPES):
+        return TokenType.BASIC.value
+
+    return TokenType.PUBLIC.value
+
+
+def scope_names(token: Token) -> List[str]:
+    token_scopes = []
+    for scope in token.scopes.all():
+        token_scopes.append(scope.name)
+    return sorted(token_scopes)
