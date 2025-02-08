@@ -22,7 +22,6 @@ const CORPORATIONS_WITH_SLIDE = [
     'Minmatar Fleet Academy',
     'Exit-Strategy',
     'Soltech Armada',
-    'Protean Concept',
     'Criterion.',
 ]
 
@@ -35,7 +34,8 @@ import { get_alliance_logo } from '@helpers/eve_image_server';
 const MINMATAR_FLEET_HOLDINGS_ID = 98735318
 const BLACK_RIFTER_COFFIN_COMPANY_ID  = 98726032
 const VINDICTA_EXPEDITIONARY_ID  = 98760041
-const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY_ID, VINDICTA_EXPEDITIONARY_ID ]
+const PROTEAN_CONCEPT_ID = 98633005
+const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY_ID, VINDICTA_EXPEDITIONARY_ID, PROTEAN_CONCEPT_ID ]
 corporations = corporations.filter( (i) => !CORPORATIONS_FILTER.includes(i.corporation_id) )
 
 const pagination_icons:string[] = []
@@ -77,7 +77,6 @@ import RapidUnscheduledDisassemblySlide from '@components/blocks/RapidUnschedule
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import ExitStrategySlide from '@components/blocks/ExitStrategySlide.astro';
-import ProteanSlide from '@components/blocks/ProteanSlide.astro';
 import CriterionSlide from '@components/blocks/CriterionSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
@@ -138,13 +137,6 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Exit-Strategy' &&
                         <ExitStrategySlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
-                    {corporation.corporation_name == 'Protean Concept' &&
-                        <ProteanSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}

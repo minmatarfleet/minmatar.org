@@ -29,7 +29,8 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     ceo_character_id={BEARTHATCARES_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
-    picture_placement={picture_placement}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
 >
     <img slot="ships" class="[ jaguar ]" src="/images/corporations/rattini/jaguar.png" />
     <img slot="ships" class="[ scimitar ]" src="/images/corporations/rattini/scimitar.png" />

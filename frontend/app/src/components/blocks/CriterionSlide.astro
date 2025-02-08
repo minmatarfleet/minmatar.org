@@ -32,10 +32,12 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     ceo_character_id={BLAZING_BUNNY_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
-    picture_placement={picture_placement}
+    picture_placement={'left'}
+    mirror_slide={picture_placement === 'right'}
 >
     <StylessButton
         class="[ co-ceo ]"
+        slot="coceo"
         x-data={`{
             show_character_modal() {
                 show_modal({
@@ -69,7 +71,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         transform: scale(0.5);
         opacity: 0;
         height: 99%;
-        left: 0%;
+        left: calc(-1 * var(--space-2xl));
         top: 0;
 
         img {
