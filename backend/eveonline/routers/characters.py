@@ -391,7 +391,7 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 )
                 character.token = token
                 character.save()
-            else:
+            elif token != character.token:
                 logger.info(
                     "Character %s already has better token, throwing this one away",
                     token.character_id,
