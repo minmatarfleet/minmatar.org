@@ -8,12 +8,7 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { get_auth_url } from '@helpers/env'
-
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 import { prod_error_messages } from '@helpers/env'
 import { get_external_referrals, get_referral_stats } from '@helpers/fetching/referrals'
@@ -24,7 +19,7 @@ const external_referrals_pages = get_external_referrals(user.user_id, lang)
 let get_referral_stats_error:string | false = false
 
 try {
-    referral_stats = await get_referral_stats(auth_token, user.user_id, lang)
+    referral_stats = await get_referral_stats(auth_token as string, user.user_id, lang)
 } catch (error) {
     get_referral_stats_error = prod_error_messages() ? t('get_referral_stats_error') : error.message
 }
