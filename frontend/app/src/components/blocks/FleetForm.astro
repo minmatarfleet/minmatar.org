@@ -57,9 +57,12 @@ const no_audience_option = {
     value: -1
 } as SelectOptions
 
+const DEPRECATED_AUDIENCES_ID = [ 2 ]
+const filtered_audiences = audiences.filter(audience => !DEPRECATED_AUDIENCES_ID.includes(audience.id) )
+
 let AUDIENCES = {}
 const audiences_select_options = [  no_audience_option  ].concat(
-    audiences.map( (i):SelectOptions => {
+    filtered_audiences.map( (i):SelectOptions => {
         AUDIENCES[i.id] = i.display_name
         return { label: i.display_name, value: i.id }
     } )
@@ -83,6 +86,7 @@ const default_audience = fleet_audience_id ?? audiences_select_options[0].value
 const AUDIENCE_ICONS = {
     1: '/images/fleet-logo.svg',
     2: '/images/minmatar-logo.svg',
+    3: '/images/muscle-logo.png',
 }
 
 import Context from '@components/layout/Context.astro';
@@ -163,10 +167,10 @@ import Grid from '@components/compositions/Grid.astro';
                     <p>{t('fleets.add.form_info')}</p>
 
                     <Flexblock>
-                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                        <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
                             <label>{t('select_audience')}</label>
                             <FlexInline class="[ audiences ]">
-                                {audiences.map((option) => 
+                                {filtered_audiences.map((option) => 
                                     <StylessButton
                                         x-on:click={`audience = ${option.id}`}
                                         type="button"
@@ -181,7 +185,7 @@ import Grid from '@components/compositions/Grid.astro';
                                         />
                                     </StylessButton>
                                 )}
-                                <div class="[ opacity-0 ]">
+                                <div class="[ visually-hidden ]">
                                     <Select
                                         class="[ pointer-events-none ]"
                                         id="audience"
