@@ -59,6 +59,9 @@ const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
 const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
 
+import { marked } from 'marked'
+import { renderer } from '@helpers/marked';
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -280,6 +283,20 @@ const page_title = t('account.page_title');
                             <p class="[ no-options-text ]">{t('no_options_to_reset')}</p>
                         </BlockList>
                     </div>
+                </Flexblock>
+            </ComponentBlock>
+
+            <ComponentBlock
+                width='narrow'
+            >
+                <Flexblock gap='var(--space-l)' class="[ w-full ]">
+                    <h2>{t('troubleshooting')}</h2>
+
+                    <Flexblock
+                        class="[ post ]"
+                        set:html={marked.parse(t('troubleshooting_description'), { renderer })}
+                        gap='var(--space-l)'
+                    />
                 </Flexblock>
             </ComponentBlock>
 

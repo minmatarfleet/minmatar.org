@@ -42,7 +42,7 @@ body,
 .component {
     // background-color: var(--component-background);
 
-    h4, p {
+    h4, p, li {
         font-size: var(--step--1);
     }
 }
@@ -249,4 +249,13 @@ ul {
 
 ul {
     list-style-type: square;
+}
+
+ol,
+ul {
+    padding-left: 19px;
+
+    > li::marker {
+        color: var(--highlight);
+    }
 }

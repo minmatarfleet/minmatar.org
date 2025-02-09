@@ -20,7 +20,7 @@ delete attributes.class
     block_list_gap: gap,
 }}>
     .block-list {
-        gap: var(--block_list_gap);
+        --block-list--gap: var(--block_list_gap);
     }
 </style>
 
@@ -32,6 +32,7 @@ delete attributes.class
         flex-direction: column;
         flex-wrap: nowrap;
         justify-content: flex-start;
+        gap: var(--block-list--gap);
 
         &[data-mod="centered"] {
             align-items: center;
