@@ -1290,5 +1290,7 @@ export const ui = {
         'no_referrals': 'No referrals from you have been clicked yet.',
         'referral_copied': 'Referral copied!',
         'corporations_descriptions': 'Meet the backbone of our alliance. We are recruiting.',
+        'troubleshooting': 'Troubleshooting',
+        'troubleshooting_description': 'If you’re experiencing unexpected behavior on the website, such as issues adding characters, viewing fleets, or other problems, try the following steps (one at a time) to resolve it:\n\n1. Ensure you’re logged into your browser with the same Discord account you used to add the characters. You can log in to Discord [here](https://discord.com/app).\n2. Click the "Clear Cache" button above.\n3. Logout and log back in.\n\nIf none of the above solutions fix the issue, please report it in [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
     },
 } as const;
