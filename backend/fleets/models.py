@@ -352,6 +352,7 @@ class EveFleetAudience(models.Model):
     discord_voice_channel = models.CharField(
         max_length=255, null=True, blank=True
     )
+    add_to_schedule = models.BooleanField(default=True)
 
     def __str__(self):
         return str(self.name)

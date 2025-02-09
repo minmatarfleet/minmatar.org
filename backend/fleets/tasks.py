@@ -73,8 +73,9 @@ def update_fleet_schedule():
     message = "## Fleet Schedule\n"
 
     for fleet in fleets:
-        # pylint: disable=inconsistent-quotes
-        message += f"- {fleet.get_type_display()} | {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet.start_time.timestamp())}> LOCAL | <@{fleet.fleet_commander.token.user.discord_user.id}>\n"
+        if fleet.audience.add_to_schedule:
+            # pylint: disable=inconsistent-quotes
+            message += f"- {fleet.get_type_display()} | {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet.start_time.timestamp())}> LOCAL | <@{fleet.fleet_commander.token.user.discord_user.id}>\n"
 
     if not fleets:
         message += "- No upcoming fleets, go touch grass you nerd"
