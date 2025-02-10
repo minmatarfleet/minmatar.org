@@ -96,7 +96,10 @@ def update_contract(esi_contract):
             end_location = "Structure"
 
     completed_by = None
-    if esi_contract["acceptor_id"] != EveFreightContract.supported_corporation_id:
+    if (
+        esi_contract["acceptor_id"]
+        != EveFreightContract.supported_corporation_id
+    ):
         completed_by_character = EveCharacter.objects.filter(
             character_id=esi_contract["acceptor_id"]
         ).first()
