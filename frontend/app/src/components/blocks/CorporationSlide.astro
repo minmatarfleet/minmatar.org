@@ -11,6 +11,7 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     picture_placement:      'left' | 'right';
+    mirror_slide?:          boolean;
 }
 
 const {
@@ -20,6 +21,7 @@ const {
     corporation,
     is_user_corporation = false,
     picture_placement = 'left',
+    mirror_slide = false,
 } = Astro.props
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
@@ -35,9 +37,10 @@ import { get_corporation_logo } from '@helpers/eve_image_server';
 import { query_string } from '@helpers/string';
 import Wrapper from '@components/compositions/Wrapper.astro';
 ---
+
 <FixedFluid
     id={id}
-    class=" [ corporation-intro ][ w-full items-center ]"
+    class:list={[ 'corporation-intro',  'w-full items-center', { mirrorwed: mirror_slide } ]}
     width='650px'
     breakpoint='30%'
     fluid_first={picture_placement === 'left'}
@@ -46,7 +49,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
         padding_block='var(--space-s)'
         padding_inline='var(--space-s)'
     >
-        <Flexblock gap='var(--space-xl)' class="[ pb-32 lg:pb-0 ]">
+        <Flexblock gap='var(--space-xl)' class="[ content ][ pb-32 lg:pb-0 ]">
             <VerticalCenter>
                 <FixedFluid width='64px' class="[ items-center w-full ]">
                     <picture class="[ border ]">
@@ -84,6 +87,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
             >
                 <img src={ceo_image} height="496" width="940" />
             </StylessButton>
+            <slot name="coceo" />
             <slot name="ships" />
         </picture>
     </div>
@@ -164,6 +168,14 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 </style>
 
 <style lang="scss" is:global>
+    .mirrorwed {
+        transform: scaleX(-1);
+
+        .content > *:not(.co-ceo) {
+            transform: scaleX(-1);
+        }
+    }
+
     .swiper-slide-active {
         .ceo {
             animation: ceo ease-out 1.5s;

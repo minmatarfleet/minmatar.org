@@ -27,7 +27,8 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     ceo_character_id={SIN_ALARMA_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
-    picture_placement={picture_placement}
+    picture_placement='right'
+    mirror_slide={picture_placement === 'left'}
 >
     <img slot="ships" class="[ astero ]" src="/images/corporations/exitstrategy/astero.png" />
     <img slot="ships" class="[ legion ]" src="/images/corporations/exitstrategy/legion.png" />

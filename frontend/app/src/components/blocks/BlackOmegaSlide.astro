@@ -28,7 +28,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     ceo_character_id={IBN_KHATAB_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
-    picture_placement={picture_placement}
+    picture_placement='right'
+    mirror_slide={picture_placement === 'left'}
 >
     <img slot="ships" class="[ minokawa ]" src="/images/corporations/omega/minokawa.png" />
     <img slot="ships" class="[ vindicator ]" src="/images/corporations/omega/vindicator.png" />
