@@ -2,6 +2,7 @@ import logging
 
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from bravado.exception import HTTPNotModified
 
 from app.celery import app
 from eveonline.models import EveCharacter
@@ -25,12 +26,20 @@ def update_contracts():
         logger.error("Unable to get valid EveFreightContract CEO token")
         return
 
-    contracts_data = (
-        esi.client.Contracts.get_corporations_corporation_id_contracts(
-            corporation_id=EveFreightContract.supported_corporation_id,
-            token=token.valid_access_token(),
-        ).results()
-    )
+    try:
+        contracts_data = (
+            esi.client.Contracts.get_corporations_corporation_id_contracts(
+                corporation_id=EveFreightContract.supported_corporation_id,
+                token=token.valid_access_token(),
+            ).results()
+        )
+    except HTTPNotModified:
+        logger.debug(
+            "Contracts not modified for corp %d",
+            EveFreightContract.supported_corporation_id,
+        )
+        return
+
     contract_ids = set()
     for contract in contracts_data:
         if (
@@ -40,72 +49,7 @@ def update_contracts():
             == EveFreightContract.supported_corporation_id
         ):
             contract_ids.add(int(contract["contract_id"]))
-            start_id = int(contract["start_location_id"])
-            end_id = int(contract["end_location_id"])
-
-            start_location = "Unknown"
-            if 60000000 < start_id < 61000000:
-                system_id = (
-                    esi.client.Universe.get_universe_stations_station_id(
-                        station_id=start_id
-                    ).results()["system_id"]
-                )
-                system_name = (
-                    esi.client.Universe.get_universe_systems_system_id(
-                        system_id=system_id
-                    ).results()["name"]
-                )
-                start_location = system_name
-            else:
-                if EveStructure.objects.filter(id=start_id).exists():
-                    start_location = EveStructure.objects.get(id=start_id).name
-                else:
-                    start_location = "Structure"
-
-            end_location = "Unknown"
-            if 60000000 < end_id < 61000000:
-                system_id = (
-                    esi.client.Universe.get_universe_stations_station_id(
-                        station_id=end_id
-                    ).results()["system_id"]
-                )
-                system_name = (
-                    esi.client.Universe.get_universe_systems_system_id(
-                        system_id=system_id
-                    ).results()["name"]
-                )
-                end_location = system_name
-            else:
-                if EveStructure.objects.filter(id=end_id).exists():
-                    end_location = EveStructure.objects.get(id=end_id).name
-                else:
-                    end_location = "Structure"
-
-            completed_by = None
-            if (
-                contract["acceptor_id"]
-                != EveFreightContract.supported_corporation_id
-            ):
-                completed_by_character = EveCharacter.objects.filter(
-                    character_id=contract["acceptor_id"]
-                ).first()
-                if completed_by_character and completed_by_character.token:
-                    completed_by = completed_by_character.token.user
-
-            EveFreightContract.objects.update_or_create(
-                contract_id=contract["contract_id"],
-                defaults={
-                    "status": contract["status"],
-                    "start_location_name": start_location,
-                    "end_location_name": end_location,
-                    "volume": contract["volume"],
-                    "collateral": contract["collateral"],
-                    "reward": contract["reward"],
-                    "completed_by": completed_by,
-                    "date_issued": contract["date_issued"],
-                    "date_completed": contract["date_completed"],
-                },
-            )
+            update_contract(contract)
 
     # Update all hanging contracts
     contracts = EveFreightContract.objects.filter(
@@ -115,3 +59,61 @@ def update_contracts():
         if int(contract.contract_id) not in contract_ids:
             contract.status = "expired"
             contract.save()
+
+
+def update_contract(esi_contract):
+    start_id = int(esi_contract["start_location_id"])
+    end_id = int(esi_contract["end_location_id"])
+
+    start_location = "Unknown"
+    if 60000000 < start_id < 61000000:
+        system_id = esi.client.Universe.get_universe_stations_station_id(
+            station_id=start_id
+        ).results()["system_id"]
+        system_name = esi.client.Universe.get_universe_systems_system_id(
+            system_id=system_id
+        ).results()["name"]
+        start_location = system_name
+    else:
+        if EveStructure.objects.filter(id=start_id).exists():
+            start_location = EveStructure.objects.get(id=start_id).name
+        else:
+            start_location = "Structure"
+
+    end_location = "Unknown"
+    if 60000000 < end_id < 61000000:
+        system_id = esi.client.Universe.get_universe_stations_station_id(
+            station_id=end_id
+        ).results()["system_id"]
+        system_name = esi.client.Universe.get_universe_systems_system_id(
+            system_id=system_id
+        ).results()["name"]
+        end_location = system_name
+    else:
+        if EveStructure.objects.filter(id=end_id).exists():
+            end_location = EveStructure.objects.get(id=end_id).name
+        else:
+            end_location = "Structure"
+
+    completed_by = None
+    if esi_contract["acceptor_id"] != EveFreightContract.supported_corporation_id:
+        completed_by_character = EveCharacter.objects.filter(
+            character_id=esi_contract["acceptor_id"]
+        ).first()
+        if completed_by_character and completed_by_character.token:
+            completed_by = completed_by_character.token.user
+
+    EveFreightContract.objects.update_or_create(
+        contract_id=esi_contract["contract_id"],
+        defaults={
+            "status": esi_contract["status"],
+            "start_location_name": start_location,
+            "end_location_name": end_location,
+            "volume": esi_contract["volume"],
+            "collateral": esi_contract["collateral"],
+            "reward": esi_contract["reward"],
+            "completed_by": completed_by,
+            "date_issued": esi_contract["date_issued"],
+            "date_completed": esi_contract["date_completed"],
+        },
+    )
