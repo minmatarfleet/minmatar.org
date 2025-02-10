@@ -86,8 +86,11 @@ import Progress from '@components/blocks/Progress.astro';
             height: var(--sikillset-height);
             top: 0;
             background-color: var(--sikillset-background-color);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
             transition: var(--fast-transition);
+
+            @media screen and (min-width: 980px) {
+                backdrop-filter: blur(var(--transparency-backdrop-blur));
+            }
         }
 
         &:before {
@@ -105,9 +108,12 @@ import Progress from '@components/blocks/Progress.astro';
         }
 
         .background {
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
             background-color: var(--sikillset-background-color);
             transition: var(--fast-transition);
+
+            @media screen and (min-width: 980px) {
+                backdrop-filter: blur(var(--transparency-backdrop-blur));
+            }
         }
 
         > * {
