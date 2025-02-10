@@ -76,7 +76,7 @@ import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
-import NewsFed from '@components/blocks/NewsFed.astro';
+import NewsFeed from '@components/blocks/NewsFeed.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 
@@ -210,7 +210,7 @@ const page_description = t('index.leading_text');
 						<a
 							class="[ w-[32px] neocom-button ]"
 							data-tippy-content={t('view_station_market_contracts')}
-							href={translatePath(`/market/contracts?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
+							href={translatePath(`/market/contracts/?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
 						>
 							<ContractsServiceEvEIcon />
 						</a>
@@ -286,11 +286,12 @@ const page_description = t('index.leading_text');
 					width='656px'
 					gap='var(--space-3xs)'
 					breakpoint='49%'
+					class="[ w-full ]"
 				>
 					<Wrapper
 						padding_block='0'
 						padding_inline='0'
-						class="[ relative ]"
+						class="[ relative w-full ]"
 						max_width='656px'
 					>
 						<Flexblock gap='var(--space-3xs)'>
@@ -307,7 +308,7 @@ const page_description = t('index.leading_text');
 						padding_block='0'
 						padding_inline='0'
 						max_width='656px'
-						class="[ relative z-10 ]"
+						class="[ relative z-10 w-full ]"
 					>
 						<MediaFeed />
 					</Wrapper>
@@ -317,13 +318,13 @@ const page_description = t('index.leading_text');
 					width='656px'
 					gap='var(--space-3xs)'
 					breakpoint='49%'
-					class="[ !items-start ]"
+					class="[ !items-start w-full ]"
 				>
 					<MetaGuideWidget />
-					<Flexblock gap='var(--space-3xs)'>
+					<Flexblock class="[ w-full ]" gap='var(--space-3xs)'>
 						{posts?.length > 0 &&
-							<ComponentBlock padding_block='0' padding_inline='0' max_width='656px'>
-								<NewsFed posts={posts} />
+							<ComponentBlock class="[ w-full ]" padding_block='0' padding_inline='0' max_width='656px'>
+								<NewsFeed posts={posts} />
 							</ComponentBlock>
 						}
 						<RatBibbleWidget						

@@ -85,10 +85,14 @@ const {
     }
 
     .toastui-editor-dark .toastui-editor-defaultUI-toolbar {
-        background-color: var(--light-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
         border: none;
         margin-left: calc(var(--max-text-width) + var(--space-m));
+        background-color: var(--light-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 
     .toastui-editor-defaultUI-toolbar {

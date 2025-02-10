@@ -54,8 +54,12 @@ const subheader_content = await Astro.slots.render('subheader');
 
 <style lang="scss">
     .sticky {
-        background-color: var(--dark-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+        background-color: var(--dark-transparency-background-mobile);
+
+        @media screen and (min-width: 980px) {
+            background-color: var(--dark-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 
     :global(.post-header > .wrapper > .flex-inline) {

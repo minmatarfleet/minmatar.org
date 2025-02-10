@@ -49,9 +49,9 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
             const slides = [
                 <div class="[ swiper-slide ]">
                     <Wrapper max_width="656px" padding_inline="var(--space-s)" padding_block="var(--component-padding-block)">
-                        <FluidFixed width='115px' class="[ !items-center ]">
+                        <FluidFixed width='115px' breakpoint='20%' class="[ !items-center ]">
                             <PostItem post={post} />
-                            <Button size='sm' href={translatePath(`/alliance/posts/${post.slug}-${post.post_id}`)}>
+                            <Button class="[ !hidden sm:!flex ]" size='sm' href={translatePath(`/alliance/posts/${post.slug}-${post.post_id}`)}>
                                 {t('read_more')}
                             </Button>
                         </FluidFixed>
@@ -61,7 +61,7 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
 
             if (index === 0) {
                 slides.push(
-                    <div class="[ swiper-slide ]">
+                    <div class="[ swiper-slide ][ red-slide ]">
                         <Wrapper max_width="656px" padding_inline="0" padding_block="0">
                             <RatsWithGatsBanner />
                         </Wrapper>
@@ -81,6 +81,11 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
         --swiper-pagination-bullet-border-radius: 0;
     }
 
+    .red-slide {
+        background-color: var(--fleet-red);
+        height: auto;
+    }
+
     .swiper-pagination {
         --swiper-pagination-color: var(--fleet-yellow);
         --swiper-pagination-bullet-inactive-color: var(--highlight);
@@ -89,7 +94,7 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
 
     .swiper-wrapper {
         flex-wrap: nowrap;
-        align-items: flex-start;
+        align-items: stretch;
     }
 
     .swiper-pagination-bullets.swiper-pagination-horizontal {
