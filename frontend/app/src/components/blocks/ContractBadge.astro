@@ -49,11 +49,6 @@ import Square from '@components/blocks/Square.astro';
             <canvas
                 x-data={`{
                     init() {
-                        if (window.innerWidth < 1280) {
-                            $el.closest('div').remove()
-                            return
-                        }
-
                         const ctx = $el.getContext('2d')
 
                         const gradient = ctx.createLinearGradient(0, 0, 0, 64)
