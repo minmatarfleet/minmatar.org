@@ -1,8 +1,10 @@
 from typing import List
-import esi
+from esi.clients import EsiClientProvider
 from esi.models import Token
 
 from .models import EveCharacter
+
+esi = EsiClientProvider()
 
 
 class EsiResponse:
