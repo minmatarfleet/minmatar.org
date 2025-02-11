@@ -1293,5 +1293,10 @@ export const ui = {
         'referral_copied': 'Referral copied!',
         'corporations_descriptions': 'Meet the backbone of our alliance. We are recruiting.',
         'troubleshooting': 'Troubleshooting',
+        'convert_countdown': 'Convert countdown',
+        'convert': 'Convert',
+        'hours': 'Hours',
+        'min': 'Min',
+        'secs': 'Secs',
     },
 } as const;

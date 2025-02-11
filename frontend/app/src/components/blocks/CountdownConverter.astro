@@ -1,0 +1,132 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    flatpcker_date_id:  string;
+    flatpcker_time_id:  string;
+    hidden?:            boolean;
+}
+
+const {
+    flatpcker_date_id,
+    flatpcker_time_id,
+    hidden = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Dialog from '@components/blocks/Dialog.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+
+import StylessButton from '@components/blocks/StylessButton.astro'
+import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
+---
+
+<div
+    class="[ countdown-converter ]"
+    x-data={`{
+        days: '',
+        hours: '',
+        min: '',
+        secs: '',
+        countdown_converter_open: false,
+        open_dialog() {
+            this.days = ''
+            this.hours = ''
+            this.min = ''
+            this.secs = ''
+
+            $nextTick(() => {
+                this.countdown_converter_open = true
+            })
+        },
+        close_dialog() {
+            this.countdown_converter_open = false
+        },
+        update_disabled() {
+            this.disabled_submit = !(this.character > 0 || this.corporation > 0)
+        },
+        convert() {
+            const now = new Date()
+
+            now.setDate(now.getDate() + (parseInt(this.days) > 0 ? parseInt(this.days) : 0))
+            now.setHours(now.getHours() + (parseInt(this.hours) > 0 ? parseInt(this.hours) : 0))
+            now.setMinutes(now.getMinutes() + (parseInt(this.minutes) > 0 ? parseInt(this.minutes) : 0))
+            now.setSeconds(now.getSeconds() + (parseInt(this.seconds) > 0 ? parseInt(this.seconds) : 0))
+
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+            const day = String(now.getDate()).padStart(2, "0");
+            const hour = String(now.getHours()).padStart(2, "0");
+            const minute = String(now.getMinutes()).padStart(2, "0");
+            const second = String(now.getSeconds()).padStart(2, "0");
+
+            const date = \`\${year}-\${month}-\${day}\`
+            const time = \`\${hour}:\${minute}:\${second}\`
+
+            const flatpcker_date = document.querySelector("#${flatpcker_date_id}")._flatpickr
+            const flatpcker_time = document.querySelector("#${flatpcker_time_id}")._flatpickr
+
+            flatpcker_date.setDate(date, true)
+            flatpcker_time.setDate(time, true)
+        }
+    }`}
+    x-effect="update_disabled()"
+>
+    <StylessButton
+        class="[ flex ]"
+        data-tippy-content={t('convert_countdown')}
+        x-on:click.stop.prevent="open_dialog()"
+        id="countdown-converter-button"
+        class={hidden ? '[ !hidden ]' : undefined}
+    >
+        <TimerIcon />
+    </StylessButton>
+
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        thin={true}
+        class="[ supplier-contract-dialog ][ w-full max-w-[600px] component overflow-y-auto ]"
+        x-bind:class="(countdown_converter_open ? 'open' : '')"
+        x-bind:aria-hidden="countdown_converter_open == false"
+        x-trap="countdown_converter_open"
+        x-bind:inert="!countdown_converter_open"
+        @keyup.escape.window="close_dialog()"
+        @mousedown.outside="open && close_dialog()"
+    >
+        <form
+            x-ref="countdown_form"
+            x-on:submit.prevent="convert()"
+        >
+            <Flexblock gap="var(--space-xs)">
+                <FlexInline class="[ w-full !flex-nowrap ]">
+                    <Input type="number" placeholder={t('days')} x-model="days" min="0" />
+                    <Input type="number" placeholder={t('hours')} x-model="hours" min="0" />
+                    <Input type="number" placeholder={t('min')} x-model="min" min="0" />
+                    <Input type="number" placeholder={t('secs')} x-model="secs" min="0" />
+                </FlexInline>
+                <FlexInline justification='flex-end'>
+                    <Button
+                        class="[ grow !text-center ]"
+                        size='sm'
+                        x-on:click="close_dialog()"
+                        type="submit"
+                    >
+                        {t('convert')}
+                    </Button>
+                    <Button
+                        type="button"
+                        size='sm'
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </form>
+    </Dialog>
+</div>
