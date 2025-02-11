@@ -24,7 +24,7 @@ import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
     </CollapsableButton>
  
     <div
-        class="[ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]"
+        class="[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]"
         x-show="expanded"
         x-anchor.bottom-end="document.getElementById(id)"
         style="display: none"
@@ -33,9 +33,3 @@ import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
         <slot />
     </div>
 </div>
-
-<style lang="scss">
-    div > div {
-        background-color: var(--light-transparency-background-mobile);
-    }
-</style>
