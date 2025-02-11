@@ -37,6 +37,9 @@ def discord_login_redirect(request: HttpRequest):
     code = request.GET.get("code")
     user = exchange_code(code)
 
+    if not user:
+        redirect_to_error_page(request, "exchange_token_failed")
+
     if DiscordUser.objects.filter(id=user["id"]).exists():
         logger.info("[DISCORD VIEW] :: User already exists. Logging in...")
         discord_user = DiscordUser.objects.get(id=user["id"])
@@ -105,7 +108,10 @@ def exchange_code(code: str):
     logger.info(
         "[DISCORD VIEW] :: Discord OAuth2 Token Response: %s", response.json()
     )
-    response.raise_for_status()
+    if response.status_code >= 400:
+        logger.error("Error %d exchanging Discord code", response.status_code)
+        return None
+    # response.raise_for_status()
     credentials = response.json()
     access_token = credentials["access_token"]
     response = requests.get(
@@ -115,3 +121,15 @@ def exchange_code(code: str):
     )
     user = response.json()
     return user
+
+
+def redirect_to_error_page(request, error_code):
+    """Redirects to a frontend authentication error page"""
+    try:
+        redirect_url = request.session["authentication_redirect_url"]
+    except KeyError:
+        redirect_url = "https://my.minmatar.org/auth/login"
+
+    redirect_url = redirect_url + "?error=" + error_code
+    logger.info("Redirecting to error URL... %s", redirect_url)
+    return redirect(redirect_url)
