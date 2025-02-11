@@ -1298,5 +1298,7 @@ export const ui = {
         'hours': 'Hours',
         'min': 'Min',
         'secs': 'Secs',
+        'exchange_token_failed': 'Error during token exchange.',
+        'auth_dialog_title': 'Authentication'
     },
 } as const;

@@ -1,22 +1,29 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
+import { query_string } from '@helpers/string';
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
 
 let token:string | null = null
 let user:User | null = null
+
 try {
+    const error = Astro.url.searchParams.get('error') as string
+
+    if (error)
+        throw new Error(t(error as any) !== undefined ? t(error as any) : t('exchange_token_failed'))
+
     token = Astro.url.searchParams.get('token') as string
     user = jose.decodeJwt(token)
     await get_characters(token)
 } catch (error) {
-    throw new Error(`Error during token exchange: ${error.message}`)
+    return Astro.redirect(`${translatePath('/')}?${query_string({ auth_error: error.message })}`)
 }
 
 const ONE_DAY_IN_MS = 24*60*60*1000
