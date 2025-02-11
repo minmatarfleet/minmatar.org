@@ -177,7 +177,7 @@ const page_description = t('index.leading_text');
 
 		<div x-show="show_stagging_info">
 			<Flexblock 
-				class="[ station-info ][ animate-fade-in-up !hidden xl:!block ]"
+				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
 				{staging === 'auga' ? <AugaInfo /> :
@@ -208,7 +208,7 @@ const page_description = t('index.leading_text');
 					}
 					{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
 						<a
-							class="[ w-[32px] neocom-button ]"
+							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 							data-tippy-content={t('view_station_market_contracts')}
 							href={translatePath(`/market/contracts/?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
 						>
@@ -216,7 +216,7 @@ const page_description = t('index.leading_text');
 						</a>
 					}
 					<a
-						class="[ w-[32px] neocom-button ]"
+						class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 						data-tippy-content={t('view_on_dotlan')}
 						href={`https://evemaps.dotlan.net/system/${STAGINGS_SYSTEMS[staging] ?? 'Sosala'}`}
 						target="_blank"

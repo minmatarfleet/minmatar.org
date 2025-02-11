@@ -60,7 +60,7 @@ import StylessButton from './StylessButton.astro';
     @keydown.escape.prevent.stop="close()"
 >
     <StylessButton
-        class="[ block w-[32px] neocom-button cursor-pointer ]"
+        class="[ neocom-button ][ block w-[32px] cursor-pointer animate-fade-in-up ]"
         data-tippy-content={t('station_assets')}
         @click.prevent="toggle()"
     >
