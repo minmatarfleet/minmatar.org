@@ -2,7 +2,7 @@ from typing import List
 import esi
 from esi.models import Token
 
-from models import EveCharacter
+from .models import EveCharacter
 
 
 class EsiResponse:

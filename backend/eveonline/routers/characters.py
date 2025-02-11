@@ -11,7 +11,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from backend.eveonline.client import esi_client
+from eveonline.client import esi_client
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
