@@ -8,6 +8,7 @@ interface Props {
     href?:              string;
     size?:              ButtonSizes;
     narrow?:            boolean;
+    centered?:          boolean;
     [propName: string]: any;
 }
 
@@ -17,6 +18,7 @@ const {
     href,
     size = 'lg',
     narrow = false,
+    centered = true,
     ...attributes
 } = Astro.props;
 
@@ -35,7 +37,7 @@ const Element = href ? 'a' : 'button';
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
 >
-    <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'}>
+    <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'} justification={centered ? 'center' : 'flex-start'}>
         <slot name="icon" />
         <slot />
     </FlexInline>
