@@ -11,7 +11,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.client import esi_client
+from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
@@ -604,7 +604,7 @@ def debug_character_esi(request, character_id: int):
     if not user_in_team(request.user, TECH_TEAM):
         return 403, ErrorResponse(detail="Not authorised")
 
-    response = esi_client(character_id).get_character_skills()
+    response = EsiClient(character_id).get_character_skills()
     if response.success():
         skills = response.results()
         return str(len(skills))

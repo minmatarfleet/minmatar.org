@@ -12,6 +12,11 @@ class EsiResponse:
     response: any
     response_code: int
 
+    def __init__(self, response_code, data=None, response=None):
+        self.data = data
+        self.response = response
+        self.response_code = response_code
+
     def success(self):
         """Returns true of the ESI call was successful."""
         return self.response_code <= 400
@@ -28,6 +33,12 @@ class EsiClient:
     """An instance of the ESI client for a specific character"""
 
     character_id: int
+
+    def __init__(self, character):
+        if isinstance(character, int):
+            self.character_id = character
+        elif isinstance(character, EveCharacter):
+            self.character_id = character.character_id
 
     def get_valid_token(self, required_scopes: List[str]) -> Token:
         if not self.character_id:
@@ -46,7 +57,7 @@ class EsiClient:
         """Returns the skills for the character this ESI client was created for."""
         token = self.get_valid_token(["esi-skills.read_skills.v1"])
         if not token:
-            return EsiResponse(data=None, response=None, response_code=999)
+            return EsiResponse(999)
 
         operation = esi.client.Skills.get_characters_character_id_skills(
             character_id=self.character_id,
@@ -57,13 +68,3 @@ class EsiClient:
         return EsiResponse(
             data=data["skills"], response=response, response_code=200
         )
-
-
-def esi_client(character: EveCharacter | int) -> EsiClient:
-    """Return an ESI client instance for a particular Eve character."""
-    if isinstance(character, int):
-        return EsiClient(character_id=character)
-    elif isinstance(character, EveCharacter):
-        return EsiClient(character_id=character.character_id)
-    else:
-        raise ValueError("No valid character provided for EsiClient")
