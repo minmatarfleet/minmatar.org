@@ -13,7 +13,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
 
-import type { StagingType } from '@dtypes/layout_components'
+import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
 import { get_market_locations } from '@helpers/api.minmatar.org/market'
@@ -79,6 +79,7 @@ import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
 import NewsFeed from '@components/blocks/NewsFeed.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ReferralLink from '@components/blocks/ReferralLink.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
@@ -119,11 +120,25 @@ const BALLS_DEEP_ID = 98252708
 
 const staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : 'watermellon'
 
+const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
+if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
+
+const alert = auth_error ? {
+	title: t('auth_error_dialog_title'),
+	content: auth_error,
+} as Alert : false
+
 const page_title = t('index.page_title');
 const page_description = t('index.leading_text');
 ---
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+	title={page_title}
+	meta_description={page_description}
+	components={{
+		alert_dialog: true,
+	}}
+>
     <PageLanding
         cover={{
             image: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
@@ -149,6 +164,8 @@ const page_description = t('index.leading_text');
         }`}
         x-effect="update"
     >
+		{alert && <ShowAlert alert={alert} /> }
+
 		{!DISABLED_CCPWGL &&
 			<canvas
 				slot="cover"
