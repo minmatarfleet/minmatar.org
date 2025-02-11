@@ -11,6 +11,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
+from eveonline.client import esi_client
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
@@ -587,3 +588,25 @@ def get_character_tokens(request, character_id: int):
             )
 
     return response
+
+
+@router.get(
+    "/{int:character_id}/debug",
+    summary="ESI debugging",
+    auth=AuthBearer(),
+    response={
+        200: str,
+        403: ErrorResponse,
+    },
+)
+def debug_character_esi(request, character_id: int):
+    """API endpoint for exploring the ESI client"""
+    if not user_in_team(request.user, TECH_TEAM):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    response = esi_client(character_id).get_character_skills()
+    if response.success():
+        skills = response.results()
+        return str(len(skills))
+    else:
+        return f"Error {response.response_code}"
