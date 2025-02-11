@@ -20,10 +20,15 @@ try {
         throw new Error(t(error as any) !== undefined ? t(error as any) : t('exchange_token_failed'))
 
     token = Astro.url.searchParams.get('token') as string
+
+    if (!token)
+        throw new Error(t('invalid_token'))
+    
     user = jose.decodeJwt(token)
     await get_characters(token)
 } catch (error) {
-    return Astro.redirect(`${translatePath('/')}?${query_string({ auth_error: error.message })}`)
+    Astro.cookies.set('auth_error', error.message, { path: '/' })
+    return Astro.redirect(translatePath('/'))
 }
 
 const ONE_DAY_IN_MS = 24*60*60*1000

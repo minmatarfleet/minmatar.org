@@ -124,7 +124,7 @@ const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_err
 if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
 
 const alert = auth_error ? {
-	title: t('auth_dialog_title'),
+	title: t('auth_error_dialog_title'),
 	content: auth_error,
 } as Alert : false
 
