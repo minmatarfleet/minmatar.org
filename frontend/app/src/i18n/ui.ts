@@ -1301,5 +1301,6 @@ export const ui = {
         'exchange_token_failed': 'Error during token exchange.',
         'auth_error_dialog_title': 'Authentication error',
         'invalid_token': 'Invalid token',
+        'set_fleet_in': 'Set fleet in...',
     },
 } as const;
