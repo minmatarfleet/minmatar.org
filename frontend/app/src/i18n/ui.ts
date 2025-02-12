@@ -660,6 +660,7 @@ export const ui = {
         'page_finder.corporations.applications.records.description': 'List of processed corporation applications',
         'page_finder.account.description': 'Your profile management page',
         'page_finder.account.referral.description': 'Find external referral links and inspect your statistics',
+        'page_finder.account.referral.troubleshooting': 'Find solutions to common issues while using our website',
         'page_finder.ships.description': 'Ships landing page',
         'page_finder.index.description': 'Minmatar.org landing page',
         'page_finder.ships.fitting.list.description': 'List of fittings',

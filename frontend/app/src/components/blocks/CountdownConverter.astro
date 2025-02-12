@@ -56,8 +56,8 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 
             now.setDate(now.getDate() + (parseInt(this.days) > 0 ? parseInt(this.days) : 0))
             now.setHours(now.getHours() + (parseInt(this.hours) > 0 ? parseInt(this.hours) : 0))
-            now.setMinutes(now.getMinutes() + (parseInt(this.minutes) > 0 ? parseInt(this.minutes) : 0))
-            now.setSeconds(now.getSeconds() + (parseInt(this.seconds) > 0 ? parseInt(this.seconds) : 0))
+            now.setMinutes(now.getMinutes() + (parseInt(this.min) > 0 ? parseInt(this.min) : 0))
+            now.setSeconds(now.getSeconds() + (parseInt(this.secs) > 0 ? parseInt(this.secs) : 0))
 
             let date
             let time

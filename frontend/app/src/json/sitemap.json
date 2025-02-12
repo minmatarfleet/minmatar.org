@@ -26,6 +26,15 @@
         }
     },
     {
+        "slug": "account.troubleshooting",
+        "path": "/account/troubleshooting/",
+        "publish": true,
+        "description": "page_finder.account.troubleshooting.description",
+        "permissions" : {
+            "auth": true
+        }
+    },
+    {
         "slug": "alliance",
         "alt": "icon.alliance.alt",
         "path": "/alliance/",
