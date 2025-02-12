@@ -95,6 +95,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
 import ThumbCard from '@components/blocks/ThumbCard.astro';
@@ -105,312 +106,331 @@ import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import CountdownConverter from '@components/blocks/CountdownConverter.astro';
 
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import Markdown from '@components/icons/buttons/Markdown.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
-import StylessButton from '@components/blocks/StylessButton.astro';
-import Grid from '@components/compositions/Grid.astro';
+import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 ---
 
-<form
-    method="POST"
-    x-data={`{
-        submitted: false,
-        fleet_type: '${default_fleet_type}',
-        eve_date: '${eve_date}',
-        eve_time: '${eve_time}',
-        location: ${default_location},
-        audience: ${default_audience},
-        doctrine_id: '${default_doctrine}',
-        local_datetime: '',
-        locations: ${JSON.stringify(FLEET_LOCATIONS)},
-        audiences: ${JSON.stringify(AUDIENCES)},
-        fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
-        get_images() {
-            let images = [{
-                src: '${get_player_icon(fleet_commander.character_id)}',
-                width: 64,
-                height: 64,
-            }];
+<div>
+    <CountdownConverter
+        hidden={true}
+        flatpcker_date_id='fleet_date'
+        flatpcker_time_id='fleet_time'
+        utc={true}
+    />
 
-            document.querySelectorAll('#doctrine-hx-target picture img').forEach((img) => {
-                images.push({
-                    src: img.getAttribute('src'),
+    <form
+        method="POST"
+        x-data={`{
+            submitted: false,
+            fleet_type: '${default_fleet_type}',
+            eve_date: '${eve_date}',
+            eve_time: '${eve_time}',
+            location: ${default_location},
+            audience: ${default_audience},
+            doctrine_id: '${default_doctrine}',
+            local_datetime: '',
+            locations: ${JSON.stringify(FLEET_LOCATIONS)},
+            audiences: ${JSON.stringify(AUDIENCES)},
+            fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
+            get_images() {
+                let images = [{
+                    src: '${get_player_icon(fleet_commander.character_id)}',
                     width: 64,
                     height: 64,
+                }];
+
+                document.querySelectorAll('#doctrine-hx-target picture img').forEach((img) => {
+                    images.push({
+                        src: img.getAttribute('src'),
+                        width: 64,
+                        height: 64,
+                    })
                 })
-            })
-            
-            return images
-        },
-        fleet_datetime(utc) {
-            const date_time = this.eve_date+' '+this.eve_time
-            const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
-                '${lang}',
-                ${import.meta.env.DATETIME_FORMAT}
-            )
+                
+                return images
+            },
+            fleet_datetime(utc) {
+                const date_time = this.eve_date+' '+this.eve_time
+                const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
+                    '${lang}',
+                    ${import.meta.env.DATETIME_FORMAT}
+                )
 
-            return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
-        },
-    }`}
-    x-on:submit="launch_confetti(get_images()); submitted = true;"
->
-    <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-        <Flexblock>
-            <ComponentBlock width='narrow'>
-                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                    <h2>{t('fleet_information')} (1/3)</h2>
-
-                    <p>{t('fleets.add.form_info')}</p>
-
-                    <Flexblock>
-                        <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
-                            <label>{t('select_audience')}</label>
-                            <FlexInline class="[ audiences ]">
-                                {filtered_audiences.map((option) => 
-                                    <StylessButton
-                                        x-on:click={`audience = ${option.id}`}
-                                        type="button"
-                                        data-tippy-content={option.display_name}
-                                    >
-                                        <img
-                                            class:list={{ selected: option.id === default_audience}}
-                                            x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                            src={AUDIENCE_ICONS[option.id]}
-                                            height="128"
-                                            width="128"
-                                        />
-                                    </StylessButton>
-                                )}
-                                <div class="[ visually-hidden ]">
-                                    <Select
-                                        class="[ pointer-events-none ]"
-                                        id="audience"
-                                        name="audience_id"
-                                        x-model="audience"
-                                        tabindex="-1"
-                                        required
-                                    >
-                                        {audiences_select_options.map((option) => 
-                                            <option value={option.value}>{option.label}</option>
-                                        )}
-                                    </Select>
-                                </div>
-                            </FlexInline>
-                        </FixedFluid>
-
-                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                            <label for="doctrine">{t('doctrine')}</label>
-                            <Select
-                                id="doctrine"
-                                name="doctrine_id"
-                                x-model="doctrine_id"
-                                hx-validate="true"
-                                hx-get={translatePath('/partials/doctrine_component')}
-                                hx-target="#doctrine-hx-target"
-                                hx-on--after-request="this.removeAttribute('disabled')"
-                                hx-trigger="load, change"
-                                hx-swap="innerHTML transition:true"
-                                hx-indicator=".loader"
-                            >
-                                {doctrines_select_options.map((option) => 
-                                    option.value === default_doctrine ?
-                                    <option value={option.value}>{option.label}</option> :
-                                    <option value={option.value} selected>{option.label}</option>
-                                )}
-                            </Select>
-                        </FixedFluid>
-
-                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                            <label for="fleet_date">{t('fleet_date_and_time')}</label>
-                            <Grid>
-                                <FlatPicker
-                                    id="fleet_date"
-                                    type="date"
-                                    x-model="eve_date"
-                                    name="eve_date"
-                                    required
-                                    value={eve_date}
-                                    options={{
-                                        minDate: "today",
-                                    } as any}
-                                />
-                                <FlatPicker
-                                    id="fleet_time"
-                                    x-model="eve_time"
-                                    name="eve_time"
-                                    value={eve_time}
-                                    required
-                                    options={{
-                                        enableTime: true,
-                                        noCalendar: true,
-                                        dateFormat: "H:i",
-                                        time_24hr: true,
-                                    } as any}
-                                />
-                            </Grid>
-                        </FixedFluid>
-
-                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                            <label for="type">{t('type')}</label>
-                            <Select id="type" x-model="fleet_type" name="fleet_type">
-                                {fleet_types_select_options.map((option) => 
-                                    <option value={option.value}>{option.label}</option>
-                                )}
-                            </Select>
-                        </FixedFluid>
-
-                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                            <label for="location">{t('location')}</label>
-                            <Select id="location" x-model="location" name="location">
-                                {locations_select_options.map((option) => 
-                                    <option value={option.value}>{option.label}</option>
-                                )}
-                            </Select>
-                        </FixedFluid>
-
-                        <Context>
-                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                                <label for="description">{t('description')}</label>
-                                <Textarea id="description" name="description" rows="5" required>{fleet?.description}</Textarea>
-                            </Flexblock>
-                            <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
-                                <FlexInline gap='var(--space-3xs)'>
-                                    <Markdown />
-                                    <small>{t('markdown_support')}</small>
-                                </FlexInline>
-                            </a>
-                        </Context>
-                    </Flexblock>
-                </Flexblock>
-            </ComponentBlock>
-
-            <Flexblock gap='var(--space-3xs)'>
+                return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
+            },
+        }`}
+        x-on:submit="launch_confetti(get_images()); submitted = true;"
+    >
+        <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
+            <Flexblock>
                 <ComponentBlock width='narrow'>
-                    <h2>{t('confirm')} (2/3)</h2>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('fleet_information')} (1/3)</h2>
+
+                        <p>{t('fleets.add.form_info')}</p>
+
+                        <Flexblock>
+                            <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
+                                <label>{t('select_audience')}</label>
+                                <FlexInline class="[ audiences ]">
+                                    {filtered_audiences.map((option) => 
+                                        <StylessButton
+                                            x-on:click={`audience = ${option.id}`}
+                                            type="button"
+                                            data-tippy-content={option.display_name}
+                                        >
+                                            <img
+                                                class:list={{ selected: option.id === default_audience}}
+                                                x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                src={AUDIENCE_ICONS[option.id]}
+                                                height="128"
+                                                width="128"
+                                            />
+                                        </StylessButton>
+                                    )}
+                                    <div class="[ visually-hidden ]">
+                                        <Select
+                                            class="[ pointer-events-none ]"
+                                            id="audience"
+                                            name="audience_id"
+                                            x-model="audience"
+                                            tabindex="-1"
+                                            required
+                                        >
+                                            {audiences_select_options.map((option) => 
+                                                <option value={option.value}>{option.label}</option>
+                                            )}
+                                        </Select>
+                                    </div>
+                                </FlexInline>
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="doctrine">{t('doctrine')}</label>
+                                <Select
+                                    id="doctrine"
+                                    name="doctrine_id"
+                                    x-model="doctrine_id"
+                                    hx-validate="true"
+                                    hx-get={translatePath('/partials/doctrine_component')}
+                                    hx-target="#doctrine-hx-target"
+                                    hx-on--after-request="this.removeAttribute('disabled')"
+                                    hx-trigger="load, change"
+                                    hx-swap="innerHTML transition:true"
+                                    hx-indicator=".loader"
+                                >
+                                    {doctrines_select_options.map((option) => 
+                                        option.value === default_doctrine ?
+                                        <option value={option.value}>{option.label}</option> :
+                                        <option value={option.value} selected>{option.label}</option>
+                                    )}
+                                </Select>
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <FlexInline class="[ !items-center ]" gap='var(--space-3xs)'>
+                                    <label for="timfleet_dateer_date">{t('fleet_date_and_time')}</label>
+                                    <StylessButton
+                                        class="[ flex ]"
+                                        data-tippy-content={t('set_fleet_in')}
+                                        x-on:click="document.getElementById('countdown-converter-button').click()"
+                                    >
+                                        <TimerIcon />
+                                    </StylessButton>
+                                </FlexInline>
+                                <Grid>
+                                    <FlatPicker
+                                        id="fleet_date"
+                                        type="date"
+                                        x-model="eve_date"
+                                        name="eve_date"
+                                        required
+                                        value={eve_date}
+                                        options={{
+                                            minDate: "today",
+                                        } as any}
+                                    />
+                                    <FlatPicker
+                                        id="fleet_time"
+                                        x-model="eve_time"
+                                        name="eve_time"
+                                        value={eve_time}
+                                        required
+                                        options={{
+                                            enableTime: true,
+                                            noCalendar: true,
+                                            dateFormat: "H:i",
+                                            time_24hr: true,
+                                        } as any}
+                                    />
+                                </Grid>
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="type">{t('type')}</label>
+                                <Select id="type" x-model="fleet_type" name="fleet_type">
+                                    {fleet_types_select_options.map((option) => 
+                                        <option value={option.value}>{option.label}</option>
+                                    )}
+                                </Select>
+                            </FixedFluid>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="location">{t('location')}</label>
+                                <Select id="location" x-model="location" name="location">
+                                    {locations_select_options.map((option) => 
+                                        <option value={option.value}>{option.label}</option>
+                                    )}
+                                </Select>
+                            </FixedFluid>
+
+                            <Context>
+                                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                    <label for="description">{t('description')}</label>
+                                    <Textarea id="description" name="description" rows="5" required>{fleet?.description}</Textarea>
+                                </Flexblock>
+                                <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
+                                    <FlexInline gap='var(--space-3xs)'>
+                                        <Markdown />
+                                        <small>{t('markdown_support')}</small>
+                                    </FlexInline>
+                                </a>
+                            </Context>
+                        </Flexblock>
+                    </Flexblock>
                 </ComponentBlock>
 
-                <ThumbCard
-                    thumb_name={fleet_commander.character_name}
-                    thumb_image={get_player_icon(fleet_commander.character_id, 512)}
-                    thumb_image_small={get_player_icon(fleet_commander.character_id, 512)}
-                    thumb_image_alt={fleet_commander.character_name}
-                    thumb_title={t('fleet_commander')}
-                    class="[ max-w-[var(--max-text-width)] ]"
-                >
-                    <div
-                        class="[ absolute top-0 left-0 ]"
-                        x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
-                    >
-                        <template x-if="fleet_type === 'strategic'">
-                            <div data-fleet-tip data-tippy-content={t('strategic_fleet')}>
-                                <StratopIcon />
-                            </div>
-                        </template>
-                        <template x-if="fleet_type === 'non_strategic'">
-                            <div data-fleet-tip data-tippy-content={t('non_strategic_fleet')}>
-                                <NonStrategicIcon />
-                            </div>
-                        </template>
-                        <template x-if="fleet_type === 'training'">
-                            <div data-fleet-tip data-tippy-content={t('training_fleet')}>
-                                <TrainingIcon />
-                            </div>
-                        </template>
-                    </div>
-
-                    <VerticalCenter>
-                        <Flexblock gap="var(--space-s-m)">
-                            <TextGroup
-                                class:list={{ 'text-red': default_audience < 1 }}
-                                x-bind:class="{ 'text-red': audience < 1 }"
-                                title={t('audience')}
-                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
-                            >
-                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                            </TextGroup>
-                            <TextGroup title={t('location')} x-text="locations[location]">
-                                {default_location_name}
-                            </TextGroup>
-                        </Flexblock>
-                    </VerticalCenter>
-                    
-                    <VerticalCenter>
-                        <Flexblock gap="var(--space-s-m)">
-                            <TextGroup
-                                title={t('eve_time')}
-                                class="[ sentence-cap ]"
-                                x-text="fleet_datetime()"
-                            >    
-                                {t('waiting_fleet_time')}
-                            </TextGroup>
-                            <TextGroup
-                                title={t('local_time')}
-                                class="[ sentence-cap ]"
-                                x-text="fleet_datetime(true)"
-                            >
-                                {t('waiting_fleet_time')}
-                            </TextGroup>
-                        </Flexblock>
-                    </VerticalCenter>
-                </ThumbCard>
-
-                <template x-if="doctrine_id !== '-1'">
-                    <ComponentBlock id="doctrine-hx-target" width='narrow'>
-                        <FlexInline class="[ items-center ]">
-                            <RifterIcon/>
-                            <p class="[ loading ]">{t('updating')}</p>
-                        </FlexInline>
+                <Flexblock gap='var(--space-3xs)'>
+                    <ComponentBlock width='narrow'>
+                        <h2>{t('confirm')} (2/3)</h2>
                     </ComponentBlock>
-                </template>
-            </Flexblock>
 
-            <ComponentBlock width='narrow'>
-                <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                    <h2>{t('fleet_submit')} (3/3)</h2>
-
-                    <Flexblock
-                        x-show="show"
-                        x-data={`{
-                            show: false,
-                            is_last_minute_fleet() {
-                                const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
-                                const now = new Date().getTime();
-                                const distance = fleet_time - now;
-                                const DISTANCE_15_MINUTES = 15*60*1000
-
-                                this.show = (distance <= DISTANCE_15_MINUTES && distance > 0)
-                            }
-                        }`}
-                        x-effect="eve_date && eve_time && is_last_minute_fleet()"
-                        style="display: none"
+                    <ThumbCard
+                        thumb_name={fleet_commander.character_name}
+                        thumb_image={get_player_icon(fleet_commander.character_id, 512)}
+                        thumb_image_small={get_player_icon(fleet_commander.character_id, 512)}
+                        thumb_image_alt={fleet_commander.character_name}
+                        thumb_title={t('fleet_commander')}
+                        class="[ max-w-[var(--max-text-width)] ]"
                     >
-                        <p>{t('fleet_starting_soon')}</p>
+                        <div
+                            class="[ absolute top-0 left-0 ]"
+                            x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
+                        >
+                            <template x-if="fleet_type === 'strategic'">
+                                <div data-fleet-tip data-tippy-content={t('strategic_fleet')}>
+                                    <StratopIcon />
+                                </div>
+                            </template>
+                            <template x-if="fleet_type === 'non_strategic'">
+                                <div data-fleet-tip data-tippy-content={t('non_strategic_fleet')}>
+                                    <NonStrategicIcon />
+                                </div>
+                            </template>
+                            <template x-if="fleet_type === 'training'">
+                                <div data-fleet-tip data-tippy-content={t('training_fleet')}>
+                                    <TrainingIcon />
+                                </div>
+                            </template>
+                        </div>
+
+                        <VerticalCenter>
+                            <Flexblock gap="var(--space-s-m)">
+                                <TextGroup
+                                    class:list={{ 'text-red': default_audience < 1 }}
+                                    x-bind:class="{ 'text-red': audience < 1 }"
+                                    title={t('audience')}
+                                    x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                                >
+                                    {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                                </TextGroup>
+                                <TextGroup title={t('location')} x-text="locations[location]">
+                                    {default_location_name}
+                                </TextGroup>
+                            </Flexblock>
+                        </VerticalCenter>
+                        
+                        <VerticalCenter>
+                            <Flexblock gap="var(--space-s-m)">
+                                <TextGroup
+                                    title={t('eve_time')}
+                                    class="[ sentence-cap ]"
+                                    x-text="fleet_datetime()"
+                                >    
+                                    {t('waiting_fleet_time')}
+                                </TextGroup>
+                                <TextGroup
+                                    title={t('local_time')}
+                                    class="[ sentence-cap ]"
+                                    x-text="fleet_datetime(true)"
+                                >
+                                    {t('waiting_fleet_time')}
+                                </TextGroup>
+                            </Flexblock>
+                        </VerticalCenter>
+                    </ThumbCard>
+
+                    <template x-if="doctrine_id !== '-1'">
+                        <ComponentBlock id="doctrine-hx-target" width='narrow'>
+                            <FlexInline class="[ items-center ]">
+                                <RifterIcon/>
+                                <p class="[ loading ]">{t('updating')}</p>
+                            </FlexInline>
+                        </ComponentBlock>
+                    </template>
+                </Flexblock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('fleet_submit')} (3/3)</h2>
+
+                        <Flexblock
+                            x-show="show"
+                            x-data={`{
+                                show: false,
+                                is_last_minute_fleet() {
+                                    const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
+                                    const now = new Date().getTime();
+                                    const distance = fleet_time - now;
+                                    const DISTANCE_15_MINUTES = 15*60*1000
+
+                                    this.show = (distance <= DISTANCE_15_MINUTES && distance > 0)
+                                }
+                            }`}
+                            x-effect="eve_date && eve_time && is_last_minute_fleet()"
+                            style="display: none"
+                        >
+                            <p>{t('fleet_starting_soon')}</p>
+                            <SwitchSquare
+                                class="[ w-full ]"
+                                name="start_tracking"
+                                label={t('start_tracking')}
+                                description={t('start_fleet_tracking_description')}
+                            />
+                        </Flexblock>
+
                         <SwitchSquare
                             class="[ w-full ]"
-                            name="start_tracking"
-                            label={t('start_tracking')}
-                            description={t('start_fleet_tracking_description')}
+                            name="disable_motd"
+                            label={t('disable_motd')}
+                            description={t('disable_motd_description')}
+                            checked={disable_motd}
                         />
+                        
+                        <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
                     </Flexblock>
-
-                    <SwitchSquare
-                        class="[ w-full ]"
-                        name="disable_motd"
-                        label={t('disable_motd')}
-                        description={t('disable_motd_description')}
-                        checked={disable_motd}
-                    />
-                    
-                    <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
-                </Flexblock>
-            </ComponentBlock>
-        </Flexblock>
-    </Wrapper>
-</form>
+                </ComponentBlock>
+            </Flexblock>
+        </Wrapper>
+    </form>
+</div>
 
 <style lang="scss">
     .audiences{

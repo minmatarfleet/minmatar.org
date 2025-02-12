@@ -6,12 +6,14 @@ interface Props {
     flatpcker_date_id:  string;
     flatpcker_time_id:  string;
     hidden?:            boolean;
+    utc?:               boolean;
 }
 
 const {
     flatpcker_date_id,
     flatpcker_time_id,
     hidden = false,
+    utc = false,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -57,15 +59,24 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             now.setMinutes(now.getMinutes() + (parseInt(this.minutes) > 0 ? parseInt(this.minutes) : 0))
             now.setSeconds(now.getSeconds() + (parseInt(this.seconds) > 0 ? parseInt(this.seconds) : 0))
 
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
-            const day = String(now.getDate()).padStart(2, "0");
-            const hour = String(now.getHours()).padStart(2, "0");
-            const minute = String(now.getMinutes()).padStart(2, "0");
-            const second = String(now.getSeconds()).padStart(2, "0");
+            let date
+            let time
 
-            const date = \`\${year}-\${month}-\${day}\`
-            const time = \`\${hour}:\${minute}:\${second}\`
+            if (${JSON.stringify(utc)}) {
+                const datetime = now.toISOString().replace("T", " ").split(".")[0]
+                date = datetime.split(' ')[0]
+                time = datetime.split(' ')[1]
+            } else {
+                const year = now.getFullYear()
+                const month = String(now.getMonth() + 1).padStart(2, "0")
+                const day = String(now.getDate()).padStart(2, "0")
+                const hour = String(now.getHours()).padStart(2, "0")
+                const minute = String(now.getMinutes()).padStart(2, "0")
+                const second = String(now.getSeconds()).padStart(2, "0")
+
+                date = \`\${year}-\${month}-\${day}\`
+                time = \`\${hour}:\${minute}:\${second}\`
+            }
 
             const flatpcker_date = document.querySelector("#${flatpcker_date_id}")._flatpickr
             const flatpcker_time = document.querySelector("#${flatpcker_time_id}")._flatpickr
@@ -116,7 +127,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         x-on:click="close_dialog()"
                         type="submit"
                     >
-                        {t('convert')}
+                        {t('set')}
                     </Button>
                     <Button
                         type="button"
