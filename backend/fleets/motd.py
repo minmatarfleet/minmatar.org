@@ -5,10 +5,11 @@ Formup: </font><font size="13" color="#ffd98d00"><a href="showinfo:2502//{{stati
 </font><font size="13" color="#ffffffff">Voice: </font><font size="13" color="#ffffe400"><loc><a href="{{discord_link}}">{{discord_name}}</a>
 </font><font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{doctrine_link}}">{{doctrine_name}}</a>
 <br>
-</font><font size="13" color="#ff00a99d"><a href="bookmarkFolder:11785719">Minmil Bookmarks</a></font><font size="13" color="#ffffe400"><a href="https://tools.minmatar.org/fleets/doctrines/stratop-battlecruiser-composition/"> </a>
-</font><font size="13" color="#ff6868e1"><a href="joinChannel:player_4a392b7086c611ecaf859abe94f5a39b">Minmatar Logistics Chain</a>
+</font>Bookmarks: <a href="bookmarkFolder:11785719">MinMil</a>
+Broadcast settings: <a href="sharedSetting:b6254caf7710e789c99b506ea2ccdc63dc800d91//1//3">DPS</url> | <a href="sharedSetting:ef2be973427c71f5e3785105ce3751882d14acc8//1//3">Logi</url> | <a href="sharedSetting:d2928f2f783f75d0c9815a843ecf0626500dae1d//1//3">Dual Role</url>
+Channels: <a href="joinChannel:player_4a392b7086c611ecaf859abe94f5a39b">Minmatar Logistics Chain</a>
 <br>
-</font><font size="13" color="#ff00ff00"><b>Fleet tracking is active, managed by https://my.minmatar.org/.</b></font>
+<font size="13" color="#ff00ff00"><b>Fleet tracking is active, managed by https://my.minmatar.org/.</b></font>
 """
 
 standing_fleet_motd = """
