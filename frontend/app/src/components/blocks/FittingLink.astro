@@ -1,0 +1,39 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    fitting_id: number;
+    [propName: string]: any;
+}
+
+const {
+    fitting_id,
+    ...attributes
+} = Astro.props
+
+const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
+const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
+
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+---
+
+<a
+    href={translatePath(`/ships/fitting/${fitting_id}`)}
+    x-bind:href={DISABLED_CCPWGL ? 'link' : undefined}
+    x-data={DISABLED_CCPWGL ? `{
+        render_enabled: $persist(true),
+        link: '${render_view}',
+        init() {
+            if (window.innerWidth > 1820 && this.render_enabled === true)
+                this.link = '${render_view}'
+            else
+                this.link = '${normal_view}'
+        }
+    }` : undefined}
+    {...attributes}
+>
+    <slot />
+</a>

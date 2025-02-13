@@ -54,6 +54,7 @@ import Grid from '@components/compositions/Grid.astro';
 import FittingCard from '@components/blocks/FittingCard.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
+import FittingLink from '@components/blocks/FittingLink.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -163,10 +164,10 @@ const page_title = t('fitting.list.page_title');
                             column_gap='var(--space-3xs)'
                         >
                             {group_fittings.map((fitting) =>
-                                <a
+                                <FittingLink
+                                    fitting_id={fitting.id}
                                     class="[ fitting-card-container ]"
                                     x-show="show_item($el)"
-                                    href={translatePath(`/ships/fitting/${fitting.id}`)}
                                 >
                                     <FittingCard
                                         fitting={fitting}
@@ -174,7 +175,7 @@ const page_title = t('fitting.list.page_title');
                                         subtitle={fitting.fitting_type}
                                         role="listitem"
                                     />
-                                </a>
+                                </FittingLink>
                             )}
                         </Grid>
                     </Flexblock>

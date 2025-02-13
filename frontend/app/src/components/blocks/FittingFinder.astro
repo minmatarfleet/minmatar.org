@@ -36,6 +36,7 @@ import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
 import Input from '@components/blocks/Input.astro';
 import Badge from '@components/blocks/Badge.astro';
+import FittingLink from '@components/blocks/FittingLink.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
@@ -126,24 +127,19 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                             <span>{t('no_fittings')}</span>
                         </div>
                         {fittings.map((fitting) =>
-                            <a
-                                href={translatePath(`/ships/fitting/${fitting.id}`)}
+                            <FittingLink
+                                fitting_id={fitting.id}
                                 fitting-finder-action="accept"
                                 fitting-finder-data={fitting.id}
-                                x-show="show_item($el)"
                                 x-on:click="(search = '')"
-                                x-data={`{
-                                    show_item() {
-                                        return filtered_fittings.includes(${fitting.id})
-                                    }
-                                }`}
+                                x-show={`filtered_fittings.includes(${fitting.id})`}
                             >
                                 <Badge
                                     title={fitting.fitting_name}
                                     image={get_item_icon(fitting.ship_id)}
                                     subtitle={fitting.ship_type}
                                 />
-                            </a>
+                            </FittingLink>
                         )}
                     </Flexblock>
 

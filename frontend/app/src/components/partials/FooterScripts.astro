@@ -1,3 +1,9 @@
+---
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+---
+
 <script is:inline src="/js/clipboard.js"></script>
 <script is:inline src="/js/numbers.js"></script>
 
@@ -106,9 +112,11 @@
     }
 </script>
 
-<script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl_int.min.js"></script>
-<script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl.js"></script>
-<script is:inline type="text/javascript" src="/js/ccpwgl/minmatar.js"></script>
+{!DISABLED_CCPWGL &&
+    <script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl_int.min.js"></script>
+    <script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl.js"></script>
+    <script is:inline type="text/javascript" src="/js/ccpwgl/minmatar.js"></script>
+}
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
