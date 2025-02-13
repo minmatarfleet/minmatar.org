@@ -7,6 +7,8 @@ Formup: </font><font size="13" color="#ffd98d00"><a href="showinfo:2502//{{stati
 <br>
 </font><font size="13" color="#ff00a99d"><a href="bookmarkFolder:11785719">Minmil Bookmarks</a></font><font size="13" color="#ffffe400"><a href="https://tools.minmatar.org/fleets/doctrines/stratop-battlecruiser-composition/"> </a>
 </font><font size="13" color="#ff6868e1"><a href="joinChannel:player_4a392b7086c611ecaf859abe94f5a39b">Minmatar Logistics Chain</a>
+Broadcast settings: <a href="sharedSetting:b6254caf7710e789c99b506ea2ccdc63dc800d91//1//3">DPS</a> <a href="sharedSetting:ef2be973427c71f5e3785105ce3751882d14acc8//1//3>Logi</a>
+ 
 <br>
 </font><font size="13" color="#ff00ff00"><b>Fleet tracking is active, managed by https://my.minmatar.org/.</b></font>
 """
