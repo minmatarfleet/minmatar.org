@@ -131,6 +131,13 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             </TextGroup>
                         </Flexblock>
                     </div>
+                    <div class="[ basis-[250px] ]">
+                        <Flexblock class="[ basis-[250px] ]">
+                            <TextGroup title={t('audience')} class="[ sentence-cap ]">
+                                {fleet.audience}
+                            </TextGroup>
+                        </Flexblock>
+                    </div>
                 </FlexInline>
 
                 <Flexblock gap='var(--space-3xs)'>
