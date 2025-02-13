@@ -42,6 +42,7 @@ from srp.router import router as srp_router
 from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
+from tech.router import router as tech_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -64,6 +65,7 @@ api.add_router("market", market_router)
 api.add_router("standingfleet", standingfleet_router)
 api.add_router("referrals", referrals_router)
 api.add_router("srp", srp_router)
+api.add_router("tech", tech_router)
 
 
 @api.exception_handler(UnauthorizedError)
