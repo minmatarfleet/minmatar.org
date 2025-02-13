@@ -9,18 +9,27 @@ def get_fleet_discord_notification(
     fleet_voice_channel,
     fleet_voice_channel_link,
     fleet_doctrine=None,
+    fleet_start_time=None,
+    is_pre_ping=False,
+    content="@everyone",
 ):
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
-    description += (
-        f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
-    )
+    if is_pre_ping:
+        description += f"**START TIME**: {fleet_start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet_start_time.timestamp())}> LOCAL\n"
+    else:
+        description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
     description += f"**LOCATION**: {fleet_location.upper()}\n"
     description += f"**AUDIENCE**: {fleet_audience.upper()}\n"
     description += f"\n**OBJECTIVE**: {fleet_description}\n"
 
+    if is_pre_ping:
+        title = "FLEET PRE-PING"
+    else:
+        title = "INCOMING PING TRANSMISSION..."
+
     payload = {
-        "content": "@everyone",
+        "content": content,
         "components": [
             {
                 "type": 1,
@@ -29,7 +38,7 @@ def get_fleet_discord_notification(
                         "style": 5,
                         "label": "Join Voice Channel",
                         "url": fleet_voice_channel_link,
-                        "disabled": False,
+                        "disabled": is_pre_ping,
                         "type": 2,
                     },
                     {
@@ -52,7 +61,7 @@ def get_fleet_discord_notification(
         "embeds": [
             {
                 "type": "rich",
-                "title": "INCOMING PING TRANSMISSION...",
+                "title": title,
                 "description": description,
                 "color": 0x18ED09,
                 "author": {

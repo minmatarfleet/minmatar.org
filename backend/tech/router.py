@@ -1,14 +1,14 @@
 import logging
+import datetime
 
 from ninja import Router
-
-# from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 
 from discord.client import DiscordClient
+from fleets.notifications import get_fleet_discord_notification
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -47,47 +47,20 @@ def discord_fleet_pre_ping(request):
             "Only admins and tech team members can access this endpoint."
         )
 
-    payload = {
-        "content": "@here",
-        "components": [
-            {
-                "type": 1,
-                "components": [
-                    {
-                        "style": 5,
-                        "label": "View Fleet Information",
-                        "url": "https://my.minmatar.org/fleets/history/0",
-                        "disabled": False,
-                        "type": 2,
-                    },
-                    {
-                        "style": 5,
-                        "label": "New Player Instructions",
-                        "url": "https://minmatar.org/guides/new-player-fleet-guide/",
-                        "disabled": False,
-                        "type": 2,
-                    },
-                ],
-            }
-        ],
-        "embeds": [
-            {
-                "type": "rich",
-                "title": "TEST PRE+PING",
-                "description": "Testing of fleet pre-pings",
-                "color": 0x18ED09,
-                "author": {
-                    "name": "Silvatek",
-                    "icon_url": "https://images.evetech.net/characters/2119722788/portrait?size=32",
-                },
-                "url": "https://my.minmatar.org/",
-                "footer": {
-                    "text": "Minmatar Fleet FC Team",
-                    "icon_url": "https://minmatar.org/wp-content/uploads/2023/04/Logo13.png",
-                },
-            }
-        ],
-    }
+    payload = get_fleet_discord_notification(
+        is_pre_ping=True,
+        content="Everyone",
+        fleet_id=99999,
+        fleet_type="NON STRATEGIC OPERATION",
+        fleet_location="Sosala",
+        fleet_audience="Tech Team",
+        fleet_commander_name="Silvatek",
+        fleet_commander_id=2119722788,
+        fleet_description="Testing pre-pings",
+        fleet_voice_channel="Testing",
+        fleet_voice_channel_link="",
+        fleet_start_time=datetime.datetime.now(),
+    )
 
     discord = DiscordClient()
 
