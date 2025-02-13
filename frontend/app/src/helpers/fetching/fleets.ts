@@ -15,14 +15,15 @@ const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
 
 export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true) {
-    let api_fleets_id:Fleet[]
+    let api_fleets:Fleet[]
 
-    api_fleets_id = await get_fleets_v3(access_token, upcoming ? 'upcoming' : 'recent')
+    api_fleets = await get_fleets_v3(access_token, upcoming ? 'upcoming' : 'recent')
+    api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
     
-    const fleet_commanders = unique_values(api_fleets_id.map(api_fleet => api_fleet.fleet_commander))
+    const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
     const fleet_commanders_profiles = await get_users_character(fleet_commanders)
 
-    return api_fleets_id.map( fleet => add_fleet_info(fleet, fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander)) )
+    return api_fleets.map( fleet => add_fleet_info(fleet, fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander)) )
 }
 
 export async function fetch_fleets(upcoming:boolean = true) {
