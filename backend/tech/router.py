@@ -58,7 +58,7 @@ def discord_fleet_pre_ping(request):
         fleet_commander_id=2119722788,
         fleet_description="Testing pre-pings",
         fleet_voice_channel="Testing",
-        fleet_voice_channel_link="",
+        fleet_voice_channel_link="https://my.minmatar.org/",
         fleet_start_time=datetime.datetime.now(),
     )
 
