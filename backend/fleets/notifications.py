@@ -16,7 +16,7 @@ def get_fleet_discord_notification(
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
     if is_pre_ping:
-        description += f"**START TIME**: {fleet_start_time}\n"
+        description += f"**START TIME**: {fleet_start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet_start_time.timestamp())}> LOCAL\n"
     else:
         description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
     description += f"**LOCATION**: {fleet_location.upper()}\n"
