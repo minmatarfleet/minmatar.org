@@ -9,12 +9,15 @@ def get_fleet_discord_notification(
     fleet_voice_channel,
     fleet_voice_channel_link,
     fleet_doctrine=None,
+    fleet_start_time=None,
     is_pre_ping=False,
     content="@everyone",
 ):
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
-    if not is_pre_ping:
+    if is_pre_ping:
+        description += f"**START TIME**: {fleet_start_time}\n"
+    else:
         description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
     description += f"**LOCATION**: {fleet_location.upper()}\n"
     description += f"**AUDIENCE**: {fleet_audience.upper()}\n"

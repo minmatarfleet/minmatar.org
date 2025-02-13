@@ -1,4 +1,5 @@
 import logging
+import datetime
 
 from ninja import Router
 
@@ -58,6 +59,7 @@ def discord_fleet_pre_ping(request):
         fleet_description="Testing pre-pings",
         fleet_voice_channel="Testing",
         fleet_voice_channel_link="",
+        fleet_start_time=datetime.datetime.now(),
     )
 
     discord = DiscordClient()
