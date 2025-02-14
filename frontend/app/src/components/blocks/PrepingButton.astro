@@ -1,0 +1,42 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    fleet_id:   number;
+}
+
+const {
+    fleet_id,
+} = Astro.props
+
+const PREPING_BUTTON_PARTIAL_URL = `${translatePath('/partials/preping_buttom_component')}?fleet_id=${fleet_id}`
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    id="preping-button"
+    size='sm'
+    hx-indicator=".loader"
+    hx-swap="outerHTML transition:true"
+    x-data={`{
+        show_preping_fleet_dialog() {
+            $el.setAttribute('disabled','')
+            
+            show_confirm_dialog({
+                title: '${t('preping_dialog_title')}',
+                content: '${t('preping_dialog_text')}',
+                hx: {
+                    method: 'post',
+                    url: '${PREPING_BUTTON_PARTIAL_URL}?fleet_id=${fleet_id}',
+                    swap: 'outerHTML transition:true',
+                    target: '#preping-button',
+                }
+            }).then(accepted => !accepted && $el.removeAttribute('disabled'))
+        }
+    }`}
+    x-on:click="show_preping_fleet_dialog"
+>
+    {t('preping')}
+</Button>

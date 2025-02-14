@@ -1,0 +1,45 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { preping } from '@helpers/api.minmatar.org/fleets'
+import type { Alert } from '@dtypes/layout_components'
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+let alert:Alert | null = null
+
+if (Astro.request.method === "POST") {
+    try {
+        if (!fleet_id)
+            throw new Error(t('invalid_fleet_id'))
+
+        const success = await preping(auth_token as string, fleet_id)
+
+        alert = {
+            title: t('preping_dialog_title'),
+            content: success ? t('preping_success') : t('preping_unsuccess'),
+        } as Alert
+    } catch (error) {
+        alert = {
+            title: t('preping_dialog_title'),
+            content: prod_error_messages() ? t('preping_error') : error.message,
+        } as Alert
+    }
+}
+
+import PrepingButton from '@components/blocks/PrepingButton.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+---
+
+{alert && <ShowAlert alert={alert} /> }
+<PrepingButton fleet_id={fleet_id} />
