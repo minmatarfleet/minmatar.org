@@ -695,18 +695,18 @@ def delete_fleet(request, fleet_id: int):
     "/{fleet_id}/preping",
     auth=AuthBearer(),
     response={200: None, 403: ErrorResponse, 404: ErrorResponse},
-    description="Send a Discord pre-ping for a fleet.",
+    description="Send a Discord pre-ping for a fleet. No request body needed.",
 )
 def send_pre_ping(request, fleet_id):
-    fleet = EveFleet.objects.get(id=fleet_id)
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+
+    if not fleet:
+        return 404, ErrorResponse(detail="Fleet not found")
+
     if request.user != fleet.created_by:
         return 403, {
             "detail": "User does not have permission to delete this fleet"
         }
-
-    fleet = EveFleet.objects.filter(id=fleet_id).first()
-    if not fleet:
-        return 404, ErrorResponse(detail="Fleet not found")
 
     send_discord_pre_ping(fleet)
 
