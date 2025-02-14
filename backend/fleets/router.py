@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from eveonline.models import EvePrimaryCharacter
+from discord.client import DiscordClient
 from fittings.models import EveDoctrine
 
 from .models import (
@@ -20,8 +22,11 @@ from .models import (
     EveFleetLocation,
     EveStandingFleet,
 )
+from .notifications import get_fleet_discord_notification
+
 
 router = Router(tags=["Fleets"])
+logger = logging.getLogger(__name__)
 
 
 class EveFleetType(str, Enum):
@@ -106,6 +111,7 @@ class CreateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: int
     disable_motd: bool = False
+    immediate_ping: bool = False
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -545,6 +551,13 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         fleet.doctrine = doctrine
         fleet.save()
 
+    if not fleet.audience.add_to_schedule:
+        # Remove this once the fleet creation UI is sending it
+        payload.immediate_ping = True
+
+    if payload.immediate_ping:
+        send_discord_pre_ping(fleet)
+
     payload = {
         "id": fleet.id,
         "type": fleet.type,
@@ -559,6 +572,34 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetResponse(**payload)
+
+
+def send_discord_pre_ping(fleet: EveFleet):
+    """Send a Discord pre-ping for a fleet"""
+    notification = get_fleet_discord_notification(
+        is_pre_ping=True,
+        fleet_id=fleet.id,
+        fleet_type=fleet.get_type_display(),
+        fleet_location=fleet.location.location_name,
+        fleet_audience=fleet.audience.name,
+        fleet_commander_name=fleet.fleet_commander.character_name,
+        fleet_commander_id=fleet.fleet_commander.character_id,
+        fleet_description=fleet.description,
+        fleet_voice_channel=fleet.audience.discord_voice_channel_name,
+        fleet_voice_channel_link=fleet.audience.discord_voice_channel,
+    )
+
+    try:
+        DiscordClient().create_message(
+            channel_id=fleet.fleet_audience.channel_id,
+            payload=notification,
+        )
+    except Exception as e:
+        logger.error(
+            "Error sending Discord pre-ping for fleet %d : %s",
+            fleet.id,
+            str(e),
+        )
 
 
 @router.patch(
@@ -648,3 +689,25 @@ def delete_fleet(request, fleet_id: int):
         }
     fleet.delete()
     return 200, None
+
+
+@router.post(
+    "/{fleet_id}/preping",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
+    description="Send a Discord pre-ping for a fleet.",
+)
+def send_pre_ping(request, fleet_id):
+    fleet = EveFleet.objects.get(id=fleet_id)
+    if request.user != fleet.created_by:
+        return 403, {
+            "detail": "User does not have permission to delete this fleet"
+        }
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, ErrorResponse(detail="Fleet not found")
+
+    send_discord_pre_ping(fleet)
+
+    return 200
