@@ -587,6 +587,7 @@ def send_discord_pre_ping(fleet: EveFleet):
         fleet_description=fleet.description,
         fleet_voice_channel=fleet.audience.discord_voice_channel_name,
         fleet_voice_channel_link=fleet.audience.discord_voice_channel,
+        fleet_start_time=fleet.start_time,
     )
 
     try:
