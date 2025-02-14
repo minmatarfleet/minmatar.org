@@ -23,30 +23,32 @@ const optional_attributes = {
 }
 ---
 
-<picture
+<div
     class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]}
     class="[ viewport-cover ]"
-    x-data="{ loaded: false }"
-    x-init="loaded = $refs.img.complete"
 >
-    <source srcset={image_990} media="(max-width: 990px)">
-    <img
-        x-ref="img"
-        src={image}
-        role={!alt ? 'presentation' : undefined}
+    <picture
         class="[ !hidden animate-fade-in ]"
+        x-data="{ loaded: false }"
+        x-init="loaded = $refs.img.complete"
         x-bind:class="{ '!hidden': !loaded }"
-        x-on:load="loaded = true"
-        {...optional_attributes}
-    />
-</picture>
+    >
+        <source srcset={image_990} media="(max-width: 990px)">
+        <img
+            src={image}
+            role={!alt ? 'presentation' : undefined}
+            x-ref="img"
+            x-on:load="loaded = true"
+            {...optional_attributes}
+        />
+    </picture>
+</div>
 
 <style lang="scss" is:global>
     .viewport-cover {
         position: fixed;
         inset: 0;
-        overflow: hidden;
-        z-index: -1;
+        overflow: visible;
 
         &.scrollable {
             position: absolute;
@@ -62,6 +64,7 @@ const optional_attributes = {
         &.overlay:after {
             content: ' ';
             inset: 0;
+            height: 101vh;
             position: absolute;
             background-image: linear-gradient(
                 to bottom,
