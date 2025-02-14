@@ -1303,5 +1303,7 @@ export const ui = {
         'auth_error_dialog_title': 'Authentication error',
         'invalid_token': 'Invalid token',
         'set_fleet_in': 'Set fleet in...',
+        'preping': 'Pre-ping',
+        'preping_description': 'Immediately create a pre-ping when “pushing the button”',
     },
 } as const;

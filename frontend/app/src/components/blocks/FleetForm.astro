@@ -416,6 +416,17 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             />
                         </Flexblock>
 
+                        {!fleet?.id &&
+                            <SwitchSquare
+                                class="[ w-full ]"
+                                name="immediate_ping"
+                                label={t('preping')}
+                                description={t('preping_description')}
+                                x-bind:checked="audience > 2"
+                                x-bind:disabled="audience > 2"
+                            />
+                        }
+
                         <SwitchSquare
                             class="[ w-full ]"
                             name="disable_motd"
