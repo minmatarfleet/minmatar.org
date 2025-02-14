@@ -75,3 +75,10 @@ export const HTTP_500_Server_Error = (body:BodyInit | null = null):Response => {
         statusText: 'Server Error'
     });
 }
+
+export const HTTP_502_Server_Error = (body:BodyInit | null = null):Response => {
+    return new Response(body, {
+        status: 502,
+        statusText: 'Service Unavailable'
+    });
+}
