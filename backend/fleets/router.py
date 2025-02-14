@@ -592,7 +592,7 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
 
     try:
         DiscordClient().create_message(
-            channel_id=fleet.fleet_audience.channel_id,
+            channel_id=fleet.audience.channel_id,
             payload=notification,
         )
         return True
