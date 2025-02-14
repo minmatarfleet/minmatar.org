@@ -574,7 +574,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     return EveFleetResponse(**payload)
 
 
-def send_discord_pre_ping(fleet: EveFleet):
+def send_discord_pre_ping(fleet: EveFleet) -> bool:
     """Send a Discord pre-ping for a fleet"""
     notification = get_fleet_discord_notification(
         is_pre_ping=True,
@@ -595,12 +595,14 @@ def send_discord_pre_ping(fleet: EveFleet):
             channel_id=fleet.fleet_audience.channel_id,
             payload=notification,
         )
+        return True
     except Exception as e:
         logger.error(
             "Error sending Discord pre-ping for fleet %d : %s",
             fleet.id,
             str(e),
         )
+        return False
 
 
 @router.patch(
@@ -695,7 +697,7 @@ def delete_fleet(request, fleet_id: int):
 @router.post(
     "/{fleet_id}/preping",
     auth=AuthBearer(),
-    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
+    response={202: None, 403: ErrorResponse, 404: ErrorResponse, 500: None},
     description="Send a Discord pre-ping for a fleet. No request body needed.",
 )
 def send_pre_ping(request, fleet_id):
@@ -709,6 +711,9 @@ def send_pre_ping(request, fleet_id):
             "detail": "User does not have permission to delete this fleet"
         }
 
-    send_discord_pre_ping(fleet)
+    sent = send_discord_pre_ping(fleet)
 
-    return 200
+    if sent:
+        return 202
+    else:
+        return 500
