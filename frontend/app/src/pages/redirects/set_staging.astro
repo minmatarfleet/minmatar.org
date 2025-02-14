@@ -2,12 +2,18 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import { is_disabled_ccpwgl } from '@helpers/env';
+
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+
 const tag = Astro.url.searchParams.get('tag')
 
 if (tag)
     Astro.cookies.set('staging', tag, { path: '/' })
 
 const redirect = translatePath('/')
+
+if (DISABLED_CCPWGL) return Astro.redirect(redirect)
 ---
 
 <script define:vars={{ redirect }}>
