@@ -3,7 +3,7 @@ interface Props {
     image: string;
     image_990: string;
     alt?: string;
-    animated?: boolean;
+    animated?: boolean; // deprecated
     scrollable?: boolean;
     overlay?: boolean;
     [propName: string]: any;
@@ -13,20 +13,32 @@ const {
     image,
     image_990,
     alt = '',
-    animated = true,
+    animated = true, // deprecated
     scrollable = false,
     overlay = false,
 } = Astro.props
 
 const optional_attributes = {
-    ...(animated && { "class": 'slide-in' }),
     ...(alt && { "alt": alt }),
 }
 ---
 
-<picture class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]} class="[ viewport-cover ]">
+<picture
+    class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]}
+    class="[ viewport-cover ]"
+    x-data="{ loaded: false }"
+    x-init="loaded = $refs.img.complete"
+>
     <source srcset={image_990} media="(max-width: 990px)">
-    <img src={image} {...optional_attributes} role={!alt ? 'presentation' : undefined} />
+    <img
+        x-ref="img"
+        src={image}
+        role={!alt ? 'presentation' : undefined}
+        class="[ !hidden animate-fade-in ]"
+        x-bind:class="{ '!hidden': !loaded }"
+        x-on:load="loaded = true"
+        {...optional_attributes}
+    />
 </picture>
 
 <style lang="scss" is:global>
