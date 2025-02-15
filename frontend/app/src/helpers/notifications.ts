@@ -24,8 +24,21 @@ webpush.setVapidDetails(
     vapidKeys.privateKey
 )
 
+interface Subscriptions {
+    id: number;
+    user_id: number | null;
+    subscription: unknown;
+}
+
 export async function send_active_fleet_notification(auth_token:string, fleet_id:number) {
-    const subscriptions = await get_all_subscriptions()
+    let subscriptions:Subscriptions[] = []
+
+    try {
+        subscriptions = await get_all_subscriptions()
+    } catch (error) {
+        return
+    }
+
     const users = unique(subscriptions, 'user_id')
 
     const fleet_users = await fetch_fleet_users(fleet_id) ?? []
