@@ -1,3 +1,5 @@
+import { useTranslations } from '@i18n/utils';
+
 import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type {
     SkillsetsUI,
@@ -12,8 +14,23 @@ import type {
 import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_user_by_id, get_users_by_id } from '@helpers/api.minmatar.org/authentication'
 
-export async function get_user_character(user_id:number) {
-    const user_profile = await get_user_by_id(user_id)
+export async function get_user_character(user_id:number, lang:'en' = 'en') {
+    const t = useTranslations(lang);
+
+    let user_profile:UserProfile | null = null
+    try {
+        user_profile = await get_user_by_id(user_id)
+    } catch (error) {
+        return {
+            character_id: 0,
+            character_name: t('unknown_pilot'),
+            corporation_id: 0,
+            corporation_name: t('unknown_corporation'),
+            user_id: user_id,
+            scopes: [],
+        } as EveCharacterProfile
+    }
+
     const character_profile = user_profile.eve_character_profile
     
     if (character_profile)
