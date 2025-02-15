@@ -50,6 +50,7 @@ import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
+import PrepingButton from '@components/blocks/PrepingButton.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -77,6 +78,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     {can_remove_fleet &&
                         <FlexInline>
                             {!history &&
+                                <PrepingButton fleet_id={fleet.id} />
+
                                 <Button
                                     size='sm'
                                     href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}

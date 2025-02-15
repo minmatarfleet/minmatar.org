@@ -8,7 +8,7 @@ import type {
     FleetUsers,
     FleetStatus
  } from '@dtypes/api.minmatar.org'
-import { get_error_message, parse_error_message } from '@helpers/string'
+import { get_error_message, parse_error_message, parse_response_error } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
@@ -407,5 +407,33 @@ export async function get_fleet_users(fleet_id:number) {
         return await response.json() as FleetUsers[];
     } catch (error) {
         throw new Error(`Error fetching fleet: ${error.message}`);
+    }
+}
+
+export async function preping(access_token:string, fleet_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/preping`
+    const METHOD = 'POST'
+
+    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            method: METHOD,
+        })
+
+        // console.log(response)
+
+        if (!response.ok)
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+
+        return (response.status === 200)
+    } catch (error) {
+        throw new Error(`Error creating pre-ping: ${error.message}`);
     }
 }

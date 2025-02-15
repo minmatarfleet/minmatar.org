@@ -1305,5 +1305,10 @@ export const ui = {
         'set_fleet_in': 'Set fleet in...',
         'preping': 'Pre-ping',
         'preping_description': 'Immediately create a pre-ping when “pushing the button”',
+        'preping_error': 'An error occurred while pre-pinging the fleet.',
+        'preping_dialog_title': 'Fleet pre-ping',
+        'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord?',
+        'preping_success': 'Pre-ping issued successfully.',
+        'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
     },
 } as const;
