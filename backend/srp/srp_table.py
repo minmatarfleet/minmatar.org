@@ -3,7 +3,7 @@ BILLION = 1000000000
 
 reimbursement_class_lookup = {
     "Force Auxiliary": 4 * BILLION,
-    "Logistics": 230050 * MILLION,
+    "Logistics": 300 * MILLION,
     "Command Ship": 500 * MILLION,
     "Logistics Frigate": 50 * MILLION,
     "Force Recon Ship": 275 * MILLION,
