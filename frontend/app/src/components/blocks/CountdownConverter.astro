@@ -89,6 +89,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 >
     <StylessButton
         class="[ flex ]"
+        type="button"
         data-tippy-content={t('convert_countdown')}
         x-on:click.stop.prevent="open_dialog()"
         id="countdown-converter-button"
