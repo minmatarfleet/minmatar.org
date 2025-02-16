@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
-from .models import UserSubscription  
+from .models import UserSubscription
 
 router = Router(tags=["Subscriptions"])
 
