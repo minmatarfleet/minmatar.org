@@ -2,7 +2,7 @@ import { i18n } from '@helpers/i18n'
 import { prod_error_messages } from '@helpers/env'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
-import { remove_subscription } from '@helpers/push_notification_subscriptions'
+import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
@@ -44,7 +44,7 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
         const subscription_id = cookies.has('subscription_id') ? parseInt(cookies.get('subscription_id').value) : null
         
         try {
-            (subscription_id ?? 0) > 0 ? await remove_subscription(subscription_id as number) : null
+            (subscription_id ?? 0) > 0 ? await remove_subscription(auth_token, subscription_id as number) : null
             cookies.delete('subscription_id', { path: '/' })
         } catch (error) {
             console.log(error.message)
