@@ -61,8 +61,12 @@ const send_notification = (auth_token: string, subscription:any, payload:string,
             console.log('Push notification sent successfully:', response);
         })
         .catch(async error => {
-            if (error.statusCode === 410)
-                await remove_subscription(auth_token, subscription_id)
+            try {
+                if (error.statusCode === 410)
+                    await remove_subscription(auth_token, subscription_id)
+            } catch (error) {
+                console.log(error.message)
+            }
 
             console.error('Error sending push notification:', error);
         });
