@@ -54,11 +54,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
                 }
             )
 
-            if (!response.ok && response.status !== 404) {
-                this.fleet_notifications = true
-                return
-            }
-
             this.unregister_sw()
         },
         async toogle_subscription() {

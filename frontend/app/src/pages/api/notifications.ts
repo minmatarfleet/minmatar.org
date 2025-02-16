@@ -38,9 +38,7 @@ export async function POST({ request, cookies, redirect }) {
     }))
 }
 
-export async function DELETE({ request, cookies }) {
-    const { t } = i18n(new URL(request.url))
-    
+export async function DELETE({ request, cookies }) {    
     const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
     const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
     
@@ -54,15 +52,10 @@ export async function DELETE({ request, cookies }) {
         try {
             await remove_subscription(auth_token, subscription_id)
             cookies.delete('subscription_id', { path: '/' })
-            return HTTP_200_Success()
         } catch (error) {
             console.log(error)
-
-            return HTTP_500_Server_Error(JSON.stringify({
-                error: is_prod_mode() ? t('delete_subscription_error') : error.message
-            }))
         }
     }
 
-    return HTTP_404_Not_Found()
+    return HTTP_200_Success()
 }
