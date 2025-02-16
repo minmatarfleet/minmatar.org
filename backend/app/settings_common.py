@@ -74,6 +74,8 @@ INSTALLED_APPS = [
     "srp",
     # Referral links,
     "referrals",
+    # User subscriptions
+    "subscriptions",
 ]
 
 # Discord Login
