@@ -886,6 +886,7 @@ export const ui = {
         'notifications_denied_hint': 'Change notifications permission on your browser to receive notifications',
         'grant_permission': 'Grant notifications permission',
         'create_subscription_error': 'An error occurred while creating the subscription',
+        'delete_subscription_error': 'An error occurred while deleting the subscription',
         'fleet_date_and_time': 'Fleet date and time',
         'select_audience': 'Select audience',
         'no_audience_selected': 'No audience selected',
