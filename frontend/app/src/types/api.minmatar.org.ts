@@ -561,3 +561,14 @@ export interface ExternalReferralLink {
     target:     string;
     decription: string;
 }
+
+export interface NotificationSubscription {
+    id:             number;
+    subscription:   string;
+}
+
+export interface NotificationSubscriptionsFull {
+    id:             number;
+    user_id:        number | null;
+    subscription:   string;
+}

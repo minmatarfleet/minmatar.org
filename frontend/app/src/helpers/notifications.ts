@@ -8,7 +8,8 @@ import { strip_markdown } from '@helpers/string'
 import { get_player_icon } from '@helpers/eve_image_server';
 import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
 
-import { get_all_subscriptions, remove_subscription } from '@helpers/push_notification_subscriptions'
+import { get_all_subscriptions, remove_subscription } from '@helpers/api.minmatar.org/notifications'
+import type { NotificationSubscriptionsFull } from '@dtypes/api.minmatar.org'
 import { unique } from '@helpers/array'
 
 import webpush from 'web-push'
@@ -24,17 +25,11 @@ webpush.setVapidDetails(
     vapidKeys.privateKey
 )
 
-interface Subscriptions {
-    id: number;
-    user_id: number | null;
-    subscription: unknown;
-}
-
 export async function send_active_fleet_notification(auth_token:string, fleet_id:number) {
-    let subscriptions:Subscriptions[] = []
+    let subscriptions:NotificationSubscriptionsFull[] = []
 
     try {
-        subscriptions = await get_all_subscriptions()
+        subscriptions = await get_all_subscriptions(auth_token)
     } catch (error) {
         return
     }
@@ -56,18 +51,18 @@ export async function send_active_fleet_notification(auth_token:string, fleet_id
 
     subscriptions.map((subscription) => {
         if (recipients.includes(subscription.user_id))
-            send_notification(subscription.subscription, payload, subscription.id)
+            send_notification(auth_token, JSON.parse(subscription.subscription), payload, subscription.id)
     })
 }
 
-const send_notification = (subscription:any, payload:string, subscription_id:number) => {
+const send_notification = (auth_token: string, subscription:any, payload:string, subscription_id:number) => {
     webpush.sendNotification(subscription, payload)
         .then(response => {
             console.log('Push notification sent successfully:', response);
         })
         .catch(async error => {
             if (error.statusCode === 410)
-                await remove_subscription(subscription_id)
+                await remove_subscription(auth_token, subscription_id)
 
             console.error('Error sending push notification:', error);
         });
