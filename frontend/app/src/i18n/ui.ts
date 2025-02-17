@@ -1311,5 +1311,6 @@ export const ui = {
         'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord?',
         'preping_success': 'Pre-ping issued successfully.',
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
+        'push_notifications_missconfiguration': 'Service is not currently available.',
     },
 } as const;

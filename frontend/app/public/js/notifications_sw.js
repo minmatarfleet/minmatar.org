@@ -4,12 +4,15 @@ self.addEventListener('activate', async (e) => {
 
 async function subscribe() {
     console.log('Subscribing...')
+
+    const url = new URL(location)
+    const endpoint = url.searchParams.get('endpoint')
+    const public_key = url.searchParams.get('public_key')
+
     const subscription = await self.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array('BFucqTUQisrCDaeQpaxyDsH4y2i7CGjn_c3k5akdtxQnAwkevP_ufaJqx8hACWHwR6hJIFg1qKbRVKAvH8cQdnM')
+        applicationServerKey: urlBase64ToUint8Array(public_key)
     })
-
-    const endpoint = new URL(location).searchParams.get('endpoint')
 
     await save_subscription(endpoint, subscription)
 }
