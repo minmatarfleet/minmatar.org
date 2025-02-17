@@ -60,6 +60,9 @@ def group_post_save(
 def user_group_changed(
     sender, instance, action, reverse, model, pk_set, **kwargs
 ):  # pylint: disable=unused-argument
+    if not instance.discord_user:
+        logger.error("Group change without discord user")
+        return
     """Adds user to discord role when added to group"""
     if action == "pre_add":
         logger.info("User added to group, adding to discord role")
