@@ -77,9 +77,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </Flexblock>
                     {can_remove_fleet &&
                         <FlexInline>
-                            {!history &&
+                            {(!history && fleet.tracking === null) &&
                                 <PrepingButton fleet_id={fleet.id} />
+                            }
 
+                            {!history &&
                                 <Button
                                     size='sm'
                                     href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
