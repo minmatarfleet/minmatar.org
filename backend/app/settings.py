@@ -31,6 +31,8 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "testing")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
+SHARED_SECRET = os.environ.get("SHARED_SECRET", "testing")
+
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
 SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
 
