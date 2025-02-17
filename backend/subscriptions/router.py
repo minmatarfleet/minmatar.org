@@ -3,6 +3,7 @@ from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
+from django.conf import settings
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -20,6 +21,10 @@ class Subscription(BaseModel):
     subscription: str
 
 
+class NewSubscription(BaseModel):
+    subscription: str
+
+
 def map_sub(sub: UserSubscription) -> Subscription:
     return Subscription(
         id=sub.id,
@@ -34,10 +39,12 @@ def map_sub(sub: UserSubscription) -> Subscription:
     auth=AuthBearer(),
     description="Returns subscriptions details.",
 )
-def get_subscriptions(request, user_id: int = None):
+def get_subscriptions(request, user_id: int = None, authcode: str = None):
     query = UserSubscription.objects.all()
     if user_id:
         query = query.filter(user__id=user_id)
+    elif authcode != settings.SHARED_SECRET:
+        return 403, ErrorResponse(detail="Not authorised for all users")
     response = []
     for sub in query:
         response.append(map_sub(sub))
@@ -50,7 +57,7 @@ def get_subscriptions(request, user_id: int = None):
     auth=AuthBearer(),
     description="Creates a record of a user subscription.",
 )
-def create_user_subscription(request, subscription: Subscription):
+def create_user_subscription(request, subscription: NewSubscription):
     sub = UserSubscription.objects.create(
         user=request.user,
         subscription=subscription.subscription,
@@ -64,11 +71,11 @@ def create_user_subscription(request, subscription: Subscription):
     auth=AuthBearer(),
     description="Deletes a user subscription record.",
 )
-def delete_user_subscription(request, sub_id: int):
+def delete_user_subscription(request, sub_id: int, authcode: str = None):
     sub = UserSubscription.objects.filter(id=sub_id).first()
     if not sub:
         return 404, ErrorResponse(detail=f"Subscription {sub_id} not found")
-    if sub.user != request.user:
+    if (authcode != settings.SHARED_SECRET) and (sub.user != request.user):
         return 403, ErrorResponse(
             detail="Not permitted to delete this subscription"
         )
