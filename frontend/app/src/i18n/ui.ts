@@ -1311,5 +1311,6 @@ export const ui = {
         'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord?',
         'preping_success': 'Pre-ping issued successfully.',
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
+        'random_staging': 'Show a random staging on load',
     },
 } as const;
