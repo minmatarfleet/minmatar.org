@@ -814,7 +814,7 @@ export const ui = {
         'destroyer_guide_title': 'The Navy Destroyer Metagame',
         'destroyer_guide_description': 'In this guide you will find all the common archetypes for the navy destroyers with several fits. Written by ',
         'reddit_article': 'Read Reddit article',
-        'guide_download': 'Guide link',
+        'guide_download': 'Open guide',
         'show_credentials': 'Show credentials',
         'username': 'Username',
         'password': 'Password',
@@ -1312,5 +1312,6 @@ export const ui = {
         'preping_success': 'Pre-ping issued successfully.',
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
         'random_staging': 'Show a random staging on load',
+        'error_fetching_fittings': 'Error fetching fittings. Reload the page.',
     },
 } as const;

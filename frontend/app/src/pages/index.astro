@@ -262,14 +262,19 @@ const page_description = t('index.leading_text');
 				padding_block="var(--space-l)"
 			>
 				<Flexblock
-					gap='var(--space-m)'
+					gap='var(--space-xl)'
 					class="[ text-center ]"
-				>
-					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
-					
-					<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+				>	
+					<Flexblock
+						gap='var(--space-m)'
+						class="[ text-center ]"
+					>	
+						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
 
-					<p>{t('index.leading_text')}</p>
+						<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+
+						<p>{t('index.leading_text')}</p>
+					</Flexblock>
 
 					<FlexInline justification='center'>
 						<StylessButton href='#widgets' class="[ caret-down ]" />
