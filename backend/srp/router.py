@@ -106,9 +106,14 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         is_corp_ship=payload.is_corp_ship,
     )
 
+    if fleet:
+        fleet_id = fleet.id
+    else:
+        fleet_id = None
+
     return EveFleetReimbursementResponse(
         id=reimbursement.id,
-        fleet_id=fleet.id,
+        fleet_id=fleet_id,
         external_killmail_link=payload.external_killmail_link,
         status="pending",
         character_id=details.victim_character.character_id,
