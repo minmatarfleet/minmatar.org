@@ -142,7 +142,7 @@ def get_structure_timers(request, active: bool = True):
             "timer": timer.timer,
             "created_at": timer.created_at,
             "updated_at": timer.updated_at,
-            "created_by": timer.created_by.id,
+            "created_by": timer.created_by.id if timer.created_by else None,
             "system_name": timer.system_name,
             "corporation_name": timer.corporation_name,
             "alliance_name": timer.alliance_name,
