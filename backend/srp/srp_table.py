@@ -17,5 +17,5 @@ reimbursement_class_lookup = {
 reimbursement_ship_lookup = {
     "Bhaalgorn": 750 * MILLION,
     "Vindicator": 750 * MILLION,
-    "Scorpion": 30 * MILLION,
+    "Scorpion": 300 * MILLION,
 }
