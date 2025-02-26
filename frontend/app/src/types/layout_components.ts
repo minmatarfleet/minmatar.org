@@ -197,6 +197,8 @@ export interface HXDialogOptions {
 export interface PageCoverOptions {
     image:          string;
     image_990:      string;
+    video?:         string;
+    video_thumb?:   string;
     alt?:           string;
     animated?:      boolean;
     scrollable?:    boolean;

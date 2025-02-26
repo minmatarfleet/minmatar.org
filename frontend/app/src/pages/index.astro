@@ -147,14 +147,22 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-            image: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					`/images/home-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}`,
-            image_990: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   `/images/home-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}`,
+			video: staging === 'auga' ? '/videos/militia-loop.webm' :
+					staging === 'nakah' ? '/videos/banana-loop.webm' :
+					staging === 'vard' ? '/videos/dong-loop.webm' :
+					'/videos/watermelon-loop.webm',
+			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
+					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					staging === 'vard' ? '/images/home-vard-cover.jpg' :
+					'/images/home-cover.jpg',
+            image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
+					staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
+					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					'/images/home-cover-eve.jpg',
+            image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
+					   staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
+					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					   '/images/home-cover-eve.jpg',
             animated: false,
         }}
         fullscreen={true}
