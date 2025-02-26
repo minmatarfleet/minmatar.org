@@ -17,7 +17,7 @@ const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
 export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true) {
     let api_fleets:Fleet[]
 
-    api_fleets = await get_fleets_v3(access_token, upcoming ? 'upcoming' : 'recent')
+    api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
     
     const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
