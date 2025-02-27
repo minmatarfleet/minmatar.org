@@ -1,0 +1,66 @@
+---
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Porps {
+    size?:              ButtonSizes;
+    color?:             ButtonColors;
+    hidden?:            boolean;
+    id?:                string;
+    max_width?:         string;
+}
+
+const {
+    size = 'lg',
+    color = 'green',
+    hidden = false,
+    id,
+    max_width = '700px',
+} = Astro.props
+
+import Dialog from '@components/blocks/Dialog.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+<div
+    x-data={`{
+        button_dialog_open: false,
+        open_dialog() {
+            this.button_dialog_open = true
+        },
+        close_dialog() {
+            this.button_dialog_open = false
+        }
+    }`}
+>
+    <Button
+        size={size}
+        type="button"
+        color={color}
+        x-on:click.stop.prevent="open_dialog()"
+        type="button"
+        id={id ? id : undefined}
+        class={hidden ? '[ !hidden ]' : undefined}
+    >
+        <slot />
+    </Button>
+
+    <Dialog
+        breakout={true}
+        non_centered={true}
+        class:list={[ 'button-dialog w-full component overflow-y-auto', `max-w-[${max_width}]` ]}
+        x-bind:class="(button_dialog_open ? 'open' : '')"
+        x-bind:aria-hidden="button_dialog_open == false"
+        x-trap="button_dialog_open"
+        x-bind:inert="!button_dialog_open"
+        @keyup.escape.window="close_dialog()"
+        @mousedown.outside="open && close_dialog()"
+    >
+        <slot name="dialog" />
+    </Dialog>
+</div>
+
+<style lang="scss">
+    .button-dialog {
+        max-height: min(750px, 88vh);
+    }
+</style>

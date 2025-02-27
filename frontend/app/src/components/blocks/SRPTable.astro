@@ -24,7 +24,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
-import SubmitSRPButton from '@components/blocks/SubmitSRPButton.astro';
+import SRPButton from '@components/blocks/SRPButton.astro';
 import SRPItem from '@components/blocks/SRPItem.astro';
 import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
 ---
@@ -49,7 +49,7 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
             </Flexblock>
         </FlexInline>
         {!fleet_title &&
-            <SubmitSRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
+            <SRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
         }
     </FlexInline>
     {fleet_srps.length > 0 &&

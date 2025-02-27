@@ -528,6 +528,8 @@ export interface SRP {
     ship_name:                  string;
     killmail_id:                number;
     amount:                     number;
+    is_corp_ship:               boolean;
+    corp_id:                    number;
 }
 
 export interface SRPRequest {

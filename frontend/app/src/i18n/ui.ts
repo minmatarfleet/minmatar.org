@@ -1313,5 +1313,8 @@ export const ui = {
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
         'random_staging': 'Show a random staging on load',
         'error_fetching_fittings': 'Error fetching fittings. Reload the page.',
+        'corp_ship': 'Corporation ship',
+        'corp_ship_description': 'For ships extracted from the corporation hangar',
+        'no_srp_value': 'SRP amount not defined',
     },
 } as const;
