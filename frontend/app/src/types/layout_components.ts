@@ -942,6 +942,9 @@ export interface SRPUI {
     ship_name:                  string;
     killmail_id:                number;
     amount:                     number;
+    is_corp_ship:               boolean;
+    corporation_id:             number;
+    corporation_name:           string;
 }
 
 export interface FleetSRPUI {

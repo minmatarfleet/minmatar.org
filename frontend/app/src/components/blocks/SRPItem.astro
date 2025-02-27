@@ -36,6 +36,7 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
 import Dialog from "@components/blocks/Dialog.astro";
 import PilotBadge from "@components/blocks/PilotBadge.astro";
 import StylessButton from '@components/blocks/StylessButton.astro';
+import CorporationPicture from '@components/blocks/CorporationPicture.astro';
 
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import ArrowDown from '@components/icons/buttons/ArrowDown.astro';
@@ -75,17 +76,21 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                 />
                 <Wrapper class="[ srp-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
                     <Flexblock gap='var(--space-3xs)'>
-                        <h3>{srp.amount.toLocaleString()} {t('isk')}</h3>
+                        <h3>{srp.amount > 0 ? `${srp.amount.toLocaleString()} ${t('isk')}` : t('no_srp_value')}</h3>
                         <FlexInline gap='var(--space-3xs)' class="[ !items-center ]">
                             <ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} />
                             <small>{srp.character_name}’s {srp.ship_name}</small>
                         </FlexInline>
                     </Flexblock>
                 </Wrapper>
-                {srp.character_id !== srp.primary_character_id &&
+                {srp.is_corp_ship || (srp.character_id !== srp.primary_character_id) &&
                     <FlexInline gap='var(--space-3xs)' class="[ main-character !items-center ][ grow ]">
-                        <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
-                        <small>{srp.primary_character_name}</small>
+                        {srp.is_corp_ship ?
+                            <CorporationPicture corporation_id={srp.corporation_id} corporation_name={srp.corporation_name} size={16} icon_quality={32} />
+                            <small>{srp.corporation_name}</small> :
+                            <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
+                            <small>{srp.primary_character_name}</small>
+                        }
                     </FlexInline>
                 }
             </Flexblock>
