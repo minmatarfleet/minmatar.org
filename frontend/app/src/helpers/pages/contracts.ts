@@ -6,7 +6,6 @@ import { fetch_market_contracts } from '@helpers/fetching/market'
 import { get_market_characters, get_market_corporations } from '@helpers/api.minmatar.org/market'
 import type { Character, MarketCorporation } from '@dtypes/api.minmatar.org'
 import type { TradeHub, SelectOptions } from '@dtypes/layout_components'
-import { fitting_ship_types } from '@dtypes/layout_components'
 
 export interface ContractsData {
     contracts_trade_hubs?:      TradeHub[];

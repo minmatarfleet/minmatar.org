@@ -99,10 +99,7 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
     if not EveFleetInstance.objects.filter(
         eve_fleet=fleet,
     ).exists():
-        logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, no fleet instance"
-        )
-        return False, "No fleet instance"
+        return True, "Non-fleet SRP"
 
     fleet_instance = EveFleetInstance.objects.get(
         eve_fleet=fleet,

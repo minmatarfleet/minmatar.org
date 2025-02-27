@@ -15,7 +15,10 @@ class EveFleetShipReimbursement(models.Model):
         ("rejected", "Rejected"),
     )
     fleet = models.ForeignKey(
-        EveFleet, on_delete=models.CASCADE, related_name="reimbursements"
+        EveFleet,
+        on_delete=models.CASCADE,
+        related_name="reimbursements",
+        null=True,
     )
     external_killmail_link = models.CharField(max_length=255)
     status = models.CharField(
@@ -31,3 +34,5 @@ class EveFleetShipReimbursement(models.Model):
     amount = models.BigIntegerField()
     ship_name = models.CharField(max_length=255)
     ship_type_id = models.BigIntegerField()
+    is_corp_ship = models.BooleanField(default=False)
+    corp_id = models.BigIntegerField(null=True)

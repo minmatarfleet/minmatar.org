@@ -6,15 +6,15 @@ import type { StagingType } from '@dtypes/layout_components'
 import { stagings } from '@dtypes/layout_components'
 
 interface Props {
-    selected:   StagingType;
+    selected?:  StagingType;
 }
 
 const {
     selected
 } = Astro.props
 
-const current_staging = stagings.find(stagings => stagings.includes(selected))
-const staging_to_filter = current_staging !== undefined ? current_staging : 'watermellon'
+const current_staging = selected ? stagings.find(stagings => stagings.includes(selected)) : null
+const staging_to_filter = current_staging !== undefined ? current_staging : 'random'
 
 import { get_item_icon } from '@helpers/eve_image_server'
 
@@ -38,10 +38,15 @@ const STAGINGS = [{
         subtitle: t('vard_hq_description'),
         type_id: 35832,
         slug: 'vard',
+    }, {
+        title: 'Random',
+        subtitle: t('random_staging'),
+        type_id: 76312,
+        slug: 'random',
     }
 ]
 
-const staging_list = STAGINGS.filter(staging => staging.slug !== staging_to_filter)
+const staging_list = current_staging ? STAGINGS.filter(staging => staging.slug !== staging_to_filter) : STAGINGS.filter(staging => staging.slug !== 'random')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Badge from '@components/blocks/Badge.astro';
@@ -53,6 +58,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         <StylessButton
             href={`${translatePath('/redirects/set_staging')}?tag=${staging.slug}`}
             class="[ min-w-[350px] ]"
+            x-on:click="close()"
         >
             <Badge
                 title={staging.title}

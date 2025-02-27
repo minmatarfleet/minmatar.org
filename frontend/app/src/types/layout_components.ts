@@ -197,6 +197,8 @@ export interface HXDialogOptions {
 export interface PageCoverOptions {
     image:          string;
     image_990:      string;
+    video?:         string;
+    video_thumb?:   string;
     alt?:           string;
     animated?:      boolean;
     scrollable?:    boolean;
@@ -743,54 +745,6 @@ export interface RouteStations {
     [propName: string]: string[];
 }
 
-export const fitting_ship_types = [
-    'Frigate',
-    'Electronic Attack Ship',
-    'Assault Frigate',
-    'Logistics Frigate',
-    'Covert Ops',
-    'Stealth Bomber',
-    'Interceptor',
-    'Destroyer',
-    'Interdictor',
-    'Command Destroyer',
-    'Tactical Destroyer',
-    'Cruiser',
-    'Heavy Assault Cruiser',
-    'Heavy Interdiction Cruiser',
-    'Logistics',
-    'Logistics Crusiers',
-    'Strategic Cruiser',
-    'Recon Ship',
-    'Force Recon Ship',
-    'Combat Recon Ship',
-    'Battlecruiser',
-    'Combat Battlecruiser',
-    'Attack Battlecruiser',
-    'Command Ship',
-    'Battleship',
-    'Marauder',
-    'Black Ops',
-    'Capital',
-    'Dreadnought',
-    'Lancer Dreadnought',
-    'Carrier',
-    'Force Auxiliary',
-    'Supercapital',
-    'Supercarrier',
-    'Titan',
-    'Miningfrigate',
-    'Expedition Frigate',
-    'Miningbarge',
-    'Industrial',
-    'Transport Ship',
-    'Freighter',
-    'Jump Freighters',
-    'Industrialcommand',
-]
-
-export type FittingShipType = typeof fitting_ship_types[number]
-
 export type DoctrineTypes = typeof doctrine_types[number]
 
 export const doctrine_types = [
@@ -988,6 +942,9 @@ export interface SRPUI {
     ship_name:                  string;
     killmail_id:                number;
     amount:                     number;
+    is_corp_ship:               boolean;
+    corporation_id:             number;
+    corporation_name:           string;
 }
 
 export interface FleetSRPUI {

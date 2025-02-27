@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from ninja import Router
 from pydantic import BaseModel
@@ -23,7 +23,8 @@ router = Router(tags=["SRP"])
 
 class CreateEveFleetReimbursementRequest(BaseModel):
     external_killmail_link: str
-    fleet_id: int
+    fleet_id: int = None
+    is_corp_ship: bool = False
 
 
 class UpdateEveFleetReimbursementRequest(BaseModel):
@@ -47,6 +48,8 @@ class EveFleetReimbursementResponse(BaseModel):
     ship_name: str
     killmail_id: int
     amount: int
+    is_corp_ship: bool
+    corp_id: Optional[int]
 
 
 class SrpPatchResult(BaseModel):
@@ -66,7 +69,10 @@ class SrpPatchResult(BaseModel):
     description="Request SRP for a fleet, must be a member of the fleet",
 )
 def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
-    fleet = EveFleet.objects.get(id=payload.fleet_id)
+    if payload.fleet_id:
+        fleet = EveFleet.objects.get(id=payload.fleet_id)
+    else:
+        fleet = None
     try:
         details = get_killmail_details(
             payload.external_killmail_link, request.user
@@ -85,8 +91,6 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         return 403, {"detail": f"Killmail not eligible for SRP, {reason}"}
 
     reimbursement_amount = get_reimbursement_amount(details.ship)
-    if reimbursement_amount == 0:
-        return 404, {"detail": "Ship not eligible for SRP"}
 
     reimbursement = EveFleetShipReimbursement.objects.create(
         fleet=fleet,
@@ -100,11 +104,22 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         ship_type_id=details.ship.id,
         ship_name=details.ship.name,
         amount=reimbursement_amount,
+        is_corp_ship=payload.is_corp_ship,
+        corp_id=(
+            details.victim_character.corporation_id
+            if details.victim_character
+            else None
+        ),
     )
+
+    if fleet:
+        fleet_id = fleet.id
+    else:
+        fleet_id = None
 
     return EveFleetReimbursementResponse(
         id=reimbursement.id,
-        fleet_id=fleet.id,
+        fleet_id=fleet_id,
         external_killmail_link=payload.external_killmail_link,
         status="pending",
         character_id=details.victim_character.character_id,
@@ -115,6 +130,12 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         ship_name=details.ship.name,
         killmail_id=details.killmail_id,
         amount=reimbursement_amount,
+        is_corp_ship=reimbursement.is_corp_ship,
+        corp_id=(
+            details.victim_character.corporation_id
+            if details.victim_character
+            else None
+        ),
     )
 
 
@@ -151,6 +172,8 @@ def get_fleet_srp(request, fleet_id: int = None, status: str = None):
                 "ship_name": reimbursement.ship_name,
                 "killmail_id": reimbursement.killmail_id,
                 "amount": reimbursement.amount,
+                "is_corp_ship": reimbursement.is_corp_ship,
+                "corp_id": reimbursement.corp_id,
             }
         )
 

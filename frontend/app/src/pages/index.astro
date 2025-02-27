@@ -118,7 +118,13 @@ const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
 const BALLS_DEEP_ID = 98252708
 
-const staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : 'watermellon'
+import { stagings } from '@dtypes/layout_components'
+
+const staging = Astro.cookies.has('staging') ?
+	Astro.cookies.get('staging')?.value as StagingType :
+	stagings[Math.floor(Math.random() * stagings.length)]
+	
+const is_random_staging = !Astro.cookies.has('staging')
 
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
 if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
@@ -141,14 +147,22 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-            image: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					`/images/home-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}`,
-            image_990: staging === 'auga' ? `/images/home-auga-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   staging === 'nakah' ? `/images/home-nakah-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   staging === 'vard' ? `/images/home-vard-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}` :
-					   `/images/home-cover${DISABLED_CCPWGL ? '-eve.jpg' : '.jpg'}`,
+			video: staging === 'auga' ? '/videos/militia-loop.webm' :
+					staging === 'nakah' ? '/videos/banana-loop.webm' :
+					staging === 'vard' ? '/videos/dong-loop.webm' :
+					'/videos/watermelon-loop.webm',
+			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
+					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
+					staging === 'vard' ? '/images/home-vard-cover.jpg' :
+					'/images/home-cover.jpg',
+            image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
+					staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
+					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					'/images/home-cover-eve.jpg',
+            image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
+					   staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
+					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					   '/images/home-cover-eve.jpg',
             animated: false,
         }}
         fullscreen={true}
@@ -197,10 +211,10 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'auga' ? <AugaInfo /> :
-					staging === 'nakah' ? <NakahInfo /> :
-					staging === 'vard' ? <VardInfo /> :
-					<WatermellonInfo />
+				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
+					staging === 'nakah' ? <NakahInfo is_random={is_random_staging} /> :
+					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
+					<WatermellonInfo is_random={is_random_staging} />
 				}
 				<FlexInline gap='var(--space-3xs)'>
 					{user &&
@@ -256,14 +270,19 @@ const page_description = t('index.leading_text');
 				padding_block="var(--space-l)"
 			>
 				<Flexblock
-					gap='var(--space-m)'
+					gap='var(--space-xl)'
 					class="[ text-center ]"
-				>
-					<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
-					
-					<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+				>	
+					<Flexblock
+						gap='var(--space-m)'
+						class="[ text-center ]"
+					>	
+						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
 
-					<p>{t('index.leading_text')}</p>
+						<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+
+						<p>{t('index.leading_text')}</p>
+					</Flexblock>
 
 					<FlexInline justification='center'>
 						<StylessButton href='#widgets' class="[ caret-down ]" />

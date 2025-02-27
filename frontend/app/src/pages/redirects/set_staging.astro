@@ -8,8 +8,10 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 const tag = Astro.url.searchParams.get('tag')
 
-if (tag)
+if (tag && tag !== 'random')
     Astro.cookies.set('staging', tag, { path: '/' })
+else
+    Astro.cookies.delete('staging', { path: '/' })
 
 const redirect = translatePath('/')
 

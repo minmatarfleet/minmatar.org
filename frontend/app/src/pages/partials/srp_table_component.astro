@@ -42,12 +42,13 @@ if (Astro.request.method === "POST") {
 
     try {
         const data = await Astro.request.formData()
-        const external_killmail_link = JSON.parse(JSON.parse( data.get("data")?.valueOf() as string ))
+        const external_killmail_link = data.get('external_killmail_link' as string) as string
+        const is_corp_ship = data.get('is_corp_ship' as string) === 'on'
 
         if (!is_valid_http_url(external_killmail_link))
             throw new Error(t('invalid_srp_url'))
 
-        await create_fleet_srp(auth_token as string, fleet_id, external_killmail_link)
+        await create_fleet_srp(auth_token as string, fleet_id, external_killmail_link, is_corp_ship)
     } catch (error) {
         submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
 

@@ -2,6 +2,8 @@
 interface Props {
     image: string;
     image_990: string;
+    video?: string;
+    video_thumb?: string;
     alt?: string;
     animated?: boolean; // deprecated
     scrollable?: boolean;
@@ -12,6 +14,8 @@ interface Props {
 const {
     image,
     image_990,
+    video,
+    video_thumb,
     alt = '',
     animated = true, // deprecated
     scrollable = false,
@@ -27,21 +31,34 @@ const optional_attributes = {
     class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]}
     class="[ viewport-cover ]"
 >
-    <picture
-        class="[ !hidden animate-fade-in ]"
-        x-data="{ loaded: false }"
-        x-init="loaded = $refs.img.complete"
-        x-bind:class="{ '!hidden': !loaded }"
-    >
-        <source srcset={image_990} media="(max-width: 990px)">
-        <img
-            src={image}
-            role={!alt ? 'presentation' : undefined}
-            x-ref="img"
-            x-on:load="loaded = true"
-            {...optional_attributes}
-        />
-    </picture>
+    {!video ?
+        <picture
+            class="[ !hidden animate-fade-in ]"
+            x-data="{ loaded: false }"
+            x-init="loaded = $refs.img.complete"
+            x-bind:class="{ '!hidden': !loaded }"
+        >
+            <source srcset={image_990} media="(max-width: 990px)">
+            <img
+                src={image}
+                role={!alt ? 'presentation' : undefined}
+                x-ref="img"
+                x-on:load="loaded = true"
+                {...optional_attributes}
+            />
+        </picture>
+        :
+        <video
+            class="[ animate-fade-in ]"
+            width="1920"
+            height="1080"
+            poster={video_thumb}
+            autoplay
+            loop
+        >
+            <source src={video} type="video/webm">
+        </video>
+    }
 </div>
 
 <style lang="scss" is:global>
@@ -87,6 +104,7 @@ const optional_attributes = {
             );
         }
 
+        video,
         img {
             position: absolute;
             top: 0;

@@ -5,7 +5,6 @@ const { translatePath, t } = i18n(Astro.url)
 import { prod_error_messages } from '@helpers/env'
 
 import type { FittingItem } from '@dtypes/layout_components'
-import { fitting_ship_types } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 
 let fittings:FittingItem[] = []
@@ -22,7 +21,11 @@ let ship_type = {};
 fittings.forEach((fitting) => {
     fitting_type[fitting.fitting_type] = fitting.fitting_type;
     ship_type[fitting.ship_type] = fitting.ship_type;
+    if (fitting.ship_type === 'Unknown')
+        console.log(fitting.ship_type)
 })
+
+const fitting_ship_types = Object.keys(ship_type)
 
 let fittings_grouped_by_ship_type:FittingItem[][] = []
 fitting_ship_types.forEach((fitting_ship_type) => {
@@ -95,7 +98,7 @@ const page_title = t('fitting.list.page_title');
                 const show_item =   (
                                         (this.fitting_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.fitting_name_filter.toLowerCase())) &&
                                         (this.fitting_type_filter == '-1' || content_to_filter[1].textContent.includes(this.fitting_type_filter)) &&
-                                        (this.ship_type_filter == '-1' || content_to_filter[2].textContent.includes(this.ship_type_filter))
+                                        (this.ship_type_filter == '-1' || content_to_filter[2].textContent === this.ship_type_filter)
                                     )
 
                 return show_item
@@ -181,7 +184,7 @@ const page_title = t('fitting.list.page_title');
                     </Flexblock>
             )}
         </BlockList>
-        <p x-show="fits_count === 0" class="[ text-center ]">{t('no_results')}</p>
+        <p x-show="fits_count === 0" class="[ text-center ]">{get_fittings_error ? t('error_fetching_fittings') : t('no_results')}</p>
     </PageWide>
 </Viewport>
 
