@@ -1311,6 +1311,7 @@ export const ui = {
         'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord?',
         'preping_success': 'Pre-ping issued successfully.',
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
+        'push_notifications_missconfiguration': 'Service is not currently available.',
         'random_staging': 'Show a random staging on load',
         'error_fetching_fittings': 'Error fetching fittings. Reload the page.',
         'corp_ship': 'Corporation ship',

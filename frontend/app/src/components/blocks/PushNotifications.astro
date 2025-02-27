@@ -18,6 +18,16 @@ const SUBSCRIPTION_URL = `${get_app_url()}/api/notifications`
 const subscription_id = Astro.cookies.has('subscription_id') ? parseInt(Astro.cookies.get('subscription_id')?.value as string) : 0
 const is_subscripted = notification_subscriptions ? (notification_subscriptions.filter((subscription) => subscription.id === subscription_id) !== undefined) : true
 
+import { get_vapid_public_key } from '@helpers/env'
+import { query_string } from '@helpers/string'
+
+const VAPID_PUBLIC_KEY = get_vapid_public_key()
+
+const worker_query_string = query_string({
+    endpoint: SUBSCRIPTION_URL,
+    public_key: VAPID_PUBLIC_KEY,
+})
+
 import FlexInline from "@components/compositions/FlexInline.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
 
@@ -28,7 +38,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
 
 <Flexblock
-    x-data={`{
+    x-data={VAPID_PUBLIC_KEY ? `{
         notifications_support: null,
         fleet_notifications: ${JSON.stringify(is_subscripted && subscription_id > 0)},
         notifications_permission: null,
@@ -38,7 +48,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         async register_sw() {
             this.unregister_sw()
 
-            const registration = await navigator.serviceWorker.register('/js/notifications_sw.js?endpoint=${SUBSCRIPTION_URL}')
+            const registration = await navigator.serviceWorker.register('/js/notifications_sw.js?${worker_query_string}')
         },
         unregister_sw() {
             navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -67,47 +77,51 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
             this.check_notification_support()
             this.notifications_permission = Notification.permission
         },
-    }`}
+    }` : undefined}
     gap='var(--space-l)'
 >
     <h2>{t('push_notifications')}</h2>
-    <FlexInline x-ref="notifications_loading" class="[ items-center ]" gap='var(--space-3xs)'>
-        <RifterIcon class="small" />
-        <p class="[ loading ]">{t('loading')}</p>
-    </FlexInline>
+    {VAPID_PUBLIC_KEY ?
+        <FlexInline x-ref="notifications_loading" class="[ items-center ]" gap='var(--space-3xs)'>
+            <RifterIcon class="small" />
+            <p class="[ loading ]">{t('loading')}</p>
+        </FlexInline>
 
-    <template x-if="notifications_support">
-        <div class="[ w-full ]">
-            <template x-if="notifications_permission === 'granted'">
-                <SwitchSquare
-                    x-on:change="toogle_subscription()"
-                    class="[ w-full ]"
-                    checked={is_subscripted && subscription_id > 0}
-                    x-model="fleet_notifications"
-                    label={t('fleet_notifications')}
-                    description={t('fleet_notifications_description')}
-                />
-            </template>
-            <template x-if="notifications_permission === 'default'">
-                <Flexblock>
-                    <p>{t('allow_notification_hint')}</p>
+        <template x-if="notifications_support">
+            <div class="[ w-full ]">
+                <template x-if="notifications_permission === 'granted'">
+                    <SwitchSquare
+                        x-on:change="toogle_subscription()"
+                        class="[ w-full ]"
+                        checked={is_subscripted && subscription_id > 0}
+                        x-model="fleet_notifications"
+                        label={t('fleet_notifications')}
+                        description={t('fleet_notifications_description')}
+                    />
+                </template>
+                <template x-if="notifications_permission === 'default'">
+                    <Flexblock>
+                        <p>{t('allow_notification_hint')}</p>
 
-                    <Button
-                        class="[ w-fit ]"
-                        size='sm'
-                        x-on:click="await request_notification_permission()"
-                    >
-                        {t('grant_permission')}
-                    </Button>
-                </Flexblock>
-            </template>
-            <template x-if="notifications_permission === 'denied'">
-                <p>{t('notifications_denied_hint')}</p>
-            </template>
-        </div>
-    </template>
+                        <Button
+                            class="[ w-fit ]"
+                            size='sm'
+                            x-on:click="await request_notification_permission()"
+                        >
+                            {t('grant_permission')}
+                        </Button>
+                    </Flexblock>
+                </template>
+                <template x-if="notifications_permission === 'denied'">
+                    <p>{t('notifications_denied_hint')}</p>
+                </template>
+            </div>
+        </template>
 
-    <template x-if="!notifications_support">
-        <p>{t('push_notifications_not_supported')}</p>
-    </template>
+        <template x-if="!notifications_support">
+            <p>{t('push_notifications_not_supported')}</p>
+        </template>
+        :
+        <p>{t('push_notifications_missconfiguration')}</p>
+    }
 </Flexblock>

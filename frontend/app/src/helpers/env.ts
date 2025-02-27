@@ -37,3 +37,19 @@ export const is_disabled_ccpwgl = () => {
 export const get_prod_url = () => {
     return import.meta.env.PROD_URL ?? 'https://my.minmatar.org';
 }
+
+export const get_vapid_public_key = () => {
+    return import.meta.env.VAPID_PUBLIC_KEY
+}
+
+export const get_vapid_private_key = () => {
+    return import.meta.env.VAPID_PRIVATE_KEY
+}
+
+export const get_vapid_contact = () => {
+    return import.meta.env.VAPID_CONTACT
+}
+
+export const get_shared_secret = () => {
+    return import.meta.env.SHARED_SECRET
+}

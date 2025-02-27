@@ -5,6 +5,7 @@ const translatePath = useTranslatedPath('en')
 
 import { strip_markdown } from '@helpers/string'
 
+import { get_vapid_public_key, get_vapid_private_key, get_vapid_contact } from '@helpers/env'
 import { get_player_icon } from '@helpers/eve_image_server';
 import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
 
@@ -14,16 +15,18 @@ import { unique } from '@helpers/array'
 
 import webpush from 'web-push'
 
-const vapidKeys = {
-    publicKey: 'BFucqTUQisrCDaeQpaxyDsH4y2i7CGjn_c3k5akdtxQnAwkevP_ufaJqx8hACWHwR6hJIFg1qKbRVKAvH8cQdnM',
-    privateKey: 'a3gSYp-WROTUMTlP-6jDCIU8OxWhNpZ8_5uEWd8q8yY'
-}
+const VAPID_CONTACT = get_vapid_contact()
+const VAPID_PUBLIC_KEY = get_vapid_public_key()
+const VAPID_PRIVATE_KEY = get_vapid_private_key()
+const WEBPUSH_ENABLED = VAPID_CONTACT && VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY
 
-webpush.setVapidDetails(
-    'mailto:beautifulmim.eve@gmail.com',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
-)
+if (WEBPUSH_ENABLED) {
+    webpush.setVapidDetails(
+        VAPID_CONTACT,
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY
+    )
+}
 
 export async function send_active_fleet_notification(auth_token:string, fleet_id:number) {
     let subscriptions:NotificationSubscriptionsFull[] = []
@@ -56,6 +59,8 @@ export async function send_active_fleet_notification(auth_token:string, fleet_id
 }
 
 const send_notification = (auth_token: string, subscription:any, payload:string, subscription_id:number) => {
+    if (!WEBPUSH_ENABLED) return
+
     webpush.sendNotification(subscription, payload)
         .then(response => {
             console.log('Push notification sent successfully:', response);

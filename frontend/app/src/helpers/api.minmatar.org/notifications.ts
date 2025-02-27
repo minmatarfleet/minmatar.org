@@ -1,4 +1,5 @@
 import { parse_response_error } from '@helpers/string'
+import { get_shared_secret } from '@helpers/env'
 import type { NotificationSubscription, NotificationSubscriptionsFull } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/subscriptions`
@@ -72,7 +73,7 @@ export async function remove_subscription(access_token:string, subscription_id:n
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/${subscription_id}`
+    const ENDPOINT = `${API_ENDPOINT}/${subscription_id}?code=${get_shared_secret()}`
     const METHOD = 'DELETE'
 
     console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
