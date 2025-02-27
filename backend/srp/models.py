@@ -35,3 +35,4 @@ class EveFleetShipReimbursement(models.Model):
     ship_name = models.CharField(max_length=255)
     ship_type_id = models.BigIntegerField()
     is_corp_ship = models.BooleanField(default=False)
+    corp_id = models.BigIntegerField(null=True)

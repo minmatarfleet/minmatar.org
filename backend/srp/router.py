@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from ninja import Router
 from pydantic import BaseModel
@@ -49,6 +49,7 @@ class EveFleetReimbursementResponse(BaseModel):
     killmail_id: int
     amount: int
     is_corp_ship: bool
+    corp_id: Optional[int]
 
 
 class SrpPatchResult(BaseModel):
@@ -104,6 +105,11 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         ship_name=details.ship.name,
         amount=reimbursement_amount,
         is_corp_ship=payload.is_corp_ship,
+        corp_id=(
+            details.victim_character.corporation_id
+            if details.victim_character
+            else None
+        ),
     )
 
     if fleet:
@@ -125,6 +131,11 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         killmail_id=details.killmail_id,
         amount=reimbursement_amount,
         is_corp_ship=reimbursement.is_corp_ship,
+        corp_id=(
+            details.victim_character.corporation_id
+            if details.victim_character
+            else None
+        ),
     )
 
 
@@ -162,6 +173,7 @@ def get_fleet_srp(request, fleet_id: int = None, status: str = None):
                 "killmail_id": reimbursement.killmail_id,
                 "amount": reimbursement.amount,
                 "is_corp_ship": reimbursement.is_corp_ship,
+                "corp_id": reimbursement.corp_id,
             }
         )
 
