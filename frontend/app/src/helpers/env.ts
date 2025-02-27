@@ -49,3 +49,7 @@ export const get_vapid_private_key = () => {
 export const get_vapid_contact = () => {
     return import.meta.env.VAPID_CONTACT
 }
+
+export const get_shared_secret = () => {
+    return import.meta.env.SHARED_SECRET
+}
