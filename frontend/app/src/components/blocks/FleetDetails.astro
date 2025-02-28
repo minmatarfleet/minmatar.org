@@ -31,6 +31,12 @@ import { query_string } from '@helpers/string';
 const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
+import { minutes_to } from '@helpers/date';
+
+const diff_time = minutes_to(fleet.start_time)
+const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
+const pre_pingable = minutes_to_fleet > 30
+
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
@@ -77,7 +83,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </Flexblock>
                     {can_remove_fleet &&
                         <FlexInline>
-                            {(!history && fleet.tracking === null) &&
+                            {(fleet.tracking === null && pre_pingable) &&
                                 <PrepingButton fleet_id={fleet.id} />
                             }
 
