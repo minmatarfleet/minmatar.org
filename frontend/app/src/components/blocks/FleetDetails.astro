@@ -35,7 +35,7 @@ import { minutes_to } from '@helpers/date';
 
 const diff_time = minutes_to(fleet.start_time)
 const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
-const pre_pingable = minutes_to_fleet > 30
+const pre_pingable = minutes_to_fleet >= 30
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
@@ -68,6 +68,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         tracking_started: false,
     }`}
     @tracking_started="tracking_started = true"
+    @is_fleet_time="document.getElementById('preping-button').remove()"
 >
     <Flexblock gap="var(--space-3xs)">
         <ComponentBlock>

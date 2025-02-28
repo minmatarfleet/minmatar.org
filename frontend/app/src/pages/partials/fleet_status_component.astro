@@ -41,7 +41,7 @@ if (Astro.request.method === "POST") {
         start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
 
         alert = {
-            title: t('start_tracking'),
+            title: t('ping_fleet'),
             content: start_fleet_error as string,
         }
     }

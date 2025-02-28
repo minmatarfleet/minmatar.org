@@ -389,43 +389,48 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                 </Flexblock>
 
                 <ComponentBlock width='narrow'>
-                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                    <Flexblock
+                        class="[ w-full ]"
+                        gap='var(--space-m)'
+                        x-data={`{
+                            show: false,
+                            is_last_minute_fleet() {
+                                const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
+                                const now = new Date().getTime();
+                                const distance = fleet_time - now;
+                                const DISTANCE_30_MINUTES = 30*60*1000
+
+                                this.show = (distance <= DISTANCE_30_MINUTES && distance > 0)
+                            }
+                        }`}
+                        x-effect="eve_date && eve_time && is_last_minute_fleet()"
+                    >
                         <h2>{t('fleet_submit')} (3/3)</h2>
 
                         <Flexblock
                             x-show="show"
-                            x-data={`{
-                                show: false,
-                                is_last_minute_fleet() {
-                                    const fleet_time = new Date(\`\${eve_date}T\${eve_time}Z\`).getTime()
-                                    const now = new Date().getTime();
-                                    const distance = fleet_time - now;
-                                    const DISTANCE_15_MINUTES = 15*60*1000
-
-                                    this.show = (distance <= DISTANCE_15_MINUTES && distance > 0)
-                                }
-                            }`}
-                            x-effect="eve_date && eve_time && is_last_minute_fleet()"
                             style="display: none"
                         >
                             <p>{t('fleet_starting_soon')}</p>
                             <SwitchSquare
                                 class="[ w-full ]"
                                 name="start_tracking"
-                                label={t('start_tracking')}
+                                label={t('ping_fleet')}
                                 description={t('start_fleet_tracking_description')}
                             />
                         </Flexblock>
 
                         {!fleet?.id &&
-                            <SwitchSquare
-                                class="[ w-full ]"
-                                name="immediate_ping"
-                                label={t('preping')}
-                                description={t('preping_description')}
-                                x-bind:checked="audience > 2"
-                                x-bind:disabled="audience > 2"
-                            />
+                            <div x-show="!show">
+                                <SwitchSquare
+                                    class="[ w-full ]"
+                                    name="immediate_ping"
+                                    label={t('preping')}
+                                    description={t('preping_description')}
+                                    x-bind:checked="audience > 2"
+                                    x-bind:disabled="audience > 2"
+                                />
+                            </div>
                         }
 
                         <SwitchSquare
