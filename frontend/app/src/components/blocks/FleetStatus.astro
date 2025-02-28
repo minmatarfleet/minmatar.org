@@ -82,6 +82,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
         {is_fleet_commander && !is_fleet_time && !fleet?.tracking &&
             <template
+                id="fleet-tick"
                 x-if="is_fleet_time"
                 x-data={`{
                     init() {
@@ -93,8 +94,12 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
                             const distance = countDownDate - now;
                             const DISTANCE_30_MINUTES = 30*60*1000
 
+                            if (!document.getElementById('fleet-tick'))
+                                clearInterval(timer)
+
                             if (distance <= DISTANCE_30_MINUTES) {
                                 is_fleet_time = true
+                                $dispatch('is_fleet_time')
                                 clearInterval(timer)
                             }
                         }, 1000)
