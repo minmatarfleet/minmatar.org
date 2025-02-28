@@ -1308,7 +1308,7 @@ export const ui = {
         'preping_description': 'Immediately create a pre-ping when “pushing the button”',
         'preping_error': 'An error occurred while pre-pinging the fleet.',
         'preping_dialog_title': 'Fleet pre-ping',
-        'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord?',
+        'preping_dialog_text': 'Continue posting a fleet pre-ping on Discord? Use pre-ping to highlight upcoming fleets minutes or hours in advance. This should not be confused with the start of fleet.',
         'preping_success': 'Pre-ping issued successfully.',
         'preping_unsuccess': 'We encountered some issues while performing the pre-ping.',
         'push_notifications_missconfiguration': 'Service is not currently available.',
