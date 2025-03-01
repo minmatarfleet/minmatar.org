@@ -75,17 +75,18 @@ class EsiClient:
         except Exception:
             return None, NO_VALID_ACCESS_TOKEN
 
+    def _operation_results(self, operation) -> EsiResponse:
+        try:
+            return EsiResponse(response_code=SUCCESS, data=operation.results())
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
     def get_character_public_data(self, char_id: int) -> EsiResponse:
         """Returns the public data for the specified Eve character."""
         operation = esi.client.Character.get_characters_character_id(
             character_id=char_id
         )
-
-        try:
-            data = operation.results()
-            return EsiResponse(data=data, response_code=SUCCESS)
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        return self._operation_results(operation)
 
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""
