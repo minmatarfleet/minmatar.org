@@ -6,6 +6,7 @@ from django.conf import settings
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
+from eveonline.client import EsiClient
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -43,3 +44,27 @@ def check_var(request, var_name: str) -> str:
         return "Set"
     else:
         return "Not set"
+
+
+@router.get(
+    "character/skills/{int:character_id}",
+    summary="ESI debugging",
+    auth=AuthBearer(),
+    response={
+        200: str,
+        403: ErrorResponse,
+    },
+)
+def debug_character_esi(request, character_id: int):
+    """API endpoint for exploring the ESI client"""
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    response = EsiClient(character_id).get_character_skills()
+    if response.success():
+        skills = response.results()
+        return str(len(skills))
+    else:
+        return f"Error {response.response_code}, {response.response}"

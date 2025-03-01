@@ -11,7 +11,6 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
@@ -21,12 +20,6 @@ from eveonline.models import (
     EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import (
-    # ADVANCED_SCOPES,
-    # BASIC_SCOPES,
-    # CEO_SCOPES,
-    # EXECUTOR_CHARACTER_SCOPES,
-    # FREIGHT_CHARACTER_SCOPES,
-    # MARKET_CHARACTER_SCOPES,
     TokenType,
     scopes_for,
     scope_group,
@@ -344,21 +337,6 @@ def get_primary_character(request):
 def add_character(request, redirect_url: str, token_type: TokenType):
     request.session["redirect_url"] = redirect_url
     scopes = scopes_for(token_type)
-    # match token_type:
-    #     case TokenType.BASIC:
-    #         scopes = BASIC_SCOPES
-    #     case TokenType.ADVANCED:
-    #         scopes = ADVANCED_SCOPES
-    #     case TokenType.PUBLIC:
-    #         scopes = ["publicData"]
-    #     case TokenType.CEO:
-    #         scopes = CEO_SCOPES
-    #     case TokenType.FREIGHT:
-    #         scopes = FREIGHT_CHARACTER_SCOPES
-    #     case TokenType.MARKET:
-    #         scopes = MARKET_CHARACTER_SCOPES
-    #     case TokenType.EXECUTOR:
-    #         scopes = EXECUTOR_CHARACTER_SCOPES
 
     @login_required()
     @token_required(scopes=scopes, new=True)
@@ -588,25 +566,3 @@ def get_character_tokens(request, character_id: int):
             )
 
     return response
-
-
-@router.get(
-    "/{int:character_id}/debug",
-    summary="ESI debugging",
-    auth=AuthBearer(),
-    response={
-        200: str,
-        403: ErrorResponse,
-    },
-)
-def debug_character_esi(request, character_id: int):
-    """API endpoint for exploring the ESI client"""
-    if not user_in_team(request.user, TECH_TEAM):
-        return 403, ErrorResponse(detail="Not authorised")
-
-    response = EsiClient(character_id).get_character_skills()
-    if response.success():
-        skills = response.results()
-        return str(len(skills))
-    else:
-        return f"Error {response.response_code}"

@@ -1,3 +1,4 @@
+import json
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
@@ -5,6 +6,13 @@ from esi.models import Token
 from .models import EveCharacter
 
 esi = EsiClientProvider()
+
+SUCCESS = 0
+UNKNOWN_CLIENT_ERROR = 901
+CHAR_ESI_SUSPENDED = 902
+NO_CLIENT_CHAR = 903
+NO_VALID_ACCESS_TOKEN = 904
+NO_VALID_ESI_TOKEN = 905
 
 
 class EsiResponse:
@@ -35,31 +43,37 @@ class EsiClient:
     """An instance of the ESI client for a specific character"""
 
     character_id: int
+    character_esi_suspended: bool = False
 
-    def __init__(self, character):
+    def __init__(self, character: int | EveCharacter):
         if isinstance(character, int):
             self.character_id = character
         elif isinstance(character, EveCharacter):
             self.character_id = character.character_id
+            self.character_esi_suspended = character.esi_suspended
 
-    def get_valid_token(self, required_scopes: List[str]) -> Token:
+    def get_valid_token(self, required_scopes: List[str]) -> tuple[Token, int]:
         if not self.character_id:
-            return False
+            return None, NO_CLIENT_CHAR
+
+        if self.character_esi_suspended:
+            return None, CHAR_ESI_SUSPENDED
 
         token = Token.get_token(self.character_id, required_scopes)
         if not token:
-            return False
+            return None, NO_VALID_ESI_TOKEN
 
         try:
-            return token.valid_access_token()
+            return token.valid_access_token(), SUCCESS
         except Exception:
-            return False
+            return None, NO_VALID_ACCESS_TOKEN
 
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""
-        token = self.get_valid_token(["esi-skills.read_skills.v1"])
-        if not token:
-            return EsiResponse(999)
+
+        token, status = self.get_valid_token(["esi-skills.read_skills.v1"])
+        if status > 0:
+            return EsiResponse(status)
 
         operation = esi.client.Skills.get_characters_character_id_skills(
             character_id=self.character_id,
@@ -68,5 +82,26 @@ class EsiClient:
         operation.request_config.also_return_response = True
         data, response = operation.results()
         return EsiResponse(
-            data=data["skills"], response=response, response_code=200
+            data=data["skills"] if data else None,
+            response=response,
+            response_code=SUCCESS,
+        )
+
+    def get_character_assets(self) -> EsiResponse:
+        """Returns the assets of the character this ESI client was created for."""
+
+        token, status = self.get_valid_token(["esi-assets.read_assets.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Assets.get_characters_character_id_assets(
+            character_id=self.character_id,
+            token=token,
+        )
+        operation.request_config.also_return_response = True
+        data, response = operation.results()
+        return EsiResponse(
+            data=json.dumps(data) if data else None,
+            response=response,
+            response_code=SUCCESS,
         )
