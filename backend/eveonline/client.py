@@ -1,9 +1,13 @@
 import json
+import logging
+
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
 
 from .models import EveCharacter
+
+logger = logging.getLogger(__name__)
 
 esi = EsiClientProvider()
 
@@ -13,6 +17,7 @@ CHAR_ESI_SUSPENDED = 902
 NO_CLIENT_CHAR = 903
 NO_VALID_ACCESS_TOKEN = 904
 NO_VALID_ESI_TOKEN = 905
+ERROR_CALLING_ESI = 906
 
 
 class EsiResponse:
@@ -45,8 +50,10 @@ class EsiClient:
     character_id: int
     character_esi_suspended: bool = False
 
-    def __init__(self, character: int | EveCharacter):
-        if isinstance(character, int):
+    def __init__(self, character: int | EveCharacter | None):
+        if character is None:
+            return
+        elif isinstance(character, int):
             self.character_id = character
         elif isinstance(character, EveCharacter):
             self.character_id = character.character_id
@@ -68,6 +75,18 @@ class EsiClient:
         except Exception:
             return None, NO_VALID_ACCESS_TOKEN
 
+    def get_character_public_data(self, char_id: int) -> EsiResponse:
+        """Returns the public data for the specified Eve character."""
+        operation = esi.client.Character.get_characters_character_id(
+            character_id=char_id
+        )
+
+        try:
+            data = operation.results()
+            return EsiResponse(data=data, response_code=SUCCESS)
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""
 
@@ -79,13 +98,15 @@ class EsiClient:
             character_id=self.character_id,
             token=token,
         )
-        operation.request_config.also_return_response = True
-        data, response = operation.results()
-        return EsiResponse(
-            data=data["skills"] if data else None,
-            response=response,
-            response_code=SUCCESS,
-        )
+
+        try:
+            data = operation.results()
+            return EsiResponse(
+                data=data["skills"] if data else None,
+                response_code=SUCCESS,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 
     def get_character_assets(self) -> EsiResponse:
         """Returns the assets of the character this ESI client was created for."""
@@ -98,10 +119,11 @@ class EsiClient:
             character_id=self.character_id,
             token=token,
         )
-        operation.request_config.also_return_response = True
-        data, response = operation.results()
-        return EsiResponse(
-            data=json.dumps(data) if data else None,
-            response=response,
-            response_code=SUCCESS,
-        )
+        data = operation.results()
+        try:
+            return EsiResponse(
+                data=json.dumps(data) if data else None,
+                response_code=SUCCESS,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)

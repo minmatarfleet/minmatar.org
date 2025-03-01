@@ -47,8 +47,8 @@ def check_var(request, var_name: str) -> str:
 
 
 @router.get(
-    "character/skills/{int:character_id}",
-    summary="ESI debugging",
+    "character/{int:character_id}",
+    summary="ESI debugging without token",
     auth=AuthBearer(),
     response={
         200: str,
@@ -57,6 +57,29 @@ def check_var(request, var_name: str) -> str:
 )
 def debug_character_esi(request, character_id: int):
     """API endpoint for exploring the ESI client"""
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    response = EsiClient(None).get_character_public_data(character_id)
+    if response.success():
+        char = response.results()
+        return char["name"]
+    else:
+        return f"Error {response.response_code}, {response.response}"
+
+
+@router.get(
+    "character/{int:character_id}/skills",
+    summary="ESI debugging with token",
+    auth=AuthBearer(),
+    response={
+        200: str,
+        403: ErrorResponse,
+    },
+)
+def debug_skills_esi(request, character_id: int):
     if not (
         request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
     ):
