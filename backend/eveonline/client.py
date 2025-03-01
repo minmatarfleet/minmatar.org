@@ -119,8 +119,8 @@ class EsiClient:
             character_id=self.character_id,
             token=token,
         )
-        data = operation.results()
         try:
+            data = operation.results()
             return EsiResponse(
                 data=json.dumps(data) if data else None,
                 response_code=SUCCESS,
