@@ -28,7 +28,7 @@ const optional_attributes = {
 ---
 
 <div
-    class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, Astro.props.class]}
+    class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, { 'fix-pixel': video }, Astro.props.class]}
     class="[ viewport-cover ]"
 >
     {!video ?
@@ -66,6 +66,10 @@ const optional_attributes = {
         position: fixed;
         inset: 0;
         overflow: visible;
+
+        &.fix-pixel {
+            width: calc(100% + 1px) !important; /* Fix green right border out of sharpen filter */
+        }
 
         &.scrollable {
             position: absolute;
