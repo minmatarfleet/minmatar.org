@@ -5,13 +5,13 @@ from typing import List
 import pydantic
 from esi.clients import EsiClientProvider
 from eveuniverse.models import EveType
+from eveonline.client import EsiClient
 
 from eveonline.models import (
     EveCharacter,
     EveCharacterSkill,
     EveCharacterSkillset,
     EveSkillset,
-    Token,
 )
 
 esi = EsiClientProvider()
@@ -32,15 +32,27 @@ def upsert_character_skills(character_id: int):
     """
     logger.info("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
-    required_scopes = ["esi-skills.read_skills.v1"]
-    token = Token.get_token(character.character_id, required_scopes)
-    if not token:
-        logger.info("Skipping skills update for %s", character.character_id)
-        return
+    # required_scopes = ["esi-skills.read_skills.v1"]
+    # token = Token.get_token(character.character_id, required_scopes)
+    # if not token:
+    #     logger.info("Skipping skills update for %s", character.character_id)
+    #     return
+    #
+    # esi_skills = esi.client.Skills.get_characters_character_id_skills(
+    #     character_id=character.character_id, token=token.valid_access_token()
+    # ).results()["skills"]
 
-    esi_skills = esi.client.Skills.get_characters_character_id_skills(
-        character_id=character.character_id, token=token.valid_access_token()
-    ).results()["skills"]
+    response = EsiClient(character).get_character_skills()
+
+    if response.success():
+        esi_skills = response.results()
+    else:
+        logger.error(
+            "Error %d getting skills for %s",
+            response.response_code,
+            character.character_id,
+        )
+        esi_skills = []
 
     for skill in esi_skills:
         upsert_character_skill(character, skill)
