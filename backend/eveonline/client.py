@@ -1,4 +1,3 @@
-import json
 import logging
 
 from typing import List
@@ -121,9 +120,8 @@ class EsiClient:
             token=token,
         )
         try:
-            data = operation.results()
             return EsiResponse(
-                data=json.dumps(data) if data else None,
+                data=operation.results(),
                 response_code=SUCCESS,
             )
         except Exception as e:

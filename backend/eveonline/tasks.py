@@ -11,6 +11,7 @@ from eveonline.helpers.affiliations import (
 )
 from groups.tasks import update_affiliation
 
+from .client import EsiClient
 from .helpers.assets import create_character_assets
 from .helpers.skills import (
     create_eve_character_skillset,
@@ -138,19 +139,29 @@ def update_character_assets(eve_character_id):
     character = EveCharacter.objects.get(character_id=eve_character_id)
 
     logger.info("Updating assets for character %s", eve_character_id)
-    required_scopes = [
-        "esi-assets.read_assets.v1",
-    ]
-    token = Token.get_token(character.character_id, required_scopes)
-    if character.esi_suspended or not token:
-        logger.info("Skipping asset update for character %s", eve_character_id)
+    # required_scopes = [
+    #     "esi-assets.read_assets.v1",
+    # ]
+    # token = Token.get_token(character.character_id, required_scopes)
+    # if character.esi_suspended or not token:
+    #     logger.info("Skipping asset update for character %s", eve_character_id)
+    #     return
+
+    # esi_assets = esi.client.Assets.get_characters_character_id_assets(
+    #     character_id=eve_character_id, token=token.valid_access_token()
+    # ).results()
+
+    response = EsiClient(character).get_character_assets()
+    if not response.success():
+        logger.error(
+            "Error %d fetching assets for %s (%d)",
+            response.response_code,
+            character.character_name,
+            character.character_id,
+        )
         return
 
-    esi_assets = esi.client.Assets.get_characters_character_id_assets(
-        character_id=eve_character_id, token=token.valid_access_token()
-    ).results()
-
-    character.assets_json = json.dumps(esi_assets)
+    character.assets_json = json.dumps(response.results())
     character.save()
     create_character_assets(character)
 
