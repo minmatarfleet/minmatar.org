@@ -32,29 +32,19 @@ def upsert_character_skills(character_id: int):
     """
     logger.info("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
-    # required_scopes = ["esi-skills.read_skills.v1"]
-    # token = Token.get_token(character.character_id, required_scopes)
-    # if not token:
-    #     logger.info("Skipping skills update for %s", character.character_id)
-    #     return
-    #
-    # esi_skills = esi.client.Skills.get_characters_character_id_skills(
-    #     character_id=character.character_id, token=token.valid_access_token()
-    # ).results()["skills"]
 
     response = EsiClient(character).get_character_skills()
 
-    if response.success():
-        esi_skills = response.results()
-    else:
+    if not response.success():
         logger.error(
-            "Error %d getting skills for %s",
+            "Error %d getting skills for %s (%d)",
             response.response_code,
+            character.character_name,
             character.character_id,
         )
-        esi_skills = []
+        return
 
-    for skill in esi_skills:
+    for skill in response.results():
         upsert_character_skill(character, skill)
 
 
@@ -83,7 +73,7 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
     skill.save()
 
     if qry.count() > 1:
-        logger.warning(
+        logger.error(
             "Duplicate skill %d for character %d, deleting one",
             esi_skill["skill_id"],
             character.character_id,
