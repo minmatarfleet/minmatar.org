@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
-from discord.tasks import sync_discord_user
+from discord.tasks import sync_discord_user, sync_discord_nickname
 from groups.tasks import update_affiliation
 
 from .helpers import get_user_profile, get_user_profiles
@@ -177,4 +177,5 @@ def delete_account(request):
 def sync_user(request, user_id: int):
     update_affiliation(user_id)
     sync_discord_user(user_id)
+    sync_discord_nickname(user_id, True)
     return "User synced successfully"

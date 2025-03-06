@@ -43,33 +43,38 @@ def sync_discord_users():
 @app.task()
 def sync_discord_user_nicknames():
     for user in User.objects.all():
-        logger.debug("Syncing discord nickname user %s", user.username)
-        discord_user = DiscordUser.objects.filter(user_id=user.id).first()
-        if discord_user is None:
-            continue
-        expected_nickname = get_expected_nickname(user)
-        logger.debug("Expected nickname: %s", expected_nickname)
-        if expected_nickname is None:
-            continue
+        sync_discord_nickname(user, False)
 
-        if discord_user.nickname != expected_nickname:
-            logger.info(
-                "Updating nickname for user %s to %s",
+
+def sync_discord_nickname(user: User | int, force_update: bool):
+    if isinstance(user, int):
+        user = User.objects.get(user)
+
+    logger.debug("Syncing discord nickname user %s", user.username)
+    discord_user = DiscordUser.objects.filter(user_id=user.id).first()
+    if discord_user is None:
+        return
+    expected_nickname = get_expected_nickname(user)
+    logger.debug("Expected nickname: %s", expected_nickname)
+    if expected_nickname is None:
+        return
+
+    if force_update or (discord_user.nickname != expected_nickname):
+        logger.info(
+            "Updating nickname for user %s to %s",
+            user.username,
+            expected_nickname,
+        )
+        try:
+            discord.update_user(discord_user.id, nickname=expected_nickname)
+            discord_user.nickname = expected_nickname
+            discord_user.save()
+        except Exception as e:
+            logger.error(
+                "Failed to update nickname for user %s: %s",
                 user.username,
-                expected_nickname,
+                e,
             )
-            try:
-                discord.update_user(
-                    discord_user.id, nickname=expected_nickname
-                )
-                discord_user.nickname = expected_nickname
-                discord_user.save()
-            except Exception as e:
-                logger.error(
-                    "Failed to update nickname for user %s: %s",
-                    user.username,
-                    e,
-                )
 
 
 @app.task(rate_limit="1/s")
