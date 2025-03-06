@@ -48,7 +48,7 @@ def sync_discord_user_nicknames():
 
 def sync_discord_nickname(user: User | int, force_update: bool):
     if isinstance(user, int):
-        user = User.objects.get(user)
+        user = User.objects.get(id=user)
 
     logger.debug("Syncing discord nickname user %s", user.username)
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
