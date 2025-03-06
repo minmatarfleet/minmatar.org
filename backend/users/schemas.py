@@ -19,6 +19,7 @@ class DiscordUserSchema(BaseModel):
     id: int
     discord_tag: str
     avatar: Optional[str]
+    nickname: Optional[str]
 
 
 class UserProfileSchema(BaseModel):

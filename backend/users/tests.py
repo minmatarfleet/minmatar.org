@@ -50,6 +50,7 @@ class UserRouterTestCase(TestCase):
             user=user,
             id=123,
             discord_tag="test#1234",
+            nickname="testy",
         )
         primary_character = EvePrimaryCharacter.objects.create(
             character=character
@@ -79,6 +80,7 @@ class UserRouterTestCase(TestCase):
                     "id": discord_user.id,
                     "discord_tag": discord_user.discord_tag,
                     "avatar": f"https://cdn.discordapp.com/avatars/{discord_user.id}/{discord_user.avatar}.png",
+                    "nickname": discord_user.nickname,
                 },
             },
         )
