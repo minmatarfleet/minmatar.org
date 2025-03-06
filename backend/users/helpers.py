@@ -92,6 +92,7 @@ def expand_user_profile(
         payload["discord_user_profile"] = {
             "id": discord_user.id,
             "discord_tag": discord_user.discord_tag,
+            "nickname": discord_user.nickname,
             "avatar": f"https://cdn.discordapp.com/avatars/{discord_user.id}/{discord_user.avatar}.png",
         }
     else:
