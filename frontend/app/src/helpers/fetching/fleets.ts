@@ -19,6 +19,8 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
 
     api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
+    if (!upcoming)
+        api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time) < new Date())
     
     const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
     const fleet_commanders_profiles = await get_users_character(fleet_commanders)
