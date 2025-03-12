@@ -20,7 +20,6 @@ const CORPORATIONS_WITH_SLIDE = [
     'Balls Deep Inc.',
     'Rapid Unscheduled Disassembly.',
     'Minmatar Fleet Academy',
-    'Exit-Strategy',
     'Soltech Armada',
     'Criterion.',
 ]
@@ -34,8 +33,9 @@ import { get_alliance_logo } from '@helpers/eve_image_server';
 const MINMATAR_FLEET_HOLDINGS_ID = 98735318
 const BLACK_RIFTER_COFFIN_COMPANY_ID  = 98726032
 const VINDICTA_EXPEDITIONARY_ID  = 98760041
+const EXIT_STRATEGY_ID  = 98380820
 const PROTEAN_CONCEPT_ID = 98633005
-const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY_ID, VINDICTA_EXPEDITIONARY_ID, PROTEAN_CONCEPT_ID ]
+const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY_ID, VINDICTA_EXPEDITIONARY_ID, PROTEAN_CONCEPT_ID, EXIT_STRATEGY_ID ]
 corporations = corporations.filter( (i) => !CORPORATIONS_FILTER.includes(i.corporation_id) )
 
 const pagination_icons:string[] = []
@@ -130,13 +130,6 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Soltech Armada' &&
                         <SoltechArmadaSlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
-                    {corporation.corporation_name == 'Exit-Strategy' &&
-                        <ExitStrategySlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
