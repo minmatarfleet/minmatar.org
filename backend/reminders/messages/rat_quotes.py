@@ -5,7 +5,7 @@ rat_quotes = [
     "Rat Cheesinthians 13:4 - 'Love is patient, love is kind, love doesn't steal cheese from behind.'",
     "Rat Genesis 1:1 - 'In the beginning, Rat created the holes and the cheese.'",
     "Rat Exodus 20:15 - 'Thou shalt not steal cheese, for it is a sacred treasure.'",
-    "Ratthew 6:19 - 'Do not store up for yourselves treasures on earth, where rats and vermin destroy.'",
+    "Ratthew 6:19 - 'Do not store up for yourselves treasures on earth, where cats and felines destroy.'",
     "Rat Cheesinthians 10:13 - 'No temptation has overtaken you except what is common to Rat.'",
     "Ratthew 25:40 - 'Whatever you did for one of the least of these rats, you did for me.'",
     "Ratah 6:8 - 'He has shown you, O Rat, what is good. And what does the Rat require of you? To scurry justly and to love cheese mercy.'",
