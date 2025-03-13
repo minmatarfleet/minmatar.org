@@ -91,6 +91,17 @@ def get_reimbursement_amount(ship: EveType):
     return 0
 
 
+def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
+    """
+    Recalculate the amount for the ship
+    """
+    ship_type, _ = EveType.objects.get_or_create_esi(
+        id=reimbursement.ship_type_id
+    )
+    reimbursement.amount = get_reimbursement_amount(ship_type)
+    reimbursement.save()
+
+
 def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
     """
     Check if a character is valid for reimbursement
