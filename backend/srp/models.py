@@ -25,7 +25,7 @@ class EveFleetShipReimbursement(models.Model):
         max_length=32, choices=status_choices, default="pending"
     )
 
-    # populated
+    # populated fields
     killmail_id = models.BigIntegerField()
     character_id = models.BigIntegerField()
     character_name = models.CharField(max_length=255)
@@ -36,3 +36,12 @@ class EveFleetShipReimbursement(models.Model):
     ship_type_id = models.BigIntegerField()
     is_corp_ship = models.BooleanField(default=False)
     corp_id = models.BigIntegerField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["external_killmail_link"],
+                name="unique_pending_or_approved_killmail_link",
+                condition=models.Q(status__in=["pending", "approved"]),
+            )
+        ]
