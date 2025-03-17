@@ -52,6 +52,16 @@ class EveFleet(models.Model):
     )
     disable_motd = models.BooleanField(null=True, default=False)
 
+    fleet_statuses = (
+        ("pending", "Pending"),
+        ("active", "Active"),
+        ("complete", "Complete"),
+        ("cancelled", "Cancelled"),
+        ("unknown", "Unknown"),
+    )
+    status = models.CharField(max_length=32, choices=fleet_statuses, default="unknown")
+
+
     @property
     def token(self):
         eve_character = EvePrimaryCharacter.objects.get(
@@ -144,6 +154,7 @@ class EveFleet(models.Model):
                     ),
                     timeout=2,
                 )
+        self.status = "active"
         self.save()
 
 
