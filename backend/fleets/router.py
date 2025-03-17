@@ -70,6 +70,7 @@ class EveFleetResponse(BaseModel):
     doctrine_id: Optional[int] = None
     location: str
     disable_motd: bool = False
+    status: str = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -325,6 +326,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "audience": fleet.audience.name,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
+        "status": fleet.status,
     }
 
 
@@ -340,6 +342,7 @@ def make_fleet_shadow(fleet: EveFleet) -> EveFleetResponse:
         "audience": fleet.audience.name,
         "tracking": None,
         "disable_motd": False,
+        "status": None,
     }
 
 
@@ -449,6 +452,7 @@ def get_fleet(request, fleet_id: int):
         "audience": fleet.audience.name,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
+        "status": fleet.status,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
@@ -544,6 +548,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         location=EveFleetLocation.objects.get(location_id=payload.location_id),
         audience=audience,
         disable_motd=payload.disable_motd,
+        status="pending",
     )
 
     if payload.doctrine_id:
