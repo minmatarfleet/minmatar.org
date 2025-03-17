@@ -359,7 +359,7 @@ const page_description = t('index.leading_text');
 					<MetaGuideWidget />
 					<Flexblock class="[ w-full ]" gap='var(--space-3xs)'>
 						{posts?.length > 0 &&
-							<ComponentBlock class="[ w-full ]" padding_block='0' padding_inline='0' max_width='656px'>
+							<ComponentBlock class="[ w-full relative ]" padding_block='0' padding_inline='0' max_width='656px'>
 								<NewsFeed posts={posts} />
 							</ComponentBlock>
 						}
