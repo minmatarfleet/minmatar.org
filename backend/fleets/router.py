@@ -70,7 +70,7 @@ class EveFleetResponse(BaseModel):
     doctrine_id: Optional[int] = None
     location: str
     disable_motd: bool = False
-    status: str = None
+    status: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
