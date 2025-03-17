@@ -59,8 +59,9 @@ class EveFleet(models.Model):
         ("cancelled", "Cancelled"),
         ("unknown", "Unknown"),
     )
-    status = models.CharField(max_length=32, choices=fleet_statuses, default="unknown")
-
+    status = models.CharField(
+        max_length=32, choices=fleet_statuses, default="unknown"
+    )
 
     @property
     def token(self):
