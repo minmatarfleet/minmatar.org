@@ -57,7 +57,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
                 this.time_tooltip = '${t('daytime')}'
             }
         },
-        local_time: new Date('${eve_time} UTC').toLocaleDateString(
+        local_time: new Date('${eve_time}').toLocaleDateString(
             '${lang}',
             ${import.meta.env.DATETIME_FORMAT}
         ),
