@@ -144,6 +144,7 @@ def get_character_by_id(request, character_id: int):
 
     if (
         request.user.has_perm("eveonline.view_evecharacter")
+        or request.user.is_superuser
         or character.token
         and character.token.user == request.user
     ):
@@ -289,26 +290,32 @@ def set_primary_character(request, character_id: int):
         return 404, {"detail": "Character not found."}
 
     character = EveCharacter.objects.get(character_id=character_id)
-    if not character.token.user == request.user:
-        return 403, {
-            "detail": "You do not have permission to set this character as primary."
-        }
+    if not request.user.is_superuser:
+        if not character.token.user == request.user:
+            return 403, {
+                "detail": "You do not have permission to set this character as primary."
+            }
 
-    if EvePrimaryCharacter.objects.filter(
+    primary_characters = EvePrimaryCharacter.objects.filter(
         character__token__user=request.user
-    ).exists():
-        primary_character = EvePrimaryCharacter.objects.get(
-            character__token__user=request.user
-        )
-        EvePrimaryCharacterChangeLog.objects.create(
-            username=request.user.username,
-            previous_character_name=primary_character.character.character_name,
-            new_character_name=character.character_name,
-        )
-        primary_character.character = character
-        primary_character.save()
-    else:
-        EvePrimaryCharacter.objects.create(character=character)
+    ).distinct()
+    if primary_characters.exists():
+        # Delete any existing primary character records, after creating change log
+        if primary_characters.count() > 1:
+            logger.error(
+                "User %s has %d primary characters",
+                request.user.username,
+                primary_characters.count,
+            )
+        for primary_character in primary_characters.all():
+            EvePrimaryCharacterChangeLog.objects.create(
+                username=request.user.username,
+                previous_character_name=primary_character.character.character_name,
+                new_character_name=character.character_name,
+            )
+            primary_character.delete()
+
+    EvePrimaryCharacter.objects.create(character=character)
     return 200, None
 
 

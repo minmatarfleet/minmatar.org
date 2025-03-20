@@ -22,6 +22,10 @@ class CharacterRouterTestCase(TestCase):
 
         super().setUp()
 
+    def make_superuser(self):
+        self.user.is_superuser = True
+        self.user.save()
+
     def test_get_characters_success(self):
         response = self.client.get(
             BASE_URL, HTTP_AUTHORIZATION=f"Bearer {self.token}"
@@ -43,3 +47,30 @@ class CharacterRouterTestCase(TestCase):
         character = EveCharacter.objects.create(character_id=123)
         response = self.client.get(f"{BASE_URL}{character.character_id}")
         self.assertEqual(response.status_code, 401)
+
+    def test_get_character_by_id(self):
+        self.make_superuser()
+        character = EveCharacter.objects.create(character_id=123)
+        response = self.client.get(
+            f"{BASE_URL}{character.character_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_primary_character_none(self):
+        self.make_superuser()
+        character = EveCharacter.objects.create(character_id=123)
+        response = self.client.get(
+            f"{BASE_URL}primary?character_id={character.character_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_set_primary_character(self):
+        self.make_superuser()
+        character = EveCharacter.objects.create(character_id=123)
+        response = self.client.put(
+            f"{BASE_URL}primary?character_id={character.character_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
