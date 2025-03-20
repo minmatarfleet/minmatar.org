@@ -312,7 +312,7 @@ def set_primary_character(request, character_id: int):
     return 200, None
 
 
-def fetch_primary_character(user):
+def fetch_primary_character(user) -> EveCharacter | None:
     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
     if q.count() > 1:
@@ -321,7 +321,7 @@ def fetch_primary_character(user):
         )
 
     if q.count() >= 1:
-        return q.first()
+        return q.first().character
     else:
         return None
 
