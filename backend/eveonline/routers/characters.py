@@ -312,6 +312,20 @@ def set_primary_character(request, character_id: int):
     return 200, None
 
 
+def fetch_primary_character(user):
+    q = EvePrimaryCharacter.objects.filter(character__token__user=user)
+
+    if q.count() > 1:
+        logger.error(
+            "User %s has %d primary characters", user.username, q.count()
+        )
+
+    if q.count() >= 1:
+        return q.first()
+    else:
+        return None
+
+
 @router.get(
     "/primary",
     summary="Get primary character",
@@ -319,14 +333,11 @@ def set_primary_character(request, character_id: int):
     response={200: BasicCharacterResponse, 404: ErrorResponse},
 )
 def get_primary_character(request):
-    if not EvePrimaryCharacter.objects.filter(
-        character__token__user=request.user
-    ).exists():
+    character = fetch_primary_character(request.user)
+
+    if character is None:
         return 404, {"detail": "Primary character not found."}
 
-    character = EvePrimaryCharacter.objects.get(
-        character__token__user=request.user
-    ).character
     return {
         "character_id": character.character_id,
         "character_name": character.character_name,
