@@ -260,9 +260,7 @@ def delete_character_by_id(request, character_id: int):
     if EvePrimaryCharacter.objects.filter(
         character__token__user=request.user
     ).exists():
-        primary_character = EvePrimaryCharacter.objects.get(
-            character__token__user=request.user
-        )
+        primary_character = fetch_primary_character(request.user)
         if primary_character.character.character_id == character_id:
             characters = EveCharacter.objects.filter(
                 token__user=request.user
