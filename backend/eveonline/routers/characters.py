@@ -317,7 +317,7 @@ def set_primary_character(request, character_id: int):
     return 200, None
 
 
-def fetch_primary_character(user) -> EveCharacter | None:
+def fetch_primary_character(user) -> EvePrimaryCharacter | None:
     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
     if q.count() > 1:
@@ -326,7 +326,7 @@ def fetch_primary_character(user) -> EveCharacter | None:
         )
 
     if q.count() >= 1:
-        return q.first().character
+        return q.first()
     else:
         return None
 
@@ -338,14 +338,14 @@ def fetch_primary_character(user) -> EveCharacter | None:
     response={200: BasicCharacterResponse, 404: ErrorResponse},
 )
 def get_primary_character(request):
-    character = fetch_primary_character(request.user)
+    primary = fetch_primary_character(request.user)
 
-    if character is None:
+    if primary is None:
         return 404, {"detail": "Primary character not found."}
 
     return {
-        "character_id": character.character_id,
-        "character_name": character.character_name,
+        "character_id": primary.character.character_id,
+        "character_name": primary.character.character_name,
     }
 
 
