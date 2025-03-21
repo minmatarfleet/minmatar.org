@@ -482,13 +482,16 @@ def fixup_character_token_level(character, token_count):
 def get_user_characters(
     request, discord_id: int = None, character_name: str = None
 ) -> UserCharacterResponse:
-    if not request.user.is_superuser:
-        return 403, ErrorResponse(detail="Not authorised")
 
-    if discord_id and character_name:
-        return 400, ErrorResponse(
-            detail="Only one query parameter can be provided"
-        )
+    if discord_id or character_name:
+        # Parameters provided, must be a superuser
+        if not request.user.is_superuser:
+            return 403, ErrorResponse(detail="Not authorised")
+
+        if discord_id and character_name:
+            return 400, ErrorResponse(
+                detail="Only one query parameter can be provided"
+            )
 
     if character_name:
         char = EveCharacter.objects.filter(
@@ -512,9 +515,12 @@ def get_user_characters(
 
         char_user = discord_user.user
     else:
-        return 400, ErrorResponse(
-            detail="A character name or discord ID must be specified"
-        )
+        # No parameters provided, only return current user details
+        char_user = request.user
+        discord_user = DiscordUser.objects.filter(user=char_user).first()
+
+        if not discord_user:
+            return 404, ErrorResponse(detail="No matching discord user found")
 
     response = UserCharacterResponse(
         user_id=char_user.id,
