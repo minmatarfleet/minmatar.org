@@ -63,11 +63,11 @@ class UserCharacter(BaseModel):
     character_id: int
     character_name: str
     is_primary: bool
-    corp_id: Optional[int]
-    corp_name: Optional[str]
-    alliance_id: Optional[int]
-    alliance_name: Optional[str]
-    esi_token: Optional[str]
+    corp_id: Optional[int] = None
+    corp_name: Optional[str] = None
+    alliance_id: Optional[int] = None
+    alliance_name: Optional[str] = None
+    esi_token: Optional[str] = None
 
 
 class UserCharacterResponse(BaseModel):
