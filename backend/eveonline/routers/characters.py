@@ -63,6 +63,11 @@ class UserCharacter(BaseModel):
     character_id: int
     character_name: str
     is_primary: bool
+    corp_id: Optional[int]
+    corp_name: Optional[str]
+    alliance_id: Optional[int]
+    alliance_name: Optional[str]
+    esi_token: Optional[str]
 
 
 class UserCharacterResponse(BaseModel):
@@ -535,15 +540,36 @@ def get_user_characters(
 
     chars = EveCharacter.objects.filter(token__user=char_user)
     for char in chars.all():
-        response.characters.append(
-            UserCharacter(
-                character_id=char.character_id,
-                character_name=char.character_name,
-                is_primary=(primary and char == primary.character),
-            )
-        )
+        response.characters.append(build_character_response(char, primary))
 
     return response
+
+
+def build_character_response(char, primary):
+    item = UserCharacter(
+        character_id=char.character_id,
+        character_name=char.character_name,
+        is_primary=(primary and char == primary.character),
+    )
+    try:
+        if char.corporation:
+            item.corp_id = char.corporation.id
+            item.corp_name = char.corporation.name
+        if char.alliance:
+            item.alliance_id = char.alliance.id
+            item.alliance_name = char.alliance.name
+        if char.esi_token_level:
+            if char.esi_suspended:
+                item.esi_token = f"{char.esi_token_level} (SUSPENDED)"
+            else:
+                item.esi_token = char.esi_token_level
+
+    except Exception as e:
+        logger.error(
+            "Error enriching character %s, %s", char.character_name, e
+        )
+
+    return item
 
 
 @router.get(
