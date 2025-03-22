@@ -23,6 +23,7 @@ from eveonline.scopes import (
     TokenType,
     scopes_for,
     scope_group,
+    token_type_str,
 )
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
@@ -558,11 +559,19 @@ def build_character_response(char, primary):
         if char.alliance:
             item.alliance_id = char.alliance.id
             item.alliance_name = char.alliance.name
+
         if char.esi_token_level:
+            level = token_type_str(char.esi_token_level)
+        elif char.token:
+            level = scope_group(char.token)
+        else:
+            level = None
+
+        if level:
             if char.esi_suspended:
-                item.esi_token = f"{char.esi_token_level} (SUSPENDED)"
+                item.esi_token = f"{level} (SUSPENDED)"
             else:
-                item.esi_token = char.esi_token_level
+                item.esi_token = level
 
     except Exception as e:
         logger.error(
