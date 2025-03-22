@@ -3,6 +3,7 @@ from django.test import Client
 
 from app.test import TestCase
 from eveonline.models import EveCharacter
+from eveonline.scopes import token_type_str
 
 BASE_URL = "/api/eveonline/characters/"
 
@@ -74,3 +75,9 @@ class CharacterRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_token_type_str(self):
+        self.assertEqual("", token_type_str(None))
+        self.assertEqual("BASIC", token_type_str("Basic"))
+        self.assertEqual("BASIC", token_type_str("TokenType.BASIC"))
+        self.assertEqual("CEO", token_type_str("TokenType.CEO"))

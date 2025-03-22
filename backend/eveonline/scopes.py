@@ -119,3 +119,10 @@ def scope_names(token: Token) -> List[str]:
     for scope in token.scopes.all():
         token_scopes.append(scope.name)
     return sorted(token_scopes)
+
+
+def token_type_str(s) -> str:
+    if s:
+        return s.removeprefix("TokenType.").upper()
+    else:
+        return ""
