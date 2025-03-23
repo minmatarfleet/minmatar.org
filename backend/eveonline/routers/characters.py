@@ -356,13 +356,27 @@ def get_primary_character(request):
 
 
 @router.get("/add", summary="Add character using EVE Online SSO")
-def add_character(request, redirect_url: str, token_type: TokenType):
+def add_character(
+    request, redirect_url: str, token_type: TokenType, character_id: str = None
+):
     request.session["redirect_url"] = redirect_url
+    if character_id:
+        request.session["add_character_id"] = character_id
     scopes = scopes_for(token_type)
 
     @login_required()
     @token_required(scopes=scopes, new=True)
     def wrapped(request, token):
+        requested_char = request.session["redirect_url"]
+        if requested_char and (token.character_id != requested_char):
+            logger.warning(
+                "Incorrect character in tokem refresh, %s != %s",
+                token.character_id,
+                requested_char,
+            )
+            return redirect(
+                request.session["redirect_url"] + "?error=wrong_character"
+            )
         if EveCharacter.objects.filter(
             character_id=token.character_id
         ).exists():
@@ -376,10 +390,11 @@ def add_character(request, redirect_url: str, token_type: TokenType):
             if (
                 character.token
                 and character.token != token
-                and len(token.scopes.all()) > len(character.token.scopes.all())
+                and len(token.scopes.all())
+                >= len(character.token.scopes.all())
             ):
                 logger.info(
-                    "New token has more scopes, deleting old character token"
+                    "New token has at least as many scopes, deleting old character token"
                 )
                 old_token = character.token
                 character.token = token
@@ -395,8 +410,8 @@ def add_character(request, redirect_url: str, token_type: TokenType):
                 character.esi_token_level = token_type.value
                 character.save()
             elif token != character.token:
-                logger.info(
-                    "Character %s already has better token, throwing this one away",
+                logger.warning(
+                    "Character %s already has better token, throwing new one away",
                     token.character_id,
                 )
                 token.delete()
@@ -561,13 +576,14 @@ def build_character_response(char, primary):
             item.alliance_name = char.alliance.name
 
         if char.esi_token_level:
-            level = token_type_str(char.esi_token_level)
+            level = char.esi_token_level
         elif char.token:
             level = scope_group(char.token)
         else:
             level = None
 
         if level:
+            level = token_type_str(level)
             if char.esi_suspended:
                 item.esi_token = f"{level} (SUSPENDED)"
             else:
