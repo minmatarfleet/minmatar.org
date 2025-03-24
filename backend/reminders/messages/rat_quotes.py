@@ -45,7 +45,7 @@ rat_quotes = [
     "Rat Cheesinthians 2:9 - 'However, as it is written: 'What no eye has seen, what no whisker has heard, and what no nose has smelled— the nibbles Rat has prepared for those who love him.'",
     "Rat Genesis 1:27 - 'So Rat created rat-kind in his own image, in the image of Rat he created them; male and female he created them, with a fondness for cheese.'",
     "Rat Cheesinthians 13:13 - 'And now these three remain: faith, hope, and cheese. But the greatest of these is cheese.'",
-    "Rat Exodus 3:14 - 'Rat said to Moses, 'I am who I am. This is what you are to say to the rats of Israel: 'I am has sent me to you.''",
+    "Rat Exodus 3:14 - 'Rat said to Mouses, 'I am who I am. This is what you are to say to the rats of Sosala: 'I am has sent me to you.''",
     "Squeek Chronicles 17:2 - 'Go and tell Rat David, 'This is what the Rat says: I will build you a house and feed you nibbles.''",
     "Ratthew 18:20 - 'For where two or three gather in my name, there am I with them, probably eyeing the cheese.'",
     "Rat Galatians 5:22 - 'But the fruit of the Spirit is love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, cheese.'",
