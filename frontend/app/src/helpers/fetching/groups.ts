@@ -163,7 +163,7 @@ export async function is_director(access_token:string, user_id:number) {
     let groups:Group[]
     
     try {
-        groups = await get_current_teams(access_token)
+        groups = await get_current_teams(access_token, true)
     } catch (error) {
         return undefined
     }
@@ -175,7 +175,7 @@ export async function is_officer(access_token:string, user_id:number) {
     let groups:Group[]
     
     try {
-        groups = await get_current_sigs(access_token)
+        groups = await get_current_sigs(access_token, true)
     } catch (error) {
         return undefined
     }
