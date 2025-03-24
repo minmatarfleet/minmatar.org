@@ -32,13 +32,13 @@ export async function get_groups() {
     }
 }
 
-export async function get_current_groups(access_token:string) {
+export async function get_current_groups(access_token:string, officer:boolean = false) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/current`
+    const ENDPOINT = `${API_ENDPOINT}/current?officer=${JSON.stringify(officer)}`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
