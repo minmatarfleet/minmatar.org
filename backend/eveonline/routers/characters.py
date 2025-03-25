@@ -324,6 +324,7 @@ def set_primary_character(request, character_id: int):
 
 
 def fetch_primary_character(user) -> EvePrimaryCharacter | None:
+    """Better to call users.helpers.get_primary_character() instead"""
     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
     if q.count() > 1:

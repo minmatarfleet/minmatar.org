@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
 from discord.models import DiscordUser
-from eveonline.models import EvePrimaryCharacter
+from eveonline.models import EvePrimaryCharacter, EveCharacter
 
 from .schemas import UserProfileSchema
 
@@ -110,3 +110,21 @@ def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
         except Exception:
             logger.error("Error expanding profile for user %d", user.id)
     return results
+
+
+def get_primary_character(user: User) -> EveCharacter | None:
+    candidates = EvePrimaryCharacter.objects.filter(
+        character__token__user=user
+    )
+
+    if candidates.count() == 0:
+        return None
+
+    if candidates.count() > 1:
+        logger.error(
+            "User %s has %d primary characters",
+            user.username,
+            candidates.count(),
+        )
+
+    return candidates.first().character

@@ -1,10 +1,12 @@
 from django.db.models import signals
+from django.contrib.auth.models import User
 from django.test import Client
 from esi.models import Token
 
 from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePrimaryCharacter
+from .helpers import get_primary_character
 
 # Create your tests here.
 BASE_URL = "/api/users/"
@@ -84,3 +86,32 @@ class UserRouterTestCase(TestCase):
                 },
             },
         )
+
+    def test_get_primary_character(self):
+        user = User.objects.first()
+
+        primary = get_primary_character(user)
+        self.assertIsNone(primary)
+
+        token = Token.objects.create(
+            user=user,
+            character_id=123456,
+        )
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char",
+            token=token,
+        )
+        EvePrimaryCharacter.objects.create(
+            character=char,
+        )
+
+        primary = get_primary_character(user)
+        self.assertEqual("Test Char", primary.character_name)
+
+        EvePrimaryCharacter.objects.create(
+            character=char,
+        )
+
+        primary = get_primary_character(user)
+        self.assertEqual("Test Char", primary.character_name)

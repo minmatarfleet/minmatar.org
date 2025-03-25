@@ -7,6 +7,7 @@ from django.utils import timezone
 from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
+from users.helpers import get_primary_character
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
@@ -65,16 +66,26 @@ class EveFleet(models.Model):
 
     @property
     def token(self):
-        eve_character = EvePrimaryCharacter.objects.get(
-            character__token__user=self.created_by
-        ).character
-        return eve_character.token.valid_access_token()
+        try:
+            # New approach
+            return self.fleet_commander().token.valid_access_token()
+        except Exception:
+            # Original approach - remove fallback when new approach is working
+            eve_character = EvePrimaryCharacter.objects.get(
+                character__token__user=self.created_by
+            ).character
+            return eve_character.token.valid_access_token()
 
     @property
     def fleet_commander(self):
-        return EvePrimaryCharacter.objects.get(
-            character__token__user=self.created_by
-        ).character
+        try:
+            # New approach
+            return get_primary_character(self.created_by)
+        except Exception:
+            # Original approach - remove fallback when new approach is working
+            return EvePrimaryCharacter.objects.get(
+                character__token__user=self.created_by
+            ).character
 
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
@@ -85,9 +96,12 @@ class EveFleet(models.Model):
         """
         logger.info("Starting fleet %s", self.id)
         user = self.created_by
-        eve_character = EvePrimaryCharacter.objects.get(
-            character__token__user=user
-        ).character
+        try:
+            eve_character = self.fleet_commander()
+        except:
+            eve_character = EvePrimaryCharacter.objects.get(
+                character__token__user=user
+            ).character
         response = esi.client.Fleets.get_characters_character_id_fleet(
             character_id=eve_character.character_id,
             token=self.token,
