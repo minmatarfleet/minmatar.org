@@ -98,7 +98,7 @@ class EveFleet(models.Model):
         user = self.created_by
         try:
             eve_character = self.fleet_commander()
-        except:
+        except Exception:
             eve_character = EvePrimaryCharacter.objects.get(
                 character__token__user=user
             ).character
