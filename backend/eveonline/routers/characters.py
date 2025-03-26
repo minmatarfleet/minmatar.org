@@ -320,7 +320,7 @@ def set_primary_character(request, character_id: int):
             )
             primary_character.delete()
 
-    EvePrimaryCharacter.objects.create(character=character)
+    EvePrimaryCharacter.objects.create(character=character, user=request.user)
     return 200, None
 
 
@@ -402,6 +402,7 @@ def add_character(
                 old_token = character.token
                 character.token = token
                 character.esi_token_level = token_type.value
+                character.user = token.user
                 character.save()
                 old_token.delete()
             elif not character.token:
@@ -410,6 +411,7 @@ def add_character(
                     token.character_id,
                 )
                 character.token = token
+                character.user = token.user
                 character.esi_token_level = token_type.value
                 character.save()
             elif token != character.token:
@@ -448,6 +450,7 @@ def add_character(
                 character_name=token.character_name,
                 esi_token_level=token_type,
                 token=token,
+                user=token.user,
             )
         EveCharacterLog.objects.create(
             username=request.user.username,
@@ -466,7 +469,9 @@ def add_character(
                 character.character_name,
                 request.user.username,
             )
-            EvePrimaryCharacter.objects.create(character=character)
+            EvePrimaryCharacter.objects.create(
+                character=character, user=request.user
+            )
 
         # populate corporation if CEO token
         if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
