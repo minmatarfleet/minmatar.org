@@ -4,7 +4,6 @@ from enum import Enum
 from typing import List
 
 from django.contrib.auth.models import User
-from esi.models import Token
 from pydantic import BaseModel
 
 from eveonline.models import EvePrimaryCharacter, EveCharacter
