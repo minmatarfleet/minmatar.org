@@ -6,7 +6,10 @@ from esi.models import Token
 from app.test import TestCase
 from eveonline.models import EveCharacter, EvePrimaryCharacter
 from eveonline.scopes import token_type_str
-from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters import (
+    user_primary_character,
+    user_characters,
+)
 
 BASE_URL = "/api/eveonline/characters/"
 
@@ -121,3 +124,35 @@ class CharacterRouterTestCase(TestCase):
         epc.user = user
         primary = user_primary_character(user)
         self.assertEqual("Test Char", primary.character_name)
+
+    def test_get_user_characters(self):
+        user = User.objects.first()
+
+        chars = user_characters(user)
+        self.assertEqual(0, len(chars))
+
+        token = Token.objects.create(
+            user=user,
+            character_id=123456,
+        )
+        EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char 1",
+            token=token,
+        )
+
+        chars = user_characters(user)
+        self.assertEqual(1, len(chars))
+
+        token = Token.objects.create(
+            user=user,
+            character_id=234567,
+        )
+        EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char 2",
+            token=token,
+        )
+
+        chars = user_characters(user)
+        self.assertEqual(2, len(chars))

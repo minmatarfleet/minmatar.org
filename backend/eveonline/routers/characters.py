@@ -25,7 +25,10 @@ from eveonline.scopes import (
     scope_group,
     token_type_str,
 )
-from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters import (
+    user_primary_character,
+    user_characters,
+)
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
 
@@ -103,9 +106,11 @@ def get_characters(request, primary_character_id: int = None):
             return 404, {"detail": "Primary character not found."}
         character = EveCharacter.objects.get(character_id=primary_character_id)
         character_user = character.token.user
-        characters = EveCharacter.objects.filter(token__user=character_user)
+        # characters = EveCharacter.objects.filter(token__user=character_user)
+        characters = user_characters(character_user)
     else:
-        characters = EveCharacter.objects.filter(token__user=request.user)
+        # characters = EveCharacter.objects.filter(token__user=request.user)
+        characters = user_characters(request.user)
     response = []
     for character in characters:
         response.append(
