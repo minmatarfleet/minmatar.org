@@ -3,6 +3,7 @@ from typing import List
 
 from django.db import models
 from django.db.models import Q
+from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
 from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
@@ -14,9 +15,11 @@ esi = EsiClientProvider()
 
 
 class EvePrimaryCharacter(models.Model):
-    """Primary character model"""
+    """Identifies the primary character for a user"""
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return str(self.character.character_name)
@@ -60,6 +63,9 @@ class EveCharacter(models.Model):
     # data
     skills_json = models.TextField(blank=True, default="{}")
     assets_json = models.TextField(blank=True, default="{}")
+
+    # The my.minmatar.org user that owns this Eve character
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     @property
     def tokens(self):
