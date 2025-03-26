@@ -1,9 +1,12 @@
 from django.db.models import signals
 from django.test import Client
+from django.contrib.auth.models import User
 
+from esi.models import Token
 from app.test import TestCase
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePrimaryCharacter
 from eveonline.scopes import token_type_str
+from eveonline.helpers.characters import user_primary_character
 
 BASE_URL = "/api/eveonline/characters/"
 
@@ -16,6 +19,10 @@ class CharacterRouterTestCase(TestCase):
         signals.post_save.disconnect(
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
         )
 
         # create test client
@@ -81,3 +88,36 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual("BASIC", token_type_str("Basic"))
         self.assertEqual("BASIC", token_type_str("TokenType.BASIC"))
         self.assertEqual("CEO", token_type_str("TokenType.CEO"))
+
+    def test_get_primary_character(self):
+        user = User.objects.first()
+
+        primary = user_primary_character(user)
+        self.assertIsNone(primary)
+
+        token = Token.objects.create(
+            user=user,
+            character_id=123456,
+        )
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char",
+            token=token,
+        )
+        epc = EvePrimaryCharacter.objects.create(
+            character=char,
+        )
+
+        primary = user_primary_character(user)
+        self.assertEqual("Test Char", primary.character_name)
+
+        EvePrimaryCharacter.objects.create(
+            character=char,
+        )
+
+        primary = user_primary_character(user)
+        self.assertEqual("Test Char", primary.character_name)
+
+        epc.user = user
+        primary = user_primary_character(user)
+        self.assertEqual("Test Char", primary.character_name)

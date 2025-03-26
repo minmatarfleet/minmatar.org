@@ -1,3 +1,5 @@
+import logging
+
 from enum import Enum
 from typing import List
 
@@ -5,7 +7,10 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from pydantic import BaseModel
 
-from eveonline.models import EveCorporation, EvePrimaryToken
+from eveonline.models import EvePrimaryCharacter, EveCharacter
+
+
+logger = logging.getLogger(__name__)
 
 
 class TokenType(Enum):
@@ -66,47 +71,69 @@ class CorporationCharacterResponse(BaseModel):
     is_primary: bool = False
 
 
-def get_character_list(user: User) -> List[CharacterResponse]:
-    characters = {}
-    for token in user.token_set.all():
-        if token.character_id not in characters:
-            characters[token.character_id] = CharacterResponse(
-                character_id=token.character_id,
-                character_name=token.character_name,
-                scopes=[scope.name for scope in token.scopes.all()],
-            )
-        else:
-            characters[token.character_id].scopes += [
-                scope.name for scope in token.scopes.all()
-            ]
+# def get_character_list(user: User) -> List[CharacterResponse]:
+#     characters = {}
+#     for token in user.token_set.all():
+#         if token.character_id not in characters:
+#             characters[token.character_id] = CharacterResponse(
+#                 character_id=token.character_id,
+#                 character_name=token.character_name,
+#                 scopes=[scope.name for scope in token.scopes.all()],
+#             )
+#         else:
+#             characters[token.character_id].scopes += [
+#                 scope.name for scope in token.scopes.all()
+#             ]
+#
+#     # Check if a primary token exists and set the flag
+#     if EvePrimaryToken.objects.filter(user=user).exists():
+#         characters[
+#             EvePrimaryToken.objects.get(user=user).token.character_id
+#         ].is_primary = True
+#
+#     # Check scopes for character_id and set type
+#     for character in characters.values():
+#         character.type = get_token_type_for_scopes_list(character.scopes)
+#
+#     return list(characters.values())
+#
+#
+# def get_corporation_character_list(
+#     corporation: EveCorporation,
+# ) -> List[CorporationCharacterResponse]:
+#     characters = {}
+#     for character in corporation.evecharacter_set.all():
+#         characters[character.character_id] = CorporationCharacterResponse(
+#             character_id=character.character_id,
+#             character_name=character.character_name,
+#             is_registered=Token.objects.filter(
+#                 character_id=character.character_id
+#             ).exists(),
+#             is_primary=EvePrimaryToken.objects.filter(
+#                 token__character_id=character.character_id
+#             ).exists(),
+#         )
+#
+#     return list(characters.values())
 
-    # Check if a primary token exists and set the flag
-    if EvePrimaryToken.objects.filter(user=user).exists():
-        characters[
-            EvePrimaryToken.objects.get(user=user).token.character_id
-        ].is_primary = True
 
-    # Check scopes for character_id and set type
-    for character in characters.values():
-        character.type = get_token_type_for_scopes_list(character.scopes)
+def user_primary_character(user: User) -> EveCharacter | None:
+    """Returns the primary character for a particular User"""
 
-    return list(characters.values())
+    # New method using the "user" field
+    pc = EvePrimaryCharacter.objects.filter(user=user).first()
+    if pc:
+        return pc.character
 
+    # Fall back to old method using link through ESI token
+    q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
-def get_corporation_character_list(
-    corporation: EveCorporation,
-) -> List[CorporationCharacterResponse]:
-    characters = {}
-    for character in corporation.evecharacter_set.all():
-        characters[character.character_id] = CorporationCharacterResponse(
-            character_id=character.character_id,
-            character_name=character.character_name,
-            is_registered=Token.objects.filter(
-                character_id=character.character_id
-            ).exists(),
-            is_primary=EvePrimaryToken.objects.filter(
-                token__character_id=character.character_id
-            ).exists(),
+    if q.count() > 1:
+        logger.error(
+            "User %s has %d primary characters", user.username, q.count()
         )
 
-    return list(characters.values())
+    if q.count() >= 1:
+        return q.first().character
+    else:
+        return None

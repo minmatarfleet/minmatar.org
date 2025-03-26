@@ -25,6 +25,7 @@ from eveonline.scopes import (
     scope_group,
     token_type_str,
 )
+from eveonline.helpers.characters import user_primary_character
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
 
@@ -344,14 +345,14 @@ def fetch_primary_character(user) -> EvePrimaryCharacter | None:
     response={200: BasicCharacterResponse, 404: ErrorResponse},
 )
 def get_primary_character(request):
-    primary = fetch_primary_character(request.user)
+    char = user_primary_character(request.user)
 
-    if primary is None:
+    if char is None:
         return 404, {"detail": "Primary character not found."}
 
     return {
-        "character_id": primary.character.character_id,
-        "character_name": primary.character.character_name,
+        "character_id": char.character_id,
+        "character_name": char.character_name,
     }
 
 
