@@ -4,7 +4,8 @@ from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
 from discord.models import DiscordUser
-from eveonline.models import EvePrimaryCharacter
+from eveonline.helpers.characters import user_primary_character
+# from eveonline.models import EvePrimaryCharacter
 
 from .schemas import UserProfileSchema
 
@@ -46,28 +47,28 @@ def expand_user_profile(
     else:
         discord_user = None
 
-    primary_character = EvePrimaryCharacter.objects.filter(
-        character__token__user=user
-    ).first()
+    # primary_character = EvePrimaryCharacter.objects.filter(
+    #     character__token__user=user
+    # ).first()
+    primary_character = user_primary_character(user)
     if primary_character:
         eve_character_profile = {
-            "character_id": primary_character.character.character_id,
-            "character_name": primary_character.character.character_name,
+            "character_id": primary_character.character_id,
+            "character_name": primary_character.character_name,
             "corporation_id": (
-                primary_character.character.corporation.corporation_id
-                if hasattr(primary_character.character, "corporation")
+                primary_character.corporation.corporation_id
+                if hasattr(primary_character, "corporation")
                 else None
             ),
             "corporation_name": (
-                primary_character.character.corporation.name
-                if hasattr(primary_character.character, "corporation")
+                primary_character.corporation.name
+                if hasattr(primary_character, "corporation")
                 else None
             ),
         }
         if include_permissions:
             scopes = [
-                scope.name
-                for scope in primary_character.character.token.scopes.all()
+                scope.name for scope in primary_character.token.scopes.all()
             ]
         else:
             scopes = []
