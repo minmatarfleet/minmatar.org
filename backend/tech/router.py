@@ -1,12 +1,14 @@
 import logging
 
 from ninja import Router
+from typing import List, Optional
 
 from django.conf import settings
+from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
-from eveonline.client import EsiClient
+from eveonline.models import EveCharacter
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -46,48 +48,33 @@ def check_var(request, var_name: str) -> str:
         return "Not set"
 
 
-@router.get(
-    "character/{int:character_id}",
-    summary="ESI debugging without token",
-    auth=AuthBearer(),
-    response={
-        200: str,
-        403: ErrorResponse,
-    },
-)
-def debug_character_esi(request, character_id: int):
-    """API endpoint for exploring the ESI client"""
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
-        return 403, ErrorResponse(detail="Not authorised")
-
-    response = EsiClient(None).get_character_public_data(character_id)
-    if response.success():
-        char = response.results()
-        return char["name"]
-    else:
-        return f"Error {response.response_code}, {response.response}"
+class TokenUserCharacterResponse(BaseModel):
+    character_id: int
+    character_name: str
+    token_user_id: Optional[int] = None
+    token_user_name: Optional[str] = None
 
 
 @router.get(
-    "character/{int:character_id}/skills",
-    summary="ESI debugging with token",
+    "/no_user_char",
+    description="Finds characters without direct link to user",
     auth=AuthBearer(),
-    response={
-        200: str,
-        403: ErrorResponse,
-    },
+    response={200: List[TokenUserCharacterResponse], 403: ErrorResponse},
 )
-def debug_skills_esi(request, character_id: int):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
-        return 403, ErrorResponse(detail="Not authorised")
+def characters_without_user(request) -> List[TokenUserCharacterResponse]:
+    if not user_in_team(request.user, TECH_TEAM):
+        return 403, "Not authorised"
 
-    response = EsiClient(character_id).get_character_skills()
-    if response.success():
-        skills = response.results()
-        return str(len(skills))
-    else:
-        return f"Error {response.response_code}, {response.response}"
+    response = []
+
+    for char in EveCharacter.objects.filter(user__isnull=True):
+        item = TokenUserCharacterResponse(
+            character_id=char.character_id, character_name=char.character_name
+        )
+        if char.token.user:
+            item.token_user_id = char.token.user.id
+            item.token_user_name = char.token.user.username
+
+        response.append(item)
+
+    return response

@@ -70,52 +70,6 @@ class CorporationCharacterResponse(BaseModel):
     is_primary: bool = False
 
 
-# def get_character_list(user: User) -> List[CharacterResponse]:
-#     characters = {}
-#     for token in user.token_set.all():
-#         if token.character_id not in characters:
-#             characters[token.character_id] = CharacterResponse(
-#                 character_id=token.character_id,
-#                 character_name=token.character_name,
-#                 scopes=[scope.name for scope in token.scopes.all()],
-#             )
-#         else:
-#             characters[token.character_id].scopes += [
-#                 scope.name for scope in token.scopes.all()
-#             ]
-#
-#     # Check if a primary token exists and set the flag
-#     if EvePrimaryToken.objects.filter(user=user).exists():
-#         characters[
-#             EvePrimaryToken.objects.get(user=user).token.character_id
-#         ].is_primary = True
-#
-#     # Check scopes for character_id and set type
-#     for character in characters.values():
-#         character.type = get_token_type_for_scopes_list(character.scopes)
-#
-#     return list(characters.values())
-#
-#
-# def get_corporation_character_list(
-#     corporation: EveCorporation,
-# ) -> List[CorporationCharacterResponse]:
-#     characters = {}
-#     for character in corporation.evecharacter_set.all():
-#         characters[character.character_id] = CorporationCharacterResponse(
-#             character_id=character.character_id,
-#             character_name=character.character_name,
-#             is_registered=Token.objects.filter(
-#                 character_id=character.character_id
-#             ).exists(),
-#             is_primary=EvePrimaryToken.objects.filter(
-#                 token__character_id=character.character_id
-#             ).exists(),
-#         )
-#
-#     return list(characters.values())
-
-
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
@@ -141,3 +95,13 @@ def user_primary_character(user: User) -> EveCharacter | None:
 def user_characters(user: User) -> List[EveCharacter]:
     """Returns all the EveCharacters for a particular User"""
     return EveCharacter.objects.filter(token__user=user).all()
+
+
+def character_primary(character: EveCharacter) -> EveCharacter | None:
+    """Returns the primary character for a character"""
+    if not character:
+        return None
+    if character.user:
+        return user_primary_character(character.user)
+    else:
+        return user_primary_character(character.token.user)
