@@ -28,10 +28,6 @@ class TechRoutesTestCase(TestCase):
 
         super().setUp()
 
-    def make_superuser(self):
-        self.user.is_superuser = True
-        self.user.save()
-
     def test_get_character(self):
         self.make_superuser()
 
