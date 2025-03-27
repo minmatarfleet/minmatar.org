@@ -62,7 +62,9 @@ class TokenUserCharacterResponse(BaseModel):
     response={200: List[TokenUserCharacterResponse], 403: ErrorResponse},
 )
 def characters_without_user(request) -> List[TokenUserCharacterResponse]:
-    if not user_in_team(request.user, TECH_TEAM):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
         return 403, "Not authorised"
 
     response = []
@@ -71,7 +73,7 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
         item = TokenUserCharacterResponse(
             character_id=char.character_id, character_name=char.character_name
         )
-        if char.token.user:
+        if char and char.token and char.token.user:
             item.token_user_id = char.token.user.id
             item.token_user_name = char.token.user.username
 
