@@ -156,3 +156,27 @@ class CharacterRouterTestCase(TestCase):
 
         chars = user_characters(user)
         self.assertEqual(2, len(chars))
+
+    def test_get_character(self):
+        self.make_superuser()
+
+        user = User.objects.first()
+        token = Token.objects.create(
+            user=user,
+            character_id=123456,
+        )
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char",
+            user=user,
+            token=token,
+        )
+        EvePrimaryCharacter.objects.create(
+            character=char,
+            user=user,
+        )
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)

@@ -95,3 +95,13 @@ def user_primary_character(user: User) -> EveCharacter | None:
 def user_characters(user: User) -> List[EveCharacter]:
     """Returns all the EveCharacters for a particular User"""
     return EveCharacter.objects.filter(token__user=user).all()
+
+
+def character_primary(character: EveCharacter) -> EveCharacter | None:
+    """Returns the primary character for a character"""
+    if not character:
+        return None
+    if character.user:
+        return user_primary_character(character.user)
+    else:
+        return user_primary_character(character.token.user)
