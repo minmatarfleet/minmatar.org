@@ -361,6 +361,7 @@ class EveCorporation(models.Model):
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]
+        self.alliance_id = esi_corporation["alliance_id"]
         # set ceo
         if esi_corporation["ceo_id"] > 90000000:
             logger.info(
