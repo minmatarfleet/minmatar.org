@@ -9,6 +9,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.models import EveCharacter
+from eveonline.client import EsiClient, EsiCorporation
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -77,6 +78,25 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
             item.token_user_id = char.token.user.id
             item.token_user_name = char.token.user.username
 
-        response.append(item)
+            response.append(item)
 
     return response
+
+
+@router.get(
+    "/esi_corporation",
+    description="Returns ESI details about a corporation",
+    auth=AuthBearer(),
+    response={200: EsiCorporation, 400: int, 403: str},
+)
+def esi_corporation(request, corporation_id: int) -> EsiCorporation:
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
+    response = EsiClient(None).get_corporation(corporation_id)
+    if response.success():
+        return response.typed_data
+    else:
+        return 400, response.response_code

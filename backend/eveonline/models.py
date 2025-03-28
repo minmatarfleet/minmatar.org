@@ -348,40 +348,6 @@ class EveCorporation(models.Model):
 
         return True
 
-    def populate(self):
-        logger.info(
-            "Fetching external corporation details for %s", self.corporation_id
-        )
-        esi_corporation = (
-            esi.client.Corporation.get_corporations_corporation_id(
-                corporation_id=self.corporation_id
-            ).results()
-        )
-        logger.debug("ESI corporation data: %s", esi_corporation)
-        self.name = esi_corporation["name"]
-        self.ticker = esi_corporation["ticker"]
-        self.member_count = esi_corporation["member_count"]
-        # set ceo
-        if esi_corporation["ceo_id"] > 90000000:
-            logger.info(
-                "Setting CEO as %s for corporation %s",
-                esi_corporation["ceo_id"],
-                self.name,
-            )
-            self.ceo = EveCharacter.objects.get_or_create(
-                character_id=esi_corporation["ceo_id"]
-            )[0]
-        elif esi_corporation["ceo_id"] == 1:
-            if self.id is not None:
-                logger.info("Deleting corporation %s", self.name)
-                self.delete()
-                return
-        else:
-            logger.info("Skipping CEO for corporation %s", self.name)
-        # affiliations are set by update_character_affilliations
-        # better endpoint / faster
-        self.save()
-
     def __str__(self):
         return str(self.name)
 

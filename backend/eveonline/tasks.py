@@ -266,9 +266,12 @@ def update_corporations():
 def update_corporation(corporation_id):
     logger.info("Updating corporation %s", corporation_id)
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
-    corporation.populate()
+
     if not corporation:
         return
+
+    populate_corp(corporation)
+
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]
@@ -294,6 +297,44 @@ def update_corporation(corporation_id):
                     corporation.name,
                 )
                 EveCharacter.objects.create(character_id=member_id)
+
+
+def populate_corp(corp: EveCorporation):
+    logger.info(
+        "Fetching external corporation details for %s", corp.corporation_id
+    )
+    response = EsiClient(None).get_corporation(corp.corporation_id)
+    if not response.success():
+        logger.error(
+            "ESI error %d updating corp %s",
+            response.response_code,
+            corp.name,
+        )
+        return
+    esi_corporation = response.typed_data
+    corp.name = esi_corporation.name
+    corp.ticker = esi_corporation.ticker
+    corp.alliance_id = esi_corporation.alliance_id
+    corp.member_count = esi_corporation.member_count
+    # set ceo
+    if esi_corporation.ceo_id > 90000000:
+        logger.info(
+            "Setting CEO as %s for corporation %s",
+            esi_corporation.ceo_id,
+            corp.name,
+        )
+        corp.ceo = EveCharacter.objects.get_or_create(
+            character_id=esi_corporation.ceo_id
+        )[0]
+    elif esi_corporation.ceo_id == 1:
+        if corp.id is not None:
+            logger.info("Deleting corporation %s", corp.name)
+            corp.delete()
+            return
+    else:
+        logger.info("Skipping CEO for corporation %s", corp.name)
+
+    corp.save()
 
 
 @app.task

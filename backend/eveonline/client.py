@@ -1,6 +1,7 @@
 import logging
 
 from typing import List
+from pydantic import BaseModel
 from esi.clients import EsiClientProvider
 from esi.models import Token
 
@@ -19,17 +20,21 @@ NO_VALID_ESI_TOKEN = 905
 ERROR_CALLING_ESI = 906
 
 
-class EsiResponse:
+class EsiResponse[T]:
     """Represents a response from the ESI API"""
 
     data: any
     response: any
     response_code: int
+    typed_data: T
 
-    def __init__(self, response_code, data=None, response=None):
+    def __init__(
+        self, response_code, data=None, response=None, typed_data=None
+    ):
         self.data = data
         self.response = response
         self.response_code = response_code
+        self.typed_data = typed_data
 
     def success(self):
         """Returns true of the ESI call was successful."""
@@ -43,8 +48,26 @@ class EsiResponse:
             raise ValueError("Cannot return data for failed ESI call")
 
 
+class EsiCorporation(BaseModel):
+    corporation_id: int
+    alliance_id: int
+    ceo_id: int
+    name: str
+    ticker: str
+    member_count: int
+
+
 class EsiClient:
-    """An instance of the ESI client for a specific character"""
+    """
+    An instance of the ESI client for a specific character.
+
+    ESI call methods return an EsiResponse object containing
+    status information and any results data.
+
+    Responses can be typed or untyped. Untyped response data
+    (dicts) will be in response.data, and typed response data
+    will be in the response.typed_data field.
+    """
 
     character_id: int
     character_esi_suspended: bool = False
@@ -126,3 +149,30 @@ class EsiClient:
             )
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
+    def get_corporation(
+        self, corporation_id: int
+    ) -> EsiResponse[EsiCorporation]:
+        """Returns details of an Eve corporation"""
+
+        operation = esi.client.Corporation.get_corporations_corporation_id(
+            corporation_id=corporation_id,
+        )
+
+        try:
+            data = data = operation.results()
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
+        return EsiResponse(
+            data=data,
+            typed_data=EsiCorporation(
+                corporation_id=corporation_id,
+                alliance_id=data["alliance_id"],
+                ceo_id=data["ceo_id"],
+                name=data["name"],
+                ticker=data["ticker"],
+                member_count=data["member_count"],
+            ),
+            response_code=SUCCESS,
+        )
