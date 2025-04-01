@@ -1317,5 +1317,6 @@ export const ui = {
         'corp_ship': 'Corporation ship',
         'corp_ship_description': 'For ships extracted from the corporation hangar',
         'no_srp_value': 'SRP amount not defined',
+        'amarr_hq_description': 'Minmatar Fleet Alliance HQ',
     },
 } as const;
