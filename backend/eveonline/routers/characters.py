@@ -303,25 +303,6 @@ def set_primary_character(request, character_id: int):
                 "detail": "You do not have permission to set this character as primary."
             }
 
-    # primary_characters = EvePrimaryCharacter.objects.filter(
-    #     character__token__user=request.user
-    # ).distinct()
-    # if primary_characters.exists():
-    #     # Delete any existing primary character records, after creating change log
-    #     if primary_characters.count() > 1:
-    #         logger.error(
-    #             "User %s has %d primary characters",
-    #             request.user.username,
-    #             primary_characters.count,
-    #         )
-    #     for primary_character in primary_characters.all():
-    #         EvePrimaryCharacterChangeLog.objects.create(
-    #             username=request.user.username,
-    #             previous_character_name=primary_character.character.character_name,
-    #             new_character_name=character.character_name,
-    #         )
-    #         primary_character.delete()
-
     primary = EvePrimaryCharacter.objects.filter(user=request.user).first()
     if primary:
         EvePrimaryCharacterChangeLog.objects.create(
@@ -594,7 +575,7 @@ def build_character_response(char, primary):
             item.corp_id = char.corporation.id
             item.corp_name = char.corporation.name
         if char.alliance:
-            item.alliance_id = char.alliance.id
+            item.alliance_id = char.alliance.alliance_id
             item.alliance_name = char.alliance.name
 
         if char.esi_token_level:
