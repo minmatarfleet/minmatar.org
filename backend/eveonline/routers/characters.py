@@ -396,7 +396,7 @@ def add_character(
                 )
                 old_token = character.token
                 character.token = token
-                character.esi_token_level = token_type.value
+                character.esi_token_level = token_type_str(token_type)
                 character.user = token.user
                 character.save()
                 old_token.delete()
@@ -407,7 +407,7 @@ def add_character(
                 )
                 character.token = token
                 character.user = token.user
-                character.esi_token_level = token_type.value
+                character.esi_token_level = token_type_str(token_type)
                 character.save()
             elif token != character.token:
                 logger.warning(
@@ -443,7 +443,7 @@ def add_character(
             character = EveCharacter.objects.create(
                 character_id=token.character_id,
                 character_name=token.character_name,
-                esi_token_level=token_type,
+                esi_token_level=token_type_str(token_type),
                 token=token,
                 user=token.user,
             )

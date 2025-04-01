@@ -122,7 +122,11 @@ def scope_names(token: Token) -> List[str]:
 
 
 def token_type_str(s) -> str:
-    if s:
-        return s.removeprefix("TokenType.").upper()
+    if s is None:
+        return ""
+    elif isinstance(s, str):
+        return s.removeprefix("TokenType.")
+    elif isinstance(s, TokenType):
+        return str(s.value)
     else:
         return ""
