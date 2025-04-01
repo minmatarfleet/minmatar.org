@@ -1,0 +1,16 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import StationInfo from '@components/blocks/StationInfo.astro';
+---
+
+<StationInfo
+    system="Amarr"
+    security="1.0"
+    constellation="Throne Worlds"
+    region="Domain"
+    station_name="Amarr VIII (Oris) - Emperor Family Academy"
+    station_description={t('amarr_hq_description')}
+    slot="button"
+/>
