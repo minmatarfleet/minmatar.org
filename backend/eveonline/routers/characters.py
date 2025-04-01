@@ -572,7 +572,7 @@ def build_character_response(char, primary):
     )
     try:
         if char.corporation:
-            item.corp_id = char.corporation.id
+            item.corp_id = char.corporation.corporation_id
             item.corp_name = char.corporation.name
         if char.alliance:
             item.alliance_id = char.alliance.alliance_id
