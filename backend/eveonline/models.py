@@ -361,17 +361,10 @@ class EveCorporation(models.Model):
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]
-        alliance = EveAlliance.objects.filter(
+        self.alliance = EveAlliance.objects.get_or_create(
+            # Details will be pulled from ESI via post_save signal
             alliance_id=esi_corporation["alliance_id"]
-        ).first()
-        if alliance:
-            self.alliance = alliance
-        else:
-            logger.error(
-                "Could not find alliance %d for corp %s",
-                esi_corporation["alliance_id"],
-                self.name,
-            )
+        )
         # set ceo
         if esi_corporation["ceo_id"] > 90000000:
             logger.info(
