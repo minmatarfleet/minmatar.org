@@ -36,6 +36,8 @@ const Element = href ? 'a' : 'button';
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
+    disabled={Element === 'button' ? 'disabled' : undefined}
+    x-init={Element === 'button' ? '$el.removeAttribute("disabled")' : undefined}
 >
     <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'} justification={centered ? 'center' : 'flex-start'}>
         <slot name="icon" />
