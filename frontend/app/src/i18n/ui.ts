@@ -1341,5 +1341,6 @@ export const ui = {
         'wrong_character': 'The ESI token could not be fixed because the selected character was incorrect.',
         'auth_third_party_link_link': 'Authorized Third-Party applications',
         'auth_third_party_link_description': 'View your characters authorized third-party applications.',
+        'amarr_hq_description': 'Minmatar Fleet Alliance HQ',
     },
 } as const;

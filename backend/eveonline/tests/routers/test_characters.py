@@ -9,7 +9,7 @@ from eveonline.models import (
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
 )
-from eveonline.scopes import token_type_str
+from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
@@ -101,8 +101,10 @@ class CharacterRouterTestCase(TestCase):
 
     def test_token_type_str(self):
         self.assertEqual("", token_type_str(None))
-        self.assertEqual("BASIC", token_type_str("Basic"))
-        self.assertEqual("BASIC", token_type_str("TokenType.BASIC"))
+        self.assertEqual("", token_type_str(""))
+        self.assertEqual("Basic", token_type_str("Basic"))
+        self.assertEqual("Basic", token_type_str(TokenType.BASIC))
+        self.assertEqual("CEO", token_type_str(TokenType.CEO))
         self.assertEqual("CEO", token_type_str("TokenType.CEO"))
 
     def test_get_primary_character(self):
