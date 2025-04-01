@@ -17,13 +17,13 @@ if (!auth_token || !user) {
 }
 
 import { set_primary_characters } from '@helpers/api.minmatar.org/characters'
-import type { Character } from '@dtypes/api.minmatar.org'
-import { get_characters } from '@helpers/api.minmatar.org/characters'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_character_summary } from '@helpers/api.minmatar.org/characters'
 
 const character_id = parseInt(Astro.url.searchParams.get('id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
 let set_main_character_error
-let pilots:Character[] = []
+let pilots:SummaryCharacter[] = []
 let get_characters_error:string | false = false
 let readonly = false
 
@@ -55,7 +55,8 @@ if (set_main_character_error) {
     }
 
     try {
-        pilots = await get_characters(auth_token);
+        const character_summary = await get_character_summary(auth_token as string)
+        pilots = character_summary?.characters ?? []
     } catch (error) {
         get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
         readonly = true
@@ -66,7 +67,6 @@ if (set_main_character_error) {
 
 import PilotsList from '@components/blocks/PilotsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';

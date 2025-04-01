@@ -574,3 +574,31 @@ export interface NotificationSubscriptionsFull {
     user_id:        number | null;
     subscription:   string;
 }
+
+export interface CharacterSummary {
+    user_id:    number;
+    user_name:  string;
+    discord_id: string;
+    characters: SummaryCharacter[];
+}
+
+export interface SummaryCharacter {
+    character_id:   number;
+    character_name: string;
+    is_primary:     boolean;
+    corp_id:        number;
+    corp_name:      string;
+    alliance_id:    number;
+    alliance_name:  string;
+    esi_token:      string;
+}
+
+export interface CharacterESITokens {
+    id:             number;
+    created:        Date;
+    expires:        Date;
+    can_refresh:    boolean;
+    owner_hash:     string;
+    scopes:         string[];
+    level:          string;
+}

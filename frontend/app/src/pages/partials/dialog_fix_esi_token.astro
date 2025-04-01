@@ -1,0 +1,15 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const character_id = parseInt(Astro.url.searchParams.get('id') as string)
+const character_name = Astro.url.searchParams.get('character_name') as string
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+---
+
+<Flexblock>
+    <p>{t('fix_esi_token_dialog_text')}</p>
+    <PilotBadge character_id={character_id} character_name={character_name} />
+</Flexblock>

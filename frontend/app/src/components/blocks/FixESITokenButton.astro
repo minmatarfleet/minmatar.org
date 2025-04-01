@@ -1,0 +1,48 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string';
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    character:  SummaryCharacter;
+}
+
+const {
+    character
+} = Astro.props
+
+import Button from '@components/blocks/Button.astro';
+import Tippy from '@components/blocks/Tippy.astro';
+---
+
+<Tippy
+    data-tippy-placement="top"
+    partial={`${translatePath('/partials/normal_tooltip')}?description=fix_esi_button_tooltip`}
+    height='70px'
+    width='340px'
+    element='div'
+    show_delay={2000}
+>
+    <Button
+        class="[ action-button ]"
+        size='sm'
+        type="button"
+        x-data={`{
+            show_fix_esi_dialog() {
+                show_confirm_dialog({
+                    title: '${t('fix_esi_token_dialog_title')}',
+                    partial: '${translatePath('/partials/dialog_fix_esi_token/')}?${query_string({
+                        id: character.character_id,
+                        character_name: character.character_name,
+                    })}',
+                }).then( (accepted) => fix_token_redirect(accepted, '${character.esi_token.replace(' (SUSPENDED)', '')}', ${character.character_id}) )
+            }
+        }`}
+        x-on:click="show_fix_esi_dialog"
+    >
+        {t('fix_esi_token')}
+    </Button>
+</Tippy>

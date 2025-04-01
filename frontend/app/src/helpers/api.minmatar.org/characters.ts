@@ -1,4 +1,4 @@
-import type { Character, CharacterSkillset, CharacterAsset } from '@dtypes/api.minmatar.org'
+import type { Character, CharacterSkillset, CharacterAsset, CharacterSummary, CharacterESITokens } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
@@ -212,5 +212,65 @@ export async function set_primary_characters(access_token:string, character_id:n
         return (response.status === 200);
     } catch (error) {
         throw new Error(`Error setting main character: ${error.message}`);
+    }
+}
+
+export async function get_character_summary(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/summary`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as CharacterSummary;
+    } catch (error) {
+        throw new Error(`Error fetching character summary: ${error.message}`);
+    }
+}
+
+export async function get_character_esi_token(access_token:string, character_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}/tokens`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as CharacterESITokens[];
+    } catch (error) {
+        throw new Error(`Error fetching character summary: ${error.message}`);
     }
 }

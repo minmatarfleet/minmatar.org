@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { AllianceBadgeProps } from '@dtypes/layout_components'
+import type { AllianceBadgeProps, EvEImageServiceSize } from '@dtypes/layout_components'
 import { get_alliance_by_id } from '@helpers/api.eveonline/alliances'
 import type { AllianceEvE } from '@dtypes/api.eveonline'
 import { prod_error_messages } from '@helpers/env'
@@ -27,18 +27,41 @@ if (!alliance?.name) {
 
 const alliance_name = alliance?.name ?? (alliance_eve?.name ?? get_eve_alliance_error)
 
+const LOGO_SIZES = {
+    'xs': 24,
+    'sm': 32,
+    'lg': 64,
+}
+
+const LOGO_QLTY = {
+    'xs': 32,
+    'sm': 32,
+    'lg': 64,
+}
+
+const GAPS = {
+    'xs': 'var(--space-3xs)',
+    'sm': 'var(--space-2xs)',
+    'lg': 'var(--space-s)',
+}
+
+const size = alliance?.size ?? 'sm'
+const logo_size = LOGO_SIZES[size] ?? 32
+const logo_qlty = LOGO_QLTY[size] ?? 32
+const gap = GAPS[size] ?? 'var(--space-2xs)'
+
 import { get_alliance_logo } from '@helpers/eve_image_server';
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 ---
 <FixedFluid
-    width='32px'
-    gap='var(--space-2xs)'
+    width={`${size}px`}
+    gap={gap}
     class="[ items-center ]"
 >
     <picture>
-        <img loading="lazy" src={get_alliance_logo(alliance.id)} width="32" height="32" />
+        <img loading="lazy" src={get_alliance_logo(alliance.id, logo_qlty as EvEImageServiceSize)} width={logo_size} height={logo_size} />
     </picture>
-    <small>
+    <small class="[ w-full ]">
         <span class="[ text-[var(--highlight)] ]">{alliance_name}</span>
     </small>
 </FixedFluid>
