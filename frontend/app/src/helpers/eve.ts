@@ -250,6 +250,7 @@ export const sec_status_class = (security:string):string => {
         '0.3': 'text-status-point-3',
         '0.2': 'text-status-point-2',
         '0.1': 'text-status-point-1',
+        '0': 'text-status-null',
     }
 
     return SEC_CLASS[security] ?? 'text-status-null'
