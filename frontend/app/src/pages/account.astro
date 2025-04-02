@@ -134,6 +134,7 @@ const page_title = t('account.page_title');
             <Button
                 href="https://wiki.minmatar.org/en/guides/account-issues"
                 target="_blank"
+                rel="nofollow noopener noreferrer"
                 size='sm'
             >
                 {t('troubleshooting')}
@@ -244,7 +245,13 @@ const page_title = t('account.page_title');
 
                 <ComponentBlock width='narrow'>
                     <Flexblock gap="var(--space-3xs)">
-                        <a href="https://developers.eveonline.com/authorized-apps">{t('auth_third_party_link_link')}</a>
+                        <a
+                            href="https://developers.eveonline.com/authorized-apps"
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                        >
+                            {t('auth_third_party_link_link')}
+                        </a>
                         <small>{t('auth_third_party_link_description')}</small>
                     </Flexblock>
                 </ComponentBlock>

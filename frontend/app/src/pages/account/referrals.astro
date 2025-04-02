@@ -88,7 +88,7 @@ const page_title = t('account.referral.page_title');
                             {external_referrals_pages.map(page =>
                                 <FlexInline class="[ items-center ]">
                                     <Flexblock class="basis-[450px]" gap='var(--space-3xs)'>
-                                        <a href={page.target} target="_blank">{page.name}</a>
+                                        <a href={page.target} target="_blank" rel="nofollow noopener noreferrer">{page.name}</a>
                                         <small>{page.decription}</small>
                                     </Flexblock>
                                     
