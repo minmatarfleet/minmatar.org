@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { CorporationBadgeProps } from '@dtypes/layout_components'
+import type { CorporationBadgeProps, EvEImageServiceSize } from '@dtypes/layout_components'
 import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
 import type { CorporationEvE } from '@dtypes/api.eveonline'
 import { prod_error_messages } from '@helpers/env'
@@ -27,16 +27,34 @@ if (!corporation?.name) {
     }
 }
 
+const LOGO_SIZES = {
+    'xs': 24,
+    'sm': 32,
+    'lg': 64,
+}
+
+const LOGO_QLTY = {
+    'xs': 32,
+    'sm': 32,
+    'lg': 64,
+}
+
+const GAPS = {
+    'xs': 'var(--space-3xs)',
+    'sm': 'var(--space-2xs)',
+    'lg': 'var(--space-s)',
+}
+
 const corporation_name = corporation?.name ?? (corporation_eve?.name ?? get_eve_corporation_error)
 const size = corporation?.size ?? 'sm'
-const logo_size = (size == 'sm' ? 32 : 64)
+const logo_size = LOGO_SIZES[size] ?? 32
+const logo_qlty = LOGO_QLTY[size] ?? 32
 const description:string | false = corporation?.description ?? false
+const gap = GAPS[size] ?? 'var(--space-2xs)'
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
-
-const gap = size === 'sm' ? 'var(--space-2xs)' : 'var(--space-s)'
 ---
 <FixedFluid
     width={`${logo_size}px`}
@@ -44,7 +62,7 @@ const gap = size === 'sm' ? 'var(--space-2xs)' : 'var(--space-s)'
     class="[ items-center ]"
 >
     <picture class:list={{ border: border }}>
-        <img loading="lazy" src={get_corporation_logo(corporation.id, logo_size)} width={logo_size} height={logo_size} />
+        <img loading="lazy" src={get_corporation_logo(corporation.id, logo_qlty as EvEImageServiceSize)} width={logo_size} height={logo_size} />
     </picture>
     <Flexblock gap='0' class="[ w-full ]">
         {size == 'lg' ?

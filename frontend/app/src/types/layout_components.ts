@@ -390,7 +390,7 @@ export interface ModalCover {
     overlay?:       boolean;
 }
 
-export type BadgeSize = 'sm' | 'lg'
+export type BadgeSize = 'xs' | 'sm' | 'lg'
 
 export interface CorporationBadgeProps {
     id:             number;
@@ -402,6 +402,7 @@ export interface CorporationBadgeProps {
 export interface AllianceBadgeProps {
     id:     number;
     name?:  string;
+    size?:  BadgeSize;
 }
 
 export interface CorporationHistoryItem {

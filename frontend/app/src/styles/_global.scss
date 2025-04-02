@@ -258,3 +258,14 @@ ul {
         color: var(--highlight);
     }
 }
+
+.toast {
+    position: fixed;
+    right: var(--space-s);
+    bottom: var(--space-s);
+    background-color: var(--fleet-red);
+    color: var(--foreground);
+    padding: var(--space-2xs) var(--space-2xs);
+    z-index: var(--tooltips-z-index);
+    cursor: pointer;
+}

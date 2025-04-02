@@ -17,8 +17,8 @@ if (!auth_token || !user) {
 }
 
 import type { Alert } from '@dtypes/layout_components'
-import type { Character } from '@dtypes/api.minmatar.org'
-import { get_characters, delete_characters } from '@helpers/api.minmatar.org/characters'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_character_summary, delete_characters } from '@helpers/api.minmatar.org/characters'
 import { query_string } from '@helpers/string';
 
 let redirect:string | false = false
@@ -64,11 +64,12 @@ if (Astro.request.method === "DELETE") {
     }
 }
 
-let pilots:Character[] = []
+let pilots:SummaryCharacter[] = []
 let get_characters_error:string | false = false
 let readonly = false
 try {
-    pilots = await get_characters(auth_token);
+    const character_summary = await get_character_summary(auth_token as string)
+    pilots = character_summary?.characters ?? []
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true

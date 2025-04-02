@@ -3,12 +3,12 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
-import type { Character } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import { get_api_url, get_app_url } from '@helpers/env'
 import type { Alert } from '@dtypes/layout_components'
 
 interface Props {
-    pilots?:            Array<Character>;
+    pilots?:            Array<SummaryCharacter>;
     readonly?:          boolean;
     removed_character?: number | false;
     alert?:             Alert | false;
@@ -28,6 +28,7 @@ const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : 
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
 const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}&token_type=Basic`
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
 const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/pilots_list_component')}`
 const SET_MAIN_CHARACTER_PARTIAL_URL = translatePath('/partials/set_primary_character')
 
@@ -38,6 +39,9 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import Button from '@components/blocks/Button.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import AllianceBadge from '@components/blocks/AllianceBadge.astro';
 
 delete attributes.class
 ---
@@ -54,8 +58,12 @@ delete attributes.class
         primary_pilot: ${primary_pilot_id},
         character_name_slugs: {},
         enabled: true,
+        show_details: false,
         add_pilot(accepted) {
             if (accepted) window.location.href = "${ADD_CHARACTER_URL}"
+        },
+        fix_token_redirect(accepted, esi_token, character_id) {
+            if (accepted) window.location.href = \`${FIX_CHARACTER_URL}&token_type=\${esi_token}&character_id=\${character_id}\`
         },
         pilot_list_init() {
             ${removed_character !== false ? `stop_remove_animation(${removed_character})` : ''}
@@ -77,11 +85,20 @@ delete attributes.class
                 </small>
             </Flexblock>
             
-            {!readonly &&
-                <FlexInline>
+            <FlexInline>
+                <Button
+                    size='sm'
+                    type="button"
+                    x-on:click="show_details = !show_details"
+                    x-text={`show_details ? '${t('hide_details')}' : '${t('show_details')}'`}
+                >
+                    {t('show_details')}
+                </Button>
+                {!readonly &&
                     <Button
                         size='sm'
                         type="button"
+                        color='green'
                         x-data={`{
                             show_add_pilot_disclaimer() {
                                 if (pilots.length == 0) {
@@ -110,8 +127,8 @@ delete attributes.class
                             t('add_pilot')
                         }
                     </Button>
-                </FlexInline>
-            }
+                }
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap='var(--space-3xs)'>
@@ -121,7 +138,7 @@ delete attributes.class
                         character_id={pilot.character_id}
                         character_name={pilot.character_name}
                     />
-                    <FlexInline class="[ items-center ]">
+                    <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
                         <Flexblock gap='0' class="[ grow ]">
                             <span
                                 class="truncate cursor-pointer text-[var(--highlight)]"
@@ -138,14 +155,32 @@ delete attributes.class
                                 x-on:click="show_character_modal()"
                             />
                             <small class="truncate">
-                                {pilot.character_id == primary_pilot_id ?
+                                {pilot.is_primary ?
                                     t('main_character') :
                                     t('alt_character')
                                 }
                             </small>
+                            <FlexInline x-show="show_details" gap='var(--space-2xs)' class="[ w-full grow ]" style="display: none">
+                                <CorporationBadge
+                                    corporation={{
+                                        id: pilot.corp_id,
+                                        name: pilot.corp_name,
+                                        size: 'xs',
+                                    }}
+                                />
+                                {pilot.alliance_id &&
+                                    <AllianceBadge
+                                        alliance={{
+                                            id: pilot.alliance_id,
+                                            name: pilot.alliance_name,
+                                            size: 'xs',
+                                        }}
+                                    />
+                                }
+                            </FlexInline>
                         </Flexblock>
                         <FlexInline>
-                            {!readonly && pilot.character_id != primary_pilot_id &&
+                            {!readonly && !pilot.is_primary &&
                                 <Button
                                     class="[ action-button ]"
                                     size='sm'
@@ -175,6 +210,10 @@ delete attributes.class
                                 >
                                     {t('set_primary_pilot')}
                                 </Button>
+                            }
+
+                            {!readonly &&
+                                <FixESITokenButton character={pilot} />
                             }
 
                             {!readonly &&
@@ -233,6 +272,15 @@ delete attributes.class
             height: 100%;
         }
 
+        &.disabled {
+            pointer-events: none;
+            opacity: 0.25;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    .pilot-list {
         .pilot-item {
             @media (hover: hover) {
                 .action-button {
@@ -247,11 +295,6 @@ delete attributes.class
                     }
                 }
             }
-        }
-
-        &.disabled {
-            pointer-events: none;
-            opacity: 0.25;
         }
     }
 </style>
