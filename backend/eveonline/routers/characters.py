@@ -351,13 +351,20 @@ def get_primary_character(request):
     }
 
 
+def set_or_remove_session_value(request, key, value):
+    """Adds a value to the session, or removes it if the value is None."""
+    if value:
+        request.session[key] = value
+    else:
+        request.session.pop(key, None)
+
+
 @router.get("/add", summary="Add character using EVE Online SSO")
 def add_character(
     request, redirect_url: str, token_type: TokenType, character_id: str = None
 ):
     request.session["redirect_url"] = redirect_url
-    if character_id:
-        request.session["add_character_id"] = character_id
+    set_or_remove_session_value(request, "add_character_id", character_id)
     scopes = scopes_for(token_type)
 
     @login_required()
@@ -366,7 +373,7 @@ def add_character(
         if "add_character_id" in request.session:
             requested_char = request.session["add_character_id"]
             if str(token.character_id) != requested_char:
-                logger.warning(
+                logger.error(
                     "Incorrect character in tokem refresh, %s != %s",
                     str(token.character_id),
                     requested_char,
