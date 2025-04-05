@@ -39,6 +39,16 @@ def update_fleet_instances():
             if closed_message in str(e):
                 fleet_instance.end_time = timezone.now()
                 fleet_instance.save()
+
+                try:
+                    fleet_instance.eve_fleet.status = "complete"
+                    fleet_instance.eve_fleet.save()
+                except Exception as e1:
+                    logger.error(
+                        "Error setting Fleet %d status, %s",
+                        fleet_instance.eve_fleet.id,
+                        e1,
+                    )
                 continue
 
             raise e
