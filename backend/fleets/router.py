@@ -113,6 +113,7 @@ class CreateEveFleetRequest(BaseModel):
     location_id: int
     disable_motd: bool = False
     immediate_ping: bool = False
+    status: Optional[str] = None
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -123,6 +124,7 @@ class UpdateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: int
     disable_motd: bool = False
+    status: Optional[str] = None
 
 
 class CreateEveFleetReimbursementRequest(BaseModel):
@@ -638,6 +640,8 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         location_id=payload.location_id
     )
     fleet.audience = audience
+    if payload.status:
+        fleet.status = payload.status
 
     if payload.doctrine_id:
         doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
@@ -653,6 +657,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "fleet_commander": fleet.created_by.id,
         "location": fleet.location.location_name,
         "audience": fleet.audience.name,
+        "status": fleet.status,
     }
 
     if fleet.doctrine:
