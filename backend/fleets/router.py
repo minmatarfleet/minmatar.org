@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
-from eveonline.models import EvePrimaryCharacter
+from eveonline.helpers.characters import user_primary_character
 from discord.client import DiscordClient
 from fittings.models import EveDoctrine
 
@@ -379,14 +379,18 @@ def create_standing_fleet(request):
             "detail": "User missing permission fleets.add_evestandingfleet"
         }
 
-    eve_primary_character = EvePrimaryCharacter.objects.get(
-        character__token__user=request.user
-    )
+    # eve_primary_character = EvePrimaryCharacter.objects.get(
+    #     character__token__user=request.user
+    # )
+    primary_character = user_primary_character(request.user)
+    if not primary_character:
+        return 400, {"detail": "No primary character found"}
+
     try:
-        EveStandingFleet.start(eve_primary_character.character.character_id)
+        EveStandingFleet.start(primary_character.character_id)
     except Exception as e:
         return 400, {
-            "detail": f"Error starting fleet for {eve_primary_character.character}: {e}"
+            "detail": f"Error starting fleet for {primary_character}: {e}"
         }
 
     return 200, None
@@ -405,11 +409,14 @@ def claim_standing_fleet(request, fleet_id: int):
         }
 
     standing_fleet = EveStandingFleet.objects.get(id=fleet_id)
-    eve_primary_character = EvePrimaryCharacter.objects.get(
-        character__token__user=request.user
-    )
+    # eve_primary_character = EvePrimaryCharacter.objects.get(
+    #     character__token__user=request.user
+    # )
+    primary_character = user_primary_character(request.user)
+    if not primary_character:
+        return 400, {"detail": "No primary character found"}
 
-    standing_fleet.claim(eve_primary_character.character.character_id)
+    standing_fleet.claim(primary_character.character_id)
 
     return 200, None
 

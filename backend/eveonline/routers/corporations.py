@@ -12,8 +12,8 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
-    EvePrimaryCharacter,
 )
+from eveonline.helpers.characters import user_primary_character
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 logger = logging.getLogger(__name__)
@@ -231,20 +231,20 @@ def get_corporation_by_id(request, corporation_id: int):
             payload["exempt"] = True
         if character.token:
             payload["registered"] = True
-            primary_character = EvePrimaryCharacter.objects.filter(
-                character__token__user=character.token.user
-            ).first()
+            # primary_character = EvePrimaryCharacter.objects.filter(
+            #     character__token__user=character.token.user
+            # ).first()
+            primary_character = user_primary_character(character.user)
             if (
                 primary_character
-                and primary_character.character
-                and primary_character.character.character_id
-                != character.character_id
+                # and primary_character.character
+                and primary_character.character_id != character.character_id
             ):
                 payload["primary_character_id"] = (
-                    primary_character.character.character_id
+                    primary_character.character_id
                 )
                 payload["primary_character_name"] = (
-                    primary_character.character.character_name
+                    primary_character.character_name
                 )
         response["members"].append(payload)
     return response
