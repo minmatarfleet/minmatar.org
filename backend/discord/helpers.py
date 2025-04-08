@@ -38,7 +38,7 @@ def get_expected_nickname(user: User):
     if not eve_primary_character or not is_valid_for_nickname:
         return None
 
-    return make_nickname(eve_primary_character.character, discord_user)
+    return make_nickname(eve_primary_character, discord_user)
 
 
 def get_discord_user(user: User, notify=False):
