@@ -3,7 +3,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
-from eveonline.models import EvePrimaryCharacter
+from eveonline.helpers.characters import user_primary_character
 
 from .models import MumbleAccess
 
@@ -30,16 +30,20 @@ def get_mumble_connection(request):
     if not request.user.has_perm("mumble.view_mumbleaccess"):
         return 403, {"detail": "You do not have permission to access mumble."}
 
-    if not EvePrimaryCharacter.objects.filter(
-        character__token__user=request.user
-    ).exists():
+    primary_character = user_primary_character(request.user)
+    if not primary_character:
         return 404, {"detail": "Primary character not found."}
+
+    # if not EvePrimaryCharacter.objects.filter(
+    #     character__token__user=request.user
+    # ).exists():
+    #     return 404, {"detail": "Primary character not found."}
 
     mumble_access, _ = MumbleAccess.objects.get_or_create(user=request.user)
 
-    primary_character = EvePrimaryCharacter.objects.get(
-        character__token__user=request.user
-    ).character
+    # primary_character = EvePrimaryCharacter.objects.get(
+    #     character__token__user=request.user
+    # ).character
 
     response = {
         "username": primary_character.character_name,
