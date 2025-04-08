@@ -117,13 +117,13 @@ class CreateEveFleetRequest(BaseModel):
 
 
 class UpdateEveFleetRequest(BaseModel):
-    type: EveFleetType
-    description: str
-    start_time: datetime
+    type: Optional[EveFleetType] = None
+    description: Optional[str] = None
+    start_time: Optional[datetime] = None
     doctrine_id: Optional[int] = None
-    audience_id: int
-    location_id: int
-    disable_motd: bool = False
+    audience_id: Optional[int] = None
+    location_id: Optional[int] = None
+    disable_motd: Optional[bool] = False
     status: Optional[str] = None
 
 
@@ -626,27 +626,39 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
     description="Update the fleet details. Must have fleets.add_evefleet permission",
 )
 def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
-    if not request.user.has_perm("fleets.add_evefleet"):
+    if not (
+        request.user.is_superuser
+        or request.user.has_perm("fleets.add_evefleet")
+    ):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
 
     fleet = EveFleet.objects.get(id=fleet_id)
 
-    if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
-        return 400, {"detail": "Audience does not exist"}
+    if payload.audience_id:
+        if not EveFleetAudience.objects.filter(
+            id=payload.audience_id
+        ).exists():
+            return 400, {"detail": "Audience does not exist"}
+        audience = EveFleetAudience.objects.get(id=payload.audience_id)
+        fleet.audience = audience
 
-    if not EveFleetLocation.objects.filter(
-        location_id=payload.location_id
-    ).exists():
-        return 400, {"detail": "Location does not exist"}
+    if payload.location_id:
+        if not EveFleetLocation.objects.filter(
+            location_id=payload.location_id
+        ).exists():
+            return 400, {"detail": "Location does not exist"}
 
-    audience = EveFleetAudience.objects.get(id=payload.audience_id)
-    fleet.type = payload.type
-    fleet.description = payload.description
-    fleet.start_time = payload.start_time
-    fleet.location = EveFleetLocation.objects.get(
-        location_id=payload.location_id
-    )
-    fleet.audience = audience
+        fleet.location = EveFleetLocation.objects.get(
+            location_id=payload.location_id
+        )
+
+    if payload.type:
+        fleet.type = payload.type
+    if payload.description:
+        fleet.description = payload.description
+    if payload.start_time:
+        fleet.start_time = payload.start_time
+
     if payload.status:
         fleet.status = payload.status
 
@@ -661,14 +673,12 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "type": fleet.type,
         "description": fleet.description,
         "start_time": fleet.start_time,
-        "fleet_commander": fleet.created_by.id,
-        "location": fleet.location.location_name,
-        "audience": fleet.audience.name,
+        "fleet_commander": fleet.created_by.id if fleet.created_by else None,
+        "location": fleet.location.location_name if fleet.location else None,
+        "audience": fleet.audience.name if fleet.audience else None,
+        "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "status": fleet.status,
     }
-
-    if fleet.doctrine:
-        payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetResponse(**payload)
 
