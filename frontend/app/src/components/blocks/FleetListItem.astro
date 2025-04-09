@@ -120,15 +120,19 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     {fleet.fleet_commander_id > 0 &&
         <VerticalCenter>
             <Flexblock>
-                {fleet?.tracking && !fleet?.tracking?.end_time &&
+                {fleet?.status === 'cancelled' &&
+                    <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
+                }
+                
+                {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
                     <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
                 }
 
-                {fleet?.tracking && fleet?.tracking?.end_time &&
+                {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
                     <p class="[ fleet-status-text ]">{t('completed')}</p>
                 }
 
-                {!history && !fleet?.tracking &&
+                {fleet?.status !== 'cancelled' && !history && !fleet?.tracking &&
                     <Countdown
                         date={fleet.start_time}
                         id={fleet.id}
@@ -149,7 +153,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     }
 </ThumbCard>
 
-<style>
+<style lang="scss">
     .fleet-status-text {
         font-family: var(--heading-font);
         font-size: var(--step-0);
@@ -161,5 +165,9 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+
+        &.cancelled {
+            color: var(--fleet-red);
+        }
     }
 </style>

@@ -189,6 +189,7 @@ export interface Fleet {
     location:           string;
     disable_motd:       boolean;
     tracking?:          Tracking;
+    status?:            TrackingStatus;
 }
 
 export interface FleetBasic {
@@ -212,7 +213,23 @@ export interface FleetRequest {
     audience_id:        number;
     disable_motd:       boolean;
     immediate_ping?:    boolean;
+    status?:            TrackingStatus;
 }
+
+export interface FleetPatchRequest {
+    type?:              FleetTypes;
+    description?:       string;
+    start_time?:        Date;
+    doctrine_id?:       number | null;
+    location_id?:       number;
+    audience_id?:       number;
+    disable_motd?:      boolean;
+    immediate_ping?:    boolean;
+    status?:            TrackingStatus;
+}
+
+export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
+export type TrackingStatus = typeof tracking_status[number]
 
 export interface MumbleInformation {
     username:   string,

@@ -1,0 +1,42 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    fleet_id:   number;
+}
+
+const {
+    fleet_id
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    id="remove-fleet-button"
+    size='sm'
+    x-data={`{
+        show_remove_fleet_dialog() {
+            show_confirm_dialog({
+                title: '${t('remove_fleet_dialog_title')}',
+                content: '${t('remove_fleet_dialog_text')}',
+                hx: {
+                    method: 'delete',
+                    url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
+                        fleet_id: fleet_id,
+                    })}',
+                    target: '#remove-fleet-button',
+                    swap: 'outerHTML transition:true'
+                }
+            })
+        }
+    }`}
+    x-on:click="show_remove_fleet_dialog"
+>
+    {t('remove')}
+</Button>

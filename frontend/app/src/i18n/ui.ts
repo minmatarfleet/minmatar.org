@@ -1342,5 +1342,10 @@ export const ui = {
         'auth_third_party_link_link': 'Authorized Third-Party applications',
         'auth_third_party_link_description': 'View your characters authorized third-party applications.',
         'amarr_hq_description': 'Minmatar Fleet Alliance HQ',
+        'cancel': 'Cancel',
+        'cancelled': 'Cancelled',
+        'cancel_fleet_dialog_title': 'Cancel fleet',
+        'cancel_fleet_dialog_text': 'Proceed cancelling the fleet?',
+        'cancel_fleet_error': 'An error ocurred cancelling the fleet',
     },
 } as const;

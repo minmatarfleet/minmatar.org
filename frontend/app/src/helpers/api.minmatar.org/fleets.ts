@@ -6,7 +6,8 @@ import type {
     Location,
     FleetBasic,
     FleetUsers,
-    FleetStatus
+    FleetStatus,
+    FleetPatchRequest
  } from '@dtypes/api.minmatar.org'
 import { get_error_message, parse_error_message, parse_response_error } from '@helpers/string'
 
@@ -224,7 +225,7 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
     }
 }
 
-export async function update_fleet(access_token:string, fleet:FleetRequest, fleet_id: number) {
+export async function update_fleet(access_token:string, fleet:FleetPatchRequest, fleet_id: number) {
     const data = JSON.stringify(fleet)
     
     const headers = {

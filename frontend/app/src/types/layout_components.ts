@@ -663,7 +663,10 @@ export interface FleetItem {
     fleet_commander_name:   string;
     location?:              string;
     tracking?:              Tracking;
+    status?:                TrackingStatus;
 }
+
+import type { TrackingStatus } from '@dtypes/api.minmatar.org'
 
 export interface FleetUI {
     id:                     number;
@@ -677,6 +680,7 @@ export interface FleetUI {
     tracking:               Tracking;
     audience:               string;
     disable_motd:           boolean;
+    status?:                TrackingStatus;
 }
 
 export interface Tracking {

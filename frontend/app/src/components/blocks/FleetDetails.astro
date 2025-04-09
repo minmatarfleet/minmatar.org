@@ -28,7 +28,6 @@ const {
 
 import { query_string } from '@helpers/string';
 
-const FLEET_REMOVE_BUTTON_PARTIAL_URL = translatePath('/partials/fleet_remove_button_component')
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
 import { minutes_to } from '@helpers/date';
@@ -48,6 +47,8 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 import Button from '@components/blocks/Button.astro';
+import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
+import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
@@ -98,27 +99,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             }
 
                             {(!history && fleet.tracking === null) &&
-                                <Button
-                                    size='sm'
-                                    x-data={`{
-                                        show_remove_fleet_dialog() {
-                                            show_confirm_dialog({
-                                                title: '${t('remove_fleet_dialog_title')}',
-                                                content: '${t('remove_fleet_dialog_text')}',
-                                                hx: {
-                                                    method: 'delete',
-                                                    url: '${FLEET_REMOVE_BUTTON_PARTIAL_URL}?${query_string({
-                                                        fleet_id: fleet.id,
-                                                    })}',
-                                                    swap: 'outerHTML transition:true'
-                                                }
-                                            })
-                                        }
-                                    }`}
-                                    x-on:click="show_remove_fleet_dialog"
-                                >
-                                    {t('remove')}
-                                </Button>
+                                <CancelFleetButton fleet_id={fleet.id} />
                             }
                         </FlexInline>
                     }
