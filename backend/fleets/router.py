@@ -276,15 +276,12 @@ def get_v3_fleets(
         fleets = (
             EveFleet.objects.filter(evefleetinstance__end_time=None)
             .filter(start_time__gte=timezone.now() - timedelta(hours=1))
-            .exclude(status="cancelled")
             .order_by("-start_time")
         )
     elif fleet_filter == EveFleetFilter.UPCOMING:
-        fleets = (
-            EveFleet.objects.filter(start_time__gte=timezone.now())
-            .exclude(status="cancelled")
-            .order_by("-start_time")
-        )
+        fleets = EveFleet.objects.filter(
+            start_time__gte=timezone.now()
+        ).order_by("-start_time")
     else:
         # get fleets from past 30 days
         fleets = EveFleet.objects.filter(
