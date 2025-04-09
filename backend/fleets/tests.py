@@ -128,6 +128,9 @@ class FleetRouterTestCase(TestCase):
         tracking = None
         self.assertEqual("active", fixup_fleet_status(fleet, tracking))
         tracking = EveFleetTrackingResponse(
+            id=1,
+            start_time=datetime.datetime.now(),
             end_time=datetime.datetime.now(),
+            is_registered=True,
         )
         self.assertEqual("complete", fixup_fleet_status(fleet, tracking))
