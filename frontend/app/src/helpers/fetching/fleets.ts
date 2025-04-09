@@ -56,6 +56,7 @@ export function add_fleet_info(fleet:Fleet, fc_profile:EveCharacterProfile | und
         start_time: fleet.start_time,
         type: fleet.type,
         tracking: fleet.tracking,
+        status: fleet.status,
     } as FleetItem
 }
 
@@ -82,6 +83,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         tracking: fleet.tracking,
         audience: fleet.audience,
         disable_motd: fleet.disable_motd,
+        status: fleet.status,
     } as FleetUI
 }
 

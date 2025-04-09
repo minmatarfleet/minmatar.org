@@ -30,15 +30,19 @@ import StylessButton from './StylessButton.astro';
         />
         <small>{t(fleet.type as any)} {t('fleet')}</small>
         <div class="[ text-center basis-[340px] ]">
-            {fleet?.tracking && !fleet?.tracking?.end_time &&
+            {fleet?.status === 'cancelled' &&
+                <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
+            }
+
+            {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
                 <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
             }
 
-            {fleet?.tracking && fleet?.tracking?.end_time &&
+            {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
                 <p class="[ fleet-status-text ]">{t('completed')}</p>
             }
 
-            {!fleet?.tracking ?
+            {fleet?.status !== 'cancelled' && !fleet?.tracking ?
                 <Countdown
                     date={fleet.start_time}
                     id={fleet.id}
@@ -80,5 +84,9 @@ import StylessButton from './StylessButton.astro';
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+
+        &.cancelled {
+            color: var(--fleet-red);
+        }
     }
 </style>

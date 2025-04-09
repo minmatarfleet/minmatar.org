@@ -15,33 +15,38 @@ if (!user)
     return HTTP_403_Forbidden()
 
 import type { Alert } from '@dtypes/layout_components'
-import { delete_fleet } from '@helpers/api.minmatar.org/fleets'
-import { query_string } from '@helpers/string';
+import { update_fleet } from '@helpers/api.minmatar.org/fleets'
+import type { FleetPatchRequest } from '@dtypes/api.minmatar.org'
 
 let alert:Alert | false = false
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 let redirect:string | null = null
 
-if (Astro.request.method === "DELETE") {
-    let delete_fleet_error:string | false = false
+if (Astro.request.method === "PATCH") {
+    let cancel_fleet_error:string | false = false
 
     try {
-        await delete_fleet(auth_token as string, fleet_id)
-        redirect = translatePath('/fleets/upcoming/')
+        const fleet_data = {
+            status: 'cancelled'
+        } as FleetPatchRequest
+        
+        await update_fleet(auth_token as string, fleet_data, fleet_id)
+        
+        redirect = translatePath(`/fleets/upcoming/${fleet_id}`)
     } catch (error) {
-        delete_fleet_error = (prod_error_messages() ? t('delete_fleet_error') : error.message)
+        cancel_fleet_error = (prod_error_messages() ? t('cancel_fleet_error') : error.message)
     }
     
-    if (delete_fleet_error) {
+    if (cancel_fleet_error) {
         alert = {
-            title: t('remove_fleet_dialog_title'),
-            content: delete_fleet_error,
+            title: t('cancel_fleet_dialog_title'),
+            content: cancel_fleet_error,
         }
     }
 }
 
-import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
+import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
 
@@ -53,4 +58,4 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
 
 {alert && <ShowAlert alert={alert} />}
 
-<RemoveFleetButton fleet_id={fleet_id} />
+<CancelFleetButton fleet_id={fleet_id} />

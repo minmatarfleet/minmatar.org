@@ -53,7 +53,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         class="[ grow text-center ]"
         centered={true}
     >
-        {fleet?.tracking === null &&
+        {fleet?.tracking === null && fleet?.status !== 'cancelled' &&
             <Countdown
                 date={fleet.start_time}
                 id={fleet.id}
@@ -61,26 +61,30 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
                 x-data={`{
                     init() {
                         window.addEventListener('countdown', event => {
-                            is_fleet_time =  true
+                            is_fleet_time = true
                         })
                     }
                 }`}
             />
         }
 
-        {fleet?.tracking && !fleet?.tracking?.end_time &&
+        {fleet?.status === 'cancelled' &&
+            <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
+        }
+
+        {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
             <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
         }
 
-        {fleet?.tracking && fleet?.tracking?.end_time &&
+        {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
             <p class="[ fleet-status-text ]">{t('completed')}</p>
         }
 
-        {is_fleet_commander && is_fleet_time && !fleet?.tracking &&
+        {is_fleet_commander && is_fleet_time && !fleet?.tracking && fleet?.status !== 'cancelled' &&
             <StartFleetButton id={fleet.id} />
         }
 
-        {is_fleet_commander && !is_fleet_time && !fleet?.tracking &&
+        {is_fleet_commander && !is_fleet_time && !fleet?.tracking && fleet?.status !== 'cancelled' &&
             <template
                 id="fleet-tick"
                 x-if="is_fleet_time"
@@ -121,7 +125,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
     </Flexblock>
 </ComponentBlock>
 
-<style>
+<style lang="scss">
     .fleet-status-text {
         font-family: var(--heading-font);
         font-size: var(--step-0);
@@ -133,5 +137,9 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+
+        &.cancelled {
+            color: var(--fleet-red);
+        }
     }
 </style>
