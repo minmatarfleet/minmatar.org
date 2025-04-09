@@ -7,7 +7,7 @@ from django.utils import timezone
 from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
@@ -66,9 +66,6 @@ class EveFleet(models.Model):
 
     @property
     def token(self):
-        # eve_character = EvePrimaryCharacter.objects.get(
-        #     character__token__user=self.created_by
-        # ).character
         if self.fleet_commander:
             return self.fleet_commander.token.valid_access_token()
         else:
@@ -76,9 +73,6 @@ class EveFleet(models.Model):
 
     @property
     def fleet_commander(self):
-        # return EvePrimaryCharacter.objects.get(
-        #     character__token__user=self.created_by
-        # ).character
         return user_primary_character(self.created_by)
 
     def __str__(self):
@@ -90,9 +84,10 @@ class EveFleet(models.Model):
         """
         logger.info("Starting fleet %s", self.id)
         user = self.created_by
-        eve_character = EvePrimaryCharacter.objects.get(
-            character__token__user=user
-        ).character
+        # eve_character = EvePrimaryCharacter.objects.get(
+        #     character__token__user=user
+        # ).character
+        eve_character = user_primary_character(user)
         response = esi.client.Fleets.get_characters_character_id_fleet(
             character_id=eve_character.character_id,
             token=self.token,

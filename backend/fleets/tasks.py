@@ -77,8 +77,10 @@ def update_fleet_schedule():
     Updates fleet schedule message to display all upcoming fleets
     Message format: <fleet type> | <eve time> | <local discord timestamp> | <fleet commander>
     """
-    fleets = EveFleet.objects.filter(start_time__gte=timezone.now()).order_by(
-        "start_time"
+    fleets = (
+        EveFleet.objects.filter(start_time__gte=timezone.now())
+        .exclude(status="cancelled")
+        .order_by("start_time")
     )
     message = "## Fleet Schedule\n"
 
