@@ -7,6 +7,7 @@ from django.test import Client
 from app.test import TestCase
 from eveonline.models import EveCharacter
 from fleets.models import EveFleet, EveFleetAudience, EveFleetLocation
+from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
 
 BASE_URL = "/api/fleets"
 
@@ -119,3 +120,14 @@ class FleetRouterTestCase(TestCase):
         updated_fleet = EveFleet.objects.filter(id=fleet.id).first()
 
         self.assertEqual("Updated", updated_fleet.description)
+
+    def test_fixup_fleet_status(self):
+        self.assertEqual(None, fixup_fleet_status(None, None))
+        fleet = self.make_test_fleet("Test")
+        fleet.status = "active"
+        tracking = None
+        self.assertEqual("active", fixup_fleet_status(fleet, tracking))
+        tracking = EveFleetTrackingResponse(
+            end_time=datetime.datetime.now(),
+        )
+        self.assertEqual("complete", fixup_fleet_status(fleet, tracking))
