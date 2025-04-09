@@ -332,8 +332,25 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "audience": fleet.audience.name,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
-        "status": fleet.status,
+        "status": fixup_fleet_status(fleet, tracking),
     }
+
+
+def fixup_fleet_status(
+    fleet: EveFleet, tracking: EveFleetTrackingResponse
+) -> str:
+    """Override status for older fleets"""
+    if not fleet:
+        return None
+    if not fleet.status:
+        return None
+
+    if fleet.status == "active" and tracking:
+        if tracking.end_time:
+            # Fleet is active but has an end time, so actually complete
+            return "complete"
+
+    return fleet.status
 
 
 def make_fleet_shadow(fleet: EveFleet) -> EveFleetResponse:
