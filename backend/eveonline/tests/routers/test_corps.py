@@ -1,8 +1,6 @@
 from django.db.models import signals
 from django.test import Client
-from django.contrib.auth.models import User
 
-from esi.models import Token
 from app.test import TestCase
 from eveonline.models import (
     EveCharacter,
@@ -34,18 +32,19 @@ class CorporationRouterTestCase(TestCase):
     def create_corp(self, corp_id: int, corp_name: str) -> EveCorporation:
         return EveCorporation.objects.create(
             corporation_id=corp_id,
-            introduction = "Intro",
-            biography = "Bio",
-            timezones = "TZ",
-            requirements = "Req",
-            name = corp_name,
+            introduction="Intro",
+            biography="Bio",
+            timezones="TZ",
+            requirements="Req",
+            name=corp_name,
         )
 
     def test_get_corporations(self):
         self.create_corp(12345, "TestCorp")
-        
+
         response = self.client.get(
-            BASE_URL+"corporations", HTTP_AUTHORIZATION=f"Bearer {self.token}"
+            BASE_URL + "corporations",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
         self.assertEqual(200, response.status_code)
@@ -56,7 +55,8 @@ class CorporationRouterTestCase(TestCase):
         self.create_corp(23456, "TestCorp 2")
 
         response = self.client.get(
-            BASE_URL+"corporations", HTTP_AUTHORIZATION=f"Bearer {self.token}"
+            BASE_URL + "corporations",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
         self.assertEqual(200, response.status_code)
@@ -67,7 +67,8 @@ class CorporationRouterTestCase(TestCase):
         self.create_corp(12345, "TestCorp")
 
         response = self.client.get(
-            BASE_URL+"corporations/12345", HTTP_AUTHORIZATION=f"Bearer {self.token}"
+            BASE_URL + "corporations/12345",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
         self.assertEqual(200, response.status_code)

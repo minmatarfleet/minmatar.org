@@ -30,9 +30,9 @@ class IndividualResult:
         return f"{self.module} > {self.test_method} ({self.status})"
 
     def __lt__(self, other):
-        return (
-            self.module < other.module or 
-            (self.module == other.module and self.test_method < other.test_method)
+        return self.module < other.module or (
+            self.module == other.module
+            and self.test_method < other.test_method
         )
 
 
