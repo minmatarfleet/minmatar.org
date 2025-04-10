@@ -34,6 +34,9 @@ jobs:
           pip install pipenv
           pipenv install --dev
           pipenv run python3 manage.py test --testrunner="testrunner.Runner" 
+          echo Testing >test.txt
+      - name: Display test results
+        run: cat test.txt
   frontend-check:
     runs-on: ubuntu-22.04
     defaults:
