@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from django.test.runner import DiscoverRunner
 from unittest import TextTestRunner, TextTestResult, TestCase
@@ -88,11 +89,15 @@ class Runner(DiscoverRunner):
         log.info("Using custom TestRunner...")
         result = super().run_tests(test_labels, **kwargs)
 
-        self.report_results()
+        self.report_results(sys.stdout)
+
+        f = open('testresults.txt', 'w')
+        self.report_results(f)
+        f.close()
 
         return result
 
-    def report_results(self):
+    def report_results(self, f):
         """Report the results of the test suite"""
 
         results.sort()
@@ -100,14 +105,15 @@ class Runner(DiscoverRunner):
         module_width, method_width = self.calc_col_widths()
         total_width = module_width + method_width + 9
 
-        print("=" * total_width)
-        print(f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT")
-        print("-" * total_width)
+        print("=" * total_width, file=f)
+        print(f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT", file=f)
+        print("-" * total_width, file=f)
         for result in results:
             print(
-                f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}"
+                f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}", 
+                file=f
             )
-        print("=" * total_width)
+        print("=" * total_width, file=f)
 
     def calc_col_widths(self):
         """Calculate the widths of the columns to display"""
