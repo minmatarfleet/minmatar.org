@@ -91,9 +91,8 @@ class Runner(DiscoverRunner):
 
         self.report_results(sys.stdout)
 
-        f = open('testresults.txt', 'w')
-        self.report_results(f)
-        f.close()
+        with open("testresults.txt", mode="w", encoding="utf-8") as f:
+            self.report_results(f)
 
         return result
 
@@ -106,12 +105,14 @@ class Runner(DiscoverRunner):
         total_width = module_width + method_width + 9
 
         print("=" * total_width, file=f)
-        print(f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT", file=f)
+        print(
+            f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT", file=f
+        )
         print("-" * total_width, file=f)
         for result in results:
             print(
-                f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}", 
-                file=f
+                f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}",
+                file=f,
             )
         print("=" * total_width, file=f)
 
