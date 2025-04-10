@@ -33,7 +33,7 @@ jobs:
         run: |
           pip install pipenv
           pipenv install --dev
-          pipenv run python3 manage.py test
+          pipenv run python3 manage.py test --testrunner="testrunner.Runner" 
   frontend-check:
     runs-on: ubuntu-22.04
     defaults:
