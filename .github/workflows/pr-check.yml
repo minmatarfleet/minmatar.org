@@ -4,7 +4,7 @@ on:
     branches:
       - main
 jobs:
-  pr-check:
+  backend-check:
     runs-on: ubuntu-22.04
     defaults:
       run:
@@ -33,7 +33,9 @@ jobs:
         run: |
           pip install pipenv
           pipenv install --dev
-          pipenv run python3 manage.py test
+          pipenv run python3 manage.py test --testrunner="testrunner.Runner" 
+      - name: Display test results
+        run: cat testresults.txt
   frontend-check:
     runs-on: ubuntu-22.04
     defaults:
