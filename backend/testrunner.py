@@ -85,9 +85,12 @@ class Runner(DiscoverRunner):
     def run_tests(self, test_labels, **kwargs):
         """Override parent to report results afterwards"""
 
-        log.info("Using CustomTestRunner...")
-        super().run_tests(test_labels, **kwargs)
+        log.info("Using custom TestRunner...")
+        result = super().run_tests(test_labels, **kwargs)
+
         self.report_results()
+        
+        return result
 
     def report_results(self):
         """Report the results of the test suite"""
@@ -95,13 +98,16 @@ class Runner(DiscoverRunner):
         results.sort()
 
         module_width, method_width = self.calc_col_widths()
-
-        print("Test results...")
-        print(f"{'MODULE':{module_width}} {'METHOD':{method_width}} RESULT")
+        total_width = module_width + method_width + 9
+        
+        print('=' * total_width)
+        print(f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT")
+        print('-' * total_width)
         for result in results:
             print(
                 f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}"
             )
+        print('=' * total_width)
 
     def calc_col_widths(self):
         """Calculate the widths of the columns to display"""
