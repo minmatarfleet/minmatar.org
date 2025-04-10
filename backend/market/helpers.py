@@ -19,6 +19,8 @@ from market.models import (
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
+# pylint: disable=W1405
+
 
 class MarketContractHistoricalQuantity:
     date: str

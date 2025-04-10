@@ -97,6 +97,8 @@ class Runner(DiscoverRunner):
 
         return result
 
+    # pylint: disable=W1405
+
     def report_results(self, f):
         """Report the results of the test suite"""
 
