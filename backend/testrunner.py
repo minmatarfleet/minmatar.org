@@ -31,7 +31,8 @@ class IndividualResult:
 
     def __lt__(self, other):
         return (
-            self.module < other.module and self.test_method < other.test_method
+            self.module < other.module or 
+            (self.module == other.module and self.test_method < other.test_method)
         )
 
 
