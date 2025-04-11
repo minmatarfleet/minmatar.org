@@ -28,6 +28,12 @@ class TechRoutesTestCase(TestCase):
 
         super().setUp()
 
+    def test_ping(self):
+        response = self.client.get(
+            f"{BASE_URL}/ping",
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_get_character(self):
         self.make_superuser()
 

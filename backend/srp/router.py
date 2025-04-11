@@ -79,8 +79,8 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         )
     except PrimaryCharacterDoesNotExist:
         return 404, {"detail": "Primary character does not exist"}
-    except CharacterDoesNotExist:
-        return 404, {"detail": "Character does not exist"}
+    except CharacterDoesNotExist as e:
+        return 404, {"detail": str(e)}
     except UserCharacterMismatch:
         return 403, {"detail": "Character does not belong to user"}
     except Exception:

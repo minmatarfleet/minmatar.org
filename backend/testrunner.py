@@ -30,8 +30,9 @@ class IndividualResult:
         return f"{self.module} > {self.test_method} ({self.status})"
 
     def __lt__(self, other):
-        return (
-            self.module < other.module and self.test_method < other.test_method
+        return self.module < other.module or (
+            self.module == other.module
+            and self.test_method < other.test_method
         )
 
 
@@ -95,6 +96,8 @@ class Runner(DiscoverRunner):
             self.report_results(f)
 
         return result
+
+    # pylint: disable=W1405
 
     def report_results(self, f):
         """Report the results of the test suite"""

@@ -3,6 +3,7 @@ import logging
 
 from django.db.models import signals
 from django.test import Client
+from django.contrib.auth.models import User
 
 from app.test import TestCase
 from eveonline.models import EveCharacter
@@ -14,6 +15,52 @@ BASE_URL = "/api/fleets"
 logger = logging.getLogger(__name__)
 
 
+def disconnect_fleet_signals():
+    """Disconnect signals that would try to call Discord or ESI"""
+    signals.post_save.disconnect(
+        sender=EveFleet,
+        dispatch_uid="update_fleet_schedule_on_save",
+    )
+    signals.post_save.disconnect(
+        sender=EveCharacter,
+        dispatch_uid="populate_eve_character_public_data",
+    )
+    signals.post_save.disconnect(
+        sender=EveCharacter,
+        dispatch_uid="populate_eve_character_private_data",
+    )
+
+
+def setup_fleet_reference_data():
+    """Create reference data needed for fleets"""
+    EveFleetAudience.objects.create(
+        name="Test Audience",
+    )
+    EveFleetLocation.objects.create(
+        location_id=123,
+        location_name="Test Location",
+        solar_system_id=234,
+        solar_system_name="Somewhere",
+    )
+
+
+def make_test_fleet(
+    description: str, fc_user: User, start: datetime.datetime = None
+) -> EveFleet:
+    if start is None:
+        start = datetime.datetime.now() + datetime.timedelta(hours=1)
+
+    return EveFleet.objects.create(
+        start_time=start,
+        description=description,
+        type="training",
+        status="pending",
+        created_by=fc_user,
+        audience=EveFleetAudience.objects.first(),
+        location=EveFleetLocation.objects.first(),
+    )
+
+
 class FleetRouterTestCase(TestCase):
     """Test cases for the fleet router."""
 
@@ -21,58 +68,15 @@ class FleetRouterTestCase(TestCase):
         # create test client
         self.client = Client()
 
-        self.disconnect_signals()
+        disconnect_fleet_signals()
 
-        self.setup_reference_data()
+        setup_fleet_reference_data()
 
         super().setUp()
 
-    def setup_reference_data(self):
-        """Create reference data needed for fleets"""
-        self.audience = EveFleetAudience.objects.create(
-            name="Test Audience",
-        )
-        self.location = EveFleetLocation.objects.create(
-            location_id=123,
-            location_name="Test Location",
-            solar_system_id=234,
-            solar_system_name="Somewhere",
-        )
-
-    def disconnect_signals(self):
-        """Disconnect signals that would try to call Discord or ESI"""
-        signals.post_save.disconnect(
-            sender=EveFleet,
-            dispatch_uid="update_fleet_schedule_on_save",
-        )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_public_data",
-        )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_private_data",
-        )
-
-    def make_test_fleet(
-        self, description: str, start: datetime.datetime = None
-    ) -> EveFleet:
-        if start is None:
-            start = datetime.datetime.now() + datetime.timedelta(hours=1)
-
-        return EveFleet.objects.create(
-            start_time=start,
-            description=description,
-            type="training",
-            status="pending",
-            created_by=self.user,
-            audience=self.audience,
-            location=self.location,
-        )
-
     def test_get_fleets_v3(self):
-        self.make_test_fleet("Test fleet 1")
-        self.make_test_fleet("Test fleet 2")
+        make_test_fleet("Test fleet 1", self.user)
+        make_test_fleet("Test fleet 2", self.user)
 
         response = self.client.get(
             f"{BASE_URL}/v3?fleet_filter=upcoming",
@@ -85,7 +89,7 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(2, len(fleets))
 
     def test_get_fleet(self):
-        fleet = self.make_test_fleet("Test fleet")
+        fleet = make_test_fleet("Test fleet", self.user)
 
         response = self.client.get(
             f"{BASE_URL}/{fleet.id}",
@@ -100,7 +104,7 @@ class FleetRouterTestCase(TestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        fleet = self.make_test_fleet("Test fleet")
+        fleet = make_test_fleet("Test fleet", self.user)
 
         logger.info("Created test fleet %d", fleet.id)
 
@@ -123,7 +127,7 @@ class FleetRouterTestCase(TestCase):
 
     def test_fixup_fleet_status(self):
         self.assertEqual(None, fixup_fleet_status(None, None))
-        fleet = self.make_test_fleet("Test")
+        fleet = make_test_fleet("Test", self.user)
         fleet.status = "active"
         tracking = None
         self.assertEqual("active", fixup_fleet_status(fleet, tracking))

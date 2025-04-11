@@ -8,7 +8,8 @@ from esi.models import Token
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import EveCharacter
+from eveonline.helpers.characters import user_primary_character
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from reminders.messages.rat_quotes import rat_quotes
 from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
@@ -56,21 +57,17 @@ def get_killmail_details(external_link: str, user: User):
     ship_type_id = result["victim"]["ship_type_id"]
     ship_type, _ = EveType.objects.get_or_create_esi(id=ship_type_id)
 
-    if not EvePrimaryCharacter.objects.filter(
-        character__token__user=user
-    ).exists():
+    primary_character = user_primary_character(user)
+    if not primary_character:
         raise PrimaryCharacterDoesNotExist("Primary character does not exist")
     if not EveCharacter.objects.filter(character_id=character_id).exists():
-        raise CharacterDoesNotExist("Character does not exist")
+        raise CharacterDoesNotExist(f"Character {character_id} does not exist")
     if not EveCharacter.objects.filter(
-        character_id=character_id, token__user=user
+        character_id=character_id, user=user
     ).exists():
         raise UserCharacterMismatch("Character does not belong to user")
 
     character = EveCharacter.objects.get(character_id=character_id)
-    primary_character = EvePrimaryCharacter.objects.get(
-        character__token__user=user
-    ).character
     return KillmailDetails(
         killmail_id=killmail_id,
         victim_character=character,
