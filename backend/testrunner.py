@@ -112,11 +112,19 @@ class Runner(DiscoverRunner):
             f"{'MODULE':{module_width}} {'TEST':{method_width}} RESULT", file=f
         )
         print("-" * total_width, file=f)
+
+        success_count = 0
+
         for result in results:
             print(
                 f"{result.module:{module_width}} {result.test_method:{method_width}} {result.status}",
                 file=f,
             )
+            if result.status == "Success":
+                success_count += 1
+
+        print("-" * total_width, file=f)
+        print(f"{success_count} out of {len(results)} tests passed.", file=f)
         print("=" * total_width, file=f)
 
     def calc_col_widths(self):
