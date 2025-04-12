@@ -1,19 +1,22 @@
 from django.db.models import signals
+from django.http import HttpRequest
 from django.test import Client
 from django.contrib.auth.models import User
 
-from esi.models import Token
+from esi.models import Token, Scope
 from app.test import TestCase
 from eveonline.models import (
     EveCharacter,
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
+    EveCharacterLog,
 )
 from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
 )
+from eveonline.routers.characters import handle_add_character_esi_callback
 
 BASE_URL = "/api/eveonline/characters/"
 
@@ -183,3 +186,117 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(
             "Test Char 2", user_primary_character(self.user).character_name
         )
+
+    def make_token(self, char_id: int) -> Token:
+        return Token.objects.create(
+            character_id=char_id,
+            character_name=f"TestChar {char_id}",
+            character_owner_hash=f"new hash {char_id}",
+        )
+
+    def make_request(
+        self, redirect_url: str = "/", add_char_id=None
+    ) -> HttpRequest:
+        req = HttpRequest()
+        req.user = self.user
+        req.session = self.client.session
+        req.session["redirect_url"] = redirect_url
+        if add_char_id:
+            req.session["add_character_id"] = str(add_char_id)
+        else:
+            req.session.pop("add_character_id", None)
+        return req
+
+    def test_add_esi_character_new(self):
+        char_id = 1234
+        req = self.make_request()
+        token = self.make_token(char_id)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(f"TestChar {char_id}", new_char.character_name)
+        self.assertEqual("Basic", new_char.esi_token_level)
+        self.assertFalse(new_char.esi_suspended)
+        self.assertEqual(char_id, new_char.token.character_id)
+        self.assertEqual(
+            f"new hash {char_id}", new_char.token.character_owner_hash
+        )
+
+    def test_add_esi_character_update(self):
+        char_id = 2345
+        self.make_character(self.user, char_id, "TestChar 2345")
+
+        req = self.make_request("/", char_id)
+        token = self.make_token(char_id)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(f"TestChar {char_id}", new_char.character_name)
+        self.assertEqual("Basic", new_char.esi_token_level)
+        self.assertFalse(new_char.esi_suspended)
+        self.assertEqual(char_id, new_char.token.character_id)
+        self.assertEqual(
+            f"new hash {char_id}", new_char.token.character_owner_hash
+        )
+
+        log = EveCharacterLog.objects.filter(
+            username=self.user.username
+        ).first()
+        self.assertEqual(f"TestChar {char_id}", log.character_name)
+
+    def test_add_esi_character_update_incorrect(self):
+        char_id = 7890
+        req = self.make_request("/testing", 1000)
+        token = self.make_token(char_id)
+
+        response = handle_add_character_esi_callback(
+            req, token, TokenType.BASIC
+        )
+
+        self.assertEqual("/testing?error=wrong_character", response.url)
+
+    def test_add_esi_character_update_no_token(self):
+        char_id = 3456
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+        char.token.delete()
+        char.token = None
+        char.save()
+
+        req = self.make_request()
+        token = self.make_token(char_id)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(f"TestChar {char_id}", new_char.character_name)
+        self.assertEqual("Basic", new_char.esi_token_level)
+        self.assertFalse(new_char.esi_suspended)
+        self.assertEqual(char_id, new_char.token.character_id)
+        self.assertEqual(
+            f"new hash {char_id}", new_char.token.character_owner_hash
+        )
+
+    def test_add_esi_character_update_less_scopes(self):
+        char_id = 4567
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+
+        scope = Scope.objects.create(name="TestScope.1")
+
+        self.assertEqual(0, len(char.token.scopes.all()))
+        char.token.scopes.add(scope)
+        char.token.character_owner_hash = "Old hash"
+        char.token.save()
+        self.assertEqual(1, len(char.token.scopes.all()))
+
+        req = self.make_request()
+        token = self.make_token(char_id)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(f"TestChar {char_id}", new_char.character_name)
+        self.assertFalse(new_char.esi_suspended)
+        self.assertEqual(char_id, new_char.token.character_id)
+        self.assertEqual("Old hash", new_char.token.character_owner_hash)
