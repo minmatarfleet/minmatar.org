@@ -14,6 +14,7 @@ from .combatlog import (
     repair_events,
 )
 
+
 class ParseCombatLogTest(SimpleTestCase):
     def test_parse_line_combat(self):
         log_line = "[ 2024.09.07 14:58:50 ] (combat) <color=0xff00ffff><b>567</b> <color=0x77ffffff><font size=10>to</font> <b><color=0xffffffff>Angel Cartel Codebug</b><font size=10><color=0x77ffffff> - Inferno Rage Compiler Error - Hits"
@@ -253,11 +254,7 @@ class CombatLogRouterTest(TestCase):
             "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
             "[ 2024.01.01 09:00:10 ] (combat) 456 from [P-1]Bad Guy - Pea Shooter - Hits\n"
         )
-        response = self.client.post(
-            "/api/combatlog",
-            log,
-            "text/plain"
-        )
+        response = self.client.post("/api/combatlog", log, "text/plain")
         self.assertEqual(200, response.status_code)
         analysis = response.json()
         self.assertEqual(7, analysis["logged_events"])
@@ -265,9 +262,7 @@ class CombatLogRouterTest(TestCase):
         self.assertEqual(456, analysis["damage_taken"])
 
     def test_save_logs(self):
-        log = (
-            "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
-        )
+        log = "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
         response = self.client.post(
             "/api/combatlog?store=true",
             log,
@@ -283,7 +278,7 @@ class CombatLogRouterTest(TestCase):
         self.assertEqual(200, response.status_code)
         logs = response.json()
         self.assertEqual(1, len(logs))
-        
+
         log_id = logs[0]["id"]
 
         response = self.client.get(
@@ -297,4 +292,3 @@ class CombatLogRouterTest(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
-
