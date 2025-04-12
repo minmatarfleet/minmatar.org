@@ -359,6 +359,117 @@ def set_or_remove_session_value(request, key, value):
         request.session.pop(key, None)
 
 
+def handle_add_character_esi_callback(request, token, token_type):
+    if "add_character_id" in request.session:
+        requested_char = request.session["add_character_id"]
+        if str(token.character_id) != requested_char:
+            logger.error(
+                "Incorrect character in tokem refresh, %s != %s",
+                str(token.character_id),
+                requested_char,
+            )
+            return redirect(
+                request.session["redirect_url"] + "?error=wrong_character"
+            )
+
+    if EveCharacter.objects.filter(character_id=token.character_id).exists():
+        logger.info(
+            "Character %s already exists, updating token",
+            token.character_id,
+        )
+        character = EveCharacter.objects.get(character_id=token.character_id)
+        if (
+            character.token
+            and character.token != token
+            and len(token.scopes.all()) >= len(character.token.scopes.all())
+        ):
+            logger.info(
+                "New token has at least as many scopes, deleting old character token"
+            )
+            old_token = character.token
+            character.token = token
+            character.esi_token_level = token_type_str(token_type)
+            character.user = token.user
+            character.save()
+            old_token.delete()
+        elif not character.token:
+            logger.info(
+                "Character %s has no token, adding token",
+                token.character_id,
+            )
+            character.token = token
+            character.user = token.user
+            character.esi_token_level = token_type_str(token_type)
+            character.save()
+        elif token != character.token:
+            logger.warning(
+                "Character %s already has better token, throwing new one away",
+                token.character_id,
+            )
+            token.delete()
+
+        token_count = Token.objects.filter(
+            character_id=character.character_id
+        ).count()
+        if token_count != 1:
+            logger.error(
+                "Character %d (%s) has %d tokens after update",
+                character.character_id,
+                character.character_name,
+                token_count,
+            )
+
+        if not character.token:
+            logger.error(
+                "Character %d (%s) has no token set after update",
+                character.character_id,
+                character.character_name,
+            )
+
+        fixup_character_token_level(character, token_count)
+    else:
+        logger.info(
+            "Creating new character %s with token",
+            token.character_id,
+        )
+        character = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name=token.character_name,
+            esi_token_level=token_type_str(token_type),
+            token=token,
+            user=token.user,
+        )
+    EveCharacterLog.objects.create(
+        username=request.user.username,
+        character_name=character.character_name,
+    )
+    # set as primary character if only one character
+    if (
+        not EvePrimaryCharacter.objects.filter(
+            character__token__user=request.user
+        ).exists()
+        and EveCharacter.objects.filter(token__user=request.user).count() == 1
+    ):
+        logger.info(
+            "Setting %s as primary character for user %s",
+            character.character_name,
+            request.user.username,
+        )
+        EvePrimaryCharacter.objects.create(
+            character=character, user=request.user
+        )
+
+    # populate corporation if CEO token
+    if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
+        logger.info(
+            "Populating CEO token corporation for character %s",
+            character.character_id,
+        )
+        character.corporation.populate()
+
+    return redirect(request.session["redirect_url"])
+
+
 @router.get("/add", summary="Add character using EVE Online SSO")
 def add_character(
     request, redirect_url: str, token_type: TokenType, character_id: str = None
@@ -370,120 +481,7 @@ def add_character(
     @login_required()
     @token_required(scopes=scopes, new=True)
     def wrapped(request, token):
-        if "add_character_id" in request.session:
-            requested_char = request.session["add_character_id"]
-            if str(token.character_id) != requested_char:
-                logger.error(
-                    "Incorrect character in tokem refresh, %s != %s",
-                    str(token.character_id),
-                    requested_char,
-                )
-                return redirect(
-                    request.session["redirect_url"] + "?error=wrong_character"
-                )
-
-        if EveCharacter.objects.filter(
-            character_id=token.character_id
-        ).exists():
-            logger.info(
-                "Character %s already exists, updating token",
-                token.character_id,
-            )
-            character = EveCharacter.objects.get(
-                character_id=token.character_id
-            )
-            if (
-                character.token
-                and character.token != token
-                and len(token.scopes.all())
-                >= len(character.token.scopes.all())
-            ):
-                logger.info(
-                    "New token has at least as many scopes, deleting old character token"
-                )
-                old_token = character.token
-                character.token = token
-                character.esi_token_level = token_type_str(token_type)
-                character.user = token.user
-                character.save()
-                old_token.delete()
-            elif not character.token:
-                logger.info(
-                    "Character %s has no token, adding token",
-                    token.character_id,
-                )
-                character.token = token
-                character.user = token.user
-                character.esi_token_level = token_type_str(token_type)
-                character.save()
-            elif token != character.token:
-                logger.warning(
-                    "Character %s already has better token, throwing new one away",
-                    token.character_id,
-                )
-                token.delete()
-
-            token_count = Token.objects.filter(
-                character_id=character.character_id
-            ).count()
-            if token_count != 1:
-                logger.error(
-                    "Character %d (%s) has %d tokens after update",
-                    character.character_id,
-                    character.character_name,
-                    token_count,
-                )
-
-            if not character.token:
-                logger.error(
-                    "Character %d (%s) has no token set after update",
-                    character.character_id,
-                    character.character_name,
-                )
-
-            fixup_character_token_level(character, token_count)
-        else:
-            logger.info(
-                "Creating new character %s with token",
-                token.character_id,
-            )
-            character = EveCharacter.objects.create(
-                character_id=token.character_id,
-                character_name=token.character_name,
-                esi_token_level=token_type_str(token_type),
-                token=token,
-                user=token.user,
-            )
-        EveCharacterLog.objects.create(
-            username=request.user.username,
-            character_name=character.character_name,
-        )
-        # set as primary character if only one character
-        if (
-            not EvePrimaryCharacter.objects.filter(
-                character__token__user=request.user
-            ).exists()
-            and EveCharacter.objects.filter(token__user=request.user).count()
-            == 1
-        ):
-            logger.info(
-                "Setting %s as primary character for user %s",
-                character.character_name,
-                request.user.username,
-            )
-            EvePrimaryCharacter.objects.create(
-                character=character, user=request.user
-            )
-
-        # populate corporation if CEO token
-        if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
-            logger.info(
-                "Populating CEO token corporation for character %s",
-                character.character_id,
-            )
-            character.corporation.populate()
-
-        return redirect(request.session["redirect_url"])
+        return handle_add_character_esi_callback(request, token, token_type)
 
     return wrapped(request)  # pylint: disable=no-value-for-parameter
 
