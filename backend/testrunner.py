@@ -127,7 +127,6 @@ class Runner(DiscoverRunner):
         print(f"{success_count} out of {len(results)} tests passed.", file=f)
         print("=" * total_width, file=f)
 
-
     def calc_col_widths(self):
         """Calculate the widths of the columns to display"""
         module_width = 0
