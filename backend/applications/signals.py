@@ -4,8 +4,9 @@ from django.db.models import signals
 from django.dispatch import receiver
 from esi.clients import EsiClientProvider
 
+from eveonline.helpers.characters import user_primary_character
+
 from discord.client import DiscordClient
-from eveonline.models import EvePrimaryCharacter
 from groups.models import EveCorporationGroup
 
 from .models import EveCorporationApplication
@@ -28,9 +29,7 @@ def eve_corporation_application_post_save(
     """Create a forum thread when an application is created"""
     if instance.discord_thread_id is None:
         user = instance.user
-        primary_character = EvePrimaryCharacter.objects.get(
-            character__token__user=user
-        )
+        primary_character = user_primary_character(user)
         message = ""
         message += f"<@{user.discord_user.id}>"
         if EveCorporationGroup.objects.filter(
@@ -43,16 +42,14 @@ def eve_corporation_application_post_save(
             discord_group_id = discord_group.role_id
             message += f"<@&{discord_group_id}>"
         message += "\n\n"
-        message += (
-            f"Main Character: {primary_character.character.character_name}\n"
-        )
+        message += f"Main Character: {primary_character.character_name}\n"
         message += f"Applying to: {instance.corporation.name}\n"
         message += f"Description: {instance.description}\n"
         application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation.corporation_id}/{instance.id}"
         message += f"{application_url}\n"
         response = discord.create_forum_thread(
             channel_id=APPLICATION_CHANNEL_ID,
-            title=f"{primary_character.character.character_name} - {instance.corporation.name}",
+            title=f"{primary_character.character_name} - {instance.corporation.name}",
             message=message,
         )
         instance.discord_thread_id = int(response.json()["id"])

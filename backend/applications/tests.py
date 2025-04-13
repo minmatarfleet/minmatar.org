@@ -1,10 +1,13 @@
+from unittest.mock import patch
+
 from django.contrib.auth.models import Permission
 from django.db.models import signals
 from django.test import Client
 
 from app.test import TestCase
 from applications.models import EveCorporationApplication
-from eveonline.models import EveCharacter, EveCorporation
+from discord.models import DiscordUser
+from eveonline.models import EveCharacter, EveCorporation, EvePrimaryCharacter
 
 BASE_URL = "/api/applications/"
 
@@ -139,3 +142,45 @@ class EveCorporationApplicationTestCase(TestCase):
         self.assertEqual(response.status_code, 403)
         application = EveCorporationApplication.objects.get(id=application.id)
         self.assertEqual(application.status, "pending")
+
+
+class EveCorporationApplicationSignalTest(TestCase):
+    """Test case for the application signal handlers."""
+
+    def test_application_post_save_signal(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporation,
+            dispatch_uid="eve_corporation_post_save",
+        )
+
+        corporation = EveCorporation.objects.create(
+            corporation_id=123, name="Test Corporation"
+        )
+        char = EveCharacter.objects.create(
+            character_id=1234,
+            character_name="Mr User",
+            user=self.user,
+        )
+        EvePrimaryCharacter.objects.create(
+            user=self.user,
+            character=char,
+        )
+        DiscordUser.objects.create(
+            id=1,
+            discord_tag="MrUser",
+            user=self.user,
+        )
+
+        with patch("applications.signals.discord") as discord_mock:
+            EveCorporationApplication.objects.create(
+                user=self.user,
+                corporation=corporation,
+                description="Test application",
+                status="accepted",
+            )
+
+            discord_mock.create_message.assert_called()
