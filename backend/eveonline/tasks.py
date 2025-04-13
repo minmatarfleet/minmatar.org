@@ -139,17 +139,6 @@ def update_character_assets(eve_character_id):
     character = EveCharacter.objects.get(character_id=eve_character_id)
 
     logger.info("Updating assets for character %s", eve_character_id)
-    # required_scopes = [
-    #     "esi-assets.read_assets.v1",
-    # ]
-    # token = Token.get_token(character.character_id, required_scopes)
-    # if character.esi_suspended or not token:
-    #     logger.info("Skipping asset update for character %s", eve_character_id)
-    #     return
-
-    # esi_assets = esi.client.Assets.get_characters_character_id_assets(
-    #     character_id=eve_character_id, token=token.valid_access_token()
-    # ).results()
 
     response = EsiClient(character).get_character_assets()
     if not response.success():

@@ -1,15 +1,18 @@
 import datetime
 import logging
+from unittest.mock import patch
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User
 
 from app.test import TestCase
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePrimaryCharacter
+from discord.models import DiscordUser
 from fleets.models import EveFleet, EveFleetAudience, EveFleetLocation
 from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
+from fleets.tasks import update_fleet_schedule
 
 BASE_URL = "/api/fleets"
 
@@ -172,3 +175,33 @@ class FleetRouterTestCase(TestCase):
             is_registered=True,
         )
         self.assertEqual("complete", fixup_fleet_status(fleet, tracking))
+
+
+class FleetTaskTests(TestCase):
+    """Tests of the Fleet background tasks."""
+
+    def test_update_fleet_schedule_task(self):
+        setup_fleet_reference_data()
+        make_test_fleet("Test fleet 1", self.user)
+
+        fc = EveCharacter.objects.create(
+            character_id=1234,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        EvePrimaryCharacter.objects.create(
+            user=self.user,
+            character=fc,
+        )
+        DiscordUser.objects.create(
+            id=1,
+            discord_tag="MrFC",
+            user=self.user,
+        )
+
+        with patch("fleets.tasks.discord_client") as discord_mock:
+            update_fleet_schedule()
+
+            discord_mock.update_message.assert_called()
+            discord_mock.create_message.assert_called()
+            discord_mock.delete_message.assert_called()

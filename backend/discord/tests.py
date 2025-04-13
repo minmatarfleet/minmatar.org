@@ -4,11 +4,20 @@ from unittest.mock import Mock
 
 from django.contrib.auth.models import User, Group
 from django.test import SimpleTestCase
+from django.db.models import signals
+
+from eveonline.models import (
+    EveCharacter,
+    EvePrimaryCharacter,
+    EvePrimaryCharacterChangeLog,
+    EveCorporation,
+)
 
 from app.test import TestCase
 from discord.core import make_nickname
 from discord.models import DiscordUser
 from discord.views import discord_login_redirect
+from discord.tasks import sync_discord_nickname
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -39,9 +48,9 @@ class DiscordSimpleTests(SimpleTestCase):
         self.assertEqual("[ω] Scott", make_nickname(character, discord))
 
 
-class DiscordTests(TestCase):
+class DiscordSignalTests(TestCase):
     """
-    Django tests for Discord functionality.
+    Django tests for Discord signal functionality.
     """
 
     def test_user_group_change_signals(self):
@@ -62,6 +71,12 @@ class DiscordTests(TestCase):
 
             discord_mock.get_roles.assert_called()
             discord_mock.create_role.assert_called_with("testgroup")
+
+
+class DiscordTests(TestCase):
+    """
+    Django tests for Discord functionality.
+    """
 
     def test_discord_login_redirect(self):
 
@@ -101,6 +116,51 @@ class DiscordTests(TestCase):
         ).first()
         self.assertIsNotNone(new_discord_user)
         self.assertEqual("http://avatar.gif", new_discord_user.avatar)
+
+    def test_discord_nickname_task(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
+        )
+        signals.post_save.disconnect(
+            sender=EvePrimaryCharacterChangeLog,
+            dispatch_uid="notify_people_team_of_primary_character_change",
+        )
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+
+        DiscordUser.objects.create(id=1, user=self.user)
+        corp = EveCorporation.objects.create(
+            corporation_id=123,
+            introduction="",
+            biography="",
+            timezones="",
+            requirements="",
+            name="TestCorp",
+            ticker="CORP",
+        )
+        char = EveCharacter.objects.create(
+            character_id=123,
+            character_name="Test Char",
+            corporation=corp,
+        )
+        EvePrimaryCharacter.objects.create(
+            user=self.user,
+            character=char,
+        )
+        group, _ = Group.objects.get_or_create(name="Alliance")
+        self.user.groups.add(group)
+
+        with patch("discord.tasks.discord") as discord_mock:
+            sync_discord_nickname(self.user, force_update=True)
+
+            discord_mock.update_user.assert_called()
 
 
 if __name__ == "__main__":
