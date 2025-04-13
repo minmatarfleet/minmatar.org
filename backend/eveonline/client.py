@@ -3,6 +3,7 @@ import logging
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from eveonline.scopes import MARKET_CHARACTER_SCOPES
 
 from .models import EveCharacter
 
@@ -126,3 +127,16 @@ class EsiClient:
             )
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
+    def get_character_contracts(self):
+        """Returns the contracts for the character this ESI client was created for"""
+
+        token, status = self.get_valid_token(MARKET_CHARACTER_SCOPES)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Contracts.get_characters_character_id_contracts(
+            character_id=self.character_id,
+            token=token,
+        )
+        return self._operation_results(operation)

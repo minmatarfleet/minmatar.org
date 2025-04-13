@@ -93,6 +93,21 @@ class FleetRouterTestCase(TestCase):
 
         super().setUp()
 
+    def test_get_fleet_v1_v2(self):
+        make_test_fleet("Test fleet 1", self.user)
+
+        response = self.client.get(
+            f"{BASE_URL}?upcoming=true",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(
+            f"{BASE_URL}/v2?upcoming=true",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+
     def test_get_fleets_v3(self):
         make_test_fleet("Test fleet 1", self.user)
         make_test_fleet("Test fleet 2", self.user)
