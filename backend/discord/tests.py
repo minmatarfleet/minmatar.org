@@ -2,12 +2,13 @@ import unittest
 from unittest.mock import patch
 from unittest.mock import Mock
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import User, Group
 from django.test import SimpleTestCase
 
 from app.test import TestCase
 from discord.core import make_nickname
 from discord.models import DiscordUser
+from discord.views import discord_login_redirect
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -61,6 +62,45 @@ class DiscordTests(TestCase):
 
             discord_mock.get_roles.assert_called()
             discord_mock.create_role.assert_called_with("testgroup")
+
+    def test_discord_login_redirect(self):
+
+        with patch("discord.views.login"):
+            with patch("discord.views.requests") as discord_request_mock:
+                mock_post_response = Mock(
+                    data="data",
+                    status_code=200,
+                )
+                discord_request_mock.post.return_value = mock_post_response
+                mock_post_response.json.return_value = {
+                    "access_token": "ABC123",
+                }
+
+                mock_get_response = Mock(
+                    data="data",
+                    status_code=200,
+                )
+                discord_request_mock.get.return_value = mock_get_response
+                mock_get_response.json.return_value = {
+                    "id": 12345,
+                    "username": "testuser",
+                    "discriminator": "123",
+                    "avatar": "http://avatar.gif",
+                }
+
+                redirect_request_mock = Mock()
+                redirect_request_mock.GET.get.return_value = None
+                redirect_request_mock.session = {}
+
+                discord_login_redirect(redirect_request_mock)
+
+        new_django_user = User.objects.filter(username="testuser").first()
+        self.assertIsNotNone(new_django_user)
+        new_discord_user = DiscordUser.objects.filter(
+            user=new_django_user
+        ).first()
+        self.assertIsNotNone(new_discord_user)
+        self.assertEqual("http://avatar.gif", new_discord_user.avatar)
 
 
 if __name__ == "__main__":
