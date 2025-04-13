@@ -53,5 +53,18 @@ Note that this only works if you have access to the server's secret key.
 
 Also note that some APIs require Discord for correct operation regardless of authentication.
 
+## Testing
+The backend Python code includes three primary external integrations...
+
+1. The database
+2. ESI, the Eve Swagger Interface 
+3. Signal
+
+In many cases the Django data entities have signals registered that call ESI, Signal or both, when changes are made to the database.
+
+Many of the unit tests disable these signals.
+
+In other cases, the Discord and ESI clients are mocked.
+
 ## Commands
 - `for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done` set local environment variables
