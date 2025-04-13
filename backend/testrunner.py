@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from django.test.runner import DiscoverRunner
 from unittest import TextTestRunner, TextTestResult, TestCase
@@ -90,10 +89,10 @@ class Runner(DiscoverRunner):
         log.info("Using custom TestRunner...")
         result = super().run_tests(test_labels, **kwargs)
 
-        self.report_results(sys.stdout)
-
         with open("testresults.txt", mode="w", encoding="utf-8") as f:
             self.report_results(f)
+
+        print("Test results written to testsresults.txt")
 
         return result
 

@@ -67,4 +67,10 @@ Many of the unit tests disable these signals.
 In other cases, the Discord and ESI clients are mocked.
 
 ## Commands
-- `for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done` set local environment variables
+### Set local environment variables
+```for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done``` 
+
+### Run tests with result and coverage reporting
+```
+coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults.txt && coverage html
+```
