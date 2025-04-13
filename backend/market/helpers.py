@@ -6,6 +6,7 @@ import pytz
 from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from eveonline.client import EsiClient
 
 from eveonline.models import EveCorporation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
@@ -108,16 +109,26 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
 
 
 def create_character_market_contracts(character_id: int):
-    token = Token.get_token(character_id, MARKET_CHARACTER_SCOPES)
-    if not token:
+    # token = Token.get_token(character_id, MARKET_CHARACTER_SCOPES)
+    # if not token:
+    #     logger.error(
+    #         f"Character {character_id} does not have required scopes to fetch market contracts."
+    #     )
+    #     return
+
+    # contracts = esi.client.Contracts.get_characters_character_id_contracts(
+    #     character_id=character_id, token=token.valid_access_token()
+    # ).results()
+
+    response = EsiClient(character_id).get_character_contracts()
+    if not response.success:
         logger.error(
-            f"Character {character_id} does not have required scopes to fetch market contracts."
+            "Error %d getting contracts for %s.",
+            response.response_code,
+            character_id,
         )
         return
-
-    contracts = esi.client.Contracts.get_characters_character_id_contracts(
-        character_id=character_id, token=token.valid_access_token()
-    ).results()
+    contracts = response.data
 
     known_contract_ids = []
     for contract in contracts:

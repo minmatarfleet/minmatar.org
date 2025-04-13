@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List
 
-from esi.models import Token
+from esi.models import Token, Scope
 
 BASIC_SCOPES = [
     "esi-corporations.read_structures.v1",
@@ -130,3 +130,11 @@ def token_type_str(s) -> str:
         return str(s.value)
     else:
         return ""
+
+
+def add_scopes(tokenType: TokenType, token: Token):
+    for scope_name in scopes_for(tokenType):
+        scope, _ = Scope.objects.get_or_create(
+            name=scope_name,
+        )
+        token.scopes.add(scope)
