@@ -22,10 +22,9 @@ import TextGroup from '@components/blocks/TextGroup.astro';
             const date = new Date('${eve_time} UTC')
             const hour = date.getHours()
 
-            if (hour >= 0 && hour < 1) {
-                this.timer_class = 'text-status-point-1'
-                this.time_tooltip = '${t('sleeptime')}'
-            } else if (hour >= 1 && hour < 7) {
+            console.log(hour)
+
+            if (hour >= 0 && hour < 7) {
                 this.time_class = 'text-status-point-2'
                 this.time_tooltip = '${t('sleeptime')}'
             } else if (hour >= 7 && hour < 8) {
