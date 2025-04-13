@@ -5,6 +5,11 @@ from app.test import TestCase
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
+    EveAlliance,
+)
+from eveonline.helpers.affiliations import (
+    create_or_update_affiliation_entities,
+    update_character_with_affiliations,
 )
 
 BASE_URL = "/api/eveonline/corporations/"
@@ -22,6 +27,10 @@ class CorporationRouterTestCase(TestCase):
         signals.post_save.disconnect(
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_private_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveAlliance,
+            dispatch_uid="eve_alliance_post_save",
         )
 
         # create test client
@@ -75,3 +84,17 @@ class CorporationRouterTestCase(TestCase):
         corp = response.json()
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
+
+    def test_update_affiliations(self):
+        create_or_update_affiliation_entities(
+            corporation_id=123,
+            alliance_id=234,
+            faction_id=None,
+        )
+        EveCharacter.objects.create(
+            character_id=100,
+            character_name="Itsy Bitsy",
+        )
+        update_character_with_affiliations(
+            character_id=100, corporation_id=123, alliance_id=234
+        )

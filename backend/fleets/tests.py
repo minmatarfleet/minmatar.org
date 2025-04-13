@@ -2,13 +2,14 @@ import datetime
 import logging
 
 from django.db.models import signals
-from django.test import Client
+from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User
 
 from app.test import TestCase
 from eveonline.models import EveCharacter
 from fleets.models import EveFleet, EveFleetAudience, EveFleetLocation
 from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
+from fleets.notifications import get_fleet_discord_notification
 
 BASE_URL = "/api/fleets"
 
@@ -59,6 +60,24 @@ def make_test_fleet(
         audience=EveFleetAudience.objects.first(),
         location=EveFleetLocation.objects.first(),
     )
+
+
+class FleetHelperTestCase(SimpleTestCase):
+    """Tests for Fleet helper code"""
+
+    def test_discord_notification_template(self):
+        notification = get_fleet_discord_notification(
+            fleet_id=123,
+            fleet_type="training",
+            fleet_location="Jita",
+            fleet_audience="Alliance",
+            fleet_commander_name="Fleet Commander",
+            fleet_commander_id=1234,
+            fleet_description="Test fleet",
+            fleet_voice_channel="Voice 1",
+            fleet_voice_channel_link="link",
+        )
+        self.assertEqual("@everyone", notification["content"])
 
 
 class FleetRouterTestCase(TestCase):

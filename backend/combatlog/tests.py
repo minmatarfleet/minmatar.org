@@ -1,4 +1,5 @@
-from django.test import TestCase
+from django.test import Client, SimpleTestCase
+from app.test import TestCase
 
 from .combatlog import (
     DamageEvent,
@@ -14,7 +15,7 @@ from .combatlog import (
 )
 
 
-class ParseCombatLogTest(TestCase):
+class ParseCombatLogTest(SimpleTestCase):
     def test_parse_line_combat(self):
         log_line = "[ 2024.09.07 14:58:50 ] (combat) <color=0xff00ffff><b>567</b> <color=0x77ffffff><font size=10>to</font> <b><color=0xffffffff>Angel Cartel Codebug</b><font size=10><color=0x77ffffff> - Inferno Rage Compiler Error - Hits"
         event = parse_line(log_line)
@@ -90,7 +91,7 @@ class ParseCombatLogTest(TestCase):
         self.assertEqual("EvePlayer 123", character_name(events))
 
 
-class StripHtmlTest(TestCase):
+class StripHtmlTest(SimpleTestCase):
     def test_strip_html_basic(self):
         stripped = strip_html("hello <b>world</b>")
         self.assertEqual("hello world", stripped)
@@ -124,7 +125,7 @@ def damage_event(
     return event
 
 
-class DamageParseTest(TestCase):
+class DamageParseTest(SimpleTestCase):
     def test_find_damage_events(self):
         events = []
         events.append(log_event("", "combat", "123 from Rat"))
@@ -191,7 +192,7 @@ class DamageParseTest(TestCase):
         self.assertEqual(0, len(dmg_events))
 
 
-class RemoteRepsParseTest(TestCase):
+class RemoteRepsParseTest(SimpleTestCase):
 
     def test_parse_armor_rep(self):
         logs = "[ 2024.09.07 14:58:50 ] (combat) 220 remote armor repaired to Big Duck - Tankface - Small Remote Armor Repairer II"
@@ -233,3 +234,61 @@ class RemoteRepsParseTest(TestCase):
         self.assertEqual(
             "Medium S95a Scoped Remote Shield Booster", event.module
         )
+
+
+class CombatLogRouterTest(TestCase):
+    """Test the CombatLog API endpoints"""
+
+    def setUp(self):
+        self.client = Client()
+
+        super().setUp()
+
+    def test_analyse_log_endpoint(self):
+        log = (
+            "------------------------------------------------------------\n"
+            "Gamelog\n"
+            "Listener: EvePlayer 123\n"
+            "Session Started: 2024.01.01 09:00:00\n"
+            "------------------------------------------------------------\n"
+            "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
+            "[ 2024.01.01 09:00:10 ] (combat) 456 from [P-1]Bad Guy - Pea Shooter - Hits\n"
+        )
+        response = self.client.post("/api/combatlog", log, "text/plain")
+        self.assertEqual(200, response.status_code)
+        analysis = response.json()
+        self.assertEqual(7, analysis["logged_events"])
+        self.assertEqual(567, analysis["damage_done"])
+        self.assertEqual(456, analysis["damage_taken"])
+
+    def test_save_logs(self):
+        log = "[ 2024.01.01 09:00:00 ] (combat) 567 to [P-1]Bad Guy - Inferno Rage Compiler Error - Hits\n"
+        response = self.client.post(
+            "/api/combatlog?store=true",
+            log,
+            "text/plain",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.get(
+            "/api/combatlog",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        logs = response.json()
+        self.assertEqual(1, len(logs))
+
+        log_id = logs[0]["id"]
+
+        response = self.client.get(
+            f"/api/combatlog/{log_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+
+        response = self.client.delete(
+            f"/api/combatlog/{log_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
