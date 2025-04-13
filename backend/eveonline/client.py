@@ -134,7 +134,7 @@ class EsiClient:
         token, status = self.get_valid_token(MARKET_CHARACTER_SCOPES)
         if status > 0:
             return EsiResponse(status)
-    
+
         operation = esi.client.Contracts.get_characters_character_id_contracts(
             character_id=self.character_id,
             token=token,

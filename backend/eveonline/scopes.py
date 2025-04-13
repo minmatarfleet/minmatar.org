@@ -132,8 +132,8 @@ def token_type_str(s) -> str:
         return ""
 
 
-def add_scopes(tokenType: TokenType, token: Token):
-    for scope_name in scopes_for(tokenType):
+def add_scopes(token_type: TokenType, token: Token):
+    for scope_name in scopes_for(token_type):
         scope, _ = Scope.objects.get_or_create(
             name=scope_name,
         )

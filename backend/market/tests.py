@@ -7,7 +7,7 @@ from app.test import TestCase
 
 from fittings.models import EveFitting
 from esi.models import Token
-from eveonline.client import EsiClient, EsiResponse
+from eveonline.client import EsiResponse
 from eveonline.models import EveCharacter
 from eveonline.scopes import add_scopes, TokenType
 from market.models import (
