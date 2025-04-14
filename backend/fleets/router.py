@@ -151,9 +151,8 @@ def get_fleet_types(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
     return [
-        EveFleetType.STRATOP,
+        EveFleetType.STRATEGIC,
         EveFleetType.NON_STRATEGIC,
-        EveFleetType.CASUAL,
         EveFleetType.TRAINING,
     ]
 
