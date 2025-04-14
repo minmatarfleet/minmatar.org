@@ -7,6 +7,7 @@ from django.utils import timezone
 from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
 from fittings.models import EveDoctrine
@@ -66,7 +67,7 @@ class EveFleet(models.Model):
 
     @property
     def token(self):
-        if self.fleet_commander:
+        if self.fleet_commander and self.fleet_commander.token:
             return self.fleet_commander.token.valid_access_token()
         else:
             return None
@@ -84,14 +85,16 @@ class EveFleet(models.Model):
         """
         logger.info("Starting fleet %s", self.id)
         user = self.created_by
-        # eve_character = EvePrimaryCharacter.objects.get(
-        #     character__token__user=user
-        # ).character
         eve_character = user_primary_character(user)
-        response = esi.client.Fleets.get_characters_character_id_fleet(
-            character_id=eve_character.character_id,
-            token=self.token,
-        ).results()
+        esi_response = EsiClient(eve_character).get_active_fleet()
+        # response = esi.client.Fleets.get_characters_character_id_fleet(
+        #     character_id=eve_character.character_id,
+        #     token=self.token,
+        # ).results()
+        if not esi_response.success:
+            raise f"ESI error {esi_response.response_code} starting fleet {self.id}"
+
+        response = esi_response.data
 
         if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
             fleet_instance = EveFleetInstance.objects.get(
@@ -114,26 +117,27 @@ class EveFleet(models.Model):
         else:
             doctrine = None
 
-        logger.info(
-            "Sending fleet notification for fleet %s to discord channel %s",
-            self.id,
-            self.audience.discord_channel_id,
-        )
-        discord.create_message(
-            self.audience.discord_channel_id,
-            payload=get_fleet_discord_notification(
-                fleet_id=self.id,
-                fleet_type=self.get_type_display(),
-                fleet_location=self.location.location_name,
-                fleet_audience=self.audience.name,
-                fleet_commander_name=self.fleet_commander.character_name,
-                fleet_commander_id=self.fleet_commander.character_id,
-                fleet_description=self.description,
-                fleet_voice_channel=self.audience.discord_voice_channel_name,
-                fleet_voice_channel_link=self.audience.discord_voice_channel,
-                fleet_doctrine=doctrine,
-            ),
-        )
+        if self.audience.discord_channel_id:
+            logger.info(
+                "Sending fleet notification for fleet %s to discord channel %s",
+                self.id,
+                self.audience.discord_channel_id,
+            )
+            discord.create_message(
+                self.audience.discord_channel_id,
+                payload=get_fleet_discord_notification(
+                    fleet_id=self.id,
+                    fleet_type=self.get_type_display(),
+                    fleet_location=self.location.location_name,
+                    fleet_audience=self.audience.name,
+                    fleet_commander_name=self.fleet_commander.character_name,
+                    fleet_commander_id=self.fleet_commander.character_id,
+                    fleet_description=self.description,
+                    fleet_voice_channel=self.audience.discord_voice_channel_name,
+                    fleet_voice_channel_link=self.audience.discord_voice_channel,
+                    fleet_doctrine=doctrine,
+                ),
+            )
 
         if len(self.audience.evefleetaudiencewebhook_set.all()) > 0:
             for (
@@ -211,6 +215,12 @@ class EveFleetInstance(models.Model):
         """
         Update the free move status for the fleet
         """
+        if not self.eve_fleet.token:
+            logger.warning(
+                "Unable to set free move for fleet without token, %d",
+                self.eve_fleet.id,
+            )
+            return None
         token = self.eve_fleet.token
         response = esi.client.Fleets.put_fleets_fleet_id(
             fleet_id=self.id,
