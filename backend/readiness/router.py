@@ -1,22 +1,27 @@
 import logging
-from datetime import datetime, timedelta
 
 from ninja import Router
 from pydantic import BaseModel
+from django.db import connection
+from typing import List
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-
-from fleets.models import EveFleetInstanceMember
 
 router = Router(tags=["Pilot Readiness and Experience"])
 
 log = logging.getLogger(__name__)
 
 
+class ReadinessResponseDetail(BaseModel):
+    key: str
+    value: int
+
+
 class ReadinessResponse(BaseModel):
     summary: str = ""
     total: int = 0
+    values: List[ReadinessResponseDetail]
 
 
 @router.get(
@@ -29,10 +34,22 @@ class ReadinessResponse(BaseModel):
     },
 )
 def readiness_summary(request):
-    query = EveFleetInstanceMember.objects.filter(
-        join_time__gt=datetime.now() - timedelta(days=30)
-    )
-    return ReadinessResponse(
-        summary="Testing",
-        total=query.count(),
-    )
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT squad_id, COUNT(*)
+            FROM fleets_evefleetinstancemember
+            GROUP BY squad_id
+            ORDER BY squad_id
+        """
+        )
+        data = cursor.fetchall()
+    response = ReadinessResponse(summary="Testing", total=len(data), values=[])
+    for item in data:
+        response.values.append(
+            ReadinessResponseDetail(
+                key=f"Squad {item[0]}",
+                value=item[1],
+            )
+        )
+    return response

@@ -20,14 +20,16 @@ class ReadinessRouterTestCase(TestCase):
 
         super().setUp()
 
-    def add_fleet_member(self, instance: EveFleetInstance, char_id: int):
+    def add_fleet_member(
+        self, instance: EveFleetInstance, char_id: int, squad: int = 1
+    ):
         EveFleetInstanceMember.objects.create(
             eve_fleet_instance=instance,
             character_id=char_id,
             character_name=f"Char {char_id}",
             ship_type_id=1,
             solar_system_id=1,
-            squad_id=1,
+            squad_id=squad,
             wing_id=1,
             join_time=datetime.now() - timedelta(days=1),
         )
@@ -42,8 +44,9 @@ class ReadinessRouterTestCase(TestCase):
             id=1234,
             eve_fleet=fleet,
         )
-        self.add_fleet_member(instance, 1)
-        self.add_fleet_member(instance, 2)
+        self.add_fleet_member(instance, 1, 1)
+        self.add_fleet_member(instance, 2, 2)
+        self.add_fleet_member(instance, 3, 1)
 
         response = self.client.get(
             f"{BASE_URL}",
@@ -51,4 +54,9 @@ class ReadinessRouterTestCase(TestCase):
         )
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(2, response.json()["total"])
+        result = response.json()
+        self.assertEqual(2, result["total"])
+        self.assertEqual("Squad 1", result["values"][0]["key"])
+        self.assertEqual(2, result["values"][0]["value"])
+        self.assertEqual("Squad 2", result["values"][1]["key"])
+        self.assertEqual(1, result["values"][1]["value"])
