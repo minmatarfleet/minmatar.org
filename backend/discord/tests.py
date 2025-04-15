@@ -78,7 +78,8 @@ class DiscordTests(TestCase):
     Django tests for Discord functionality.
     """
 
-    def test_discord_login_redirect(self):
+    def test_discord_login_redirect_admin(self):
+        """Test the admin page login redirect"""
 
         with patch("discord.views.login"):
             with patch("discord.views.requests") as discord_request_mock:

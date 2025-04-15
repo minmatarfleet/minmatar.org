@@ -10,6 +10,8 @@ from eveonline.models import (
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
     EveCharacterLog,
+    EveCharacterSkillset,
+    EveSkillset,
 )
 from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
@@ -300,3 +302,29 @@ class CharacterRouterTestCase(TestCase):
         self.assertFalse(new_char.esi_suspended)
         self.assertEqual(char_id, new_char.token.character_id)
         self.assertEqual("Old hash", new_char.token.character_owner_hash)
+
+    def test_get_skillsets(self):
+        char_id = 5678
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+
+        skillset = EveSkillset.objects.create(
+            name="Test skillset",
+            skills="",
+            total_skill_points=1234567,
+        )
+        EveCharacterSkillset.objects.create(
+            eve_skillset=skillset,
+            character=char,
+            progress=0.6,
+            missing_skills="[]",
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}{char_id}/skillsets",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        skillsets = response.json()
+        self.assertEqual(1, len(skillsets))
+        self.assertEqual("Test skillset", skillsets[0]["name"])
+        self.assertAlmostEqual(0.6, skillsets[0]["progress"])
