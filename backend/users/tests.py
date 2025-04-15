@@ -101,7 +101,6 @@ class UserRouterTestCase(TestCase):
 
             response = self.client.get(
                 "/api/users/callback?code=123",
-                HTTP_AUTHORIZATION=f"Bearer {self.token}",
             )
 
             print("Response = ", response)
@@ -139,7 +138,6 @@ class UserRouterTestCase(TestCase):
 
             response = self.client.get(
                 "/api/users/callback?code=123",
-                HTTP_AUTHORIZATION=f"Bearer {self.token}",
             )
 
             print("Response = ", response)
@@ -154,3 +152,12 @@ class UserRouterTestCase(TestCase):
             discord_user = DiscordUser.objects.filter(user=django_user).first()
             self.assertIsNotNone(discord_user)
             self.assertTrue(discord_user.is_down_under)
+
+    def test_login(self):
+        response = self.client.get(
+            "/api/users/login?redirect_url=abc123",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            "abc123", self.client.session["authentication_redirect_url"]
+        )
