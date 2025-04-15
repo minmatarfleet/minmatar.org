@@ -1,5 +1,8 @@
+from unittest.mock import patch
+
 from django.db.models import signals
 from django.test import Client
+from django.contrib.auth.models import User
 from esi.models import Token
 
 from app.test import TestCase
@@ -84,3 +87,70 @@ class UserRouterTestCase(TestCase):
                 },
             },
         )
+
+    def test_discord_login_redirect_api_new(self):
+        """Test the API login redirect"""
+
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.exchange_code.return_value = {
+                "id": 123,
+                "username": "Test User",
+                "discriminator": "123",
+                "avatar": "http://avatar.gif",
+            }
+
+            response = self.client.get(
+                "/api/users/callback?code=123",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+
+            print("Response = ", response)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn(
+                "https://my.minmatar.org/auth/login?token=", response.url
+            )
+
+            new_django_user = User.objects.filter(username="Test User").first()
+            self.assertIsNotNone(new_django_user)
+            new_discord_user = DiscordUser.objects.filter(
+                user=new_django_user
+            ).first()
+            self.assertIsNotNone(new_discord_user)
+            self.assertEqual("http://avatar.gif", new_discord_user.avatar)
+
+    def test_discord_login_redirect_api_existing(self):
+        """Test the API login redirect"""
+
+        DiscordUser.objects.create(
+            id=123,
+            user=self.user,
+            discord_tag="testuser",
+            nickname="testuser",
+            is_down_under=True,
+        )
+
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.exchange_code.return_value = {
+                "id": 123,
+                "username": "testuser",
+                "discriminator": "123",
+                "avatar": "http://avatar.gif",
+            }
+
+            response = self.client.get(
+                "/api/users/callback?code=123",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+
+            print("Response = ", response)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn(
+                "https://my.minmatar.org/auth/login?token=", response.url
+            )
+
+            django_user = User.objects.filter(username="testuser").first()
+            self.assertEqual(django_user, self.user)
+
+            discord_user = DiscordUser.objects.filter(user=django_user).first()
+            self.assertIsNotNone(discord_user)
+            self.assertTrue(discord_user.is_down_under)
