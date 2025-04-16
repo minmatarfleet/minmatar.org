@@ -1,0 +1,30 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CargoItem } from '@dtypes/layout_components'
+
+interface Props {
+    pod:    CargoItem[];
+    text:   string;
+    id:     string;
+}
+
+const {
+    pod,
+    text,
+    id,
+} = Astro.props
+
+const multibuy = pod.map(implant => `${implant.name} ${implant.amount ?? 1}`).join(`\r\n`)
+
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+<ClipboardButton
+    narrow={true}
+    id={id}
+    text={text}
+    data-tippy-content={t('copy_multibuy_tip')}
+    data-tippy-delay="[1000, 200]"
+>{multibuy}</ClipboardButton>
