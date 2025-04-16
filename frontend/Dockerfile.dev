@@ -1,0 +1,19 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY app/package*.json ./
+RUN npm install
+
+# Copy source code
+COPY app/ .
+
+# ✅ Explicitly copy .env from project root into container
+COPY .env .env
+
+# Set host/port for dev server
+ENV HOST=0.0.0.0
+EXPOSE 4321
+
+CMD ["npm", "run", "dev"]
