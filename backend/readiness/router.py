@@ -8,6 +8,8 @@ from typing import List
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
+from groups.helpers import TECH_TEAM, user_in_team
+
 router = Router(tags=["Pilot Readiness and Experience"])
 
 log = logging.getLogger(__name__)
@@ -34,6 +36,11 @@ class ReadinessResponse(BaseModel):
     },
 )
 def readiness_summary(request):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
     with connection.cursor() as cursor:
         cursor.execute(
             """

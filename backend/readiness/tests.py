@@ -16,10 +16,12 @@ class ReadinessRouterTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
+        super().setUp()
+
         disconnect_fleet_signals()
         setup_fleet_reference_data()
 
-        super().setUp()
+        super().make_superuser()
 
     def add_fleet_member(
         self, instance: EveFleetInstance, char_id: int, squad: int = 1
