@@ -37,10 +37,16 @@ def readiness_summary(request):
     with connection.cursor() as cursor:
         cursor.execute(
             """
-            SELECT squad_id, COUNT(*)
-            FROM fleets_evefleetinstancemember
-            GROUP BY squad_id
-            ORDER BY squad_id
+            SELECT
+                fim.squad_id,
+                COUNT(*)
+            FROM fleets_evefleetinstancemember fim
+                LEFT OUTER JOIN fleets_evefleetinstance fi
+                LEFT OUTER JOIN fleets_evefleet f
+            WHERE
+                f.type = 'strategic'
+            GROUP BY fim.squad_id
+            ORDER BY fim.squad_id
         """
         )
         data = cursor.fetchall()

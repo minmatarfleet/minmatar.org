@@ -54,9 +54,14 @@ class ReadinessRouterTestCase(TestCase):
         )
 
         self.assertEqual(200, response.status_code)
-        result = response.json()
-        self.assertEqual(2, result["total"])
-        self.assertEqual("Squad 1", result["values"][0]["key"])
-        self.assertEqual(2, result["values"][0]["value"])
-        self.assertEqual("Squad 2", result["values"][1]["key"])
-        self.assertEqual(1, result["values"][1]["value"])
+        self.assertEqual(
+            response.json(),
+            {
+                "summary": "Testing",
+                "total": 2,
+                "values": [
+                    {"key": "Squad 1", "value": 2},
+                    {"key": "Squad 2", "value": 1},
+                ],
+            },
+        )
