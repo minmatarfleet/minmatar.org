@@ -5,7 +5,7 @@ from django.test import Client
 from app.test import TestCase
 
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
-from fleets.tests import disconnect_fleet_signals
+from fleets.tests import disconnect_fleet_signals, setup_fleet_reference_data
 
 BASE_URL = "/api/readiness"
 
@@ -17,6 +17,7 @@ class ReadinessRouterTestCase(TestCase):
         self.client = Client()
 
         disconnect_fleet_signals()
+        setup_fleet_reference_data()
 
         super().setUp()
 
@@ -38,6 +39,7 @@ class ReadinessRouterTestCase(TestCase):
         fleet = EveFleet.objects.create(
             description="Test fleet 1",
             type="strategic",
+            location_id=123,
             start_time=datetime.now(),
         )
         instance = EveFleetInstance.objects.create(
@@ -60,8 +62,8 @@ class ReadinessRouterTestCase(TestCase):
                 "summary": "Testing",
                 "total": 2,
                 "values": [
-                    {"key": "Squad 1", "value": 2},
-                    {"key": "Squad 2", "value": 1},
+                    {"key": "Test Location, Squad 1", "value": 2},
+                    {"key": "Test Location, Squad 2", "value": 1},
                 ],
             },
         )

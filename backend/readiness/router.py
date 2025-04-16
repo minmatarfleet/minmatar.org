@@ -38,24 +38,29 @@ def readiness_summary(request):
         cursor.execute(
             """
             SELECT
+                fl.location_name,
                 fim.squad_id,
                 COUNT(*)
             FROM fleets_evefleetinstancemember fim
                 LEFT OUTER JOIN fleets_evefleetinstance fi
+                    ON fim.eve_fleet_instance_id = fi.id
                 LEFT OUTER JOIN fleets_evefleet f
+                    ON fi.eve_fleet_id = f.id
+                LEFT OUTER JOIN fleets_evefleetlocation fl
+                    ON f.location_id = fl.location_id
             WHERE
                 f.type = 'strategic'
-            GROUP BY fim.squad_id
-            ORDER BY fim.squad_id
-        """
+            GROUP BY fl.location_name,fim.squad_id
+            ORDER BY 1, 2
+            """
         )
         data = cursor.fetchall()
     response = ReadinessResponse(summary="Testing", total=len(data), values=[])
     for item in data:
         response.values.append(
             ReadinessResponseDetail(
-                key=f"Squad {item[0]}",
-                value=item[1],
+                key=f"{item[0]}, Squad {item[1]}",
+                value=item[2],
             )
         )
     return response
