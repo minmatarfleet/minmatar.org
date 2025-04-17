@@ -136,6 +136,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Fit from '@components/blocks/Fit.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import CopyPodButton from '@components/blocks/CopyPodButton.astro';
 
 const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
 
@@ -187,11 +188,31 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                     </Button>
                 </div>
                 
-                <ClipboardButton id="fit-clipboard" size='lg'>
+                <ClipboardButton id="fit-clipboard" size='lg' text={t('copy_eft')}>
                     {fitting?.eft_format as string}
                 </ClipboardButton>
             </FlexInline>
         </FlexInline>
+
+        {(minimum_pod.length > 0 || recommended_pod.length > 0) &&
+            <FlexInline slot="subheader">
+                {minimum_pod.length > 0 &&
+                    <CopyPodButton
+                        pod={minimum_pod}
+                        text={t('copy_minimun_pod')}
+                        id="minumun-pod"
+                    />
+                }
+
+                {recommended_pod.length > 0 &&
+                    <CopyPodButton
+                        pod={recommended_pod}
+                        text={t('copy_recommended_pod')}
+                        id="recommended-pod"
+                    />
+                }
+            </FlexInline>
+        }
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>

@@ -96,6 +96,7 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
 import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
 import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
+import CopyPodButton from '@components/blocks/CopyPodButton.astro'
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
@@ -302,11 +303,27 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                             <PageTitle>{page_title}</PageTitle>
                         </Flexblock>
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
-                        <ButtonStack>                            
-                            <ClipboardButton id="fit-clipboard">
+                        <FlexInline>                            
+                            <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
                                 {fitting?.eft_format as string}
                             </ClipboardButton>
-                        </ButtonStack>
+
+                            {minimum_pod.length > 0 &&
+                                <CopyPodButton
+                                    pod={minimum_pod}
+                                    text={t('copy_minimun_pod')}
+                                    id="minumun-pod"
+                                />
+                            }
+
+                            {recommended_pod.length > 0 &&
+                                <CopyPodButton
+                                    pod={recommended_pod}
+                                    text={t('copy_recommended_pod')}
+                                    id="recommended-pod"
+                                />
+                            }
+                        </FlexInline>
                     </Flexblock>
                     
                     <Flexblock set:html={marked.parse(fitting?.description as string)} />
