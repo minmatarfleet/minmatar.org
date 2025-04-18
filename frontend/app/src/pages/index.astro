@@ -47,9 +47,6 @@ import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
 import { query_string } from '@helpers/string';
-import { is_disabled_ccpwgl } from '@helpers/env';
-
-const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -64,9 +61,9 @@ import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import NakahInfo from '@components/blocks/NakahInfo.astro';
+import EvatiInfo from '@components/blocks/EvatiInfo.astro';
 import VardInfo from '@components/blocks/VardInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
-import Input from '@components/blocks/Input.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
@@ -86,17 +83,6 @@ import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
 import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 
-import {
-	WatermellonXData,
-	WatermellonCameraXData,
-	AugaMilitiaHQCameraXData,
-	AugaMilitiaHQXData,
-	BananaCameraXData,
-	BananaXData,
-	RunForrestCameraXData,
-	RunForrestXData,
-} from '@components/partials/HomepageRenders.astro';
-
 type StagingTranslation = {
 	[key in StagingType]: string;
 }
@@ -104,6 +90,7 @@ type StagingTranslation = {
 const STAGINGS_STATIONS:StagingTranslation = {
 	auga: 'Auga - Minmatar Militia HQ',
 	nakah: 'Nakah - Banana',
+	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
 	vard: 'Vard - DONG OF WAR',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
@@ -112,6 +99,7 @@ const STAGINGS_STATIONS:StagingTranslation = {
 const STAGINGS_SYSTEMS:StagingTranslation = {
 	auga: 'Auga',
 	nakah: 'Nakah',
+	evati: 'Evati',
 	vard: 'Vard',
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
@@ -158,21 +146,25 @@ const page_description = t('index.leading_text');
 			video: staging === 'auga' ? '/videos/militia-loop.webm' :
 					staging === 'nakah' ? '/videos/banana-loop.webm' :
 					staging === 'vard' ? '/videos/dong-loop.webm' :
+					staging === 'evati' ? '/videos/tzu-loop.webm' :
 					staging === 'amarr' ? '/videos/emperor-loop.webm' :
 					'/videos/watermelon-loop.webm',
 			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
 					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover.jpg' :
+					staging === 'evati' ? '/images/home-evati-cover.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
 					'/images/home-cover.jpg',
             image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
 					staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
             image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
 					   staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
             animated: false,
@@ -182,35 +174,9 @@ const page_description = t('index.leading_text');
 		x-data={`{
 			show_fleet_feeds: true,
 			show_stagging_info: true,
-            ${staging === 'auga' ? AugaMilitiaHQCameraXData :
-				staging === 'nakah' ? BananaCameraXData :
-				staging === 'vard' ? RunForrestCameraXData :
-				WatermellonCameraXData
-			}
         }`}
-        x-effect="update"
     >
 		{alert && <ShowAlert alert={alert} /> }
-
-		{!DISABLED_CCPWGL &&
-			<canvas
-				slot="cover"
-				id="mainCanvas"
-				width="500"
-				height="500"
-				x-on:scroll.stop
-				x-on:mousewheel.stop
-				x-data={`{
-					${staging === 'auga' ? AugaMilitiaHQXData :
-						staging === 'nakah' ? BananaXData :
-						staging === 'vard' ? RunForrestXData :
-						WatermellonXData
-					}
-				}`}
-				x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
-				x-init="$nextTick(() => init_ccpwgl())"
-			/>
-		}
 
 		{is_referral_page && user &&
 			<div class="[ fixed top-[var(--space-2xs)] left-[var(--space-xl)] ]">
@@ -226,6 +192,7 @@ const page_description = t('index.leading_text');
 				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
 					staging === 'nakah' ? <NakahInfo is_random={is_random_staging} /> :
 					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
+					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
@@ -242,6 +209,9 @@ const page_description = t('index.leading_text');
 								} : staging === 'vard' ? {
 									id: BALLS_DEEP_ID,
 									name: 'Balls Deep Inc.',
+								} : staging === 'evati' ? {
+									id: RATTINI_TRIBE_ID,
+									name: 'Rattini Tribe',
 								} : staging === 'amarr' ? {
 									id: EMPEROR_FAMILY_ID,
 									name: 'Emperor Family',
@@ -303,19 +273,6 @@ const page_description = t('index.leading_text');
 					<FlexInline justification='center'>
 						<StylessButton href='#widgets' class="[ caret-down ]" />
 					</FlexInline>
-
-					{user_is_superadmin &&
-						<Flexblock class="[ camera-controls !hidden ]">
-							<Flexblock gap='0'>
-								<label for="doctrine">{t('rotation_x')}</label>
-								<Input type="number" x-model="rotation_x" step="0.01" />
-							</Flexblock>
-							<Flexblock gap='0'>
-								<label for="doctrine">{t('rotation_y')}</label>
-								<Input type="number" x-model="rotation_y" step="0.01" />
-							</Flexblock>
-						</Flexblock>
-					}
 				</Flexblock>
 			</Wrapper>
 		</VerticalCenter>
@@ -628,13 +585,6 @@ const page_description = t('index.leading_text');
 		font-size: var(--step--2);
 	}
 
-	.camera-controls {
-		position: fixed;
-		top: 60px;
-		left: 100px;
-		width: 250px;
-	}
-
 	.welcome-heading {
 		font-size: var(--step-5);
 	}
@@ -666,15 +616,6 @@ const page_description = t('index.leading_text');
 </style>
 
 <style is:global>
-
-    #mainCanvas {
-        border: none;
-        position:fixed;
-        width:100%;
-        height:100%;
-		/*z-index: -1;*/
-    }
-
 	#tsparticles {
 		position: absolute;
 		top: 0;
@@ -683,5 +624,4 @@ const page_description = t('index.leading_text');
 		height: 100%;
 		background: none; /* Ensures no conflicting background */
 	}
-
 </style>
