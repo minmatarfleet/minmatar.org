@@ -27,6 +27,7 @@ try {
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+    console.log(active_fleet_index)
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -47,7 +48,7 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
         @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
         @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
     >
-        <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index > 0 ? active_fleet_index + 1 : 1}>
+        <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
             {fleets.map( (fleet) =>
                 <div class="swiper-slide">
                     <FleetFeedItem fleet={fleet} />
