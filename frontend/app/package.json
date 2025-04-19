@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "astro dev --host",
     "studio": "drizzle-kit studio",
     "introspect": "drizzle-kit introspect",
     "introspectsde": "drizzle-kit introspect --config=sde.drizzle.config.ts",
