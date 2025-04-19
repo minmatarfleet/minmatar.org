@@ -22,6 +22,11 @@ const {
 const CHRONUS_ID = 146444251
 const SYCAMORIA_ID = 2116242012
 
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 ---
@@ -56,7 +61,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     <img slot="ships" class="[ stabber ]" src="/images/corporations/soltecharmada/stabber.png" />
     <img slot="ships" class="[ brutix ]" src="/images/corporations/soltecharmada/brutix.png" />
 
-    <p>{corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback') }</p>
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback'), { renderer })} />
 </CorporationSlide>
 
 <style lang="scss">
