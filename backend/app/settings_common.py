@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     "referrals",
     # User subscriptions
     "subscriptions",
+    # Pilot readiness and training
+    "readiness",
 ]
 
 # Discord Login
