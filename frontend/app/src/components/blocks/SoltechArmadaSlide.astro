@@ -22,6 +22,11 @@ const {
 const CHRONUS_ID = 146444251
 const SYCAMORIA_ID = 2116242012
 
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 ---
@@ -52,11 +57,11 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         <img src="/images/corporations/soltecharmada/co-ceo.png" height="496" width="940" />
     </StylessButton>
     
-    <img slot="ships" class="[ vargur ]" src="/images/corporations/soltecharmada/vargur.png" />
+    <img slot="ships" class="[ scythe ]" src="/images/corporations/soltecharmada/scythe.png" />
     <img slot="ships" class="[ stabber ]" src="/images/corporations/soltecharmada/stabber.png" />
-    <img slot="ships" class="[ brutix ]" src="/images/corporations/soltecharmada/brutix.png" />
+    <img slot="ships" class="[ slasher ]" src="/images/corporations/soltecharmada/slasher.png" />
 
-    <p>{corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback') }</p>
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('soltech_armada_description_fallback'), { renderer })} />
 </CorporationSlide>
 
 <style lang="scss">
@@ -92,12 +97,12 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         }
     }
 
-    .vargur {
+    .scythe {
         position: absolute;
         top: 14%;
         left: -39%;
         height: auto;
-        width: 54%;
+        width: 58%;
         z-index: 0;
         transform: scale(0);
     }
@@ -112,17 +117,17 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         transform: scale(0);
     }
 
-    .brutix {
+    .slasher {
         position: absolute;
         top: 39%;
         left: -12%;
-        width: 70%;
+        width: 80%;
         height: auto;
-        z-index: 1;
+        z-index: 2;
         transform: scale(0);
     }
 
-    @keyframes vargur {
+    @keyframes scythe {
         from {
             transform: scale(0);
             top: 36%;
@@ -131,7 +136,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
         to {
             transform: scale(1);
-            top: 2%;
+            top: 8%;
             left: 43%;
         }
     }
@@ -150,17 +155,17 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         }
     }
 
-    @keyframes brutix {
+    @keyframes slasher {
         from {
             transform: scale(0);
-            left: -39%;
-            top: 49%;
+            left: -64%;
+            top: 42%;
         }
 
         to {
             transform: scale(1);
-            top: 42%;
-            left: 29%;
+            top: 35%;
+            left: 21%;
         }
     }
 
@@ -183,8 +188,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     .swiper-slide-active {
-        .vargur {
-            animation: vargur cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .scythe {
+            animation: scythe cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2s;
             animation-iteration-count: 1;
             transform-origin: top right;
@@ -199,8 +204,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             animation-fill-mode: forwards;
         }
         
-        .brutix {
-            animation: brutix cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+        .slasher {
+            animation: slasher cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
