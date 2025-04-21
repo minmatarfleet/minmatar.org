@@ -42,6 +42,7 @@ import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
 import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
+import ButtonCorpApply from './ButtonCorpApply.astro';
 ---
 
 <Flexblock
@@ -75,44 +76,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
         (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
         (is_re_applicable && corporation?.status === 'rejected') ?
-            <Button
-                color='green'
-                type="button"
-                size='sm'
-                x-bind:disabled="disabled"
-                x-data={`{
-                    disabled: false,
-                    show_join_request_dialog() {
-                        this.disabled = true
-                        
-                        show_confirm_dialog({
-                            title: '${t('corporation_join_request_dialog_title')}',
-                            partial: '${translatePath('/partials/dialog_apply_corporation/')}?${query_string({
-                                corporation_id: corporation.corporation_id,
-                                corporation_name: corporation.corporation_name,
-                                alliance_id: corporation.alliance_id,
-                                alliance_name: corporation.alliance_name,
-                                corporation_type: corporation.corporation_type,
-                                status: corporation.status,
-                                message: t('corporation_join_request_dialog_text')
-                            })}',
-                            return_on_accept: ${corporation.corporation_id},
-                            hx: {
-                                method: 'post',
-                                url: '${CORPORATION_REQUEST_STATUS_PARTIAL_URL}?${query_string({
-                                    corporation: JSON.stringify(corporation),
-                                })}',
-                                target: '${`#corporation-status-${corporation.corporation_id}`}',
-                                swap: 'outerHTML transition:true'
-                            }
-                        }).then( (corporation_id) => { this.disabled = !!corporation_id } )
-                    }
-                }`}
-                x-on:click="show_join_request_dialog()"
-                type="button"
-            >
-                {t('enlist_today')}
-            </Button>
+            <ButtonCorpApply corporation={corporation} />
         :
         corporation?.status == 'unauth' ?
             <ButtonAuth
