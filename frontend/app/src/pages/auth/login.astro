@@ -31,8 +31,10 @@ try {
     return Astro.redirect(translatePath('/'))
 }
 
-Astro.cookies.set('auth_token', token, { path: '/' })
-Astro.cookies.set('avatar', user?.avatar ?? '', { path: '/' })
+const ONE_DAY_IN_MS = 24*60*60*1000
+const in_20_days = new Date(new Date().getTime()+(20*ONE_DAY_IN_MS))
+Astro.cookies.set('auth_token', token, { path: '/', expires: in_20_days })
+Astro.cookies.set('avatar', user?.avatar ?? '', { path: '/', expires: in_20_days })
 
 const redirect = Astro.cookies.has('redirect_after_auth') ? (Astro.cookies.get('redirect_after_auth')?.value as string) : translatePath('/account/')
 Astro.cookies.delete('redirect_after_auth', { path: '/' })
