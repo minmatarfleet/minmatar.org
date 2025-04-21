@@ -771,6 +771,7 @@ export const ui = {
         'auga_hq_description': 'Minmatar Fleet Alliance former HQ',
         'yishinoon_hq_description': 'Minmatar Fleet Alliance FOB',
         'nakah_hq_description': 'Minmatar Fleet Alliance FOB',
+        'evati_hq_description': 'Minmatar Fleet Alliance FOB',
         'vard_hq_description': 'The Tips Must Touch - Tip I',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
@@ -1347,5 +1348,9 @@ export const ui = {
         'cancel_fleet_dialog_title': 'Cancel fleet',
         'cancel_fleet_dialog_text': 'Proceed cancelling the fleet?',
         'cancel_fleet_error': 'An error ocurred cancelling the fleet',
+        'copy_eft': 'Copy EFT',
+        'copy_minimun_pod': 'Copy minimun pod',
+        'copy_recommended_pod': 'Copy recommended pod',
+        'copy_multibuy_tip': 'Import shopping lists into the Multibuy Tool in EVE Online.',
     },
 } as const;

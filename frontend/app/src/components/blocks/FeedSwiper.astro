@@ -1,4 +1,14 @@
 ---
+interface Props {
+    autoplay?:          boolean;
+    initial_slide?:     number;
+}
+
+const {
+    autoplay = true,
+    initial_slide = 1,
+} = Astro.props
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
@@ -9,6 +19,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         swiper: null,
         init() {
             this.swiper = new Swiper('.fleet-feed', {
+                initialSlide: ${initial_slide},
                 slidesPerView: 1,
                 direction: 'vertical',
                 spaceBetween: 4,
@@ -24,9 +35,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                 fadeEffect: {
                     crossFade: true
                 },
-                autoplay: {
+                ${autoplay ? `autoplay: {
                     delay: 10000,
-                },
+                }` : ''}
             });
         }
     }`}
