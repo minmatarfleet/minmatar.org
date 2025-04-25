@@ -18,38 +18,71 @@ const {
 
 const ADD_MOON_RESULT_PARTIAL_URL = translatePath('/partials/add_moon_result_component/')
 
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
+import Textarea from '@components/blocks/Textarea.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
-<Button
+<DialogButton
     size={size}
-    type="button"
     color={color}
-    x-bind:disabled="disabled"
-    x-data={`{
-        disabled: false,
-        show_add_moon_dialog() {
-            this.disabled = true
-            
-            show_confirm_dialog({
-                title: '${t('add_moon_dialog_title')}',
-                partial: '${translatePath('/partials/dialog_add_moon/')}',
-                hx: {
-                    method: 'post',
-                    url: '${ADD_MOON_RESULT_PARTIAL_URL}',
-                    target: '#add-moon-result',
-                    swap: 'outerHTML transition:true'
-                }
-            }).then( () => { this.disabled = false, document.getElementById('moon-information').value = '' } )
-        }
-    }`}
-    x-on:click="show_add_moon_dialog()"
-    type="button"
 >
     {iconed && <AddIcon slot="icon" />}    
     {t('add_moon')}
-</Button>
+
+    <form
+        slot="dialog" 
+        hx-post={ADD_MOON_RESULT_PARTIAL_URL}
+        hx-trigger="submit"
+        hx-target="#add-moon-result"
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-data={`{
+            moon_information: '',
+            clear_form() {
+                $nextTick(() => {
+                    this.moon_information = ''
+                })
+            }
+        }`}
+        x-on:submit="close_dialog(); clear_form()"
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-s)">
+                <h3>{t('add_moon_dialog_title')}</h3>
+                
+                <p>{t('add_moon_dialog_text')}</p>
+
+                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                    <label for="moon-information">{t('moon_information')}</label>
+                    <Textarea class="[ text-nowrap ]" id="moon-information" name="moon-information" x-model="moon_information" rows="5" required />
+                    <small><a href="https://wiki.eveuniversity.org/Moon_mining#Performing_the_Activity" target="_blank" rel="nofollow noopener noreferrer">{t('how_to_paste')}</a></small>
+                </Flexblock>
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
+                <Button
+                    size='sm'
+                    type="submit"
+                    color='green'
+                >
+                    {t('save')}
+                </Button>
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
         
 <div id="add-moon-result" />
