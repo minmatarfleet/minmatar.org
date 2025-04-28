@@ -66,6 +66,7 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 class MarketContractResponse(BaseModel):
     """Details of a market contract"""
+
     expectation_id: int
     title: str
     fitting_id: int
