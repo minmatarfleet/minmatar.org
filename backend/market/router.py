@@ -323,7 +323,7 @@ def fetch_eve_market_contracts(request):
         try:
             latest = EveMarketContract.objects.filter(
                 fitting=expectation.fitting, status="outstanding"
-            ).aggregate(Max("created_at", default=None))["max_created_at"]
+            ).aggregate(Max("created_at", default=None))["created_at__max"]
         except Exception as e:
             logger.error("Error fetching last timestamp, %s", e)
             latest = None
