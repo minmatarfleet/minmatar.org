@@ -85,6 +85,7 @@ import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import CopyToken from '@components/blocks/CopyToken.astro';
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -147,7 +148,7 @@ const page_title = t('account.page_title');
                     <FlexInline class="[ grow ]">
                         <VerticalCenter class="[ basis-48 ]">
                             <TextGroup title={t('account_name')}>
-                                {user.username}
+                                <FlexInline slot="outside" gap='var(--space-2xs)'>{user.username} <CopyToken /></FlexInline>
                             </TextGroup>
                         </VerticalCenter>
                         <VerticalCenter class="[ basis-48 ]">
