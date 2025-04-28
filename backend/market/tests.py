@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch
 
 from django.test import Client
@@ -29,7 +30,7 @@ class MarketRouterTestCase(TestCase):
 
         super().setUp()
 
-    def test_expectations_and_location(self):
+    def _setup_expecation(self):
         loc = EveMarketLocation.objects.create(
             location_id=1234,
             location_name="Somewhere else",
@@ -42,11 +43,14 @@ class MarketRouterTestCase(TestCase):
             description="Testing",
             eft_format="[Atron, [NVY-5] Atron]",
         )
-        EveMarketContractExpectation.objects.create(
+        return EveMarketContractExpectation.objects.create(
             fitting=fit,
             location=loc,
             quantity=10,
         )
+
+    def test_expectations_and_location(self):
+        self._setup_expecation()
 
         response = self.client.get(
             f"{BASE_URL}/expectations",
@@ -64,6 +68,34 @@ class MarketRouterTestCase(TestCase):
         expectations = response.json()
         self.assertEqual(1, len(expectations))
         self.assertEqual("Somewhere else", expectations[0]["name"])
+
+    def test_get_contracts(self):
+        expectation = self._setup_expecation()
+
+        timestamp = datetime.datetime.now()
+
+        EveMarketContract.objects.create(
+            id=1234,
+            location=expectation.location,
+            fitting=expectation.fitting,
+            status="outstanding",
+            price=123.45,
+            issuer_external_id=1,
+            created_at=timestamp,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("[NVY-5] Atron", data[0]["title"])
+        self.assertEqual(1, data[0]["current_quantity"])
+        self.assertIn(
+            str(timestamp)[0:19], data[0]["latest_contract_timestamp"]
+        )
 
 
 class MarketHelperTestCase(TestCase):
