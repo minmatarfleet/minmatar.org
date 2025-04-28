@@ -1009,7 +1009,7 @@ export const ui = {
         'moon_tracking': 'Moon tracking',
         'add_moon': 'Add moon',
         'add_moon_dialog_title': 'Add moon',
-        'add_moon_dialog_text': 'Proceed adding the following moon?',
+        'add_moon_dialog_text': 'Paste the survey probe scan result below and save moon information. Make sure you’re pasting the full scan result copied from in-game.',
         'moon_information': 'Moon information',
         'add_moon_error': 'An error occurred while adding the moon.',
         'add_moon_success': 'Moon added successfully',
@@ -1352,5 +1352,7 @@ export const ui = {
         'copy_minimun_pod': 'Copy minimun pod',
         'copy_recommended_pod': 'Copy recommended pod',
         'copy_multibuy_tip': 'Import shopping lists into the Multibuy Tool in EVE Online.',
+        'save': 'Save',
+        'how_to_paste': 'How to obtain the value to paste?',
     },
 } as const;
