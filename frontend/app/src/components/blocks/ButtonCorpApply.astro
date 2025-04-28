@@ -12,7 +12,6 @@ const {
     corporation,
 } = Astro.props
 
-import { query_string } from '@helpers/string';
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
 
 const REAPPLY_PERIOD_HOURS = 1
@@ -61,7 +60,7 @@ import Markdown from '@components/icons/buttons/Markdown.astro';
                 <h3>{t('corporation_join_request_dialog_title')}</h3>
                 
                 <p>{t('corporation_join_request_dialog_text')}</p>
-                <CorporationItem corporation={corporation} />
+                <CorporationItem corporation={corporation} disable_applications={true} />
                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                     <label for="description">{t('application_text')}</label>
                     <div class="[ remain-wrapper ]" x-data={`{ limit: $el.dataset.limit }`} data-limit={MAX_APPLICATION_TEXT_LENGTH}>
