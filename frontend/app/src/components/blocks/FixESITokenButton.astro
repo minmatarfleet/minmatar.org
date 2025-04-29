@@ -38,7 +38,7 @@ import Tippy from '@components/blocks/Tippy.astro';
                         id: character.character_id,
                         character_name: character.character_name,
                     })}',
-                }).then( (accepted) => fix_token_redirect(accepted, '${character.esi_token.replace(' (SUSPENDED)', '')}', ${character.character_id}) )
+                }).then( (accepted) => fix_token_redirect(accepted, '${(character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '')}', ${character.character_id}) )
             }
         }`}
         x-on:click="show_fix_esi_dialog"
