@@ -530,10 +530,10 @@ def get_user_characters(
         if not char:
             return 404, ErrorResponse(detail="No matching character found")
 
-        if not char.token:
+        if not char.user:
             return 400, ErrorResponse(detail="Character not linked to a user")
 
-        char_user = char.token.user
+        char_user = char.user
 
         discord_user = DiscordUser.objects.filter(user=char_user).first()
     elif discord_id:
@@ -558,11 +558,9 @@ def get_user_characters(
         characters=[],
     )
 
-    primary = EvePrimaryCharacter.objects.filter(
-        character__token__user=char_user
-    ).first()
+    primary = EvePrimaryCharacter.objects.filter(user=char_user).first()
 
-    chars = EveCharacter.objects.filter(token__user=char_user)
+    chars = EveCharacter.objects.filter(user=char_user)
     for char in chars.all():
         response.characters.append(build_character_response(char, primary))
 
