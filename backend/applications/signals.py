@@ -72,3 +72,23 @@ def eve_corporation_application_post_save(
             channel_id=instance.discord_thread_id, message=message
         )
         discord.close_thread(channel_id=instance.discord_thread_id)
+
+
+@receiver(
+    signals.pre_delete,
+    sender=EveCorporationApplication,
+    dispatch_uid="eve_corporation_application_pre_delete",
+)
+def eve_corporation_application_pre_delete(
+    sender, instance, **kwargs
+):  # noqa # pylint: disable=unused-argument
+    """Close the forum thread if one exists"""
+    try:
+        if instance.discord_thread_id:
+            message = ":bangbang: This application has been deleted"
+            discord.create_message(
+                channel_id=instance.discord_thread_id, message=message
+            )
+            discord.close_thread(channel_id=instance.discord_thread_id)
+    except Exception as e:
+        logger.error("Error closing discord thread: %s", e)
