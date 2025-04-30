@@ -50,6 +50,8 @@ services:
                 condition: service_healthy
         ports:
             - "8000:8000"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
 
     bot:
         build:
