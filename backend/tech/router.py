@@ -83,6 +83,7 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
 
     return response
 
+
 @router.get(
     "/containers",
     description="List all Docker containers",
@@ -98,6 +99,7 @@ def list_containers(request):
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
     containers = client.containers.list()
     return [container.name for container in containers]
+
 
 @router.get(
     "/logs/{container_name}",
@@ -118,4 +120,6 @@ def stream_logs(request, container_name: str):
         for log in container.logs(stream=True, stdout=True, stderr=True):
             yield f"data: {log.decode('utf-8')}\n\n"
 
-    return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    return StreamingHttpResponse(
+        event_stream(), content_type="text/event-stream"
+    )
