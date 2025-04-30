@@ -1,9 +1,11 @@
 import logging
+import docker
 
 from ninja import Router
 from typing import List, Optional
 
 from django.conf import settings
+from django.http import StreamingHttpResponse
 from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -80,3 +82,44 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
         response.append(item)
 
     return response
+
+
+@router.get(
+    "/containers",
+    description="List all Docker containers",
+    auth=AuthBearer(),
+    response={200: List[str], 403: ErrorResponse},
+)
+def list_containers(request):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
+    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    containers = client.containers.list()
+    return [container.name for container in containers]
+
+
+@router.get(
+    "/logs/{container_name}",
+    description="Get logs for a specific container",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
+)
+def stream_logs(request, container_name: str):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
+    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    container = client.containers.get(container_name)
+
+    def event_stream():
+        for log in container.logs(stream=True, stdout=True, stderr=True):
+            yield f"data: {log.decode('utf-8')}\n\n"
+
+    return StreamingHttpResponse(
+        event_stream(), content_type="text/event-stream"
+    )
