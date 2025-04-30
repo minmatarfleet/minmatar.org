@@ -4,7 +4,7 @@ services:
     app:
         build:
             context: ./backend/.
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.prod
         working_dir: /opt/minmatar
         command: ./app-start.sh
         env_file:
@@ -47,7 +47,7 @@ services:
     frontend:
         build:
             context: ./frontend/
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.prod
         depends_on:
             - app
         env_file:
