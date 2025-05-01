@@ -132,7 +132,12 @@ def stream_logs(request, container_name: str):
     auth=AuthBearer(),
     response={200: str, 403: ErrorResponse},
 )
-def get_logs(request, container_name: str):
+def get_logs(
+    request,
+    container_name: str,
+    start_delta_mins: int = 60,
+    duration_mins: int = 10,
+):
     if not (
         request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
     ):
@@ -141,8 +146,10 @@ def get_logs(request, container_name: str):
     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
     container = client.containers.get(container_name)
 
-    start_time = datetime.datetime.now() - datetime.timedelta(minutes=60)
-    end_time = start_time + datetime.timedelta(minutes=10)
+    start_time = datetime.datetime.now() - datetime.timedelta(
+        minutes=start_delta_mins
+    )
+    end_time = start_time + datetime.timedelta(minutes=duration_mins)
 
     content = container.logs(
         stream=False,
