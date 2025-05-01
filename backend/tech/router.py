@@ -1,5 +1,6 @@
 import logging
 import docker
+import datetime
 
 from ninja import Router
 from typing import List, Optional
@@ -123,3 +124,32 @@ def stream_logs(request, container_name: str):
     return StreamingHttpResponse(
         event_stream(), content_type="text/event-stream"
     )
+
+
+@router.get(
+    "/logs2/{container_name}",
+    description="Get historic logs for a specific container",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
+)
+def get_logs(request, container_name: str):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
+    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    container = client.containers.get(container_name)
+
+    start_time = datetime.datetime.now() - datetime.timedelta(minutes=60)
+    end_time = start_time + datetime.timedelta(minutes=10)
+
+    content = container.logs(
+        stream=False,
+        stdout=True,
+        stderr=True,
+        since=start_time,
+        until=end_time,
+        timestamps=True,
+    )
+    return content.decode("utf-8")
