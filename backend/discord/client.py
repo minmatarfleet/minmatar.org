@@ -143,7 +143,7 @@ class DiscordClient(DiscordBaseClient):
             headers=headers,
             timeout=10,
         )
-        logger.info("Discord OAuth2 Token Response: %s", response.json())
+        logger.debug("Discord OAuth2 Token Response: %s", response.json())
         response.raise_for_status()
         credentials = response.json()
         access_token = credentials["access_token"]

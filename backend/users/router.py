@@ -46,9 +46,9 @@ def login(request, redirect_url: str):
 def callback(request, code: str):
     logger.info("Recived discord callback with code: %s", code)
     user = discord.exchange_code(code)
-    logger.info("Successfully exchanged code for user: %s", user)
+    logger.debug("Successfully exchanged code for user: %s", user["username"])
     if DiscordUser.objects.filter(id=user["id"]).exists():
-        logger.info("User already exists. Logging in...")
+        logger.info("User %s already exists. Logging in...", user["username"])
         discord_user = DiscordUser.objects.get(id=user["id"])
         discord_user.discord_tag = (
             user["username"] + "#" + user["discriminator"]
@@ -60,7 +60,9 @@ def callback(request, code: str):
         django_user.username = user["username"]
         django_user.save()
     else:
-        logger.info("User does not exist. Creating user...")
+        logger.info(
+            "User %s does not exist. Creating user...", user["username"]
+        )
         django_user = User.objects.create(username=user["username"])
         django_user.username = user["username"]
         django_user.save()
@@ -84,15 +86,15 @@ def callback(request, code: str):
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
-    logger.info("Signed JWT Token: %s", encoded_jwt_token)
+    logger.debug("Signed JWT Token: %s", encoded_jwt_token)
     redirect_url = "https://my.minmatar.org/auth/login"
     try:
         redirect_url = request.session["authentication_redirect_url"]
     except KeyError:
         logger.warning("No redirect URL found in session")
 
-    redirect_url = redirect_url + "?token=" + encoded_jwt_token
     logger.info("Redirecting to authentication URL... %s", redirect_url)
+    redirect_url = redirect_url + "?token=" + encoded_jwt_token
     return redirect(redirect_url)
 
 
