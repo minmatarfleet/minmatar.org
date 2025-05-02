@@ -1,6 +1,6 @@
 import logging
 import docker
-import datetime
+from datetime import datetime, timedelta
 
 from ninja import Router
 from typing import List, Optional
@@ -12,6 +12,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.models import EveCharacter
+from tech.docker import docker_containers, DockerContainer
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
 
 @router.get(
     "/containers",
-    description="List all Docker containers",
+    summary="List all Docker containers",
     auth=AuthBearer(),
     response={200: List[str], 403: ErrorResponse},
 )
@@ -103,8 +104,45 @@ def list_containers(request):
 
 
 @router.get(
+    "/containers/{container_name}/logs",
+    summary="Get historic logs for a Docker container",
+    description="Specify a time delta (how long ago to start reading logs from) "
+    "and duration (how long to include logs for from that point) in minutes, "
+    "as well as the name of the container. ",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
+)
+def get_logs(
+    request,
+    container_name: str,
+    start_delta_mins: int = 20,
+    duration_mins: int = 20,
+):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, "Not authorised"
+
+    start_time = datetime.now() - timedelta(minutes=start_delta_mins)
+    end_time = start_time + timedelta(minutes=duration_mins)
+
+    all_logs = ""
+
+    for container in docker_containers():
+        if container_name in container:
+            container_logs = DockerContainer(container_name).logs(
+                start_time, end_time
+            )
+            # all_logs = all_logs + "\n" + container_logs
+            all_logs = container_logs
+
+    print("[" + all_logs + "]")
+    return all_logs
+
+
+@router.get(
     "/logs/{container_name}",
-    description="Get logs for a specific container",
+    summary="Stream logs for a specific container",
     auth=AuthBearer(),
     response={200: str, 403: ErrorResponse},
 )
@@ -124,39 +162,3 @@ def stream_logs(request, container_name: str):
     return StreamingHttpResponse(
         event_stream(), content_type="text/event-stream"
     )
-
-
-@router.get(
-    "/logs2/{container_name}",
-    description="Get historic logs for a specific container",
-    auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
-)
-def get_logs(
-    request,
-    container_name: str,
-    start_delta_mins: int = 60,
-    duration_mins: int = 10,
-):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
-        return 403, "Not authorised"
-
-    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    container = client.containers.get(container_name)
-
-    start_time = datetime.datetime.now() - datetime.timedelta(
-        minutes=start_delta_mins
-    )
-    end_time = start_time + datetime.timedelta(minutes=duration_mins)
-
-    content = container.logs(
-        stream=False,
-        stdout=True,
-        stderr=True,
-        since=start_time,
-        until=end_time,
-        timestamps=True,
-    )
-    return content.decode("utf-8")
