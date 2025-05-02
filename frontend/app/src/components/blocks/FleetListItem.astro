@@ -24,6 +24,8 @@ const {
 
 import { get_player_icon } from '@helpers/eve_image_server'
 import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
 const APPLY_HINT_TEXT = (marked.parseInline(t('apply_hint')) as string)
     .replace(
         'FLEET_PAGE_LINK', translatePath('/alliance/')
@@ -41,7 +43,6 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro'
 
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
@@ -98,27 +99,20 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     {fleet.fleet_commander_id > 0 &&
         <VerticalCenter>
             <Flexblock gap="var(--space-s-m)">
-                <TextGroup title={t('audience')}>
-                    {fleet.audience}
-                </TextGroup>
-                <TextGroup title={t('location')}>
-                    {fleet.location}
-                </TextGroup>
-            </Flexblock>
-        </VerticalCenter>
-        
-        <VerticalCenter>
-            <Flexblock gap="var(--space-s-m)">
                 <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
                     {eve_time_text}
                 </TextGroup>
                 <LocalTimeGroup eve_time={eve_time} />
             </Flexblock>
         </VerticalCenter>
-    }
-        
-    {fleet.fleet_commander_id > 0 &&
+
         <VerticalCenter>
+            <TextGroup title={t('description')}>
+                <Flexblock slot="outside" class="[ wrap-break-word max-w-full ]" gap="var(--space-s-m)" set:html={marked.parse(fleet.description ?? '', { renderer })} />
+            </TextGroup>
+        </VerticalCenter>
+
+        <VerticalCenter class="[ justify-center ]">
             <Flexblock>
                 {fleet?.status === 'cancelled' &&
                     <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
@@ -146,7 +140,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     {fleet.fleet_commander_id > 0 &&
         <VerticalCenter slot="actions">
             <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
-                <MagnifierIcon slot="icon" />
                 {t('view_details')}
             </Button>
         </VerticalCenter>
@@ -154,6 +147,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 </ThumbCard>
 
 <style lang="scss">
+    .wrap-break-word {
+        max-width: 100%;
+        overflow-wrap: break-word;
+    }
+
+    :global(.wrap-break-word *) {
+        max-width: 100%;
+        overflow-wrap: break-word;
+    }
+
     .fleet-status-text {
         font-family: var(--heading-font);
         font-size: var(--step-0);
