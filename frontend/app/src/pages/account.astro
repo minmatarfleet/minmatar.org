@@ -110,7 +110,7 @@ const page_title = t('account.page_title');
         }}
     >
         {fix_esi_token_error &&
-            <div class="toast" set:html={t(fix_esi_token_error as any)} x-on:click="$el.remove()"></div>
+            <div class="[ toast ][ animate-fade-in-up ]" set:html={t(fix_esi_token_error as any)} x-on:click="$el.remove()"></div>
         }
 
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">

@@ -8,10 +8,12 @@ import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 
 interface Props {
     character:  SummaryCharacter;
+    fix?:       boolean;
 }
 
 const {
-    character
+    character,
+    fix = false,
 } = Astro.props
 
 import Button from '@components/blocks/Button.astro';
@@ -27,7 +29,7 @@ import Tippy from '@components/blocks/Tippy.astro';
     show_delay={2000}
 >
     <Button
-        class="[ action-button ]"
+        class:list={[ { 'action-button': !fix } ]}
         size='sm'
         type="button"
         x-data={`{
@@ -43,6 +45,6 @@ import Tippy from '@components/blocks/Tippy.astro';
         }`}
         x-on:click="show_fix_esi_dialog"
     >
-        {t('fix_esi_token')}
+        {fix ? t('fix_esi_token') : t('refresh_esi_token')}
     </Button>
 </Tippy>
