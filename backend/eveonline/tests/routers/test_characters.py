@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 
 from esi.models import Token, Scope
 from app.test import TestCase
+from discord.models import DiscordUser
 from eveonline.models import (
     EveCharacter,
     EvePrimaryCharacter,
@@ -18,7 +19,9 @@ from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
 )
-from eveonline.routers.characters import handle_add_character_esi_callback
+from eveonline.routers.characters import (
+    handle_add_character_esi_callback,
+)
 
 BASE_URL = "/api/eveonline/characters/"
 
@@ -61,6 +64,7 @@ class CharacterRouterTestCase(TestCase):
         return EveCharacter.objects.create(
             character_id=token.character_id,
             character_name=name,
+            user=user,
             token=token,
         )
 
@@ -328,3 +332,31 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(1, len(skillsets))
         self.assertEqual("Test skillset", skillsets[0]["name"])
         self.assertAlmostEqual(0.6, skillsets[0]["progress"])
+
+    def test_get_character_with_token_issue(self):
+        char = self.make_character(self.user, 123456, "Test Char suspended")
+        char.esi_suspended = True
+        char.esi_token_level = "Super"
+        char.save()
+
+        DiscordUser.objects.create(
+            user=self.user,
+            id=1234,
+            discord_tag="tag",
+        )
+        EvePrimaryCharacter.objects.create(
+            character=char,
+            user=self.user,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}summary",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        data = response.json()
+
+        chars = data["characters"]
+
+        self.assertEqual(1, len(chars))
+        self.assertEqual("SUSPENDED", chars[0]["token_status"])

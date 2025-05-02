@@ -74,6 +74,7 @@ class UserCharacter(BaseModel):
     alliance_id: Optional[int] = None
     alliance_name: Optional[str] = None
     esi_token: Optional[str] = None
+    token_status: Optional[str] = None
 
 
 class UserCharacterResponse(BaseModel):
@@ -562,7 +563,8 @@ def get_user_characters(
 
     chars = EveCharacter.objects.filter(user=char_user)
     for char in chars.all():
-        response.characters.append(build_character_response(char, primary))
+        char_response = build_character_response(char, primary)
+        response.characters.append(char_response)
 
     return response
 
@@ -592,8 +594,10 @@ def build_character_response(char, primary):
             level = token_type_str(level)
             if char.esi_suspended:
                 item.esi_token = f"{level} (SUSPENDED)"
+                item.token_status = "SUSPENDED"
             else:
                 item.esi_token = level
+                item.token_status = "ACTIVE"
 
     except Exception as e:
         logger.error(
