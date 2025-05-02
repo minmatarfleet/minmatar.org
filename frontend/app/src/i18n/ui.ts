@@ -1323,7 +1323,8 @@ export const ui = {
         'no_srp_value': 'SRP amount not defined',
         'show_details': 'Show details',
         'hide_details': 'Hide details',
-        'fix_esi_token': 'Refresh ESI token',
+        'fix_esi_token': 'Fix ESI token',
+        'refresh_esi_token': 'Refresh ESI token',
         'fix_esi_token_dialog_title': 'Fix ESI token',
         'fix_esi_token_dialog_text': 'To fix your ESI token, accept this dialog, log into your EVE account, and select the following character:',
         'fix_esi_token_dialog_subtext': 'The scopes listed below will be requested:',
@@ -1357,5 +1358,7 @@ export const ui = {
         'copy_multibuy_tip': 'Import shopping lists into the Multibuy Tool in EVE Online.',
         'save': 'Save',
         'how_to_paste': 'How to obtain the value to paste?',
+        'suspended': 'Suspended',
+        'esi_token_fix_toast': 'One or more of your characters have an issue with their ESI token. More details on how to fix it are available on the Account page.',
     },
 } as const;

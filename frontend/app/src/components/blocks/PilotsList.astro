@@ -42,6 +42,7 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import AllianceBadge from '@components/blocks/AllianceBadge.astro';
+import Tag from '@components/blocks/Tag.astro';
 
 delete attributes.class
 ---
@@ -140,20 +141,25 @@ delete attributes.class
                     />
                     <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
                         <Flexblock gap='0' class="[ grow ]">
-                            <span
-                                class="truncate cursor-pointer text-[var(--highlight)]"
-                                set:text={pilot.character_name}
-                                x-data={`{
-                                    show_character_modal() {
-                                        show_modal({
-                                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                                character_id: pilot.character_id.toString(),
-                                            })}'
-                                        })
-                                    }
-                                }`}
-                                x-on:click="show_character_modal()"
-                            />
+                            <FlexInline gap='var(--space-2xs)'>
+                                <span
+                                    class="truncate cursor-pointer text-[var(--highlight)]"
+                                    set:text={pilot.character_name}
+                                    x-data={`{
+                                        show_character_modal() {
+                                            show_modal({
+                                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                                    character_id: pilot.character_id.toString(),
+                                                })}'
+                                            })
+                                        }
+                                    }`}
+                                    x-on:click="show_character_modal()"
+                                />
+                                {pilot.token_status === 'SUSPENDED' &&
+                                    <Tag text={t('suspended')} />
+                                }
+                            </FlexInline>
                             <small class="truncate">
                                 {pilot.is_primary ?
                                     t('main_character') :
@@ -212,7 +218,7 @@ delete attributes.class
                                 </Button>
                             }
 
-                            {!readonly &&
+                            {!readonly && pilot.token_status === 'ACTIVE' &&
                                 <FixESITokenButton character={pilot} />
                             }
 
@@ -248,6 +254,10 @@ delete attributes.class
                                 >
                                     <TrashIcon slot="icon" />
                                 </Button>
+                            }
+
+                            {!readonly && pilot.token_status !== 'ACTIVE' &&
+                                <FixESITokenButton character={pilot} fix={true} />
                             }
                         </FlexInline>
                     </FlexInline>
