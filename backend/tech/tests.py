@@ -1,3 +1,5 @@
+from unittest.mock import patch, Mock
+
 from django.db.models import signals
 from django.test import Client
 from django.contrib.auth.models import User
@@ -57,3 +59,21 @@ class TechRoutesTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_get_logs(self):
+        self.make_superuser()
+
+        with patch("tech.router.DockerContainer") as container_mock:
+            with patch("tech.router.docker_containers") as container_list_mock:
+
+                container_list_mock.return_value = ["app_container"]
+                container = Mock()
+                container_mock.return_value = container
+                container.logs.return_value = "Test logs"
+
+                response = self.client.get(
+                    f"{BASE_URL}/containers/app_container/logs",
+                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("Test logs", response.content.decode("utf-8"))
