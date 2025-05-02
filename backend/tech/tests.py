@@ -64,7 +64,7 @@ class TechRoutesTestCase(TestCase):
         self.make_superuser()
 
         with patch("tech.router.DockerContainer") as container_mock:
-            with patch("tech.router.docker_containers") as container_list_mock:
+            with patch("tech.router.container_names") as container_list_mock:
 
                 container_list_mock.return_value = ["app_container"]
                 container = Mock()

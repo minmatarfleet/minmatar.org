@@ -12,7 +12,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.models import EveCharacter
-from tech.docker import docker_containers, DockerContainer
+from tech.docker import container_names, DockerContainer
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ def get_logs(
 
     all_logs = ""
 
-    for container in docker_containers():
+    for container in container_names():
         if container_name in container:
             container_logs = DockerContainer(container_name).logs(
                 start_time, end_time

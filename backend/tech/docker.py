@@ -6,8 +6,8 @@ def docker_client():
     return docker.DockerClient(base_url="unix://var/run/docker.sock")
 
 
-def docker_containers():
-    return docker_client().containers.list()
+def container_names():
+    return [container.name for container in docker_client().containers.list()]
 
 
 class DockerContainer:
