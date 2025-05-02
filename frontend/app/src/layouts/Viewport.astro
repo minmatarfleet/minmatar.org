@@ -11,9 +11,9 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { is_esi_token_error } from '@helpers/fetching/characters'
+import { esi_token_error } from '@helpers/fetching/characters'
 
-const fix_account_esi_token = auth_token ? is_esi_token_error(auth_token as string) : false
+const fix_account_esi_token = auth_token ? await esi_token_error(auth_token as string) : false
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)

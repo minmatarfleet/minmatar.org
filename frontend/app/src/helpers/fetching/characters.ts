@@ -168,11 +168,11 @@ export async function get_user_assets(access_token:string) {
     return characters_assets
 }
 
-export async function  is_esi_token_error(auth_token: string) {
+export async function  esi_token_error(auth_token: string) {
     try {
         const character_summary = await get_character_summary(auth_token)
-
-        return character_summary.characters.find(character => character.token_status === 'SUSPENDED') !== undefined
+        
+        return character_summary.characters.find(character => character.token_status !== 'ACTIVE') !== undefined
     } catch (error) {
         return false
     }
