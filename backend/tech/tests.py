@@ -69,11 +69,14 @@ class TechRoutesTestCase(TestCase):
                 container_list_mock.return_value = ["app_container"]
                 container = Mock()
                 container_mock.return_value = container
-                container.logs.return_value = "Test logs"
+                container.logs.return_value = "Test logs\nLine 2"
 
                 response = self.client.get(
                     f"{BASE_URL}/containers/app_container/logs",
                     HTTP_AUTHORIZATION=f"Bearer {self.token}",
                 )
                 self.assertEqual(response.status_code, 200)
-                self.assertIn("Test logs", response.content.decode("utf-8"))
+                content = response.content.decode("utf-8")
+                self.assertIn("app_container", content)
+                self.assertIn("Test logs", content)
+                self.assertIn("Line 2", content)

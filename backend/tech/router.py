@@ -6,7 +6,7 @@ from ninja import Router
 from typing import List, Optional
 
 from django.conf import settings
-from django.http import StreamingHttpResponse
+from django.http import HttpResponse
 from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -130,35 +130,36 @@ def get_logs(
 
     for container in container_names():
         if container_name in container:
-            container_logs = DockerContainer(container_name).logs(
+            all_logs += "===========================\n"
+            all_logs += container + "\n"
+            container_logs = DockerContainer(container).logs(
                 start_time, end_time
             )
             # all_logs = all_logs + "\n" + container_logs
-            all_logs = container_logs
+            all_logs += container_logs + "\n"
 
-    print("[" + all_logs + "]")
-    return all_logs
+    return HttpResponse(all_logs, content_type="text/plain")
 
 
-@router.get(
-    "/logs/{container_name}",
-    summary="Stream logs for a specific container",
-    auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
-)
-def stream_logs(request, container_name: str):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
-        return 403, "Not authorised"
+# @router.get(
+#     "/logs/{container_name}",
+#     summary="Stream logs for a specific container",
+#     auth=AuthBearer(),
+#     response={200: str, 403: ErrorResponse},
+# )
+# def stream_logs(request, container_name: str):
+#     if not (
+#         request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+#     ):
+#         return 403, "Not authorised"
 
-    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    container = client.containers.get(container_name)
+#     client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+#     container = client.containers.get(container_name)
 
-    def event_stream():
-        for log in container.logs(stream=True, stdout=True, stderr=True):
-            yield f"data: {log.decode('utf-8')}\n\n"
+#     def event_stream():
+#         for log in container.logs(stream=True, stdout=True, stderr=True):
+#             yield f"data: {log.decode('utf-8')}\n\n"
 
-    return StreamingHttpResponse(
-        event_stream(), content_type="text/event-stream"
-    )
+#     return StreamingHttpResponse(
+#         event_stream(), content_type="text/event-stream"
+#     )
