@@ -410,6 +410,16 @@ def handle_add_character_esi_callback(request, token, token_type):
                 token.character_id,
             )
             token.delete()
+        elif token == character.token:
+            logger.warning(
+                "New token is same as existing one for character %s",
+                token.character_id,
+            )
+        else:
+            logger.warning(
+                "Unexpected scenario updating token for character %s",
+                token.character_id,
+            )
 
         token_count = Token.objects.filter(
             character_id=character.character_id
