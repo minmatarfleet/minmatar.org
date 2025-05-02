@@ -391,6 +391,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             character.token = token
             character.esi_token_level = token_type_str(token_type)
             character.user = token.user
+            character.esi_suspended = False
             character.save()
             old_token.delete()
         elif not character.token:
@@ -401,6 +402,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             character.token = token
             character.user = token.user
             character.esi_token_level = token_type_str(token_type)
+            character.esi_suspended = False
             character.save()
         elif token != character.token:
             logger.warning(
