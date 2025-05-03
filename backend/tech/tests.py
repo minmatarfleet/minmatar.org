@@ -1,14 +1,40 @@
 from unittest.mock import patch, Mock
 
 from django.db.models import signals
-from django.test import Client
+from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User
 
 from esi.models import Token
 from app.test import TestCase
 from eveonline.models import EveCharacter, EvePrimaryCharacter
+from tech.docker import parse_docker_logs, sort_chronologically, DockerLogEntry
 
 BASE_URL = "/api/tech"
+
+
+class DockerLogsTestCase(SimpleTestCase):
+    """Non-django unit test for the docker logs code."""
+
+    def test_log_entries(self):
+        log_text_a = """
+        2025-05-03T10:01:01.000000000Z 2025-05-03 10:01:01,000 WARNING  [log.test] Log entry 1
+        2025-05-03T10:01:03.000000000Z 2025-05-03 10:01:03,000 WARNING  [log.test] Log entry 3
+        """
+        logs = parse_docker_logs("container_a", log_text_a)
+
+        log_text_b = """
+        2025-05-03T10:01:02.000000000Z 2025-05-03 10:01:01,000 WARNING  [log.test] Log entry 2
+        """
+        logs += parse_docker_logs("container_b", log_text_b)
+
+        sort_chronologically(logs)
+
+        self.assertIn("Log entry 1", str(logs[0]))
+        self.assertIn("container_a", str(logs[0]))
+        self.assertIn("Log entry 2", str(logs[1]))
+        self.assertIn("container_b", str(logs[1]))
+        self.assertIn("Log entry 3", str(logs[2]))
+        self.assertIn("container_a", str(logs[2]))
 
 
 class TechRoutesTestCase(TestCase):
@@ -69,7 +95,11 @@ class TechRoutesTestCase(TestCase):
                 container_list_mock.return_value = ["app_container"]
                 container = Mock()
                 container_mock.return_value = container
-                container.logs.return_value = "Test logs\nLine 2"
+
+                container.log_entries.return_value = [
+                    DockerLogEntry("app_container", "123", "Test logs"),
+                    DockerLogEntry("app_container", "124", "Line 2"),
+                ]
 
                 response = self.client.get(
                     f"{BASE_URL}/containers/app_container/logs",
