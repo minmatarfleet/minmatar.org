@@ -33,7 +33,7 @@ def update_corporation_structures(corporation_id: int):
         and corporation.ceo.token
         and not corporation.ceo.esi_suspended
     ):
-        logger.info(
+        logger.debug(
             "Corporation %s has token for CEO: %s",
             corporation,
             corporation.ceo,
@@ -43,7 +43,7 @@ def update_corporation_structures(corporation_id: int):
 
         token = Token.get_token(corporation.ceo.character_id, required_scopes)
         if token:
-            logger.info("Fetching structures for corporation %s", corporation)
+            logger.debug("Fetching structures for corporation %s", corporation)
             response = esi.client.Corporation.get_corporations_corporation_id_structures(
                 corporation_id=corporation.corporation_id,
                 token=token.valid_access_token(),
@@ -51,7 +51,8 @@ def update_corporation_structures(corporation_id: int):
 
             known_structure_ids = []
             for structure in response:
-                logger.info("Processing structure %s", structure)
+                logger.info("Updating structure %s", structure["name"])
+                logger.debug("Structure details %s", structure)
                 system, _ = EveSolarSystem.objects.get_or_create_esi(
                     id=structure["system_id"]
                 )

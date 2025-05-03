@@ -40,7 +40,7 @@ def update_affiliation(user_id: int):
         logger.warning("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
-    if primaries.count() > 0:
+    if primaries.count() != 1:
         logger.warning(
             "%d primary characters found for user %s", primaries.count(), user
         )
