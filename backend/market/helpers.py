@@ -40,7 +40,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     # Need to add comma for ships that contain same name
     # e.g Exequror and Exequror Navy Issue
     alias_title_lookup = f"{contract['title']},"
-    logger.info(
+    logger.debug(
         f"Processing contract {contract['contract_id']}, {contract['title']}"
     )
     if contract["acceptor_id"] == issuer_id:
