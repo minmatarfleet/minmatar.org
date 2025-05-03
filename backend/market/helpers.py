@@ -109,7 +109,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         contract["status"],
     )
 
-    contract, _ = EveMarketContract.objects.update_or_create(
+    contract_instance, _ = EveMarketContract.objects.update_or_create(
         id=contract["contract_id"],
         defaults={
             "title": contract["title"],
@@ -124,7 +124,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         },
     )
     logger.debug("Contract %d created", contract["contract_id"])
-    return contract
+    return contract_instance
 
 
 def create_character_market_contracts(character_id: int):
