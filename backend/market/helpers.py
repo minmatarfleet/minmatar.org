@@ -45,12 +45,12 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     )
     if contract["acceptor_id"] == issuer_id:
         logger.debug(
-            f"Skipping {contract['contract_id']}, issuer is also acceptor."
+            f"Skipping contract {contract['contract_id']}, issuer is also acceptor."
         )
         return
     if contract["type"] != EveMarketContract.esi_contract_type:
         logger.debug(
-            f"Skipping {contract['contract_id']}, not an item exchange."
+            f"Skipping contract {contract['contract_id']}, not an item exchange."
         )
         return
 
@@ -58,7 +58,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         location_id=contract["start_location_id"]
     ).exists():
         logger.info(
-            "Skipping %s, location not found, %s",
+            "Skipping contract %s, location not found, %s",
             contract["contract_id"],
             contract["start_location_id"],
         )
@@ -68,7 +68,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
     ).exists():
         logger.info(
-            "Skipping %s, fitting not found, %s",
+            "Skipping contract %s, fitting not found, %s",
             contract["contract_id"],
             contract["title"],
         )
@@ -81,7 +81,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         > 1
     ):
         logger.info(
-            "Skipping %s, unable to determine fitting, %s",
+            "Skipping contract %s, unable to determine fitting, %s",
             contract["contract_id"],
             contract["title"],
         )
@@ -102,7 +102,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         status = "expired"
 
     logger.info(
-        "Processing contract %s, %s in %s (%s)",
+        "Updating contract %s, %s in %s (%s)",
         contract["contract_id"],
         contract["title"],
         contract["start_location_id"],

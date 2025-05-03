@@ -1,7 +1,6 @@
 from celery.schedules import crontab
-from celery.worker import strategy
 
-strategy.logger.setLevel("WARNING")
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 CELERYBEAT_SCHEDULE = {
     "esi_cleanup_callbackredirect": {
