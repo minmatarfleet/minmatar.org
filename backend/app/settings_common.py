@@ -167,3 +167,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # EVE Universe Settings
 EVEUNIVERSE_LOAD_DOGMAS = True
+
+# ESI token management settings
+ESI_ALWAYS_CREATE_TOKEN = True
