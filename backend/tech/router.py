@@ -12,7 +12,13 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.models import EveCharacter
-from tech.docker import container_names, DockerContainer
+from tech.docker import (
+    container_names,
+    sort_chronologically,
+    DockerContainer,
+    DockerLogQuery,
+    DockerLogEntry,
+)
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -123,22 +129,29 @@ def get_logs(
     ):
         return 403, "Not authorised"
 
-    start_time = datetime.now() - timedelta(minutes=start_delta_mins)
-    end_time = start_time + timedelta(minutes=duration_mins)
+    now = datetime.now()
+    start_time = now - timedelta(minutes=start_delta_mins)
 
-    all_logs = ""
+    query = DockerLogQuery(
+        containers=container_name,
+        start_time=start_time,
+        end_time=start_time + timedelta(minutes=duration_mins),
+    )
+
+    all_logs: List[DockerLogEntry] = []
 
     for container in container_names():
         if container_name in container:
-            all_logs += "===========================\n"
-            all_logs += container + "\n"
-            container_logs = DockerContainer(container).logs(
-                start_time, end_time
-            )
-            # all_logs = all_logs + "\n" + container_logs
-            all_logs += container_logs + "\n"
+            container_logs = DockerContainer(container).log_entries(query)
+            all_logs += container_logs
 
-    return HttpResponse(all_logs, content_type="text/plain")
+    sort_chronologically(all_logs)
+
+    response = ""
+    for log_entry in all_logs:
+        response += str(log_entry) + "\n"
+
+    return HttpResponse(response, content_type="text/plain")
 
 
 # @router.get(
