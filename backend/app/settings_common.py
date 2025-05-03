@@ -141,6 +141,14 @@ LOGGING = {
             "level": "INFO",
             "handlers": ["console"],
         },
+        "celery": {
+            "level": "WARNING",
+            "handlers": ["console"],
+        },
+        "celery.task": {
+            "level": "WARNING",
+            "handlers": ["console"],
+        },
     },
 }
 
