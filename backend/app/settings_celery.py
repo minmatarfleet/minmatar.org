@@ -1,4 +1,7 @@
 from celery.schedules import crontab
+from celery.worker import strategy
+
+strategy.logger.setLevel("WARNING")
 
 CELERYBEAT_SCHEDULE = {
     "esi_cleanup_callbackredirect": {
