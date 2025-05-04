@@ -43,7 +43,7 @@ const subheader_content = await Astro.slots.render('subheader');
 
     {subheader_content !== '' &&
         <div class="[ subheader-bar ]">
-            <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='var(--space-2xs)'>
+            <Wrapper centered={true} max_width="var(--max-content-width)" padding_block='0'>
                 <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0" class="[ w-full ]">
                     <slot name="subheader" />
                 </Wrapper>
@@ -82,25 +82,19 @@ const subheader_content = await Astro.slots.render('subheader');
         }
     }
     
+    .subheader-bar {
+        padding-bottom: var(--space-s);
+    }
+    
     .post-header {
         transition: var(--fast-transition);
         position: sticky;
         top: -1px;
         z-index: var(--header-z-index);
-        padding-top: var(--space-xl);        
-        border-top: 1px solid transparent;
+        padding-top: var(--space-xl);
 
         &.sticky {
-            box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
             padding-top: 0;
-
-            .subheader-bar {
-                border-top: solid 1px var(--border-color);
-            }
-        }
-
-        .subheader-bar {
-            border-top: solid 1px transparent;
         }
 
         .main-bar {
