@@ -353,6 +353,7 @@ class CharacterRouterTestCase(TestCase):
             f"{BASE_URL}summary",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
+        self.assertEqual(response.status_code, 200)
 
         data = response.json()
 
@@ -360,3 +361,24 @@ class CharacterRouterTestCase(TestCase):
 
         self.assertEqual(1, len(chars))
         self.assertEqual("SUSPENDED", chars[0]["token_status"])
+
+    def test_character_summary_without_primary(self):
+        char = self.make_character(self.user, 123456, "Test Char suspended")
+        char.esi_token_level = "Super"
+        char.save()
+
+        DiscordUser.objects.create(
+            user=self.user,
+            id=1234,
+            discord_tag="tag",
+        )
+        response = self.client.get(
+            f"{BASE_URL}summary",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(1, len(data["characters"]))
+        for char in data["characters"]:
+            self.assertFalse(char["is_primary"])

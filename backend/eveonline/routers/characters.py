@@ -365,7 +365,7 @@ def handle_add_character_esi_callback(request, token, token_type):
         requested_char = request.session["add_character_id"]
         if str(token.character_id) != requested_char:
             logger.error(
-                "Incorrect character in tokem refresh, %s != %s",
+                "Incorrect character in token refresh, %s != %s",
                 str(token.character_id),
                 requested_char,
             )
@@ -385,7 +385,8 @@ def handle_add_character_esi_callback(request, token, token_type):
             and len(token.scopes.all()) >= len(character.token.scopes.all())
         ):
             logger.info(
-                "New token has at least as many scopes, deleting old character token"
+                "New token has at least as many scopes, deleting old token for %s",
+                token.character_id,
             )
             old_token = character.token
             character.token = token
@@ -442,8 +443,9 @@ def handle_add_character_esi_callback(request, token, token_type):
         fixup_character_token_level(character, token_count)
     else:
         logger.info(
-            "Creating new character %s with token",
+            "Creating new character (%s, %s) with token",
             token.character_id,
+            token.character_name,
         )
         character = EveCharacter.objects.create(
             character_id=token.character_id,
@@ -457,14 +459,9 @@ def handle_add_character_esi_callback(request, token, token_type):
         character_name=character.character_name,
     )
     # set as primary character if only one character
-    if (
-        not EvePrimaryCharacter.objects.filter(
-            character__token__user=request.user
-        ).exists()
-        and EveCharacter.objects.filter(token__user=request.user).count() == 1
-    ):
+    if user_primary_character(request.user) is None:
         logger.info(
-            "Setting %s as primary character for user %s",
+            "Setting primary character %s for user %s",
             character.character_name,
             request.user.username,
         )
@@ -581,11 +578,17 @@ def get_user_characters(
     return response
 
 
+def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
+    # Return an explicit True or False, rather than just a truthy value
+    # Pydantic validation fails if I use the expression rather than calling this function
+    return bool(primary and char == primary.character)
+
+
 def build_character_response(char, primary):
     item = UserCharacter(
         character_id=char.character_id,
         character_name=char.character_name,
-        is_primary=(primary and char == primary.character),
+        is_primary=is_primary(char, primary),
     )
     try:
         if char.corporation:
