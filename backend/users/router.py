@@ -34,6 +34,9 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
+    if hasattr(settings, "FAKE_LOGIN_USER_ID"):
+        return fake_login(request, redirect_url)
+
     logger.info(f"Adding redirect URL to session: {redirect_url}")
     if not redirect_url:
         redirect_url = "https://my.minmatar.org/auth/login"
@@ -181,3 +184,28 @@ def sync_user(request, user_id: int):
     sync_discord_user(user_id)
     sync_discord_nickname(user_id, True)
     return "User synced successfully"
+
+
+def fake_login(request, redirect_url):
+    """Fake user login for local dev server only."""
+
+    user_id = int(settings.FAKE_LOGIN_USER_ID)
+    logger.warning("*** FAKE USER LOGIN (id=%d) ***", user_id)
+
+    django_user = User.objects.get(id=user_id)
+    payload = {
+        "user_id": django_user.id,
+        "username": django_user.username,
+        "is_superuser": django_user.is_superuser,
+        "sub": django_user.username,
+        "iss": request.get_host(),
+        "iat": datetime.datetime.now(),
+    }
+    encoded_jwt_token = jwt.encode(
+        payload, settings.SECRET_KEY, algorithm="HS256"
+    )
+    logger.debug("Signed JWT Token: %s", encoded_jwt_token)
+
+    logger.info("Redirecting to authentication URL... %s", redirect_url)
+    redirect_url = redirect_url + "?token=" + encoded_jwt_token
+    return redirect(redirect_url)
