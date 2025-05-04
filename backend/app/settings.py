@@ -32,7 +32,7 @@ SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-FAKE_LOGIN_USER_ID=1
+FAKE_LOGIN_USER_ID = 1
 
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
 SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
