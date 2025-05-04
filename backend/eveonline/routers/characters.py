@@ -459,7 +459,7 @@ def handle_add_character_esi_callback(request, token, token_type):
         character_name=character.character_name,
     )
     # set as primary character if only one character
-    if not EvePrimaryCharacter.objects.filter(user=request.user).exists():
+    if user_primary_character(request.user) is None:
         logger.info(
             "Setting primary character %s for user %s",
             character.character_name,
