@@ -110,7 +110,7 @@ def list_containers(request):
 
 
 @router.get(
-    "/containers/{container_name}/logs",
+    "/containers/{container_match}/logs",
     summary="Get historic logs for a Docker container",
     description="Specify a time delta (how long ago to start reading logs from) "
     "and duration (how long to include logs for from that point) in minutes, "
@@ -120,7 +120,7 @@ def list_containers(request):
 )
 def get_logs(
     request,
-    container_name: str,
+    container_match: str,
     start_delta_mins: int = 20,
     duration_mins: Optional[int] = None,
     search_for: Optional[str] = None,
@@ -137,7 +137,7 @@ def get_logs(
     end_time = start_time + timedelta(minutes=duration_mins)
 
     query = DockerLogQuery(
-        containers=container_name,
+        containers=container_match,
         start_time=start_time,
         end_time=end_time,
         search_for=search_for,
@@ -145,10 +145,14 @@ def get_logs(
 
     all_logs: List[DockerLogEntry] = []
 
-    for container in container_names():
-        if container_name in container:
-            logger.info("Get logs, fetching %s", container)
-            container_logs = DockerContainer(container).log_entries(query)
+    for container_name in container_names():
+        if container_name.startswith("tools"):
+            # Skip containers from old "tools" site
+            logger.debug("Get logs, skipping %s", container_name)
+            continue
+        if container_match in container_name:
+            logger.info("Get logs, fetching %s", container_name)
+            container_logs = DockerContainer(container_name).log_entries(query)
             all_logs += container_logs
 
     logger.info("Get logs, sorting %d entries", len(all_logs))
