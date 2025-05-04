@@ -1,5 +1,4 @@
 import logging
-import docker
 from datetime import datetime, timedelta
 
 from ninja import Router
@@ -104,9 +103,10 @@ def list_containers(request):
     ):
         return 403, "Not authorised"
 
-    client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    containers = client.containers.list()
-    return [container.name for container in containers]
+    # client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+    # containers = client.containers.list()
+    # return [container.name for container in containers]
+    return container_names()
 
 
 @router.get(
@@ -122,7 +122,7 @@ def get_logs(
     request,
     container_name: str,
     start_delta_mins: int = 20,
-    duration_mins: int = 20,
+    duration_mins: Optional[int] = None,
     search_for: Optional[str] = None,
 ):
     if not (
@@ -132,11 +132,14 @@ def get_logs(
 
     now = datetime.now()
     start_time = now - timedelta(minutes=start_delta_mins)
+    if not duration_mins:
+        duration_mins = max(start_delta_mins, 60)
+    end_time = start_time + timedelta(minutes=duration_mins)
 
     query = DockerLogQuery(
         containers=container_name,
         start_time=start_time,
-        end_time=start_time + timedelta(minutes=duration_mins),
+        end_time=end_time,
         search_for=search_for,
     )
 
@@ -144,17 +147,21 @@ def get_logs(
 
     for container in container_names():
         if container_name in container:
-            logger.info("Fetching logs for %s", container_name)
+            logger.info("Get logs, fetching %s", container)
             container_logs = DockerContainer(container).log_entries(query)
             all_logs += container_logs
 
-    logger.info("Sorting logs, %d entries", len(all_logs))
+    logger.info("Get logs, sorting %d entries", len(all_logs))
 
     sort_chronologically(all_logs)
+
+    logger.info("Get logs, building response")
 
     response = ""
     for log_entry in all_logs:
         response += str(log_entry) + "\n"
+
+    logger.info("Get logs, complete.")
 
     return HttpResponse(response, content_type="text/plain")
 

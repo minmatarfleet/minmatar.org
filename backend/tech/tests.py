@@ -111,6 +111,22 @@ class TechRoutesTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    def test_get_container_names(self):
+        self.make_superuser()
+
+        with patch("tech.router.container_names") as container_list_mock:
+            container_list_mock.return_value = [
+                "app",
+                "frontend",
+                "celery_1",
+            ]
+            response = self.client.get(
+                f"{BASE_URL}/containers",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), ["app", "frontend", "celery_1"])
+
     def test_get_logs(self):
         self.make_superuser()
 
