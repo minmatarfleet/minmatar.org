@@ -123,6 +123,7 @@ def get_logs(
     container_name: str,
     start_delta_mins: int = 20,
     duration_mins: int = 20,
+    search_for: Optional[str] = None,
 ):
     if not (
         request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
@@ -136,6 +137,7 @@ def get_logs(
         containers=container_name,
         start_time=start_time,
         end_time=start_time + timedelta(minutes=duration_mins),
+        search_for=search_for,
     )
 
     all_logs: List[DockerLogEntry] = []

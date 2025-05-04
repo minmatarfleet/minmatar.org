@@ -7,7 +7,12 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from app.test import TestCase
 from eveonline.models import EveCharacter, EvePrimaryCharacter
-from tech.docker import parse_docker_logs, sort_chronologically, DockerLogEntry
+from tech.docker import (
+    parse_docker_logs,
+    sort_chronologically,
+    DockerLogEntry,
+    DockerLogQuery,
+)
 
 BASE_URL = "/api/tech"
 
@@ -35,6 +40,26 @@ class DockerLogsTestCase(SimpleTestCase):
         self.assertIn("container_b", str(logs[1]))
         self.assertIn("Log entry 3", str(logs[2]))
         self.assertIn("container_a", str(logs[2]))
+
+    def test_search_log_entries(self):
+        log_text = """
+        2025-05-03T10:01:01.000000000Z 2025-05-03 10:01:01,000 WARNING  [log.test] Something red
+        2025-05-03T10:01:02.000000000Z 2025-05-03 10:01:02,000 WARNING  [log.test] Something blue
+        2025-05-03T10:01:03.000000000Z 2025-05-03 10:01:03,000 WARNING  [log.test] Blue Monday
+        2025-05-03T10:01:04.000000000Z 2025-05-03 10:01:04,000 WARNING  [log.test] Green Friday
+        """
+
+        query = DockerLogQuery(
+            containers="a",
+            start_time="2025-05-03T10:01:01.000000000Z",
+            end_time="2025-05-03T10:59:59.000000000Z",
+            search_for="blue",
+        )
+        logs = parse_docker_logs("container_a", log_text, query)
+
+        self.assertEqual(2, len(logs))
+        for entry in logs:
+            self.assertIn("blue", str(entry).lower())
 
 
 class TechRoutesTestCase(TestCase):
