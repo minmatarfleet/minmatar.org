@@ -583,7 +583,8 @@ def get_user_characters(
 
 def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
     # Return an explicit True or False, rather than just a truthy value
-    return True if (primary and char == primary.character) else False
+    # Pydantic validation fails if I use the expression rather than calling this function
+    return bool(primary and char == primary.character)
 
 
 def build_character_response(char, primary):

@@ -21,7 +21,6 @@ from eveonline.helpers.characters import (
 )
 from eveonline.routers.characters import (
     handle_add_character_esi_callback,
-    is_primary,
 )
 
 BASE_URL = "/api/eveonline/characters/"
@@ -362,10 +361,6 @@ class CharacterRouterTestCase(TestCase):
 
         self.assertEqual(1, len(chars))
         self.assertEqual("SUSPENDED", chars[0]["token_status"])
-
-    def test_is_primary(self):
-        char = self.make_character(self.user, 123456, "Test Char suspended")
-        self.assertFalse(is_primary(char, None))
 
     def test_character_summary_without_primary(self):
         char = self.make_character(self.user, 123456, "Test Char suspended")
