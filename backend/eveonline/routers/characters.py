@@ -581,11 +581,16 @@ def get_user_characters(
     return response
 
 
+def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
+    # Return an explicit True or False, rather than just a truthy value
+    return True if (primary and char == primary.character) else False
+
+
 def build_character_response(char, primary):
     item = UserCharacter(
         character_id=char.character_id,
         character_name=char.character_name,
-        is_primary=(primary and char == primary.character),
+        is_primary=is_primary(char, primary),
     )
     try:
         if char.corporation:

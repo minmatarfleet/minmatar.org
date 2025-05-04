@@ -21,6 +21,7 @@ from eveonline.helpers.characters import (
 )
 from eveonline.routers.characters import (
     handle_add_character_esi_callback,
+    is_primary,
 )
 
 BASE_URL = "/api/eveonline/characters/"
@@ -353,6 +354,7 @@ class CharacterRouterTestCase(TestCase):
             f"{BASE_URL}summary",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
+        self.assertEqual(response.status_code, 200)
 
         data = response.json()
 
@@ -360,3 +362,28 @@ class CharacterRouterTestCase(TestCase):
 
         self.assertEqual(1, len(chars))
         self.assertEqual("SUSPENDED", chars[0]["token_status"])
+
+    def test_is_primary(self):
+        char = self.make_character(self.user, 123456, "Test Char suspended")
+        self.assertFalse(is_primary(char, None))
+
+    def test_character_summary_without_primary(self):
+        char = self.make_character(self.user, 123456, "Test Char suspended")
+        char.esi_token_level = "Super"
+        char.save()
+
+        DiscordUser.objects.create(
+            user=self.user,
+            id=1234,
+            discord_tag="tag",
+        )
+        response = self.client.get(
+            f"{BASE_URL}summary",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(1, len(data["characters"]))
+        for char in data["characters"]:
+            self.assertFalse(char["is_primary"])
