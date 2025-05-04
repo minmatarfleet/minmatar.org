@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.conf import settings
 from django.db.models import signals
 from django.test import Client
 from django.contrib.auth.models import User
@@ -154,6 +155,9 @@ class UserRouterTestCase(TestCase):
             self.assertTrue(discord_user.is_down_under)
 
     def test_login(self):
+        fake_user = settings.FAKE_LOGIN_USER_ID
+        del settings.FAKE_LOGIN_USER_ID
+
         response = self.client.get(
             "/api/users/login?redirect_url=abc123",
         )
@@ -161,3 +165,5 @@ class UserRouterTestCase(TestCase):
         self.assertEqual(
             "abc123", self.client.session["authentication_redirect_url"]
         )
+
+        settings.FAKE_LOGIN_USER_ID = fake_user
