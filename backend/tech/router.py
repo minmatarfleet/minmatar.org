@@ -144,8 +144,11 @@ def get_logs(
 
     for container in container_names():
         if container_name in container:
+            logger.info("Fetching logs for %s", container_name)
             container_logs = DockerContainer(container).log_entries(query)
             all_logs += container_logs
+
+    logger.info("Sorting logs, %d entries", len(all_logs))
 
     sort_chronologically(all_logs)
 
