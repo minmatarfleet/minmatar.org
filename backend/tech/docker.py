@@ -13,14 +13,20 @@ def container_names():
 
 
 class DockerLogQuery:
+    """A query for content in Docker logs"""
+
     container_names: str
+    search_for: str | None
+    exclude: List[str]
     start_time: datetime
     end_time: datetime
 
-    def __init__(self, containers, start_time, end_time):
+    def __init__(self, containers, start_time, end_time, search_for=None):
         self.container_names = containers
         self.start_time = start_time
         self.end_time = end_time
+        self.search_for = search_for
+        self.exclude = []
 
 
 class DockerLogEntry:
@@ -44,13 +50,16 @@ def sort_chronologically(logs: List[DockerLogEntry]):
 
 
 def parse_docker_logs(
-    container_name: str, log_text: str
+    container_name: str, log_text: str, query: DockerLogQuery = None
 ) -> List[DockerLogEntry]:
     entries = []
     for line in log_text.splitlines():
         line = line.strip()
         if len(line) == 0:
             continue
+        if query and query.search_for:
+            if not query.search_for.upper() in line.upper():
+                continue
         entries.append(DockerLogEntry(container_name, line[0:30], line[31:]))
     return entries
 
@@ -74,4 +83,4 @@ class DockerContainer:
 
     def log_entries(self, query: DockerLogQuery) -> List[DockerLogEntry]:
         log_text = self.logs(query)
-        return parse_docker_logs(self.container_name, log_text)
+        return parse_docker_logs(self.container_name, log_text, query)
