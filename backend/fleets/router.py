@@ -471,7 +471,7 @@ def can_see_metrics(user: User) -> bool:
         return True
     if user.has_perm("fleets.end_evestandingfleet"):
         return True
-    if user_in_team(TECH_TEAM):
+    if user_in_team(user, TECH_TEAM):
         return True
     return False
 
