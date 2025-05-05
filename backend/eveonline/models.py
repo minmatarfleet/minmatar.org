@@ -121,13 +121,13 @@ class EveCharacterKillmailAttacker(models.Model):
     """Killmail attacker model"""
 
     killmail = models.ForeignKey(
-        "EveCharacterKillmail", on_delete=models.CASCADE
+        "EveCharacterKillmail", on_delete=models.CASCADE, db_index=True
     )
-    character_id = models.BigIntegerField(null=True)
+    character_id = models.BigIntegerField(null=True, db_index=True)
     corporation_id = models.BigIntegerField(null=True)
     alliance_id = models.BigIntegerField(null=True)
     faction_id = models.BigIntegerField(null=True)
-    ship_type_id = models.BigIntegerField(null=True)
+    ship_type_id = models.BigIntegerField(null=True, db_index=True)
 
 
 class EveCharacterAsset(models.Model):
