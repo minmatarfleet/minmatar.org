@@ -1,0 +1,128 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+}
+
+const {
+    corporation,
+} = Astro.props
+
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
+
+const REAPPLY_PERIOD_HOURS = 1
+let reapplication_date = new Date(corporation?.application_updated as Date)
+reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
+
+const MAX_APPLICATION_TEXT_LENGTH = 2000
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import CorporationItem from '@components/blocks/CorporationItem.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+
+import Markdown from '@components/icons/buttons/Markdown.astro';
+---
+
+<DialogButton
+    size='sm'
+    color='green'
+>
+    {t('enlist_today')}
+
+    <form
+        slot="dialog" 
+        hx-post={CORPORATION_REQUEST_STATUS_PARTIAL_URL}
+        hx-trigger="submit"
+        hx-target={`#corporation-status-${corporation.corporation_id}`}
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-data={`{
+            application_text: '',
+            error: false,
+            clear_form() {
+                $nextTick(() => {
+                    this.application_text = ''
+                })
+            }
+        }`}
+        x-on:submit="close_dialog(); clear_form()"
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-s)">
+                <h3>{t('corporation_join_request_dialog_title')}</h3>
+                
+                <p>{t('corporation_join_request_dialog_text')}</p>
+                <CorporationItem corporation={corporation} disable_applications={true} />
+                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                    <label for="description">{t('application_text')}</label>
+                    <div class="[ remain-wrapper ]" x-data={`{ limit: $el.dataset.limit }`} data-limit={MAX_APPLICATION_TEXT_LENGTH}>
+                        <Textarea
+                             x-ref="content"
+                             id="description"
+                             name="application_text"
+                             x-model="application_text"
+                             rows="5"
+                             x-on:input={`error = !application_text || application_text.length > ${MAX_APPLICATION_TEXT_LENGTH}`}
+                             required
+                        />
+                        <small
+                            x-show={`application_text.length > ${MAX_APPLICATION_TEXT_LENGTH - 200}`}
+                            x-ref="remaining"
+                            x-text="limit - application_text.length"
+                            x-bind:class="(error ? 'text-red animate-fade-in-up' : '')"
+                        >
+                            {MAX_APPLICATION_TEXT_LENGTH}
+                        </small>
+                    </div>
+                    <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
+                        <FlexInline gap='var(--space-3xs)'>
+                            <Markdown />
+                            <small>{t('markdown_support')}</small>
+                        </FlexInline>
+                    </a>
+                </Flexblock>
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
+                <Button
+                    size='sm'
+                    type="submit"
+                    color='green'
+                >
+                    {t('apply')}
+                </Button>
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    .remain-wrapper {
+        position: relative;
+
+        small {
+            position: absolute;
+            right: var(--space-2xs);
+            bottom: var(--space-3xs);
+
+            &.text-red {
+                font-weight: 600;
+            }
+        }
+    }
+</style>

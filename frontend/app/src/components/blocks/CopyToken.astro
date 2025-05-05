@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    position?:  'left' | 'right';
+}
+
+const {
+    position = 'right',
+} = Astro.props
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+
+const COPIED_LABEL_TIME_MS = 2000
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Tippy from '@components/blocks/Tippy.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+
+---
+
+<Wrapper
+    class:list={[ 'copy-auth-token', 'relative', position ]}
+    max_width='32px'
+    padding_block='0'
+    padding_inline='0'
+    x-data={`{
+        click_class: '',
+    }`}
+>
+    <Tippy
+        class="[ flex text-[var(--highlight)] ]"
+        data-tippy-placement="right"
+        partial={`${translatePath('/partials/normal_tooltip')}?description=auth_token_page`}
+        height='70px'
+        width='340px'
+        element='div'
+        show_delay={0}
+    >
+        <StylessButton
+            class="[ !pointer-events-auto ]"
+            x-bind:class="click_class"
+            x-on:click.stop.prevent={`copyFitToClipboard('copy-auth-token')`}
+            x-on:click.throttle.750ms={`click_class = 'glow'; setTimeout(() => click_class = '', ${COPIED_LABEL_TIME_MS})`}
+            x-init="$el.removeAttribute('disabled')"
+            disabled
+        >
+            <ClipboardIcon width={12} height={12} />
+        </StylessButton>
+        <Textarea class="[ hidden ]" id="copy-auth-token" readonly>{auth_token}</Textarea>
+    </Tippy>
+    <small class="[ animate-fade-in-up ]" x-show="click_class === 'glow'" style="display: none">{t('copied')}</small>
+</Wrapper>
+
+<style lang="scss">
+    .glow {
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+    }
+
+    .left small {
+        right: 30px;
+    }
+
+    .right small {
+        left: 30px;
+    }
+
+    small {
+        position: absolute;
+        top: 2px;
+        white-space: nowrap;
+        color: var(--fleet-yellow);
+    }
+</style>

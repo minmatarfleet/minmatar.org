@@ -143,6 +143,14 @@ LOGGING = {
             "level": "INFO",
             "handlers": ["console"],
         },
+        "celery": {
+            "level": "WARNING",
+            "handlers": ["console"],
+        },
+        "celery.task": {
+            "level": "WARNING",
+            "handlers": ["console"],
+        },
     },
 }
 
@@ -169,3 +177,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # EVE Universe Settings
 EVEUNIVERSE_LOAD_DOGMAS = True
+
+# ESI token management settings
+ESI_ALWAYS_CREATE_TOKEN = True

@@ -19,14 +19,16 @@ def update_fleet_instances():
     Update fleet instances
     """
     active_fleet_instances = EveFleetInstance.objects.filter(end_time=None)
-    logger.info("Updating status of %s fleets", active_fleet_instances.count())
+    logger.debug(
+        "Updating status of %s fleets", active_fleet_instances.count()
+    )
     for fleet_instance in active_fleet_instances:
         logger.info("Updating fleet instance %s", fleet_instance.id)
         try:
             fleet_instance.update_is_registered_status()
             fleet_instance.update_fleet_members()
         except Exception as e:
-            logger.info(
+            logger.warning(
                 "An error occurred while updating fleet instance %s: %s",
                 fleet_instance.id,
                 e,
@@ -61,12 +63,12 @@ def update_standing_fleet_instances():
         try:
             standing_fleet.update_fleet_members()
         except Exception as e:
-            logger.info(
+            logger.error(
                 "An error occurred while updating standing fleet instance %s: %s",
                 standing_fleet.id,
                 e,
             )
-            logger.info("Assuming fleet is closed")
+            logger.debug("Assuming fleet is closed")
             standing_fleet.end_time = timezone.now()
             standing_fleet.save()
 
@@ -122,7 +124,7 @@ def update_fleet_schedule():
         )["content"]
         == message
     ):
-        logger.info("Fleet schedule message is up to date, skipping update")
+        logger.debug("Fleet schedule message is up to date, skipping update")
         return
 
     discord_client.update_message(

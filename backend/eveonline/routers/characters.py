@@ -74,6 +74,7 @@ class UserCharacter(BaseModel):
     alliance_id: Optional[int] = None
     alliance_name: Optional[str] = None
     esi_token: Optional[str] = None
+    token_status: Optional[str] = None
 
 
 class UserCharacterResponse(BaseModel):
@@ -364,7 +365,7 @@ def handle_add_character_esi_callback(request, token, token_type):
         requested_char = request.session["add_character_id"]
         if str(token.character_id) != requested_char:
             logger.error(
-                "Incorrect character in tokem refresh, %s != %s",
+                "Incorrect character in token refresh, %s != %s",
                 str(token.character_id),
                 requested_char,
             )
@@ -384,12 +385,14 @@ def handle_add_character_esi_callback(request, token, token_type):
             and len(token.scopes.all()) >= len(character.token.scopes.all())
         ):
             logger.info(
-                "New token has at least as many scopes, deleting old character token"
+                "New token has at least as many scopes, deleting old token for %s",
+                token.character_id,
             )
             old_token = character.token
             character.token = token
             character.esi_token_level = token_type_str(token_type)
             character.user = token.user
+            character.esi_suspended = False
             character.save()
             old_token.delete()
         elif not character.token:
@@ -400,6 +403,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             character.token = token
             character.user = token.user
             character.esi_token_level = token_type_str(token_type)
+            character.esi_suspended = False
             character.save()
         elif token != character.token:
             logger.warning(
@@ -407,6 +411,16 @@ def handle_add_character_esi_callback(request, token, token_type):
                 token.character_id,
             )
             token.delete()
+        elif token == character.token:
+            logger.warning(
+                "New token is same as existing one for character %s",
+                token.character_id,
+            )
+        else:
+            logger.warning(
+                "Unexpected scenario updating token for character %s",
+                token.character_id,
+            )
 
         token_count = Token.objects.filter(
             character_id=character.character_id
@@ -429,8 +443,9 @@ def handle_add_character_esi_callback(request, token, token_type):
         fixup_character_token_level(character, token_count)
     else:
         logger.info(
-            "Creating new character %s with token",
+            "Creating new character (%s, %s) with token",
             token.character_id,
+            token.character_name,
         )
         character = EveCharacter.objects.create(
             character_id=token.character_id,
@@ -444,14 +459,9 @@ def handle_add_character_esi_callback(request, token, token_type):
         character_name=character.character_name,
     )
     # set as primary character if only one character
-    if (
-        not EvePrimaryCharacter.objects.filter(
-            character__token__user=request.user
-        ).exists()
-        and EveCharacter.objects.filter(token__user=request.user).count() == 1
-    ):
+    if user_primary_character(request.user) is None:
         logger.info(
-            "Setting %s as primary character for user %s",
+            "Setting primary character %s for user %s",
             character.character_name,
             request.user.username,
         )
@@ -530,10 +540,10 @@ def get_user_characters(
         if not char:
             return 404, ErrorResponse(detail="No matching character found")
 
-        if not char.token:
+        if not char.user:
             return 400, ErrorResponse(detail="Character not linked to a user")
 
-        char_user = char.token.user
+        char_user = char.user
 
         discord_user = DiscordUser.objects.filter(user=char_user).first()
     elif discord_id:
@@ -558,22 +568,27 @@ def get_user_characters(
         characters=[],
     )
 
-    primary = EvePrimaryCharacter.objects.filter(
-        character__token__user=char_user
-    ).first()
+    primary = EvePrimaryCharacter.objects.filter(user=char_user).first()
 
-    chars = EveCharacter.objects.filter(token__user=char_user)
+    chars = EveCharacter.objects.filter(user=char_user)
     for char in chars.all():
-        response.characters.append(build_character_response(char, primary))
+        char_response = build_character_response(char, primary)
+        response.characters.append(char_response)
 
     return response
+
+
+def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
+    # Return an explicit True or False, rather than just a truthy value
+    # Pydantic validation fails if I use the expression rather than calling this function
+    return bool(primary and char == primary.character)
 
 
 def build_character_response(char, primary):
     item = UserCharacter(
         character_id=char.character_id,
         character_name=char.character_name,
-        is_primary=(primary and char == primary.character),
+        is_primary=is_primary(char, primary),
     )
     try:
         if char.corporation:
@@ -594,8 +609,10 @@ def build_character_response(char, primary):
             level = token_type_str(level)
             if char.esi_suspended:
                 item.esi_token = f"{level} (SUSPENDED)"
+                item.token_status = "SUSPENDED"
             else:
                 item.esi_token = level
+                item.token_status = "ACTIVE"
 
     except Exception as e:
         logger.error(

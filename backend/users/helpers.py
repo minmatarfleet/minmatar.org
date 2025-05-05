@@ -48,9 +48,6 @@ def expand_user_profile(
     else:
         discord_user = None
 
-    # primary_character = EvePrimaryCharacter.objects.filter(
-    #     character__token__user=user
-    # ).first()
     primary_character = user_primary_character(user)
     if primary_character:
         eve_character_profile = {
@@ -67,7 +64,7 @@ def expand_user_profile(
                 else None
             ),
         }
-        if include_permissions:
+        if include_permissions and primary_character.token:
             scopes = [
                 scope.name for scope in primary_character.token.scopes.all()
             ]

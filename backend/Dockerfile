@@ -14,6 +14,7 @@ RUN adduser --disabled-password --gecos '' minmatar && \
   pip install pipenv && \
   pipenv requirements > requirements.txt && \
   pip3 install -r requirements.txt && \
+  pip install docker && \
   python3 manage.py collectstatic --noinput
 
 # keep open for debugging

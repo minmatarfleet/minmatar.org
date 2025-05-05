@@ -40,30 +40,38 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     # Need to add comma for ships that contain same name
     # e.g Exequror and Exequror Navy Issue
     alias_title_lookup = f"{contract['title']},"
-    logger.info(
+    logger.debug(
         f"Processing contract {contract['contract_id']}, {contract['title']}"
     )
     if contract["acceptor_id"] == issuer_id:
-        logger.info(
-            f"Skipping {contract['contract_id']}, issuer is also acceptor."
+        logger.debug(
+            f"Skipping contract {contract['contract_id']}, issuer is also acceptor."
         )
         return
     if contract["type"] != EveMarketContract.esi_contract_type:
-        logger.info(
-            f"Skipping {contract['contract_id']}, not an item exchange."
+        logger.debug(
+            f"Skipping contract {contract['contract_id']}, not an item exchange."
         )
         return
 
     if not EveMarketLocation.objects.filter(
         location_id=contract["start_location_id"]
     ).exists():
-        logger.info(f"Skipping {contract['contract_id']}, location not found.")
+        logger.info(
+            "Skipping contract %s, location not found, %s",
+            contract["contract_id"],
+            contract["start_location_id"],
+        )
         return
 
     if not EveFitting.objects.filter(
         Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
     ).exists():
-        logger.info(f"Skipping {contract['contract_id']}, fitting not found.")
+        logger.info(
+            "Skipping contract %s, fitting not found, %s",
+            contract["contract_id"],
+            contract["title"],
+        )
         return
 
     if (
@@ -73,7 +81,9 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         > 1
     ):
         logger.info(
-            f"Skipping {contract['contract_id']}, unable to determine fitting."
+            "Skipping contract %s, unable to determine fitting, %s",
+            contract["contract_id"],
+            contract["title"],
         )
         return
 
@@ -91,7 +101,15 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
     else:
         status = "expired"
 
-    contract, _ = EveMarketContract.objects.update_or_create(
+    logger.info(
+        "Updating contract %s, %s in %s (%s)",
+        contract["contract_id"],
+        contract["title"],
+        contract["start_location_id"],
+        contract["status"],
+    )
+
+    contract_instance, _ = EveMarketContract.objects.update_or_create(
         id=contract["contract_id"],
         defaults={
             "title": contract["title"],
@@ -105,7 +123,8 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
             "location_id": location.location_id,
         },
     )
-    return contract
+    logger.debug("Contract %d created", contract["contract_id"])
+    return contract_instance
 
 
 def create_character_market_contracts(character_id: int):

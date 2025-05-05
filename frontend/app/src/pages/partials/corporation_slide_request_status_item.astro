@@ -19,6 +19,7 @@ if (!auth_token || !user) {
 import type { CorporationObject, Alert, CorporationStatusType } from '@dtypes/layout_components'
 import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
 import type { CorporationApplication } from '@dtypes/api.minmatar.org'
+import { get_corporation_list_by_id_auth } from '@helpers/fetching/corporations'
 
 let corporation:CorporationObject | null = null
 let create_corporation_application_error:string | false = false
@@ -26,9 +27,12 @@ let application:CorporationApplication
 
 if (Astro.request.method === "POST") {
     try {
-        corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationObject
-        const application_text = await Astro.request.formData()
-        const description = JSON.parse(JSON.parse( application_text.get("data")?.valueOf() as string ))
+        const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
+        corporation = await get_corporation_list_by_id_auth(auth_token, corporation_id, user.user_id)
+        console.log(corporation)
+        const data = await Astro.request.formData()
+        const description = data.get('application_text') as string
+        console.log(description)
 
         if (!description)
             throw new Error(t('invalid_description'));

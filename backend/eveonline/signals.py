@@ -3,6 +3,7 @@ import logging
 from django.db.models import signals
 from django.dispatch import receiver
 from esi.clients import EsiClientProvider
+from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
@@ -110,4 +111,18 @@ def notify_people_team_of_primary_character_change(
         discord.create_message(
             DISCORD_PEOPLE_TEAM_CHANNEL_ID,
             f"Primary character change for {instance.username} from {instance.previous_character_name} to {instance.new_character_name}",
+        )
+
+
+@receiver(
+    signals.post_save,
+    sender=Token,
+    dispatch_uid="log_esi_token_creation",
+)
+def log_esi_token_creation(sender, instance, created, **kwargs):
+    if created:
+        logger.info(
+            "ESI token created for user %s, %s",
+            instance.user if hasattr(instance, "user") else "*unknown*",
+            instance.pk if hasattr(instance, "pk") else "*unknown*",
         )

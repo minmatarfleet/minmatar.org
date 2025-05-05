@@ -264,8 +264,9 @@ ul {
     right: var(--space-s);
     bottom: var(--space-s);
     background-color: var(--fleet-red);
-    color: var(--foreground);
+    color: var(--highlight);
     padding: var(--space-2xs) var(--space-2xs);
     z-index: var(--tooltips-z-index);
     cursor: pointer;
+    max-width: 60ch;
 }

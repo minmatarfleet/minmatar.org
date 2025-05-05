@@ -41,7 +41,7 @@ def fetch_eve_market_contracts():
                 f"Not fetching character contracts for ESI suspended character {character.character_id}"
             )
             continue
-        logger.info(f"Fetching character contracts {character.character_id}")
+        logger.debug(f"Fetching character contracts {character.character_id}")
         try:
             create_character_market_contracts(character.character_id)
             known_entity_ids.append(character.character_id)

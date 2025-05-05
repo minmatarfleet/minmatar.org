@@ -1,5 +1,7 @@
 from celery.schedules import crontab
 
+CELERYD_HIJACK_ROOT_LOGGER = False
+
 CELERYBEAT_SCHEDULE = {
     "esi_cleanup_callbackredirect": {
         "task": "esi.tasks.cleanup_callbackredirect",

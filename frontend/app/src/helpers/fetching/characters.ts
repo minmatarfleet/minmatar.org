@@ -11,7 +11,7 @@ import type {
     AssetsLocationIcons,
     AssetGroup,
 } from '@dtypes/layout_components'
-import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters } from '@helpers/api.minmatar.org/characters'
+import { get_character_by_id, get_character_skillsets, get_character_assets, get_characters, get_character_summary } from '@helpers/api.minmatar.org/characters'
 import { get_user_by_id, get_users_by_id } from '@helpers/api.minmatar.org/authentication'
 
 export async function get_user_character(user_id:number, lang:'en' = 'en') {
@@ -166,4 +166,14 @@ export async function get_user_assets(access_token:string) {
     }))
 
     return characters_assets
+}
+
+export async function  esi_token_error(auth_token: string) {
+    try {
+        const character_summary = await get_character_summary(auth_token)
+        
+        return character_summary.characters.find(character => character.token_status !== 'ACTIVE') !== undefined
+    } catch (error) {
+        return false
+    }
 }

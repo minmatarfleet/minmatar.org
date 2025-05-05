@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Max
 from ninja import Router
 from pydantic import BaseModel
 
@@ -65,6 +65,8 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 
 class MarketContractResponse(BaseModel):
+    """Details of a market contract"""
+
     expectation_id: int
     title: str
     fitting_id: int
@@ -72,6 +74,7 @@ class MarketContractResponse(BaseModel):
     location_name: str
     desired_quantity: int
     current_quantity: int
+    latest_contract_timestamp: str | None = None
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
     responsibilities: List[MarketContractResponsibilityResponse]
 
@@ -317,6 +320,14 @@ def fetch_eve_market_contracts(request):
             get_historical_quantity(expectation)
         )
 
+        try:
+            latest = EveMarketContract.objects.filter(
+                fitting=expectation.fitting, status="outstanding"
+            ).aggregate(Max("created_at", default=None))["created_at__max"]
+        except Exception as e:
+            logger.error("Error fetching last timestamp, %s", e)
+            latest = None
+
         response.append(
             MarketContractResponse(
                 expectation_id=expectation.id,
@@ -332,6 +343,7 @@ def fetch_eve_market_contracts(request):
                 current_quantity=EveMarketContract.objects.filter(
                     fitting=expectation.fitting, status="outstanding"
                 ).count(),
+                latest_contract_timestamp=str(latest) if latest else None,
                 historical_quantity=[
                     MarketContractHistoricalQuantityResponse(
                         date=entry.date, quantity=entry.quantity

@@ -30,7 +30,7 @@ def upsert_character_skills(character_id: int):
     populate skills from eve and save them to the character
 
     """
-    logger.info("Upserting skills for character %s", character_id)
+    logger.debug("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
 
     response = EsiClient(character).get_character_skills()
@@ -55,7 +55,7 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
         character=character, skill_id=esi_skill["skill_id"]
     ).order_by("-skill_points")
 
-    logger.info("Query count %d", qry.count())
+    logger.debug("Query count %d", qry.count())
 
     if qry.count() == 0:
         skill = EveCharacterSkill(
@@ -145,7 +145,7 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
 def create_eve_character_skillset(character_id: int, skillset: EveSkillset):
     """Create a skillset for a character"""
     # delete existing
-    logger.info(
+    logger.debug(
         "Creating skillset for character %s and skillset %s",
         character_id,
         skillset.name,
