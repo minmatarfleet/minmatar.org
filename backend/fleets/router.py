@@ -507,10 +507,10 @@ def get_fleet_metrics(request):
             fleet_id=fleet.id,
             members=fleet.members,
             time_region=time_region(fleet.start_time),
-            location_name=fleet.location_name,
+            location_name=fleet.location_name if fleet.location_name else "",
             status=fleet.status,
-            fc_corp_name=fleet.fc_corp_name,
-            audience_name=fleet.audience_name,
+            fc_corp_name=fleet.fc_corp_name if fleet.fc_corp_name else "",
+            audience_name=fleet.audience_name if fleet.audience_name else "",
         )
         metrics.append(metric)
     return 200, metrics
