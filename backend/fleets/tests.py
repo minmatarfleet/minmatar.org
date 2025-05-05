@@ -8,9 +8,15 @@ from django.contrib.auth.models import User, Permission
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import EveCharacter, EvePrimaryCharacter, EveCorporation
 from discord.models import DiscordUser
-from fleets.models import EveFleet, EveFleetAudience, EveFleetLocation
+from fleets.models import (
+    EveFleet,
+    EveFleetAudience,
+    EveFleetLocation,
+    EveFleetInstance,
+    EveFleetInstanceMember,
+)
 from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule
@@ -102,10 +108,14 @@ class FleetRouterTestCase(TestCase):
         self.user.user_permissions.add(
             Permission.objects.get(codename="add_evefleet")
         )
+        corp = EveCorporation.objects.create(
+            corporation_id=1, name="Test Corp"
+        )
         character = EveCharacter.objects.create(
             character_id=1234,
             character_name="Mr FC",
             user=self.user,
+            corporation=corp,
         )
         EvePrimaryCharacter.objects.create(
             user=self.user,
@@ -265,6 +275,54 @@ class FleetRouterTestCase(TestCase):
                     HTTP_AUTHORIZATION=f"Bearer {self.token}",
                 )
                 self.assertEqual(200, response.status_code)
+
+    def add_fleet_member(
+        self,
+        instance: EveFleetInstance,
+        char_id: int,
+    ):
+        EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=instance,
+            character_id=char_id,
+            character_name=f"Pilot {char_id}",
+            ship_type_id=1,
+            solar_system_id=1,
+            squad_id=1,
+            wing_id=1,
+            join_time=datetime.datetime.now(),
+        )
+
+    def test_fleet_metrics(self):
+        self.make_superuser()
+        self.setup_fc()
+
+        fleet = make_test_fleet("Test", self.user)
+        fleet.start_time = datetime.datetime(2025, 1, 1, 21, 30, 0)
+        fleet.save()
+        instance = EveFleetInstance.objects.create(id=1, eve_fleet=fleet)
+        self.add_fleet_member(instance, 1)
+        self.add_fleet_member(instance, 2)
+
+        response = self.client.get(
+            f"{BASE_URL}/metrics",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        metrics = response.json()
+        self.assertEqual(
+            metrics,
+            [
+                {
+                    "fleet_id": fleet.id,
+                    "members": 2,
+                    "time_region": "EU_US",
+                    "location_name": "Test Location",
+                    "status": "pending",
+                    "fc_corp_name": "Test Corp",
+                    "audience_name": "Test Audience",
+                },
+            ],
+        )
 
 
 class FleetTaskTests(TestCase):

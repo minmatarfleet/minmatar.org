@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
 
-from django.db.models import Count
+from django.db.models import Count, F
+from django.contrib.auth.models import User
 from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ from authentication import AuthBearer, AuthOptional
 from eveonline.helpers.characters import user_primary_character
 from discord.client import DiscordClient
 from fittings.models import EveDoctrine
+from groups.helpers import user_in_team, TECH_TEAM
 
 from .models import (
     EveFleet,
@@ -140,6 +142,16 @@ class EveFleetReimbursementResponse(BaseModel):
     primary_character_id: int
     killmail_id: int
     amount: int
+
+
+class EveFleetMetric(BaseModel):
+    fleet_id: int
+    members: int
+    time_region: str
+    location_name: str
+    status: str
+    fc_corp_name: str
+    audience_name: str
 
 
 @router.get(
@@ -436,6 +448,72 @@ def claim_standing_fleet(request, fleet_id: int):
     standing_fleet.claim(primary_character.character_id)
 
     return 200, None
+
+
+def time_region(time: datetime) -> str:
+    match time.hour:
+        case 22 | 23 | 0 | 1 | 2 | 3 | 4:
+            return "US"
+        case 5 | 6 | 7 | 8 | 9:
+            return "US_AP"
+        case 10 | 11 | 12 | 13 | 14:
+            return "AP"
+        case 15 | 16 | 17 | 18 | 19:
+            return "EU"
+        case 20 | 21:
+            return "EU_US"
+        case _:
+            return "??"
+
+
+def can_see_metrics(user: User) -> bool:
+    if user.is_superuser:
+        return True
+    if user.has_perm("fleets.end_evestandingfleet"):
+        return True
+    if user_in_team(user, TECH_TEAM):
+        return True
+    return False
+
+
+@router.get(
+    "/metrics",
+    auth=AuthBearer(),
+    response={200: List[EveFleetMetric], 403: ErrorResponse},
+    summary="Get fleet metrics",
+)
+def get_fleet_metrics(request):
+    if not can_see_metrics(request.user):
+        return 403, {
+            "detail": "User missing permission fleets.end_evestandingfleet"
+        }
+
+    metrics = []
+    one_year_ago = datetime.now() - timedelta(days=365)
+    fleets = (
+        EveFleet.objects.filter(start_time__gte=one_year_ago)
+        .annotate(instances=Count("evefleetinstance"))
+        .annotate(members=Count("evefleetinstance__evefleetinstancemember"))
+        .annotate(location_name=F("location__location_name"))
+        .annotate(
+            fc_corp_name=F(
+                "created_by__eveprimarycharacter__character__corporation__name"
+            )
+        )
+        .annotate(audience_name=F("audience__name"))
+    )
+    for fleet in fleets:
+        metric = EveFleetMetric(
+            fleet_id=fleet.id,
+            members=fleet.members,
+            time_region=time_region(fleet.start_time),
+            location_name=fleet.location_name,
+            status=fleet.status,
+            fc_corp_name=fleet.fc_corp_name,
+            audience_name=fleet.audience_name,
+        )
+        metrics.append(metric)
+    return 200, metrics
 
 
 @router.get(
