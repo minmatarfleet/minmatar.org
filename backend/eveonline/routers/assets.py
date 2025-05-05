@@ -4,8 +4,11 @@ from ninja import Router
 from pydantic import BaseModel
 from typing import List
 
+from django.contrib.auth.models import User
+
 from authentication import AuthBearer
 
+from groups.helpers import user_in_team, TECH_TEAM
 from eveonline.models import EveCharacterAsset
 
 logger = logging.getLogger(__name__)
@@ -33,13 +36,24 @@ SHIP_ASSET_TYPE_ID_FILTER = [
 ]
 
 
+def permitted(user: User) -> bool:
+    if user.is_superuser:
+        return True
+    if user_in_team(user, TECH_TEAM):
+        return True
+    return False
+
+
 @router.get(
     "/ships",
     summary="Get a summary of alliance member ship assets",
     auth=AuthBearer(),
-    response={200: List[ShipAsset], 404: ErrorResponse},
+    response={200: List[ShipAsset], 403: ErrorResponse},
 )
 def get_(request, primary_character_id: int = None):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not permitted")
+
     summary = {}
 
     assets = EveCharacterAsset.objects.filter(

@@ -73,6 +73,8 @@ class AssetRouterTestCase(TestCase):
         )
 
     def test_get_asset_summary(self):
+        self.make_superuser()
+
         _, _, char1, char2 = self.setup_alliance()
 
         self.create_asset(char1, 72811, "Cyclone Fleet Issue", 1, "Jita Fort")
