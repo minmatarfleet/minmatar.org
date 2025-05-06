@@ -1,13 +1,15 @@
 ---
 interface Props {
-    src:    string;
-    alt?:   string;
+    src:        string;
+    alt?:       string;
+    narrow?:    boolean;
     [propName: string]: any;
 }
 
 const {
     src,
     alt,
+    narrow = false,
     ...attributes
 } = Astro.props
 
@@ -21,6 +23,7 @@ import Card from "@components/blocks/Card.astro";
         src={src}
         alt={alt ? alt : undefined}
         size={256}
+        narrow={narrow}
         mask={true}
     />
 

@@ -2,16 +2,18 @@
 import type { ImageSize } from '@dtypes/layout_components'
 
 interface Props {
-    src:    string;
-    alt?:   string;
-    size?:  ImageSize;
-    mask?:  boolean;
+    src:        string;
+    alt?:       string;
+    size?:      ImageSize;
+    narrow?:    boolean;
+    mask?:      boolean;
 }
 
 const {
     src,
     alt,
     size = 64,
+    narrow = false,
     mask = false,
 } = Astro.props
 ---
@@ -20,7 +22,7 @@ const {
     <img
         class:list={{ mask }}
         loading="lazy"
-        height={size}
+        height={narrow ? 412 : size}
         width={size}
         src={src}
         alt={alt ? alt : undefined}

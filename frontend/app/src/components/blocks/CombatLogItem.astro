@@ -32,7 +32,7 @@ import MemberEVEIcon from '@components/icons/MemberEVEIcon.astro';
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
-<PictureCard src="/images/combatlog-card.jpg">
+<PictureCard src="/images/combatlog-card.jpg" narrow={true}>
     {log.fleet_id > 0 ?
         <div class="[ icon ]" slot="header"><FleetEvEIcon /></div> :
         log.fitting_id > 0 ?
