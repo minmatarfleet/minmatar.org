@@ -7,11 +7,15 @@ from .models import (
     EveCorporation,
     EvePrimaryCharacter,
     EveSkillset,
+    EveTag,
+    EveCharacterTag,
 )
 
 # Register your models here.
 admin.site.register(EveSkillset)
 admin.site.register(EveAlliance)
+admin.site.register(EveTag)
+admin.site.register(EveCharacterTag)
 admin.site.unregister(CallbackRedirect)
 admin.site.unregister(Token)
 admin.site.unregister(Scope)

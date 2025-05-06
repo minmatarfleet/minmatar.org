@@ -3,6 +3,7 @@ import logging
 import datetime
 from typing import List, Optional
 
+from django.db.models import F
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from esi.decorators import token_required
@@ -18,6 +19,8 @@ from eveonline.models import (
     EveCharacterSkillset,
     EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
+    EveCharacterTag,
+    EveTag,
 )
 from eveonline.scopes import (
     TokenType,
@@ -94,6 +97,11 @@ class CharacterTokenInfo(BaseModel):
     level: str
 
 
+class CharacterTagResponse(BaseModel):
+    id: int
+    description: str
+
+
 @router.get(
     "",
     summary="Get characters",
@@ -122,6 +130,23 @@ def get_characters(request, primary_character_id: int = None):
             }
         )
     return response
+
+
+@router.get(
+    "/tags",
+    summary="Get possible tags for characters",
+    response={
+        200: List[CharacterTagResponse],
+    },
+)
+def get_available_tags(request):
+    tags = EveTag.objects.all()
+    response = []
+    for tag in tags:
+        response.append(
+            CharacterTagResponse(id=tag.id, description=tag.description)
+        )
+    return 200, response
 
 
 @router.get(
@@ -663,4 +688,26 @@ def get_character_tokens(request, character_id: int):
                 )
             )
 
+    return response
+
+
+@router.get(
+    "/{int:character_id}/tags",
+    summary="Get tags for a character",
+    auth=AuthBearer(),
+    response={
+        200: List[CharacterTagResponse],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_character_tags(request, character_id: int):
+    tags = EveCharacterTag.objects.filter(character_id=character_id).annotate(
+        description=F("tag__description")
+    )
+    response = []
+    for tag in tags:
+        response.append(
+            CharacterTagResponse(id=tag.tag_id, description=tag.description)
+        )
     return response

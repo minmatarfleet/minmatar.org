@@ -13,6 +13,8 @@ from eveonline.models import (
     EveCharacterLog,
     EveCharacterSkillset,
     EveSkillset,
+    EveTag,
+    EveCharacterTag,
 )
 from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
@@ -382,3 +384,38 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(1, len(data["characters"]))
         for char in data["characters"]:
             self.assertFalse(char["is_primary"])
+
+    def test_get_character_tags(self):
+        char = self.make_character(self.user, 123456, "Test Char")
+        tag1 = EveTag.objects.create(description="Test 1")
+        tag2 = EveTag.objects.create(description="Test 2")
+        EveTag.objects.create(description="Test 3")
+
+        response = self.client.get(
+            f"{BASE_URL}tags",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            [
+                {"id": 1, "description": "Test 1"},
+                {"id": 2, "description": "Test 2"},
+                {"id": 3, "description": "Test 3"},
+            ],
+        )
+
+        EveCharacterTag.objects.create(character=char, tag=tag1)
+        EveCharacterTag.objects.create(character=char, tag=tag2)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.id}/tags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            [
+                {"id": 1, "description": "Test 1"},
+                {"id": 2, "description": "Test 2"},
+            ],
+        )

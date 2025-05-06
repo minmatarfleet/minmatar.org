@@ -80,6 +80,22 @@ class EveCharacter(models.Model):
         ]
 
 
+class EveTag(models.Model):
+    """A tag that can be applied to an EveCharacter"""
+
+    description = models.CharField(max_length=255)
+
+
+class EveCharacterTag(models.Model):
+    """The tags applied to a specific EveCharacter"""
+
+    character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
+    tag = models.ForeignKey(EveTag, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = (("character", "tag"),)
+
+
 class EveCharacterLog(models.Model):
     """Character log model"""
 
