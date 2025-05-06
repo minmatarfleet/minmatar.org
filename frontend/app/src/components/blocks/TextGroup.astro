@@ -6,17 +6,19 @@ import type { spaces } from '@dtypes/layout_components'
 interface Props {
     title?:             false | string;
     gap?:               spaces;
+    full?:              boolean;
     [propName: string]: any;
 }
 
 const {
     title = false,
     gap = 'var(--space-3xs)',
+    full = false,
     ...attributes
 } = Astro.props
 ---
 
-<Flexblock gap={gap} class="[ w-full ]">
+<Flexblock gap={gap} class:list={[ { 'w-full': full } ]}>
     {title &&
         <h4>{title}</h4>
     }
