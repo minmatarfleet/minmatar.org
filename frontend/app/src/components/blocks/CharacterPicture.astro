@@ -10,6 +10,7 @@ interface Props {
     x_character_id?:    string | false;
     x_character_name?:  string | false;
     size?:              ImageSize;
+    narrow?:            boolean;
     icon_quality?:      EvEImageServiceSize;
     tooltip?:           string;
     mask?:              boolean;
@@ -22,6 +23,7 @@ const {
     x_character_id = false,
     x_character_name = false,
     size = 64,
+    narrow = false,
     icon_quality = 64,
     tooltip,
     mask = false,
@@ -39,7 +41,7 @@ import { get_player_icon } from '@helpers/eve_image_server'
     <img
         class:list={{ mask }}
         loading="lazy"
-        height={size}
+        height={narrow ? 412 : size}
         width={size}
         src={get_player_icon(character_id, icon_quality ?? size)}
         x-bind:src={`${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`}

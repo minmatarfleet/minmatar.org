@@ -8,6 +8,7 @@ interface Props {
     item_id:        number;
     item_name?:     string;
     size?:          ImageSize;
+    narrow?:        boolean;
     icon_quality?:  EvEImageServiceSize;
     mask?:          boolean;
 }
@@ -16,6 +17,7 @@ const {
     item_id,
     item_name,
     size = 64,
+    narrow = false,
     icon_quality = 64,
     mask = false,
 } = Astro.props
@@ -27,7 +29,7 @@ import { get_item_icon } from '@helpers/eve_image_server';
     <img
         class:list={{ mask }}
         loading="lazy"
-        height={size}
+        height={narrow ? 412 : size}
         width={size}
         src={get_item_icon(item_id, icon_quality ?? size)}
         alt={item_name ?? t('item_picture')}
