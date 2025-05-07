@@ -387,9 +387,9 @@ class CharacterRouterTestCase(TestCase):
 
     def test_get_character_tags(self):
         char = self.make_character(self.user, 123456, "Test Char")
-        tag1 = EveTag.objects.create(description="Test 1")
-        tag2 = EveTag.objects.create(description="Test 2")
-        EveTag.objects.create(description="Test 3")
+        tag1 = EveTag.objects.create(title="Test 1", description="Desc 1")
+        tag2 = EveTag.objects.create(title="Test 2", description="Desc 2")
+        EveTag.objects.create(title="Test 3", description="Desc 3")
 
         response = self.client.get(
             f"{BASE_URL}tags",
@@ -398,9 +398,24 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(
             response.json(),
             [
-                {"id": 1, "description": "Test 1"},
-                {"id": 2, "description": "Test 2"},
-                {"id": 3, "description": "Test 3"},
+                {
+                    "id": 1,
+                    "title": "Test 1",
+                    "description": "Desc 1",
+                    "image_name": None,
+                },
+                {
+                    "id": 2,
+                    "title": "Test 2",
+                    "description": "Desc 2",
+                    "image_name": None,
+                },
+                {
+                    "id": 3,
+                    "title": "Test 3",
+                    "description": "Desc 3",
+                    "image_name": None,
+                },
             ],
         )
 
@@ -408,14 +423,90 @@ class CharacterRouterTestCase(TestCase):
         EveCharacterTag.objects.create(character=char, tag=tag2)
 
         response = self.client.get(
-            f"{BASE_URL}{char.id}/tags",
+            f"{BASE_URL}{char.character_id}/tags",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.json(),
             [
-                {"id": 1, "description": "Test 1"},
-                {"id": 2, "description": "Test 2"},
+                {
+                    "id": 1,
+                    "title": "Test 1",
+                    "description": "Desc 1",
+                    "image_name": None,
+                },
+                {
+                    "id": 2,
+                    "title": "Test 2",
+                    "description": "Desc 2",
+                    "image_name": None,
+                },
             ],
+            response.json(),
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}{char.character_id}/tags",
+            data=[3],
+            content_type="text/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}/tags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [
+                {
+                    "id": 1,
+                    "title": "Test 1",
+                    "description": "Desc 1",
+                    "image_name": None,
+                },
+                {
+                    "id": 2,
+                    "title": "Test 2",
+                    "description": "Desc 2",
+                    "image_name": None,
+                },
+                {
+                    "id": 3,
+                    "title": "Test 3",
+                    "description": "Desc 3",
+                    "image_name": None,
+                },
+            ],
+            response.json(),
+        )
+
+        response = self.client.delete(
+            f"{BASE_URL}{char.character_id}/tags/2",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}/tags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [
+                {
+                    "id": 1,
+                    "title": "Test 1",
+                    "description": "Desc 1",
+                    "image_name": None,
+                },
+                {
+                    "id": 3,
+                    "title": "Test 3",
+                    "description": "Desc 3",
+                    "image_name": None,
+                },
+            ],
+            response.json(),
         )
