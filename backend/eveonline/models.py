@@ -83,7 +83,9 @@ class EveCharacter(models.Model):
 class EveTag(models.Model):
     """A tag that can be applied to an EveCharacter"""
 
+    title = models.CharField(max_length=40, default="TBC")
     description = models.CharField(max_length=255)
+    image_name = models.CharField(max_length=255, null=True)
 
 
 class EveCharacterTag(models.Model):

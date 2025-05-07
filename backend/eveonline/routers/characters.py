@@ -3,7 +3,7 @@ import logging
 import datetime
 from typing import List, Optional
 
-from django.db.models import F
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from esi.decorators import token_required
@@ -99,7 +99,9 @@ class CharacterTokenInfo(BaseModel):
 
 class CharacterTagResponse(BaseModel):
     id: int
+    title: str
     description: str
+    image_name: Optional[str] = None
 
 
 @router.get(
@@ -144,7 +146,12 @@ def get_available_tags(request):
     response = []
     for tag in tags:
         response.append(
-            CharacterTagResponse(id=tag.id, description=tag.description)
+            CharacterTagResponse(
+                id=tag.id,
+                title=tag.title,
+                description=tag.description,
+                image_name=tag.image_name,
+            )
         )
     return 200, response
 
@@ -691,6 +698,16 @@ def get_character_tokens(request, character_id: int):
     return response
 
 
+def can_manage_tags(user: User, character: EveCharacter) -> bool:
+    if character.user == user:
+        return True
+    if user.is_superuser:
+        return True
+    if user_in_team(TECH_TEAM) or user_in_team(PEOPLE_TEAM):
+        return True
+    return False
+
+
 @router.get(
     "/{int:character_id}/tags",
     summary="Get tags for a character",
@@ -702,12 +719,64 @@ def get_character_tokens(request, character_id: int):
     },
 )
 def get_character_tags(request, character_id: int):
-    tags = EveCharacterTag.objects.filter(character_id=character_id).annotate(
-        description=F("tag__description")
-    )
+    character = EveCharacter.objects.get(character_id=character_id)
+    if not can_manage_tags(request.user, character):
+        return 403, ErrorResponse(detail="Cannot manage tags for this user")
+
+    tags = EveCharacterTag.objects.filter(character=character)
     response = []
     for tag in tags:
         response.append(
-            CharacterTagResponse(id=tag.tag_id, description=tag.description)
+            CharacterTagResponse(
+                id=tag.tag_id,
+                title=tag.tag.title,
+                description=tag.tag.description,
+                image_name=tag.tag.image_name,
+            )
         )
     return response
+
+
+@router.post(
+    "/{int:character_id}/tags",
+    summary="Add a tags for a character",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def add_character_tags(request, character_id: int, payload: List[int]):
+    character = EveCharacter.objects.get(character_id=character_id)
+    if not can_manage_tags(request.user, character):
+        return 403, ErrorResponse(detail="Cannot manage tags for this user")
+
+    for tag_id in payload:
+        EveCharacterTag.objects.get_or_create(
+            character=character,
+            tag_id=tag_id,
+        )
+
+    return 200
+
+
+@router.delete(
+    "/{int:character_id}/tags/{int:tag_id}",
+    summary="Remove a tag from a character",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def remove_character_tag(request, character_id: int, tag_id: int):
+    character = EveCharacter.objects.get(character_id=character_id)
+    if not can_manage_tags(request.user, character):
+        return 403, ErrorResponse(detail="Cannot manage tags for this user")
+
+    tag = EveCharacterTag.objects.get(id=tag_id)
+    tag.delete()
+
+    return 200
