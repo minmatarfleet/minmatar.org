@@ -77,9 +77,12 @@ if (fleet) {
     fleet_location_id = fleet_location !== undefined ? fleet_location?.value : null
 }
 
+const DEFAULT_LOCATION = 1049037316814
+const DEFAULT_LOCATION_NAME = 'Vard - Rickety Roost'
+
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
-const default_location = fleet_location_id ?? locations_select_options[0].value
-const default_location_name = fleet?.location ?? locations_select_options[0].label
+const default_location = fleet_location_id ?? DEFAULT_LOCATION
+const default_location_name = fleet?.location ?? DEFAULT_LOCATION_NAME
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
 const default_audience = fleet_audience_id ?? audiences_select_options[0].value
 
@@ -287,7 +290,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 <label for="location">{t('location')}</label>
                                 <Select id="location" x-model="location" name="location">
                                     {locations_select_options.map((option) => 
-                                        <option value={option.value}>{option.label}</option>
+                                        <option value={option.value} selected={option.value === default_location ? 'true' : undefined}>{option.label}</option>
                                     )}
                                 </Select>
                             </FixedFluid>

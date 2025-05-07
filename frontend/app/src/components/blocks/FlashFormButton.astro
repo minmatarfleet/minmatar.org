@@ -21,13 +21,15 @@ const {
     hidden = false,
 } = Astro.props
 
+const DEFAULT_LOCATION = 1049037316814
+
 let FLEET_LOCATIONS = {}
 const locations_select_options = locations.map( (i):SelectOptions => {
     FLEET_LOCATIONS[i.location_id] = i.location_name
     return {value: i.location_id, label: i.location_name} 
 } )
 
-const default_location = locations_select_options[0]?.value ?? '-1'
+const default_location = DEFAULT_LOCATION ?? '-1'
 
 import { marked } from 'marked';
 
@@ -106,7 +108,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             <label for="location">{t('location')}</label>
                             <Select id="location" x-model="location" name="location" required>
                                 {locations_select_options.map((option) => 
-                                    <option value={option.value}>{option.label}</option>
+                                    <option value={option.value} selected={option.value === default_location ? 'true' : undefined}>{option.label}</option>
                                 )}
                             </Select>
                         </Flexblock>
