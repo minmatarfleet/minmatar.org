@@ -739,7 +739,7 @@ def get_character_tags(request, character_id: int):
 
 @router.post(
     "/{int:character_id}/tags",
-    summary="Add a tags for a character",
+    summary="Add tags for a character",
     auth=AuthBearer(),
     response={
         200: None,
@@ -778,5 +778,26 @@ def remove_character_tag(request, character_id: int, tag_id: int):
 
     tag = EveCharacterTag.objects.get(id=tag_id)
     tag.delete()
+
+    return 200
+
+
+@router.put(
+    "/{int:character_id}/tags",
+    summary="Replace a character's tags",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def replace_character_tags(request, character_id: int, payload: List[int]):
+    character = EveCharacter.objects.get(character_id=character_id)
+    if not can_manage_tags(request.user, character):
+        return 403, ErrorResponse(detail="Cannot manage tags for this user")
+
+    EveCharacterTag.objects.filter(character=character).delete()
+    add_character_tags(request, character_id, payload)
 
     return 200

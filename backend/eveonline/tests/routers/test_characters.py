@@ -385,7 +385,7 @@ class CharacterRouterTestCase(TestCase):
         for char in data["characters"]:
             self.assertFalse(char["is_primary"])
 
-    def test_get_character_tags(self):
+    def test_manage_character_tags(self):
         char = self.make_character(self.user, 123456, "Test Char")
         tag1 = EveTag.objects.create(title="Test 1", description="Desc 1")
         tag2 = EveTag.objects.create(title="Test 2", description="Desc 2")
@@ -499,6 +499,37 @@ class CharacterRouterTestCase(TestCase):
                     "id": 1,
                     "title": "Test 1",
                     "description": "Desc 1",
+                    "image_name": None,
+                },
+                {
+                    "id": 3,
+                    "title": "Test 3",
+                    "description": "Desc 3",
+                    "image_name": None,
+                },
+            ],
+            response.json(),
+        )
+
+        response = self.client.put(
+            f"{BASE_URL}{char.character_id}/tags",
+            data=[2,3],
+            content_type="text/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}/tags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [
+                {
+                    "id": 2,
+                    "title": "Test 2",
+                    "description": "Desc 2",
                     "image_name": None,
                 },
                 {
