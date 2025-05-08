@@ -513,7 +513,7 @@ class CharacterRouterTestCase(TestCase):
 
         response = self.client.put(
             f"{BASE_URL}{char.character_id}/tags",
-            data=[2,3],
+            data=[2, 3],
             content_type="text/json",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
