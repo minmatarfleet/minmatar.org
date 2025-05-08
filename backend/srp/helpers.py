@@ -118,7 +118,10 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         character_id=killmail.victim_character.character_id,
     ).exists():
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, character not in fleet"
+            "Killmail %d not eligible for SRP, character %d not in fleet %d",
+            killmail.killmail_id,
+            killmail.victim_character.character_id,
+            fleet.id,
         )
         return False, "Character not in fleet"
 
@@ -126,13 +129,19 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         fleet_instance.end_time + timedelta(hours=2) < killmail.timestamp
     ):
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
+            "Killmail %d not eligible for SRP, lost after fleet %d ended (%s)",
+            killmail.killmail_id,
+            fleet.id,
+            killmail.victim_character.character_id,
         )
         return False, "Lost after fleet ended"
 
     if fleet_instance.start_time - timedelta(hours=1) > killmail.timestamp:
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, lost before fleet started"
+            "Killmail%d not eligible for SRP, lost before fleet %d started (%d)",
+            killmail.killmail_id,
+            fleet.id,
+            killmail.victim_character.character_id,
         )
         return False, "Lost before fleet started"
 
