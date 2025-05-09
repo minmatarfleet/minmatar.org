@@ -20,6 +20,7 @@ from .helpers.skills import (
 from .routers.characters import scope_group
 from .models import (
     EveCharacter,
+    EvePrimaryCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
     EveCorporation,
@@ -305,3 +306,17 @@ def fixup_character_tokens():
 
         if updated:
             character.save()
+
+
+@app.task
+def fixup_primary_characters():
+    """Update primary characters to EveCharacter attribute"""
+
+    for primary in EvePrimaryCharacter.objects.all():
+        if not primary.character.is_primary:
+            primary.character.is_primary = True
+            primary.character.save()
+            logger.info(
+                "Set %s primary character attribute",
+                primary.character.character_name,
+            )
