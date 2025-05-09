@@ -8,7 +8,8 @@ from django.contrib.auth.models import User, Permission
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter, EvePrimaryCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation
+from eveonline.helpers.characters import set_primary_character
 from discord.models import DiscordUser
 from fleets.models import (
     EveFleet,
@@ -117,10 +118,8 @@ class FleetRouterTestCase(TestCase):
             user=self.user,
             corporation=corp,
         )
-        EvePrimaryCharacter.objects.create(
-            user=self.user,
-            character=character,
-        )
+        set_primary_character(self.user, character)
+
         DiscordUser.objects.create(
             id=1,
             discord_tag="MrFC",
@@ -337,10 +336,8 @@ class FleetTaskTests(TestCase):
             character_name="Mr FC",
             user=self.user,
         )
-        EvePrimaryCharacter.objects.create(
-            user=self.user,
-            character=fc,
-        )
+        set_primary_character(self.user, fc)
+
         DiscordUser.objects.create(
             id=1,
             discord_tag="MrFC",

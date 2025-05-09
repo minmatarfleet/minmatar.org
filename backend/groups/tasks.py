@@ -5,7 +5,9 @@ from esi.clients import EsiClientProvider
 
 from app.celery import app
 from discord.client import DiscordClient
-from eveonline.models import EvePrimaryCharacter
+from eveonline.helpers.characters import (
+    user_primary_character,
+)
 
 from .models import (
     AffiliationType,
@@ -35,17 +37,12 @@ def update_affiliations():
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
     logger.debug("Checking affiliations for user %s", user)
-    primaries = EvePrimaryCharacter.objects.filter(character__token__user=user)
-    if not primaries.exists():
+
+    primary_character = user_primary_character(user)
+    if not primary_character:
         logger.warning("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
-    if primaries.count() != 1:
-        logger.warning(
-            "%d primary characters found for user %s", primaries.count(), user
-        )
-
-    primary_character = primaries.first()
 
     # loop through affiliations in priority to find highest qualifying
     for affiliation in AffiliationType.objects.order_by("-priority"):
@@ -53,31 +50,28 @@ def update_affiliation(user_id: int):
         is_qualifying = False
         if affiliation.default:
             is_qualifying = True
-        if (
-            primary_character.character.corporation
-            in affiliation.corporations.all()
-        ):
+        if primary_character.corporation in affiliation.corporations.all():
             logger.debug(
                 "User %s is in corporation %s",
                 user,
-                primary_character.character.corporation,
+                primary_character.corporation,
             )
 
             is_qualifying = True
 
-        if primary_character.character.alliance in affiliation.alliances.all():
+        if primary_character.alliance in affiliation.alliances.all():
             logger.debug(
                 "User %s is in alliance %s",
                 user,
-                primary_character.character.alliance,
+                primary_character.alliance,
             )
             is_qualifying = True
 
-        if primary_character.character.faction in affiliation.factions.all():
+        if primary_character.faction in affiliation.factions.all():
             logger.debug(
                 "User %s is in faction %s",
                 user,
-                primary_character.character.faction,
+                primary_character.faction,
             )
             is_qualifying = True
 
@@ -138,8 +132,7 @@ def update_affiliation(user_id: int):
 
 
 def log_affiliation_update_error(user: User, e):
-    pc = EvePrimaryCharacter.objects.filter(character__token__user=user)
-    if pc.exists():
+    if user_primary_character(user):
         logger.error("Error updating affiliations for user %s: %s", user, e)
     else:
         # If user has no primary character then assume it isn't important.
@@ -158,9 +151,7 @@ def sync_eve_corporation_groups():
         for user in User.objects.all():
             try:
                 group = corporation_group.group
-                eve_primary_character = EvePrimaryCharacter.objects.filter(
-                    character__token__user=user
-                ).first()
+                eve_primary_character = user_primary_character(user)
 
                 if not eve_primary_character and group in user.groups.all():
                     logger.info(
@@ -175,7 +166,7 @@ def sync_eve_corporation_groups():
                     continue
 
                 if (
-                    not eve_primary_character.character.corporation
+                    not eve_primary_character.corporation
                     == corporation_group.corporation
                     and group in user.groups.all()
                 ):
@@ -188,16 +179,16 @@ def sync_eve_corporation_groups():
                     user.groups.remove(group)
                     continue
 
-                if not eve_primary_character.character.corporation:
+                if not eve_primary_character.corporation:
                     # Characters might have moved into an NPC corp, not recorded in database
                     logger.info(
                         "Character %s has no recorded corporation",
-                        eve_primary_character.character.character_name,
+                        eve_primary_character.character_name,
                     )
                     continue
 
                 if (
-                    eve_primary_character.character.corporation.id
+                    eve_primary_character.corporation.id
                     == corporation_group.corporation.id
                     and group not in user.groups.all()
                 ):

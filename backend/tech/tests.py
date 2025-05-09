@@ -6,7 +6,8 @@ from django.contrib.auth.models import User
 
 from esi.models import Token
 from app.test import TestCase
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import EveCharacter
+from eveonline.helpers.characters import set_primary_character
 from tech.docker import (
     parse_docker_logs,
     sort_chronologically,
@@ -100,10 +101,7 @@ class TechRoutesTestCase(TestCase):
             character_name="Test Char",
             token=token,
         )
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=user,
-        )
+        set_primary_character(user, char)
 
         response = self.client.get(
             f"{BASE_URL}/no_user_char",

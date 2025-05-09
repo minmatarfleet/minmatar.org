@@ -7,7 +7,8 @@ from django.test import Client
 from app.test import TestCase
 from applications.models import EveCorporationApplication
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation, EvePrimaryCharacter
+from eveonline.models import EveCharacter, EveCorporation
+from eveonline.helpers.characters import set_primary_character
 
 BASE_URL = "/api/applications/"
 
@@ -165,10 +166,7 @@ class EveCorporationApplicationSignalTest(TestCase):
             character_name="Mr User",
             user=self.user,
         )
-        EvePrimaryCharacter.objects.create(
-            user=self.user,
-            character=char,
-        )
+        set_primary_character(self.user, char)
         DiscordUser.objects.create(
             id=1,
             discord_tag="MrUser",

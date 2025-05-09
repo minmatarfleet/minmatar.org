@@ -78,6 +78,7 @@ class EveCharacter(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["character_name"]),
+            models.Index(fields=["user", "is_primary"]),
         ]
         constraints = [
             UniqueConstraint(

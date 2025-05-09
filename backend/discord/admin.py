@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from eveonline.models import EvePrimaryCharacter
+from eveonline.helpers.characters import user_primary_character
 
 from .models import DiscordUser
 
@@ -12,7 +12,4 @@ class DiscordUserAdmin(admin.ModelAdmin):
     search_fields = ("discord_tag", "nickname")
 
     def primary_eve_character(self, obj):
-        user = obj.user
-        return EvePrimaryCharacter.objects.filter(
-            character__token__user=user
-        ).first()
+        return user_primary_character(obj.user)

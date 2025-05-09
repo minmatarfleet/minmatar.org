@@ -9,8 +9,8 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
-    EvePrimaryCharacter,
 )
+from eveonline.helpers.characters import set_primary_character
 from groups.models import AffiliationType, UserAffiliation
 from groups.tasks import update_affiliations
 
@@ -64,9 +64,7 @@ class UserAffiliationTestCase(TestCase):
         )
         character.token = token
         character.save()
-        EvePrimaryCharacter.objects.create(
-            character=character,
-        )
+        set_primary_character(user, character)
         affiliation_type = AffiliationType.objects.create(
             name="Example",
             description="Example",
@@ -144,9 +142,7 @@ class UserAffiliationTestCase(TestCase):
         )
         character.token = token
         character.save()
-        EvePrimaryCharacter.objects.create(
-            character=character,
-        )
+        set_primary_character(user, character)
         affiliation_type = AffiliationType.objects.create(
             name="Example",
             description="Example",
