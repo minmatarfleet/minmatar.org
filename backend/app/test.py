@@ -3,7 +3,8 @@ import jwt
 from django.conf import settings
 from django.contrib.auth.models import User
 from esi.models import Token
-from eveonline.models import EveCharacter, EvePrimaryCharacter
+from eveonline.models import EveCharacter
+from eveonline.helpers.characters import set_primary_character
 
 
 class TestCase(django.test.TestCase):
@@ -34,7 +35,4 @@ class TestCase(django.test.TestCase):
             user=user,
             token=token,
         )
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=user,
-        )
+        set_primary_character(user, char)
