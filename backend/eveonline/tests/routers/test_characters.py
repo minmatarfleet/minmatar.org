@@ -1,4 +1,5 @@
 from django.db.models import signals
+from django.db.utils import IntegrityError
 from django.http import HttpRequest
 from django.test import Client
 from django.contrib.auth.models import User
@@ -20,6 +21,7 @@ from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
+    set_primary_character,
 )
 from eveonline.routers.characters import (
     handle_add_character_esi_callback,
@@ -56,7 +58,11 @@ class CharacterRouterTestCase(TestCase):
         self.user.save()
 
     def make_character(
-        self, user: User, character_id: int, name: str
+        self,
+        user: User,
+        character_id: int,
+        name: str,
+        is_primary: bool = False,
     ) -> EveCharacter:
         """Creates an EveCharacter with an ESI token."""
         token = Token.objects.create(
@@ -68,6 +74,7 @@ class CharacterRouterTestCase(TestCase):
             character_name=name,
             user=user,
             token=token,
+            is_primary=is_primary,
         )
 
     def test_get_characters_success(self):
@@ -171,9 +178,9 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_change_primary_character(self):
-        self.make_superuser()
+        # self.make_superuser()
 
-        char1 = self.make_character(self.user, 123456, "Test Char 1")
+        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
 
         response = self.client.put(
             f"{BASE_URL}primary?character_id={char1.character_id}",
@@ -541,3 +548,30 @@ class CharacterRouterTestCase(TestCase):
             ],
             response.json(),
         )
+
+    def test_character_primary_attribute(self):
+        char1 = self.make_character(self.user, 123456, "Test Char 1")
+        char2 = self.make_character(self.user, 234567, "Test Char 2")
+
+        char1.is_primary = True
+        char1.save()
+
+        char2.is_primary = True
+        try:
+            char2.save()
+            self.fail("Should not be able to save second primary")
+        except IntegrityError as e:
+            self.assertIn(
+                "UNIQUE constraint failed: eveonline_evecharacter.user_id",
+                str(e),
+            )
+
+    def test_primary_character_via_attribute(self):
+        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
+        self.make_character(self.user, 234567, "Test Char 2", True)
+
+        set_primary_character(self.user, char1)
+
+        new_primary = user_primary_character(self.user)
+        self.assertIsNotNone(new_primary)
+        self.assertEqual("Test Char 1", new_primary.character_name)

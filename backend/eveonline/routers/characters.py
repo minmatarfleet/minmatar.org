@@ -17,8 +17,6 @@ from eveonline.models import (
     EveCharacterAsset,
     EveCharacterLog,
     EveCharacterSkillset,
-    EvePrimaryCharacter,
-    EvePrimaryCharacterChangeLog,
     EveCharacterTag,
     EveTag,
 )
@@ -32,7 +30,9 @@ from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
     character_primary,
+    set_primary_character,
 )
+
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 from discord.models import DiscordUser
 
@@ -299,17 +299,15 @@ def delete_character_by_id(request, character_id: int):
         }
 
     # if user is primary character, pick a new primary character if possible
-    if EvePrimaryCharacter.objects.filter(
-        character__token__user=request.user
-    ).exists():
-        primary_character = fetch_primary_character(request.user)
-        if primary_character.character.character_id == character_id:
+    primary_character = user_primary_character(request.user)
+    if primary_character:
+        if primary_character.character_id == character_id:
             characters = EveCharacter.objects.filter(
-                token__user=request.user
+                user=request.user
             ).exclude(character_id=character_id)
             if characters.exists():
-                primary_character.character = characters.first()
-                primary_character.save()
+                set_primary_character(request.user, characters.first())
+
     try:
         EveCharacter.objects.filter(character_id=character_id).delete()
         Token.objects.filter(character_id=character_id).delete()
@@ -323,47 +321,35 @@ def delete_character_by_id(request, character_id: int):
     "/primary",
     summary="Set primary character",
     auth=AuthBearer(),
-    response={200: None, 404: ErrorResponse},
+    response={200: None, 403: ErrorResponse, 404: ErrorResponse},
 )
-def set_primary_character(request, character_id: int):
-    if not EveCharacter.objects.filter(character_id=character_id).exists():
-        return 404, {"detail": "Character not found."}
+def put_primary_character(request, character_id: int):
+    character = EveCharacter.objects.filter(character_id=character_id).first()
+    if not character:
+        return 404, {"detail": f"Character {character_id} not found."}
 
-    character = EveCharacter.objects.get(character_id=character_id)
-    if not request.user.is_superuser:
-        if not character.token.user == request.user:
-            return 403, {
-                "detail": "You do not have permission to set this character as primary."
-            }
+    if character.user != request.user:
+        return 403, {
+            "detail": "You do not have permission to set this character as primary."
+        }
 
-    primary = EvePrimaryCharacter.objects.filter(user=request.user).first()
-    if primary:
-        EvePrimaryCharacterChangeLog.objects.create(
-            username=request.user.username,
-            previous_character_name=primary.character.character_name,
-            new_character_name=character.character_name,
-        )
-        primary.character = character
-        primary.save()
-    else:
-        EvePrimaryCharacter.objects.create(
-            character=character, user=request.user
-        )
+    set_primary_character(request.user, character)
+
     return 200, None
 
 
-def fetch_primary_character(user) -> EvePrimaryCharacter | None:
-    q = EvePrimaryCharacter.objects.filter(character__token__user=user)
+# def fetch_primary_character(user) -> EvePrimaryCharacter | None:
+#     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
-    if q.count() > 1:
-        logger.error(
-            "User %s has %d primary characters", user.username, q.count()
-        )
+#     if q.count() > 1:
+#         logger.error(
+#             "User %s has %d primary characters", user.username, q.count()
+#         )
 
-    if q.count() >= 1:
-        return q.first()
-    else:
-        return None
+#     if q.count() >= 1:
+#         return q.first()
+#     else:
+#         return None
 
 
 @router.get(
@@ -497,9 +483,10 @@ def handle_add_character_esi_callback(request, token, token_type):
             character.character_name,
             request.user.username,
         )
-        EvePrimaryCharacter.objects.create(
-            character=character, user=request.user
-        )
+        set_primary_character(request.user, character)
+        # EvePrimaryCharacter.objects.create(
+        #     character=character, user=request.user
+        # )
 
     # populate corporation if CEO token
     if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
@@ -600,7 +587,8 @@ def get_user_characters(
         characters=[],
     )
 
-    primary = EvePrimaryCharacter.objects.filter(user=char_user).first()
+    # primary = EvePrimaryCharacter.objects.filter(user=char_user).first()
+    primary = user_primary_character(char_user)
 
     chars = EveCharacter.objects.filter(user=char_user)
     for char in chars.all():
@@ -613,10 +601,10 @@ def get_user_characters(
 def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
     # Return an explicit True or False, rather than just a truthy value
     # Pydantic validation fails if I use the expression rather than calling this function
-    return bool(primary and char == primary.character)
+    return bool(primary and char == primary)
 
 
-def build_character_response(char, primary):
+def build_character_response(char: EveCharacter, primary: EveCharacter | None):
     item = UserCharacter(
         character_id=char.character_id,
         character_name=char.character_name,
