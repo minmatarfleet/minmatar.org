@@ -5,11 +5,11 @@ from .models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
-    EvePrimaryCharacter,
     EveSkillset,
     EveTag,
     EveCharacterTag,
 )
+from .helpers.characters import user_primary_character
 
 # Register your models here.
 admin.site.register(EveSkillset)
@@ -48,17 +48,5 @@ class EveCharacterAdmin(admin.ModelAdmin):
     list_filter = ("corporation", "alliance")
 
     def primary_eve_character(self, obj):
-        if obj.token:
-            user = obj.token.user
-            return EvePrimaryCharacter.objects.filter(
-                character__token__user=user
-            ).first()
-
-
-@admin.register(EvePrimaryCharacter)
-class EvePrimaryCharacterAdmin(admin.ModelAdmin):
-    """
-    Custom admin to allow fixing of primary character data.
-    """
-
-    pass
+        if obj.user:
+            return user_primary_character(obj.user)
