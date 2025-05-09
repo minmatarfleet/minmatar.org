@@ -178,9 +178,9 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_change_primary_character(self):
-        self.make_superuser()
+        # self.make_superuser()
 
-        char1 = self.make_character(self.user, 123456, "Test Char 1")
+        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
 
         response = self.client.put(
             f"{BASE_URL}primary?character_id={char1.character_id}",

@@ -6,7 +6,11 @@ from typing import List
 from django.contrib.auth.models import User
 from pydantic import BaseModel
 
-from eveonline.models import EvePrimaryCharacter, EveCharacter
+from eveonline.models import (
+    EvePrimaryCharacter,
+    EveCharacter,
+    EvePrimaryCharacterChangeLog,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -112,19 +116,19 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
         return user_primary_character(character.token.user)
 
 
-def clear_primary_character(user: User):
-    current_primary = user_primary_character(user)
-    if current_primary:
-        logger.info("Clearing primary character for %s", user.username)
-        current_primary.is_primary = False
-        current_primary.save()
-        EvePrimaryCharacter.objects.filter(user=user).delete()
-
-
 def set_primary_character(user: User, character: EveCharacter):
     """Sets the primary character for a user"""
 
-    clear_primary_character(user)
+    current_primary = user_primary_character(user)
+    if current_primary and (current_primary != character):
+        EvePrimaryCharacterChangeLog.objects.create(
+            username=user.username,
+            previous_character_name=current_primary.character_name,
+            new_character_name=character.character_name,
+        )
+        current_primary.is_primary = False
+        current_primary.save()
+        EvePrimaryCharacter.objects.filter(user=user).delete()
 
     character.user = user
     character.is_primary = True
