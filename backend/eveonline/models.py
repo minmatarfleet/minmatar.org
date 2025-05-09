@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
 from esi.models import Scope, Token
@@ -66,6 +66,7 @@ class EveCharacter(models.Model):
 
     # The my.minmatar.org user that owns this Eve character
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_primary = models.BooleanField(default=False)
 
     @property
     def tokens(self):
@@ -77,6 +78,13 @@ class EveCharacter(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["character_name"]),
+        ]
+        constraints = [
+            UniqueConstraint(
+                fields=["user"],
+                condition=Q(is_primary=True),
+                name="unique_primary_user",
+            )
         ]
 
 

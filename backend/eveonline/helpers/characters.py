@@ -73,6 +73,11 @@ class CorporationCharacterResponse(BaseModel):
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
+    # Newest method using the is_primary attribute on EveCharacter
+    primary = EveCharacter.objects.filter(user=user, is_primary=True).first()
+    if primary:
+        return primary
+
     # New method using the "user" field
     pc = EvePrimaryCharacter.objects.filter(user=user).first()
     if pc:
@@ -105,3 +110,25 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
         return user_primary_character(character.user)
     else:
         return user_primary_character(character.token.user)
+
+
+def clear_primary_character(user: User):
+    current_primary = user_primary_character(user)
+    if current_primary:
+        logger.info("Clearing primary character for %s", user.username)
+        current_primary.is_primary = False
+        current_primary.save()
+        EvePrimaryCharacter.objects.filter(user=user).delete()
+
+
+def set_primary_character(user: User, character: EveCharacter):
+    """Sets the primary character for a user"""
+
+    clear_primary_character(user)
+
+    character.user = user
+    character.is_primary = True
+    character.save()
+
+    # Legacy approach for transition period
+    EvePrimaryCharacter.objects.create(user=user, character=character)
