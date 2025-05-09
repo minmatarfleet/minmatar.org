@@ -12,6 +12,7 @@ from eveonline.helpers.affiliations import (
 from groups.tasks import update_affiliation
 
 from .client import EsiClient
+from .helpers.characters import all_primary_character_objects
 from .helpers.assets import create_character_assets
 from .helpers.skills import (
     create_eve_character_skillset,
@@ -20,7 +21,6 @@ from .helpers.skills import (
 from .routers.characters import scope_group
 from .models import (
     EveCharacter,
-    EvePrimaryCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
     EveCorporation,
@@ -312,7 +312,7 @@ def fixup_character_tokens():
 def fixup_primary_characters():
     """Update primary characters to EveCharacter attribute"""
 
-    for primary in EvePrimaryCharacter.objects.all():
+    for primary in all_primary_character_objects():
         if not primary.character.is_primary:
             primary.character.is_primary = True
             primary.character.save()
