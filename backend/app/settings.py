@@ -32,8 +32,6 @@ SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-FAKE_LOGIN_USER_ID = 1
-
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
 SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
 
@@ -112,3 +110,12 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
     environment=os.environ.get("ENV", ENV),
 )
+
+# Local settings only, not for production
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+# If this is set, Discord login will be bypassed and the user will be logged in with this ID
+FAKE_LOGIN_USER_ID = 1
