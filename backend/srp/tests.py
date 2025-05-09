@@ -2,7 +2,8 @@ from django.test import Client
 
 from app.test import TestCase
 
-from eveonline.models import EvePrimaryCharacter, EveCharacter
+from eveonline.models import EveCharacter
+from eveonline.helpers.characters import set_primary_character
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -33,10 +34,7 @@ class SrpRouterTestCase(TestCase):
             character_name="Mr FC",
             user=self.user,
         )
-        EvePrimaryCharacter.objects.create(
-            user=self.user,
-            character=fc_char,
-        )
+        set_primary_character(self.user, fc_char)
 
         data = {
             "external_killmail_link": KM_LINK,

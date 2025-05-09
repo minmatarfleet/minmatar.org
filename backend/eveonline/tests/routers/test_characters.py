@@ -9,7 +9,6 @@ from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
     EveCharacterLog,
     EveCharacterSkillset,
@@ -129,23 +128,8 @@ class CharacterRouterTestCase(TestCase):
         primary = user_primary_character(self.user)
         self.assertIsNone(primary)
 
-        char = self.make_character(self.user, 123456, "Test Char")
+        self.make_character(self.user, 123456, "Test Char", True)
 
-        epc = EvePrimaryCharacter.objects.create(
-            character=char,
-        )
-
-        primary = user_primary_character(self.user)
-        self.assertEqual("Test Char", primary.character_name)
-
-        EvePrimaryCharacter.objects.create(
-            character=char,
-        )
-
-        primary = user_primary_character(self.user)
-        self.assertEqual("Test Char", primary.character_name)
-
-        epc.user = self.user
         primary = user_primary_character(self.user)
         self.assertEqual("Test Char", primary.character_name)
 
@@ -166,11 +150,7 @@ class CharacterRouterTestCase(TestCase):
     def test_get_character(self):
         self.make_superuser()
 
-        char = self.make_character(self.user, 123456, "Test Char")
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=self.user,
-        )
+        char = self.make_character(self.user, 123456, "Test Char", True)
         response = self.client.get(
             f"{BASE_URL}{char.character_id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
@@ -343,7 +323,9 @@ class CharacterRouterTestCase(TestCase):
         self.assertAlmostEqual(0.6, skillsets[0]["progress"])
 
     def test_get_character_with_token_issue(self):
-        char = self.make_character(self.user, 123456, "Test Char suspended")
+        char = self.make_character(
+            self.user, 123456, "Test Char suspended", False
+        )
         char.esi_suspended = True
         char.esi_token_level = "Super"
         char.save()
@@ -353,10 +335,7 @@ class CharacterRouterTestCase(TestCase):
             id=1234,
             discord_tag="tag",
         )
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=self.user,
-        )
+        set_primary_character(self.user, char)
 
         response = self.client.get(
             f"{BASE_URL}summary",
