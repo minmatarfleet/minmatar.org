@@ -8,10 +8,10 @@ from django.db.models import signals
 
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
     EveCorporation,
 )
+from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
 from discord.core import make_nickname
@@ -151,10 +151,7 @@ class DiscordTests(TestCase):
             character_name="Test Char",
             corporation=corp,
         )
-        EvePrimaryCharacter.objects.create(
-            user=self.user,
-            character=char,
-        )
+        set_primary_character(self.user, char)
         group, _ = Group.objects.get_or_create(name="Alliance")
         self.user.groups.add(group)
 
