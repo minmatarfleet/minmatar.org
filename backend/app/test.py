@@ -23,7 +23,7 @@ class TestCase(django.test.TestCase):
         self.user.save()
 
     def setup_character(self):
-        """Create an EveCharacter and EvePrimaryCharacter"""
+        """Create an EveCharacter and make it primary"""
         user = User.objects.first()
         token = Token.objects.create(
             user=user,
