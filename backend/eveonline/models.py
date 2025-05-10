@@ -9,6 +9,7 @@ from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
+from eveonline.client import EsiClient
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -379,10 +380,13 @@ class EveCorporation(models.Model):
         logger.info(
             "Fetching external corporation details for %s", self.corporation_id
         )
+        # esi_corporation = (
+        #     esi.client.Corporation.get_corporations_corporation_id(
+        #         corporation_id=self.corporation_id
+        #     ).results()
+        # )
         esi_corporation = (
-            esi.client.Corporation.get_corporations_corporation_id(
-                corporation_id=self.corporation_id
-            ).results()
+            EsiClient(None).get_corporation(self.corporation_id).results()
         )
         logger.debug("ESI corporation data: %s", esi_corporation)
         self.name = esi_corporation["name"]
