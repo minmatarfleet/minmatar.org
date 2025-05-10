@@ -261,20 +261,23 @@ def update_corporation(corporation_id):
         return
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
-        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        token = Token.get_token(corporation.ceo.character_id, required_scopes)
-        if not token:
-            logger.warning("No valid CEO token for %s", corporation.name)
-            return
+        # required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        # token = Token.get_token(corporation.ceo.character_id, required_scopes)
+        # if not token:
+        #     logger.warning("No valid CEO token for %s", corporation.name)
+        #     return
 
-        logger.info("Updating corporation members for %s", corporation.name)
-        esi_members = (
-            esi.client.Corporation.get_corporations_corporation_id_members(
-                corporation_id=corporation_id,
-                token=token.valid_access_token(),
-            ).results()
+        # logger.info("Updating corporation members for %s", corporation.name)
+        # esi_members = (
+        #     esi.client.Corporation.get_corporations_corporation_id_members(
+        #         corporation_id=corporation_id,
+        #         token=token.valid_access_token(),
+        #     ).results()
+        # )
+        esi_members = EsiClient(corporation.ceo).get_corporation_members(
+            corporation.corporation_id
         )
-        for member_id in esi_members:
+        for member_id in esi_members.results():
             if not EveCharacter.objects.filter(
                 character_id=member_id
             ).exists():
