@@ -129,15 +129,15 @@ export async function get_fleet_combatlogs(access_token:string, fleet_id:number)
     const user_ids = unique_values(not_null_logs.map(log => log.user_id))
     const loggers = user_ids.length > 0 ? await get_users_character(user_ids) : []
 
-    return fleet_logs.map(log => {
-        const logger = loggers.find(log => log.user_id === log.user_id)
+    return fleet_logs.map(fleet_log => {
+        const logger = loggers.find(log => log.user_id === fleet_log.user_id)
 
         return {
-            id: log.id,
-            uploaded_at: log.uploaded_at,
-            user_id: log.user_id,
-            character_name: log.character_name,
-            system_name: log.system_name,
+            id: fleet_log.id,
+            uploaded_at: fleet_log.uploaded_at,
+            user_id: fleet_log.user_id,
+            character_name: fleet_log.character_name,
+            system_name: fleet_log.system_name,
             logger: logger !== undefined ? {
                 character_id: logger.character_id,
                 character_name: logger.character_name,
