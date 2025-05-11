@@ -430,7 +430,7 @@ class EveCorporation(models.Model):
 class EveAlliance(models.Model):
     """Alliance model"""
 
-    alliance_id = models.IntegerField()
+    alliance_id = models.IntegerField(unique=True)
 
     # autopopulated
     name = models.CharField(max_length=255, blank=True)

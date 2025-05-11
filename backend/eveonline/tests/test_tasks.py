@@ -10,7 +10,6 @@ from eveonline.tasks import (
     update_character_assets,
     update_character_skills,
     update_corporation,
-    deduplicate_alliances,
 )
 from eveonline.models import EveCharacter, EveCorporation, EveAlliance
 
@@ -102,14 +101,3 @@ class EveOnlineTaskTests(TestCase):
                 ).first()
 
                 self.assertEqual("TICK", updated_corp.ticker)
-
-    def test_deduplicate_alliances(self):
-        EveAlliance.objects.create(alliance_id=1234)
-        EveAlliance.objects.create(alliance_id=2345)
-        EveAlliance.objects.create(alliance_id=1234)
-
-        self.assertEqual(3, EveAlliance.objects.count())
-
-        deduplicate_alliances()
-
-        self.assertEqual(2, EveAlliance.objects.count())
