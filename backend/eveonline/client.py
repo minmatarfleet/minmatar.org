@@ -170,3 +170,17 @@ class EsiClient:
         )
 
         return self._operation_results(operation)
+
+    def send_evemail(self, mail_details):
+        required_scopes = ["esi-mail.send_mail.v1"]
+        token, status = self.get_valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Mail.post_characters_character_id_mail(
+            mail=mail_details,
+            character_id=self.character_id,
+            token=token.valid_access_token(),
+        )
+
+        return self._operation_results(operation)

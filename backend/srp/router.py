@@ -37,7 +37,7 @@ class EveFleetReimbursementResponse(BaseModel):
     """
 
     id: int
-    fleet_id: int
+    fleet_id: Optional[int] = None
     external_killmail_link: str
     status: str
     character_id: int
