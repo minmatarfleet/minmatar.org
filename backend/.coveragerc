@@ -8,3 +8,4 @@ omit =
     */admin.py
     eveonline/client.py
     discord/client.py
+    manage.py
