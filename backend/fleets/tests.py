@@ -1,6 +1,6 @@
 import datetime
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, ANY
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
@@ -321,6 +321,25 @@ class FleetRouterTestCase(TestCase):
                     "audience_name": "Test Audience",
                 },
             ],
+        )
+
+    @patch("fleets.router.DiscordClient")
+    def test_fleet_preping(self, discord_mock):
+        mock_client = MagicMock()
+        discord_mock.return_value = mock_client
+        self.make_superuser()
+        self.setup_fc()
+        fleet = make_test_fleet("Test", self.user)
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/preping",
+            "",
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(202, response.status_code)
+
+        mock_client.create_message.assert_called_with(
+            channel_id=ANY, payload=ANY
         )
 
 
