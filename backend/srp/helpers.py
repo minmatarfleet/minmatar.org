@@ -150,6 +150,30 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
 
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
     mail_character_id = 2116116149
+    evemail = make_reimbursement_evemail(reimbursement)
+
+    result = EsiClient(mail_character_id).send_evemail(evemail).results()
+
+    # token = Token.objects.filter(
+    #     character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
+    # ).first()
+    # if not token:
+    #     logger.error("Missing token for mail")
+    #     return
+
+    # result = esi.client.Mail.post_characters_character_id_mail(
+    #     mail=evemail,
+    #     character_id=mail_character_id,
+    #     token=token.valid_access_token(),
+    # ).result()
+
+    logger.info(
+        f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
+    )
+    return result
+
+
+def make_reimbursement_evemail(reimbursement):
     mail_subject = "SRP Reimbursement Decision"
     if reimbursement.fleet:
         mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} ({reimbursement.ship_name}) has been {reimbursement.status}."
@@ -177,22 +201,4 @@ def send_decision_notification(reimbursement: EveFleetShipReimbursement):
         ],
     }
 
-    result = EsiClient(mail_character_id).send_evemail(evemail).results()
-
-    # token = Token.objects.filter(
-    #     character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
-    # ).first()
-    # if not token:
-    #     logger.error("Missing token for mail")
-    #     return
-
-    # result = esi.client.Mail.post_characters_character_id_mail(
-    #     mail=evemail,
-    #     character_id=mail_character_id,
-    #     token=token.valid_access_token(),
-    # ).result()
-
-    logger.info(
-        f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
-    )
-    return result
+    return evemail
