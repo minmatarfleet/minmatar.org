@@ -149,6 +149,7 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
 
 
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
+    mail_character_id = 2116116149
     mail_subject = "SRP Reimbursement Decision"
     if reimbursement.fleet:
         mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} ({reimbursement.ship_name}) has been {reimbursement.status}."
@@ -176,9 +177,7 @@ def send_decision_notification(reimbursement: EveFleetShipReimbursement):
         ],
     }
 
-    result = (
-        EsiClient(reimbursement.character_id).send_evemail(evemail).results()
-    )
+    result = EsiClient(mail_character_id).send_evemail(evemail).results()
 
     # token = Token.objects.filter(
     #     character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"

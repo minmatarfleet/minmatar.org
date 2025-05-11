@@ -13,8 +13,9 @@ from fleets.tests import (
 )
 
 BASE_URL = "/api/srp"
-KM_LINK = "https://esi.evetech.net/latest/killmails/126008813/9c92aa157f138da9b5a64abbd8225893f1b8b5f0/"
 
+KM_LINK = "https://esi.evetech.net/latest/killmails/126008813/9c92aa157f138da9b5a64abbd8225893f1b8b5f0/"
+KM_CHAR = 634915984
 
 class SrpRouterTestCase(TestCase):
     """Test cases for the market router."""
@@ -56,7 +57,7 @@ class SrpRouterTestCase(TestCase):
         self.make_superuser()
 
         fc_char = EveCharacter.objects.create(
-            character_id=634915984,
+            character_id=KM_CHAR,
             character_name="Mr FC",
             user=self.user,
         )
@@ -116,7 +117,7 @@ class SrpRouterTestCase(TestCase):
                     "body": ANY,
                     "recipients": [
                         {
-                            "recipient_id": 634915984,
+                            "recipient_id": KM_CHAR,
                             "recipient_type": "character",
                         }
                     ],
