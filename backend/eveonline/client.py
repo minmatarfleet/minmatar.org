@@ -165,7 +165,7 @@ class EsiClient:
         operation = (
             esi.client.Corporation.get_corporations_corporation_id_members(
                 corporation_id=corporation_id,
-                token=token.valid_access_token(),
+                token=token,
             )
         )
 
@@ -180,7 +180,7 @@ class EsiClient:
         operation = esi.client.Mail.post_characters_character_id_mail(
             mail=mail_details,
             character_id=self.character_id,
-            token=token.valid_access_token(),
+            token=token,
         )
 
         return self._operation_results(operation)
