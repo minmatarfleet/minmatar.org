@@ -17,6 +17,7 @@ BASE_URL = "/api/srp"
 KM_LINK = "https://esi.evetech.net/latest/killmails/126008813/9c92aa157f138da9b5a64abbd8225893f1b8b5f0/"
 KM_CHAR = 634915984
 
+
 class SrpRouterTestCase(TestCase):
     """Test cases for the market router."""
 
