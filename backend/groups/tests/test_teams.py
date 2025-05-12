@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group
 from app.test import TestCase
 
 from groups.models import Team
+from groups.helpers import user_in_team, TECH_TEAM
 
 BASE_URL = "/api/teams"
 
@@ -20,7 +21,12 @@ class TeamsRouterTestCase(TestCase):
         group = Group.objects.create(name=name)
         return Team.objects.create(name=name, group=group)
 
-    def test_get_sigs(self):
+    def test_user_in_team(self):
+        group = Group.objects.create(name=TECH_TEAM)
+        Team.objects.create(name=TECH_TEAM, group=group)
+        self.assertFalse(user_in_team(self.user, TECH_TEAM))
+
+    def test_get_teams(self):
         team = self.make_team("Test Team")
         team.members.add(self.user)
         self.make_team("Another Team")

@@ -15,9 +15,9 @@ from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
 from discord.core import make_nickname
-from discord.models import DiscordUser
+from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect
-from discord.tasks import sync_discord_nickname
+from discord.tasks import sync_discord_nickname, sync_discord_user
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -78,6 +78,36 @@ class DiscordTests(TestCase):
     Django tests for Discord functionality.
     """
 
+    def disconnect_signals(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
+        )
+        signals.post_save.disconnect(
+            sender=EvePrimaryCharacterChangeLog,
+            dispatch_uid="notify_people_team_of_primary_character_change",
+        )
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        signals.pre_save.disconnect(
+            sender=DiscordRole,
+            dispatch_uid="resolve_existing_discord_role_from_server",
+        )
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        signals.m2m_changed.disconnect(
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
+        )
+
     def test_discord_login_redirect_admin(self):
         """Test the admin page login redirect"""
 
@@ -119,23 +149,7 @@ class DiscordTests(TestCase):
         self.assertEqual("http://avatar.gif", new_discord_user.avatar)
 
     def test_discord_nickname_task(self):
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_public_data",
-        )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_private_data",
-        )
-        signals.post_save.disconnect(
-            sender=EvePrimaryCharacterChangeLog,
-            dispatch_uid="notify_people_team_of_primary_character_change",
-        )
-        signals.post_save.disconnect(
-            sender=Group,
-            dispatch_uid="group_post_save",
-        )
-
+        self.disconnect_signals()
         DiscordUser.objects.create(id=1, user=self.user)
         corp = EveCorporation.objects.create(
             corporation_id=123,
@@ -159,6 +173,31 @@ class DiscordTests(TestCase):
             sync_discord_nickname(self.user, force_update=True)
 
             discord_mock.update_user.assert_called()
+
+    @patch("discord.tasks.discord")
+    @patch("discord.helpers.discord")
+    def test_sync_discord_user(self, task_client, helper_client):
+        self.disconnect_signals()
+
+        helper_client.get_user.return_value = {
+            "roles": ["Alliance", "Another"]
+        }
+
+        user = User.objects.create(id=1234)
+        DiscordUser.objects.create(
+            user=user,
+            id=12345,
+            discord_tag="XYZ",
+        )
+        group, _ = Group.objects.get_or_create(name="Alliance")
+        DiscordRole.objects.create(
+            role_id=1,
+            name=group.name,
+            group=group,
+        )
+        user.groups.add(group)
+
+        sync_discord_user(user.id)
 
 
 if __name__ == "__main__":
