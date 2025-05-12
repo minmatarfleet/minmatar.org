@@ -505,6 +505,11 @@ def add_character(
 ):
     request.session["redirect_url"] = redirect_url
     set_or_remove_session_value(request, "add_character_id", character_id)
+
+    if character_id and token_type == TokenType.PUBLIC:
+        # Upgrade public tokens to basic when refreshing
+        token_type = TokenType.BASIC
+
     scopes = scopes_for(token_type)
 
     @login_required()
