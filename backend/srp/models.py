@@ -1,9 +1,9 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 from fleets.models import EveFleet
 
 
-# Create your models here.
 class EveFleetShipReimbursement(models.Model):
     """
     Represents a SRP request
@@ -36,6 +36,7 @@ class EveFleetShipReimbursement(models.Model):
     ship_type_id = models.BigIntegerField()
     is_corp_ship = models.BooleanField(default=False)
     corp_id = models.BigIntegerField(null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         constraints = [
@@ -44,4 +45,7 @@ class EveFleetShipReimbursement(models.Model):
                 name="unique_pending_or_approved_killmail_link",
                 condition=models.Q(status__in=["pending", "approved"]),
             )
+        ]
+        indexes = [
+            models.Index(fields=["status", "fleet", "user"]),
         ]
