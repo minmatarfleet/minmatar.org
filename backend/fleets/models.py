@@ -87,11 +87,7 @@ class EveFleet(models.Model):
         user = self.created_by
         eve_character = user_primary_character(user)
         esi_response = EsiClient(eve_character).get_active_fleet()
-        # response = esi.client.Fleets.get_characters_character_id_fleet(
-        #     character_id=eve_character.character_id,
-        #     token=self.token,
-        # ).results()
-        if not esi_response.success:
+        if not esi_response.success():
             raise f"ESI error {esi_response.response_code} starting fleet {self.id}"
 
         response = esi_response.data

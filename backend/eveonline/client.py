@@ -150,6 +150,17 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_fleet_members(self, fleet_id: int) -> EsiResponse:
+        token, status = self.get_valid_token(BASIC_SCOPES)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Fleets.get_fleets_fleet_id_members(
+            fleet_id=fleet_id, token=token
+        )
+
+        return self._operation_results(operation)
+
     def get_corporation(self, corporation_id: int) -> EsiResponse:
         operation = esi.client.Corporation.get_corporations_corporation_id(
             corporation_id=corporation_id
