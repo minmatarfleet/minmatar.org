@@ -27,7 +27,7 @@ import Button from '@components/blocks/Button.astro';
         show_srp_submit_dialog() {
             show_confirm_dialog({
                 title: '${t('srp_submit_dialog_title')}',
-                content: '${t('srp_submit_dialog_text')}',
+                content: '${fleet_id ? t('srp_submit_dialog_text') : t('srp_no_fleet_submit_dialog_text')}',
                 partial: '${DIALOG_SRP_PARTIAL_URL}',
                 hx: {
                     method: 'post',
