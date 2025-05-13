@@ -114,6 +114,9 @@ def fleet_tracking_poc(request):
             if esi_fleet["fleet_boss_id"] == char.id:
                 # Don't look further if is fleet boss
                 break
+            if esi_fleet["role"] == "fleet_commander":
+                # Don't look further if is fleet commander
+                break
 
     if not esi_fleet:
         return 404, ErrorResponse(detail="No characters in fleet")

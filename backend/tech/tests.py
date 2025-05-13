@@ -131,6 +131,7 @@ class TechRoutesTestCase(TestCase):
             data={
                 "fleet_id": 1234,
                 "fleet_boss_id": 123456,
+                "role": "squad_commander",
             },
         )
 
