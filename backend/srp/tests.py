@@ -11,6 +11,7 @@ from fleets.tests import (
     setup_fleet_reference_data,
     make_test_fleet,
 )
+from srp.models import EveFleetShipReimbursement
 
 BASE_URL = "/api/srp"
 
@@ -124,3 +125,47 @@ class SrpRouterTestCase(TestCase):
                     ],
                 }
             )
+
+    def test_user_srp(self):
+        self.make_superuser()
+        fc_char = EveCharacter.objects.create(
+            character_id=634915984,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+
+        EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="pending",
+            killmail_id=1234,
+            external_killmail_link="abc",
+            character_id=fc_char.character_id,
+            character_name=fc_char.character_name,
+            primary_character_id=fc_char.character_id,
+            primary_character_name=fc_char.character_name,
+            amount=1.23,
+            ship_name="Rifter",
+            ship_type_id=1234567,
+        )
+        EveFleetShipReimbursement.objects.create(
+            status="pending",
+            killmail_id=2345,
+            external_killmail_link="xyz",
+            character_id=fc_char.character_id,
+            character_name=fc_char.character_name,
+            primary_character_id=fc_char.character_id,
+            primary_character_name=fc_char.character_name,
+            amount=1.23,
+            ship_name="Rifter",
+            ship_type_id=1234567,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}?user_id={self.user.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        reimbursements = response.json()
+        self.assertEqual(1, len(reimbursements))
+        self.assertEqual("abc", reimbursements[0]["external_killmail_link"])
