@@ -24,7 +24,7 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
                 character_name: api_srp.character_name,
                 amount: api_srp.amount,
                 external_killmail_link: api_srp.external_killmail_link,
-                fleet_id: api_srp.fleet_id,
+                fleet_id: api_srp.fleet_id ?? 0,
                 primary_character_id: api_srp.primary_character_id,
                 primary_character_name: api_srp.primary_character_name,
                 ship_name: api_srp.ship_name,
@@ -44,15 +44,17 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
         } as FleetSRPUI
     })
 
-    return fleets_srps
+    return fleets_srps.sort((a, b) => a.fleet_id - b.fleet_id)
 }
 
-export async function fetch_fleet_srps(access_token:string, fleet_id: number, status:SRPStatus = 'pending') {
+export async function fetch_fleet_srps(access_token:string, fleet_id?: number, status:SRPStatus = 'pending') {
     const api_corporations = await get_all_corporations('alliance')
     const CORP_NAMES = {}
     api_corporations.map(api_corporation => CORP_NAMES[api_corporation.corporation_id] = api_corporation.corporation_name)
 
-    return (await get_fleet_srp(access_token, { fleet_id: fleet_id, status: status})).map(api_srp => {
+    return (await get_fleet_srp(access_token, { fleet_id: fleet_id, status: status}))
+    .filter(api_srp => fleet_id === undefined ? api_srp.fleet_id === null : api_srp.fleet_id === fleet_id)
+    .map(api_srp => {
         return {
             id: api_srp.id,
             character_id: api_srp.character_id,
