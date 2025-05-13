@@ -26,6 +26,8 @@ const {
 
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
 
+import { marked } from 'marked';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -67,10 +69,11 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         x-on:submit="close_dialog(); clear_form()"
     >
         <Flexblock gap="var(--space-l)">
+            <h3>{t('srp_submit_dialog_title')}</h3>
+            
             <Flexblock gap="var(--space-s)">
-                <h3>{t('srp_submit_dialog_title')}</h3>
 
-                <p>{t('srp_submit_dialog_text')}</p>
+                <Flexblock set:html={marked.parse(fleet_id > 0 ? t('srp_submit_dialog_text') : t('srp_no_fleet_submit_dialog_text'))} />
                 
                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                     <label for="srp-url">{t('external_killmail_link')}</label>
