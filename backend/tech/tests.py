@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from app.test import TestCase
 from eveonline.models import EveCharacter
+from eveonline.client import EsiResponse
 from eveonline.helpers.characters import set_primary_character
 from tech.docker import (
     parse_docker_logs,
@@ -108,6 +109,46 @@ class TechRoutesTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
+
+    @patch("tech.router.EsiClient")
+    def test_fleet_tracking_poc(self, esi_client_mock):
+        esi_mock = esi_client_mock.return_value
+        self.make_superuser()
+
+        token = Token.objects.create(
+            user=self.user,
+            character_id=123456,
+        )
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char",
+            token=token,
+        )
+        set_primary_character(self.user, char)
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": 1234,
+                "fleet_boss_id": 123456,
+            },
+        )
+
+        esi_mock.get_fleet_members.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {"character_id": 123456},
+                {"character_id": 123457},
+            ],
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/fleet_tracking_poc",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        members = response.json()
+        self.assertEqual(2, len(members))
 
     def test_get_container_names(self):
         self.make_superuser()
