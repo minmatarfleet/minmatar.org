@@ -27,8 +27,9 @@ import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { is_valid_http_url } from '@helpers/string';
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
+const fleet_title = JSON.parse(Astro.url.searchParams.get('fleet_title') ?? 'false')
 
 let data_fetching_error:string | false = false
 let update_fleet_srp_error:string | false = false
@@ -89,24 +90,25 @@ if (Astro.request.method === "PATCH") {
 let is_fleet_commander:boolean = false
 
 try {
-    if (!(fleet_id > 0))
+    if (fleet_id > 0) {
+        fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
+        fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+        user_character = await get_user_character(user.user_id)
+        is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
+    } else if (fleet_id === 0) {
+        fleet_srps = await fetch_fleet_srps(auth_token as string)
+    } else {
         throw new Error(t('invalid_fleet_id'))
-
-    fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
-    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
-    user_character = await get_user_character(user.user_id)
-    is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
+    }
 } catch (error) {
     data_fetching_error = error.message
 }
 
-const can_remove_fleet = is_superuser ||
-                        user_permissions.includes('fleets.delete_evefleet') ||
-                        is_fleet_commander
+const can_view_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement') || is_fleet_commander
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
@@ -126,7 +128,9 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
     />
     :
     fleet_srps.length > 0 ?
-        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} /> :
+        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_view_srp} fleet_title={fleet_title} /> :
+    fleet_srps.length === 0 ?
+        fleet_id === 0 && <div id="srp-table-0" class="[ hidden ]" /> :
         !remove_table &&
-        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
+        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_view_srp} />
 }

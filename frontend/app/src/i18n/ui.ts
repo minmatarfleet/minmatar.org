@@ -1360,5 +1360,6 @@ export const ui = {
         'how_to_paste': 'How to obtain the value to paste?',
         'suspended': 'Suspended',
         'esi_token_fix_toast': 'One or more of your characters have an issue with their ESI token. More details on how to fix it are available on the Account page.',
+        'fleetless': 'No fleet',
     },
 } as const;

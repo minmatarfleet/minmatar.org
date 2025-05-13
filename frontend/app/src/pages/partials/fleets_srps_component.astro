@@ -27,9 +27,11 @@ import { get_user_character } from '@helpers/fetching/characters'
 let fetch_srp_error:string | false = false
 let fleets_srps:FleetSRPUI[] | null = []
 let srps_count:number = 0
+let fleetless:boolean = false
 
 try {
     fleets_srps = await fetch_srps(auth_token as string)
+    fleetless = fleets_srps.find(srp => srp.fleet_id === 0) !== undefined
 
     if (!can_view_all_srp) {
         const user_character = await get_user_character(user.user_id)
@@ -71,7 +73,8 @@ import SRPTable from '@components/blocks/SRPTable.astro';
     <div x-data={`{ srps_count: ${srps_count} }`} x-init="el.remove()"></div>
     <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
         {fleets_srps.map(fleet_srps =>
-            <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={!can_view_all_srp} fleet_title={true} />
+            <SRPTable fleet_id={fleet_srps.fleet_id ?? 0} fleet_srps={fleet_srps.srps} readonly={!can_view_all_srp} fleet_title={true} />
         )}
+        {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}
     </Flexblock>
 }

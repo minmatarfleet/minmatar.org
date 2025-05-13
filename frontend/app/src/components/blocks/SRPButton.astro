@@ -2,19 +2,29 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { ButtonSizes } from '@dtypes/layout_components';
+
 interface Props {
     fleet_id:       number;
     target?:        string;
     remove_table?:  boolean;
+    size?:          ButtonSizes;
+    fleet_title?:   boolean;
+    hidden?:        boolean;
+    id?:            string;
 }
 
 const {
     fleet_id,
     target = '#srp-table',
     remove_table = false,
+    size = 'sm',
+    fleet_title = false,
+    hidden = false,
+    id,
 } = Astro.props
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -30,8 +40,10 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
 
 <DialogButton
-    size='sm'
+    size={size}
     color='green'
+    hidden={hidden}
+    id={id ? id : undefined}
 >
     {t('add_killmail')}
 
