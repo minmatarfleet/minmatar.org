@@ -106,6 +106,8 @@ class FleetRouterTestCase(TestCase):
         super().setUp()
 
     def setup_fc(self):
+        character_id = 1234
+
         self.user.user_permissions.add(
             Permission.objects.get(codename="add_evefleet")
         )
@@ -113,7 +115,7 @@ class FleetRouterTestCase(TestCase):
             corporation_id=1, name="Test Corp"
         )
         character = EveCharacter.objects.create(
-            character_id=1234,
+            character_id=character_id,
             character_name="Mr FC",
             user=self.user,
             corporation=corp,
@@ -125,6 +127,8 @@ class FleetRouterTestCase(TestCase):
             discord_tag="MrFC",
             user=self.user,
         )
+
+        return character_id
 
     def test_get_fleet_v1_v2(self):
         make_test_fleet("Test fleet 1", self.user)
@@ -251,29 +255,56 @@ class FleetRouterTestCase(TestCase):
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
 
-    def test_start_fleet_endpoint(self):
-        self.setup_fc()
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_endpoint(self, discord_mock, esi_mock):
+        char_id = self.setup_fc()
         fleet = make_test_fleet("Test", self.user)
         fleet.disable_motd = True
         fleet.save()
-        print("Fleet discord channel", fleet.audience.discord_channel_name)
 
-        with patch("fleets.models.discord"):
-            with patch("fleets.models.EsiClient") as esi_mock:
-                esi_mock_instance = esi_mock.return_value
-                esi_mock_instance.get_active_fleet.return_value = EsiResponse(
-                    response_code=200,
-                    data={
-                        "fleet_id": fleet.id,
-                    },
-                )
-                response = self.client.post(
-                    f"{BASE_URL}/{fleet.id}/tracking",
-                    "",
-                    "application/json",
-                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
-                )
-                self.assertEqual(200, response.status_code)
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": fleet.id,
+                "fleet_boss_id": char_id,
+            },
+        )
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data=None,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_with_char(self, discord_mock, esi_mock):
+        fc_id = self.setup_fc()
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.save()
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": fleet.id,
+                "fleet_boss_id": fc_id,
+            },
+        )
+        data = {
+            "fc_character_id": fc_id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data,
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
 
     def add_fleet_member(
         self,
