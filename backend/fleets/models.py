@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import requests
 from django.contrib.auth.models import Group, User
@@ -79,13 +80,18 @@ class EveFleet(models.Model):
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
 
-    def start(self):
+    def start(self, character_id: int | None = None):
         """
         Start the fleet
         """
         logger.info("Starting fleet %s", self.id)
+
         user = self.created_by
-        eve_character = user_primary_character(user)
+        if character_id:
+            eve_character = EveCharacter.objects.get(character_id=character_id)
+        else:
+            eve_character = user_primary_character(user)
+
         esi_response = EsiClient(eve_character).get_active_fleet()
         if not esi_response.success():
             raise f"ESI error {esi_response.response_code} starting fleet {self.id}"
@@ -97,10 +103,12 @@ class EveFleet(models.Model):
                 id=response["fleet_id"]
             )
             fleet_instance.eve_fleet = self
+            fleet_instance.boss_id = response["fleet_boss_id"]
             fleet_instance.save()
         else:
             fleet_instance = EveFleetInstance.objects.create(
                 id=response["fleet_id"],
+                boss_id=response["fleet_boss_id"],
                 eve_fleet=self,
             )
 
@@ -171,6 +179,8 @@ class EveFleetInstance(models.Model):
     is_free_move = models.BooleanField(default=False)
     is_registered = models.BooleanField(default=False)
     motd = models.TextField(blank=True)
+    boss_id = models.IntegerField(null=True)
+    last_updated = models.DateTimeField(null=True, blank=True)
 
     @property
     def active(self):
@@ -317,6 +327,9 @@ class EveFleetInstance(models.Model):
                         esi_fleet_member["solar_system_id"]
                     ],
                 )
+
+        self.last_updated = datetime.now()
+        self.save()
 
 
 class EveFleetInstanceMember(models.Model):

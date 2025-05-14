@@ -11,7 +11,11 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
-from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters import (
+    user_primary_character,
+    user_characters,
+)
+from eveonline.client import EsiClient
 from discord.client import DiscordClient
 from fittings.models import EveDoctrine
 from groups.helpers import user_in_team, TECH_TEAM
@@ -152,6 +156,19 @@ class EveFleetMetric(BaseModel):
     status: str
     fc_corp_name: str
     audience_name: str
+
+
+class UserActiveFleetResponse(BaseModel):
+    character_id: int
+    eve_fleet_id: int
+    fleet_boss_id: int
+    fleet_role: str
+
+
+class StartFleetRequest(BaseModel):
+    """Additional data for starting to track a fleet"""
+
+    fc_character_id: Optional[int] = None
 
 
 @router.get(
@@ -517,6 +534,28 @@ def get_fleet_metrics(request):
 
 
 @router.get(
+    "/current",
+    summary="Get the fleets that the user is currently active in",
+    auth=AuthBearer(),
+    response={200: List[UserActiveFleetResponse], 403: None, 404: None},
+)
+def get_user_active_fleets(request):
+    active_fleets = []
+    for char in user_characters(request.user):
+        response = EsiClient(char).get_active_fleet()
+        if response.success():
+            active_fleets.append(
+                UserActiveFleetResponse(
+                    character_id=char.character_id,
+                    eve_fleet_id=response.data["fleet_id"],
+                    fleet_boss_id=response.data["fleet_boss_id"],
+                    fleet_role=response.data["role"],
+                )
+            )
+    return active_fleets
+
+
+@router.get(
     "/{fleet_id}",
     auth=AuthBearer(),
     response={200: EveFleetResponse, 403: None, 404: None},
@@ -784,14 +823,19 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     response={200: None, 403: ErrorResponse, 400: ErrorResponse},
     description="Start a fleet and send a discord ping, must be the owner of the fleet",
 )
-def start_fleet(request, fleet_id: int):
+def start_fleet(
+    request, fleet_id: int, payload: Optional[StartFleetRequest] = None
+):
     fleet = EveFleet.objects.get(id=fleet_id)
     if request.user != fleet.created_by:
         return 403, {
             "detail": "User does not have permission to start tracking this fleet"
         }
     try:
-        fleet.start()
+        if payload and payload.fc_character_id:
+            fleet.start(payload.fc_character_id)
+        else:
+            fleet.start(None)
     except Exception as e:
         logger.error("Error starting fleet %d: %s", fleet_id, e)
         return 400, {"detail": str(e)}
