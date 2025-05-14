@@ -79,13 +79,16 @@ class EveFleet(models.Model):
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
 
-    def start(self):
+    def start(self, character_id: int | None = None):
         """
         Start the fleet
         """
         logger.info("Starting fleet %s", self.id)
         user = self.created_by
-        eve_character = user_primary_character(user)
+        if character_id:
+            eve_character = EveCharacter.objects.get(character_id=character_id)
+        else:
+            eve_character = user_primary_character(user)
         esi_response = EsiClient(eve_character).get_active_fleet()
         if not esi_response.success():
             raise f"ESI error {esi_response.response_code} starting fleet {self.id}"
