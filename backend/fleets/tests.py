@@ -342,6 +342,31 @@ class FleetRouterTestCase(TestCase):
             channel_id=ANY, payload=ANY
         )
 
+    @patch("fleets.router.EsiClient")
+    def test_user_active_fleets(self, esi_client_class):
+        esi_mock = esi_client_class.return_value
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": 123456,
+                "fleet_boss_id": 23456,
+                "role": "squad_member",
+            },
+        )
+
+        self.make_superuser()
+        self.setup_fc()
+
+        response = self.client.get(
+            f"{BASE_URL}/current",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        fleets = response.json()
+        self.assertEqual(1, len(fleets))
+        self.assertEqual("squad_member", fleets[0]["fleet_role"])
+
 
 class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
