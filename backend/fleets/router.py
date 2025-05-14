@@ -165,6 +165,12 @@ class UserActiveFleetResponse(BaseModel):
     fleet_role: str
 
 
+class StartFleetRequest(BaseModel):
+    """Additional data for starting to track a fleet"""
+
+    fc_character_id: Optional[int] = None
+
+
 @router.get(
     "/types",
     auth=AuthBearer(),
@@ -817,14 +823,19 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     response={200: None, 403: ErrorResponse, 400: ErrorResponse},
     description="Start a fleet and send a discord ping, must be the owner of the fleet",
 )
-def start_fleet(request, fleet_id: int, character_id: int | None = None):
+def start_fleet(
+    request, fleet_id: int, payload: StartFleetRequest | None = None
+):
     fleet = EveFleet.objects.get(id=fleet_id)
     if request.user != fleet.created_by:
         return 403, {
             "detail": "User does not have permission to start tracking this fleet"
         }
     try:
-        fleet.start()
+        if payload and payload.fc_character_id:
+            fleet.start(payload.fc_character_id)
+        else:
+            fleet.start()
     except Exception as e:
         logger.error("Error starting fleet %d: %s", fleet_id, e)
         return 400, {"detail": str(e)}
