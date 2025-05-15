@@ -93,3 +93,8 @@ of those entities. The outer tasks are therefore generally not tested.
 ```
 coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults.txt && coverage html
 ```
+
+### Setup test data
+```
+./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
+```
