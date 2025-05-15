@@ -160,6 +160,8 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <ClipboardButton id={`srp-dialog-copy-name-${srp.id}`}>{srp.primary_character_name}</ClipboardButton>
                         </FlexInline>
                     </Flexblock>
+                    
+                    {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
                 </Flexblock>
 
                 <FlexInline justification='space-between'>
