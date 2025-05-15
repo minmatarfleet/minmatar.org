@@ -9,3 +9,4 @@ omit =
     eveonline/client.py
     discord/client.py
     manage.py
+    tech/testdata.py
