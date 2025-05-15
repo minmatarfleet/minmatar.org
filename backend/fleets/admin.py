@@ -24,6 +24,8 @@ class FleetInstanceInline(admin.TabularInline):
 
 
 class FleetAdmin(admin.ModelAdmin):
+    """Custom admin model for EveFleet entities"""
+
     date_hierarchy = "start_time"
     list_display = [
         "start_time",
