@@ -40,6 +40,7 @@ class FleetAdmin(admin.ModelAdmin):
         "end_time",
         "boss",
         "members",
+        "updated",
     )
 
     def end_time(self, instance) -> Optional[datetime]:
@@ -48,10 +49,16 @@ class FleetAdmin(admin.ModelAdmin):
             return efi.end_time
         return None
 
-    def boss(self, instance) -> Optional[datetime]:
+    def boss(self, instance) -> Optional[int]:
         efi = EveFleetInstance.objects.filter(eve_fleet=instance).first()
         if efi:
             return efi.boss_id
+        return None
+
+    def updated(self, instance) -> Optional[datetime]:
+        efi = EveFleetInstance.objects.filter(eve_fleet=instance).first()
+        if efi:
+            return efi.last_updated
         return None
 
     def members(self, instance) -> List[str]:
