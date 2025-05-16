@@ -49,6 +49,12 @@ def setup_fleet_reference_data():
         name="Test Audience",
         discord_channel_name="TestChannel",
     )
+    EveFleetAudience.objects.create(
+        name="Hidden",
+        hidden=True,
+        add_to_schedule=False,
+    )
+
     EveFleetLocation.objects.create(
         location_id=123,
         location_name="Test Location",
@@ -221,12 +227,15 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()))
 
         response = self.client.get(
             f"{BASE_URL}/audiences",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()))
+        self.assertEqual("Test Audience", response.json()[0]["display_name"])
 
     def test_create_fleet_endpoint(self):
         setup_fc(self.user)

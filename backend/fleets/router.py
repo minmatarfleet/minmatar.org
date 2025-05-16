@@ -220,7 +220,7 @@ def get_v2_fleet_locations(request):
 def get_fleet_audiences(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
-    audiences = EveFleetAudience.objects.all()
+    audiences = EveFleetAudience.objects.filter(hidden=False).all()
     response = []
     for audience in audiences:
         response.append(
@@ -326,6 +326,8 @@ def get_v3_fleets(
 
 
 def can_see_fleet(fleet: EveFleet, user) -> bool:
+    if fleet.audience and fleet.audience.hidden:
+        return False
     if not user.id:
         return False
     if user.has_perm("fleets.view_evefleet"):

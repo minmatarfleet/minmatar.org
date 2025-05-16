@@ -448,6 +448,7 @@ class EveFleetAudience(models.Model):
         max_length=255, null=True, blank=True
     )
     add_to_schedule = models.BooleanField(default=True)
+    hidden = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.name)
