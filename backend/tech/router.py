@@ -1,11 +1,12 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from ninja import Router
 from typing import List, Optional
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import timezone
 from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -116,7 +117,7 @@ def fleet_tracking_poc(
             audience=audience,
             description="Technical test fleet",
             type="training",
-            start_time=datetime.now(),
+            start_time=timezone.now(),
             created_by=request.user,
             disable_motd=True,
         )
@@ -166,7 +167,7 @@ def get_logs(
     ):
         return 403, "Not authorised"
 
-    now = datetime.now()
+    now = timezone.now()
     start_time = now - timedelta(minutes=start_delta_mins)
     if not duration_mins:
         duration_mins = max(start_delta_mins, 60)

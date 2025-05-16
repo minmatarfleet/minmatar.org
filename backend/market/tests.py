@@ -1,7 +1,7 @@
-import datetime
 from unittest.mock import patch
 
 from django.test import Client
+from django.utils import timezone
 from django.db.models import signals
 
 from app.test import TestCase
@@ -72,7 +72,7 @@ class MarketRouterTestCase(TestCase):
     def test_get_contracts(self):
         expectation = self._setup_expecation()
 
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
 
         EveMarketContract.objects.create(
             id=1234,
