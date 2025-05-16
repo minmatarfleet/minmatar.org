@@ -21,8 +21,7 @@ const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles
 
 import type { SummaryCharacter, Corporation, EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type { NotificationSubscription } from '@dtypes/layout_components'
-import { get_character_summary } from '@helpers/api.minmatar.org/characters'
-import { get_user_character } from '@helpers/fetching/characters'
+import { get_user_character, get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 
@@ -33,15 +32,17 @@ let user_character:EveCharacterProfile | null = null
 let is_fleet_pilot = false
 let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
+let readiness_character_id = 0
 
 try {
-    const character_summary = await get_character_summary(auth_token as string)
-    pilots = character_summary?.characters ?? []
+    const character_summary = await get_characters_summary_sorted(auth_token as string)
+    pilots = character_summary.characters ?? []
     alliance_corporations = await get_all_corporations('alliance')
     user_character = await get_user_character(user.user_id)
     if (user_character) {
         const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character?.corporation_id) : undefined
         is_fleet_pilot = (user_corporation !== undefined)
+        readiness_character_id = is_fleet_pilot ? user_character.character_id : 0
     }
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
@@ -86,6 +87,7 @@ import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CopyToken from '@components/blocks/CopyToken.astro';
+import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -208,6 +210,10 @@ const page_title = t('account.page_title');
             }
 
             <Context>
+                {readiness_character_id > 0 &&
+                    <PilotReadinessBanner main_character_id={readiness_character_id} />
+                }
+
                 <ComponentBlock 
                     width='narrow'
                     x-data={`{

@@ -611,6 +611,7 @@ export interface SummaryCharacter {
     alliance_id:    number;
     alliance_name:  string;
     esi_token:      string;
+    tags:           number[];
     token_status:   ESITokenStatus;
 }
 
@@ -622,4 +623,11 @@ export interface CharacterESITokens {
     owner_hash:     string;
     scopes:         string[];
     level:          string;
+}
+
+export interface CharacterTag {
+    id:             number;
+    title:          string;
+    description:    string;
+    image_name:     string;
 }

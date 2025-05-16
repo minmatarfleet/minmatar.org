@@ -1,10 +1,12 @@
 ---
 interface Props {
-    gap:    number;
+    gap:                number;
+    initial_slide?:     number;
 }
 
 const {
     gap,
+    initial_slide = 1,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -19,7 +21,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
     max_width='100%'
 >
     <div class="[ swiper ][ w-full ]">
-        <LandingSwiper pagination={false} gap={gap}>
+        <LandingSwiper pagination={false} gap={gap} initial_slide={initial_slide}>
             <slot />
         </LandingSwiper>
     </div>
@@ -59,9 +61,11 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 
     .swiper-button-prev {
         transform: translateY(-1.25rem);
+        top: 3.3em;
     }
 
     .swiper-button-next {
         transform: translateY(-1.25rem);
+        top: 3.3em;
     }
 </style>

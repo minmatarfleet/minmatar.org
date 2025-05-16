@@ -14,7 +14,9 @@ const {
 
 <label class="[ cursor-pointer ]">
     <input type={type} {...attributes} />
-    <small>{label}</small>
+    <slot>
+        <small>{label}</small>
+    </slot>
 </label>
 
 <style lang="scss">

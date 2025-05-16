@@ -1,0 +1,105 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    thin?:              boolean;
+    main_character_id:  number;
+}
+
+const {
+    thin = false,
+    main_character_id,
+} = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+
+import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
+---
+
+<div class:list={[ 'banner', { thin } ]}>
+    <img src="/images/pilot_readiness_bg.jpg" height="233" width="960" />
+    <Wrapper
+        padding_block='0'
+        padding_inline='var(--space-l-xl)'
+        max_width='var(--max-text-width)'
+        class="[ relative w-full ]"
+    >
+        <FlexInline justification='space-between' class="[ !items-center w-full ]">
+            <h2>
+                <Flexblock gap='var(--space-3xs)'>
+                    <span>{t('complete')}</span>
+                    <span>{t('your_pilots')}</span>
+                    <span>{t('readiness')}</span>
+                </Flexblock>
+            </h2>
+            <Button href={translatePath(`/account/tags/${main_character_id}`)}>
+                {t('lets_start')}
+                <ArrowRight />
+            </Button>
+        </FlexInline>
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    .banner {
+        position: relative;
+        min-height: 151px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+
+        &.thin {
+            min-height: 142px;
+        }
+
+        img {
+            position: absolute;
+            left: 0;
+            object-fit: cover;
+            object-position: left;
+
+            animation: pilot ease both 30s;
+            animation-iteration-count: infinite;
+        }
+
+        h2 {
+            font-size: var(--step-2);
+            line-height: 1;
+
+            > div span:nth-child(1) {
+                font-size: var(--step-1);
+            }
+
+            > div span:nth-child(2) {
+                font-size: var(--step-1);
+            }
+        }
+
+        h3 {
+            font-size: var(--step--1);
+        }
+
+        h2, h3 {
+            color: var(--fleet-red);
+        }
+    }
+
+    @keyframes pilot {
+        0% {
+            bottom: -30px;
+        }
+
+        50% {
+            bottom: 0px;
+        }
+
+        100% {
+            bottom: -30px;
+        }
+    }
+</style>

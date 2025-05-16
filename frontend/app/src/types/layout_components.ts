@@ -967,3 +967,9 @@ export interface ReferralLinkStatsUI {
     count:      number;
     target?:    string;
 }
+
+export interface CharacterTagSummary {
+    character_id:       number;
+    character_name:     string;
+    tags:               number[];
+}

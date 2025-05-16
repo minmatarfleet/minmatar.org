@@ -1,0 +1,115 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CharacterTag } from '@dtypes/api.minmatar.org'
+import type { CharacterTagSummary } from '@dtypes/layout_components'
+
+interface Props {
+    tags:               CharacterTag[];
+    tags_summary:       CharacterTagSummary[];
+    active_character:   number;
+}
+
+const {
+    tags,
+    tags_summary,
+    active_character,
+} = Astro.props
+
+const active_tags = tags_summary.find(character => character.character_id === active_character)?.tags
+
+const REEL_GAP = 20
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import SelectableCard from '@components/blocks/SelectableCard.astro'
+import CharactersReel from '@components/blocks/CharactersReel.astro';
+import CharacterReelSlide from '@components/blocks/CharacterReelSlide.astro';
+import Badge from '@components/blocks/Badge.astro';
+---
+
+<Flexblock id="character-tag-list" gap='var(--space-2xl)'>
+    <CharactersReel gap={REEL_GAP} initial_slide={tags_summary.findIndex(character => character.character_id === active_character)}>
+        {tags_summary.map(character =>
+            <CharacterReelSlide gap={REEL_GAP}>
+                <Wrapper padding_block='0' padding_inline='0' max_width='350px'>
+                    {active_character === character.character_id ?
+                        <Badge
+                            character_id={character.character_id}
+                            title={character.character_name}
+                            image={get_player_icon(character.character_id)}
+                            title_el="h2"
+                        >
+                            <small>{`${character.tags.length} ${character.tags.length === 1 ? t('role_selected') : t('roles_selected')}`}</small>
+                        </Badge>
+                        :
+                        <StylessButton class="w-full character-selector" href={translatePath(`/account/tags/${character.character_id}`)}>
+                            <Badge
+                                character_id={character.character_id}
+                                title={character.character_name}
+                                image={get_player_icon(character.character_id)}
+                                title_el="h2"
+                            >
+                                <small>{`${character.tags.length} ${character.tags.length === 1 ? t('role_selected') : t('roles_selected')}`}</small>
+                            </Badge>
+                        </StylessButton>
+                    }
+                        
+                </Wrapper>
+            </CharacterReelSlide>
+        )}
+    </CharactersReel>
+
+    <Grid
+        role="list"
+        class="[ w-full grid-fill ]"
+        min_item_width='240px'
+        row_gap='var(--space-3xs)'
+        column_gap='var(--space-3xs)'
+    >
+        {tags.map(tag =>
+            <SelectableCard
+                image={tag.image_name}
+                label={tag.description}
+                name="tag"
+                value={tag.id}
+                checked={active_tags?.includes(tag.id)}
+                x-on:change="is_dirty = true; console.log(is_dirty)"
+            >
+                <Flexblock gap='var(--space-3xs)'>
+                    <h4>{t(`${tag.description}_tag` as any)}</h4>
+                    <small>{t(`${tag.description}_tag_description` as any)}</small>
+                </Flexblock>
+            </SelectableCard>    
+        )}
+    </Grid>
+</Flexblock>
+
+<style lang="scss">
+    .character-selector {
+        opacity: 0.5;
+
+        &:hover,
+        &:focus-visible {
+            opacity: 0.8;
+        }
+
+        &.active {
+            opacity: 1;
+        }
+
+        h2 {
+            color: var(--faded);
+        }
+
+        small {
+            color: var(--fleet-yellow);
+        }
+    }
+</style>

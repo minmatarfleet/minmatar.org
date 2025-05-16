@@ -1,4 +1,11 @@
-import type { Character, CharacterSkillset, CharacterAsset, CharacterSummary, CharacterESITokens } from '@dtypes/api.minmatar.org'
+import type {
+    Character,
+    CharacterSkillset,
+    CharacterAsset,
+    CharacterSummary,
+    CharacterESITokens,
+    CharacterTag
+} from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/characters`
@@ -215,7 +222,7 @@ export async function set_primary_characters(access_token:string, character_id:n
     }
 }
 
-export async function get_character_summary(access_token:string) {
+export async function get_characters_summary(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
@@ -270,6 +277,98 @@ export async function get_character_esi_token(access_token:string, character_id:
         }
 
         return await response.json() as CharacterESITokens[];
+    } catch (error) {
+        throw new Error(`Error fetching character summary: ${error.message}`);
+    }
+}
+
+export async function get_tags(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/tags`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as CharacterTag[];
+    } catch (error) {
+        throw new Error(`Error fetching character summary: ${error.message}`);
+    }
+}
+
+export async function set_character_tags(access_token:string, character_id:number, tags:number[]) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}/tags`
+
+    console.log(`Requesting PUT: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify(tags),
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `PUT ${ENDPOINT}`
+            ))
+        }
+
+        return (response.status === 200);
+    } catch (error) {
+        throw new Error(`Error setting character tags: ${error.message}`);
+    }
+}
+
+export async function get_character_tags(access_token:string, character_id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${character_id}/tags`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as CharacterTag[];
     } catch (error) {
         throw new Error(`Error fetching character summary: ${error.message}`);
     }
