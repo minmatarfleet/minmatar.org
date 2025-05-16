@@ -7,8 +7,8 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from app.test import TestCase
 from eveonline.models import EveCharacter
-from eveonline.client import EsiResponse
 from eveonline.helpers.characters import set_primary_character
+from fleets.models import EveFleetAudience
 from tech.docker import (
     parse_docker_logs,
     sort_chronologically,
@@ -110,9 +110,8 @@ class TechRoutesTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch("tech.router.EsiClient")
-    def test_fleet_tracking_poc(self, esi_client_mock):
-        esi_mock = esi_client_mock.return_value
+    def test_fleet_tracking_poc(self):
+        # esi_mock = esi_client_mock.return_value
         self.make_superuser()
 
         token = Token.objects.create(
@@ -126,30 +125,36 @@ class TechRoutesTestCase(TestCase):
         )
         set_primary_character(self.user, char)
 
-        esi_mock.get_active_fleet.return_value = EsiResponse(
-            response_code=200,
-            data={
-                "fleet_id": 1234,
-                "fleet_boss_id": 123456,
-                "role": "squad_commander",
-            },
+        EveFleetAudience.objects.create(
+            name="Hidden",
+            hidden=True,
+            add_to_schedule=False,
         )
 
-        esi_mock.get_fleet_members.return_value = EsiResponse(
-            response_code=200,
-            data=[
-                {"character_id": 123456},
-                {"character_id": 123457},
-            ],
-        )
+        # esi_mock.get_active_fleet.return_value = EsiResponse(
+        #     response_code=200,
+        #     data={
+        #         "fleet_id": 1234,
+        #         "fleet_boss_id": 123456,
+        #         "role": "squad_commander",
+        #     },
+        # )
+
+        # esi_mock.get_fleet_members.return_value = EsiResponse(
+        #     response_code=200,
+        #     data=[
+        #         {"character_id": 123456},
+        #         {"character_id": 123457},
+        #     ],
+        # )
 
         response = self.client.get(
-            f"{BASE_URL}/fleet_tracking_poc",
+            f"{BASE_URL}/fleet_tracking_poc?start=False",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
-        members = response.json()
-        self.assertEqual(2, len(members))
+        # members = response.json()
+        # self.assertEqual(2, len(members))
 
     def test_get_container_names(self):
         self.make_superuser()

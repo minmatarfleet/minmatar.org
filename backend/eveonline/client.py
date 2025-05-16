@@ -32,7 +32,7 @@ class EsiResponse:
 
     def success(self):
         """Returns true of the ESI call was successful."""
-        return self.response_code <= 400
+        return self.response_code < 400
 
     def results(self):
         """Returns the data provided by the ESI call"""
@@ -182,7 +182,7 @@ class EsiClient:
 
         return self._operation_results(operation)
 
-    def send_evemail(self, mail_details):
+    def send_evemail(self, mail_details) -> EsiResponse:
         required_scopes = ["esi-mail.send_mail.v1"]
         token, status = self.get_valid_token(required_scopes)
         if status > 0:
@@ -194,4 +194,8 @@ class EsiClient:
             token=token,
         )
 
+        return self._operation_results(operation)
+
+    def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
+        operation = esi.client.Universe.post_universe_names(ids=ids_to_resolve)
         return self._operation_results(operation)

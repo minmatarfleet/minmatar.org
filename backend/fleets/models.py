@@ -241,23 +241,47 @@ class EveFleetInstance(models.Model):
         """
         Fetch the advert status for the fleet
         """
-        token = self.eve_fleet.token
-        response = esi.client.Fleets.get_fleets_fleet_id(
-            fleet_id=self.id, token=token
-        ).results()
+        try:
+            token = self.eve_fleet.token
+            response = esi.client.Fleets.get_fleets_fleet_id(
+                fleet_id=self.id, token=token
+            ).results()
 
-        self.is_registered = response["is_registered"]
-        self.save()
-        return response
+            self.is_registered = response["is_registered"]
+            self.save()
+            return response
+        except Exception as e:
+            # Don't need to handle this one gracefully
+            logger.warning(
+                "ESI call failed getting fleet registered status, %d %s",
+                self.eve_fleet.id,
+                e,
+            )
+
+    def esi_client(self):
+        if self.boss_id:
+            char_id = self.boss_id
+        else:
+            char_id = user_primary_character(
+                self.eve_fleet.created_by
+            ).character_id
+        return EsiClient(char_id)
 
     def update_fleet_members(self):
         """
         Fetch the fleet members for the fleet
         """
-        token = self.eve_fleet.token
-        response = esi.client.Fleets.get_fleets_fleet_id_members(
-            fleet_id=self.id, token=token
-        ).results()
+        # token = self.eve_fleet.token
+        # response = esi.client.Fleets.get_fleets_fleet_id_members(
+        #     fleet_id=self.id, token=token
+        # ).results()
+
+        response = self.esi_client().get_fleet_members(self.eve_fleet.id)
+        if response.success():
+            response = response.results()
+        else:
+            self.handle_fleet_update_esi_failure(response)
+            return
 
         ids_to_resolve = set()
         for esi_fleet_member in response:
@@ -265,9 +289,12 @@ class EveFleetInstance(models.Model):
             ids_to_resolve.add(esi_fleet_member["ship_type_id"])
             ids_to_resolve.add(esi_fleet_member["solar_system_id"])
         ids_to_resolve = list(ids_to_resolve)
-        resolved_ids = esi.client.Universe.post_universe_names(
-            ids=ids_to_resolve
-        ).results()
+        # resolved_ids = esi.client.Universe.post_universe_names(
+        #     ids=ids_to_resolve
+        # ).results()
+        resolved_ids = (
+            EsiClient().resolve_universe_names(ids_to_resolve).results()
+        )
         resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
 
         for esi_fleet_member in response:
@@ -331,6 +358,43 @@ class EveFleetInstance(models.Model):
         self.last_updated = datetime.now()
         self.save()
 
+    def handle_fleet_update_esi_failure(self, esi_response):
+        logger.warning(
+            "ESI error updating fleet %d: %s (%d)",
+            self.eve_fleet.id,
+            esi_response.response,
+            esi_response.response_code,
+        )
+        tries = 0
+        max_tries = 8
+        for member in EveFleetInstanceMember.objects.filter(
+            eve_fleet_instance=self
+        ):
+            # Find an active member who can report who is now boss
+            response = EsiClient(member.character_id).get_active_fleet()
+            if response.success():
+                # Make sure they are in the correct fleet
+                if response.data["fleet_id"] == self.eve_fleet.id:
+                    # Update boss for future ESI calls
+                    self.boss_id = response.data["fleet_boss_id"]
+                    self.save()
+                    return
+
+            tries += 1
+            if tries >= max_tries:
+                break
+
+        logger.info(
+            "Closing fleet %d after %d attempts to find new boss",
+            self.eve_fleet.id,
+            tries,
+        )
+        self.end_time = timezone.now()
+        self.save()
+
+        self.eve_fleet.status = "complete"
+        self.eve_fleet.save()
+
 
 class EveFleetInstanceMember(models.Model):
     """
@@ -384,6 +448,7 @@ class EveFleetAudience(models.Model):
         max_length=255, null=True, blank=True
     )
     add_to_schedule = models.BooleanField(default=True)
+    hidden = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.name)

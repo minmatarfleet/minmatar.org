@@ -10,9 +10,8 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
-from eveonline.helpers.characters import user_characters
 from eveonline.models import EveCharacter
-from eveonline.client import EsiClient
+from fleets.models import EveFleetAudience, EveFleet
 from tech.docker import (
     container_names,
     sort_chronologically,
@@ -97,47 +96,35 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
     "/fleet_tracking_poc",
     summary="Proof-of-concept for advanced fleet tracking",
     auth=AuthBearer(),
-    response={200: List[int], 403: ErrorResponse, 404: ErrorResponse},
+    response={200: int, 403: ErrorResponse, 404: ErrorResponse},
 )
-def fleet_tracking_poc(request):
+def fleet_tracking_poc(
+    request, fleet_id: Optional[int] = None, start: bool = False
+):
     if not (
         request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
     ):
         return 403, ErrorResponse(detail="Not authorised")
 
-    # Find a fleet that one of the user's characters is in
-    esi_fleet = None
-    for char in user_characters(request.user):
-        fleet_response = EsiClient(char).get_active_fleet()
-        if fleet_response.success():
-            esi_fleet = fleet_response.data
-            if esi_fleet["fleet_boss_id"] == char.id:
-                # Don't look further if is fleet boss
-                break
-            if esi_fleet["role"] == "fleet_commander":
-                # Don't look further if is fleet commander
-                break
+    if fleet_id:
+        fleet = EveFleet.objects.get(id=fleet_id)
+    else:
+        audience = EveFleetAudience.objects.filter(hidden=True).first()
+        if not audience:
+            return 404, ErrorResponse(detail="No hidden audience found")
+        fleet = EveFleet.objects.create(
+            audience=audience,
+            description="Technical test fleet",
+            type="training",
+            start_time=datetime.now(),
+            created_by=request.user,
+            disable_motd=True,
+        )
 
-    if not esi_fleet:
-        return 404, ErrorResponse(detail="No characters in fleet")
+    if start:
+        fleet.start()
 
-    fleet_id = esi_fleet["fleet_id"]
-    fleet_boss_id = esi_fleet["fleet_boss_id"]
-
-    # Find the character that is boss
-    boss_char = EveCharacter.objects.filter(character_id=fleet_boss_id).first()
-
-    if not boss_char:
-        return 404, ErrorResponse(detail="Fleet boss character not found")
-
-    member_response = EsiClient(boss_char).get_fleet_members(fleet_id)
-
-    fleet_members = []
-
-    for member in member_response.results():
-        fleet_members.append(member["character_id"])
-
-    return 200, fleet_members
+    return 200, fleet.id
 
 
 @router.get(

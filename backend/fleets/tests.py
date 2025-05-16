@@ -49,12 +49,40 @@ def setup_fleet_reference_data():
         name="Test Audience",
         discord_channel_name="TestChannel",
     )
+    EveFleetAudience.objects.create(
+        name="Hidden",
+        hidden=True,
+        add_to_schedule=False,
+    )
+
     EveFleetLocation.objects.create(
         location_id=123,
         location_name="Test Location",
         solar_system_id=234,
         solar_system_name="Somewhere",
     )
+
+
+def setup_fc(user):
+    character_id = 1234
+
+    user.user_permissions.add(Permission.objects.get(codename="add_evefleet"))
+    corp = EveCorporation.objects.create(corporation_id=1, name="Test Corp")
+    character = EveCharacter.objects.create(
+        character_id=character_id,
+        character_name="Mr FC",
+        user=user,
+        corporation=corp,
+    )
+    set_primary_character(user, character)
+
+    DiscordUser.objects.create(
+        id=1,
+        discord_tag="MrFC",
+        user=user,
+    )
+
+    return character_id
 
 
 def make_test_fleet(
@@ -104,31 +132,6 @@ class FleetRouterTestCase(TestCase):
         setup_fleet_reference_data()
 
         super().setUp()
-
-    def setup_fc(self):
-        character_id = 1234
-
-        self.user.user_permissions.add(
-            Permission.objects.get(codename="add_evefleet")
-        )
-        corp = EveCorporation.objects.create(
-            corporation_id=1, name="Test Corp"
-        )
-        character = EveCharacter.objects.create(
-            character_id=character_id,
-            character_name="Mr FC",
-            user=self.user,
-            corporation=corp,
-        )
-        set_primary_character(self.user, character)
-
-        DiscordUser.objects.create(
-            id=1,
-            discord_tag="MrFC",
-            user=self.user,
-        )
-
-        return character_id
 
     def test_get_fleet_v1_v2(self):
         make_test_fleet("Test fleet 1", self.user)
@@ -211,7 +214,7 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual("complete", fixup_fleet_status(fleet, tracking))
 
     def test_get_fleet_reference_data(self):
-        self.setup_fc()
+        setup_fc(self.user)
 
         response = self.client.get(
             f"{BASE_URL}/types",
@@ -224,15 +227,18 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()))
 
         response = self.client.get(
             f"{BASE_URL}/audiences",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()))
+        self.assertEqual("Test Audience", response.json()[0]["display_name"])
 
     def test_create_fleet_endpoint(self):
-        self.setup_fc()
+        setup_fc(self.user)
 
         data = {
             "type": "training",
@@ -258,7 +264,7 @@ class FleetRouterTestCase(TestCase):
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
     def test_start_fleet_endpoint(self, discord_mock, esi_mock):
-        char_id = self.setup_fc()
+        char_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
         fleet.disable_motd = True
         fleet.save()
@@ -282,7 +288,7 @@ class FleetRouterTestCase(TestCase):
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
     def test_start_fleet_with_char(self, discord_mock, esi_mock):
-        fc_id = self.setup_fc()
+        fc_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
         fleet.disable_motd = True
         fleet.save()
@@ -324,7 +330,7 @@ class FleetRouterTestCase(TestCase):
 
     def test_fleet_metrics(self):
         self.make_superuser()
-        self.setup_fc()
+        setup_fc(self.user)
 
         fleet = make_test_fleet("Test", self.user)
         fleet.start_time = datetime.datetime(2025, 1, 1, 21, 30, 0)
@@ -359,7 +365,7 @@ class FleetRouterTestCase(TestCase):
         mock_client = MagicMock()
         discord_mock.return_value = mock_client
         self.make_superuser()
-        self.setup_fc()
+        setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
         response = self.client.post(
             f"{BASE_URL}/{fleet.id}/preping",
@@ -387,7 +393,7 @@ class FleetRouterTestCase(TestCase):
         )
 
         self.make_superuser()
-        self.setup_fc()
+        setup_fc(self.user)
 
         response = self.client.get(
             f"{BASE_URL}/current",
@@ -425,3 +431,83 @@ class FleetTaskTests(TestCase):
             discord_mock.update_message.assert_called()
             discord_mock.create_message.assert_called()
             discord_mock.delete_message.assert_called()
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_fleet_member_update(self, discord, esi):
+        esi_mock = esi.return_value
+
+        fc_id = setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.status = "active"
+        fleet.save()
+
+        efi = EveFleetInstance.objects.create(
+            id=1234,
+            eve_fleet=fleet,
+        )
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": fleet.id,
+                "fleet_boss_id": fc_id,
+            },
+        )
+        fleet_member_response = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "character_id": fc_id,
+                    "join_time": datetime.datetime.now(),
+                    "role": "squad_member",
+                    "role_name": "squad_member",
+                    "ship_type_id": 1000,
+                    "squad_id": 10,
+                    "wing_id": 20,
+                    "solar_system_id": 3001,
+                    "station_id": 4001,
+                    "takes_fleet_warp": True,
+                }
+            ],
+        )
+        esi_mock.get_fleet_members.return_value = fleet_member_response
+        esi_mock.resolve_universe_names.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {"id": fc_id, "name": "Mr FC"},
+                {"id": 1000, "name": "X-Wing"},
+                {"id": 3001, "name": "Homesystem"},
+                {"id": 4001, "name": "Homestation"},
+            ],
+        )
+
+        efi.update_fleet_members()
+
+        self.assertEqual("active", efi.eve_fleet.status)
+
+        efi.boss_id = fc_id
+        efi.save()
+
+        efi.update_fleet_members()
+
+        self.assertEqual("active", efi.eve_fleet.status)
+
+        esi_mock.get_fleet_members.return_value = EsiResponse(
+            response_code=400,
+            response="Mock error",
+        )
+
+        efi.update_fleet_members()
+
+        self.assertEqual("active", efi.eve_fleet.status)
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=400,
+        )
+
+        efi.update_fleet_members()
+
+        self.assertEqual("complete", efi.eve_fleet.status)
+        self.assertIsNotNone(efi.end_time)
