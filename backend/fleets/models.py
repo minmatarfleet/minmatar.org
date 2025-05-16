@@ -385,7 +385,25 @@ class EveFleetInstance(models.Model):
                     # Update boss for future ESI calls
                     self.boss_id = response.data["fleet_boss_id"]
                     self.save()
+                    logger.info(
+                        "Updated fleet boss %d %d",
+                        self.eve_fleet.id,
+                        self.boss_id,
+                    )
                     return
+                else:
+                    logger.info(
+                        "Character no longer in same fleet %d, %d",
+                        self.eve_fleet.id,
+                        member.character_id,
+                    )
+
+            logger.info(
+                "Fleet member no longer has access to fleet, char: %d fleet: %d status: %d",
+                member.character_id,
+                self.eve_fleet.id,
+                response.response_code,
+            )
 
             tries += 1
             if tries >= max_tries:
