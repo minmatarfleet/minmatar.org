@@ -1,0 +1,74 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { prod_error_messages } from '@helpers/env'
+import { get_tags, set_character_tags } from '@helpers/api.minmatar.org/characters'
+import { get_tags_summary } from '@helpers/fetching/characters'
+import type { CharacterTag } from '@dtypes/api.minmatar.org'
+import type { CharacterTagSummary, Alert } from '@dtypes/layout_components'
+
+let tags_summary:CharacterTagSummary[] = []
+let tags:CharacterTag[] = []
+let get_tags_error:string | false = false
+let alert:Alert | false = false
+
+let active_character:number = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+
+if (Astro.request.method === "POST") {
+    try {
+        const form_data = await Astro.request.formData()
+        const tags = (form_data.getAll('tag') as string[]).map(tag => parseInt(tag))
+
+        if (isNaN(active_character))
+            throw new Error('invalid_character_id')
+
+        await set_character_tags(auth_token as string, active_character, tags)
+    } catch (error) {
+        const set_character_tags_error = prod_error_messages() ? t('set_character_tags_error') : error.message
+
+        alert = {
+            title: t('setting_roles'),
+            content: set_character_tags_error as string,
+        }
+    }
+}
+
+try {
+    tags_summary = await get_tags_summary(auth_token as string)
+    tags = await get_tags(auth_token as string)
+} catch (error) {
+    get_tags_error = prod_error_messages() ? t('get_tags_error') : error.message
+}
+
+const CHARACTER_TAG_LIST_PARTIAL_URL = `${translatePath('/partials/character_tag_list_component')}?character_id=${active_character}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import CharactersTagList from '@components/blocks/CharactersTagList.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{get_tags_error ?
+    <ErrorRefetch
+        args={{
+            partial: CHARACTER_TAG_LIST_PARTIAL_URL,
+            message: get_tags_error,
+            delay: delay,
+        }}
+    />
+    :
+    <div x-init={`is_dirty = ${alert ? 'true' : 'false'}; $el.remove()`} />
+    <CharactersTagList tags={tags} tags_summary={tags_summary} active_character={active_character} />
+}

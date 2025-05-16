@@ -18,7 +18,8 @@ if (!auth_token || !user) {
 
 import type { Alert } from '@dtypes/layout_components'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
-import { get_character_summary, delete_characters } from '@helpers/api.minmatar.org/characters'
+import {  delete_characters } from '@helpers/api.minmatar.org/characters'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { query_string } from '@helpers/string';
 
 let redirect:string | false = false
@@ -68,7 +69,7 @@ let pilots:SummaryCharacter[] = []
 let get_characters_error:string | false = false
 let readonly = false
 try {
-    const character_summary = await get_character_summary(auth_token as string)
+    const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary?.characters ?? []
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)

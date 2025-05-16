@@ -1,0 +1,113 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { prod_error_messages } from '@helpers/env'
+import { get_tags } from '@helpers/api.minmatar.org/characters'
+import { get_tags_summary } from '@helpers/fetching/characters'
+import type { CharacterTag } from '@dtypes/api.minmatar.org'
+import type { CharacterTagSummary } from '@dtypes/layout_components'
+ 
+const active_character = parseInt(Astro.params.character_id ? Astro.params.character_id : '0');
+
+let tags_summary:CharacterTagSummary[] = []
+let tags:CharacterTag[] = []
+let get_tags_error:string | false = false
+
+try {
+    tags_summary = await get_tags_summary(auth_token as string)
+    tags = await get_tags(auth_token as string)
+} catch (error) {
+    get_tags_error = prod_error_messages() ? t('get_tags_error') : error.message
+}
+
+const CHARACTER_TAG_LIST_PARTIAL_URL = `${translatePath('/partials/character_tag_list_component')}?character_id=${active_character}`
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import CharactersTagList from '@components/blocks/CharactersTagList.astro'
+
+const page_title = t('account.tags.page_title');
+---
+
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true
+    }}
+>
+    <form
+        hx-post={CHARACTER_TAG_LIST_PARTIAL_URL}
+        hx-trigger="submit"
+        hx-target="#character-tag-list"
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-data={`{
+            is_dirty: false
+        }`}
+        x-on:submit="is_dirty = false"
+    >
+        <PageWide
+            cover={{
+                image: "/images/account-cover.jpg",
+                image_990: "/images/account-cover.jpg",
+                scrollable: true,
+                overlay: true
+            }}
+        >
+            <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <FlexInline>
+                    <Button
+                        class="[ !hidden md:!flex ]"
+                        color='green'
+                        off_disable={true}
+                        x-bind:disabled="!is_dirty"
+                    >
+                        {t('update')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+            
+            <Flexblock gap="var(--space-xl)">
+                <TextBox>
+                    <p>{t('account.tags.description')}</p>
+                </TextBox>
+
+                {get_tags_error ?
+                    <ErrorRefetch
+                        args={{
+                            partial: CHARACTER_TAG_LIST_PARTIAL_URL,
+                            message: get_tags_error,
+                            delay: 0,
+                        }}
+                    />
+                    :
+                    <CharactersTagList tags={tags} tags_summary={tags_summary} active_character={active_character} />
+                }
+            </Flexblock>
+        </PageWide>
+    </form>
+</Viewport>

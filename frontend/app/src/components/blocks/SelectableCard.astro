@@ -1,0 +1,61 @@
+---
+interface Props {
+    image:  string;
+    label:    string;
+    [propName: string]: any;
+}
+
+const {
+    image,
+    label,
+    ...attributes
+} = Astro.props
+
+import PictureCard from '@components/blocks/PictureCard.astro'
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+---
+
+<UnstyledRadioCheckButton {...attributes} class="[ selectable-card ]" type="checkbox" label={label}>
+    <PictureCard src={image} narrow={true}>
+        <slot />
+    </PictureCard>
+</UnstyledRadioCheckButton>
+
+<style lang="scss" is:global>
+    .selectable-card + *:before {
+        content: ' ';
+        z-index: 1;
+        position: absolute;
+        top: var(--space-2xs);
+        left: var(--space-2xs);
+        width: var(--space-xs);
+        height: var(--space-xs);
+        background-color: var(--fleet-yellow);
+    }
+
+    .selectable-card:checked + *:before {
+        background-color: var(--green);
+        border: solid 2px var(--fleet-yellow);
+    }
+
+    .selectable-card:not(:checked) + * {
+        filter: saturate(20%);
+    }
+
+    .selectable-card:focus-visible + * {
+        picture.animated img {
+            transform: scale(1.1);
+        }
+    }
+
+    .selectable-card:focus-visible + *,
+    .selectable-card:not(:checked) + *:hover {
+        filter: saturate(50%);
+    }
+
+    small {
+        color: var(--fleet-yellow);
+        line-height: 1.5;
+        text-wrap: pretty;
+    }
+</style>

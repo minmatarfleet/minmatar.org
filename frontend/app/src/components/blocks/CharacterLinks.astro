@@ -52,6 +52,15 @@ import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
         href={get_zkillboard_character_link(character_id)}
         target="_blank"
         rel="nofollow noopener noreferrer"
+        x-data={`{
+            show_external_link_disclaimer() {
+                show_alert_dialog({
+                    title: '${t('leaving_website')}',
+                    content: '${t('leaving_website_description')}',
+                }).then( (accepted) => accepted && window.location.href = "${get_zkillboard_character_link(character_id)}" )
+            }
+        }`}
+        x-on:click.prevent="show_external_link_disclaimer"
     >
         <ZkillboardEvEIcon />
     </a>

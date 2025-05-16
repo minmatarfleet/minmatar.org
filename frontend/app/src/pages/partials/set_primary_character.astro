@@ -18,7 +18,7 @@ if (!auth_token || !user) {
 
 import { set_primary_characters } from '@helpers/api.minmatar.org/characters'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
-import { get_character_summary } from '@helpers/api.minmatar.org/characters'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 const character_id = parseInt(Astro.url.searchParams.get('id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
@@ -55,7 +55,7 @@ if (set_main_character_error) {
     }
 
     try {
-        const character_summary = await get_character_summary(auth_token as string)
+        const character_summary = await get_characters_summary_sorted(auth_token as string)
         pilots = character_summary?.characters ?? []
     } catch (error) {
         get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)

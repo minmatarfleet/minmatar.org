@@ -9,6 +9,7 @@ interface Props {
     size?:              ButtonSizes;
     narrow?:            boolean;
     centered?:          boolean;
+    off_disable?:       boolean;
     [propName: string]: any;
 }
 
@@ -19,6 +20,7 @@ const {
     size = 'lg',
     narrow = false,
     centered = true,
+    off_disable = false,
     ...attributes
 } = Astro.props;
 
@@ -37,7 +39,7 @@ const Element = href ? 'a' : 'button';
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
     disabled={Element === 'button' ? 'disabled' : undefined}
-    x-init={Element === 'button' ? '$el.removeAttribute("disabled")' : undefined}
+    x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
 >
     <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'} justification={centered ? 'center' : 'flex-start'}>
         <slot name="icon" />
