@@ -275,13 +275,20 @@ class EveFleetInstance(models.Model):
         # response = esi.client.Fleets.get_fleets_fleet_id_members(
         #     fleet_id=self.id, token=token
         # ).results()
+        logger.info(
+            "Updating members for fleet %d (%s)", self.eve_fleet.id, self.id
+        )
 
-        response = self.esi_client().get_fleet_members(self.eve_fleet.id)
+        response = self.esi_client().get_fleet_members(self.id)
         if response.success():
             response = response.results()
         else:
             self.handle_fleet_update_esi_failure(response)
             return
+
+        logger.info(
+            "Fleet member count %d = %d ", self.eve_fleet.id, len(response)
+        )
 
         ids_to_resolve = set()
         for esi_fleet_member in response:
