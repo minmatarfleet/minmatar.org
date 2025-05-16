@@ -300,7 +300,7 @@ class EveFleetInstance(models.Model):
         #     ids=ids_to_resolve
         # ).results()
         resolved_ids = (
-            EsiClient().resolve_universe_names(ids_to_resolve).results()
+            EsiClient(None).resolve_universe_names(ids_to_resolve).results()
         )
         resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
 
