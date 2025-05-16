@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 import requests
 from django.contrib.auth.models import Group, User
@@ -362,7 +361,7 @@ class EveFleetInstance(models.Model):
                     ],
                 )
 
-        self.last_updated = datetime.now()
+        self.last_updated = timezone.now()
         self.save()
 
     def handle_fleet_update_esi_failure(self, esi_response):
@@ -381,7 +380,7 @@ class EveFleetInstance(models.Model):
             response = EsiClient(member.character_id).get_active_fleet()
             if response.success():
                 # Make sure they are in the correct fleet
-                if response.data["fleet_id"] == self.eve_fleet.id:
+                if response.data["fleet_id"] == self.id:
                     # Update boss for future ESI calls
                     self.boss_id = response.data["fleet_boss_id"]
                     self.save()
