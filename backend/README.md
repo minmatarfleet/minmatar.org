@@ -99,6 +99,7 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 ./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
 ```
 
+### Create a test admin user and display JWT
 ```
 ./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
 ```
