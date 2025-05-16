@@ -42,9 +42,9 @@ export async function get_fleet_srp(access_token:string, srp_request:SRPRequest)
 
 export async function create_fleet_srp(access_token:string, fleet_id:number, external_killmail_link:string, is_corp_ship:boolean) {
     const data = JSON.stringify({
-        fleet_id: fleet_id,
         external_killmail_link: external_killmail_link,
         is_corp_ship: is_corp_ship,
+        ...(fleet_id && { fleet_id }),
     })
 
     const headers = {

@@ -12,6 +12,7 @@ from eveonline.helpers.affiliations import (
 from groups.tasks import update_affiliation
 
 from .client import EsiClient
+from .helpers.characters import all_primary_character_objects
 from .helpers.assets import create_character_assets
 from .helpers.skills import (
     create_eve_character_skillset,
@@ -23,6 +24,7 @@ from .models import (
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
     EveCorporation,
+    EveAlliance,
     EveSkillset,
 )
 
@@ -260,20 +262,23 @@ def update_corporation(corporation_id):
         return
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
-        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        token = Token.get_token(corporation.ceo.character_id, required_scopes)
-        if not token:
-            logger.warning("No valid CEO token for %s", corporation.name)
-            return
+        # required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        # token = Token.get_token(corporation.ceo.character_id, required_scopes)
+        # if not token:
+        #     logger.warning("No valid CEO token for %s", corporation.name)
+        #     return
 
-        logger.info("Updating corporation members for %s", corporation.name)
-        esi_members = (
-            esi.client.Corporation.get_corporations_corporation_id_members(
-                corporation_id=corporation_id,
-                token=token.valid_access_token(),
-            ).results()
+        # logger.info("Updating corporation members for %s", corporation.name)
+        # esi_members = (
+        #     esi.client.Corporation.get_corporations_corporation_id_members(
+        #         corporation_id=corporation_id,
+        #         token=token.valid_access_token(),
+        #     ).results()
+        # )
+        esi_members = EsiClient(corporation.ceo).get_corporation_members(
+            corporation.corporation_id
         )
-        for member_id in esi_members:
+        for member_id in esi_members.results():
             if not EveCharacter.objects.filter(
                 character_id=member_id
             ).exists():
@@ -305,3 +310,33 @@ def fixup_character_tokens():
 
         if updated:
             character.save()
+
+
+@app.task
+def fixup_primary_characters():
+    """Update primary characters to EveCharacter attribute"""
+
+    for primary in all_primary_character_objects():
+        if not primary.character.is_primary:
+            primary.character.is_primary = True
+            primary.character.save()
+            logger.info(
+                "Set %s primary character attribute",
+                primary.character.character_name,
+            )
+
+
+@app.task
+def deduplicate_alliances():
+    """Remove duplicate alliance instances"""
+
+    previous_id = -1
+    for alliance in EveAlliance.objects.all().order_by("alliance_id"):
+        if alliance.alliance_id == previous_id:
+            logger.warning(
+                "Removing duplicate alliance, %d %s",
+                alliance.alliance_id,
+                alliance.name,
+            )
+            alliance.delete()
+        previous_id = alliance.alliance_id

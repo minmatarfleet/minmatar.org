@@ -2,13 +2,14 @@ import logging
 from typing import List
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
 from esi.models import Scope, Token
 from eveuniverse.models import EveFaction
 
 from eveonline.scopes import CEO_SCOPES
+from eveonline.client import EsiClient
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
@@ -66,6 +67,7 @@ class EveCharacter(models.Model):
 
     # The my.minmatar.org user that owns this Eve character
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_primary = models.BooleanField(default=False)
 
     @property
     def tokens(self):
@@ -77,6 +79,14 @@ class EveCharacter(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["character_name"]),
+            models.Index(fields=["user", "is_primary"]),
+        ]
+        constraints = [
+            UniqueConstraint(
+                fields=["user"],
+                condition=Q(is_primary=True),
+                name="unique_primary_user",
+            )
         ]
 
 
@@ -370,10 +380,13 @@ class EveCorporation(models.Model):
         logger.info(
             "Fetching external corporation details for %s", self.corporation_id
         )
+        # esi_corporation = (
+        #     esi.client.Corporation.get_corporations_corporation_id(
+        #         corporation_id=self.corporation_id
+        #     ).results()
+        # )
         esi_corporation = (
-            esi.client.Corporation.get_corporations_corporation_id(
-                corporation_id=self.corporation_id
-            ).results()
+            EsiClient(None).get_corporation(self.corporation_id).results()
         )
         logger.debug("ESI corporation data: %s", esi_corporation)
         self.name = esi_corporation["name"]
@@ -417,7 +430,7 @@ class EveCorporation(models.Model):
 class EveAlliance(models.Model):
     """Alliance model"""
 
-    alliance_id = models.IntegerField()
+    alliance_id = models.IntegerField(unique=True)
 
     # autopopulated
     name = models.CharField(max_length=255, blank=True)

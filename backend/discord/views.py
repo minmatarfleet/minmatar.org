@@ -17,6 +17,9 @@ auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={setting
 
 
 def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
+    if hasattr(settings, "FAKE_LOGIN_USER_ID"):
+        return fake_login(request)
+
     # get next and store in session
     logger.info("Adding redirect URL to session: %s", request.GET.get("next"))
     request.session["next"] = request.GET.get("next")
@@ -133,3 +136,16 @@ def redirect_to_error_page(request, error_code):
     redirect_url = redirect_url + "?error=" + error_code
     logger.info("Redirecting to error URL... %s", redirect_url)
     return redirect(redirect_url)
+
+
+def fake_login(request: HttpRequest):
+    django_user = User.objects.get(id=settings.FAKE_LOGIN_USER_ID)
+    django_user.is_superuser = True
+    django_user.is_staff = True
+    django_user.save()
+
+    login(request, django_user)
+
+    logger.info("Fake login as user %s", django_user.username)
+
+    return redirect("/admin")

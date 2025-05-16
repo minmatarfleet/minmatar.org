@@ -26,9 +26,11 @@ import { get_user_character } from '@helpers/fetching/characters'
 let fetch_srp_error:string | false = false
 let fleets_srps:FleetSRPUI[] | null = []
 let srps_count:number = 0
+let fleetless:boolean = false
 
 try {
     fleets_srps = await fetch_srps(auth_token as string)
+    fleetless = fleets_srps.find(srp => srp.fleet_id === 0) !== undefined
 
     if (!can_view_all_srp) {
         const user_character = await get_user_character(user.user_id)
@@ -59,13 +61,10 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro'
 
-import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-
 import SRPTable from '@components/blocks/SRPTable.astro';
-
-import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
-import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
+import SRPButton from '@components/blocks/SRPButton.astro'
+import Button from '@components/blocks/Button.astro'
 
 const page_title = t('fleets.srp.page_title');
 ---
@@ -104,16 +103,20 @@ const page_title = t('fleets.srp.page_title');
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming/')}>
-                    <FleetIcon slot="icon" />
-                    {t('upcoming_fleets')}
-                </Button>
-                <Button class="[ !hidden lg:!flex ]" href={translatePath('/fleets/history/')}>
-                    <HistoryIcon slot="icon" />
-                    {t('fleet_history')}
+                <Button color='green' x-on:click="document.getElementById('submit-srp-button').click()">
+                    {t('add_killmail')}
                 </Button>
             </FlexInline>
         </FlexInline>
+
+        <SRPButton
+            id='submit-srp-button'
+            fleet_id={0}
+            target='#srp-table-0'
+            size='lg'
+            fleet_title={true}
+            hidden={true}
+        />
         
         {fetch_srp_error ?
             <ErrorRefetch
@@ -132,8 +135,14 @@ const page_title = t('fleets.srp.page_title');
                     <p x-show="srps_count === 0" class="[ text-center ]" style="display: none">{t('no_srp_found')}</p>
                 }
                 {fleets_srps.map(fleet_srps =>
-                    <SRPTable fleet_id={fleet_srps.fleet_id} fleet_srps={fleet_srps.srps} readonly={!can_view_all_srp} fleet_title={true} />
+                    <SRPTable
+                        fleet_id={fleet_srps.fleet_id ?? 0}
+                        fleet_srps={fleet_srps.srps}
+                        readonly={!can_view_all_srp}
+                        fleet_title={true}
+                    />
                 )}
+                {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}
             </BlockList>
         }
 	</PageWide>

@@ -5,8 +5,6 @@ from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveonline.scopes import MARKET_CHARACTER_SCOPES, BASIC_SCOPES
 
-from .models import EveCharacter
-
 logger = logging.getLogger(__name__)
 
 esi = EsiClientProvider()
@@ -34,7 +32,7 @@ class EsiResponse:
 
     def success(self):
         """Returns true of the ESI call was successful."""
-        return self.response_code <= 400
+        return self.response_code < 400
 
     def results(self):
         """Returns the data provided by the ESI call"""
@@ -50,12 +48,12 @@ class EsiClient:
     character_id: int
     character_esi_suspended: bool = False
 
-    def __init__(self, character: int | EveCharacter | None):
+    def __init__(self, character):
         if character is None:
             return
         elif isinstance(character, int):
             self.character_id = character
-        elif isinstance(character, EveCharacter):
+        elif hasattr(character, "character_id"):
             self.character_id = character.character_id
             self.character_esi_suspended = character.esi_suspended
 
@@ -150,4 +148,54 @@ class EsiClient:
             character_id=self.character_id,
             token=token,
         )
+        return self._operation_results(operation)
+
+    def get_fleet_members(self, fleet_id: int) -> EsiResponse:
+        token, status = self.get_valid_token(BASIC_SCOPES)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Fleets.get_fleets_fleet_id_members(
+            fleet_id=fleet_id, token=token
+        )
+
+        return self._operation_results(operation)
+
+    def get_corporation(self, corporation_id: int) -> EsiResponse:
+        operation = esi.client.Corporation.get_corporations_corporation_id(
+            corporation_id=corporation_id
+        )
+        return self._operation_results(operation)
+
+    def get_corporation_members(self, corporation_id: int) -> EsiResponse:
+        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        token, status = self.get_valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = (
+            esi.client.Corporation.get_corporations_corporation_id_members(
+                corporation_id=corporation_id,
+                token=token,
+            )
+        )
+
+        return self._operation_results(operation)
+
+    def send_evemail(self, mail_details) -> EsiResponse:
+        required_scopes = ["esi-mail.send_mail.v1"]
+        token, status = self.get_valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Mail.post_characters_character_id_mail(
+            mail=mail_details,
+            character_id=self.character_id,
+            token=token,
+        )
+
+        return self._operation_results(operation)
+
+    def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
+        operation = esi.client.Universe.post_universe_names(ids=ids_to_resolve)
         return self._operation_results(operation)

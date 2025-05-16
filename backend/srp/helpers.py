@@ -4,10 +4,10 @@ from random import randint
 
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
-from esi.models import Token
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
@@ -118,7 +118,10 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         character_id=killmail.victim_character.character_id,
     ).exists():
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, character not in fleet"
+            "Killmail %d not eligible for SRP, character %d not in fleet %d",
+            killmail.killmail_id,
+            killmail.victim_character.character_id,
+            fleet.id,
         )
         return False, "Character not in fleet"
 
@@ -126,13 +129,19 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
         fleet_instance.end_time + timedelta(hours=2) < killmail.timestamp
     ):
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, lost after fleet ended"
+            "Killmail %d not eligible for SRP, lost after fleet %d ended (%s)",
+            killmail.killmail_id,
+            fleet.id,
+            killmail.victim_character.character_id,
         )
         return False, "Lost after fleet ended"
 
     if fleet_instance.start_time - timedelta(hours=1) > killmail.timestamp:
         logger.info(
-            f"Killmail {killmail.killmail_id} not eligible for SRP, lost before fleet started"
+            "Killmail%d not eligible for SRP, lost before fleet %d started (%d)",
+            killmail.killmail_id,
+            fleet.id,
+            killmail.victim_character.character_id,
         )
         return False, "Lost before fleet started"
 
@@ -141,8 +150,35 @@ def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
 
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
     mail_character_id = 2116116149
+    evemail = make_reimbursement_evemail(reimbursement)
+
+    result = EsiClient(mail_character_id).send_evemail(evemail).results()
+
+    # token = Token.objects.filter(
+    #     character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
+    # ).first()
+    # if not token:
+    #     logger.error("Missing token for mail")
+    #     return
+
+    # result = esi.client.Mail.post_characters_character_id_mail(
+    #     mail=evemail,
+    #     character_id=mail_character_id,
+    #     token=token.valid_access_token(),
+    # ).result()
+
+    logger.info(
+        f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
+    )
+    return result
+
+
+def make_reimbursement_evemail(reimbursement):
     mail_subject = "SRP Reimbursement Decision"
-    mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} ({reimbursement.ship_name}) has been {reimbursement.status}."
+    if reimbursement.fleet:
+        mail_body = f"Your SRP request for fleet {reimbursement.fleet.id} ({reimbursement.ship_name}) has been {reimbursement.status}."
+    else:
+        mail_body = f"Your non-fleet SRP request ({reimbursement.ship_name}) has been {reimbursement.status}."
     if reimbursement.status == "approved":
         mail_body += f" You have been reimbursed {reimbursement.amount} ISK."
 
@@ -154,29 +190,15 @@ def send_decision_notification(reimbursement: EveFleetShipReimbursement):
 
     mail_body += "Best,\nMr. ThatCares"
 
-    token = Token.objects.filter(
-        character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
-    ).first()
-    if not token:
-        logger.error("Missing token for mail")
-        return
+    evemail = {
+        "subject": mail_subject,
+        "body": mail_body,
+        "recipients": [
+            {
+                "recipient_id": reimbursement.primary_character_id,
+                "recipient_type": "character",
+            }
+        ],
+    }
 
-    result = esi.client.Mail.post_characters_character_id_mail(
-        mail={
-            "subject": mail_subject,
-            "body": mail_body,
-            "recipients": [
-                {
-                    "recipient_id": reimbursement.primary_character_id,
-                    "recipient_type": "character",
-                }
-            ],
-        },
-        character_id=mail_character_id,
-        token=token.valid_access_token(),
-    ).result()
-
-    logger.info(
-        f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
-    )
-    return result
+    return evemail

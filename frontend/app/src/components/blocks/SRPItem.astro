@@ -9,6 +9,7 @@ interface Props {
     readonly:       boolean;
     target?:        string;
     remove_table?:  boolean;
+    fleet_title?:   boolean;
 }
 
 const {
@@ -16,6 +17,7 @@ const {
     readonly,
     target = '#srp-table',
     remove_table = false,
+    fleet_title = false,
 } = Astro.props
 
 import { number_name } from '@helpers/numbers.ts';
@@ -116,12 +118,16 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
 
                 <Flexblock>
                     <FlexInline gap='var(--space-3xs)' class="[ !items-center ]">
-                        <p>{t('process_srp_dialog_text')}</p>
-                        <p><CharacterPicture character_id={srp.character_id} character_name={srp.character_name} size={16} icon_quality={32} /></p>
-                        <p>{srp.character_name}’s</p>
-                        <p><ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} /></p>
-                        <p>{srp.ship_name}</p>
-                        <p>{t('srp')}.</p>
+                        <span>{t('process_srp_dialog_text')}</span>
+                        <span><CharacterPicture character_id={srp.character_id} character_name={srp.character_name} size={16} icon_quality={32} /></span>
+                        <span>{srp.character_name}’s</span>
+                        <a href={`https://zkillboard.com/kill/${srp.killmail_id}/`} target="_blank">
+                            <FlexInline gap='var(--space-3xs)' class="[ !items-center ]">
+                                <span><ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} /></span>
+                                <span>{srp.ship_name}</span>
+                            </FlexInline>
+                        </a>
+                        <span>{t('srp')}.</span>
                     </FlexInline>
                     <Flexblock gap='var(--space-2xs)'>
                         <FlexInline>
@@ -154,6 +160,8 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <ClipboardButton id={`srp-dialog-copy-name-${srp.id}`}>{srp.primary_character_name}</ClipboardButton>
                         </FlexInline>
                     </Flexblock>
+                    
+                    {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
                 </Flexblock>
 
                 <FlexInline justification='space-between'>
@@ -165,9 +173,10 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             x-on:click="close_dialog()"
                             x-on:mouseenter="action = 'approve'"
                             hx-patch={`${SRP_TABLE_PARTIAL_URL}?${query_string({
-                                fleet_id : JSON.stringify(srp.fleet_id),
+                                fleet_id : JSON.stringify(srp.fleet_id ?? 0),
                                 reimbursement_id : JSON.stringify(srp.id),
                                 remove_table: JSON.stringify(remove_table),
+                                fleet_title: JSON.stringify(fleet_title),
                                 status: 'approved'
                             })}`}
                             hx-target={target}
@@ -182,9 +191,10 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             x-on:click="close_dialog()"
                             x-on:mouseenter="action = 'reject'"
                             hx-patch={`${SRP_TABLE_PARTIAL_URL}?${query_string({
-                                fleet_id : JSON.stringify(srp.fleet_id),
+                                fleet_id : JSON.stringify(srp.fleet_id ?? 0),
                                 reimbursement_id : JSON.stringify(srp.id),
                                 remove_table: JSON.stringify(remove_table),
+                                fleet_title: JSON.stringify(fleet_title),
                                 status: 'rejected'
                             })}`}
                             hx-target={target}

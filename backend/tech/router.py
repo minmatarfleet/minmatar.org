@@ -11,6 +11,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.models import EveCharacter
+from fleets.models import EveFleetAudience, EveFleet
 from tech.docker import (
     container_names,
     sort_chronologically,
@@ -89,6 +90,41 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
         response.append(item)
 
     return response
+
+
+@router.get(
+    "/fleet_tracking_poc",
+    summary="Proof-of-concept for advanced fleet tracking",
+    auth=AuthBearer(),
+    response={200: int, 403: ErrorResponse, 404: ErrorResponse},
+)
+def fleet_tracking_poc(
+    request, fleet_id: Optional[int] = None, start: bool = False
+):
+    if not (
+        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
+    ):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    if fleet_id:
+        fleet = EveFleet.objects.get(id=fleet_id)
+    else:
+        audience = EveFleetAudience.objects.filter(hidden=True).first()
+        if not audience:
+            return 404, ErrorResponse(detail="No hidden audience found")
+        fleet = EveFleet.objects.create(
+            audience=audience,
+            description="Technical test fleet",
+            type="training",
+            start_time=datetime.now(),
+            created_by=request.user,
+            disable_motd=True,
+        )
+
+    if start:
+        fleet.start()
+
+    return 200, fleet.id
 
 
 @router.get(

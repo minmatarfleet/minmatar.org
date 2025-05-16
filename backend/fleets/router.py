@@ -11,7 +11,11 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
-from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters import (
+    user_primary_character,
+    user_characters,
+)
+from eveonline.client import EsiClient
 from discord.client import DiscordClient
 from fittings.models import EveDoctrine
 from groups.helpers import user_in_team, TECH_TEAM
@@ -154,6 +158,19 @@ class EveFleetMetric(BaseModel):
     audience_name: str
 
 
+class UserActiveFleetResponse(BaseModel):
+    character_id: int
+    eve_fleet_id: int
+    fleet_boss_id: int
+    fleet_role: str
+
+
+class StartFleetRequest(BaseModel):
+    """Additional data for starting to track a fleet"""
+
+    fc_character_id: Optional[int] = None
+
+
 @router.get(
     "/types",
     auth=AuthBearer(),
@@ -203,7 +220,7 @@ def get_v2_fleet_locations(request):
 def get_fleet_audiences(request):
     if not request.user.has_perm("fleets.add_evefleet"):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
-    audiences = EveFleetAudience.objects.all()
+    audiences = EveFleetAudience.objects.filter(hidden=False).all()
     response = []
     for audience in audiences:
         response.append(
@@ -309,6 +326,8 @@ def get_v3_fleets(
 
 
 def can_see_fleet(fleet: EveFleet, user) -> bool:
+    if fleet.audience and fleet.audience.hidden:
+        return False
     if not user.id:
         return False
     if user.has_perm("fleets.view_evefleet"):
@@ -514,6 +533,28 @@ def get_fleet_metrics(request):
         )
         metrics.append(metric)
     return 200, metrics
+
+
+@router.get(
+    "/current",
+    summary="Get the fleets that the user is currently active in",
+    auth=AuthBearer(),
+    response={200: List[UserActiveFleetResponse], 403: None, 404: None},
+)
+def get_user_active_fleets(request):
+    active_fleets = []
+    for char in user_characters(request.user):
+        response = EsiClient(char).get_active_fleet()
+        if response.success():
+            active_fleets.append(
+                UserActiveFleetResponse(
+                    character_id=char.character_id,
+                    eve_fleet_id=response.data["fleet_id"],
+                    fleet_boss_id=response.data["fleet_boss_id"],
+                    fleet_role=response.data["role"],
+                )
+            )
+    return active_fleets
 
 
 @router.get(
@@ -784,14 +825,19 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     response={200: None, 403: ErrorResponse, 400: ErrorResponse},
     description="Start a fleet and send a discord ping, must be the owner of the fleet",
 )
-def start_fleet(request, fleet_id: int):
+def start_fleet(
+    request, fleet_id: int, payload: Optional[StartFleetRequest] = None
+):
     fleet = EveFleet.objects.get(id=fleet_id)
     if request.user != fleet.created_by:
         return 403, {
             "detail": "User does not have permission to start tracking this fleet"
         }
     try:
-        fleet.start()
+        if payload and payload.fc_character_id:
+            fleet.start(payload.fc_character_id)
+        else:
+            fleet.start(None)
     except Exception as e:
         logger.error("Error starting fleet %d: %s", fleet_id, e)
         return 400, {"detail": str(e)}
@@ -820,7 +866,12 @@ def delete_fleet(request, fleet_id: int):
 @router.post(
     "/{fleet_id}/preping",
     auth=AuthBearer(),
-    response={202: None, 403: ErrorResponse, 404: ErrorResponse, 500: None},
+    response={
+        202: str,
+        403: ErrorResponse,
+        404: ErrorResponse,
+        500: ErrorResponse,
+    },
     description="Send a Discord pre-ping for a fleet. No request body needed.",
 )
 def send_pre_ping(request, fleet_id):
@@ -837,6 +888,6 @@ def send_pre_ping(request, fleet_id):
     sent = send_discord_pre_ping(fleet)
 
     if sent:
-        return 202
+        return 202, "Sent"
     else:
-        return 500
+        return 500, ErrorResponse(detail="Error sending pre-ping")

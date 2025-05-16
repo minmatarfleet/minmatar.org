@@ -54,17 +54,36 @@ Note that this only works if you have access to the server's secret key.
 Also note that some APIs require Discord for correct operation regardless of authentication.
 
 ## Testing
-The backend Python code includes three primary external integrations...
+The backend Python code includes three main external integrations...
 
 1. The database
 2. ESI, the Eve Swagger Interface 
-3. Signal
+3. Discord
 
-In many cases the Django data entities have signals registered that call ESI, Signal or both, when changes are made to the database.
+In many cases the Django data entities have signals registered that call ESI, Discord or both, 
+when changes are made to the database. The signals are not necessarily defined in the same 
+package as the entities they are attacjed to.
 
-Many of the unit tests disable these signals.
+Due to the deeply interconnected nature of the various parts of the code, the most challenging
+aspects of unit testing are generally setting up the necessary test data and mocks, and disabling
+signals.
 
-In other cases, the Discord and ESI clients are mocked.
+Many of the `TestCase` classes provide helper functions for setting up test data and disabling signals, 
+though this is not yet done in a systematic manner.
+
+Mocking of the Discord and ESI clients allows testing of the code without external connectivity to those services. 
+The mocks are created using standard Python mocking/patching mechanics.
+
+Note that not all ESI access is performed via the mockable `EsiClient` yet. 
+While it is technically possible to mock the existing code, it is much easier to migrate it to use `EsiClient` first.
+
+Because they are invariably mocked in unit tests, the Discord and ESI
+client classes are excluded from coverage reporting. 
+As they cannot be easily tested, they should contain minimal logic.
+
+Some of the background Celery tasks identify a set of entities and then create another asynchronous task instance for each
+of those entities. The outer tasks are therefore generally not tested.
+
 
 ## Commands
 ### Set local environment variables
@@ -73,4 +92,14 @@ In other cases, the Discord and ESI clients are mocked.
 ### Run tests with result and coverage reporting
 ```
 coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults.txt && coverage html
+```
+
+### Setup test data
+```
+./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
+```
+
+### Create a test admin user and display JWT
+```
+./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
 ```

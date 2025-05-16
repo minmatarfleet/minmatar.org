@@ -1,4 +1,5 @@
 from django.db.models import signals
+from django.db.utils import IntegrityError
 from django.http import HttpRequest
 from django.test import Client
 from django.contrib.auth.models import User
@@ -8,7 +9,6 @@ from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacter,
     EvePrimaryCharacterChangeLog,
     EveCharacterLog,
     EveCharacterSkillset,
@@ -20,6 +20,7 @@ from eveonline.scopes import TokenType, token_type_str
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
+    set_primary_character,
 )
 from eveonline.routers.characters import (
     handle_add_character_esi_callback,
@@ -56,7 +57,11 @@ class CharacterRouterTestCase(TestCase):
         self.user.save()
 
     def make_character(
-        self, user: User, character_id: int, name: str
+        self,
+        user: User,
+        character_id: int,
+        name: str,
+        is_primary: bool = False,
     ) -> EveCharacter:
         """Creates an EveCharacter with an ESI token."""
         token = Token.objects.create(
@@ -68,6 +73,7 @@ class CharacterRouterTestCase(TestCase):
             character_name=name,
             user=user,
             token=token,
+            is_primary=is_primary,
         )
 
     def test_get_characters_success(self):
@@ -122,23 +128,8 @@ class CharacterRouterTestCase(TestCase):
         primary = user_primary_character(self.user)
         self.assertIsNone(primary)
 
-        char = self.make_character(self.user, 123456, "Test Char")
+        self.make_character(self.user, 123456, "Test Char", True)
 
-        epc = EvePrimaryCharacter.objects.create(
-            character=char,
-        )
-
-        primary = user_primary_character(self.user)
-        self.assertEqual("Test Char", primary.character_name)
-
-        EvePrimaryCharacter.objects.create(
-            character=char,
-        )
-
-        primary = user_primary_character(self.user)
-        self.assertEqual("Test Char", primary.character_name)
-
-        epc.user = self.user
         primary = user_primary_character(self.user)
         self.assertEqual("Test Char", primary.character_name)
 
@@ -159,11 +150,7 @@ class CharacterRouterTestCase(TestCase):
     def test_get_character(self):
         self.make_superuser()
 
-        char = self.make_character(self.user, 123456, "Test Char")
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=self.user,
-        )
+        char = self.make_character(self.user, 123456, "Test Char", True)
         response = self.client.get(
             f"{BASE_URL}{char.character_id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
@@ -171,9 +158,9 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_change_primary_character(self):
-        self.make_superuser()
+        # self.make_superuser()
 
-        char1 = self.make_character(self.user, 123456, "Test Char 1")
+        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
 
         response = self.client.put(
             f"{BASE_URL}primary?character_id={char1.character_id}",
@@ -336,7 +323,9 @@ class CharacterRouterTestCase(TestCase):
         self.assertAlmostEqual(0.6, skillsets[0]["progress"])
 
     def test_get_character_with_token_issue(self):
-        char = self.make_character(self.user, 123456, "Test Char suspended")
+        char = self.make_character(
+            self.user, 123456, "Test Char suspended", False
+        )
         char.esi_suspended = True
         char.esi_token_level = "Super"
         char.save()
@@ -346,10 +335,7 @@ class CharacterRouterTestCase(TestCase):
             id=1234,
             discord_tag="tag",
         )
-        EvePrimaryCharacter.objects.create(
-            character=char,
-            user=self.user,
-        )
+        set_primary_character(self.user, char)
 
         response = self.client.get(
             f"{BASE_URL}summary",
@@ -385,7 +371,7 @@ class CharacterRouterTestCase(TestCase):
         for char in data["characters"]:
             self.assertFalse(char["is_primary"])
 
-    def test_get_character_tags(self):
+    def test_manage_character_tags(self):
         char = self.make_character(self.user, 123456, "Test Char")
         tag1 = EveTag.objects.create(title="Test 1", description="Desc 1")
         tag2 = EveTag.objects.create(title="Test 2", description="Desc 2")
@@ -510,3 +496,61 @@ class CharacterRouterTestCase(TestCase):
             ],
             response.json(),
         )
+
+        response = self.client.put(
+            f"{BASE_URL}{char.character_id}/tags",
+            data=[2, 3],
+            content_type="text/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}/tags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [
+                {
+                    "id": 2,
+                    "title": "Test 2",
+                    "description": "Desc 2",
+                    "image_name": None,
+                },
+                {
+                    "id": 3,
+                    "title": "Test 3",
+                    "description": "Desc 3",
+                    "image_name": None,
+                },
+            ],
+            response.json(),
+        )
+
+    def test_character_primary_attribute(self):
+        char1 = self.make_character(self.user, 123456, "Test Char 1")
+        char2 = self.make_character(self.user, 234567, "Test Char 2")
+
+        char1.is_primary = True
+        char1.save()
+
+        char2.is_primary = True
+        try:
+            char2.save()
+            self.fail("Should not be able to save second primary")
+        except IntegrityError as e:
+            self.assertIn(
+                "UNIQUE constraint failed: eveonline_evecharacter.user_id",
+                str(e),
+            )
+
+    def test_primary_character_via_attribute(self):
+        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
+        self.make_character(self.user, 234567, "Test Char 2", True)
+
+        set_primary_character(self.user, char1)
+
+        new_primary = user_primary_character(self.user)
+        self.assertIsNotNone(new_primary)
+        self.assertEqual("Test Char 1", new_primary.character_name)

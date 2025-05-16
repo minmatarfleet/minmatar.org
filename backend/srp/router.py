@@ -37,7 +37,7 @@ class EveFleetReimbursementResponse(BaseModel):
     """
 
     id: int
-    fleet_id: int
+    fleet_id: Optional[int] = None
     external_killmail_link: str
     status: str
     character_id: int
@@ -94,6 +94,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
 
     reimbursement = EveFleetShipReimbursement.objects.create(
         fleet=fleet,
+        user=request.user,
         external_killmail_link=payload.external_killmail_link,
         status="pending",
         character_id=details.victim_character.character_id,
@@ -144,17 +145,24 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     auth=AuthBearer(),
     response={200: List[EveFleetReimbursementResponse], 403: ErrorResponse},
 )
-def get_fleet_srp(request, fleet_id: int = None, status: str = None):
+def get_fleet_srp(
+    request,
+    fleet_id: int | None = None,
+    status: str | None = None,
+    user_id: int | None = None,
+):
     if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
 
     reimbursements = EveFleetShipReimbursement.objects.all()
-    if fleet_id:
-        reimbursements = reimbursements.filter(fleet_id=fleet_id)
     if status:
         reimbursements = reimbursements.filter(status=status)
+    if fleet_id:
+        reimbursements = reimbursements.filter(fleet_id=fleet_id)
+    if user_id:
+        reimbursements = reimbursements.filter(user_id=user_id)
 
     response = []
     for reimbursement in reimbursements:

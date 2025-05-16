@@ -6,7 +6,11 @@ from typing import List
 from django.contrib.auth.models import User
 from pydantic import BaseModel
 
-from eveonline.models import EvePrimaryCharacter, EveCharacter
+from eveonline.models import (
+    EvePrimaryCharacter,
+    EveCharacter,
+    EvePrimaryCharacterChangeLog,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -73,12 +77,21 @@ class CorporationCharacterResponse(BaseModel):
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
+    # Newest method using the is_primary attribute on EveCharacter
+    primary = EveCharacter.objects.filter(user=user, is_primary=True).first()
+    if primary:
+        return primary
+
     # New method using the "user" field
     pc = EvePrimaryCharacter.objects.filter(user=user).first()
     if pc:
+        logger.warning(
+            "Found primary using outdated method 1: %s",
+            pc.character.character_name,
+        )
         return pc.character
 
-    # Fall back to old method using link through ESI token
+    # Fall back to oldest method using link through ESI token
     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
 
     if q.count() > 1:
@@ -87,6 +100,10 @@ def user_primary_character(user: User) -> EveCharacter | None:
         )
 
     if q.count() >= 1:
+        logger.warning(
+            "Found primary using outdated method 2: %s",
+            pc.character.character_name,
+        )
         return q.first().character
     else:
         return None
@@ -94,7 +111,7 @@ def user_primary_character(user: User) -> EveCharacter | None:
 
 def user_characters(user: User) -> List[EveCharacter]:
     """Returns all the EveCharacters for a particular User"""
-    return EveCharacter.objects.filter(token__user=user).all()
+    return EveCharacter.objects.filter(user=user).all()
 
 
 def character_primary(character: EveCharacter) -> EveCharacter | None:
@@ -105,3 +122,29 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
         return user_primary_character(character.user)
     else:
         return user_primary_character(character.token.user)
+
+
+def set_primary_character(user: User, character: EveCharacter):
+    """Sets the primary character for a user"""
+
+    current_primary = user_primary_character(user)
+    if current_primary and (current_primary != character):
+        EvePrimaryCharacterChangeLog.objects.create(
+            username=user.username,
+            previous_character_name=current_primary.character_name,
+            new_character_name=character.character_name,
+        )
+        current_primary.is_primary = False
+        current_primary.save()
+        EvePrimaryCharacter.objects.filter(user=user).delete()
+
+    character.user = user
+    character.is_primary = True
+    character.save()
+
+    # Legacy approach for transition period
+    EvePrimaryCharacter.objects.create(user=user, character=character)
+
+
+def all_primary_character_objects():
+    return EvePrimaryCharacter.objects.all()

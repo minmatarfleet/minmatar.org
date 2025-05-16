@@ -8,7 +8,11 @@ from esi.models import Token
 
 from app.test import TestCase
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation, EvePrimaryCharacter
+from eveonline.models import EveCharacter, EveCorporation
+from eveonline.helpers.characters import (
+    set_primary_character,
+    user_primary_character,
+)
 
 # Create your tests here.
 BASE_URL = "/api/users/"
@@ -56,9 +60,8 @@ class UserRouterTestCase(TestCase):
             discord_tag="test#1234",
             nickname="testy",
         )
-        primary_character = EvePrimaryCharacter.objects.create(
-            character=character
-        )
+        set_primary_character(user, character)
+        primary_character = user_primary_character(user)
 
         response = self.client.get(
             f"{BASE_URL}{self.user.id}/profile",
@@ -74,10 +77,10 @@ class UserRouterTestCase(TestCase):
                 "permissions": [],
                 "is_superuser": user.is_superuser,
                 "eve_character_profile": {
-                    "character_id": primary_character.character.character_id,
-                    "character_name": primary_character.character.character_name,
-                    "corporation_id": primary_character.character.corporation.corporation_id,
-                    "corporation_name": primary_character.character.corporation.name,
+                    "character_id": primary_character.character_id,
+                    "character_name": primary_character.character_name,
+                    "corporation_id": primary_character.corporation.corporation_id,
+                    "corporation_name": primary_character.corporation.name,
                     "scopes": [],
                 },
                 "discord_user_profile": {

@@ -6,3 +6,7 @@ omit =
     */tests/*
     */apps.py
     */admin.py
+    eveonline/client.py
+    discord/client.py
+    manage.py
+    tech/testdata.py
