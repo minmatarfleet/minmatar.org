@@ -451,7 +451,7 @@ class FleetTaskTests(TestCase):
         esi_mock.get_active_fleet.return_value = EsiResponse(
             response_code=200,
             data={
-                "fleet_id": fleet.id,
+                "fleet_id": efi.id,
                 "fleet_boss_id": fc_id,
             },
         )
