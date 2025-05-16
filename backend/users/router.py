@@ -1,11 +1,11 @@
 import logging
 
-import datetime
 import jwt
 from typing import List
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
+from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
@@ -84,7 +84,7 @@ def callback(request, code: str):
         "is_superuser": django_user.is_superuser,
         "sub": user["username"],
         "iss": request.get_host(),
-        "iat": datetime.datetime.now(),
+        "iat": timezone.now(),
     }
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
@@ -199,7 +199,7 @@ def fake_login(request, redirect_url):
         "is_superuser": django_user.is_superuser,
         "sub": django_user.username,
         "iss": request.get_host(),
-        "iat": datetime.datetime.now(),
+        "iat": timezone.now(),
     }
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"

@@ -44,7 +44,7 @@ class EveFleetType(str, Enum):
 class EveFleetChannelResponse(BaseModel):
     id: int
     display_name: str
-    display_channel_name: str
+    display_channel_name: Optional[str] = None
 
 
 class EveFleetTrackingResponse(BaseModel):
@@ -508,7 +508,7 @@ def get_fleet_metrics(request):
         }
 
     metrics = []
-    one_year_ago = datetime.now() - timedelta(days=365)
+    one_year_ago = timezone.now() - timedelta(days=365)
     fleets = (
         EveFleet.objects.filter(start_time__gte=one_year_ago)
         .annotate(instances=Count("evefleetinstance"))
@@ -804,6 +804,9 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
 
     fleet.save()
 
+    if payload.status and (payload.status == "complete"):
+        update_instance_endtime(fleet)
+
     payload = {
         "id": fleet.id,
         "type": fleet.type,
@@ -817,6 +820,13 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     }
 
     return EveFleetResponse(**payload)
+
+
+def update_instance_endtime(fleet):
+    for instance in EveFleetInstance.objects.filter(eve_fleet=fleet):
+        if not instance.end_time:
+            instance.end_time = timezone.now()
+            instance.save()
 
 
 @router.post(

@@ -1,10 +1,11 @@
-import datetime
 import logging
+from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, ANY
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User, Permission
+from django.utils import timezone
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
@@ -86,10 +87,10 @@ def setup_fc(user):
 
 
 def make_test_fleet(
-    description: str, fc_user: User, start: datetime.datetime = None
+    description: str, fc_user: User, start: datetime = None
 ) -> EveFleet:
     if start is None:
-        start = datetime.datetime.now() + datetime.timedelta(hours=1)
+        start = timezone.now() + timedelta(hours=1)
 
     return EveFleet.objects.create(
         start_time=start,
@@ -207,8 +208,8 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual("active", fixup_fleet_status(fleet, tracking))
         tracking = EveFleetTrackingResponse(
             id=1,
-            start_time=datetime.datetime.now(),
-            end_time=datetime.datetime.now(),
+            start_time=timezone.now(),
+            end_time=timezone.now(),
             is_registered=True,
         )
         self.assertEqual("complete", fixup_fleet_status(fleet, tracking))
@@ -243,7 +244,7 @@ class FleetRouterTestCase(TestCase):
         data = {
             "type": "training",
             "description": "Test fleet",
-            "start_time": datetime.datetime.now(),
+            "start_time": timezone.now(),
             "audience_id": EveFleetAudience.objects.first().id,
             "location_id": EveFleetLocation.objects.first().location_id,
         }
@@ -325,7 +326,7 @@ class FleetRouterTestCase(TestCase):
             solar_system_id=1,
             squad_id=1,
             wing_id=1,
-            join_time=datetime.datetime.now(),
+            join_time=timezone.now(),
         )
 
     def test_fleet_metrics(self):
@@ -333,7 +334,9 @@ class FleetRouterTestCase(TestCase):
         setup_fc(self.user)
 
         fleet = make_test_fleet("Test", self.user)
-        fleet.start_time = datetime.datetime(2025, 1, 1, 21, 30, 0)
+        fleet.start_time = datetime(
+            2025, 1, 1, 21, 30, 0, 0, timezone.get_current_timezone()
+        )
         fleet.save()
         instance = EveFleetInstance.objects.create(id=1, eve_fleet=fleet)
         self.add_fleet_member(instance, 1)
@@ -404,6 +407,29 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(1, len(fleets))
         self.assertEqual("squad_member", fleets[0]["fleet_role"])
 
+    def test_manually_close_fleet(self):
+        self.make_superuser()
+        setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+
+        EveFleetInstance.objects.create(
+            id=123456,
+            eve_fleet=fleet,
+        )
+
+        update = {"status": "complete"}
+
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            update,
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+
+        self.assertIsNotNone(EveFleetInstance.objects.get(id=123456).end_time)
+
 
 class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
@@ -460,7 +486,7 @@ class FleetTaskTests(TestCase):
             data=[
                 {
                     "character_id": fc_id,
-                    "join_time": datetime.datetime.now(),
+                    "join_time": timezone.now(),
                     "role": "squad_member",
                     "role_name": "squad_member",
                     "ship_type_id": 1000,
