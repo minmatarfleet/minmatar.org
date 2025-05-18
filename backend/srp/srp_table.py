@@ -2,9 +2,9 @@ MILLION = 1000000
 BILLION = 1000000000
 
 reimbursement_class_lookup = {
-    "Force Auxiliary": 3 * BILLION,
+    "Force Auxiliary": 4500 * MILLION,
     "Carrier": 2 * BILLION,
-    "Dreadnought": 1500 * MILLION,
+    "Dreadnought": 2000 * MILLION,
     "Logistics": 300 * MILLION,
     "Command Ship": 500 * MILLION,
     "Logistics Frigate": 50 * MILLION,
@@ -17,8 +17,8 @@ reimbursement_class_lookup = {
 }
 
 reimbursement_ship_lookup = {
-    "Revelation Navy Issue": 3000 * MILLION,
-    "Zirnitra": 3000 * MILLION,
+    "Revelation Navy Issue": 4000 * MILLION,
+    "Zirnitra": 4000 * MILLION,
     "Phoenix Navy Issue": 3000 * MILLION,
     "Bhaalgorn": 1250 * MILLION,
     "Vindicator": 1250 * MILLION,
