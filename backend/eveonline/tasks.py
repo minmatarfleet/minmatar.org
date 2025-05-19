@@ -20,6 +20,7 @@ from .helpers.skills import (
 )
 from .routers.characters import scope_group
 from .models import (
+    EvePlayer,
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
@@ -340,3 +341,19 @@ def deduplicate_alliances():
             )
             alliance.delete()
         previous_id = alliance.alliance_id
+
+
+@app.task
+def setup_players():
+    """Setup EvePlayer entities based on primary character data"""
+
+    created = 0
+    for char in EveCharacter.objects.filter(is_primary=True):
+        EvePlayer.objects.create(
+            primary_character=char,
+            user=char.user,
+            nickname=char.user.username,
+        )
+        logger.info("Created EvePlayer %s", char.user.username)
+        created += 1
+    logger.info("EvePlayers created: %d", created)

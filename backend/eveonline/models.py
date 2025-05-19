@@ -15,8 +15,49 @@ logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
 
+class EvePlayer(models.Model):
+    """Represents an Eve Online player"""
+
+    # Website nickname is same as username by default, but can be changed.
+    nickname = models.CharField(max_length=255, unique=True)
+
+    primary_character = models.OneToOneField(
+        "EveCharacter",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True)
+
+    prime_choices = (
+        ("US", "US"),
+        ("US_AP", "US / AP"),
+        ("AP", "AP"),
+        ("AP_EU", "AP / EU"),
+        ("EU", "EU"),
+        ("EU_US", "EU / US"),
+    )
+    prime_time = models.CharField(
+        max_length=16,
+        choices=prime_choices,
+        null=True,
+    )
+
+    def __str__(self):
+        user_name = self.user.username if self.user else "unknown"
+        primary_char = (
+            self.primary_character.character_name
+            if self.primary_character
+            else "unknown"
+        )
+        return f"{user_name} / {primary_char}"
+
+    def characters(self):
+        return EveCharacter.objects.filter(user=self.user)
+
+
 class EvePrimaryCharacter(models.Model):
-    """Identifies the primary character for a user"""
+    """DEPRECATED - Identifies the primary character for a user"""
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 

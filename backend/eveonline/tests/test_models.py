@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from app.test import TestCase
 from eveuniverse.models import EveType
 from eveonline.models import (
+    EvePlayer,
     EveCharacter,
     EveCharacterSkill,
     EveSkillset,
@@ -268,3 +269,32 @@ class SkillsUpdateTestCase(TestCase):
         upsert_character_skill(char, esi_skill)
 
         self.assertEqual(1, EveCharacterSkill.objects.count())
+
+
+class EvePlayerTestCase(TestCase):
+    """
+    Tests the EvePlayer database model
+    """
+
+    def test_eveplayer(self):
+        self.user.username = "somebody"
+        self.user.save()
+
+        character = EveCharacter.objects.create(
+            character_id=123,
+            character_name="Testpilot",
+            user=self.user,
+        )
+
+        player = EvePlayer.objects.create(
+            nickname="Nobody",
+            primary_character=character,
+            user=self.user,
+        )
+
+        self.assertEqual(1, EvePlayer.objects.count())
+
+        self.assertEqual("somebody / Testpilot", str(player))
+        self.assertEqual(123, player.primary_character.character_id)
+        self.assertEqual(1, len(player.characters()))
+        self.assertEqual("Testpilot", player.characters()[0].character_name)
