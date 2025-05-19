@@ -56,6 +56,7 @@ class EveCharacterAdmin(admin.ModelAdmin):
 @admin.register(EvePlayer)
 class EvePlayerAdmin(admin.ModelAdmin):
     """Admin screen for EvePlayer entity"""
+
     list_display = (
         "id",
         "nickname",

@@ -199,3 +199,17 @@ class EsiClient:
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
         operation = esi.client.Universe.post_universe_names(ids=ids_to_resolve)
         return self._operation_results(operation)
+
+    def update_fleet_details(self, update) -> EsiResponse:
+        required_scopes = ["esi-fleets.write_fleet.v1"]
+        token, status = self.get_valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Fleets.put_fleets_fleet_id(
+            fleet_id=self.id,
+            new_settings=update,
+            token=token,
+        )
+
+        return self._operation_results(operation)
