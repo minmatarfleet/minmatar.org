@@ -278,6 +278,10 @@ class FleetRouterTestCase(TestCase):
                 "fleet_boss_id": char_id,
             },
         )
+        esi_mock_instance.update_fleet_details.return_value = EsiResponse(
+            response_code=204, data={}
+        )
+
         response = self.client.post(
             f"{BASE_URL}/{fleet.id}/tracking",
             data=None,
