@@ -2,6 +2,7 @@ from django.contrib import admin
 from esi.models import CallbackRedirect, Scope, Token
 
 from .models import (
+    EvePlayer,
     EveAlliance,
     EveCharacter,
     EveCorporation,
@@ -50,3 +51,25 @@ class EveCharacterAdmin(admin.ModelAdmin):
     def primary_eve_character(self, obj):
         if obj.user:
             return user_primary_character(obj.user)
+
+
+@admin.register(EvePlayer)
+class EvePlayerAdmin(admin.ModelAdmin):
+    """Admin screen for EvePlayer entity"""
+
+    list_display = (
+        "id",
+        "nickname",
+        "user__username",
+        "primary_character__character_name",
+    )
+    list_display_links = ("id", "nickname")
+    search_fields = ("user__username", "primary_character__character_name")
+
+    readonly_fields = ["id", "characters"]
+
+    def characters(self, instance):
+        chars = []
+        for char in instance.characters():
+            chars.append(char.character_name)
+        return chars

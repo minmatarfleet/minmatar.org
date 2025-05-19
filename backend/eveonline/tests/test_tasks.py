@@ -10,8 +10,14 @@ from eveonline.tasks import (
     update_character_assets,
     update_character_skills,
     update_corporation,
+    setup_players,
 )
-from eveonline.models import EveCharacter, EveCorporation, EveAlliance
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EveAlliance,
+    EvePlayer,
+)
 
 
 class EveOnlineTaskTests(TestCase):
@@ -101,3 +107,23 @@ class EveOnlineTaskTests(TestCase):
                 ).first()
 
                 self.assertEqual("TICK", updated_corp.ticker)
+
+    def test_setup_players(self):
+        EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Testpilot1",
+            user=self.user,
+            is_primary=False,
+        )
+        EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Testpilot2",
+            user=self.user,
+            is_primary=True,
+        )
+
+        self.assertEqual(0, EvePlayer.objects.count())
+
+        setup_players()
+
+        self.assertEqual(1, EvePlayer.objects.count())
