@@ -20,14 +20,15 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import type { FleetUI, Alert } from '@dtypes/layout_components'
-import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, TrackingStatus } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
-import { start_fleet } from '@helpers/api.minmatar.org/fleets'
+import { start_fleet, update_fleet } from '@helpers/api.minmatar.org/fleets'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
 let fetch_fleets_error:string | false = false
 let start_fleet_error:string | false = false
+let end_fleet_tracking_error:string | false = false
 let fleet:FleetUI | null = null
 let user_character:EveCharacterProfile | null = null
 let alert:Alert | false = false
@@ -43,6 +44,21 @@ if (Astro.request.method === "POST") {
         alert = {
             title: t('ping_fleet'),
             content: start_fleet_error as string,
+        }
+    }
+}
+
+if (Astro.request.method === "PATCH") {
+    try {
+        const status = Astro.url.searchParams.get('status') as TrackingStatus
+
+        await update_fleet(auth_token as string, { status: status }, fleet_id)
+    } catch (error) {
+        end_fleet_tracking_error = prod_error_messages() ? t('end_fleet_tracking_error') : error.message
+
+        alert = {
+            title: t('stop_tracking_dialog_title'),
+            content: end_fleet_tracking_error as string,
         }
     }
 }

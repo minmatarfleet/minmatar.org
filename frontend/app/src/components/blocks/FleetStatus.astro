@@ -31,6 +31,7 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
+import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 ---
@@ -73,7 +74,14 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         }
 
         {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
-            <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
+            <Flexblock>
+                <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
+
+                {is_fleet_commander &&
+                    <EndFleetButton id={fleet.id} />
+                }
+            </Flexblock>
+
         }
 
         {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&

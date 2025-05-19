@@ -1,0 +1,43 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    id:     number;
+}
+
+const {
+    id,
+} = Astro.props
+
+const FLEET_STATUS_PARTIAL_URL = translatePath('/partials/fleet_status_component')
+
+import { query_string } from '@helpers/string';
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<Button
+    class="[ w-full ]"
+    type="button"
+    x-data={`{
+        show_stop_tracking_confirm() {
+            show_confirm_dialog({
+                title: '${t('stop_tracking_dialog_title')}',
+                content: '${t('stop_tracking_dialog_text')}',
+                hx: {
+                    method: 'patch',
+                    url: '${FLEET_STATUS_PARTIAL_URL}?${query_string({
+                        id: id,
+                        status: 'complete',
+                    })}',
+                    target: '#fleet-status',
+                    swap: 'outerHTML transition:true'
+                }
+            })
+        }
+    }`}
+    x-on:click="show_stop_tracking_confirm"
+>
+    {t('stop_tracking')}
+</Button>

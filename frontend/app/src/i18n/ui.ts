@@ -790,6 +790,7 @@ export const ui = {
         'location': 'Location',
         'fetch_fleets_error': 'An error ocurred fetching fleets',
         'start_fleet_error': 'An error ocurred starting the fleet. Make sure you have a fleet created in-game',
+        'end_fleet_tracking_error': 'An error ocurred ending fleet tracking.',
         'scheduled': 'Scheduled',
         'fleets': 'Fleets',
         'remove_fleet_dialog_title': 'Remove fleet',
@@ -831,6 +832,8 @@ export const ui = {
         'ping_fleet': 'Ping fleet',
         'start_tracking_dialog_title': 'Ping fleet',
         'start_tracking_dialog_text': 'Start fleet form posting the ping on Discord? Requieres fleet previously created in game',
+        'stop_tracking_dialog_title': 'Stop fleet tracking',
+        'stop_tracking_dialog_text': 'Proceed to stopping fleet tracking manually? Fleet will persist in game',
         'active': 'Active',
         'jumps': 'Jumps',
         'jump': 'Jump',
@@ -1393,5 +1396,6 @@ export const ui = {
         'readiness': 'readiness',
         'your_pilots': 'your pilots',
         'lets_start': 'Lets start',
+        'stop_tracking': 'Stop tracking',
     },
 } as const;
