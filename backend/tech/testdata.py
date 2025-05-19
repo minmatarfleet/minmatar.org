@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from django.contrib.auth.models import User
 from django.db.models import signals
+from django.utils import timezone
 
 from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 from fleets.models import (
@@ -114,7 +113,7 @@ def setup_fleets(fc: EveCharacter) -> EveFleet:
         id=123,
         defaults={
             "type": "strategic",
-            "start_time": datetime.now(),
+            "start_time": timezone.now(),
         },
     )
     fleet.description = "Whelp fleet"
