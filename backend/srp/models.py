@@ -26,7 +26,7 @@ class EveFleetShipReimbursement(models.Model):
     )
 
     # populated fields
-    killmail_id = models.BigIntegerField()
+    killmail_id = models.BigIntegerField(db_index=True)
     character_id = models.BigIntegerField()
     character_name = models.CharField(max_length=255)
     primary_character_id = models.BigIntegerField()
@@ -39,13 +39,6 @@ class EveFleetShipReimbursement(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["external_killmail_link"],
-                name="unique_pending_or_approved_killmail_link",
-                condition=models.Q(status__in=["pending", "approved"]),
-            )
-        ]
         indexes = [
             models.Index(fields=["status", "fleet", "user"]),
         ]

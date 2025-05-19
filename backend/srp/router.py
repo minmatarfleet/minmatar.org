@@ -86,6 +86,9 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     except Exception:
         return 400, {"detail": "Unexpected error processing killmail"}
 
+    if duplicate_kill(details):
+        return 400, {"detail": "SRP already exists for this killmail"}
+
     valid, reason = is_valid_for_reimbursement(details, fleet)
     if not valid:
         return 403, {"detail": f"Killmail not eligible for SRP, {reason}"}
@@ -137,6 +140,16 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
             if details.victim_character
             else None
         ),
+    )
+
+
+def duplicate_kill(details) -> bool:
+    return (
+        EveFleetShipReimbursement.objects.filter(
+            killmail_id=details.killmail_id
+        )
+        .exclude(status="rejected")
+        .exists()
     )
 
 
