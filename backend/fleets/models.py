@@ -111,9 +111,10 @@ class EveFleet(models.Model):
                 eve_fleet=self,
             )
 
-        if not self.disable_motd:
-            fleet_instance.update_motd()
-        fleet_instance.update_free_move()
+        fleet_instance.update_eve_fleet(self.disable_motd)
+        # if not self.disable_motd:
+        #     fleet_instance.update_motd()
+        # fleet_instance.update_free_move()
 
         if self.type != "strategic":
             doctrine = self.doctrine
@@ -184,6 +185,42 @@ class EveFleetInstance(models.Model):
     @property
     def active(self):
         return self.end_time is None
+
+    def update_eve_fleet(self, disable_motd: bool):
+        """Update fleet freemove and MOTD"""
+
+        update = {
+            "is_free_move": True,
+        }
+
+        if not disable_motd:
+            self.motd = get_motd(
+                self.eve_fleet.fleet_commander.character_id,
+                self.eve_fleet.fleet_commander.character_name,
+                self.eve_fleet.location.location_id,
+                self.eve_fleet.location.location_name,
+                "https://discord.gg/minmatar",
+                "Minmatar Fleet Discord",
+                (
+                    self.eve_fleet.doctrine.doctrine_link
+                    if self.eve_fleet.doctrine
+                    else "https://my.minmatar.org/ships/fitting/list/"
+                ),
+                (
+                    self.eve_fleet.doctrine.name
+                    if self.eve_fleet.doctrine
+                    else "Kitchen Sink"
+                ),
+            )
+            update["motd"] = self.motd
+
+        response = self.esi_client().update_fleet_details(self.id, update)
+
+        if response.success():
+            self.is_free_move = True
+            self.save()
+        else:
+            logger.warning("Error updating Eve fleet %d", self.id)
 
     def update_motd(self):
         """
