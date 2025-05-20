@@ -1397,5 +1397,7 @@ export const ui = {
         'your_pilots': 'your pilots',
         'lets_start': 'Lets start',
         'stop_tracking': 'Stop tracking',
+        'unsaved_changes_dialog_title': 'Stay on Page',
+        'unsaved_changes_dialog_text': 'You have unsaved changes on this page. If you leave now, your character roles will not be updated. Are you sure you want to continue without saving?',
     },
 } as const;

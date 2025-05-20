@@ -49,7 +49,22 @@ import Badge from '@components/blocks/Badge.astro';
                             <small>{`${character.tags.length} ${character.tags.length === 1 ? t('role_selected') : t('roles_selected')}`}</small>
                         </Badge>
                         :
-                        <StylessButton class="w-full character-selector" href={translatePath(`/account/tags/${character.character_id}`)}>
+                        <StylessButton
+                            class="w-full character-selector"
+                            href={translatePath(`/account/tags/${character.character_id}`)}
+                            x-data={`{
+                                redirect(accepted) {
+                                    if (accepted) navigate("${translatePath(`/account/tags/${character.character_id}`)}")
+                                },
+                                show_unsaved_dialog() {
+                                    show_confirm_dialog({
+                                        title: '${t('unsaved_changes_dialog_title')}',
+                                        content: '${t('unsaved_changes_dialog_text')}',
+                                    }).then( (accepted) => this.redirect(accepted) )
+                                }
+                            }`}
+                            x-on:click.prevent="is_dirty ? show_unsaved_dialog() : redirect(true)"
+                        >
                             <Badge
                                 character_id={character.character_id}
                                 title={character.character_name}
