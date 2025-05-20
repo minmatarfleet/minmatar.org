@@ -79,9 +79,12 @@ const page_title = t('account.tags.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <FlexInline>
+                <FlexInline
+                    class="[ animate-fade-in-up ]"
+                    x-show="is_dirty"
+                    style="display: none"
+                >
                     <Button
-                        class="[ !hidden md:!flex ]"
                         color='green'
                         off_disable={true}
                         x-bind:disabled="!is_dirty"
