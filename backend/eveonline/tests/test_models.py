@@ -2,6 +2,7 @@ import random
 import factory
 import logging
 from django.db.models import signals
+from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
 
 from app.test import TestCase
@@ -298,3 +299,35 @@ class EvePlayerTestCase(TestCase):
         self.assertEqual(123, player.primary_character.character_id)
         self.assertEqual(1, len(player.characters()))
         self.assertEqual("Testpilot", player.characters()[0].character_name)
+
+    def test_duplicate_eveplayer_user_rejected(self):
+        EvePlayer.objects.create(
+            nickname="Player 1",
+            user=self.user,
+        )
+        with self.assertRaises(IntegrityError):
+            EvePlayer.objects.create(
+                nickname="Player 2",
+                user=self.user,
+            )
+
+    def test_duplicate_eveplayer_char_rejected(self):
+        user2 = User.objects.create_user(username="User 2")
+
+        character = EveCharacter.objects.create(
+            character_id=123,
+            character_name="Testpilot",
+            user=self.user,
+        )
+
+        EvePlayer.objects.create(
+            nickname="Player 1",
+            user=self.user,
+            primary_character=character,
+        )
+        with self.assertRaises(IntegrityError):
+            EvePlayer.objects.create(
+                nickname="Player 2",
+                user=user2,
+                primary_character=character,
+            )
