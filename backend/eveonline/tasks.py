@@ -349,6 +349,12 @@ def setup_players():
 
     created = 0
     for char in EveCharacter.objects.filter(is_primary=True):
+        if not char.user:
+            logger.warning(
+                "EveCharacter with primary but not user: %s",
+                char.character_name,
+            )
+            continue
         EvePlayer.objects.create(
             primary_character=char,
             user=char.user,

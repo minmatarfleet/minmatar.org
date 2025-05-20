@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from pydantic import BaseModel
 
 from eveonline.models import (
+    EvePlayer,
     EvePrimaryCharacter,
     EveCharacter,
     EvePrimaryCharacterChangeLog,
@@ -77,7 +78,12 @@ class CorporationCharacterResponse(BaseModel):
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
-    # Newest method using the is_primary attribute on EveCharacter
+    # Even newer method using the EvePlayer entity
+    player = user_player(user)
+    if player and player.primary_character:
+        return player.primary_character
+
+    # New method using the is_primary attribute on EveCharacter
     primary = EveCharacter.objects.filter(user=user, is_primary=True).first()
     if primary:
         return primary
@@ -142,8 +148,25 @@ def set_primary_character(user: User, character: EveCharacter):
     character.is_primary = True
     character.save()
 
+    player = user_player(user)
+    if player:
+        player.primary_character = character
+        player.save()
+    else:
+        EvePlayer.objects.create(
+            user=user, primary_character=character, nickname=user.username
+        )
+
     # Legacy approach for transition period
     EvePrimaryCharacter.objects.create(user=user, character=character)
+
+
+def user_player(user: User) -> EvePlayer | None:
+    return EvePlayer.objects.filter(user=user).first()
+
+
+def player_characters(player: EvePlayer) -> List[EveCharacter]:
+    return user_characters(player.user)
 
 
 def all_primary_character_objects():
