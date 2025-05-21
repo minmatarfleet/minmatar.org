@@ -1,5 +1,4 @@
 from django.db.models import signals
-from django.db.utils import IntegrityError
 from django.http import HttpRequest
 from django.test import Client
 from django.contrib.auth.models import User
@@ -68,13 +67,16 @@ class CharacterRouterTestCase(TestCase):
             user=user,
             character_id=character_id,
         )
-        return EveCharacter.objects.create(
+        character = EveCharacter.objects.create(
             character_id=token.character_id,
             character_name=name,
             user=user,
             token=token,
             is_primary=is_primary,
         )
+        if is_primary:
+            set_primary_character(user=user, character=character)
+        return character
 
     def test_get_characters_success(self):
         response = self.client.get(
@@ -527,30 +529,3 @@ class CharacterRouterTestCase(TestCase):
             ],
             response.json(),
         )
-
-    def test_character_primary_attribute(self):
-        char1 = self.make_character(self.user, 123456, "Test Char 1")
-        char2 = self.make_character(self.user, 234567, "Test Char 2")
-
-        char1.is_primary = True
-        char1.save()
-
-        char2.is_primary = True
-        try:
-            char2.save()
-            self.fail("Should not be able to save second primary")
-        except IntegrityError as e:
-            self.assertIn(
-                "UNIQUE constraint failed: eveonline_evecharacter.user_id",
-                str(e),
-            )
-
-    def test_primary_character_via_attribute(self):
-        char1 = self.make_character(self.user, 123456, "Test Char 1", False)
-        self.make_character(self.user, 234567, "Test Char 2", True)
-
-        set_primary_character(self.user, char1)
-
-        new_primary = user_primary_character(self.user)
-        self.assertIsNotNone(new_primary)
-        self.assertEqual("Test Char 1", new_primary.character_name)

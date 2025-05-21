@@ -78,17 +78,12 @@ class CorporationCharacterResponse(BaseModel):
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
-    # Even newer method using the EvePlayer entity
+    # New method using the EvePlayer entity
     player = user_player(user)
     if player and player.primary_character:
         return player.primary_character
 
-    # New method using the is_primary attribute on EveCharacter
-    primary = EveCharacter.objects.filter(user=user, is_primary=True).first()
-    if primary:
-        return primary
-
-    # New method using the "user" field
+    # Fall-back to old EvePrimaryCharacter
     pc = EvePrimaryCharacter.objects.filter(user=user).first()
     if pc:
         logger.warning(
@@ -97,22 +92,7 @@ def user_primary_character(user: User) -> EveCharacter | None:
         )
         return pc.character
 
-    # Fall back to oldest method using link through ESI token
-    q = EvePrimaryCharacter.objects.filter(character__token__user=user)
-
-    if q.count() > 1:
-        logger.error(
-            "User %s has %d primary characters", user.username, q.count()
-        )
-
-    if q.count() >= 1:
-        logger.warning(
-            "Found primary using outdated method 2: %s",
-            pc.character.character_name,
-        )
-        return q.first().character
-    else:
-        return None
+    return None
 
 
 def user_characters(user: User) -> List[EveCharacter]:
@@ -167,7 +147,3 @@ def user_player(user: User) -> EvePlayer | None:
 
 def player_characters(player: EvePlayer) -> List[EveCharacter]:
     return user_characters(player.user)
-
-
-def all_primary_character_objects():
-    return EvePrimaryCharacter.objects.all()

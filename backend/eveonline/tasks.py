@@ -12,7 +12,6 @@ from eveonline.helpers.affiliations import (
 from groups.tasks import update_affiliation
 
 from .client import EsiClient
-from .helpers.characters import all_primary_character_objects
 from .helpers.assets import create_character_assets
 from .helpers.skills import (
     create_eve_character_skillset,
@@ -314,20 +313,6 @@ def fixup_character_tokens():
 
 
 @app.task
-def fixup_primary_characters():
-    """Update primary characters to EveCharacter attribute"""
-
-    for primary in all_primary_character_objects():
-        if not primary.character.is_primary:
-            primary.character.is_primary = True
-            primary.character.save()
-            logger.info(
-                "Set %s primary character attribute",
-                primary.character.character_name,
-            )
-
-
-@app.task
 def deduplicate_alliances():
     """Remove duplicate alliance instances"""
 
@@ -355,11 +340,15 @@ def setup_players():
                 char.character_name,
             )
             continue
-        EvePlayer.objects.create(
-            primary_character=char,
+        _, created = EvePlayer.objects.get_or_create(
             user=char.user,
-            nickname=char.user.username,
+            defaults={
+                "primary_character": char,
+                "nickname": char.user.username,
+            },
         )
-        logger.info("Created EvePlayer %s", char.user.username)
-        created += 1
+        if created:
+            logger.info("Created EvePlayer %s", char.user.username)
+            created += 1
+
     logger.info("EvePlayers created: %d", created)
