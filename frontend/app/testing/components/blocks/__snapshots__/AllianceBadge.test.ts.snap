@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AllianceBadge defaults 1`] = `"<div class="fixed-fluid [ items-center ]" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-2xs);--fixed_fluid_width: smpx;--fixed_fluid_breakpoint: 50%;">  <picture> <img loading="lazy" src="test-alliance-image-src" width="32" height="32"> </picture> <small class="[ w-full ]"> <span class="[ text-[var(--highlight)] ]">lolcat alliance is best alliance</span> </small>  </div>  "`;

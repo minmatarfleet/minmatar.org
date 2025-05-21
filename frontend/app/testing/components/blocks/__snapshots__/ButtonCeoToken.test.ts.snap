@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ButtonCeoToken defaults 1`] = `
+"<a href="/redirects/add_ceo_token_init?redirect=https://example.com/" type="button" x-data="{
+        add_ceo_token(accepted) {
+            if (accepted) window.location.href = &#34;/redirects/add_ceo_token_init?redirect=https://example.com/&#34;
+        },
+        show_add_ceo_disclaimer() {
+            show_confirm_dialog({
+                title: 'undefined',
+                partial: '/partials/dialog_with_corporation/?alliance_id=12&#38;corporation_id=undefined&#38;alliance_name=Chickens+R+Us&#38;corporation_name=Top+Cluck&#38;corporation_type=feathered&#38;active=undefined&#38;biography=lorem+ipsum+chickensum&#38;introduction=in+a+world...+with+chickens&#38;requirements=must+be+a+chicken&#38;timezones=CHICKUTC&#38;message=Corporation+applications+are+currently+not+available+until+a+CEO+token+is+added.+If+you+are+not+one+of+the+CEOs+of+this+corporation%2C+you+may+close+this+dialog.%0A%0AWould+you+like+to+proceed+with+adding+the+CEO+token%3F',
+            }).then( (accepted) => this.add_ceo_token(accepted) )
+        }
+    }" x-on:click.prevent="show_add_ceo_disclaimer" data-size="lg" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">       </div>   </a> "
+`;

@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CharacterLinksItem defaults 1`] = `
+"<div class="flex-inline [ items-center ]" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: space-between;">  <div class="fixed-fluid pilot-item [ grow basis-[300px] ]" data-astro-cid-xf65qrs5="true" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-s);--fixed_fluid_width: 64px;--fixed_fluid_breakpoint: 50%;">  <picture data-astro-cid-hwwa7zih> <img loading="lazy" height="64" width="64" src="https://images.evetech.net/characters/45/portrait?size=64" x-bind:src="false ? get_player_icon(false) : 'https://images.evetech.net/characters/45/portrait?size=64'" alt="Profile picture of bagok" x-bind:alt="\`Profile picture of \${(false ? false : &#34;bagok&#34;)}\`" x-data="{
+            show_character_modal() {
+                if (!false &#38;&#38; 45 == 0)
+                    return
+
+                show_modal({
+                    partial: '/partials/character_modal_component/?character_id='+(false ? false : '45'),
+                })
+            }
+        }" x-on:click.stop.prevent="show_character_modal()" data-astro-cid-hwwa7zih> </picture>  <div class="!flex !items-center" data-astro-cid-xf65qrs5="true">  <div class="flex-block [ w-full ] gap-0" data-astro-cid-xf65qrs5="true" data-mod style="--flex_block_gap: 0;">  <span class="truncate text-[var(--highlight)] cursor-pointer max-w-fit" x-data="{
+                    show_character_modal() {
+                        if (45 == 0)
+                            return
+
+                        show_modal({
+                            partial: '/partials/character_modal_component/?character_id=45',
+                        })
+                    }
+                }" x-on:click.stop.prevent="show_character_modal()" data-astro-cid-xf65qrs5>bagok</span>   <div class="fixed-fluid [ items-center ]" data-astro-cid-xf65qrs5="true" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-3xs);--fixed_fluid_width: 24px;--fixed_fluid_breakpoint: 50%;">  <picture data-astro-cid-xf65qrs5> <img loading="lazy" src="https://images.evetech.net/corporations/undefined/logo?size=32" width="24" height="24" alt="Profile picture of bagok" data-astro-cid-xf65qrs5> </picture> <span class="[ truncate ]" data-astro-cid-xf65qrs5> <small data-astro-cid-xf65qrs5></small> </span>  </div>     </div>   </div>  </div>    <div class="flex-inline" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-3xs);--flex_inline_justification: flex-start;"> <a data-tippy-content="Zkillboard" class="[ w-[32px] neocom-button neocom-button-focus ]" href="https://zkillboard.com/character/45/" target="_blank" rel="nofollow noopener noreferrer" x-data="{
+            show_external_link_disclaimer() {
+                show_alert_dialog({
+                    title: 'You’re Leaving Our Site',
+                    content: 'The link you clicked will take you to an external website.',
+                }).then( (accepted) => accepted &#38;&#38; window.location.href = &#34;https://zkillboard.com/character/45/&#34; )
+            }
+        }" x-on:click.prevent="show_external_link_disclaimer"> <img loading="lazy" class="[ max-w-[100%] h-auto ]" src="/images/icons/48px-Combatlog.png" width="48" height="48" alt="EVE Online Combat Log Icon"> </a>  </div>    </div>  "
+`;
