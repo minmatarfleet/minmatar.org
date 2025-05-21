@@ -82,6 +82,8 @@ services:
                     - local.minmatar.org
         ports:
             - "4321:4321"
+        volumes:
+            - "./frontend/app/src/data:/app/src/data"
 
     proxy:
         image: nginx:stable
