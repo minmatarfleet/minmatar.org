@@ -27,24 +27,25 @@ from eveonline.routers.characters import (
 
 BASE_URL = "/api/eveonline/characters/"
 
+def disconnect_character_signals():
+    signals.post_save.disconnect(
+        sender=EveCharacter,
+        dispatch_uid="populate_eve_character_public_data",
+    )
+    signals.post_save.disconnect(
+        sender=EveCharacter,
+        dispatch_uid="populate_eve_character_private_data",
+    )
+    signals.post_save.disconnect(
+        sender=EvePrimaryCharacterChangeLog,
+        dispatch_uid="notify_people_team_of_primary_character_change",
+    )
 
 class CharacterRouterTestCase(TestCase):
     """Test cases for the character router."""
 
     def setUp(self):
-        # disconnect signals
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_public_data",
-        )
-        signals.post_save.disconnect(
-            sender=EveCharacter,
-            dispatch_uid="populate_eve_character_private_data",
-        )
-        signals.post_save.disconnect(
-            sender=EvePrimaryCharacterChangeLog,
-            dispatch_uid="notify_people_team_of_primary_character_change",
-        )
+        disconnect_character_signals()        
 
         # create test client
         self.client = Client()

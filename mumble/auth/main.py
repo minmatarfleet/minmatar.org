@@ -2,6 +2,7 @@ import sys, os, Ice, Murmur, mariadb
 
 db = None
 
+
 class Database:
     def __init__(self):
         self.connection = None
@@ -50,7 +51,10 @@ class MetaCallback(Murmur.MetaCallback):
     def stopped(self, srv, context=None):
         print("Server stopped")
 
+
 class Authenticator(Murmur.ServerAuthenticator):
+    # See https://www.mumble.info/documentation/slice/1.3.0/html/Murmur/ServerAuthenticator.html
+
     def __init__(self):
         Murmur.ServerAuthenticator.__init__(self)
 
@@ -63,11 +67,15 @@ class Authenticator(Murmur.ServerAuthenticator):
                 print("Failed authenticating: {0}".format(name))
                 return -1, None, None
 
-            (_, mumble_username, mumble_password, user_id, _) = mumble_access
-            if mumble_password == pw:
-                return user_id, "[FL33T] " + mumble_username, None
+            (_, mumble_username, mumble_password, user_id, suspended) = mumble_access
+            if suspended:
+                print("Mumble user suspended: {0}".format(name))
+                return -3, None, None
 
-        except Exception as e: 
+            if mumble_password == pw:
+                return user_id, mumble_username, None
+
+        except Exception as e:
             print("Error authenticating: {0}".format(e))
             return -1, None, None
 
@@ -85,6 +93,7 @@ class Authenticator(Murmur.ServerAuthenticator):
     def idToTexture(self, id, current=None):
         return None
 
+
 if __name__ == "__main__":
     print("Starting authenticator...")
 
@@ -97,16 +106,22 @@ if __name__ == "__main__":
     if not meta:
         raise RuntimeError("Invalid Proxy")
 
-    adapter = ice.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 0.0.0.0 -p 6502")
+    adapter = ice.createObjectAdapterWithEndpoints(
+        "Callback.Client", "tcp -h 0.0.0.0 -p 6502"
+    )
     adapter.activate()
 
     server = meta.getServer(1)
     print("Binding to server: {0}".format(server.id()))
 
-    meta_callback_bind = Murmur.MetaCallbackPrx.checkedCast(adapter.addWithUUID(MetaCallback()))
+    meta_callback_bind = Murmur.MetaCallbackPrx.checkedCast(
+        adapter.addWithUUID(MetaCallback())
+    )
     meta.addCallback(meta_callback_bind)
 
-    authenticator_bind = Murmur.ServerAuthenticatorPrx.checkedCast(adapter.addWithUUID(Authenticator()))
+    authenticator_bind = Murmur.ServerAuthenticatorPrx.checkedCast(
+        adapter.addWithUUID(Authenticator())
+    )
     server.setAuthenticator(authenticator_bind)
 
     ice.waitForShutdown()
