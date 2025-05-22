@@ -14,16 +14,18 @@ const {
     ideal_composition = {},
 } = Astro.props
 
-import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
 import FittingCard from '@components/blocks/FittingCard.astro';
 
 import FittingLink from '@components/blocks/FittingLink.astro'
 ---
 
-<FlexInline
+<Grid
     role="list"
-    class="[ w-full ]"
-    gap='var(--space-3xs)'
+    class="[ w-full grid-fill ]"
+    min_item_width='240px'
+    row_gap='var(--space-3xs)'
+    column_gap='var(--space-3xs)'
 >
     {fittings.map((fitting) =>
         <FittingLink
@@ -37,4 +39,4 @@ import FittingLink from '@components/blocks/FittingLink.astro'
             />
         </FittingLink>
     )}
-</FlexInline>
+</Grid>
