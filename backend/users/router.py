@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
-from eveonline.models import EvePlayer
 from discord.tasks import sync_discord_user, sync_discord_nickname
+from eveonline.models import EvePlayer
 from groups.tasks import update_affiliation
 
 from .helpers import get_user_profile, get_user_profiles
