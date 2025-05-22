@@ -29,10 +29,12 @@ class MumbleAccess(models.Model):
     """Represents Mumble access information"""
 
     objects = MumbleAccessManager()
+    username = models.CharField(max_length=255, null=True, unique=True)
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="mumble_user"
     )
     password = models.CharField(max_length=MUMBLE_ACCESS_PASSWORD_LENGTH)
+    suspended = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.password:

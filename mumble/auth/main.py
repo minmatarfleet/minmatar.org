@@ -28,16 +28,12 @@ class Database:
         query = """
             SELECT
                 mm.id,
+                mm.username,
                 mm.password,
-                mm.user_id
-            FROM esi_token et
-            INNER JOIN eveonline_evecharacter ee ON
-                ee.character_id = et.character_id 
-            INNER JOIN eveonline_eveprimarycharacter ee2 ON
-                ee2.character_id = ee.id 
-            INNER JOIN mumble_mumbleaccess mm ON
-                mm.user_id = et.user_id 
-            WHERE et.character_name = ?
+                mm.user_id,
+                mm.suspended
+            FROM mumble_mumbleaccess mm
+            WHERE mm.username = ?
             LIMIT 1
         """
         self.cursor.execute(query, [username])
@@ -67,9 +63,9 @@ class Authenticator(Murmur.ServerAuthenticator):
                 print("Failed authenticating: {0}".format(name))
                 return -1, None, None
 
-            (_, mumble_password, user_id) = mumble_access
+            (_, mumble_username, mumble_password, user_id, _) = mumble_access
             if mumble_password == pw:
-                return user_id, "[FL33T] " + name, None
+                return user_id, "[FL33T] " + mumble_username, None
 
         except Exception as e: 
             print("Error authenticating: {0}".format(e))
