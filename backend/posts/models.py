@@ -23,7 +23,7 @@ class EvePost(models.Model):
     state = models.CharField(
         max_length=10, choices=state_choices, default="draft"
     )
-    title = models.CharField(max_length=256, unique=True)
+    title = models.CharField(max_length=250, unique=True)
     seo_description = models.CharField(max_length=300)
     slug = models.SlugField(max_length=100)
     content = models.TextField()
