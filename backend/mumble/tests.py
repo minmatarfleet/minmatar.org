@@ -48,7 +48,7 @@ class MumbleAccessTestCase(TestCase):
 
         self.assertEqual(200, response.status_code)
         details = response.json()
-        self.assertEqual("[FLEET] Mr FC", details["username"])
+        self.assertEqual("Mr FC", details["username"])
         password = details["password"]
         self.assertGreater(len(password), 10)
 
@@ -120,4 +120,4 @@ class MumbleAccessTestCase(TestCase):
 
         mumble_user = MumbleAccess.objects.filter(user=self.user).first()
 
-        self.assertEqual("[FLEET] Mr FC", mumble_user.username)
+        self.assertEqual("Mr FC", mumble_user.username)
