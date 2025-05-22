@@ -27,6 +27,7 @@ from eveonline.routers.characters import (
 
 BASE_URL = "/api/eveonline/characters/"
 
+
 def disconnect_character_signals():
     signals.post_save.disconnect(
         sender=EveCharacter,
@@ -41,11 +42,12 @@ def disconnect_character_signals():
         dispatch_uid="notify_people_team_of_primary_character_change",
     )
 
+
 class CharacterRouterTestCase(TestCase):
     """Test cases for the character router."""
 
     def setUp(self):
-        disconnect_character_signals()        
+        disconnect_character_signals()
 
         # create test client
         self.client = Client()
