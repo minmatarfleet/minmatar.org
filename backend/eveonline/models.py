@@ -43,6 +43,9 @@ class EvePlayer(models.Model):
         null=True,
     )
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    modified_at = models.DateTimeField(auto_now=True, null=True)
+
     def __str__(self):
         user_name = self.user.username if self.user else "unknown"
         primary_char = (
