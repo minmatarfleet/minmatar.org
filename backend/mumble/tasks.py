@@ -32,13 +32,12 @@ def set_mumble_usernames():
                 "Mumble user with no django user: %d", mumble_user.id
             )
             continue
-        if not mumble_user.username:
-            char = user_primary_character(mumble_user.user)
-            if char:
-                mumble_user.username = mumble_username(mumble_user.user)
-                mumble_user.save()
-                logger.info("Mumble username set: %s", mumble_user.username)
-                users_updated += 1
+        char = user_primary_character(mumble_user.user)
+        if char:
+            mumble_user.username = mumble_username(mumble_user.user)
+            mumble_user.save()
+            logger.info("Mumble username set: %s", mumble_user.username)
+            users_updated += 1
     logger.info(
         "Updated %d out of %d Mumble usernames", users_updated, total_users
     )

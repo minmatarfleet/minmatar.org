@@ -23,9 +23,9 @@ class ErrorResponse(BaseModel):
 def mumble_username(user) -> str:
     primary = user_primary_character(user)
     if primary:
-        return "[FLEET] " + primary.character_name
+        return primary.character_name
 
-    return "[?????] " + user.username
+    return ""
 
 
 @router.get(
