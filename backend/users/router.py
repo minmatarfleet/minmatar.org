@@ -13,6 +13,7 @@ from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
+from eveonline.models import EvePlayer
 from groups.tasks import update_affiliation
 
 from .helpers import get_user_profile, get_user_profiles
@@ -69,6 +70,11 @@ def callback(request, code: str):
         django_user = User.objects.create(username=user["username"])
         django_user.username = user["username"]
         django_user.save()
+
+        EvePlayer.objects.create(
+            user=django_user,
+            nickname=django_user.username,
+        )
 
         discord_user = DiscordUser.objects.create(
             user=django_user,
