@@ -31,10 +31,10 @@ class Database:
                 mm.id,
                 mm.username,
                 mm.password,
-                mm.user_id,
-                mm.suspended
+                mm.user_id
             FROM mumble_mumbleaccess mm
             WHERE mm.username = ?
+            AND mm.suspended = 0
             LIMIT 1
         """
         self.cursor.execute(query, [username])
@@ -67,10 +67,7 @@ class Authenticator(Murmur.ServerAuthenticator):
                 print("Failed authenticating: {0}".format(name))
                 return -1, None, None
 
-            (_, mumble_username, mumble_password, user_id, suspended) = mumble_access
-            if suspended:
-                print("Mumble user suspended: {0}".format(name))
-                return -3, None, None
+            (_, mumble_username, mumble_password, user_id) = mumble_access
 
             if mumble_password == pw:
                 return user_id, mumble_username, None

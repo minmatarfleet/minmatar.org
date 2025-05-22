@@ -49,7 +49,7 @@ def get_mumble_connection(request):
 
     mumble_access, _ = MumbleAccess.objects.get_or_create(
         user=request.user,
-        defaults={"username": primary_character.character_name},
+        defaults={"username": mumble_username(request.user)},
     )
 
     if mumble_access.suspended:
