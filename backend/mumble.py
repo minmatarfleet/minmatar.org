@@ -9,36 +9,34 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 
 
 def get_mumble_access_by_username(username):
-    from eveonline.models import (  # pylint: disable=import-outside-toplevel
-        EveCharacter,
-    )
+    # from eveonline.models import (  # pylint: disable=import-outside-toplevel
+    #     EveCharacter,
+    # )
     from mumble.models import (  # pylint: disable=import-outside-toplevel
         MumbleAccess,
     )
 
-    eve_character = EveCharacter.objects.get(character_name=username)
-    if not eve_character:
-        return None
-    if not eve_character.token:
-        return None
-    user = eve_character.token.user
-    if not user:
-        return None
-    return MumbleAccess.objects.filter(user=user).first()
+    # eve_character = EveCharacter.objects.get(character_name=username)
+    # if not eve_character:
+    #     return None
+    # user = eve_character.user
+    return MumbleAccess.objects.filter(username=username).first()
 
 
 def get_mumble_groups_by_username(username):
-    from eveonline.models import (  # pylint: disable=import-outside-toplevel
-        EveCharacter,
+    # from eveonline.models import (  # pylint: disable=import-outside-toplevel
+    #     EveCharacter,
+    # )
+    from mumble.models import (  # pylint: disable=import-outside-toplevel
+        MumbleAccess,
     )
 
-    eve_character = EveCharacter.objects.get(character_name=username)
-    if not eve_character:
-        return None
-    if not eve_character.token:
-        return None
-    user = eve_character.token.user
-    groups = user.groups.all()
+    # eve_character = EveCharacter.objects.get(character_name=username)
+    # if not eve_character:
+    #     return None
+    # user = eve_character.user
+    mumble_user = MumbleAccess.objects.filter(username=username).first()
+    groups = mumble_user.user.groups.all()
     return [group.name for group in groups]
 
 
@@ -72,6 +70,9 @@ class Authenticator(Murmur.ServerAuthenticator):
             mumble_access = get_mumble_access_by_username(name)
             if mumble_access is None:
                 print(f"Failed authenticating: {name}")
+                return -1, None, None
+            if mumble_access.suspended:
+                print(f"User suspended: {name}")
                 return -1, None, None
 
             groups = get_mumble_groups_by_username(name)
