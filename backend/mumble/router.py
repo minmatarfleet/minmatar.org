@@ -20,11 +20,24 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
+def mumble_username(user) -> str:
+    primary = user_primary_character(user)
+    if primary:
+        return "[FLEET] " + primary.character_name
+
+    return "[?????] " + user.username
+
+
 @router.get(
     "/connection",
     summary="Get mumble connection information",
     auth=AuthBearer(),
-    response={200: MumbleConnectionInformationResponse, 403: ErrorResponse},
+    response={
+        200: MumbleConnectionInformationResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
 )
 def get_mumble_connection(request):
     if not request.user.has_perm("mumble.view_mumbleaccess"):
@@ -34,19 +47,20 @@ def get_mumble_connection(request):
     if not primary_character:
         return 404, {"detail": "Primary character not found."}
 
-    # if not EvePrimaryCharacter.objects.filter(
-    #     character__token__user=request.user
-    # ).exists():
-    #     return 404, {"detail": "Primary character not found."}
+    mumble_access, _ = MumbleAccess.objects.get_or_create(
+        user=request.user,
+        defaults={"username": primary_character.character_name},
+    )
 
-    mumble_access, _ = MumbleAccess.objects.get_or_create(user=request.user)
+    if mumble_access.suspended:
+        return 400, ErrorResponse(detail="Mumble access suspended")
 
-    # primary_character = EvePrimaryCharacter.objects.get(
-    #     character__token__user=request.user
-    # ).character
+    if not mumble_access.username:
+        mumble_access.username = mumble_username(request.user)
+        mumble_access.save()
 
     response = {
-        "username": primary_character.character_name,
+        "username": mumble_access.username,
         "password": mumble_access.password,
         "url": f"mumble://{primary_character.character_name}:{mumble_access.password}@{settings.MUMBLE_MURMUR_HOST}:{settings.MUMBLE_MURMUR_PORT}",  # noqa
     }
