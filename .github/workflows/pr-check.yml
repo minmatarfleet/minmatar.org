@@ -42,6 +42,8 @@ jobs:
           name: backend-test-results
           path: backend/testresults.txt
           retention-days: 1
+      - name: Step summary POC
+        run: echo '### Hello world! 🚀' >> $GITHUB_STEP_SUMMARY
   frontend-check:
     runs-on: ubuntu-22.04
     defaults:
