@@ -9,6 +9,7 @@ from .models import (
     EveSkillset,
     EveTag,
     EveCharacterTag,
+    EveLocation,
 )
 from .helpers.characters import user_primary_character
 
@@ -73,3 +74,17 @@ class EvePlayerAdmin(admin.ModelAdmin):
         for char in instance.characters():
             chars.append(char.character_name)
         return chars
+
+
+@admin.register(EveLocation)
+class EveLocationAdmin(admin.ModelAdmin):
+    """Admin screen for EveLocation entity"""
+
+    list_display = (
+        "location_id",
+        "location_name",
+        "solar_system_name",
+        "market_active",
+        "freight_active",
+        "staging_active",
+    )

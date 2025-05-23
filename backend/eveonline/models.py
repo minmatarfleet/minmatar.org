@@ -476,3 +476,27 @@ class EveAlliance(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+class EveLocation(models.Model):
+    """An alliance location for freight, market or staging"""
+
+    location_id = models.BigIntegerField(primary_key=True)
+    location_name = models.CharField(max_length=255)
+    solar_system_id = models.BigIntegerField()
+    solar_system_name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=32)
+
+    structure = models.ForeignKey(
+        "structures.EveStructure",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    market_active = models.BooleanField(default=False)
+    freight_active = models.BooleanField(default=False)
+    staging_active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return str(f"{self.location_name}")

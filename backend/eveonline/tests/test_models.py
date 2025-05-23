@@ -12,6 +12,7 @@ from eveonline.models import (
     EveCharacter,
     EveCharacterSkill,
     EveSkillset,
+    EveLocation,
     Token,
     Scope,
 )
@@ -331,3 +332,23 @@ class EvePlayerTestCase(TestCase):
                 user=user2,
                 primary_character=character,
             )
+
+
+class EveLocationTestCase(TestCase):
+    """
+    Tests the EveLocation database model
+    """
+
+    def test_evelocation(self):
+        EveLocation.objects.create(
+            location_id=1234567890,
+            location_name="Homebase",
+            solar_system_id=1,
+            solar_system_name="Home",
+            short_name="Home",
+            market_active=True,
+            freight_active=False,
+            staging_active=True,
+        )
+
+        self.assertEqual(1, EveLocation.objects.count())
