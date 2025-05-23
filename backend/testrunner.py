@@ -161,8 +161,14 @@ class Runner(DiscoverRunner):
 
         with open(output_file, mode="w", encoding="utf-8") as f:
             print("### Backend test results", file=f)
-            print("| Pass :white_check_mark: | Fail :red_circle: | Error :large_orange_diamond: | Total :large_blue_circle: |", file=f)
+            print(
+                "| Pass :white_check_mark: | Fail :red_circle: | Error :large_orange_diamond: | Total :large_blue_circle: |",
+                file=f,
+            )
             print("| ---- | ---- | ----- | ----- |", file=f)
-            print(f"| {success_count} | {fail_count} | {error_count} | {len(results)} |", file=f)
+            print(
+                f"| {success_count} | {fail_count} | {error_count} | {len(results)} |",
+                file=f,
+            )
 
         print("Markdown summary written to", output_file)
