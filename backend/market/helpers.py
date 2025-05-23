@@ -8,13 +8,12 @@ from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveonline.client import EsiClient
 
-from eveonline.models import EveCorporation
+from eveonline.models import EveCorporation, EveLocation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
-    EveMarketLocation,
 )
 
 esi = EsiClientProvider()
@@ -54,7 +53,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         )
         return
 
-    if not EveMarketLocation.objects.filter(
+    if not EveLocation.objects.filter(
         location_id=contract["start_location_id"]
     ).exists():
         logger.info(
@@ -88,7 +87,7 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
         return
 
     # Data massaging
-    location = EveMarketLocation.objects.get(
+    location = EveLocation.objects.get(
         location_id=contract["start_location_id"]
     )
     fitting = EveFitting.objects.get(
@@ -128,17 +127,6 @@ def create_market_contract(contract: dict, issuer_id: int) -> None:
 
 
 def create_character_market_contracts(character_id: int):
-    # token = Token.get_token(character_id, MARKET_CHARACTER_SCOPES)
-    # if not token:
-    #     logger.error(
-    #         f"Character {character_id} does not have required scopes to fetch market contracts."
-    #     )
-    #     return
-
-    # contracts = esi.client.Contracts.get_characters_character_id_contracts(
-    #     character_id=character_id, token=token.valid_access_token()
-    # ).results()
-
     response = EsiClient(character_id).get_character_contracts()
     if not response.success:
         logger.error(

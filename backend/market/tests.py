@@ -9,11 +9,10 @@ from app.test import TestCase
 from fittings.models import EveFitting
 from esi.models import Token
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveLocation
 from eveonline.scopes import add_scopes, TokenType
 from market.models import (
     EveMarketContract,
-    EveMarketLocation,
     EveMarketContractExpectation,
 )
 from market.helpers import create_character_market_contracts
@@ -31,11 +30,12 @@ class MarketRouterTestCase(TestCase):
         super().setUp()
 
     def _setup_expecation(self):
-        loc = EveMarketLocation.objects.create(
+        loc = EveLocation.objects.create(
             location_id=1234,
             location_name="Somewhere else",
             solar_system_id=1,
             solar_system_name="Somewhere",
+            market_active=True,
         )
         fit = EveFitting.objects.create(
             name="[NVY-5] Atron",
@@ -97,6 +97,33 @@ class MarketRouterTestCase(TestCase):
             str(timestamp)[0:19], data[0]["latest_contract_timestamp"]
         )
 
+    def test_inactive_market(self):
+        EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            solar_system_id=1,
+            solar_system_name="Solar 1",
+            short_name="One",
+            market_active=False,
+        )
+        EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            solar_system_id=2,
+            solar_system_name="Solar 2",
+            short_name="Two",
+            market_active=True,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/locations",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("Solar 2", data[0]["system_name"])
+
 
 class MarketHelperTestCase(TestCase):
     """Tests of the market helper functions."""
@@ -125,11 +152,12 @@ class MarketHelperTestCase(TestCase):
             character_name=token.character_name,
             token=token,
         )
-        location = EveMarketLocation.objects.create(
+        location = EveLocation.objects.create(
             location_id=1,
             location_name="Test",
             solar_system_id=1,
             solar_system_name="Jita",
+            market_active=True,
         )
         fitting = EveFitting.objects.create(
             name="[NVY-5] Atron",
