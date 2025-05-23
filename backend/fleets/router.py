@@ -197,6 +197,7 @@ def get_v2_fleet_locations(request):
     response = []
     locations = (
         EveLocation.objects.all()
+        .filter(staging_active=True)
         .annotate(count=Count("evefleet__id"))
         .order_by("-count")
     )
