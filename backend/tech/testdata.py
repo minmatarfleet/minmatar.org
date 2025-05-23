@@ -53,6 +53,18 @@ def setup_users() -> User:
 
 
 def setup_orgs(user: User) -> EveCharacter:
+    EveFleetLocation.objects.get_or_create(
+        location_name="Homebase",
+        defaults={
+            "location_id": 1234,
+            "solar_system_id": 2000,
+            "solar_system_name": "Home",
+            "short_name": "Home",
+            "staging_active": True,
+            "freight_active": True,
+            "market_active": True,
+        },
+    )
     alliance, _ = EveAlliance.objects.get_or_create(
         alliance_id=12345,
         name="FL33T",

@@ -8,7 +8,7 @@ from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
 from fittings.models import EveDoctrine
 from fleets.motd import get_motd
@@ -46,7 +46,7 @@ class EveFleet(models.Model):
         EveDoctrine, on_delete=models.SET_NULL, null=True, blank=True
     )
     location = models.ForeignKey(
-        "EveFleetLocation",
+        EveLocation,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

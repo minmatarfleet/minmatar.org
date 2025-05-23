@@ -9,13 +9,12 @@ from django.utils import timezone
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.helpers.characters import set_primary_character
 from discord.models import DiscordUser
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
-    EveFleetLocation,
     EveFleetInstance,
     EveFleetInstanceMember,
 )
@@ -56,11 +55,13 @@ def setup_fleet_reference_data():
         add_to_schedule=False,
     )
 
-    EveFleetLocation.objects.create(
+    EveLocation.objects.create(
         location_id=123,
         location_name="Test Location",
         solar_system_id=234,
         solar_system_name="Somewhere",
+        short_name="Somewhere",
+        staging_active=True,
     )
 
 
@@ -92,6 +93,8 @@ def make_test_fleet(
     if start is None:
         start = timezone.now() + timedelta(hours=1)
 
+    location = EveLocation.objects.filter(staging_active=True).first()
+
     return EveFleet.objects.create(
         start_time=start,
         description=description,
@@ -99,7 +102,7 @@ def make_test_fleet(
         status="pending",
         created_by=fc_user,
         audience=EveFleetAudience.objects.first(),
-        location=EveFleetLocation.objects.first(),
+        location=location,
     )
 
 
@@ -241,12 +244,15 @@ class FleetRouterTestCase(TestCase):
     def test_create_fleet_endpoint(self):
         setup_fc(self.user)
 
+        location = EveLocation.objects.filter(staging_active=True).first()
+        print("zzz", location.location_id)
+
         data = {
             "type": "training",
             "description": "Test fleet",
             "start_time": timezone.now(),
             "audience_id": EveFleetAudience.objects.first().id,
-            "location_id": EveFleetLocation.objects.first().location_id,
+            "location_id": location.location_id,
         }
 
         response = self.client.post(
