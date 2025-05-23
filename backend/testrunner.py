@@ -147,16 +147,22 @@ class Runner(DiscoverRunner):
         if not output_file:
             print("GITHUB_STEP_SUMMARY not set, not writing summary")
 
-        success = 0
+        success_count = 0
+        fail_count = 0
+        error_count = 0
+
         for result in results:
             if result.status == "Success":
-                success += 1
+                success_count += 1
+            if result.status == "Error":
+                error_count += 1
+            if result.status == "Failure":
+                fail_count += 1
 
         with open(output_file, mode="w", encoding="utf-8") as f:
-            print("### Backend test summary", file=f)
-            print("| Status | Count |", file=f)
-            print("| ------ | ----- |", file=f)
-            print(f"| Success | {success} |", file=f)
-            print(f"| Total | {len(results)} |", file=f)
+            print("### Backend test results", file=f)
+            print("| Pass :white_check_mark: | Fail :red_circle: | Error :large_orange_diamond: | Total :large_blue_circle: |", file=f)
+            print("| ---- | ---- | ----- | ----- |", file=f)
+            print(f"| {success_count} | {fail_count} | {error_count} | {len(results)} |", file=f)
 
         print("Markdown summary written to", output_file)
