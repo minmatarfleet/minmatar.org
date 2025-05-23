@@ -31,8 +31,9 @@ jobs:
           black --check .
       - name: Run tests
         run: |
-          pip install pipenv coverage
+          pip install pipenv
           pipenv install --dev
+          pipenv install coverage
           pipenv run coverage run manage.py test --testrunner="testrunner.Runner" 
       - name: Display test results
         run: cat testresults.txt
