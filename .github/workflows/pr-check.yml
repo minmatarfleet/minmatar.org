@@ -38,6 +38,8 @@ jobs:
           pipenv run coverage json
       - name: Display test results
         run: cat testresults.txt
+      - name: Write coverage summary
+        run: python testsummary.py
       - name: Publish results
         uses: actions/upload-artifact@v4
         with:
