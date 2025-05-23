@@ -33,7 +33,7 @@ jobs:
         run: |
           pip install pipenv
           pipenv install --dev
-          pipenv run python3 manage.py test --testrunner="testrunner.Runner" 
+          pipenv run coverage run - manage.py test --testrunner="testrunner.Runner" 
       - name: Display test results
         run: cat testresults.txt
       - name: Publish results
