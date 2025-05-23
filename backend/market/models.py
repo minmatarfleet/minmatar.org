@@ -1,12 +1,13 @@
 from django.db import models
 from eveuniverse.models import EveType
+from eveonline.models import EveLocation
 
 from fittings.models import EveFitting
 
 
 class EveMarketLocation(models.Model):
     """
-    Model for tracking market locations
+    DEPRECATED - Model for tracking market locations
     """
 
     location_id = models.BigIntegerField(primary_key=True)
@@ -28,7 +29,7 @@ class EveMarketContractExpectation(models.Model):
     """Model for seeding a quantity of fittings"""
 
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
@@ -100,7 +101,7 @@ class EveMarketContract(models.Model):
 
     # relationships
     location = models.ForeignKey(
-        EveMarketLocation, on_delete=models.CASCADE, null=True, blank=True
+        EveLocation, on_delete=models.RESTRICT, null=True, blank=True
     )
     fitting = models.ForeignKey(
         EveFitting, on_delete=models.SET_NULL, null=True, blank=True
@@ -114,7 +115,7 @@ class EveMarketItemExpectation(models.Model):
     """Model for seeding a quantity of items"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
@@ -138,7 +139,7 @@ class EveMarketItemOrder(models.Model):
     """Model for tracking an order for an item"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     quantity = models.IntegerField()
     issuer_external_id = models.BigIntegerField()
@@ -151,7 +152,7 @@ class EveMarketItemTransaction(models.Model):
     """Model for tracking a transaction for an item"""
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveMarketLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     quantity = models.IntegerField()
     issuer_external_id = models.BigIntegerField()

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,
@@ -17,7 +17,6 @@ from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
-    EveMarketLocation,
 )
 
 logger = logging.getLogger(__name__)
@@ -437,7 +436,7 @@ def fetch_eve_market_contract(request, expectation_id: int):
 )
 def get_market_locations(request) -> List[MarketLocationSummary]:
     locations = []
-    for location in EveMarketLocation.objects.all():
+    for location in EveLocation.objects.filter(market_active=True):
         contract_count = EveMarketContract.objects.filter(
             location=location,
             status="outstanding",
