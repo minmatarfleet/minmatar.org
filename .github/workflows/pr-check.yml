@@ -35,6 +35,7 @@ jobs:
           pipenv install --dev
           pipenv install coverage
           pipenv run coverage run manage.py test --testrunner="testrunner.Runner" 
+          pipenv run coverage json
       - name: Display test results
         run: cat testresults.txt
       - name: Publish results
