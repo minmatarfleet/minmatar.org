@@ -1,4 +1,5 @@
 import logging
+import os
 
 from django.test.runner import DiscoverRunner
 from unittest import TextTestRunner, TextTestResult, TestCase
@@ -94,6 +95,8 @@ class Runner(DiscoverRunner):
 
         print("Test results written to testsresults.txt")
 
+        self.write_markdown_job_summary()
+
         return result
 
     # pylint: disable=W1405
@@ -138,3 +141,35 @@ class Runner(DiscoverRunner):
         module_width += 2
         method_width += 2
         return module_width, method_width
+
+    def write_markdown_job_summary(self):
+        output_file = os.environ.get("GITHUB_STEP_SUMMARY")
+        if not output_file:
+            print("GITHUB_STEP_SUMMARY not set, not writing summary")
+
+        success_count = 0
+        fail_count = 0
+        error_count = 0
+
+        for result in results:
+            if result.status == "Success":
+                success_count += 1
+            if result.status == "Error":
+                error_count += 1
+            if result.status == "Failure":
+                fail_count += 1
+
+        # Build content and write in one atomic print statement
+        # to avoid any mingling of content with parallel processes.
+
+        content = (
+            "### Backend test results \n"
+            "| Pass :white_check_mark: | Fail :x: | Error :large_orange_diamond: | Total :large_blue_circle: |\n"
+            "| ---- | ---- | ----- | ----- |\n"
+            f"| {success_count} | {fail_count} | {error_count} | {len(results)} |\n"
+        )
+
+        with open(output_file, mode="w", encoding="utf-8") as f:
+            print(content, file=f)
+
+        print("Markdown summary written to", output_file)

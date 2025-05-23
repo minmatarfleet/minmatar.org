@@ -27,6 +27,7 @@ upsidedown = "*"
 pillow = "*"
 factory-boy = "*"
 docker = "*"
+coverage = "*"
 
 [dev-packages]
 pylint = "*"
