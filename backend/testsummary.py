@@ -9,10 +9,7 @@ with open("coverage.json", mode="r", encoding="utf-8") as f:
     data = json.load(f)
     coverage = data["totals"]["percent_covered_display"]
 
-content = (
-    "### Backend coverage \n"
-    f"{coverage}% covered :eyeglasses:\n"
-)
+content = "### Backend coverage \n" f"{coverage}% covered :eyeglasses:\n"
 
 with open(output_file, mode="a", encoding="utf-8") as f:
-    print(content, file=f)    
+    print(content, file=f)
