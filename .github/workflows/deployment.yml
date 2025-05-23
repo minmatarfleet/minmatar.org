@@ -7,6 +7,9 @@ jobs:
   build:
     name: Deploy to production
     runs-on: ubuntu-latest
+    concurrency:
+      group: prod-deploy
+      cancel-in-progress: false
     steps:
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v1.0.3
