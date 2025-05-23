@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from .models import EveFreightRoute, EveFreightRouteOption
 
-# Create your views here.
 router = Router(tags=["Freight"])
 
 

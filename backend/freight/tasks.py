@@ -6,7 +6,7 @@ from bravado.exception import HTTPNotModified
 
 from app.celery import app
 from eveonline.models import EveCharacter
-from freight.models import EveFreightContract
+from freight.models import EveFreightContract, EveFreightRoute
 from structures.models import EveStructure
 
 logger = logging.getLogger(__name__)
@@ -120,3 +120,17 @@ def update_contract(esi_contract):
             "date_completed": esi_contract["date_completed"],
         },
     )
+
+
+@app.task()
+def update_route_locations():
+    logger.info("Updating freight route locations")
+    updated = 0
+    for route in EveFreightRoute.objects.all():
+        if not route.origin_location:
+            route.origin_location_id = route.orgin.location_id
+            route.destination_location_id = route.destination.location_id
+            route.save()
+            updated += 1
+    logger.info("%d reight route locations updated", updated)
+    return updated

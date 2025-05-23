@@ -1,9 +1,14 @@
 from django.db import models
 
+from eveonline.models import EveLocation
+
 
 # Create your models here.
 class EveFreightLocation(models.Model):
-    """Model for a freight depot."""
+    """
+    DEPRECATED - see eveonline.EveLocation
+    Model for a freight depot.
+    """
 
     location_id = models.BigIntegerField(unique=True)
     name = models.CharField(max_length=255)
@@ -59,6 +64,18 @@ class EveFreightRoute(models.Model):
         EveFreightLocation,
         on_delete=models.CASCADE,
         related_name="destination",
+    )
+    origin_location = models.ForeignKey(
+        EveLocation,
+        on_delete=models.CASCADE,
+        related_name="origin_location",
+        null=True,
+    )
+    destination_location = models.ForeignKey(
+        EveLocation,
+        on_delete=models.CASCADE,
+        related_name="destination_location",
+        null=True,
     )
     bidirectional = models.BooleanField(default=True)
 
