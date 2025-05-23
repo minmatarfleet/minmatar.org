@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
+from eveonline.models import EveLocation
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
@@ -25,7 +26,6 @@ from .models import (
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
-    EveFleetLocation,
     EveStandingFleet,
 )
 from .notifications import get_fleet_discord_notification
@@ -196,7 +196,7 @@ def get_v2_fleet_locations(request):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
     response = []
     locations = (
-        EveFleetLocation.objects.all()
+        EveLocation.objects.all()
         .annotate(count=Count("evefleet__id"))
         .order_by("-count")
     )
@@ -679,7 +679,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
         return 400, {"detail": "Audience does not exist"}
 
-    if not EveFleetLocation.objects.filter(
+    if not EveLocation.objects.filter(
         location_id=payload.location_id
     ).exists():
         return 400, {"detail": "Location does not exist"}
@@ -690,7 +690,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         description=payload.description,
         start_time=payload.start_time,
         created_by=request.user,
-        location=EveFleetLocation.objects.get(location_id=payload.location_id),
+        location=EveLocation.objects.get(location_id=payload.location_id),
         audience=audience,
         disable_motd=payload.disable_motd,
         status="pending",
@@ -779,12 +779,12 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         fleet.audience = audience
 
     if payload.location_id:
-        if not EveFleetLocation.objects.filter(
+        if not EveLocation.objects.filter(
             location_id=payload.location_id
         ).exists():
             return 400, {"detail": "Location does not exist"}
 
-        fleet.location = EveFleetLocation.objects.get(
+        fleet.location = EveLocation.objects.get(
             location_id=payload.location_id
         )
 
