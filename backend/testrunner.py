@@ -159,16 +159,17 @@ class Runner(DiscoverRunner):
             if result.status == "Failure":
                 fail_count += 1
 
+        # Build content and write in one atomic print statement
+        # to avoid any mingling of content with parallel processes.
+
+        content = (
+            "### Backend test results \n"
+            "| Pass :white_check_mark: | Fail :x: | Error :large_orange_diamond: | Total :large_blue_circle: |\n"
+            "| ---- | ---- | ----- | ----- |\n"
+            f"| {success_count} | {fail_count} | {error_count} | {len(results)} |\n"
+        )
+
         with open(output_file, mode="w", encoding="utf-8") as f:
-            print("### Backend test results", file=f)
-            print(
-                "| Pass :white_check_mark: | Fail :red_circle: | Error :large_orange_diamond: | Total :large_blue_circle: |",
-                file=f,
-            )
-            print("| ---- | ---- | ----- | ----- |", file=f)
-            print(
-                f"| {success_count} | {fail_count} | {error_count} | {len(results)} |",
-                file=f,
-            )
+            print(content, file=f)
 
         print("Markdown summary written to", output_file)
