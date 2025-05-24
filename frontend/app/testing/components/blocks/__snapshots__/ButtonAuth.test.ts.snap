@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ButtonAuth defaults 1`] = `
+"<button type="button" x-data="{
+        disabled: false,
+        show_join_request_dialog() {
+            this.disabled = true
+            
+            show_confirm_dialog({
+                title: 'undefined',
+                content: '<p>The following action requires authentication. A <a target=&#34;_blank&#34; rel=&#34;noreferrer noopener nofollow&#34; href=&#34;https://discord.com/invite/3hZfahmkFx&#34;>Minmatar Discord</a> user account is needed to continue. Would you like to proceed with authentication?</p>',
+            }).then( (accepted) => {
+                if (accepted)
+                    window.location.href = '/redirects/auth_init?redirect_url=https://example.com/'
+            })
+        }
+    }" x-on:click="show_join_request_dialog()" data-size="lg" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">       </div>   </button> "
+`;

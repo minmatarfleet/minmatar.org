@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CharacterLinks defaults 1`] = `
+"<div class="flex-inline" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-3xs);--flex_inline_justification: flex-start;"> <a data-tippy-content="Zkillboard" class="[ w-[32px] neocom-button neocom-button-focus ]" href="https://zkillboard.com/character/56/" target="_blank" rel="nofollow noopener noreferrer" x-data="{
+            show_external_link_disclaimer() {
+                show_alert_dialog({
+                    title: 'You’re Leaving Our Site',
+                    content: 'The link you clicked will take you to an external website.',
+                }).then( (accepted) => accepted &#38;&#38; window.location.href = &#34;https://zkillboard.com/character/56/&#34; )
+            }
+        }" x-on:click.prevent="show_external_link_disclaimer"> <img loading="lazy" class="[ max-w-[100%] h-auto ]" src="/images/icons/48px-Combatlog.png" width="48" height="48" alt="EVE Online Combat Log Icon"> </a>  </div>  "
+`;

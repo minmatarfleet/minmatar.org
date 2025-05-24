@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AlertDialog defaults 1`] = `
+"<div class="[ alert-dialog ]" data-astro-cid-mngqp6e4> <div role="dialog" class="dialog solid-transparency breakout fixed [ w-full max-w-[500px] max-h-[80vh] overflow-y-auto ]" x-data="{
+            close_dialog() {
+                if (!alert_dialog_open)
+                    return
+                
+                var clickEvent = new MouseEvent(&#34;click&#34;, {
+                    &#34;view&#34;: window,
+                    &#34;bubbles&#34;: true,
+                    &#34;cancelable&#34;: false
+                });
+
+                document.querySelector('.alert-dialog-backdrop').dispatchEvent(clickEvent);
+            }
+        }" @keyup.escape.window="close_dialog()" x-bind:class="(alert_dialog_open ? 'open' : '')" x-bind:aria-hidden="alert_dialog_open == false" aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description" x-trap="alert_dialog_open" x-bind:inert="!alert_dialog_open" data-astro-cid-mngqp6e4="true"> <div class="wrapper" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: var(--space-m);--wrapper_padding_inline_end: var(--space-m);--wrapper_padding_block: var(--space-m);--wrapper_max_width: 80rem;">  <div class="flex-block gap---space-m" data-mod style="--flex_block_gap: var(--space-m);">   <div class="[ cover-body ]">  <div class="flex-block gap---space-l" data-astro-cid-mngqp6e4="true" data-mod style="--flex_block_gap: var(--space-l);">  <div class="flex-block gap---space-s" data-astro-cid-mngqp6e4="true" data-mod style="--flex_block_gap: var(--space-s);">  <h3 id="alert-dialog-title" x-text="alert_dialog_title" data-astro-cid-mngqp6e4></h3> <div id="alert-dialog-description" class="[ alert-dialog-content ]" x-html="alert_dialog_content" x-bind:hx-get="alert_dialog_partial ? (alert_dialog_partial ?? false) : false" x-bind:hx-trigger="alert_dialog_partial ? 'intersect' : false" x-bind:hx-swap="alert_dialog_partial ? 'innerHTML transition:true' : false" hx-target="#alert-dialog-description" hx-indicator=".loader" data-astro-cid-mngqp6e4></div>  </div>  <div class="flex-inline" data-astro-cid-mngqp6e4="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: flex-end;">  <button alert-dialog-action="accept" x-bind:hx-get="alert_dialog_hx?.method == 'get' ? (alert_dialog_hx?.url ?? false) : false" x-bind:hx-post="alert_dialog_hx?.method == 'post' ? (alert_dialog_hx?.url ?? false) : false" x-bind:hx-put="alert_dialog_hx?.method == 'put' ? (alert_dialog_hx?.url ?? false) : false" x-bind:hx-patch="alert_dialog_hx?.method == 'patch' ? (alert_dialog_hx?.url ?? false) : false" x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false" x-bind:hx-target="alert_dialog_hx?.target ?? false" x-bind:hx-swap="alert_dialog_hx?.swap ?? 'none'" hx-indicator=".loader" data-astro-cid-mngqp6e4="true" data-size="sm" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">   OK  </div>   </button>   </div>    </div>   </div>   </div>   </div>   </div>  <div class="alert-dialog-backdrop" x-bind:class="{ open: alert_dialog_open }" alert-dialog-action="close" data-astro-cid-mngqp6e4></div> </div> "
+`;

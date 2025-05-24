@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CancelFleetButton defaults 1`] = `
+"<button id="cancel-fleet-button" x-data="{
+        show_cancel_fleet_dialog() {
+            show_confirm_dialog({
+                title: 'Cancel fleet',
+                content: 'Proceed cancelling the fleet?',
+                hx: {
+                    method: 'patch',
+                    url: '/partials/fleet_cancel_button_component?fleet_id=91234',
+                    target: '#cancel-fleet-button',
+                    swap: 'outerHTML transition:true'
+                }
+            })
+        }
+    }" x-on:click="show_cancel_fleet_dialog" data-size="sm" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">   Cancel  </div>   </button> "
+`;

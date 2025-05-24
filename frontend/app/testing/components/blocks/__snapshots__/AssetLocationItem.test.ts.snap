@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AssetLocationItem defaults 1`] = `"<div class="flex-block [ asset-location-item ] [ w-full ] gap-0" data-mod style="--flex_block_gap: 0;">  <span class="text-[var(--highlight)]"> chick fil a </span> <small> 9871 assets in inventory </small>  </div> "`;
