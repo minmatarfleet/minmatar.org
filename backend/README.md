@@ -103,3 +103,10 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 ```
 ./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
 ```
+
+## Code cleanup tasks
+
+* Remove `EveFleetLocation`, `EveFreightLocation` and `EveMarketLocation`
+* Remove `EvePrimaryCharacter`
+* Remove `EveCharacter.tokens` property
+* Remove `EveCharacter.is_primary`
