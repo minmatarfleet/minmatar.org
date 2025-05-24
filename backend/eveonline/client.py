@@ -214,3 +214,17 @@ class EsiClient:
         )
 
         return self._operation_results(operation)
+
+    def get_character_notifications(self) -> EsiResponse:
+        token, status = self.get_valid_token(
+            ["esi-characters.read_notifications.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi.client.Character.get_characters_character_id_contracts(
+            character_id=self.character_id,
+            token=token,
+        )
+
+        return self._operation_results(operation)
