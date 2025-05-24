@@ -22,6 +22,7 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_403_Forbidden()
 
+import { check_csrf } from '@helpers/csrf';
 import { create_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { Location } from '@dtypes/api.minmatar.org'
@@ -32,6 +33,7 @@ let create_fleet_error
 let alert:Alert | false = false
 
 if (Astro.request.method === "POST") {
+    check_csrf(Astro.request)
     const data = await Astro.request.formData()
     const is_flash_form = data.get('flash_form')
     

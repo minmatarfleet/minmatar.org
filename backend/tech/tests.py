@@ -8,6 +8,7 @@ from django.test import Client, SimpleTestCase
 
 from esi.models import Token
 from app.test import TestCase
+from eveonline.client import EsiResponse
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.helpers.characters import set_primary_character
 from fleets.models import EveFleetAudience
@@ -214,3 +215,32 @@ class TechRoutesTestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+
+    @patch("tech.router.EsiClient")
+    def test_get_notifications(self, esi_mock):
+        self.make_superuser()
+
+        esi = esi_mock.return_value
+        esi.get_character_notifications.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "notification_id": 2173324216,
+                    "sender_id": 1000132,
+                    "sender_type": "corporation",
+                    "text": "Things going boom!",
+                    "timestamp": "2025-05-23T20:26:00Z",
+                    "type": "StructureUnderAttack",
+                },
+            ],
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/notifications",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("StructureUnderAttack", data[0]["type"])
