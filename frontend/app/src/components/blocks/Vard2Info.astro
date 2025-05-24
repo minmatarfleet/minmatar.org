@@ -1,0 +1,30 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_random:  boolean;
+}
+
+const {
+    is_random,
+} = Astro.props
+
+import Dropdown from '@components/blocks/Dropdown.astro';
+import StationInfo from '@components/blocks/StationInfo.astro';
+import StationsSelector from '@components/blocks/StationsSelector.astro';
+---
+
+<Dropdown>
+    <StationInfo
+        system="Vard"
+        security="0.4"
+        constellation="Hed"
+        region="Heimatar"
+        station_name="Vard - Welfare enjoyers"
+        station_description={t('minmatar_fleet_hq')}
+        slot="button"
+    />
+    
+    <StationsSelector selected={!is_random ? 'vard2' : undefined} />
+</Dropdown>
