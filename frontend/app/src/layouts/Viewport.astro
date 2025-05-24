@@ -87,6 +87,25 @@ components.modal = components.modal ?? true
  
 const FITTING_FINDER_PARTIAL_URL = translatePath('/partials/fitting_finder_component')
 
+
+import { generate_csrf_token } from '@helpers/csrf';
+
+const response = Astro.response
+let csrf_token:string | null = null
+
+const accept = Astro.request.headers.get('accept') || ''
+if (accept.includes('text/html')) {
+	csrf_token = generate_csrf_token();
+	response.headers.set(
+		'Set-Cookie',
+		`csrf=${csrf_token}; Path=/; HttpOnly; SameSite=Strict`
+	)
+
+	console.log(csrf_token)
+}
+
+console.log(Astro.url)
+
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
 import 'tippy.js/dist/tippy.css';
@@ -107,6 +126,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
+		{csrf_token && <meta name="csrf-token" content={csrf_token} />}
 		<title>{title}</title>
 		<ClientRouter />
 
