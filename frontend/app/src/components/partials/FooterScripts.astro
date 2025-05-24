@@ -124,11 +124,6 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 <script>
     document.body.addEventListener("htmx:configRequest", function (event) {
-        console.log('entro')
-        const token = document.querySelector('meta[name="csrf-token"]')?.content;
-        console.log(token)
-        
-        if (token)
-            event.detail.headers['X-CSRF-Token'] = token
+        event.detail.headers['Origin'] = window.location.origin
     });
 </script>
