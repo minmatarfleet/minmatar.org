@@ -26,7 +26,6 @@ import type { SRPUI, Alert, FleetUI } from '@dtypes/layout_components'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { is_valid_http_url } from '@helpers/string';
-import { check_csrf } from '@helpers/csrf';
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
@@ -43,8 +42,6 @@ if (Astro.request.method === "POST") {
     let submit_srp_error:string | false = false
 
     try {
-        check_csrf(Astro.request)
-        
         const data = await Astro.request.formData()
         const external_killmail_link = data.get('external_killmail_link' as string) as string
         const is_corp_ship = data.get('is_corp_ship' as string) === 'on'

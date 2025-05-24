@@ -22,9 +22,6 @@ export default defineConfig({
     adapter: node({
         mode: 'standalone'
     }),
-    security: {
-        checkOrigin: false
-    },
     devToolbar: { enabled: false },
     prefetch: false,
     integrations: [
