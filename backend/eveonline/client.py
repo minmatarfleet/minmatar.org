@@ -3,7 +3,6 @@ import logging
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveonline.scopes import MARKET_CHARACTER_SCOPES, BASIC_SCOPES
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +128,9 @@ class EsiClient:
     def get_character_contracts(self) -> EsiResponse:
         """Returns the contracts for the character this ESI client was created for"""
 
-        token, status = self.get_valid_token(MARKET_CHARACTER_SCOPES)
+        token, status = self.get_valid_token(
+            ["esi-contracts.read_character_contracts.v1"]
+        )
         if status > 0:
             return EsiResponse(status)
 
@@ -140,7 +141,7 @@ class EsiClient:
         return self._operation_results(operation)
 
     def get_active_fleet(self) -> EsiResponse:
-        token, status = self.get_valid_token(BASIC_SCOPES)
+        token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
         if status > 0:
             return EsiResponse(status)
 
@@ -151,7 +152,7 @@ class EsiClient:
         return self._operation_results(operation)
 
     def get_fleet_members(self, fleet_id: int) -> EsiResponse:
-        token, status = self.get_valid_token(BASIC_SCOPES)
+        token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
         if status > 0:
             return EsiResponse(status)
 
