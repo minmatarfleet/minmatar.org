@@ -58,12 +58,18 @@ class EveFreightRoute(models.Model):
     """Model for a freight route."""
 
     orgin = models.ForeignKey(
-        EveFreightLocation, on_delete=models.CASCADE, related_name="orgin"
+        EveFreightLocation,
+        on_delete=models.CASCADE,
+        related_name="orgin",
+        null=True,
+        help_text="Deprecated, use origin_location",
     )
     destination = models.ForeignKey(
         EveFreightLocation,
         on_delete=models.CASCADE,
         related_name="destination",
+        null=True,
+        help_text="Deprecated, use destination_location",
     )
     origin_location = models.ForeignKey(
         EveLocation,
@@ -78,6 +84,7 @@ class EveFreightRoute(models.Model):
         null=True,
     )
     bidirectional = models.BooleanField(default=True)
+    active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.orgin.short_name} -> {self.destination.short_name}"

@@ -39,21 +39,21 @@ class EveFreightRouteCostRequest(BaseModel):
 
 @router.get("/routes", response=List[EveFreightRouteResponse])
 def get_routes(request):
-    routes = EveFreightRoute.objects.all()
+    routes = EveFreightRoute.objects.filter(active=True)
     response = []
     for route in routes:
         response.append(
             EveFreightRouteResponse(
                 route_id=route.id,
                 orgin=EveFreightLocationResponse(
-                    location_id=route.orgin.location_id,
-                    name=route.orgin.name,
-                    short_name=route.orgin.short_name,
+                    location_id=route.origin_location.location_id,
+                    name=route.origin_location.location_name,
+                    short_name=route.origin_location.short_name,
                 ),
                 destination=EveFreightLocationResponse(
-                    location_id=route.destination.location_id,
-                    name=route.destination.name,
-                    short_name=route.destination.short_name,
+                    location_id=route.destination_location.location_id,
+                    name=route.destination_location.location_name,
+                    short_name=route.destination_location.short_name,
                 ),
                 bidirectional=route.bidirectional,
             )
