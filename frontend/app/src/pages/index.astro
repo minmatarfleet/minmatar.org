@@ -63,6 +63,7 @@ import AugaInfo from '@components/blocks/AugaInfo.astro';
 import NakahInfo from '@components/blocks/NakahInfo.astro';
 import EvatiInfo from '@components/blocks/EvatiInfo.astro';
 import VardInfo from '@components/blocks/VardInfo.astro';
+import Vard2Info from '@components/blocks/Vard2Info.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
@@ -92,6 +93,7 @@ const STAGINGS_STATIONS:StagingTranslation = {
 	nakah: 'Nakah - Banana',
 	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
 	vard: 'Vard - Rickety Roost',
+	vard2: 'Vard - Welfare enjoyers',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 }
@@ -101,6 +103,7 @@ const STAGINGS_SYSTEMS:StagingTranslation = {
 	nakah: 'Nakah',
 	evati: 'Evati',
 	vard: 'Vard',
+	vard2: 'Vard',
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
 }
@@ -147,24 +150,28 @@ const page_description = t('index.leading_text');
 			video: staging === 'auga' ? '/videos/militia-loop.webm' :
 					staging === 'nakah' ? '/videos/banana-loop.webm' :
 					staging === 'vard' ? '/videos/rickety-loop.webm' :
+					staging === 'vard2' ? '/videos/welfare-loop.webm' :
 					staging === 'evati' ? '/videos/tzu-loop.webm' :
 					staging === 'amarr' ? '/videos/emperor-loop.webm' :
 					'/videos/watermelon-loop.webm',
 			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
 					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover.jpg' :
+					staging === 'vard2' ? '/images/home-vard2-cover.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
 					'/images/home-cover.jpg',
             image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
 					staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					staging === 'vard2' ? '/images/home-vard2-cover-eve.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
             image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
 					   staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
+					   staging === 'vard2' ? '/images/home-vard2-cover-eve.jpg' :
 					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
@@ -193,6 +200,7 @@ const page_description = t('index.leading_text');
 				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
 					staging === 'nakah' ? <NakahInfo is_random={is_random_staging} /> :
 					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
+					staging === 'vard2' ? <Vard2Info is_random={is_random_staging} /> :
 					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
 					<WatermellonInfo is_random={is_random_staging} />
@@ -205,6 +213,9 @@ const page_description = t('index.leading_text');
 									id: RATTINI_TRIBE_ID,
 									name: 'Rattini Tribe',
 								} : staging === 'nakah' ? {
+									id: BALLS_DEEP_ID,
+									name: 'Balls Deep Inc.',
+								} : staging === 'vard2' ? {
 									id: BALLS_DEEP_ID,
 									name: 'Balls Deep Inc.',
 								} : staging === 'vard' ? {
