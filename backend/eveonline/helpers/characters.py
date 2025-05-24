@@ -86,7 +86,7 @@ def user_primary_character(user: User) -> EveCharacter | None:
     # Fall-back to old EvePrimaryCharacter
     pc = EvePrimaryCharacter.objects.filter(user=user).first()
     if pc:
-        logger.warning(
+        logger.error(
             "Found primary using outdated method 1: %s",
             pc.character.character_name,
         )

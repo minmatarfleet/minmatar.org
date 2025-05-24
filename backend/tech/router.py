@@ -7,11 +7,9 @@ from typing import List, Optional
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
-from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
-from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
 from tech.docker import (
     container_names,
@@ -20,9 +18,14 @@ from tech.docker import (
     DockerLogQuery,
     DockerLogEntry,
 )
+from tech.dbviews import create_all_views
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
+
+
+def permitted(user) -> bool:
+    return user.is_superuser or user_in_team(user, TECH_TEAM)
 
 
 @router.get(
@@ -51,46 +54,12 @@ def auth_ping(request):
     response={200: str, 403: ErrorResponse},
 )
 def check_var(request, var_name: str) -> str:
-    if not user_in_team(request.user, TECH_TEAM):
+    if not permitted(request.user):
         return 403, "Not authorised"
     if hasattr(settings, var_name):
         return "Set"
     else:
         return "Not set"
-
-
-class TokenUserCharacterResponse(BaseModel):
-    character_id: int
-    character_name: str
-    token_user_id: Optional[int] = None
-    token_user_name: Optional[str] = None
-
-
-@router.get(
-    "/no_user_char",
-    description="Finds characters without direct link to user",
-    auth=AuthBearer(),
-    response={200: List[TokenUserCharacterResponse], 403: ErrorResponse},
-)
-def characters_without_user(request) -> List[TokenUserCharacterResponse]:
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
-        return 403, "Not authorised"
-
-    response = []
-
-    for char in EveCharacter.objects.filter(user__isnull=True):
-        item = TokenUserCharacterResponse(
-            character_id=char.character_id, character_name=char.character_name
-        )
-        if char and char.token and char.token.user:
-            item.token_user_id = char.token.user.id
-            item.token_user_name = char.token.user.username
-
-        response.append(item)
-
-    return response
 
 
 @router.get(
@@ -102,9 +71,7 @@ def characters_without_user(request) -> List[TokenUserCharacterResponse]:
 def fleet_tracking_poc(
     request, fleet_id: Optional[int] = None, start: bool = False
 ):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
+    if not permitted(request.user):
         return 403, ErrorResponse(detail="Not authorised")
 
     if fleet_id:
@@ -135,14 +102,9 @@ def fleet_tracking_poc(
     response={200: List[str], 403: ErrorResponse},
 )
 def list_containers(request):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
+    if not permitted(request.user):
         return 403, "Not authorised"
 
-    # client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    # containers = client.containers.list()
-    # return [container.name for container in containers]
     return container_names()
 
 
@@ -162,9 +124,7 @@ def get_logs(
     duration_mins: Optional[int] = None,
     search_for: Optional[str] = None,
 ):
-    if not (
-        request.user.is_superuser or user_in_team(request.user, TECH_TEAM)
-    ):
+    if not permitted(request.user):
         return 403, "Not authorised"
 
     now = timezone.now()
@@ -229,3 +189,18 @@ def get_logs(
 #     return StreamingHttpResponse(
 #         event_stream(), content_type="text/event-stream"
 #     )
+
+
+@router.get(
+    "/dbviews",
+    summary="(Re)create database views",
+    auth=AuthBearer(),
+    response={200: None, 403: ErrorResponse},
+)
+def create_db_views(request):
+    if not permitted(request.user):
+        return 403, "Not authorised"
+
+    create_all_views()
+
+    return 200, None

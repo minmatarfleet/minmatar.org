@@ -1,12 +1,14 @@
+import logging
+import factory
+
 from unittest.mock import patch, Mock
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
-from django.contrib.auth.models import User
 
 from esi.models import Token
 from app.test import TestCase
-from eveonline.models import EveCharacter
+from eveonline.models import EvePlayer, EveCharacter
 from eveonline.helpers.characters import set_primary_character
 from fleets.models import EveFleetAudience
 from tech.docker import (
@@ -15,8 +17,10 @@ from tech.docker import (
     DockerLogEntry,
     DockerLogQuery,
 )
+from tech.dbviews import create_all_views, select_all
 
 BASE_URL = "/api/tech"
+logger = logging.getLogger(__name__)
 
 
 class DockerLogsTestCase(SimpleTestCase):
@@ -64,6 +68,50 @@ class DockerLogsTestCase(SimpleTestCase):
             self.assertIn("blue", str(entry).lower())
 
 
+class DatabaseViewsTestCase(TestCase):
+    """Unit tests for the database view creation"""
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_create_views(self):
+        create_all_views()
+
+        primary = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Pilot 1",
+            user=self.user,
+        )
+        EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Pilot 2",
+            user=self.user,
+        )
+        EvePlayer.objects.create(
+            user=self.user,
+            primary_character=primary,
+            nickname="Player 1",
+        )
+
+        data = select_all("primary_character")
+
+        logger.info("View query results: %s", data)
+
+        self.assertEqual(
+            data,
+            [
+                (
+                    self.user.id,
+                    self.user.username,
+                    1,
+                    "Player 1",
+                    1001,
+                    "Pilot 1",
+                    None,
+                    None,
+                ),
+            ],
+        )
+
+
 class TechRoutesTestCase(TestCase):
     """Test cases for the tech router."""
 
@@ -89,27 +137,6 @@ class TechRoutesTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_get_character(self):
-        self.make_superuser()
-
-        user = User.objects.first()
-        token = Token.objects.create(
-            user=user,
-            character_id=123456,
-        )
-        char = EveCharacter.objects.create(
-            character_id=token.character_id,
-            character_name="Test Char",
-            token=token,
-        )
-        set_primary_character(user, char)
-
-        response = self.client.get(
-            f"{BASE_URL}/no_user_char",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(response.status_code, 200)
-
     def test_fleet_tracking_poc(self):
         # esi_mock = esi_client_mock.return_value
         self.make_superuser()
@@ -131,30 +158,11 @@ class TechRoutesTestCase(TestCase):
             add_to_schedule=False,
         )
 
-        # esi_mock.get_active_fleet.return_value = EsiResponse(
-        #     response_code=200,
-        #     data={
-        #         "fleet_id": 1234,
-        #         "fleet_boss_id": 123456,
-        #         "role": "squad_commander",
-        #     },
-        # )
-
-        # esi_mock.get_fleet_members.return_value = EsiResponse(
-        #     response_code=200,
-        #     data=[
-        #         {"character_id": 123456},
-        #         {"character_id": 123457},
-        #     ],
-        # )
-
         response = self.client.get(
             f"{BASE_URL}/fleet_tracking_poc?start=False",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
-        # members = response.json()
-        # self.assertEqual(2, len(members))
 
     def test_get_container_names(self):
         self.make_superuser()
@@ -196,3 +204,13 @@ class TechRoutesTestCase(TestCase):
                 self.assertIn("app_container", content)
                 self.assertIn("Test logs", content)
                 self.assertIn("Line 2", content)
+
+    def test_setup_db_views(self):
+        self.make_superuser()
+
+        response = self.client.get(
+            f"{BASE_URL}/dbviews",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)

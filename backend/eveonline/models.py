@@ -60,7 +60,7 @@ class EvePlayer(models.Model):
 
 
 class EvePrimaryCharacter(models.Model):
-    """DEPRECATED - Identifies the primary character for a user"""
+    """DEPRECATED - use EvePlayer instead"""
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
