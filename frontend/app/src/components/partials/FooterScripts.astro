@@ -121,3 +121,14 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.body.addEventListener("htmx:configRequest", function (event) {
+        console.log('entro')
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        console.log(token)
+        
+        if (token)
+            event.detail.headers['X-CSRF-Token'] = token
+    });
+</script>

@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 const middleware_error = Astro.cookies.has('middleware_error') ? (Astro.cookies.get('middleware_error')?.value as string) : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 
 import GuestsHeadScripts from '@components/partials/GuestsHeadScripts.astro';
 import GuestsFooterScripts from '@components/partials/GuestsFooterScripts.astro';
@@ -61,7 +61,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
-		<ViewTransitions />
+		<ClientRouter />
 
 		<meta property="og:title" content={title}>
 		{meta_description && <meta property="og:description" content={meta_description} />}
