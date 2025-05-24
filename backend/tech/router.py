@@ -208,16 +208,16 @@ def create_db_views(request):
 
 
 @router.get(
-    "/notifications",
+    "/notifications/{int:character_id}",
     summary="Get character notifications",
     auth=AuthBearer(),
     response={200: Any, 400: ErrorResponse, 403: ErrorResponse},
 )
-def get_notifications(request):
+def get_notifications(request, character_id: int):
     if not permitted(request.user):
         return 403, "Not authorised"
 
-    response = EsiClient(request.user).get_character_notifications()
+    response = EsiClient(character_id).get_character_notifications()
     if not response.success():
         return 400, ErrorResponse(detail=str(response.response))
 

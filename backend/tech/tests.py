@@ -235,8 +235,14 @@ class TechRoutesTestCase(TestCase):
             ],
         )
 
+        character = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test pilot",
+            user=self.user,
+        )
+
         response = self.client.get(
-            f"{BASE_URL}/notifications",
+            f"{BASE_URL}/notifications/{character.id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
