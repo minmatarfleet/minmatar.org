@@ -24,6 +24,10 @@ ADVANCED_SCOPES = [
     "esi-industry.read_character_mining.v1",
 ] + BASIC_SCOPES
 
+DIRECTOR_SCOPES = [
+    "esi-characters.read_notifications.v1",
+] + ADVANCED_SCOPES
+
 CEO_SCOPES = [
     "esi-corporations.read_corporation_membership.v1",
     "esi-corporations.read_blueprints.v1",
@@ -36,7 +40,7 @@ CEO_SCOPES = [
     "esi-corporations.read_starbases.v1",
     "esi-corporations.read_titles.v1",
     "esi-wallet.read_corporation_wallets.v1",
-] + ADVANCED_SCOPES
+] + DIRECTOR_SCOPES
 
 # Used for the freight CEO (Minmatar Fleet Logistics)
 FREIGHT_CHARACTER_SCOPES = [
@@ -65,6 +69,7 @@ class TokenType(Enum):
     PUBLIC = "Public"
     BASIC = "Basic"
     ADVANCED = "Advanced"
+    DIRECTOR = "Director"
     MARKET = "Market"
     FREIGHT = "Freight"
     EXECUTOR = "Executor"
@@ -78,6 +83,8 @@ def scopes_for(token_type: TokenType):
             scopes = BASIC_SCOPES
         case TokenType.ADVANCED:
             scopes = ADVANCED_SCOPES
+        case TokenType.DIRECTOR:
+            scopes = DIRECTOR_SCOPES
         case TokenType.PUBLIC:
             scopes = ["publicData"]
         case TokenType.CEO:
@@ -106,6 +113,8 @@ def scope_group(token: Token) -> str | None:
         return TokenType.FREIGHT.value
     if token_scopes == sorted(CEO_SCOPES):
         return TokenType.CEO.value
+    if token_scopes == sorted(DIRECTOR_SCOPES):
+        return TokenType.DIRECTOR.value
     if token_scopes == sorted(ADVANCED_SCOPES):
         return TokenType.ADVANCED.value
     if token_scopes == sorted(BASIC_SCOPES):

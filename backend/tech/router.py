@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 from ninja import Router
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -10,6 +10,7 @@ from django.utils import timezone
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
+from eveonline.client import EsiClient
 from fleets.models import EveFleetAudience, EveFleet
 from tech.docker import (
     container_names,
@@ -204,3 +205,20 @@ def create_db_views(request):
     create_all_views()
 
     return 200, None
+
+
+@router.get(
+    "/notifications",
+    summary="Get character notifications",
+    auth=AuthBearer(),
+    response={200: Any, 400: ErrorResponse, 403: ErrorResponse},
+)
+def get_notifications(request):
+    if not permitted(request.user):
+        return 403, "Not authorised"
+
+    response = EsiClient(request.user).get_character_notifications()
+    if not response.success():
+        return 400, ErrorResponse(detail=str(response.response))
+
+    return 200, response.results()
