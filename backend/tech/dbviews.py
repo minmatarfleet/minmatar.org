@@ -31,13 +31,11 @@ def create_primary_character_view():
             "ep.id player_id, ep.nickname, "
             "ec.character_id, ec.character_name, "
             "ec.corporation_id, ec.alliance_id "
-            "  FROM " + character_table + " ec "
-            "LEFT OUTER JOIN " + player_table + " ep "
+            "FROM " + player_table + " ep "
+            "LEFT OUTER JOIN " + character_table + " ec "
             "  ON ep.primary_character_id = ec.id "
             "LEFT OUTER JOIN " + user_table + " u "
-            "  ON u.id = ec.user_id "
-            "WHERE "
-            "  ep.primary_character_id IS NOT NULL"
+            "  ON u.id = ep.user_id "
         ),
     )
 
