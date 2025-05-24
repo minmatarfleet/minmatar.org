@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Badge defaults 1`] = `"<div class="fixed-fluid [ items-center ]" data-astro-cid-etghgjam="true" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-s);--fixed_fluid_width: 64px;--fixed_fluid_breakpoint: 50%;">   <picture data-astro-cid-etghgjam>  </picture>  <div class="flex-block gap-0" data-astro-cid-etghgjam="true" data-mod style="--flex_block_gap: 0;">  <span data-astro-cid-etghgjam="true" class="min-w-[200px] text-[var(--highlight)]"> </span>     </div>   </div>   "`;

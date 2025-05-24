@@ -11,6 +11,10 @@ RUN npm install --production
 FROM base AS build-deps
 RUN npm install --production=false
 
+FROM build-deps as unit-tests
+COPY app/ .
+RUN npm run check
+
 FROM build-deps AS build
 COPY app/ .
 

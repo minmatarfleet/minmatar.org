@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Button defaults 1`] = `"<button data-size="lg" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">     </div>   </button> "`;

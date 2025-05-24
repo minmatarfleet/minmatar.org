@@ -1,0 +1,9 @@
+services:
+  frontend-unit-tests:
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+      target: unit-tests
+    command: npm run test-ci
+    volumes:
+      - "./artifacts:/artifacts"

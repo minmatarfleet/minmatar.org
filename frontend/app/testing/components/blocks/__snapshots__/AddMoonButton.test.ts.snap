@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AddMoonButton defaults 1`] = `
+"<div x-data="{
+        button_dialog_open: false,
+        open_dialog() {
+            this.button_dialog_open = true
+        },
+        close_dialog() {
+            this.button_dialog_open = false
+        }
+    }" data-astro-cid-xwghkimo> <button type="button" x-on:click.stop.prevent="open_dialog()" data-astro-cid-xwghkimo="true" data-size="lg" style="--button_background_color: var(--green); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">    Add moon    </div>   </button>  <div role="dialog" class="dialog solid-transparency breakout non-centered fixed button-dialog w-full component overflow-y-auto max-w-[700px]" x-bind:class="(button_dialog_open ? 'open' : '')" x-bind:aria-hidden="button_dialog_open == false" x-trap="button_dialog_open" x-bind:inert="!button_dialog_open" @keyup.escape.window="close_dialog()" @mousedown.outside="open &#38;&#38; close_dialog()" data-astro-cid-xwghkimo="true"> <div class="wrapper" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: var(--space-m);--wrapper_padding_inline_end: var(--space-m);--wrapper_padding_block: var(--space-m);--wrapper_max_width: 80rem;">  <div class="flex-block gap---space-m" data-mod style="--flex_block_gap: var(--space-m);">   <div class="[ cover-body ]">  <form hx-post="/partials/add_moon_result_component/" hx-trigger="submit" hx-target="#add-moon-result" hx-indicator=".loader" hx-swap="outerHTML transition:true" x-data="{
+            moon_information: '',
+            clear_form() {
+                $nextTick(() => {
+                    this.moon_information = ''
+                })
+            }
+        }" x-on:submit="close_dialog(); clear_form()"> <div class="flex-block gap---space-l" data-mod style="--flex_block_gap: var(--space-l);">  <div class="flex-block gap---space-s" data-mod style="--flex_block_gap: var(--space-s);">  <h3>Add moon</h3> <p>Paste the survey probe scan result below and save moon information. Make sure you’re pasting the full scan result copied from in-game.</p> <div class="flex-block [ w-full ] gap---space-3xs" data-mod style="--flex_block_gap: var(--space-3xs);">  <label for="moon-information">Moon information</label> <textarea class="[ text-nowrap ]" id="moon-information" name="moon-information" x-model="moon_information" rows="5" required data-astro-cid-2vffnk23="true"></textarea>  <small><a href="https://wiki.eveuniversity.org/Moon_mining#Performing_the_Activity" target="_blank" rel="nofollow noopener noreferrer">How to obtain the value to paste?</a></small>  </div>   </div>  <div class="flex-inline" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: flex-end;">  <button type="submit" data-size="sm" style="--button_background_color: var(--green); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">   Save  </div>   </button>  <button type="button" x-on:click="close_dialog()" data-size="sm" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">   Close  </div>   </button>   </div>    </div>  </form>  </div>   </div>   </div>   </div>  </div>  <div id="add-moon-result"></div>"
+`;
