@@ -17,18 +17,20 @@ BASIC_SCOPES = [
     "esi-clones.read_implants.v1",
 ]
 
-ADVANCED_SCOPES = [
+ADVANCED_ADDITIONAL_SCOPES = [
     "esi-characters.read_blueprints.v1",
     "esi-planets.manage_planets.v1",
     "esi-industry.read_character_jobs.v1",
     "esi-industry.read_character_mining.v1",
-] + BASIC_SCOPES
+]
+ADVANCED_SCOPES = BASIC_SCOPES + ADVANCED_ADDITIONAL_SCOPES
 
-DIRECTOR_SCOPES = [
+DIRECTOR_ADDITIONAL_SCOPES = [
     "esi-characters.read_notifications.v1",
-] + ADVANCED_SCOPES
+] 
+DIRECTOR_SCOPES = ADVANCED_SCOPES + DIRECTOR_ADDITIONAL_SCOPES
 
-CEO_SCOPES = [
+CEO_ADDITIONAL_SCOPES = [
     "esi-corporations.read_corporation_membership.v1",
     "esi-corporations.read_blueprints.v1",
     "esi-corporations.read_contacts.v1",
@@ -40,25 +42,28 @@ CEO_SCOPES = [
     "esi-corporations.read_starbases.v1",
     "esi-corporations.read_titles.v1",
     "esi-wallet.read_corporation_wallets.v1",
-] + DIRECTOR_SCOPES
+]
+CEO_SCOPES = DIRECTOR_SCOPES + CEO_ADDITIONAL_SCOPES
 
 # Used for the freight CEO (Minmatar Fleet Logistics)
-FREIGHT_CHARACTER_SCOPES = [
+FREIGHT_ADDITIONAL_SCOPES = [
     "esi-contracts.read_corporation_contracts.v1"
-] + DIRECTOR_SCOPES
+]
+FREIGHT_CHARACTER_SCOPES = DIRECTOR_SCOPES + FREIGHT_ADDITIONAL_SCOPES
 
 # Used for supply team seeders (characters, build corporations)
-MARKET_CHARACTER_SCOPES = [
+MARKET_ADDITIONAL_SCOPES = [
     "esi-wallet.read_character_wallet.v1",
     "esi-markets.read_corporation_orders.v1",
     "esi-markets.read_character_orders.v1",
     "esi-contracts.read_character_contracts.v1",
-] + FREIGHT_CHARACTER_SCOPES
+]
+MARKET_CHARACTER_SCOPES = FREIGHT_CHARACTER_SCOPES + MARKET_ADDITIONAL_SCOPES
 
-EXECUTOR_CHARACTER_SCOPES = [
+EXECUTOR_ADDITIONAL_SCOPES = [
     "esi-mail.send_mail.v1",
-] + MARKET_CHARACTER_SCOPES
-
+]
+EXECUTOR_CHARACTER_SCOPES = MARKET_CHARACTER_SCOPES + EXECUTOR_ADDITIONAL_SCOPES
 
 class TokenType(Enum):
     CEO = "CEO"
