@@ -631,3 +631,6 @@ export interface CharacterTag {
     description:    string;
     image_name:     string;
 }
+
+export const esi_token_roles = [ 'Public', 'Basic', 'Advanced', 'Director', 'CEO', 'Freight', 'Market', 'Executor' ] as const
+export type ESITokenRoles = typeof esi_token_roles[number]

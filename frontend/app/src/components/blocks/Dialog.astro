@@ -58,6 +58,21 @@ delete attributes.class
         box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.75);
         z-index: var(--dialog-z-index);
 
+        &:before {
+            @media screen and (min-width: 980px) {
+                transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 1s;
+                backdrop-filter: blur(0px) !important;
+                background-color: var(--solid-transparency-background-mobile) !important;
+            }
+        }
+
+        &.open:before {
+            @media screen and (min-width: 980px) {
+                background-color: var(--solid-transparency-background) !important;
+                backdrop-filter: blur(var(--transparency-backdrop-blur)) !important;
+            }
+        }
+
         &.non-centered {
             transform: translateX(-50%) scale(0.97);
         }

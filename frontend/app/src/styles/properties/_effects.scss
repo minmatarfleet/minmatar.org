@@ -16,55 +16,103 @@
 }
 
 .light-transparency {
-    background-color: var(--light-transparency-background-mobile);
+    position: relative;
 
-    @media screen and (min-width: 980px) {
-        background-color: var(--light-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--light-transparency-background-mobile);
+
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 }
 
 .light-transparency-heavier {
-    background-color: var(--light-transparency-background-mobile);
-    
-    @media screen and (min-width: 980px) {
-        background-color: var(--light-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
+    position: relative;
+
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--light-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
+        }
     }
 }
 
 .transparency {
-    background-color: var(--transparency-background-mobile);
+    position: relative;
     
-    @media screen and (min-width: 980px) {
-        background-color: var(--transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 }
 
 .dark-transparency {
-    background-color: var(--dark-transparency-background-mobile);
+    position: relative;
     
-    @media screen and (min-width: 980px) {
-        background-color: var(--dark-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--dark-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--dark-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 }
 
 .darker-transparency {
-    background-color: var(--darker-transparency-background-mobile);
+    position: relative;
     
-    @media screen and (min-width: 980px) {
-        background-color: var(--darker-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--darker-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--darker-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 }
 
 .solid-transparency {
-    background-color: var(--solid-transparency-background-mobile);
+    position: relative;
     
-    @media screen and (min-width: 980px) {
-        background-color: var(--solid-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-color: var(--solid-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--solid-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
     }
 }
