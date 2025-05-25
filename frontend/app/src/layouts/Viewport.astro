@@ -32,7 +32,7 @@ await check_referral_url(
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 import CharacterFinder from '@components/blocks/CharacterFinder.astro';
 
@@ -108,7 +108,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
-		<ViewTransitions />
+		<ClientRouter />
 
 		<meta property="og:title" content={title}>
 		{meta_description && <meta property="og:description" content={meta_description} />}

@@ -19,7 +19,7 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 
 import BlogPost from '@components/page/BlogPost.astro';
@@ -93,7 +93,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
-		<ViewTransitions />
+		<ClientRouter />
 
 		<meta property="og:title" content={title}>
 		{description && <meta property="og:description" content={description} />}

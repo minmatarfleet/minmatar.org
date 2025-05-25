@@ -41,7 +41,7 @@ let fleet:FleetUI | false = false
 if (Astro.request.method === "POST") {
     let submit_srp_error:string | false = false
 
-    try {
+    try {        
         const data = await Astro.request.formData()
         const external_killmail_link = data.get('external_killmail_link' as string) as string
         const is_corp_ship = data.get('is_corp_ship' as string) === 'on'
