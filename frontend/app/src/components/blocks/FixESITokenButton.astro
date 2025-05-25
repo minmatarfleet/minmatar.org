@@ -56,7 +56,9 @@ import Select from '@components/blocks/Select.astro';
 
             <Flexblock gap="var(--space-s)">
                 <p>{t('fix_esi_token_dialog_text')}</p>
-                <PilotBadge character_id={character.character_id} character_name={character.character_name} />
+                <PilotBadge character_id={character.character_id} character_name={character.character_name}>
+                    <small>{`${character.esi_token ?? 'Basic'} ${t('token')}`}</small>
+                </PilotBadge>
 
                 <Select x-model="esi_token">
                     {esi_token_roles.map(role =>

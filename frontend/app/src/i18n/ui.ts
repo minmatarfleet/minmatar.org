@@ -1408,5 +1408,6 @@ export const ui = {
         'Market': 'Market',
         'Executor': 'Executor',
         'continue': 'Continue',
+        'token': 'token',
     },
 } as const;
