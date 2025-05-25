@@ -84,6 +84,9 @@ As they cannot be easily tested, they should contain minimal logic.
 Some of the background Celery tasks identify a set of entities and then create another asynchronous task instance for each
 of those entities. The outer tasks are therefore generally not tested.
 
+You can also use an annotation to disable signals for a test...
+```@factory.django.mute_signals(signals.pre_save, signals.post_save)```
+
 
 ## Commands
 ### Set local environment variables

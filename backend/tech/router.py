@@ -1,12 +1,14 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from ninja import Router
-from typing import List, Optional, Any
+from typing import List, Optional
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
+from pydantic import BaseModel
+
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
@@ -207,11 +209,24 @@ def create_db_views(request):
     return 200, None
 
 
+class StructureNotificationResponse(BaseModel):
+    """Response model for structure notification API"""
+
+    id: int
+    type: str
+    summary: str
+    timestamp: datetime
+
+
 @router.get(
     "/notifications/{int:character_id}",
     summary="Get character notifications",
     auth=AuthBearer(),
-    response={200: Any, 400: ErrorResponse, 403: ErrorResponse},
+    response={
+        200: List[StructureNotificationResponse],
+        400: ErrorResponse,
+        403: ErrorResponse,
+    },
 )
 def get_notifications(request, character_id: int):
     if not permitted(request.user):
@@ -221,4 +236,23 @@ def get_notifications(request, character_id: int):
     if not response.success():
         return 400, ErrorResponse(detail=str(response.response))
 
-    return 200, response.results()
+    combat_types = [
+        "StructureDestroyed",
+        "StructureLostArmor",
+        "StructureLostShields",
+        "StructureUnderAttack",
+    ]
+
+    results = []
+    for notification in response.results():
+        if notification["type"] in combat_types:
+            results.append(
+                StructureNotificationResponse(
+                    id=notification["notification_id"],
+                    type=notification["type"],
+                    timestamp=notification["timestamp"],
+                    summary=notification["text"],
+                )
+            )
+
+    return results
