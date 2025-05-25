@@ -222,9 +222,11 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Character.get_characters_character_id_contracts(
-            character_id=self.character_id,
-            token=token,
+        operation = (
+            esi.client.Character.get_characters_character_id_notifications(
+                character_id=self.character_id,
+                token=token,
+            )
         )
 
         return self._operation_results(operation)
