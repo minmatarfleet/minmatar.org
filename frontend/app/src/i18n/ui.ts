@@ -1412,5 +1412,6 @@ export const ui = {
         'update_esi_button_tooltip': 'You may refresh your ESI token scopes and/or leveling them up by clicking this button and following the instructions.',
         'update_esi_token_dialog_text': 'To update your ESI token, select a new role and confirm this dialog. You’ll be redirected to log into your EVE account where you should select the character shown below:',
         'update_esi_token_dialog_title': 'Update ESI token',
+        'esi_token_wiki': 'More information about ESI tokens and why are needed check this [article](https://wiki.minmatar.org/en/guides/account-issues/token-types).',
     },
 } as const;

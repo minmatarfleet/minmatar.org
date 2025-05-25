@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, ESITokenRoles } from '@dtypes/api.minmatar.org'
 
 interface Props {
     character:  SummaryCharacter;
@@ -17,10 +17,15 @@ const {
 import { get_api_url, get_app_url } from '@helpers/env'
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
 
-const CURRENT_ESI_TOKEN = (character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '')
+const CURRENT_ESI_TOKEN = (character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '') as ESITokenRoles
 const DEFAULT_REDIRECT = `${FIX_CHARACTER_URL}&token_type=${CURRENT_ESI_TOKEN}&character_id=${character.character_id}`
 
 import { esi_token_roles } from '@dtypes/api.minmatar.org'
+
+const user_selectable_esi_tokens_roles = esi_token_roles.filter(token => esi_token_roles.indexOf(CURRENT_ESI_TOKEN) <= esi_token_roles.indexOf(token))
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -29,6 +34,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 import DialogButton from '@components/blocks/DialogButton.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
+import TutorialBadge from '@components/blocks/TutorialBadge.astro';
 ---
 
 <div
@@ -50,7 +56,7 @@ import Select from '@components/blocks/Select.astro';
         {fix ? t('fix_esi_token') : t('refresh_esi_token')}
     
         <Flexblock gap="var(--space-l)" slot="dialog" >
-            <h3>{t('fix_esi_token_dialog_title')}</h3>
+            <h3>{fix ? t('fix_esi_token_dialog_title') : t('update_esi_token_dialog_title')}</h3>
 
             <Flexblock gap="var(--space-s)">
                 <p>{fix ? t('fix_esi_token_dialog_text') : t('update_esi_token_dialog_text')}</p>
@@ -59,10 +65,14 @@ import Select from '@components/blocks/Select.astro';
                 </PilotBadge>
 
                 <Select x-model="esi_token">
-                    {esi_token_roles.map(role =>
+                    {user_selectable_esi_tokens_roles.map(role =>
                         <option value={role}>{t(role as any)}</option>
                     )}
                 </Select>
+                
+                <TutorialBadge>
+                    <p set:html={marked.parseInline(t('esi_token_wiki'), { renderer })} />
+                </TutorialBadge>
             </Flexblock>
 
             <FlexInline justification='flex-end'>
