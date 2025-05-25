@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { query_string } from '@helpers/string';
-
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 
 interface Props {
@@ -55,7 +53,7 @@ import Select from '@components/blocks/Select.astro';
             <h3>{t('fix_esi_token_dialog_title')}</h3>
 
             <Flexblock gap="var(--space-s)">
-                <p>{t('fix_esi_token_dialog_text')}</p>
+                <p>{fix ? t('fix_esi_token_dialog_text') : t('update_esi_token_dialog_text')}</p>
                 <PilotBadge character_id={character.character_id} character_name={character.character_name}>
                     <small>{`${character.esi_token ?? 'Basic'} ${t('token')}`}</small>
                 </PilotBadge>
