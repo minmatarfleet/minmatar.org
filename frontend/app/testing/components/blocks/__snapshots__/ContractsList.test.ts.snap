@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ContractsList defaults 1`] = `
+"<div class="flex-block gap---space-xl" role="list" data-astro-cid-m5bybgyc="true" data-mod style="--flex_block_gap: var(--space-xl);">  <div class="wrapper [ staging-reel ]" data-astro-cid-fk2mbc7z="true" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: 0;--wrapper_padding_inline_end: 0;--wrapper_padding_block: 0;--wrapper_max_width: 100%;">  <div class="[ swiper ][ w-full ]" data-astro-cid-fk2mbc7z> <div class="flex-inline [ swiper-wrapper ][ select-none ]" x-data="{
+        swiper: null,
+        corporation_pagination(index) {
+            return this.pagination_icons[index]
+        },
+        init() {
+            this.swiper = new Swiper('.swiper', {
+                initialSlide: 0,
+                slidesPerView: &#34;auto&#34;,
+                spaceBetween: 20,
+                pagination: false,
+                loop: false,
+                fadeEffect: {
+                    crossFade: true
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+        }
+    }" data-astro-cid-okd446ho="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: 0;--flex_inline_justification: flex-start;">   <div class="[ swiper-slide ]" style="margin-right: 20px" data-astro-cid-kiqsdmoz>  <div class="wrapper" data-astro-cid-m5bybgyc="true" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: 0;--wrapper_padding_inline_end: 0;--wrapper_padding_block: 0;--wrapper_max_width: 350px;"> <div class="flex-block gap---space-3xs" data-astro-cid-m5bybgyc="true" data-mod style="--flex_block_gap: var(--space-3xs);">  <h2 data-astro-cid-m5bybgyc>Roost</h2> <small data-astro-cid-m5bybgyc>0 contracts in hub</small>  </div>  </div>    </div>    </div>   <div class="swiper-pagination" data-astro-cid-okd446ho></div>  </div> <div class="[ swiper-button-prev hidden lg:block ]" data-astro-cid-fk2mbc7z></div> <div class="[ swiper-button-next hidden lg:block ]" data-astro-cid-fk2mbc7z></div>  </div>    <div class="block-list [ doctrine-groups ]" data-astro-cid-m5bybgyc="true" data-astro-cid-s4x3vzov style="--block_list_gap: var(--space-2xl);"> <div class="block-list [ doctrine-contract-group ]" data-astro-cid-m5bybgyc="true" data-astro-cid-s4x3vzov style="--block_list_gap: var(--space-m);">  <div class="flex-inline" data-astro-cid-m5bybgyc="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-2xs);--flex_inline_justification: flex-start;">  <picture data-astro-cid-m5bybgyc> <img src="/images/icons/ships/null" height="32" width="32" alt="rifter icon" data-astro-cid-m5bybgyc> </picture> <h3 data-astro-cid-m5bybgyc>rifter</h3>  </div>   <div class="grid [ w-full grid-fill ]" role="list" data-astro-cid-m5bybgyc="true" data-astro-cid-fkxmsq5x style="--grid_row_gap: var(--space-s);--grid_column_gap: var(--space-s);--grid_min_item_width: 350px;">  </div>    </div>   </div>   </div>  "
+`;

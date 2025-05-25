@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CopyPodButton defaults 1`] = `
+"<button x-on:click.stop.prevent="copyFitToClipboard('undefined')" data-tippy-content="Import shopping lists into the Multibuy Tool in EVE Online." data-tippy-delay="[1000, 200]" x-data="{
+        button_text: 'Copy',
+    }" x-on:click.throttle.750ms="button_text = 'Copied!'; setTimeout(() => button_text = 'Copy', 2000)" x-init="$el.removeAttribute(&#34;disabled&#34;)" disabled data-size="sm" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" data-astro-cid-r5e2wo56="true" class="[ button ] narrow"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-2xs);--flex_inline_justification: center;">  <svg width="24" height="24" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M6 0H12V2H16V20H0V2H4V0H6ZM12 4V6H4V4H2V18H14V4H12ZM10 4V2H6V4H10Z" fill="currentColor"></path> </svg> <span x-text="button_text">Copy</span>   </div>   </button>  <textarea class="[ hidden ]" readonly>super duper omega crystal alpha 6</textarea>"
+`;

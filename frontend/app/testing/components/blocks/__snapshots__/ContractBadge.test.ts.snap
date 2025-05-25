@@ -1,0 +1,108 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ContractBadge defaults 1`] = `
+"<div class="wrapper [ card component ] light-transparency" data-astro-cid-heszkxoq="true" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: 0;--wrapper_padding_inline_end: 0;--wrapper_padding_block: 0;--wrapper_max_width: 100%;">   <div class="flex-block gap-0" data-astro-cid-heszkxoq="true" data-mod style="--flex_block_gap: 0;">  <div class="wrapper" data-astro-cid-heszkxoq="true" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: var(--space-2xs);--wrapper_padding_inline_end: var(--space-2xs);--wrapper_padding_block: var(--space-2xs);--wrapper_max_width: 80rem;">  <div class="flex-inline" data-astro-cid-heszkxoq="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: space-between;">  <div class="fixed-fluid [ items-center grow ]" data-astro-cid-heszkxoq="true" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-s);--fixed_fluid_width: 32px;--fixed_fluid_breakpoint: 50%;">  <picture data-astro-cid-heszkxoq> <img loading="lazy" src="https://images.evetech.net/types/12/icon?size=32" width="32" height="32" data-astro-cid-heszkxoq> </picture> <h4 class="[ title ]" data-astro-cid-heszkxoq>MOOOOREEEE</h4>  </div>   <div class="[ quantity ]" data-astro-cid-heszkxoq> <span data-astro-cid-heszkxoq>56</span>/60 </div>  </div>    </div>   <div class="h-[64px] mb-[-7px]" data-astro-cid-heszkxoq> <canvas x-data="{
+                    init() {
+                        const ctx = $el.getContext('2d')
+
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 64)
+                        gradient.addColorStop(0, 'rgba(110, 233, 255, 0.5)')
+                        gradient.addColorStop(1, 'rgba(110, 233, 255, 0)')
+
+                        Chart.defaults.font.family = 'Montserrat Variable';
+                        Chart.defaults.backgroundColor = 'rgba(0, 0, 0, 0)';
+
+                        const myChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: [],
+                                datasets: [{
+                                    label: &#34;Monthly sales&#34;,
+                                    data: [],
+                                    pointStyle: 'rect',
+                                    fill: true,
+                                    backgroundColor: gradient,
+                                    borderColor: '#6ee9ff',
+                                    borderWidth: 2,
+                                    pointRadius: 1
+                                },
+                                {
+                                    label: &#34;Desired quantity on stock&#34;,
+                                    data: [],
+                                    pointStyle: 'rect',
+                                    backgroundColor: 'rgba(241, 217, 160, 0.2)',
+                                    borderColor: 'rgba(241, 217, 160, 0.2)',
+                                    borderWidth: 1,
+                                    pointRadius: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                layout: {
+                                    padding: {
+                                        left: -10,
+                                        bottom: -10
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    glow: {
+                                        consoleText: 'testText'
+                                    },
+                                },
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: false
+                                        },
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            display: false
+                                        },
+                                        border: {
+                                            display: false
+                                        }
+                                    },
+                                    y: {
+                                        title: {
+                                            display: false
+                                        },
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            display: false
+                                        },
+                                        border: {
+                                            display: false
+                                        },
+                                        min: 0,
+                                        max: 61
+                                    }
+                                }
+                            },
+                            plugins: [{
+                                id: 'glow',
+                                beforeDraw: (chart, args, options) => {
+                                    let ctx = chart.ctx
+                                    let _stroke = ctx.stroke
+                                    ctx.stroke = function() {
+                                        ctx.save()
+                                        ctx.shadowColor = '#ffffff'
+                                        ctx.shadowBlur = 5
+                                        ctx.shadowOffsetX = 0
+                                        ctx.shadowOffsetY = 0
+                                        _stroke.apply(this, arguments)
+                                        ctx.restore()
+                                    }
+                                }
+                            }]
+                        })
+                    }
+                }" data-astro-cid-heszkxoq></canvas> </div> <hr class="border mb-[var(--space-2xs)]" data-astro-cid-heszkxoq>  </div>    </div>   "
+`;

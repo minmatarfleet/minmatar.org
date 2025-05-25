@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CorporationSlideStatus defaults 1`] = `
+"<div class="flex-block gap---space-xl" id="corporation-status-87" x-data="{
+        init() {
+            
+        }
+    }" data-astro-cid-ggpwwpcg="true" data-mod style="--flex_block_gap: var(--space-xl);">  <div class="flex-inline" data-astro-cid-ggpwwpcg="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: flex-start;"> <button x-data="{
+            show_corporation_modal() {
+                    show_modal({
+                        partial: '/partials/corporation_modal_component/?corporation_id=87',
+                    })
+                }
+            }" x-on:click.stop.prevent="show_corporation_modal()" data-astro-cid-ggpwwpcg="true" data-size="sm" style="--button_background_color: var(--fleet-red); --button_color: var(--fleet-yellow)" disabled x-init="$el.removeAttribute(&#34;disabled&#34;)" data-astro-cid-r5e2wo56="true" class="[ button ]"> <div class="flex-inline" data-astro-cid-r5e2wo56="true" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-xs);--flex_inline_justification: center;">   Learn more  </div>   </button>   </div>    </div>  "
+`;

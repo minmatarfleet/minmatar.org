@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CorporationApplicationsList defaults 1`] = `"<div id="corporations-applications-list" class="[ corporations-applications-list ]"> <div class="flex-block [ correct-gaps ] gap---space-s" data-mod style="--flex_block_gap: var(--space-s);">  <p x-show="total_applications_filtered == 0" style="display: none;">No applications found.</p> CorporationApplicationsBlock_componentCorporationApplicationsBlock_component </div>   </div>"`;

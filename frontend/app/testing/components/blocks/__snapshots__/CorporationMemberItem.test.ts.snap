@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CorporationMemberItem defaults 1`] = `
+"<div class="flex-inline [ corporation-member-item ]" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: space-between;">  <div class="fixed-fluid pilot-item basis-[300px]" data-astro-cid-xf65qrs5="true" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-s);--fixed_fluid_width: 64px;--fixed_fluid_breakpoint: 50%;">  <picture data-astro-cid-hwwa7zih> <img loading="lazy" height="64" width="64" src="https://images.evetech.net/characters/2345/portrait?size=64" x-bind:src="false ? get_player_icon(false) : 'https://images.evetech.net/characters/2345/portrait?size=64'" alt="Profile picture of deathchick" x-bind:alt="\`Profile picture of \${(false ? false : &#34;deathchick&#34;)}\`" x-data="{
+            show_character_modal() {
+                if (!false &#38;&#38; 2345 == 0)
+                    return
+
+                show_modal({
+                    partial: '/partials/character_modal_component/?character_id='+(false ? false : '2345'),
+                })
+            }
+        }" x-on:click.stop.prevent="show_character_modal()" data-astro-cid-hwwa7zih> </picture>  <div class="!flex !items-center" data-astro-cid-xf65qrs5="true">  <div class="flex-block [ w-full ] gap-0" data-astro-cid-xf65qrs5="true" data-mod style="--flex_block_gap: 0;">  <span class="truncate text-[var(--highlight)] cursor-pointer max-w-fit" x-data="{
+                    show_character_modal() {
+                        if (2345 == 0)
+                            return
+
+                        show_modal({
+                            partial: '/partials/character_modal_component/?character_id=2345',
+                        })
+                    }
+                }" x-on:click.stop.prevent="show_character_modal()" data-astro-cid-xf65qrs5>deathchick</span>  <small class="truncate">cluckers alt character</small>  </div>   </div>  </div>    <span class="[ tag ]" data-astro-cid-oeuzgji7 style="--tag_color: var(--alliance-blue);">Exempt</span>  </div>  "
+`;

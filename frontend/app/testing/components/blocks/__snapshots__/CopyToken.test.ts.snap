@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CopyToken defaults 1`] = `
+"<div class="wrapper copy-auth-token relative right" x-data="{
+        click_class: '',
+    }" data-astro-cid-5ivck5fi="true" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: 0;--wrapper_padding_inline_end: 0;--wrapper_padding_block: 0;--wrapper_max_width: 32px;">  <div data-tippy-content="
+            <div hx-on--after-request=&#34;
+                const popper = this.closest('[data-tippy-root]')
+                const instance = popper._tippy
+                instance.popperInstance.update()
+                popper.classList.remove('visually-hidden')
+            &#34;>
+                <span
+                    hx-on--before-request=&#34;this.closest('[data-tippy-root]').classList.add('visually-hidden')&#34;
+                    hx-trigger=&#34;intersect&#34;
+                    hx-get='/partials/normal_tooltip?description=auth_token_page'
+                    hx-swap=&#34;outerHTML transition:false&#34;
+                >
+                    Loading
+                </span>
+            </div>
+        " data-tippy-delay="[0, 200]" data-tippy-allowhtml="true" class="[ flex text-[var(--highlight)] ]" data-tippy-placement="right" data-astro-cid-5ivck5fi="true"> <button class="[ !pointer-events-auto ]" x-bind:class="click_class" x-on:click.stop.prevent="copyFitToClipboard('copy-auth-token')" x-on:click.throttle.750ms="click_class = 'glow'; setTimeout(() => click_class = '', 2000)" x-init="$el.removeAttribute('disabled')" disabled data-astro-cid-5ivck5fi="true" data-astro-cid-syldxee3="true">  <svg width="12" height="12" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M6 0H12V2H16V20H0V2H4V0H6ZM12 4V6H4V4H2V18H14V4H12ZM10 4V2H6V4H10Z" fill="currentColor"></path> </svg>  </button>  <textarea class="[ hidden ]" id="copy-auth-token" readonly data-astro-cid-5ivck5fi="true" data-astro-cid-2vffnk23="true"></textarea>  </div> <small class="[ animate-fade-in-up ]" x-show="click_class === 'glow'" style="display: none" data-astro-cid-5ivck5fi>Copied!</small>  </div>   "
+`;
