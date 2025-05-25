@@ -14,6 +14,8 @@ from eveonline.client import EsiClient
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
 
+active_corp_requires_all_ceo_scopes = False
+
 
 class EvePlayer(models.Model):
     """Represents an Eve Online player"""
@@ -395,22 +397,29 @@ class EveCorporation(models.Model):
             return False
 
         # Grab CEO token for the character
-        token = Token.objects.filter(
-            character_id=self.ceo.character_id,
-            scopes__name="esi-corporations.read_corporation_membership.v1",
-        ).first()
+        # token = Token.objects.filter(
+        #     character_id=self.ceo.character_id,
+        #     scopes__name="esi-corporations.read_corporation_membership.v1",
+        # ).first()
+        token = Token.get_token(
+            self.ceo.character_id,
+            ["esi-corporations.read_corporation_membership.v1"],
+        )
         if not token:
             return False
 
-        # Check if the token has the required scopes
-        required_scopes = set(CEO_SCOPES)
-        required_scopes = Scope.objects.filter(
-            name__in=required_scopes,
-        )
+        if active_corp_requires_all_ceo_scopes:
+            # Check if the token has the required scopes
+            required_scopes = set(CEO_SCOPES)
+            required_scopes = Scope.objects.filter(
+                name__in=required_scopes,
+            )
 
-        for scope in required_scopes:
-            if scope not in token.scopes.all():
-                return False
+            for scope in required_scopes:
+                if scope not in token.scopes.all():
+                    return False
+        else:
+            logger.info("Not checking for full CEO scopes")
 
         return True
 
@@ -418,11 +427,6 @@ class EveCorporation(models.Model):
         logger.info(
             "Fetching external corporation details for %s", self.corporation_id
         )
-        # esi_corporation = (
-        #     esi.client.Corporation.get_corporations_corporation_id(
-        #         corporation_id=self.corporation_id
-        #     ).results()
-        # )
         esi_corporation = (
             EsiClient(None).get_corporation(self.corporation_id).results()
         )
