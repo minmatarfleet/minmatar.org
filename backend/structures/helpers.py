@@ -1,7 +1,10 @@
 import re
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel
+
+from eveonline.models import EveCharacter
 
 
 class StructureResponse(BaseModel):
@@ -78,4 +81,12 @@ def get_structure_details(selected_item_window: str):
         structure_name=structure_name,
         location=system_name,
         timer=datetime.strptime(timer_match.group(1), "%Y.%m.%d %H:%M:%S"),
+    )
+
+
+def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
+    return EveCharacter.objects.filter(
+        token__scopes__name="esi-characters.read_notifications.v1",
+    ).filter(
+        corporation_id=corporation_id,
     )
