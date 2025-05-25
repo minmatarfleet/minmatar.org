@@ -113,7 +113,7 @@ def scope_group(token: Token) -> str | None:
         return TokenType.FREIGHT.value
     if "esi-corporations.read_corporation_membership.v1" in token_scopes:
         return TokenType.CEO.value
-    if "esi-corporations.read_corporation_membership.v1" in token_scopes:
+    if "esi-characters.read_notifications.v1" in token_scopes:
         return TokenType.DIRECTOR.value
     if "esi-characters.read_blueprints.v1" in token_scopes:
         return TokenType.ADVANCED.value
