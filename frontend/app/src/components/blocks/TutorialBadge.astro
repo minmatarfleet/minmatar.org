@@ -1,0 +1,19 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+---
+
+<FixedFluid
+    width='48'
+    breakpoint='70%'
+    class="[ w-full items-center ]"
+>
+    <picture class="[ hidden sm:block ]">
+        <TutorialIcon />
+    </picture>
+    <Flexblock gap='var(--space-3xs)'>
+        <slot />
+    </Flexblock>
+</FixedFluid>
