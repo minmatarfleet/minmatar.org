@@ -189,6 +189,7 @@ class CharacterRouterTestCase(TestCase):
 
     def make_token(self, char_id: int) -> Token:
         return Token.objects.create(
+            user=self.user,
             character_id=char_id,
             character_name=f"TestChar {char_id}",
             character_owner_hash=f"new hash {char_id}",
