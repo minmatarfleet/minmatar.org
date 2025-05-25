@@ -10,4 +10,5 @@ omit =
     discord/client.py
     manage.py
     testrunner.py
+    testsummary.py
     tech/testdata.py    
