@@ -507,10 +507,22 @@ def handle_add_character_esi_callback(request, token, token_type):
 
 @router.get("/add", summary="Add character using EVE Online SSO")
 def add_character(
-    request, redirect_url: str, token_type: TokenType, character_id: str = None
+    request,
+    redirect_url: str,
+    token_type: Optional[TokenType] = None,
+    character_id: str = None,
 ):
     request.session["redirect_url"] = redirect_url
     set_or_remove_session_value(request, "add_character_id", character_id)
+
+    logger.info("Add character with token type %s", token_type)
+
+    if not token_type:
+        if character_id:
+            char = EveCharacter.objects.get(character_id=character_id)
+            token_type = char.esi_token_level
+        else:
+            token_type = TokenType.BASIC
 
     if character_id and token_type == TokenType.PUBLIC:
         # Upgrade public tokens to basic when refreshing
