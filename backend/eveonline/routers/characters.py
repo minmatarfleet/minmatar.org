@@ -379,6 +379,12 @@ def set_or_remove_session_value(request, key, value):
 
 
 def handle_add_character_esi_callback(request, token, token_type):
+    logger.info(
+        "ESI token callback for user %s, %s scopes (%s)",
+        token.user.username,
+        token.scopes.count(),
+        token_type,
+    )
     if "add_character_id" in request.session:
         requested_char = request.session["add_character_id"]
         if str(token.character_id) != requested_char:
@@ -509,6 +515,13 @@ def add_character(
     if character_id and token_type == TokenType.PUBLIC:
         # Upgrade public tokens to basic when refreshing
         token_type = TokenType.BASIC
+
+    logger.info(
+        "ESI token request for %s (%s), type = %s",
+        request.user.username,
+        str(character_id),
+        token_type,
+    )
 
     scopes = scopes_for(token_type)
 
