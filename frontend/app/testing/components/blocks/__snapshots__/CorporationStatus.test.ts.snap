@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CorporationStatus defaults 1`] = `
+"<div id="corporation-status-87" x-data="{
+        init() {
+            
+        }
+    }"> <div class="flex-block [ button-stack ] gap---space-2xs" data-mod style="--flex_block_gap: var(--space-2xs);">    </div>   </div>"
+`;

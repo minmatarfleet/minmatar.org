@@ -6,5 +6,5 @@ test("AmarrInfo defaults", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(AmarrInfo, {});
 
-  // expect(result).toMatchSnapshot();
+  expect(result).toMatchSnapshot();
 });
