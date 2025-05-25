@@ -54,3 +54,6 @@ jobs:
 
       - name: Run frontend unit tests
         run: make front-end-unit-tests
+
+      - name: Show front-end test summary
+        run: frontend/summary.sh
