@@ -6,11 +6,11 @@ import pytz
 from django.db.models import Q
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveonline.client import EsiClient
 
+from eveonline.client import EsiClient
 from eveonline.models import EveCorporation, EveLocation
-from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from fittings.models import EveFitting
+
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -163,9 +163,11 @@ def create_corporation_market_contracts(corporation_id: int):
         logger.warning(f"Corporation {corporation_id} CEO has ESI suspended.")
         return
 
-    token = Token.get_token(
-        corporation.ceo.character_id, MARKET_CHARACTER_SCOPES
-    )
+    # token = Token.get_token(
+    #     corporation.ceo.character_id, MARKET_CHARACTER_SCOPES
+    # )
+    required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
+    token = Token.get_token(corporation.ceo.character_id, required_scopes)
 
     if not token:
         logger.error(

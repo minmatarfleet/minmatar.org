@@ -1,12 +1,12 @@
 import logging
 
-from django.db.models import Count, Q
+from django.db.models import Q
 from esi.clients import EsiClientProvider
+from esi.models import Token
 
 from app.celery import app
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter, EveCorporation
-from eveonline.scopes import MARKET_CHARACTER_SCOPES
 from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
@@ -24,16 +24,17 @@ NOTIFICATION_CHANNEL = 1174095138197340300
 @app.task()
 def fetch_eve_market_contracts():
     known_entity_ids = []
-    characters = (
-        EveCharacter.objects.annotate(
-            matching_scopes=Count(
-                "token__scopes",
-                filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
-            )
-        )
-        .filter(matching_scopes=len(MARKET_CHARACTER_SCOPES))
-        .distinct()
-    )
+    # characters = (
+    #     EveCharacter.objects.annotate(
+    #         matching_scopes=Count(
+    #             "token__scopes",
+    #             filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+    #         )
+    #     )
+    #     .filter(matching_scopes=len(MARKET_CHARACTER_SCOPES))
+    #     .distinct()
+    # )
+    characters = EveCharacter.objects.exclude(token__isnull=True)
 
     for character in characters:
         if character.esi_suspended:
@@ -41,6 +42,10 @@ def fetch_eve_market_contracts():
                 f"Not fetching character contracts for ESI suspended character {character.character_id}"
             )
             continue
+        required_scopes = ["esi-contracts.read_character_contracts.v1"]
+        if not Token.get_token(character.character_id, required_scopes):
+            continue
+
         logger.debug(f"Fetching character contracts {character.character_id}")
         try:
             create_character_market_contracts(character.character_id)
@@ -51,23 +56,26 @@ def fetch_eve_market_contracts():
             )
 
     corporations = (
-        EveCorporation.objects.annotate(
-            matching_scopes=Count(
-                "ceo__token__scopes",
-                filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
-            )
-        )
-        .filter(
-            matching_scopes=len(MARKET_CHARACTER_SCOPES),
+        # EveCorporation.objects.annotate(
+        #     matching_scopes=Count(
+        #         "ceo__token__scopes",
+        #         filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
+        #     )
+        # )
+        EveCorporation.objects.filter(
+            # matching_scopes=len(MARKET_CHARACTER_SCOPES),
             alliance__name__in=[
                 "Minmatar Fleet Alliance",
                 "Minmatar Fleet Associates",
             ],
-        )
-        .distinct()
+        ).distinct()
     )
 
     for corporation in corporations:
+        required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
+        if not Token.get_token(corporation.ceo.character_id, required_scopes):
+            continue
+
         logger.info(
             f"Fetching corporation contracts {corporation.corporation_id}"
         )
