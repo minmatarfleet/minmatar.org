@@ -16,35 +16,72 @@ const {
     fix = false,
 } = Astro.props
 
+import { get_api_url, get_app_url } from '@helpers/env'
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
+
+const CURRENT_ESI_TOKEN = (character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '')
+const DEFAULT_REDIRECT = `${FIX_CHARACTER_URL}&token_type=${CURRENT_ESI_TOKEN}&character_id=${character.character_id}`
+
+import { esi_token_roles } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import DialogButton from '@components/blocks/DialogButton.astro';
 import Button from '@components/blocks/Button.astro';
-import Tippy from '@components/blocks/Tippy.astro';
+import Select from '@components/blocks/Select.astro';
 ---
 
-<Tippy
-    data-tippy-placement="top"
-    partial={`${translatePath('/partials/normal_tooltip')}?description=fix_esi_button_tooltip`}
-    height='70px'
-    width='340px'
-    element='div'
-    show_delay={2000}
+<div
+    x-data={`{
+        esi_token: '${CURRENT_ESI_TOKEN}',
+        redirect: '${DEFAULT_REDIRECT}',
+        update_fix_token_redirect() {
+            this.redirect = \`${FIX_CHARACTER_URL}&token_type=\${this.esi_token}&character_id=${character.character_id}\`
+        },
+    }`}
+    x-effect="esi_token && update_fix_token_redirect()"
 >
-    <Button
+    <DialogButton
         class:list={[ { 'action-button': !fix } ]}
+        color='fleet-red'
         size='sm'
         type="button"
-        x-data={`{
-            show_fix_esi_dialog() {
-                show_confirm_dialog({
-                    title: '${t('fix_esi_token_dialog_title')}',
-                    partial: '${translatePath('/partials/dialog_fix_esi_token/')}?${query_string({
-                        id: character.character_id,
-                        character_name: character.character_name,
-                    })}',
-                }).then( (accepted) => fix_token_redirect(accepted, '${(character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '')}', ${character.character_id}) )
-            }
-        }`}
-        x-on:click="show_fix_esi_dialog"
     >
         {fix ? t('fix_esi_token') : t('refresh_esi_token')}
-    </Button>
-</Tippy>
+    
+        <Flexblock gap="var(--space-l)" slot="dialog" >
+            <h3>{t('fix_esi_token_dialog_title')}</h3>
+
+            <Flexblock gap="var(--space-s)">
+                <p>{t('fix_esi_token_dialog_text')}</p>
+                <PilotBadge character_id={character.character_id} character_name={character.character_name} />
+
+                <Select x-model="esi_token">
+                    {esi_token_roles.map(role =>
+                        <option value={role}>{t(role as any)}</option>
+                    )}
+                </Select>
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
+                <Button
+                    size='sm'
+                    color='green'
+                    href={DEFAULT_REDIRECT}
+                    x-bind:href="redirect"
+                >
+                    {t('continue')}
+                </Button>
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </DialogButton>
+</div>

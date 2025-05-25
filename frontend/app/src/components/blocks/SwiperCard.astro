@@ -15,9 +15,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 ---
 
-<ComponentBlock class="[ relative animate-fade-in-up ]"
-    class:list={['relative animate-fade-in-up', Astro.props.class ]}
->
+<ComponentBlock class:list={['relative ', Astro.props.class ]}>
     <img class="[ z-0 ]" src={cover} />
     
     <BlockList class="[ relative z-10 !justify-between min-h-[340px] ]">

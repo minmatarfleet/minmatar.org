@@ -7,6 +7,7 @@ interface Porps {
     hidden?:            boolean;
     id?:                string;
     max_width?:         string;
+    [propName: string]: any;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
     hidden = false,
     id,
     max_width = '700px',
+    ...attributes
 } = Astro.props
 
 import Dialog from '@components/blocks/Dialog.astro';
@@ -31,6 +33,7 @@ import Button from '@components/blocks/Button.astro';
             this.button_dialog_open = false
         }
     }`}
+    {...attributes}
 >
     <Button
         size={size}
