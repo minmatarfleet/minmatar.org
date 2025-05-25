@@ -105,19 +105,19 @@ def scope_group(token: Token) -> str | None:
 
     token_scopes = scope_names(token)
 
-    if token_scopes == sorted(EXECUTOR_CHARACTER_SCOPES):
+    if "esi-mail.send_mail.v1" in token_scopes:
         return TokenType.EXECUTOR.value
-    if token_scopes == sorted(MARKET_CHARACTER_SCOPES):
+    if "esi-contracts.read_character_contracts.v1" in token_scopes:
         return TokenType.MARKET.value
-    if token_scopes == sorted(FREIGHT_CHARACTER_SCOPES):
+    if "esi-contracts.read_corporation_contracts.v1" in token_scopes:
         return TokenType.FREIGHT.value
-    if token_scopes == sorted(CEO_SCOPES):
+    if "esi-corporations.read_corporation_membership.v1" in token_scopes:
         return TokenType.CEO.value
-    if token_scopes == sorted(DIRECTOR_SCOPES):
+    if "esi-corporations.read_corporation_membership.v1" in token_scopes:
         return TokenType.DIRECTOR.value
-    if token_scopes == sorted(ADVANCED_SCOPES):
+    if "esi-characters.read_blueprints.v1" in token_scopes:
         return TokenType.ADVANCED.value
-    if token_scopes == sorted(BASIC_SCOPES):
+    if "esi-fleets.read_fleet.v1" in token_scopes:
         return TokenType.BASIC.value
 
     return TokenType.PUBLIC.value
