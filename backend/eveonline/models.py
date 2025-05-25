@@ -406,6 +406,9 @@ class EveCorporation(models.Model):
             ["esi-corporations.read_corporation_membership.v1"],
         )
         if not token:
+            logger.warning(
+                "CEO token does not have required scope: %s", self.name
+            )
             return False
 
         if active_corp_requires_all_ceo_scopes:
