@@ -1,6 +1,5 @@
 import factory
 from unittest.mock import patch
-from datetime import datetime
 
 from django.db.models import signals
 
@@ -64,7 +63,7 @@ class StructureTimerTaskTests(TestCase):
             data=[
                 {
                     "notification_id": 1234567890,
-                    "timestamp": datetime.now(),
+                    "timestamp": "2025-05-24 03:16:00+00:00",
                     "type": "StructureLostArmor",
                     "text": """
                         structureID: &id001 1049253339308
@@ -109,3 +108,4 @@ class StructureTimerTaskTests(TestCase):
         self.assertEqual(1049253339308, ping.structure_id)
         self.assertEqual("Pilot 2002", ping.reported_by.character_name)
         self.assertEqual("StructureLostArmor", ping.notification_type)
+        self.assertEqual(16, ping.event_time.minute)

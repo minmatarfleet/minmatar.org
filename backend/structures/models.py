@@ -148,10 +148,11 @@ class EveStructurePing(models.Model):
     summary = models.CharField(max_length=255)
     discord_success = models.BooleanField(default=False)
     structure_id = models.BigIntegerField(db_index=True, null=True)
-    created_at = models.DateTimeField(auto_created=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
     reported_by = models.ForeignKey(
         EveCharacter,
         on_delete=models.SET_NULL,
         null=True,
     )
     text = models.CharField(max_length=2000, null=True)
+    event_time = models.DateTimeField(null=True)
