@@ -4,15 +4,14 @@ from django.db.models import signals
 
 from app.test import TestCase
 
-from eveonline.models import EveAlliance, EveCorporation, EveCharacter
+from eveonline.models import EveCorporation, EveCharacter
 
 from structures.tasks import (
     setup_structure_managers,
     structure_managers_for_minute,
-    process_structure_notifications,
 )
 from structures.models import EveStructureManager
-from structures.tests.test_helpers import make_character
+# from structures.tests.test_helpers import make_character
 
 
 class StructureTimerTaskTests(TestCase):

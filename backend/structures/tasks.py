@@ -10,7 +10,6 @@ from app.celery import app
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager
-from structures.helpers import get_notification_characters
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
