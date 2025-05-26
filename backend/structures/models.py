@@ -143,7 +143,7 @@ class EveStructureManager(models.Model):
 class EveStructurePing(models.Model):
     """Record of a structure ping"""
 
-    notification_id = models.IntegerField()
+    notification_id = models.BigIntegerField()
     notification_type = models.CharField(max_length=40)
     summary = models.CharField(max_length=255)
     discord_success = models.BooleanField(default=False)
