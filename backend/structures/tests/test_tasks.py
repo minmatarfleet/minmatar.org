@@ -1,18 +1,20 @@
 import factory
+from unittest.mock import patch
 
 from django.db.models import signals
 
 from app.test import TestCase
 
-from eveonline.models import EveCorporation, EveCharacter
+from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 
 from structures.tasks import (
     setup_structure_managers,
     structure_managers_for_minute,
 )
 from structures.models import EveStructureManager
+from structures.tasks import process_structure_notifications
 
-# from structures.tests.test_helpers import make_character
+from structures.tests.test_helpers import make_character
 
 
 class StructureTimerTaskTests(TestCase):
@@ -52,25 +54,38 @@ class StructureTimerTaskTests(TestCase):
         minute_3 = structure_managers_for_minute(3)
         self.assertEqual(1, minute_3.count())
 
-    # @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    # def test_process_structure_notifications(self):
-    #     scopes = [
-    #         "esi-characters.read_notifications.v1",
-    #         "esi-fleets.read_fleet.v1",
-    #     ]
-    #     corp = EveCorporation.objects.create(
-    #         corporation_id=1001,
-    #         name="MegaCorp",
-    #         alliance=EveAlliance.objects.create(alliance_id=99011978),
-    #     )
-    #     make_character(2001, corp, scopes)
-    #     make_character(2002, corp, [])
-    #     make_character(2003, corp, scopes)
-    #     make_character(2004, corp, scopes)
-    #     make_character(2005, None, scopes)
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.EsiClient")
+    def test_process_structure_notifications(self, esi_mock):
+        # esi = esi_mock.return_value
 
-    #     self.assertEqual(0, EveStructureManager.objects.count())
+        scopes = [
+            "esi-characters.read_notifications.v1",
+            "esi-fleets.read_fleet.v1",
+        ]
+        corp = EveCorporation.objects.create(
+            corporation_id=1001,
+            name="MegaCorp",
+            alliance=EveAlliance.objects.create(alliance_id=99011978),
+        )
 
-    #     process_structure_notifications()
+        EveStructureManager.objects.create(
+            corporation=corp,
+            character=make_character(2001, corp, scopes),
+            poll_time=0,
+        )
+        EveStructureManager.objects.create(
+            corporation=corp,
+            character=make_character(2002, corp, scopes),
+            poll_time=5,
+        )
 
-    #     self.assertEqual(3, EveStructureManager.objects.count())
+        count = process_structure_notifications(5)
+
+        self.assertEqual(0, count)
+
+        self.assertIsNotNone(
+            EveStructureManager.objects.get(
+                character__character_id=2002
+            ).last_polled
+        )

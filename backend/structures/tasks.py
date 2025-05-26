@@ -2,11 +2,13 @@ import logging
 import math
 from datetime import datetime
 
+from django.utils import timezone
 from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveuniverse.models import EveSolarSystem, EveType
 
 from app.celery import app
+from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager
@@ -118,7 +120,9 @@ def update_corporation_structures(corporation_id: int):
 
 
 @app.task
-def process_structure_notifications():
+def process_structure_notifications(
+    current_minute: datetime = timezone.now().minute,
+):
     # corp_count = 0
     # for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
 
@@ -147,13 +151,53 @@ def process_structure_notifications():
     #     corp_count += 1
 
     # logger.info("Setup structure managers for %d corps", corp_count)
+    total_found = 0
 
-    for esm in structure_managers_for_minute(datetime.now().minute):
+    for esm in structure_managers_for_minute(current_minute):
         logger.info(
             "Fetching notifications for %s in %s",
             esm.character.character_name,
             esm.corporation.name,
         )
+        total_found += fetch_structure_notifications(esm)
+
+    logger.info("Found a total of %d notifications", total_found)
+
+    return total_found
+
+
+def fetch_structure_notifications(manager: EveStructureManager):
+    response = EsiClient(manager.character_id).get_character_notifications()
+    if not response.success():
+        logger.info(
+            "Error %d fetching notifications for %s",
+            response.response_code,
+            manager.character.character_name,
+        )
+        return
+
+    manager.last_polled = timezone.now()
+    manager.save()
+
+    combat_types = [
+        "StructureDestroyed",
+        "StructureLostArmor",
+        "StructureLostShields",
+        "StructureUnderAttack",
+    ]
+
+    total_found = 0
+    for notification in response.results():
+        if notification["type"] in combat_types:
+            logger.info(
+                "Found notification %d %s %s",
+                notification["notification_id"],
+                notification["timestamp"],
+                notification["type"],
+            )
+            total_found += 1
+
+    return total_found
 
 
 def structure_managers_for_minute(current_minute: int):
