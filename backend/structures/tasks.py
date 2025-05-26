@@ -171,7 +171,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
                 notification_id=notification["notification_id"],
                 defaults={
                     "notification_type": notification["type"],
-                    "summary": data["text"],
+                    "summary": data["data"],
                     "structure_id": data["structure_id"],
                 },
             )
