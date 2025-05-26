@@ -11,6 +11,7 @@ from structures.tasks import (
     structure_managers_for_minute,
 )
 from structures.models import EveStructureManager
+
 # from structures.tests.test_helpers import make_character
 
 
