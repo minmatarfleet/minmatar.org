@@ -260,24 +260,24 @@ def get_notifications(request, character_id: int):
     return results
 
 
-@router.get(
+@router.post(
     "/discordping",
     summary="Get character notifications",
     auth=AuthBearer(),
     response={
         200: None,
-        400: ErrorResponse,
+        404: ErrorResponse,
         403: ErrorResponse,
     },
 )
-def discord_ping(request, channel: Optional[int] = 1127086469631180830):
+def discord_ping(request, notification_id: int, channel_id: int):
     if not permitted(request.user):
         return 403, "Not authorised"
 
-    event = EveStructurePing.objects.create(
-        notification_id=123456,
-        notification_type="Test",
-        summary="",
-        structure_id=2345678,
-    )
-    send_discord_structure_notification(event, channel)
+    event = EveStructurePing.objects.filter(
+        notification_id=notification_id,
+    ).first()
+    if not event:
+        return 404, ErrorResponse(detail="Event not found")
+
+    send_discord_structure_notification(event, channel_id)

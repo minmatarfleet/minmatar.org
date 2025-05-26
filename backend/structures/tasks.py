@@ -228,9 +228,22 @@ def setup_structure_managers(corp, chars):
 
 
 def send_discord_structure_notification(ping: EveStructurePing, channel: int):
+    structure = EveStructure.objects.filter(id=ping.structure_id).first()
+    if not structure:
+        structure = {
+            "name": "unknown",
+            "system_name": "unknown",
+        }
     discord.create_message(
         channel_id=channel,
-        message=f":tada: Structure {ping.structure_id} {ping.notification_type} \n",
+        message=(
+            "@everyone \n"
+            ":scream: Structure under attack"
+            f"Structure: {structure.name} ({ping.structure_id}) \n",
+            f"Location: {structure.system_name} \n",
+            f"Event: {ping.notification_type} \n",
+            f"Time: {ping.event_time} \n",
+        ),
     )
     ping.discord_success = True
     ping.save()
