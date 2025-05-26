@@ -145,7 +145,7 @@ def process_structure_notifications(
 
 def utc_time(time) -> datetime:
     if isinstance(time, datetime):
-        return time.astimezone(timezone.utc)
+        return time
     return datetime.strptime(time, "%Y-%m-%d %H:%M:%S%z")
 
 
