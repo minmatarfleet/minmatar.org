@@ -1,4 +1,6 @@
 import logging
+import math
+from datetime import datetime
 
 from esi.clients import EsiClientProvider
 from esi.models import Token
@@ -7,7 +9,8 @@ from eveuniverse.models import EveSolarSystem, EveType
 from app.celery import app
 from eveonline.models import EveCorporation
 
-from .models import EveStructure
+from .models import EveStructure, EveStructureManager
+from structures.helpers import get_notification_characters
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -113,3 +116,56 @@ def update_corporation_structures(corporation_id: int):
             "Corporation %s does not have valid CEO token",
             corporation,
         )
+
+
+@app.task
+def process_structure_notifications():
+    for corp in EveCorporation.objects.filter(alliance_id=99011978):
+
+        chars = get_notification_characters(corp.corporation_id)
+        char_count = chars.count()
+        if char_count == 0:
+            continue
+
+        esm = EveStructureManager.objects.filter(corporation=corp)
+
+        if esm.count() != char_count:
+            logger.info(
+                "Calculating structure notification timing for corp %s, %d chars",
+                corp.name,
+                chars.count(),
+            )
+
+            # Delete all existing ESMs for corp
+            esm.delete()
+
+            setup_structure_managers(corp, chars)
+
+    for esm in structure_managers_for_minute(datetime.now().minute):
+        logger.info(
+            "Fetching notifications for %s in %s",
+            esm.character.character_name,
+            esm.corporation.name,
+        )
+
+
+def structure_managers_for_minute(current_minute: int):
+    mod_minute = current_minute % 10
+    return EveStructureManager.objects.filter(poll_time=mod_minute)
+
+
+def setup_structure_managers(corp, chars):
+    logger.info(
+        "Setting up %d structure managers for %s", len(chars), corp.name
+    )
+    interval = math.floor(10 / len(chars))
+    minute = 0
+
+    # Set up new ESMs for corp
+    for char in chars:
+        EveStructureManager.objects.create(
+            corporation=corp,
+            character=char,
+            poll_time=minute,
+        )
+        minute += interval

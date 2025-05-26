@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
-from eveonline.models import EveCorporation
+from eveonline.models import EveCorporation, EveCharacter
 
 
 # Create your models here.
@@ -113,3 +113,27 @@ class EveStructureTimer(models.Model):
             return str(f"{self.structure.name} - {self.state}")
         else:
             return "Timer without structure"
+
+
+class EveStructureManager(models.Model):
+    """Structure mamagement information for a corporation"""
+
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+    )
+
+    character = models.ForeignKey(
+        EveCharacter,
+        on_delete=models.CASCADE,
+    )
+
+    # Which minute in each 10 minute period this character polls
+    poll_time = models.IntegerField(default=0, db_index=True)
+
+    last_update = models.DateTimeField(null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["poll_time", "corporation", "character"]),
+        ]
