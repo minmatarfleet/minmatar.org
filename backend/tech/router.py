@@ -14,6 +14,8 @@ from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.client import EsiClient
 from fleets.models import EveFleetAudience, EveFleet
+from structures.tasks import send_discord_structure_notification
+from structures.models import EveStructurePing
 from tech.docker import (
     container_names,
     sort_chronologically,
@@ -256,3 +258,26 @@ def get_notifications(request, character_id: int):
             )
 
     return results
+
+
+@router.get(
+    "/discordping",
+    summary="Get character notifications",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        400: ErrorResponse,
+        403: ErrorResponse,
+    },
+)
+def discord_ping(request, channel: Optional[int] = 1127086469631180830):
+    if not permitted(request.user):
+        return 403, "Not authorised"
+
+    event = EveStructurePing.objects.create(
+        notification_id=123456,
+        notification_type="Test",
+        summary="",
+        structure_id=2345678,
+    )
+    send_discord_structure_notification(event, channel)

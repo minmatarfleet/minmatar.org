@@ -55,8 +55,9 @@ class StructureTimerTaskTests(TestCase):
         self.assertEqual(1, minute_3.count())
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.discord")
     @patch("structures.tasks.EsiClient")
-    def test_process_structure_notifications(self, esi_mock):
+    def test_process_structure_notifications(self, esi_mock, discord_mock):
         esi = esi_mock.return_value
         esi.get_character_notifications.return_value = EsiResponse(
             response_code=200,
