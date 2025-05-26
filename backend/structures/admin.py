@@ -45,7 +45,8 @@ class StructurePingAdmin(admin.ModelAdmin):
         "id",
         "notification_id",
         "notification_type",
+        "created_at",
         "structure_id",
-        "summary",
+        "reported_by",
         "discord_success",
     )
