@@ -143,7 +143,7 @@ def process_structure_notifications(
 
 
 def fetch_structure_notifications(manager: EveStructureManager):
-    response = EsiClient(manager.character_id).get_character_notifications()
+    response = EsiClient(manager.character).get_character_notifications()
     if not response.success():
         logger.error(
             "Error %d fetching notifications for %s",
