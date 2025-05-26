@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from ninja import Router
 from pydantic import BaseModel
@@ -29,6 +29,7 @@ class CorporationApplicationDetailResponse(CorporationApplicationResponse):
     created_at: datetime
     updated_at: datetime
     characters: List[CorporationApplicationCharacterResponse]
+    discord_thread: Optional[int]
 
 
 class CorporationApplicationRequest(BaseModel):
@@ -119,6 +120,7 @@ def get_corporation_application_by_id(
         "description": application.description,
         "created_at": application.created_at,
         "updated_at": application.updated_at,
+        "discord_thread": application.discord_thread_id,
         "characters": character_list,
     }
 
