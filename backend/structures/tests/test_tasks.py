@@ -22,6 +22,7 @@ class StructureTimerTaskTests(TestCase):
 
         corp = EveCorporation.objects.create(
             corporation_id=1001,
+            name="MegaCorp",
         )
         chars = [
             EveCharacter.objects.create(

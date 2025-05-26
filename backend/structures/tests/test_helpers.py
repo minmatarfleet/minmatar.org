@@ -57,20 +57,19 @@ class StructureHelperTest(unittest.TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_get_notification_characters(self):
+        scopes = [
+            "esi-characters.read_notifications.v1",
+            "esi-fleets.read_fleet.v1",
+        ]
         corp = EveCorporation.objects.create(
             corporation_id=1001,
             name="MegaCorp",
         )
-        self._make_character(
-            2001, corp, ["esi-characters.read_notifications.v1"]
-        )
+        self._make_character(2001, corp, scopes)
         self._make_character(2002, corp, [])
-        self._make_character(
-            2003, corp, ["esi-characters.read_notifications.v1"]
-        )
-        self._make_character(
-            2004, corp, ["esi-characters.read_notifications.v1"]
-        )
+        self._make_character(2003, corp, scopes)
+        self._make_character(2004, corp, scopes)
+        self._make_character(2005, None, scopes)
 
         chars = get_notification_characters(corp.id)
 
