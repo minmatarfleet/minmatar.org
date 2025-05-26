@@ -24,7 +24,7 @@ class StructureManagerAdmin(admin.ModelAdmin):
         "last_polled",
     )
     search_fields = ("corporation__name", "character__character_name")
-    list_filter = ("poll_time", "corporation__name")
+    list_filter = ["poll_time"]
     list_display_links = (
         "id",
         "corporation__name",

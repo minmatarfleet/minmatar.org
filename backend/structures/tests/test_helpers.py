@@ -14,7 +14,7 @@ from structures.helpers import (
 )
 
 
-def make_character(char_id, corp, scopes):
+def make_character(char_id, corp, scopes) -> EveCharacter:
     char = EveCharacter.objects.create(
         character_id=char_id,
         character_name=f"Pilot {char_id}",
@@ -30,6 +30,7 @@ def make_character(char_id, corp, scopes):
             )[0]
         )
     char.token.save()
+    return char
 
 
 class StructureHelperTest(unittest.TestCase):
