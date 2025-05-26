@@ -146,6 +146,7 @@ class Runner(DiscoverRunner):
         output_file = os.environ.get("GITHUB_STEP_SUMMARY")
         if not output_file:
             print("GITHUB_STEP_SUMMARY not set, not writing summary")
+            return
 
         success_count = 0
         fail_count = 0

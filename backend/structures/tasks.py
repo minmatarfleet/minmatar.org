@@ -12,6 +12,7 @@ from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
+from structures.helpers import parse_structure_notification
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -165,18 +166,24 @@ def fetch_structure_notifications(manager: EveStructureManager):
     total_found = 0
     for notification in response.results():
         if notification["type"] in combat_types:
+            data = parse_structure_notification(notification["text"])
+            _, created = EveStructurePing.objects.get_or_create(
+                notification_id=notification["notification_id"],
+                defaults={
+                    "notification_type": notification["type"],
+                    "summary": data["text"],
+                    "structure_id": data["structure_id"],
+                },
+            )
             logger.info(
-                "Found notification %d %s %s : %s",
+                "Found notification %d %s %s : %s, created=%s",
                 notification["notification_id"],
                 notification["timestamp"],
                 notification["type"],
-                notification["text"],
+                data["text"],
+                created,
             )
-            EveStructurePing.objects.create(
-                notification_id=notification["notification_id"],
-                notification_type=notification["type"],
-                summary=notification["text"][0:200],
-            )
+
             total_found += 1
 
     return total_found

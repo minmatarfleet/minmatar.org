@@ -9,7 +9,6 @@ from .models import (
 )
 
 admin.site.register(EveStructure)
-admin.site.register(EveStructurePing)
 
 
 @admin.register(EveStructureTimer)
@@ -35,4 +34,17 @@ class StructureManagerAdmin(admin.ModelAdmin):
         "id",
         "corporation__name",
         "character__character_name",
+    )
+
+
+@admin.register(EveStructurePing)
+class StructurePingAdmin(admin.ModelAdmin):
+    """Admin page for structure pings"""
+
+    list_display = (
+        "id",
+        "notification_id",
+        "notification_type",
+        "summary",
+        "discord_success",
     )

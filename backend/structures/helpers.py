@@ -105,3 +105,21 @@ def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
             corporation_id=corporation_id,
         )
     )
+
+
+def parse_structure_notification(text: str):
+    structure_id = -1
+
+    try:
+        for line in text.splitlines():
+            line = line.strip()
+            if line.startswith("structureID:"):
+                id_str = line.split(" ")[-1]
+                structure_id = int(id_str)
+    except Exception as e:
+        logger.warning("Error parsing structure notification, %s", e)
+
+    return {
+        "data": text[0:200],
+        "structure_id": structure_id,
+    }

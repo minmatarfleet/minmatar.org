@@ -10,9 +10,9 @@ from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 from structures.tasks import (
     setup_structure_managers,
     structure_managers_for_minute,
+    process_structure_notifications,
 )
 from structures.models import EveStructureManager
-from structures.tasks import process_structure_notifications
 
 from structures.tests.test_helpers import make_character
 
