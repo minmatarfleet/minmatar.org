@@ -116,22 +116,23 @@ class EveStructureTimer(models.Model):
 
 
 class EveStructureManager(models.Model):
-    """Structure mamagement information for a corporation"""
+    """Characters who can manage structures for a corporation"""
 
     corporation = models.ForeignKey(
         EveCorporation,
         on_delete=models.CASCADE,
     )
 
-    character = models.ForeignKey(
+    character = models.OneToOneField(
         EveCharacter,
         on_delete=models.CASCADE,
     )
 
     # Which minute in each 10 minute period this character polls
-    poll_time = models.IntegerField(default=0, db_index=True)
+    poll_time = models.IntegerField(default=0)
+    last_polled = models.DateTimeField(null=True, blank=True)
 
-    last_update = models.DateTimeField(null=True)
+    last_update = models.DateTimeField(null=True, auto_now=True)
 
     class Meta:
         indexes = [

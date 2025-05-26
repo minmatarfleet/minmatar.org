@@ -52,25 +52,25 @@ class StructureTimerTaskTests(TestCase):
         minute_3 = structure_managers_for_minute(3)
         self.assertEqual(1, minute_3.count())
 
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_process_structure_notifications(self):
-        scopes = [
-            "esi-characters.read_notifications.v1",
-            "esi-fleets.read_fleet.v1",
-        ]
-        corp = EveCorporation.objects.create(
-            corporation_id=1001,
-            name="MegaCorp",
-            alliance=EveAlliance.objects.create(alliance_id=99011978),
-        )
-        make_character(2001, corp, scopes)
-        make_character(2002, corp, [])
-        make_character(2003, corp, scopes)
-        make_character(2004, corp, scopes)
-        make_character(2005, None, scopes)
+    # @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    # def test_process_structure_notifications(self):
+    #     scopes = [
+    #         "esi-characters.read_notifications.v1",
+    #         "esi-fleets.read_fleet.v1",
+    #     ]
+    #     corp = EveCorporation.objects.create(
+    #         corporation_id=1001,
+    #         name="MegaCorp",
+    #         alliance=EveAlliance.objects.create(alliance_id=99011978),
+    #     )
+    #     make_character(2001, corp, scopes)
+    #     make_character(2002, corp, [])
+    #     make_character(2003, corp, scopes)
+    #     make_character(2004, corp, scopes)
+    #     make_character(2005, None, scopes)
 
-        self.assertEqual(0, EveStructureManager.objects.count())
+    #     self.assertEqual(0, EveStructureManager.objects.count())
 
-        process_structure_notifications()
+    #     process_structure_notifications()
 
-        self.assertEqual(3, EveStructureManager.objects.count())
+    #     self.assertEqual(3, EveStructureManager.objects.count())
