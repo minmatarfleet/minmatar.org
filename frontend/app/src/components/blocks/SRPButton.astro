@@ -27,6 +27,7 @@ const {
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
 
 import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -37,6 +38,7 @@ import Button from '@components/blocks/Button.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
+import TutorialBadge from "@components/blocks/TutorialBadge.astro";
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
@@ -106,6 +108,10 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     description={t('corp_ship_description')}
                     x-model="is_corp_ship"
                 />
+                
+                <TutorialBadge>
+                    <p set:html={marked.parseInline(t('srp_wiki'), { renderer })} />
+                </TutorialBadge>
             </Flexblock>
 
             <FlexInline justification='flex-end'>
