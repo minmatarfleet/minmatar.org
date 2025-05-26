@@ -180,7 +180,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
                 notification["notification_id"],
                 notification["timestamp"],
                 notification["type"],
-                data["text"],
+                data["data"],
                 created,
             )
 
