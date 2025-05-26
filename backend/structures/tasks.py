@@ -8,6 +8,8 @@ from esi.models import Token
 from eveuniverse.models import EveSolarSystem, EveType
 
 from app.celery import app
+
+from discord.client import DiscordClient
 from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
@@ -15,6 +17,7 @@ from .models import EveStructure, EveStructureManager, EveStructurePing
 from structures.helpers import parse_structure_notification, is_new_event
 
 esi = EsiClientProvider()
+discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 
@@ -184,7 +187,6 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     "event_time": utc_time(notification["timestamp"]),
                 },
             )
-            logger.info("Event time: %s", notification["timestamp"])
             if created:
                 logger.info(
                     "Found new notification %d (%s) %s - would ping? %s",
@@ -193,6 +195,10 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     event.notification_type,
                     is_new_event(event),
                 )
+                if is_new_event(event):
+                    send_discord_structure_notification(
+                        event, 1127086469631180830
+                    )
 
             total_found += 1
 
@@ -219,3 +225,12 @@ def setup_structure_managers(corp, chars):
             poll_time=minute,
         )
         minute += interval
+
+
+def send_discord_structure_notification(ping: EveStructurePing, channel: int):
+    discord.create_message(
+        channel_id=channel,
+        message=f":tada: Structure {ping.structure_id} {ping.notification_type} \n",
+    )
+    ping.discord_success = True
+    ping.save()
