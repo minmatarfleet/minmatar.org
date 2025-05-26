@@ -12,7 +12,7 @@ from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
-from structures.helpers import parse_structure_notification
+from structures.helpers import parse_structure_notification, is_new_event
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -143,6 +143,12 @@ def process_structure_notifications(
     return total_found
 
 
+def utc_time(time) -> datetime:
+    if isinstance(time, datetime):
+        return time.astimezone(timezone.utc)
+    return datetime.strptime(time, "%Y-%m-%d %H:%M:%S%z")
+
+
 def fetch_structure_notifications(manager: EveStructureManager):
     response = EsiClient(manager.character).get_character_notifications()
     if not response.success():
@@ -167,7 +173,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
     for notification in response.results():
         if notification["type"] in combat_types:
             data = parse_structure_notification(notification["text"])
-            _, created = EveStructurePing.objects.get_or_create(
+            event, created = EveStructurePing.objects.get_or_create(
                 notification_id=notification["notification_id"],
                 defaults={
                     "notification_type": notification["type"],
@@ -175,15 +181,17 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     "structure_id": data["structure_id"],
                     "reported_by": manager.character,
                     "text": notification["text"],
-                    "event_time": notification["timestamp"],
+                    "event_time": utc_time(notification["timestamp"]),
                 },
             )
+            logger.info("Event time: %s", notification["timestamp"])
             if created:
                 logger.info(
-                    "Found new notification %d (%s) %s",
-                    notification["notification_id"],
+                    "Found new notification %d (%s) %s - would ping? %s",
+                    event.notification_id,
                     notification["timestamp"],
-                    notification["type"],
+                    event.notification_type,
+                    is_new_event(event),
                 )
 
             total_found += 1

@@ -1,16 +1,18 @@
 import unittest
 import factory
-from datetime import datetime
+from datetime import datetime, timezone
 
 from django.db.models import signals
 
 from esi.models import Token, Scope
 from eveonline.models import EveCorporation, EveCharacter
+from structures.models import EveStructurePing
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
     get_notification_characters,
     parse_structure_notification,
+    is_new_event,
     StructureResponse,
 )
 
@@ -110,3 +112,27 @@ class StructureHelperTest(unittest.TestCase):
 
         data = parse_structure_notification(text)
         self.assertEqual(1049253339308, data["structure_id"])
+
+    def test_should_ping(self):
+        event = EveStructurePing.objects.create(
+            notification_id=10000,
+            notification_type="Test",
+            summary="ABC",
+            event_time=datetime(2025, 1, 1, 21, 30, 0, 0, tzinfo=timezone.utc),
+        )
+        now = datetime(2025, 1, 1, 23, 50, 0, 0, tzinfo=timezone.utc)
+
+        self.assertFalse(is_new_event(event, now))
+
+        now = datetime(2025, 1, 1, 21, 30, 0, 0, tzinfo=timezone.utc)
+
+        self.assertTrue(is_new_event(event, now))
+
+        EveStructurePing.objects.create(
+            notification_id=10001,
+            notification_type="Test",
+            summary="ABC",
+            event_time=datetime(2025, 1, 1, 21, 15, 0, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(is_new_event(event, now))

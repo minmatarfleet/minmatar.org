@@ -1,6 +1,6 @@
 import re
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from pydantic import BaseModel
@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
 from eveonline.models import EveCharacter
 
-# from structures.models import EveStructurePing
+from structures.models import EveStructurePing
 
 logger = logging.getLogger(__name__)
 
@@ -127,12 +127,24 @@ def parse_structure_notification(text: str):
     }
 
 
-# def is_new_event(
-#     structure_id: int, event_type: str, event_time: datetime
-# ) -> bool:
-#     latest = (
-#         EveStructurePing.objects.filter(structure_id=structure_id)
-#         .order_by("-event_time")
-#         .first()
-#     )
-#     return False
+def is_new_event(
+    event: EveStructurePing, current_time: datetime | None = None
+) -> bool:
+    if not current_time:
+        current_time = datetime.now(timezone.utc)
+
+    now_delta = current_time - event.event_time
+    if now_delta.total_seconds() > 1200:
+        # Event is more than 20 minutes old, so not new
+        return False
+
+    latest = (
+        EveStructurePing.objects.filter(structure_id=event.structure_id)
+        .exclude(notification_id=event.notification_id)
+        .order_by("-event_time")
+        .first()
+    )
+    if not latest:
+        return True
+
+    return False
