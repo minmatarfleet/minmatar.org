@@ -120,7 +120,7 @@ def update_corporation_structures(corporation_id: int):
 
 @app.task
 def process_structure_notifications():
-    corp_count = 0    
+    corp_count = 0
     for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
 
         chars = get_notification_characters(corp.corporation_id)
