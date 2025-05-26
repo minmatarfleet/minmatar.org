@@ -1,9 +1,15 @@
 from django.contrib import admin
 
 from .forms import EveStructureTimerForm
-from .models import EveStructure, EveStructureTimer, EveStructureManager
+from .models import (
+    EveStructure,
+    EveStructureTimer,
+    EveStructureManager,
+    EveStructurePing,
+)
 
 admin.site.register(EveStructure)
+admin.site.register(EveStructurePing)
 
 
 @admin.register(EveStructureTimer)
