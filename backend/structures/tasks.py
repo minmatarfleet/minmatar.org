@@ -238,11 +238,11 @@ def send_discord_structure_notification(ping: EveStructurePing, channel: int):
         channel_id=channel,
         message=(
             "@everyone \n"
-            ":scream: Structure under attack"
-            f"Structure: {structure.name} ({ping.structure_id}) \n",
-            f"Location: {structure.system_name} \n",
-            f"Event: {ping.notification_type} \n",
-            f"Time: {ping.event_time} \n",
+            ":scream: Structure under attack \n"
+            f"Structure: {structure.name} ({ping.structure_id}) \n"
+            f"Location: {structure.system_name} \n"
+            f"Event: {ping.notification_type} \n"
+            f"Time: {ping.event_time} \n"
         ),
     )
     ping.discord_success = True
