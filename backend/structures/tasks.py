@@ -11,7 +11,7 @@ from app.celery import app
 from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
-from .models import EveStructure, EveStructureManager
+from .models import EveStructure, EveStructureManager, EveStructurePing
 
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ def update_corporation_structures(corporation_id: int):
 
 @app.task
 def process_structure_notifications(
-    current_minute: datetime = timezone.now().minute,
+    current_minute: datetime | None = None,
 ):
     # corp_count = 0
     # for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
@@ -151,6 +151,9 @@ def process_structure_notifications(
     #     corp_count += 1
 
     # logger.info("Setup structure managers for %d corps", corp_count)
+    if current_minute is None:
+        current_minute = timezone.now().minute
+
     total_found = 0
 
     for esm in structure_managers_for_minute(current_minute):
@@ -161,7 +164,8 @@ def process_structure_notifications(
         )
         total_found += fetch_structure_notifications(esm)
 
-    logger.info("Found a total of %d notifications", total_found)
+    if total_found > 0:
+        logger.info("Found a total of %d structure notifications", total_found)
 
     return total_found
 
@@ -190,10 +194,16 @@ def fetch_structure_notifications(manager: EveStructureManager):
     for notification in response.results():
         if notification["type"] in combat_types:
             logger.info(
-                "Found notification %d %s %s",
+                "Found notification %d %s %s : %s",
                 notification["notification_id"],
                 notification["timestamp"],
                 notification["type"],
+                notification["text"],
+            )
+            EveStructurePing.objects.create(
+                notification_id=notification["notification_id"],
+                notification_type=notification["type"],
+                summary=notification["text"][0:200],
             )
             total_found += 1
 
