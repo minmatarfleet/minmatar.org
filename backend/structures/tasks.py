@@ -120,7 +120,8 @@ def update_corporation_structures(corporation_id: int):
 
 @app.task
 def process_structure_notifications():
-    for corp in EveCorporation.objects.filter(alliance_id=99011978):
+    corp_count = 0    
+    for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
 
         chars = get_notification_characters(corp.corporation_id)
         char_count = chars.count()
@@ -140,6 +141,10 @@ def process_structure_notifications():
             esm.delete()
 
             setup_structure_managers(corp, chars)
+
+        corp_count += 1
+
+    logger.info("Setup structure managers for %d corps", corp_count)
 
     for esm in structure_managers_for_minute(datetime.now().minute):
         logger.info(
