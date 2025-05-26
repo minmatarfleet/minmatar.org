@@ -9,6 +9,8 @@ from django.db.models import Count, Q
 from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
 from eveonline.models import EveCharacter
 
+# from structures.models import EveStructurePing
+
 logger = logging.getLogger(__name__)
 
 
@@ -123,3 +125,14 @@ def parse_structure_notification(text: str):
         "data": text[0:200],
         "structure_id": structure_id,
     }
+
+
+# def is_new_event(
+#     structure_id: int, event_type: str, event_time: datetime
+# ) -> bool:
+#     latest = (
+#         EveStructurePing.objects.filter(structure_id=structure_id)
+#         .order_by("-event_time")
+#         .first()
+#     )
+#     return False
