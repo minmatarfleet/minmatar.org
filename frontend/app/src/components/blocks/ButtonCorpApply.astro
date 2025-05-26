@@ -18,7 +18,7 @@ const REAPPLY_PERIOD_HOURS = 1
 let reapplication_date = new Date(corporation?.application_updated as Date)
 reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
 
-const MAX_APPLICATION_TEXT_LENGTH = 2000
+const MAX_APPLICATION_TEXT_LENGTH = 1800
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
