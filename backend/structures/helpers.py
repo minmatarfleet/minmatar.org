@@ -1,10 +1,15 @@
 import re
+import logging
 from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel
+from django.db.models import Count, Q
 
+from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
 from eveonline.models import EveCharacter
+
+logger = logging.getLogger(__name__)
 
 
 class StructureResponse(BaseModel):
@@ -85,8 +90,18 @@ def get_structure_details(selected_item_window: str):
 
 
 def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
-    return EveCharacter.objects.filter(
-        token__scopes__name="esi-characters.read_notifications.v1",
-    ).filter(
-        corporation_id=corporation_id,
+    return (
+        EveCharacter.objects.annotate(
+            matching_scopes=Count(
+                "token__scopes",
+                filter=Q(token__scopes__name__in=DIRECTOR_ADDITIONAL_SCOPES),
+            )
+        )
+        .filter(
+            matching_scopes=len(DIRECTOR_ADDITIONAL_SCOPES),
+        )
+        .distinct()
+        .filter(
+            corporation_id=corporation_id,
+        )
     )
