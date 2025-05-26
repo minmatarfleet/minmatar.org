@@ -123,34 +123,6 @@ def update_corporation_structures(corporation_id: int):
 def process_structure_notifications(
     current_minute: datetime | None = None,
 ):
-    # corp_count = 0
-    # for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
-
-    #     esm = EveStructureManager.objects.filter(corporation=corp)
-    #     chars = get_notification_characters(corp.id)
-
-    #     logger.info(
-    #         "Corp %s, %d ESM, %d chars",
-    #         corp.name,
-    #         len(esm),
-    #         len(chars),
-    #     )
-
-    #     if len(esm) != len(chars):
-    #         logger.info(
-    #             "Calculating structure notification timing for corp %s, %d chars",
-    #             corp.name,
-    #             len(chars),
-    #         )
-
-    #         # Delete all existing ESMs for corp
-    #         esm.delete()
-
-    #         setup_structure_managers(corp, chars)
-
-    #     corp_count += 1
-
-    # logger.info("Setup structure managers for %d corps", corp_count)
     if current_minute is None:
         current_minute = timezone.now().minute
 
@@ -173,12 +145,12 @@ def process_structure_notifications(
 def fetch_structure_notifications(manager: EveStructureManager):
     response = EsiClient(manager.character_id).get_character_notifications()
     if not response.success():
-        logger.info(
+        logger.error(
             "Error %d fetching notifications for %s",
             response.response_code,
             manager.character.character_name,
         )
-        return
+        return 0
 
     manager.last_polled = timezone.now()
     manager.save()
