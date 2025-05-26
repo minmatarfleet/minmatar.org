@@ -123,21 +123,21 @@ def process_structure_notifications():
     corp_count = 0
     for corp in EveCorporation.objects.filter(alliance__alliance_id=99011978):
 
-        chars = get_notification_characters(corp.corporation_id)
         esm = EveStructureManager.objects.filter(corporation=corp)
+        chars = get_notification_characters(corp.id)
 
         logger.info(
             "Corp %s, %d ESM, %d chars",
             corp.name,
-            esm.count(),
-            chars.count(),
+            len(esm),
+            len(chars),
         )
 
-        if esm.count() != chars.count():
+        if len(esm) != len(chars):
             logger.info(
                 "Calculating structure notification timing for corp %s, %d chars",
                 corp.name,
-                chars.count(),
+                len(chars),
             )
 
             # Delete all existing ESMs for corp
