@@ -145,6 +145,12 @@ def is_new_event(
         .first()
     )
     if not latest:
+        # First event for this structure
         return True
 
-    return False
+    latest_delta = event.event_time - latest.event_time
+    if latest_delta.total_seconds() < 3600:
+        # Last event for structure less than an hour ago
+        return False
+
+    return True
