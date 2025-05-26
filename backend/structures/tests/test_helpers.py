@@ -10,6 +10,7 @@ from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
     get_notification_characters,
+    parse_structure_notification,
     StructureResponse,
 )
 
@@ -92,3 +93,20 @@ class StructureHelperTest(unittest.TestCase):
         chars = get_notification_characters(corp.id)
 
         self.assertEqual(3, chars.count())
+
+    def test_parse_notification(self):
+        text = """
+            solarsystemID: 30002538
+            structureID: &id001 1049253339308
+            structureShowInfoData:
+             - showinfo
+             - 35826
+             - *id001
+            structureTypeID: 35826
+            timeLeft: 1670149438753
+            timestamp: 133926971500000000
+            vulnerableTime: 9000000000
+        """
+
+        data = parse_structure_notification(text)
+        self.assertEqual(1049253339308, data["structure_id"])
