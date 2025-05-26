@@ -173,14 +173,15 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     "notification_type": notification["type"],
                     "summary": data["data"],
                     "structure_id": data["structure_id"],
+                    "reported_by": manager.character,
+                    "text": notification["text"],
                 },
             )
             logger.info(
-                "Found notification %d %s %s : %s, created=%s",
+                "Found notification %d (%s) %s, created=%s",
                 notification["notification_id"],
                 notification["timestamp"],
                 notification["type"],
-                data["data"],
                 created,
             )
 

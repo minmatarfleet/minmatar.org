@@ -1,10 +1,12 @@
 import factory
 from unittest.mock import patch
+from datetime import datetime
 
 from django.db.models import signals
 
 from app.test import TestCase
 
+from eveonline.client import EsiResponse
 from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 
 from structures.tasks import (
@@ -12,8 +14,7 @@ from structures.tasks import (
     structure_managers_for_minute,
     process_structure_notifications,
 )
-from structures.models import EveStructureManager
-
+from structures.models import EveStructureManager, EveStructurePing
 from structures.tests.test_helpers import make_character
 
 
@@ -57,7 +58,20 @@ class StructureTimerTaskTests(TestCase):
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("structures.tasks.EsiClient")
     def test_process_structure_notifications(self, esi_mock):
-        # esi = esi_mock.return_value
+        esi = esi_mock.return_value
+        esi.get_character_notifications.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "notification_id": 1234567890,
+                    "timestamp": datetime.now(),
+                    "type": "StructureLostArmor",
+                    "text": """
+                        structureID: &id001 1049253339308
+                        """,
+                }
+            ],
+        )
 
         scopes = [
             "esi-characters.read_notifications.v1",
@@ -82,10 +96,16 @@ class StructureTimerTaskTests(TestCase):
 
         count = process_structure_notifications(5)
 
-        self.assertEqual(0, count)
+        self.assertEqual(1, count)
 
         self.assertIsNotNone(
             EveStructureManager.objects.get(
                 character__character_id=2002
             ).last_polled
         )
+
+        self.assertEqual(1, EveStructurePing.objects.count())
+        ping = EveStructurePing.objects.first()
+        self.assertEqual(1049253339308, ping.structure_id)
+        self.assertEqual("Pilot 2002", ping.reported_by.character_name)
+        self.assertEqual("StructureLostArmor", ping.notification_type)
