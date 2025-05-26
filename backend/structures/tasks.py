@@ -195,9 +195,10 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     event.notification_type,
                     is_new_event(event),
                 )
+                # test_channel = 1127086469631180830
                 if is_new_event(event):
                     send_discord_structure_notification(
-                        event, 1127086469631180830
+                        event, 1270780039272595549
                     )
 
             total_found += 1
@@ -237,7 +238,7 @@ def send_discord_structure_notification(ping: EveStructurePing, channel: int):
     discord.create_message(
         channel_id=channel,
         message=(
-            "@everyone \n"
+            "everyone \n"
             ":scream: Structure under attack \n"
             f"Structure: {structure.name} ({ping.structure_id}) \n"
             f"Location: {structure.system_name} \n"
