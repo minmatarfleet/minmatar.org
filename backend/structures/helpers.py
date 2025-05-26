@@ -8,6 +8,7 @@ from django.db.models import Count, Q
 
 from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
 from eveonline.models import EveCharacter
+
 # from structures.models import EveStructurePing
 
 logger = logging.getLogger(__name__)
