@@ -1,7 +1,6 @@
 import logging
 
 from django.db.models import Q
-from esi.clients import EsiClientProvider
 from esi.models import Token
 
 from app.celery import app
@@ -15,7 +14,6 @@ from market.models import EveMarketContract, EveMarketContractExpectation
 
 logger = logging.getLogger(__name__)
 
-esi = EsiClientProvider()
 discord = DiscordClient()
 
 NOTIFICATION_CHANNEL = 1174095138197340300
@@ -24,16 +22,6 @@ NOTIFICATION_CHANNEL = 1174095138197340300
 @app.task()
 def fetch_eve_market_contracts():
     known_entity_ids = []
-    # characters = (
-    #     EveCharacter.objects.annotate(
-    #         matching_scopes=Count(
-    #             "token__scopes",
-    #             filter=Q(token__scopes__name__in=MARKET_CHARACTER_SCOPES),
-    #         )
-    #     )
-    #     .filter(matching_scopes=len(MARKET_CHARACTER_SCOPES))
-    #     .distinct()
-    # )
     characters = EveCharacter.objects.exclude(token__isnull=True)
 
     for character in characters:
@@ -55,21 +43,12 @@ def fetch_eve_market_contracts():
                 f"Failed to fetch character contracts {character.character_id}: {e}"
             )
 
-    corporations = (
-        # EveCorporation.objects.annotate(
-        #     matching_scopes=Count(
-        #         "ceo__token__scopes",
-        #         filter=Q(ceo__token__scopes__name__in=MARKET_CHARACTER_SCOPES),
-        #     )
-        # )
-        EveCorporation.objects.filter(
-            # matching_scopes=len(MARKET_CHARACTER_SCOPES),
-            alliance__name__in=[
-                "Minmatar Fleet Alliance",
-                "Minmatar Fleet Associates",
-            ],
-        ).distinct()
-    )
+    corporations = EveCorporation.objects.filter(
+        alliance__name__in=[
+            "Minmatar Fleet Alliance",
+            "Minmatar Fleet Associates",
+        ],
+    ).distinct()
 
     for corporation in corporations:
         required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
