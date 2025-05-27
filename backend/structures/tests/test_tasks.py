@@ -94,9 +94,10 @@ class StructureTimerTaskTests(TestCase):
             poll_time=5,
         )
 
-        count = process_structure_notifications(5)
+        total_found, total_new = process_structure_notifications(5)
 
-        self.assertEqual(1, count)
+        self.assertEqual(1, total_found)
+        self.assertEqual(0, total_new)
 
         self.assertIsNotNone(
             EveStructureManager.objects.get(
