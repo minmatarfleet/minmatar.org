@@ -6,13 +6,14 @@ from django.db.models import signals
 
 from esi.models import Token, Scope
 from eveonline.models import EveCorporation, EveCharacter
-from structures.models import EveStructurePing
+from structures.models import EveStructure, EveStructurePing
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
     get_notification_characters,
     parse_structure_notification,
     is_new_event,
+    discord_message_for_ping,
     StructureResponse,
 )
 
@@ -136,3 +137,38 @@ class StructureHelperTest(unittest.TestCase):
         )
 
         self.assertFalse(is_new_event(event, now))
+
+    def test_structure_ping_discord_message(self):
+        structure = EveStructure.objects.create(
+            id=20001,
+            name="Homebase",
+            system_id=1,
+            system_name="Jita",
+            type_id=1234,
+            reinforce_hour=12,
+            corporation_id=1,
+        )
+        ping = EveStructurePing.objects.create(
+            notification_id=10001,
+            notification_type="StructureIsSad",
+            structure_id=structure.id,
+            summary="ABC",
+            event_time=datetime(2025, 1, 1, 21, 15, 0, 0, tzinfo=timezone.utc),
+        )
+        message = discord_message_for_ping(ping)
+
+        self.assertIn("Structure under attack", message)
+        self.assertIn("Homebase", message)
+        self.assertIn("20001", message)
+        self.assertIn("Jita", message)
+        self.assertIn("StructureIsSad", message)
+
+        ping.structure_id = 98765
+        ping.save()
+
+        message = discord_message_for_ping(ping)
+
+        self.assertIn("Structure under attack", message)
+        self.assertIn("unknown", message)
+        self.assertIn("98765", message)
+        self.assertNotIn("Jita", message)

@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
 from eveonline.models import EveCharacter
 
-from structures.models import EveStructurePing
+from structures.models import EveStructure, EveStructurePing
 
 logger = logging.getLogger(__name__)
 
@@ -154,3 +154,22 @@ def is_new_event(
         return False
 
     return True
+
+
+class NullStructure:
+    name: str = "unknown"
+    system_name: str = "unknown"
+
+
+def discord_message_for_ping(ping: EveStructurePing) -> str:
+    structure = EveStructure.objects.filter(id=ping.structure_id).first()
+    if not structure:
+        structure = NullStructure()
+    return (
+        "everyone \n"
+        ":scream: Structure under attack \n"
+        f"Structure: {structure.name} ({ping.structure_id}) \n"
+        f"Location: {structure.system_name} \n"
+        f"Event: {ping.notification_type} \n"
+        f"Time: {ping.event_time} \n"
+    )
