@@ -38,7 +38,9 @@ class EsiResponse:
         if self.success():
             return self.data
         else:
-            raise ValueError("Cannot return data for failed ESI call")
+            raise ValueError(
+                f"Cannot return data for failed ESI call ({self.response_code})"
+            )
 
 
 class EsiClient:
