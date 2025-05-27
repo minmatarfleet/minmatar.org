@@ -135,6 +135,7 @@ def process_structure_notifications(
         current_minute = timezone.now().minute
 
     total_found = 0
+    total_new = 0
 
     for esm in structure_managers_for_minute(current_minute):
         logger.info(
@@ -142,12 +143,18 @@ def process_structure_notifications(
             esm.character.character_name,
             esm.corporation.name,
         )
-        total_found += fetch_structure_notifications(esm)
+        found, new = fetch_structure_notifications(esm)
+        total_found += found
+        total_new += new
 
     if total_found > 0:
-        logger.info("Found a total of %d structure notifications", total_found)
+        logger.info(
+            "  Found a total of %d structure notifications (%d new)",
+            total_found,
+            total_new,
+        )
 
-    return total_found
+    return total_found, total_new
 
 
 def utc_time(time) -> datetime:
@@ -177,6 +184,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
     ]
 
     total_found = 0
+    total_new = 0
     for notification in response.results():
         if notification["type"] in combat_types:
             data = parse_structure_notification(notification["text"])
@@ -204,10 +212,11 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     send_discord_structure_notification(
                         event, 1270780039272595549
                     )
+                    total_new += 1
 
             total_found += 1
 
-    return total_found
+    return (total_found, total_new)
 
 
 def structure_managers_for_minute(current_minute: int):
