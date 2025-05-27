@@ -14,7 +14,11 @@ from eveonline.client import EsiClient
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
-from structures.helpers import parse_structure_notification, is_new_event
+from structures.helpers import (
+    parse_structure_notification,
+    is_new_event,
+    discord_message_for_ping,
+)
 
 esi = EsiClientProvider()
 discord = DiscordClient()
@@ -229,22 +233,9 @@ def setup_structure_managers(corp, chars):
 
 
 def send_discord_structure_notification(ping: EveStructurePing, channel: int):
-    structure = EveStructure.objects.filter(id=ping.structure_id).first()
-    if not structure:
-        structure = {
-            "name": "unknown",
-            "system_name": "unknown",
-        }
     discord.create_message(
         channel_id=channel,
-        message=(
-            "everyone \n"
-            ":scream: Structure under attack \n"
-            f"Structure: {structure.name} ({ping.structure_id}) \n"
-            f"Location: {structure.system_name} \n"
-            f"Event: {ping.notification_type} \n"
-            f"Time: {ping.event_time} \n"
-        ),
+        message=discord_message_for_ping(ping),
     )
     ping.discord_success = True
     ping.save()
