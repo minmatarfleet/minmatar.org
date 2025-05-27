@@ -1,3 +1,4 @@
+import factory
 from unittest.mock import patch
 
 from django.test import Client
@@ -9,13 +10,16 @@ from app.test import TestCase
 from fittings.models import EveFitting
 from esi.models import Token
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter, EveLocation
+from eveonline.models import EveCorporation, EveCharacter, EveLocation
 from eveonline.scopes import add_scopes, TokenType
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
 )
-from market.helpers import create_character_market_contracts
+from market.helpers import (
+    create_character_market_contracts,
+    create_corporation_market_contracts,
+)
 
 BASE_URL = "/api/market"
 
@@ -192,3 +196,64 @@ class MarketHelperTestCase(TestCase):
             contract = EveMarketContract.objects.filter(id=contact_id).first()
             self.assertIsNotNone(contract)
             self.assertEqual(fitting.name, contract.title)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("market.helpers.EsiClient")
+    def test_create_corporation_market_contracts(self, esi_mock):
+        esi = esi_mock.return_value
+
+        token = Token.objects.create(
+            user=self.user,
+            character_id=1234,
+            character_name="Tester",
+        )
+        add_scopes(TokenType.MARKET, token)
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name=token.character_name,
+            token=token,
+        )
+        location = EveLocation.objects.create(
+            location_id=1,
+            location_name="Test",
+            solar_system_id=1,
+            solar_system_name="Jita",
+            market_active=True,
+        )
+        fitting = EveFitting.objects.create(
+            name="[NVY-5] Atron",
+            ship_id=1,
+            description="Testing",
+            eft_format="[Atron, [NVY-5] Atron]",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=10001,
+            name="Megacorp",
+            ceo=char,
+        )
+
+        contract_id = 2345
+        esi.get_corporation_contracts.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "contract_id": contract_id,
+                    "type": "item_exchange",
+                    "status": "outstanding",
+                    "issuer_id": corp.corporation_id,
+                    "title": fitting.name,
+                    "start_location_id": location.location_id,
+                    "price": 12.34,
+                    "for_corporation": True,
+                    "acceptor_id": 0,
+                    "assignee_id": None,
+                    "date_completed": None,
+                }
+            ],
+        )
+
+        create_corporation_market_contracts(corp.corporation_id)
+
+        contract = EveMarketContract.objects.filter(id=contract_id).first()
+        self.assertIsNotNone(contract)
+        self.assertEqual(fitting.name, contract.title)

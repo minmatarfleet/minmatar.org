@@ -142,6 +142,22 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_corporation_contracts(self, corporation_id) -> EsiResponse:
+        token, status = self.get_valid_token(
+            ["esi-contracts.read_corporation_contracts.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = (
+            esi.client.Contracts.get_corporations_corporation_id_contracts(
+                corporation_id=corporation_id,
+                token=token,
+            ).results()
+        )
+
+        return self._operation_results(operation)
+
     def get_active_fleet(self) -> EsiResponse:
         token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
         if status > 0:
