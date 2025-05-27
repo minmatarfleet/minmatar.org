@@ -93,7 +93,9 @@ class EveFleet(models.Model):
 
         esi_response = EsiClient(eve_character).get_active_fleet()
         if not esi_response.success():
-            raise f"ESI error {esi_response.response_code} starting fleet {self.id}"
+            raise RuntimeError(
+                f"ESI error {esi_response.response_code} starting fleet {self.id}"
+            )
 
         response = esi_response.data
 

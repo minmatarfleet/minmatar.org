@@ -440,6 +440,31 @@ class FleetRouterTestCase(TestCase):
 
         self.assertIsNotNone(EveFleetInstance.objects.get(id=123456).end_time)
 
+    @patch("fleets.models.EsiClient")
+    def test_start_fleet_error(self, esi_client_class):
+        esi_mock = esi_client_class.return_value
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=599,
+            data="Error getting fleet",
+        )
+
+        setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.save()
+        data = {}
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data,
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            "ESI error 599 starting fleet 1", response.json()["detail"]
+        )
+
 
 class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
