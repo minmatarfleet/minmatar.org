@@ -172,7 +172,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
             response.response_code,
             manager.character.character_name,
         )
-        return 0
+        return 0, 0
 
     manager.last_polled = timezone.now()
     manager.save()
