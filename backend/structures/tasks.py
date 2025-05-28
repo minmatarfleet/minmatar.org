@@ -91,6 +91,7 @@ def update_corporation_structures(corporation_id: int):
                         "state_timer_end"
                     ]
                     eve_structure.fuel_expires = structure["fuel_expires"]
+                    eve_structure.name = structure["name"]
                     eve_structure.save()
                 else:
                     logger.debug(
