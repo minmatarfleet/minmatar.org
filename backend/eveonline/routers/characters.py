@@ -25,12 +25,14 @@ from eveonline.scopes import (
     scopes_for,
     scope_group,
     token_type_str,
+    scope_names,
 )
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
     character_primary,
     set_primary_character,
+    character_desired_scopes,
 )
 
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
@@ -88,13 +90,19 @@ class UserCharacterResponse(BaseModel):
 
 
 class CharacterTokenInfo(BaseModel):
+    """Information about a character's ESI token"""
+
     id: str
     created: datetime.datetime
     expires: datetime.datetime
     can_refresh: bool
     owner_hash: str
     scopes: List[str]
-    level: str
+    requested_level: str
+    requested_count: int
+    actual_level: str
+    actual_count: int
+    token_state: str
 
 
 class CharacterTagResponse(BaseModel):
@@ -697,9 +705,10 @@ def get_character_tokens(request, character_id: int):
 
     for token in character.tokens:
         if is_admin or token.user is request.user:
-            scopes = []
-            for scope in token.scopes.all():
-                scopes.append(scope.name)
+            scopes = scope_names(token)
+
+            if character.esi_token_level:
+                pass
 
             response.append(
                 CharacterTokenInfo(
@@ -709,7 +718,13 @@ def get_character_tokens(request, character_id: int):
                     can_refresh=token.can_refresh,
                     owner_hash=token.character_owner_hash,
                     scopes=scopes,
-                    level=scope_group(token),
+                    requested_level=character.esi_token_level,
+                    requested_count=len(character_desired_scopes(character)),
+                    actual_level=scope_group(token),
+                    actual_count=len(scopes),
+                    token_state=(
+                        "SUSPENDED" if character.esi_suspended else "ACTIVE"
+                    ),
                 )
             )
 
