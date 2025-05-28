@@ -47,7 +47,7 @@ CEO_SCOPES = DIRECTOR_SCOPES + CEO_ADDITIONAL_SCOPES
 
 # Used for the freight CEO (Minmatar Fleet Logistics)
 FREIGHT_ADDITIONAL_SCOPES = ["esi-contracts.read_corporation_contracts.v1"]
-FREIGHT_CHARACTER_SCOPES = DIRECTOR_SCOPES + FREIGHT_ADDITIONAL_SCOPES
+FREIGHT_CHARACTER_SCOPES = CEO_SCOPES + FREIGHT_ADDITIONAL_SCOPES
 
 # Used for supply team seeders (characters, build corporations)
 MARKET_ADDITIONAL_SCOPES = [
