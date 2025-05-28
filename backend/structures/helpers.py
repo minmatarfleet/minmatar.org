@@ -166,7 +166,7 @@ def discord_message_for_ping(ping: EveStructurePing) -> str:
     if not structure:
         structure = NullStructure()
     return (
-        "everyone \n"
+        "@everyone \n"
         ":scream: Structure under attack \n"
         f"Structure: {structure.name} ({ping.structure_id}) \n"
         f"Location: {structure.system_name} \n"
