@@ -147,3 +147,18 @@ export const is_seasonal_date = (start_date:string, end_date:string) => {
 
     return false
 }
+
+export const time_diff_text = (locale:Locales = 'en', from:Date, to:Date):string => {
+    const t = useTranslations(locale)
+    const start = moment(from)
+    const end = moment(to)
+
+    const duration = moment.duration(end.diff(start))
+
+    const parts:string[] = []
+
+    if (duration.hours()) parts.push(duration.hours() + ` ${t('hour')}` + (duration.hours() > 1 ? 's' : ''))
+    if (duration.minutes()) parts.push(duration.minutes() + ` ${t('minute')}` + (duration.minutes() > 1 ? 's' : ''))
+
+    return parts.join(' ')
+}

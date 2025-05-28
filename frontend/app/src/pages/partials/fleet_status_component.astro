@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
@@ -19,7 +19,7 @@ const fleet_id = parseInt(Astro.url.searchParams.get('id') as string)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, Alert } from '@dtypes/layout_components'
+import type { FleetUI, Alert, FleetTrackingTexts } from '@dtypes/layout_components'
 import type { EveCharacterProfile, TrackingStatus } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
@@ -63,9 +63,13 @@ if (Astro.request.method === "PATCH") {
     }
 }
 
+import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
+let fleet_tracking_texts:FleetTrackingTexts | false = false
+
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
+    fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
     return HTTP_403_Forbidden()
@@ -97,5 +101,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         is_fleet_commander={is_fleet_commander}
         alert={alert}
         start_tracking={start_tracking === true}
+        fleet_tracking_texts={fleet_tracking_texts}
     />
 }
