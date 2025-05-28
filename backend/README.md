@@ -85,7 +85,12 @@ Some of the background Celery tasks identify a set of entities and then create a
 of those entities. The outer tasks are therefore generally not tested.
 
 You can also use an annotation to disable signals for a test...
-```@factory.django.mute_signals(signals.pre_save, signals.post_save)```
+```
+import factory
+from django.db.models import signals
+
+@factory.django.mute_signals(signals.pre_save, signals.post_save)
+```
 
 
 ## Commands

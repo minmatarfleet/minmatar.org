@@ -1,6 +1,5 @@
 import logging
 
-from enum import Enum
 from typing import List
 
 from django.contrib.auth.models import User
@@ -12,52 +11,53 @@ from eveonline.models import (
     EveCharacter,
     EvePrimaryCharacterChangeLog,
 )
+from eveonline.scopes import TokenType, scopes_for
 
 
 logger = logging.getLogger(__name__)
 
 
-class TokenType(Enum):
-    ALLIANCE = "Alliance"
-    ASSOCIATE = "Associate"
-    MILITIA = "Militia"
-    PUBLIC = "Public"
+# class TokenType(Enum):
+#     ALLIANCE = "Alliance"
+#     ASSOCIATE = "Associate"
+#     MILITIA = "Militia"
+#     PUBLIC = "Public"
 
 
-MILITIA_SCOPES = [
-    "esi-characters.read_loyalty.v1",
-    "esi-killmails.read_killmails.v1",
-    "esi-characters.read_fw_stats.v1",
-]
+# MILITIA_SCOPES = [
+#     "esi-characters.read_loyalty.v1",
+#     "esi-killmails.read_killmails.v1",
+#     "esi-characters.read_fw_stats.v1",
+# ]
 
-ALLIANCE_SCOPES = [
-    "esi-wallet.read_character_wallet.v1",
-    "esi-skills.read_skills.v1",
-    "esi-skills.read_skillqueue.v1",
-    "esi-characters.read_loyalty.v1",
-    "esi-killmails.read_killmails.v1",
-    "esi-characters.read_fw_stats.v1",
-    "esi-clones.read_clones.v1",
-    "esi-clones.read_implants.v1",
-    "esi-assets.read_assets.v1",
-] + MILITIA_SCOPES
+# ALLIANCE_SCOPES = [
+#     "esi-wallet.read_character_wallet.v1",
+#     "esi-skills.read_skills.v1",
+#     "esi-skills.read_skillqueue.v1",
+#     "esi-characters.read_loyalty.v1",
+#     "esi-killmails.read_killmails.v1",
+#     "esi-characters.read_fw_stats.v1",
+#     "esi-clones.read_clones.v1",
+#     "esi-clones.read_implants.v1",
+#     "esi-assets.read_assets.v1",
+# ] + MILITIA_SCOPES
 
-ASSOCIATE_SCOPES = [
-    "esi-planets.manage_planets.v1",
-    "esi-industry.read_character_jobs.v1",
-    "esi-industry.read_character_mining.v1",
-] + ALLIANCE_SCOPES
+# ASSOCIATE_SCOPES = [
+#     "esi-planets.manage_planets.v1",
+#     "esi-industry.read_character_jobs.v1",
+#     "esi-industry.read_character_mining.v1",
+# ] + ALLIANCE_SCOPES
 
 
-def get_token_type_for_scopes_list(scopes: List[str]) -> TokenType:
-    if set(scopes).issuperset(set(ALLIANCE_SCOPES)):
-        return TokenType.ALLIANCE
-    elif set(scopes).issuperset(set(ASSOCIATE_SCOPES)):
-        return TokenType.ASSOCIATE
-    elif set(scopes).issuperset(set(MILITIA_SCOPES)):
-        return TokenType.MILITIA
-    else:
-        return TokenType.PUBLIC
+# def get_token_type_for_scopes_list(scopes: List[str]) -> TokenType:
+#     if set(scopes).issuperset(set(ALLIANCE_SCOPES)):
+#         return TokenType.ALLIANCE
+#     elif set(scopes).issuperset(set(ASSOCIATE_SCOPES)):
+#         return TokenType.ASSOCIATE
+#     elif set(scopes).issuperset(set(MILITIA_SCOPES)):
+#         return TokenType.MILITIA
+#     else:
+#         return TokenType.PUBLIC
 
 
 class CharacterResponse(BaseModel):
@@ -147,3 +147,14 @@ def user_player(user: User) -> EvePlayer | None:
 
 def player_characters(player: EvePlayer) -> List[EveCharacter]:
     return user_characters(player.user)
+
+
+def character_desired_scopes(character: EveCharacter) -> List[str]:
+    if not character.esi_token_level:
+        return []
+
+    token_type = TokenType(character.esi_token_level)
+    if not token_type:
+        return []
+
+    return scopes_for(token_type)
