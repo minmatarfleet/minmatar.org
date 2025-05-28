@@ -91,6 +91,7 @@ class UserCharacterResponse(BaseModel):
 
 class CharacterTokenInfo(BaseModel):
     """Information about a character's ESI token"""
+
     id: str
     created: datetime.datetime
     expires: datetime.datetime
