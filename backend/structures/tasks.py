@@ -150,7 +150,7 @@ def process_structure_notifications(
 
     if total_found > 0:
         logger.info(
-            "  Found a total of %d structure notifications (%d new)",
+            "Found a total of %d structure notifications (%d new)",
             total_found,
             total_new,
         )
@@ -168,9 +168,10 @@ def fetch_structure_notifications(manager: EveStructureManager):
     response = EsiClient(manager.character).get_character_notifications()
     if not response.success():
         logger.error(
-            "Error %d fetching notifications for %s",
+            "Error %d fetching notifications for %s : %s",
             response.response_code,
             manager.character.character_name,
+            response.response,
         )
         return 0, 0
 
