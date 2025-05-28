@@ -8,7 +8,7 @@ import type {
     FleetUsers,
     FleetStatus,
     FleetPatchRequest
- } from '@dtypes/api.minmatar.org'
+} from '@dtypes/api.minmatar.org'
 import { get_error_message, parse_error_message, parse_response_error } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`

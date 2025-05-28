@@ -973,3 +973,9 @@ export interface CharacterTagSummary {
     character_name:     string;
     tags:               number[];
 }
+
+export interface FleetTrackingTexts {
+    fleet_end_eve_time_text:    string;
+    fleet_duration_text:        string;
+    fleet_tracking_hint:        string;
+}

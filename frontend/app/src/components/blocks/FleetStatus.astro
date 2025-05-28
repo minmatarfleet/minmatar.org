@@ -2,13 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FleetUI, Alert } from '@dtypes/layout_components'
+import type { FleetUI, Alert, FleetTrackingTexts } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:              FleetUI;
-    is_fleet_commander: boolean;
-    alert?:             false | Alert;
-    start_tracking?:    boolean;
+    fleet:                      FleetUI;
+    is_fleet_commander:         boolean;
+    alert?:                     false | Alert;
+    start_tracking?:            boolean;
+    fleet_tracking_texts?:      FleetTrackingTexts | false;
 }
 
 const {
@@ -16,6 +17,7 @@ const {
     is_fleet_commander,
     alert = false,
     start_tracking = false,
+    fleet_tracking_texts = false,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
@@ -85,7 +87,12 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         }
 
         {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
-            <p class="[ fleet-status-text ]">{t('completed')}</p>
+            <Flexblock>
+                <p class="[ fleet-status-text ]">{t('completed')}</p>
+                {fleet_tracking_texts &&
+                    <p>{fleet_tracking_texts.fleet_end_eve_time_text} (<span data-tippy-content={fleet_tracking_texts.fleet_tracking_hint}>{fleet_tracking_texts.fleet_duration_text}</span>)</p>
+                }
+            </Flexblock>
         }
 
         {is_fleet_commander && is_fleet_time && !fleet?.tracking && fleet?.status !== 'cancelled' &&

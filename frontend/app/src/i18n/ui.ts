@@ -1414,5 +1414,8 @@ export const ui = {
         'update_esi_token_dialog_title': 'Update ESI token',
         'esi_token_wiki': 'More information about ESI tokens and why are needed check this [article](https://wiki.minmatar.org/en/guides/account-issues/token-types).',
         'srp_wiki': 'More on how our SRP philosophy differs from most alliances in this [article](https://wiki.minmatar.org/en/ship-reimbursement-policy-srp).',
+        'minute': 'minute',
+        'hour': 'hour',
+        'fleet_tracking_hint': 'From FLEET_START to FLEET_END',
     },
 } as const;
