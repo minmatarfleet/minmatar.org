@@ -1,4 +1,5 @@
 import logging
+import requests
 
 from typing import List
 from esi.clients import EsiClientProvider
@@ -15,6 +16,8 @@ NO_CLIENT_CHAR = 903
 NO_VALID_ACCESS_TOKEN = 904
 NO_VALID_ESI_TOKEN = 905
 ERROR_CALLING_ESI = 906
+
+ESI_BASE_URL = "https://esi.evetech.net/latest"
 
 
 class EsiResponse:
@@ -248,3 +251,23 @@ class EsiClient:
         )
 
         return self._operation_results(operation)
+
+    def direct_notifications_poc(self) -> EsiResponse:
+        token, status = self.get_valid_token(
+            ["esi-characters.read_notifications.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/"
+
+        response = requests.get(
+            url=url, timeout=5, headers={"Authorization": "Bearer " + token}
+        )
+        if response.status_code == 200:
+            return EsiResponse(response_code=200, data=response.json())
+        else:
+            return EsiResponse(
+                response_code=response.response_code,
+                data=response.text,
+            )
