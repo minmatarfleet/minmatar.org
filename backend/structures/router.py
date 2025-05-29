@@ -8,13 +8,14 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+
+from eveonline.models import EveCharacter
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
     get_generic_details,
 )
-
-from .models import EveStructure, EveStructureTimer
+from .models import EveStructure, EveStructureTimer, EveStructureManager
 
 router = Router(tags=["Structures"])
 logger = logging.getLogger(__name__)
@@ -95,6 +96,13 @@ class EveStructureTimerResponse(BaseModel):
     corporation_name: str | None = None
     alliance_name: str | None = None
     structure_id: int | None = None
+
+
+class CreateStructureManagerRequest(BaseModel):
+    """Request to set up a new EveStructureManager"""
+
+    character_id: int
+    poll_time: int
 
 
 @router.get(
@@ -265,3 +273,33 @@ def verify_structure_timer(
     }
 
     return response
+
+
+@router.post(
+    "/managers",
+    auth=AuthBearer(),
+    response={
+        200: int,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def add_structure_manager(request, payload: CreateStructureManagerRequest):
+    if not request.user.has_perm("structures.change_evestructuretimer"):
+        return 403, ErrorResponse(message="Permission denied")
+
+    char = EveCharacter.objects.filter(
+        character_id=payload.character_id
+    ).first()
+    if not char:
+        return 404, ErrorResponse(
+            detail="Character {payload.charater_id} not found"
+        )
+
+    esm = EveStructureManager.objects.create(
+        character=char,
+        corporation=char.corporation,
+        poll_time=payload.poll_time,
+    )
+
+    return esm.id
