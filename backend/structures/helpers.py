@@ -109,6 +109,17 @@ def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
     )
 
 
+def parse_esi_time(time) -> datetime:
+    if time is None:
+        return None
+    if isinstance(time, datetime):
+        return time
+    if time[10] == "T":
+        return datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
+    else:
+        return datetime.strptime(time, "%Y-%m-%d %H:%M:%S%z")
+
+
 def parse_structure_notification(text: str):
     structure_id = -1
 

@@ -14,6 +14,7 @@ from structures.helpers import (
     parse_structure_notification,
     is_new_event,
     discord_message_for_ping,
+    parse_esi_time,
     StructureResponse,
 )
 
@@ -172,3 +173,14 @@ class StructureHelperTest(unittest.TestCase):
         self.assertIn("unknown", message)
         self.assertIn("98765", message)
         self.assertNotIn("Jita", message)
+
+    def assertIsDateTime(self, value):
+        self.assertIsInstance(value, datetime)
+
+    def test_parse_esi_time(self):
+        self.assertIsNone(parse_esi_time(None))
+        self.assertIsDateTime(parse_esi_time(datetime.now()))
+        self.assertIsDateTime(parse_esi_time("2025-05-28T23:36:00Z"))
+        self.assertIsDateTime(parse_esi_time("2025-05-28T23:36:00+0000"))
+        self.assertIsDateTime(parse_esi_time("2025-05-28 23:36:00Z"))
+        self.assertIsDateTime(parse_esi_time("2025-05-28 23:36:00+0000"))

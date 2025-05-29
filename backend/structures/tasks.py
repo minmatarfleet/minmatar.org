@@ -18,6 +18,7 @@ from structures.helpers import (
     parse_structure_notification,
     is_new_event,
     discord_message_for_ping,
+    parse_esi_time,
 )
 
 esi = EsiClientProvider()
@@ -158,12 +159,6 @@ def process_structure_notifications(
     return total_found, total_new
 
 
-def utc_time(time) -> datetime:
-    if isinstance(time, datetime):
-        return time
-    return datetime.strptime(time, "%Y-%m-%d %H:%M:%S%z")
-
-
 def fetch_structure_notifications(manager: EveStructureManager):
     response = EsiClient(manager.character).get_character_notifications()
     if not response.success():
@@ -198,7 +193,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     "structure_id": data["structure_id"],
                     "reported_by": manager.character,
                     "text": notification["text"],
-                    "event_time": utc_time(notification["timestamp"]),
+                    "event_time": parse_esi_time(notification["timestamp"]),
                 },
             )
             if created:
