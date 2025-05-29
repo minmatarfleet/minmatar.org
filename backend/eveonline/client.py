@@ -243,27 +243,13 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi.client.Character.get_characters_character_id_notifications(
-                character_id=self.character_id,
-                token=token,
-            )
-        )
-
-        return self._operation_results(operation)
-
-    def direct_notifications_poc(self) -> EsiResponse:
-        token, status = self.get_valid_token(
-            ["esi-characters.read_notifications.v1"]
-        )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/"
-
+        # Use direct call as Swagger validation fails
         response = requests.get(
-            url=url, timeout=5, headers={"Authorization": "Bearer " + token}
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/",
+            timeout=5,
+            headers={"Authorization": "Bearer " + token},
         )
+
         if response.status_code == 200:
             return EsiResponse(response_code=200, data=response.json())
         else:

@@ -230,14 +230,11 @@ class StructureNotificationResponse(BaseModel):
         403: ErrorResponse,
     },
 )
-def get_notifications(request, character_id: int, direct: bool = False):
+def get_notifications(request, character_id: int):
     if not permitted(request.user):
         return 403, "Not authorised"
 
-    if direct:
-        response = EsiClient(character_id).direct_notifications_poc()
-    else:
-        response = EsiClient(character_id).get_character_notifications()
+    response = EsiClient(character_id).get_character_notifications()
 
     if not response.success():
         return 400, ErrorResponse(detail=str(response.response))
