@@ -13,6 +13,7 @@ class EveFleetShipReimbursement(models.Model):
         ("pending", "Pending"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
+        ("withdrawn", "Withdrawn"),
     )
     fleet = models.ForeignKey(
         EveFleet,

@@ -1,5 +1,6 @@
 from typing import List, Literal, Optional
 
+from django.contrib.auth.models import User
 from ninja import Router
 from pydantic import BaseModel
 
@@ -28,7 +29,7 @@ class CreateEveFleetReimbursementRequest(BaseModel):
 
 
 class UpdateEveFleetReimbursementRequest(BaseModel):
-    status: Literal["pending", "approved", "rejected"]
+    status: Literal["pending", "approved", "rejected", "withdrawn"]
 
 
 class EveFleetReimbursementResponse(BaseModel):
@@ -149,6 +150,7 @@ def duplicate_kill(details) -> bool:
             killmail_id=details.killmail_id
         )
         .exclude(status="rejected")
+        .exclude(status="withdrawn")
         .exists()
     )
 
@@ -201,6 +203,14 @@ def get_fleet_srp(
     return response
 
 
+def can_update(user: User, reimbursement: EveFleetShipReimbursement) -> bool:
+    if reimbursement.user == user:
+        return True
+    if user.has_perm("srp.change_evefleetshipreimbursement"):
+        return True
+    return False
+
+
 @router.patch(
     "/{reimbursement_id}",
     auth=AuthBearer(),
@@ -210,25 +220,33 @@ def get_fleet_srp(
 def update_fleet_srp(
     request, reimbursement_id: int, payload: UpdateEveFleetReimbursementRequest
 ):
-    if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
+    reimbursement = EveFleetShipReimbursement.objects.filter(
+        id=reimbursement_id
+    ).first()
+
+    if not reimbursement:
+        return 404, {"detail": "Reimbursement does not exist"}
+
+    if not can_update(request.user, reimbursement):
         return 403, {
             "detail": "User missing permission srp.change_evefleetshipreimbursement"
         }
 
-    if not EveFleetShipReimbursement.objects.filter(
-        id=reimbursement_id
-    ).exists():
-        return 404, {"detail": "Reimbursement does not exist"}
+    if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
+        if payload.status != "withdrawn":
+            return 403, {"detail": "Permission denied"}
 
-    reimbursement = EveFleetShipReimbursement.objects.get(id=reimbursement_id)
     reimbursement.status = payload.status
     reimbursement.save()
 
-    try:
-        send_decision_notification(reimbursement)
-        mail_result = "Success"
-    except Exception as err:
-        mail_result = f"Error sending mail: {err}"
+    if reimbursement.status in ["approved", "rejected"]:
+        try:
+            send_decision_notification(reimbursement)
+            mail_result = "Success"
+        except Exception as err:
+            mail_result = f"Error sending mail: {err}"
+    else:
+        mail_result = "N/A"
 
     return 200, SrpPatchResult(
         database_update_status="Success",

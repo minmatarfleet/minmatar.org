@@ -169,3 +169,45 @@ class SrpRouterTestCase(TestCase):
         reimbursements = response.json()
         self.assertEqual(1, len(reimbursements))
         self.assertEqual("abc", reimbursements[0]["external_killmail_link"])
+
+    def test_withdraw_srp(self):
+        fc_char = EveCharacter.objects.create(
+            character_id=634915984,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+
+        srp = EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="pending",
+            killmail_id=1234,
+            external_killmail_link="abc",
+            character_id=fc_char.character_id,
+            character_name=fc_char.character_name,
+            primary_character_id=fc_char.character_id,
+            primary_character_name=fc_char.character_name,
+            amount=1.23,
+            ship_name="Rifter",
+            ship_type_id=1234567,
+        )
+
+        data = {"status": "withdrawn"}
+        response = self.client.patch(
+            f"{BASE_URL}/{srp.id}",
+            data=data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        result = response.json()
+        self.assertEqual("N/A", result["evemail_status"])
+
+        data = {"status": "approved"}
+        response = self.client.patch(
+            f"{BASE_URL}/{srp.id}",
+            data=data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
