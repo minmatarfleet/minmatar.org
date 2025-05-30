@@ -254,6 +254,6 @@ class EsiClient:
             return EsiResponse(response_code=200, data=response.json())
         else:
             return EsiResponse(
-                response_code=response.response_code,
+                response_code=response.status_code,
                 data=response.text,
             )
