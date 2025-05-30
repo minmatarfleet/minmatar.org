@@ -76,12 +76,13 @@ if (Astro.request.method === "PATCH") {
         const TRANSLATE_ACTION = {
             'approved': t('approving'),
             'rejected': t('rejecting'),
+            'withdrawn': t('canceling'),
         }
 
         update_fleet_srp_error = prod_error_messages() ? t('update_fleet_srp_error').replace('ACTION', TRANSLATE_ACTION[status]) : error.message
 
         alert = {
-            title: t('process_srp_dialog_title'),
+            title: status !== 'withdrawn' ? t('process_srp_dialog_title') : t('cancel_srp_dialog_title'),
             content: update_fleet_srp_error as string,
         }
     }

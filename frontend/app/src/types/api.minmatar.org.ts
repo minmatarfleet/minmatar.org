@@ -529,7 +529,7 @@ export interface MarketLocation {
     structure_id:   number;
 }
 
-export const srp_status = [ 'pending', 'approved', 'rejected' ] as const
+export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const
 export type SRPStatus = typeof srp_status[number]
 
 export interface SRP {

@@ -1417,5 +1417,8 @@ export const ui = {
         'minute': 'minute',
         'hour': 'hour',
         'fleet_tracking_hint': 'From FLEET_START to FLEET_END',
+        'cancel_srp_dialog_title': 'Cancel SRP',
+        'cancel_srp_dialog_text': 'Proceed canceling the following SRP request?',
+        'canceling': 'canceling',
     },
 } as const;
