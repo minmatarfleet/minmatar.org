@@ -5,7 +5,7 @@ from ninja import Router
 from typing import List, Optional
 
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, F
 from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
@@ -295,6 +295,8 @@ class CharacterFlagResponse(BaseModel):
     token_count: int = 0
     scope_count: int = 0
     tag_count: int = 0
+    corp_name: str | None = None
+    alliance_name: str | None = None
 
 
 @router.get(
@@ -315,6 +317,8 @@ def character_flags(request):
         token_count=Count("token", distinct=True),
         scope_count=Count("token__scopes", distinct=True),
         tag_count=Count("evecharactertag", distinct=True),
+        corp_name=F("corporation__name"),
+        alliiance_name=F("alliance__name"),
     )
 
     response = []
@@ -333,6 +337,7 @@ def character_flags(request):
             CharacterFlagResponse(
                 character_id=char.character_id,
                 character_name=char.character_name,
+                corp_name=char.corp_name,
                 token_count=char.token_count,
                 scope_count=char.scope_count,
                 tag_count=char.tag_count,
