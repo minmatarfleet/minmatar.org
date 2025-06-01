@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 from random import randint
 
 from django.contrib.auth.models import User
-from esi.clients import EsiClientProvider
+
+# from esi.clients import EsiClientProvider
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 
@@ -17,7 +18,7 @@ from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 from .models import EveFleetShipReimbursement
 
 logger = logging.getLogger(__name__)
-esi = EsiClientProvider()
+# esi = EsiClientProvider()
 
 
 class KillmailDetails(BaseModel):
@@ -50,12 +51,18 @@ def get_killmail_details(external_link: str, user: User):
     # https://esi.evetech.net/v1/killmails/122700189/95c87afb0ce8399e0c2d9b3d7a51936ea722d491/?datasource=tranquility
     killmail_id = external_link.split("/")[5]
     killmail_hash = external_link.split("/")[6]
-    result = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
-        killmail_id=killmail_id, killmail_hash=killmail_hash
-    ).result()
+    result = (
+        EsiClient(None)
+        .get_character_killmail(killmail_id, killmail_hash)
+        .results()
+    )
+    # result = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
+    #     killmail_id=killmail_id, killmail_hash=killmail_hash
+    # ).result()
     character_id = result["victim"]["character_id"]
     ship_type_id = result["victim"]["ship_type_id"]
-    ship_type, _ = EveType.objects.get_or_create_esi(id=ship_type_id)
+    # ship_type, _ = EveType.objects.get_or_create_esi(id=ship_type_id)
+    ship_type = EsiClient(None).get_eve_type(ship_type_id)
 
     primary_character = user_primary_character(user)
     if not primary_character:
@@ -92,9 +99,10 @@ def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
     """
     Recalculate the amount for the ship
     """
-    ship_type, _ = EveType.objects.get_or_create_esi(
-        id=reimbursement.ship_type_id
-    )
+    # ship_type, _ = EveType.objects.get_or_create_esi(
+    #     id=reimbursement.ship_type_id
+    # )
+    ship_type = EsiClient(None).get_eve_type(reimbursement.ship_type_id)
     reimbursement.amount = get_reimbursement_amount(ship_type)
     reimbursement.save()
 
@@ -153,19 +161,6 @@ def send_decision_notification(reimbursement: EveFleetShipReimbursement):
     evemail = make_reimbursement_evemail(reimbursement)
 
     result = EsiClient(mail_character_id).send_evemail(evemail).results()
-
-    # token = Token.objects.filter(
-    #     character_id=mail_character_id, scopes__name="esi-mail.send_mail.v1"
-    # ).first()
-    # if not token:
-    #     logger.error("Missing token for mail")
-    #     return
-
-    # result = esi.client.Mail.post_characters_character_id_mail(
-    #     mail=evemail,
-    #     character_id=mail_character_id,
-    #     token=token.valid_access_token(),
-    # ).result()
 
     logger.info(
         f"Mail sent to {reimbursement.primary_character_id} for reimbursement"
