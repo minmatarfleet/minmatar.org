@@ -13,6 +13,7 @@ from ninja import Router
 from pydantic import BaseModel
 
 from authentication import AuthBearer
+from applications.models import EveCorporationApplication
 from eveonline.models import (
     EveCharacter,
     EveCharacterAsset,
@@ -663,7 +664,8 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
             item.alliance_name = char.alliance.name
 
         if item.is_primary and item.alliance_id != 99011978:
-            item.flags.append("MAIN_NOT_IN_FL33T")
+            if not user_has_pending_or_rejected_application(char.user):
+                item.flags.append("MAIN_NOT_IN_FL33T")
 
         if char.tag_count and char.tag_count == 0:
             item.flags.append("NO_TAGS")
@@ -677,13 +679,11 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
             item.flags.append("NO_TOKEN_LEVEL")
 
         if level:
-            level = token_type_str(level)
+            item.esi_token = token_type_str(level)
             if char.esi_suspended:
-                item.esi_token = f"{level} (SUSPENDED)"
                 item.token_status = "SUSPENDED"
                 item.flags.append("ESI_SUSPENDED")
             else:
-                item.esi_token = level
                 item.token_status = "ACTIVE"
 
     except Exception as e:
@@ -693,6 +693,14 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         item.flags.append("DATA_ERROR")
 
     return item
+
+
+def user_has_pending_or_rejected_application(user):
+    return (
+        EveCorporationApplication.objects.filter(user=user)
+        .exclude(status="accepted")
+        .exists()
+    )
 
 
 @router.get(
