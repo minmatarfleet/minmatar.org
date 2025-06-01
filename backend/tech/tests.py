@@ -9,7 +9,7 @@ from django.test import Client, SimpleTestCase
 from esi.models import Token
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from eveonline.models import EvePlayer, EveCharacter
+from eveonline.models import EvePlayer, EveCharacter, EveTag, EveCharacterTag
 from eveonline.helpers.characters import set_primary_character
 from fleets.models import EveFleetAudience
 from tech.docker import (
@@ -250,3 +250,46 @@ class TechRoutesTestCase(TestCase):
         data = response.json()
         self.assertEqual(1, len(data))
         self.assertEqual("StructureUnderAttack", data[0]["type"])
+
+    def test_character_flags(self):
+        self.make_superuser()
+
+        char = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test Pilot",
+            user=self.user,
+            esi_suspended=True,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/character_flags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("Test Pilot", data[0]["character_name"])
+        self.assertEqual(0, data[0]["tag_count"])
+        self.assertEqual(
+            data[0]["flags"], ["ESI_SUSPENDED", "NO_TAGS", "NO_TOKENS"]
+        )
+
+        EveCharacterTag.objects.create(
+            character=char,
+            tag=EveTag.objects.create(
+                title="DPS",
+                description="F1 Pusher",
+            ),
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/character_flags",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual(1, data[0]["tag_count"])
+        self.assertEqual(data[0]["flags"], ["ESI_SUSPENDED", "NO_TOKENS"])
