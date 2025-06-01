@@ -1,7 +1,7 @@
 import { useTranslations } from '@i18n/utils';
 
-import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { CharacterTagSummary } from '@dtypes/layout_components'
+import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile, SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { CharacterTagSummary, CharacterErrorUI } from '@dtypes/layout_components'
 import type {
     SkillsetsUI,
     Skillset,
@@ -176,7 +176,7 @@ export async function get_user_assets(access_token:string) {
     return characters_assets
 }
 
-export async function  esi_token_error(auth_token: string) {
+export async function esi_token_error(auth_token: string) {
     try {
         const character_summary = await get_characters_summary(auth_token)
         
@@ -200,8 +200,32 @@ export async function  get_tags_summary(auth_token: string) {
     }))
 }
 
-export async function  get_characters_summary_sorted(auth_token: string) {
+export async function get_characters_summary_sorted(auth_token: string) {
     const character_summary = await get_characters_summary(auth_token)
     character_summary.characters = character_summary.characters.sort((a, b) => (Number)(b.is_primary === true) - (Number)(a.is_primary === true) || a.character_name.localeCompare(b.character_name))
     return character_summary
+}
+
+export function get_character_error_ui(characters:SummaryCharacter[]) {
+    let character_errors:CharacterErrorUI[] = []
+    let no_main = true
+
+    characters.forEach(character => {
+        no_main = character.is_primary ? false : no_main
+
+        if (character.flags.length > 0) {
+            character.flags.forEach(flag => {
+                character_errors.push({
+                    character: character,
+                    error: flag,
+                })
+            })
+        }
+    })
+
+    if (no_main) character_errors.push({
+        error: 'NO_MAIN_SET',
+    })
+
+    return character_errors
 }

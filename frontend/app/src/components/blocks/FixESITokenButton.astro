@@ -3,15 +3,20 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, ESITokenRoles } from '@dtypes/api.minmatar.org'
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
     character:  SummaryCharacter;
     fix?:       boolean;
+    color?:     ButtonColors;
+    size?:      ButtonSizes;
 }
 
 const {
     character,
     fix = false,
+    color = 'fleet-red',
+    size = 'sm',
 } = Astro.props
 
 import { get_api_url, get_app_url } from '@helpers/env'
@@ -50,8 +55,8 @@ import TutorialBadge from '@components/blocks/TutorialBadge.astro';
 >
     <DialogButton
         class:list={[ { 'action-button': !fix } ]}
-        color='fleet-red'
-        size='sm'
+        color={color}
+        size={size}
         type="button"
     >
         {fix ? t('fix_esi_token') : t('refresh_esi_token')}

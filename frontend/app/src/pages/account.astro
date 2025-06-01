@@ -19,38 +19,36 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { SummaryCharacter, Corporation, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { NotificationSubscription } from '@dtypes/layout_components'
-import { get_user_character, get_characters_summary_sorted } from '@helpers/fetching/characters'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_components'
+import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
-import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 
+let user_permissions:string[] = []
 let pilots:SummaryCharacter[] = []
 let get_characters_error:string | false = false
-let alliance_corporations:Corporation[]
-let user_character:EveCharacterProfile | null = null
-let is_fleet_pilot = false
 let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
 let readiness_character_id = 0
+let character_errors:CharacterErrorUI[] = []
+
+import { get_user_permissions } from '@helpers/permissions'
 
 try {
+    const user_permissions = await get_user_permissions(user?.username)
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
-    alliance_corporations = await get_all_corporations('alliance')
-    user_character = await get_user_character(user.user_id)
-    if (user_character) {
-        const user_corporation = user_character?.corporation_id ? alliance_corporations.find((corporation) => corporation?.corporation_id === user_character?.corporation_id) : undefined
-        is_fleet_pilot = (user_corporation !== undefined)
-        readiness_character_id = is_fleet_pilot ? user_character.character_id : 0
-    }
+    character_errors = get_character_error_ui(pilots)
+
+    if (user_permissions.includes('eveonline.add_evecharactertag'))
+        readiness_character_id = pilots[0]?.character_id ?? 0
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
 }
 
 try {
-    if (is_fleet_pilot)
+    if (user_permissions.includes('subscriptions.add_usersubscription'))
         notification_subscriptions = await get_user_subscriptions(auth_token as string, user.user_id)
 } catch (error) {
     console.log(error)
@@ -88,6 +86,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CopyToken from '@components/blocks/CopyToken.astro';
 import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
+import CharacterErrors from '@components/blocks/CharacterErrors.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -110,7 +109,8 @@ const page_title = t('account.page_title');
             scrollable: true,
             overlay: true
         }}
-    >
+        x-init={`set_character_errors_count(${character_errors.length})`}
+    >        
         {fix_esi_token_error &&
             <div class="[ toast ][ animate-fade-in-up ]" set:html={t(fix_esi_token_error as any)} x-on:click="$el.remove()"></div>
         }
@@ -205,11 +205,15 @@ const page_title = t('account.page_title');
                 </FlexInline>
             </ComponentBlock>
 
-            {is_fleet_pilot &&
+            {user_permissions.includes('mumble.view_mumbleaccess') &&
                 <Mumble />
             }
 
             <Context>
+                {character_errors.length > 0 &&
+                    <CharacterErrors character_errors={character_errors} />
+                }
+
                 {readiness_character_id > 0 &&
                     <PilotReadinessBanner main_character_id={readiness_character_id} />
                 }
@@ -264,7 +268,7 @@ const page_title = t('account.page_title');
                 </ComponentBlock>
             </Context>
 
-            {is_fleet_pilot &&
+            {user_permissions.includes('subscriptions.add_usersubscription') &&
                 <ComponentBlock width='narrow'>
                     <PushNotifications notification_subscriptions={notification_subscriptions} />
                 </ComponentBlock>

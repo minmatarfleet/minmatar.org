@@ -17,7 +17,7 @@ const badge_background_color = `var(--${color})`;
 const badge_color = (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)')
 ---
 
-<span class="[ badge ]" {...attributes}>{number}</span>
+<span class:list={['badge', Astro.props.class]} {...attributes}>{number}</span>
 
 <style lang="scss" define:vars={{ badge_background_color, badge_color }}>
     .badge {
