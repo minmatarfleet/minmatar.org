@@ -1,6 +1,8 @@
 from django.test import Client
 from unittest.mock import patch, ANY
 
+from eveuniverse.models import EveType, EveGroup
+
 from app.test import TestCase
 
 from eveonline.client import EsiResponse
@@ -15,8 +17,10 @@ from srp.models import EveFleetShipReimbursement
 
 BASE_URL = "/api/srp"
 
-KM_LINK = "https://esi.evetech.net/latest/killmails/126008813/9c92aa157f138da9b5a64abbd8225893f1b8b5f0/"
 KM_CHAR = 634915984
+KM_ID = 126008813
+KM_HASH = "9c92aa157f138da9b5a64abbd8225893f1b8b5f0"
+KM_LINK = f"https://esi.evetech.net/latest/killmails/{KM_ID}/{KM_HASH}/"
 
 
 class SrpRouterTestCase(TestCase):
@@ -33,13 +37,32 @@ class SrpRouterTestCase(TestCase):
         setup_fleet_reference_data()
         self.fleet = make_test_fleet("Test fleet", self.user)
 
-    def test_basic_srp(self):
+    @patch("srp.helpers.EsiClient")
+    def test_basic_srp(self, esi_mock):
+        esi = esi_mock.return_value
+
         fc_char = EveCharacter.objects.create(
-            character_id=634915984,
+            character_id=KM_CHAR,
             character_name="Mr FC",
             user=self.user,
         )
         set_primary_character(self.user, fc_char)
+
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400,
+            description="Jaguar",
+            eve_group=EveGroup(),
+        )
 
         data = {
             "external_killmail_link": KM_LINK,
@@ -55,7 +78,10 @@ class SrpRouterTestCase(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-    def test_non_fleet_srp(self):
+    @patch("srp.helpers.EsiClient")
+    def test_non_fleet_srp(self, esi_mock):
+        esi = esi_mock.return_value
+
         self.make_superuser()
 
         fc_char = EveCharacter.objects.create(
@@ -64,6 +90,22 @@ class SrpRouterTestCase(TestCase):
             user=self.user,
         )
         set_primary_character(self.user, fc_char)
+
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400,
+            description="Jaguar",
+            eve_group=EveGroup(),
+        )
 
         # Create non-fleet SRP request
         data = {
@@ -95,36 +137,34 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(reimbursement_id, reimbursements[0]["id"])
 
         # Approve SRP request with mocked ESI client
-        with patch("srp.helpers.EsiClient") as mock_esi:
-            esi_client = mock_esi.return_value
-            esi_client.send_evemail.return_value = EsiResponse(
-                response_code=200, data="Success"
-            )
+        esi.send_evemail.return_value = EsiResponse(
+            response_code=200, data="Success"
+        )
 
-            data = {"status": "approved"}
-            response = self.client.patch(
-                f"{BASE_URL}/{reimbursement_id}",
-                data,
-                content_type="application/json",
-                HTTP_AUTHORIZATION=f"Bearer {self.token}",
-            )
-            self.assertEqual(200, response.status_code)
-            patch_status = response.json()
-            self.assertEqual("Success", patch_status["database_update_status"])
-            self.assertEqual("Success", patch_status["evemail_status"])
+        data = {"status": "approved"}
+        response = self.client.patch(
+            f"{BASE_URL}/{reimbursement_id}",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        patch_status = response.json()
+        self.assertEqual("Success", patch_status["database_update_status"])
+        self.assertEqual("Success", patch_status["evemail_status"])
 
-            esi_client.send_evemail.assert_called_once_with(
-                {
-                    "subject": "SRP Reimbursement Decision",
-                    "body": ANY,
-                    "recipients": [
-                        {
-                            "recipient_id": KM_CHAR,
-                            "recipient_type": "character",
-                        }
-                    ],
-                }
-            )
+        esi.send_evemail.assert_called_once_with(
+            {
+                "subject": "SRP Reimbursement Decision",
+                "body": ANY,
+                "recipients": [
+                    {
+                        "recipient_id": KM_CHAR,
+                        "recipient_type": "character",
+                    }
+                ],
+            }
+        )
 
     def test_user_srp(self):
         self.make_superuser()

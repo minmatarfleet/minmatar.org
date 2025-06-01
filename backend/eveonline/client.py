@@ -4,6 +4,7 @@ import requests
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from eveuniverse.models import EveType
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,17 @@ class EsiClient:
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 
+    def get_character_killmail(
+        self, killmail_id, killmail_hash
+    ) -> EsiResponse:
+        """Returns a character's killmail"""
+        operation = (
+            esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
+                killmail_id=killmail_id, killmail_hash=killmail_hash
+            )
+        )
+        self._operation_results(operation)
+
     def get_character_contracts(self) -> EsiResponse:
         """Returns the contracts for the character this ESI client was created for"""
 
@@ -237,6 +249,8 @@ class EsiClient:
         return self._operation_results(operation)
 
     def get_character_notifications(self) -> EsiResponse:
+        """Returns recent notifications for the character"""
+
         token, status = self.get_valid_token(
             ["esi-characters.read_notifications.v1"]
         )
@@ -257,3 +271,12 @@ class EsiClient:
                 response_code=response.status_code,
                 data=response.text,
             )
+
+    def get_eve_type(self, type_id):
+        """
+        Returns the item with the specified type ID.
+
+        A copy of the item will be cached in the database.
+        """
+        value, _ = EveType.objects.get_or_create_esi(id=type_id)
+        return value
