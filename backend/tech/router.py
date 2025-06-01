@@ -312,9 +312,9 @@ def character_flags(request):
         return 403, ErrorResponse(detail="Not authorised")
 
     chars = EveCharacter.objects.filter(user=request.user).annotate(
-        token_count=Count("token"),
-        scope_count=Count("token__scopes"),
-        tag_count=Count("evecharactertag"),
+        token_count=Count("token", distinct=True),
+        scope_count=Count("token__scopes", distinct=True),
+        tag_count=Count("evecharactertag", distinct=True),
     )
 
     response = []
@@ -322,6 +322,8 @@ def character_flags(request):
         flags = []
         if char.token_count == 0:
             flags.append("NO_TOKENS")
+        if char.token_count > 1:
+            flags.append("MULTIPLE_TOKENS")
         if char.esi_suspended:
             flags.append("ESI_SUSPENDED")
         if char.tag_count == 0:
