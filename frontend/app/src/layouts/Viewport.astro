@@ -133,7 +133,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		class="[ viewport-layout ]"
 		x-data={`{
 			post_header_height: null,
-			character_errors_count: 0,
+			character_errors_count: $persist(0),
 			set_character_errors_count(value) {
 				this.character_errors_count = value
 			},
