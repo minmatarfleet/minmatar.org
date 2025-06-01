@@ -5,6 +5,7 @@ from ninja import Router
 from typing import List, Optional
 
 from django.conf import settings
+from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.client import EsiClient
+from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
@@ -282,3 +284,57 @@ def discord_ping(request, notification_id: int, channel_id: int):
         return 404, ErrorResponse(detail="Event not found")
 
     send_discord_structure_notification(event, channel_id)
+
+
+class CharacterFlagResponse(BaseModel):
+    """Response model for character flags"""
+
+    character_id: int
+    character_name: str = ""
+    flags: List[str] = []
+    token_count: int = 0
+    scope_count: int = 0
+    tag_count: int = 0
+
+
+@router.get(
+    "/character_flags",
+    summary="Proof-of-concept for returning character flags",
+    auth=AuthBearer(),
+    response={
+        200: List[CharacterFlagResponse],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def character_flags(request):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    chars = EveCharacter.objects.filter(user=request.user).annotate(
+        token_count=Count("token"),
+        scope_count=Count("token__scopes"),
+        tag_count=Count("evecharactertag"),
+    )
+
+    response = []
+    for char in chars:
+        flags = []
+        if char.token_count == 0:
+            flags.append("NO_TOKENS")
+        if char.esi_suspended:
+            flags.append("ESI_SUSPENDED")
+        if char.tag_count == 0:
+            flags.append("NO_TAGS")
+        flags.sort()
+        response.append(
+            CharacterFlagResponse(
+                character_id=char.character_id,
+                character_name=char.character_name,
+                token_count=char.token_count,
+                scope_count=char.scope_count,
+                tag_count=char.tag_count,
+                flags=flags,
+            )
+        )
+    return response
