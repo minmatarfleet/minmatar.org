@@ -6,6 +6,7 @@ from typing import List, Optional
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
+from django.db.models import Count
 from esi.decorators import token_required
 from esi.models import Token
 from ninja import Router
@@ -71,6 +72,7 @@ class ErrorResponse(BaseModel):
 
 
 class UserCharacter(BaseModel):
+    """Summary of a player's character"""
     character_id: int
     character_name: str
     is_primary: bool
@@ -80,6 +82,7 @@ class UserCharacter(BaseModel):
     alliance_name: Optional[str] = None
     esi_token: Optional[str] = None
     token_status: Optional[str] = None
+    flags: List[str] = []
 
 
 class UserCharacterResponse(BaseModel):
@@ -625,10 +628,11 @@ def get_user_characters(
         characters=[],
     )
 
-    # primary = EvePrimaryCharacter.objects.filter(user=char_user).first()
     primary = user_primary_character(char_user)
 
-    chars = EveCharacter.objects.filter(user=char_user)
+    chars = EveCharacter.objects.filter(user=char_user).annotate(
+        tag_count=Count("evecharactertag", distinct=True),
+    )
     for char in chars.all():
         char_response = build_character_response(char, primary)
         response.characters.append(char_response)
@@ -647,6 +651,7 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         character_id=char.character_id,
         character_name=char.character_name,
         is_primary=is_primary(char, primary),
+        flags=[],
     )
     try:
         if char.corporation:
@@ -656,18 +661,26 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
             item.alliance_id = char.alliance.alliance_id
             item.alliance_name = char.alliance.name
 
+        if item.is_primary and item.alliance_id != 99011978:
+            item.flags.append("MAIN_NOT_IN_FL33T")
+
+        if char.tag_count and char.tag_count == 0:
+            item.flags.append("NO_TAGS")
+
         if char.esi_token_level:
             level = char.esi_token_level
         elif char.token:
             level = scope_group(char.token)
         else:
             level = None
+            item.flags.append("NO_TOKEN_LEVEL")
 
         if level:
             level = token_type_str(level)
             if char.esi_suspended:
                 item.esi_token = f"{level} (SUSPENDED)"
                 item.token_status = "SUSPENDED"
+                item.flags.append("ESI_SUSPENDED")
             else:
                 item.esi_token = level
                 item.token_status = "ACTIVE"
@@ -676,6 +689,7 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         logger.error(
             "Error enriching character %s, %s", char.character_name, e
         )
+        item.flags.append("DATA_ERROR")
 
     return item
 
