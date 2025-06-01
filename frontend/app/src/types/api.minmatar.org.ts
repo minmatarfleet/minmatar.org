@@ -602,6 +602,8 @@ export interface CharacterSummary {
 export const esi_token_status = [ 'ACTIVE', 'SUSPENDED' ] as const
 export type ESITokenStatus = typeof esi_token_status[number]
 
+export const character_errors = [ 'MAIN_NOT_IN_FL33T', 'NO_TOKEN_LEVEL', 'ESI_SUSPENDED', 'NO_MAIN_SET' ] as const
+export type CharacterErrors = typeof character_errors[number]
 export interface SummaryCharacter {
     character_id:   number;
     character_name: string;
@@ -611,8 +613,8 @@ export interface SummaryCharacter {
     alliance_id:    number;
     alliance_name:  string;
     esi_token:      string;
-    tags:           number[];
     token_status:   ESITokenStatus;
+    flags:          CharacterErrors[];
 }
 
 export interface CharacterESITokens {

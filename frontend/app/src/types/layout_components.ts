@@ -979,3 +979,10 @@ export interface FleetTrackingTexts {
     fleet_duration_text:        string;
     fleet_tracking_hint:        string;
 }
+
+import type { SummaryCharacter, CharacterErrors } from '@dtypes/api.minmatar.org'
+
+export interface CharacterErrorUI {
+    character?:         SummaryCharacter,
+    error:              CharacterErrors;
+}

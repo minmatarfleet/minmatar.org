@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { CharacterErrorUI } from '@dtypes/layout_components'
+
+interface Props {
+    character_errors:   CharacterErrorUI[];
+}
+
+const {
+    character_errors
+} = Astro.props
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
+import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
+---
+
+<Wrapper
+    id="character_errors"
+    class="[ component ]"
+    padding_block='var(--component-padding-block)'
+    padding_inline='var(--space-l-xl)'
+    max_width='var(--max-text-width)'
+>
+    <Flexblock gap='var(--space-l)'>
+        <h2>{t('character_troubleshooting')}</h2>
+
+        <p>{t('character_troubleshooting_description')}</p>
+
+        {character_errors.map(character_error =>
+            <FluidFixed width='200px' class="[ items-center ]">
+                <FixedFluid width="32px" gap="var(--space-2xs)">
+                    <CharacterPicture
+                        character_id={character_error?.character?.character_id ?? 0}
+                        character_name={character_error?.character?.character_name ?? ''}
+                        size={32}
+                    />
+                    <Flexblock gap="var(--space-3xs)">
+                        <h4>
+                            {character_error?.character?.character_name ?
+                                t(`${character_error.error}_title` as any).replace('CHARACTER_NAME', character_error.character.character_name as string) :
+                                t(`${character_error.error}_title` as any)
+                            }
+                        </h4>
+                        <small set:html={marked.parseInline(t(`${character_error.error}_description` as any), { renderer })} />
+                    </Flexblock>
+                </FixedFluid>
+                    
+                <div class="[ flex justify-end items-center ]">
+                    {character_error.error === 'MAIN_NOT_IN_FL33T' ?
+                        <ButtonAddPrimary
+                            color='green'
+                            size='sm'
+                            dialog_title={t('add_primary_pilot_dialog_title')}
+                        >
+                            {t('add_primary_pilot')}
+                        </ButtonAddPrimary> :
+                    character_error.error === 'NO_TOKEN_LEVEL' ?
+                        <FixESITokenButton
+                            character={character_error.character as SummaryCharacter}
+                            color='green'
+                            fix={true}
+                        /> :
+                    character_error.error === 'ESI_SUSPENDED' ?
+                        <FixESITokenButton
+                            character={character_error.character as SummaryCharacter}
+                            color='green'
+                            fix={true}
+                        /> :
+                    character_error.error === 'NO_MAIN_SET' ?
+                        <ButtonAddPrimary
+                            color='green'
+                            size='sm'
+                            dialog_title={t('add_primary_pilot_dialog_title')}
+                        >
+                            {t('add_primary_pilot')}
+                        </ButtonAddPrimary> : 'Hola'
+                    }
+                </div>
+            </FluidFixed>
+        )}
+    </Flexblock>
+</Wrapper>
+
+<style lang="scss">
+    #character_errors {
+        --foreground: var(--black);
+
+        background-color: var(--fleet-red);
+    }
+</style>

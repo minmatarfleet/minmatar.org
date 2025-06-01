@@ -3,9 +3,8 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_player_icon } from '@helpers/eve_image_server'
-
 interface Props {
-    active?: boolean;
+    active?:    boolean;
 }
 
 const {
@@ -26,6 +25,9 @@ const portrait = primary_pilot_avatar ?? no_pilot_avatar
 const title = is_auth ? 'account.page_title' : 'authentication'
 const description = is_auth ? 'account.description' : 'authentication_description'
 
+const INIT_CHARACTER_ERROR_COUNT_PARTIAL_URL = translatePath('/partials/init_character_error_count_component')
+
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 import Tippy from '@components/blocks/Tippy.astro';
 ---
 
@@ -45,9 +47,28 @@ import Tippy from '@components/blocks/Tippy.astro';
             alt={primary_pilot_name ? primary_pilot_name : t('unknown_pilot')}
         />
     </Tippy>
+
+    <div
+        transition:persist
+        hx-get={INIT_CHARACTER_ERROR_COUNT_PARTIAL_URL}
+        hx-trigger="load"
+        hx-indicator=".loader"
+    />
+    
+    <div class="[ badge-anchor ]">
+        <template x-if="character_errors_count > 0">
+            <NotificationBadge class="[ animate-rubber-band ]" number={1} x-text="character_errors_count" />
+        </template>
+    </div>
 </a>
 
 <style lang="scss">
+    .badge-anchor {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+
     a {
         text-decoration: none;
         display: flex;
