@@ -9,7 +9,13 @@ from django.test import Client, SimpleTestCase
 from esi.models import Token
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from eveonline.models import EvePlayer, EveCharacter, EveTag, EveCharacterTag
+from eveonline.models import (
+    EvePlayer,
+    EveCharacter,
+    EveTag,
+    EveCharacterTag,
+    EveCorporation,
+)
 from eveonline.helpers.characters import set_primary_character
 from fleets.models import EveFleetAudience
 from tech.docker import (
@@ -259,6 +265,10 @@ class TechRoutesTestCase(TestCase):
             character_name="Test Pilot",
             user=self.user,
             esi_suspended=True,
+            corporation=EveCorporation.objects.create(
+                corporation_id=2001,
+                name="MegaCorp",
+            ),
         )
 
         response = self.client.get(
@@ -271,6 +281,7 @@ class TechRoutesTestCase(TestCase):
         self.assertEqual(1, len(data))
         self.assertEqual("Test Pilot", data[0]["character_name"])
         self.assertEqual(0, data[0]["tag_count"])
+        self.assertEqual("MegaCorp", data[0]["corp_name"])
         self.assertEqual(
             data[0]["flags"], ["ESI_SUSPENDED", "NO_TAGS", "NO_TOKENS"]
         )

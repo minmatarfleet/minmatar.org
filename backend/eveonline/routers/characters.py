@@ -73,6 +73,7 @@ class ErrorResponse(BaseModel):
 
 class UserCharacter(BaseModel):
     """Summary of a player's character"""
+
     character_id: int
     character_name: str
     is_primary: bool
