@@ -1421,7 +1421,7 @@ export const ui = {
         'cancel_srp_dialog_text': 'Proceed canceling the SRP request?',
         'canceling': 'canceling',
         'MAIN_NOT_IN_FL33T_title': 'Your main character is not a FL33T member',
-        'MAIN_NOT_IN_FL33T_description': 'To fix this error, set your main character to one in the alliance, or, if your main is correct, update its membership in-game.',
+        'MAIN_NOT_IN_FL33T_description': 'To fix this error, set your main character to one in the alliance, or, if your main is correct, update its membership in-game.\n\nYou may disregard this notification if you’re currently in the application process.',
         'NO_TOKEN_LEVEL_title': 'CHARACTER_NAME ESI token is not properly set',
         'NO_TOKEN_LEVEL_description': 'Click the **Fix ESI Token** button and follow the steps to resolve this issue.',
         'ESI_SUSPENDED_title': 'CHARACTER_NAME ESI token is suspended',
