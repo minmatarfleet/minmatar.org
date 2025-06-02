@@ -140,7 +140,7 @@ class EsiClient:
                 killmail_id=killmail_id, killmail_hash=killmail_hash
             )
         )
-        self._operation_results(operation)
+        return self._operation_results(operation)
 
     def get_character_contracts(self) -> EsiResponse:
         """Returns the contracts for the character this ESI client was created for"""
