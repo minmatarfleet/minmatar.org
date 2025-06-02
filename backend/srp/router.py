@@ -1,3 +1,5 @@
+import logging
+
 from typing import List, Literal, Optional
 
 from django.contrib.auth.models import User
@@ -20,6 +22,8 @@ from srp.helpers import (
 from .models import EveFleetShipReimbursement
 
 router = Router(tags=["SRP"])
+
+logger = logging.getLogger(__name__)
 
 
 class CreateEveFleetReimbursementRequest(BaseModel):
@@ -84,7 +88,8 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         return 404, {"detail": str(e)}
     except UserCharacterMismatch:
         return 403, {"detail": "Character does not belong to user"}
-    except Exception:
+    except Exception as e:
+        logger.error("Error parsing killmail: %s", e)
         return 400, {"detail": "Unexpected error processing killmail"}
 
     if duplicate_kill(details):
