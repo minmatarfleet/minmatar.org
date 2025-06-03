@@ -6,10 +6,14 @@ import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
     corporation:            CorporationObject;
+    hidden?:                boolean;
+    id?:                    string;
 }
 
 const {
     corporation,
+    hidden = false,
+    id,
 } = Astro.props
 
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
@@ -32,8 +36,10 @@ import Markdown from '@components/icons/buttons/Markdown.astro';
 ---
 
 <DialogButton
+    id={id ? id : undefined}
     size='sm'
     color='green'
+    hidden={hidden}
 >
     {t('enlist_today')}
 
