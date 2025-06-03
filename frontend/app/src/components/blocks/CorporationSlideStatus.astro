@@ -8,19 +8,18 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     alert?:                 Alert | false;
+    apply_button_id:        string;
 }
 
 const {
     corporation,
     is_user_corporation = false,
     alert = false,
+    apply_button_id,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
-
-import { query_string } from '@helpers/string';
-const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_slide_request_status_item/')
 
 import { hours_diff, from_now_diff } from '@helpers/date'
 const hours_since_last_app = hours_diff(corporation?.application_updated as Date, new Date())
@@ -35,14 +34,14 @@ const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME
 
 import { marked } from 'marked';
 
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
 import Button from '@components/blocks/Button.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
 import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
 import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import ButtonCorpApply from './ButtonCorpApply.astro';
 ---
 
 <Flexblock
@@ -76,7 +75,14 @@ import ButtonCorpApply from './ButtonCorpApply.astro';
         (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
         (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
         (is_re_applicable && corporation?.status === 'rejected') ?
-            <ButtonCorpApply corporation={corporation} />
+            <Button
+                id={`${apply_button_id}-dummy`}
+                size='sm'
+                color='green'
+                x-on:click={`document.getElementById('${apply_button_id}').click()`}
+            >
+                {t('enlist_today')}
+            </Button>
         :
         corporation?.status == 'unauth' ?
             <ButtonAuth
