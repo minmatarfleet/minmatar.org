@@ -1432,5 +1432,6 @@ export const ui = {
         'character_troubleshooting_description': 'We’ve detected issues with your characters that are preventing some website features from working correctly. Please take a moment to fix them.',
         'issues_to_fix': 'Issues that requires your attention',
         'jump_2_beacon_description_fallback': 'Jumping to beacons and fragging out  is the only way to play eve. We prioritize dropping big targets and setting up fights with coordinating throughout eve offline.',
+        'casual_description': 'These doctrines are generally good killing unprepared enemies, typically for extracting random content throughout the day. A step above kitchen sink- they are cheap, accessible, and fun to fly.',
     },
 } as const;
