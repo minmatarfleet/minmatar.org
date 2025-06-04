@@ -65,6 +65,7 @@ class EveDoctrine(models.Model):
         ("skirmish", "Skirmish"),
         ("strategic", "Strategic"),
         ("specialized", "Specialized"),
+        ("casual", "Casual"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)
