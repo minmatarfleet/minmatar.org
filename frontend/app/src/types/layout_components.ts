@@ -756,6 +756,7 @@ export const doctrine_types = [
     'skirmish',
     'strategic',
     'specialized',
+    'casual',
 ]
 
 export interface SystemCardInfo {
