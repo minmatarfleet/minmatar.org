@@ -33,7 +33,7 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
 ---
 
 <div
-    id={`corporation-status-${corporation.corporation_id}`}
+    id={`corporation-status-${corporation.corporation_id}${disable_applications ? '-disabled' : ''}`}
     x-data={`{
         init() {
             ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
