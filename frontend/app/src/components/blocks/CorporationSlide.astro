@@ -40,7 +40,13 @@ import { query_string } from '@helpers/string';
 ---
 
 <template x-if={`document.getElementById('${id}-apply-button-dummy') !== null`}>
-<ButtonCorpApply id={`${id}-apply-button`} corporation={corporation} hidden={true} />
+    <div x-init="htmx.process($el)">
+        <ButtonCorpApply
+            id={`${id}-apply-button`}
+            corporation={corporation}
+            hidden={true}
+        />
+    </div>
 </template>
 
 <FixedFluid
