@@ -753,10 +753,10 @@ export interface RouteStations {
 export type DoctrineTypes = typeof doctrine_types[number]
 
 export const doctrine_types = [
+    'casual',
     'skirmish',
     'strategic',
     'specialized',
-    'casual',
 ]
 
 export interface SystemCardInfo {
