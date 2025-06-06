@@ -352,3 +352,20 @@ def setup_players():
             created += 1
 
     logger.info("EvePlayers created: %d", created)
+
+
+@app.task
+def delete_orphan_players():
+    deleted = 0
+    for player in EvePlayer.objects.filter(user__isnull=True):
+        player.delete()
+        logger.info(
+            "Deleted orphan EvePlayer for %s",
+            (
+                player.primary_character.character_name
+                if player.primary_character
+                else "Unknown"
+            ),
+        )
+        deleted += 1
+    logger.info("EvePlayers deleted: %d", deleted)

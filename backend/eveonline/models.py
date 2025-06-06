@@ -29,7 +29,7 @@ class EvePlayer(models.Model):
         null=True,
     )
 
-    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
 
     prime_choices = (
         ("US", "US"),
