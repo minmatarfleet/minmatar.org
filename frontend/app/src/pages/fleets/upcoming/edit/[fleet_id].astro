@@ -128,7 +128,7 @@ const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
 
 const timer = fleet?.start_time
 const eve_datetime = timer ? new Date(timer) : new Date()
-eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
+if (!timer) eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
 
 const eve_date = eve_datetime.toISOString().slice(0, 10)
 const eve_time = eve_datetime.toTimeString().slice(0, 5)
