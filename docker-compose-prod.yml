@@ -73,7 +73,7 @@ services:
         restart: on-failure
         volumes:
             - murmur_data:/data
-            - ./mumble/murmur/murmur.ini:/data/murmur.ini
+            - ./backend/mumble/murmur/murmur.ini:/data/murmur.ini
         environment:
             - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
             - MUMBLE_VERBOSE=true
