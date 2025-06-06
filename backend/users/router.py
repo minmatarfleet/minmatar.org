@@ -67,11 +67,11 @@ def callback(request, code: str):
         logger.info(
             "User %s does not exist. Creating user...", user["username"]
         )
-        django_user = User.objects.create(username=user["username"])
+        django_user, _ = User.objects.get_or_create(username=user["username"])
         django_user.username = user["username"]
         django_user.save()
 
-        EvePlayer.objects.create(
+        EvePlayer.objects.get_or_create(
             user=django_user,
             nickname=django_user.username,
         )
