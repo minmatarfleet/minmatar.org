@@ -65,7 +65,11 @@ class EvePlayerAdmin(admin.ModelAdmin):
         "primary_character__character_name",
     )
     list_display_links = ("id", "nickname")
-    search_fields = ("user__username", "primary_character__character_name")
+    search_fields = (
+        "user__username",
+        "primary_character__character_name",
+        "nickname",
+    )
 
     readonly_fields = ["id", "characters"]
 
