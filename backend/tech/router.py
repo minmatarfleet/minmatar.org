@@ -18,7 +18,6 @@ from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
-from srp.helpers import get_killmail_details
 from tech.docker import (
     container_names,
     sort_chronologically,
@@ -349,15 +348,11 @@ def character_flags(request):
 
 
 @router.get(
-    "/parsekm",
-    summary="Test killmail parsing",
-    auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
+    "/errortest",
+    summary="Test error handling",
+    response={200: None, 400: ErrorResponse},
 )
-def test_parse_killmail(request, killmail_url):
-    if not permitted(request.user):
-        return 403, "Not authorised"
-
-    km = get_killmail_details(killmail_url, request.user)
-
-    return 200, km.victim_character
+def test_error_id(request):
+    err = ErrorResponse.new(detail="Fake error")
+    logger.error("Fake error for testing (%s): %s", err.id, err.detail)
+    return 400, err

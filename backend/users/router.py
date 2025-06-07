@@ -9,6 +9,7 @@ from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
+from app.errors import create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
@@ -48,8 +49,17 @@ def login(request, redirect_url: str):
 
 @router.get("/callback", include_in_schema=False)
 def callback(request, code: str):
+    redirect_url = redirect_url_from_session(request)
+
     logger.info("Recived discord callback with code: %s", code)
-    user = discord.exchange_code(code)
+
+    try:
+        user = discord.exchange_code(code)
+    except Exception as e:
+        error_id = create_error_id()
+        logger.error("Error exchanging Discord code (%s): %s", error_id, e)
+        return redirect(f"{redirect_url}?error=EXCHG_CODE&id={error_id}")
+
     logger.debug("Successfully exchanged code for user: %s", user["username"])
     if DiscordUser.objects.filter(id=user["id"]).exists():
         logger.info("User %s already exists. Logging in...", user["username"])
@@ -96,15 +106,19 @@ def callback(request, code: str):
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
     logger.debug("Signed JWT Token: %s", encoded_jwt_token)
+
+    logger.info("Redirecting to authentication URL... %s", redirect_url)
+    redirect_url = redirect_url + "?token=" + encoded_jwt_token
+    return redirect(redirect_url)
+
+
+def redirect_url_from_session(request):
     redirect_url = "https://my.minmatar.org/auth/login"
     try:
         redirect_url = request.session["authentication_redirect_url"]
     except KeyError:
         logger.warning("No redirect URL found in session")
-
-    logger.info("Redirecting to authentication URL... %s", redirect_url)
-    redirect_url = redirect_url + "?token=" + encoded_jwt_token
-    return redirect(redirect_url)
+    return redirect_url
 
 
 @router.get(
