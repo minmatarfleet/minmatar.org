@@ -1312,7 +1312,7 @@ export const ui = {
         'hours': 'Hours',
         'min': 'Min',
         'secs': 'Secs',
-        'exchange_token_failed': 'Error during token exchange.',
+        'exchange_token_failed': 'Error during Discord login',
         'auth_error_dialog_title': 'Authentication error',
         'invalid_token': 'Invalid token',
         'set_fleet_in': 'Set fleet in...',
@@ -1436,5 +1436,6 @@ export const ui = {
         'disable_external_link_prompt': 'Not show external link prompt',
         'disable_external_link_prompt_description': 'Displayed when opening an external link',
         'can_be_restored': 'Can be restored on account settings',
+        'code_hint': 'Please quote error ID CODE when contacting support',
     },
 } as const;
