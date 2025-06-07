@@ -79,6 +79,7 @@ import NewsFeed from '@components/blocks/NewsFeed.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
+import ExternalLink from '@components/blocks/ExternalLink.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
@@ -244,15 +245,13 @@ const page_description = t('index.leading_text');
 							<ContractsServiceEvEIcon />
 						</a>
 					}
-					<a
+					<ExternalLink
 						class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 						data-tippy-content={t('view_on_dotlan')}
 						href={`https://evemaps.dotlan.net/system/${STAGINGS_SYSTEMS[staging] ?? 'Sosala'}`}
-						target="_blank"
-						rel="nofollow noopener noreferrer"
 					>
 						<MapEvEIcon />
-					</a>
+					</ExternalLink>
 				</FlexInline>
 			</Flexblock>
 		</div>

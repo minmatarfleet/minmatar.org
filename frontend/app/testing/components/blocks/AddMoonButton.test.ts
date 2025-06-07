@@ -6,5 +6,5 @@ test("AddMoonButton defaults", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(AddMoonButton, {});
 
-  //expect(result).toMatchSnapshot();
+  // expect(result).toMatchSnapshot();
 });

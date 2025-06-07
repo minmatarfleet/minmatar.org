@@ -1,0 +1,35 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    href:               string;
+    [propName: string]: any;
+}
+
+const {
+    href,
+    ...attributes
+} = Astro.props
+---
+
+<a
+    href={href}
+    target="_blank"
+    rel="nofollow noopener noreferrer"
+    x-data={`{
+        hide_external_link_disclaimer: $persist(false),
+        show_external_link_disclaimer() {
+            show_alert_dialog({
+                title: '${t('leaving_website')}',
+                partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
+            }).then(accepted => {
+                if (accepted) window.open('${href}', '_blank')
+            })
+        }
+    }`}
+    x-on:click.prevent={`hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()`}
+    {...attributes}
+>
+    <slot />
+</a>

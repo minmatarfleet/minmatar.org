@@ -136,9 +136,8 @@ const page_title = t('account.page_title');
             </Button>
             <Button
                 href="https://wiki.minmatar.org/en/guides/account-issues"
-                target="_blank"
-                rel="nofollow noopener noreferrer"
                 size='sm'
+                external={true}
             >
                 {t('troubleshooting')}
             </Button>
@@ -309,6 +308,27 @@ const page_title = t('account.page_title');
                                     <Button
                                         size='sm'
                                         x-on:click=`show_rendering_options = true`
+                                    >
+                                        {t('reset')}
+                                    </Button>
+                                </FlexInline>
+                            </div>
+                            <div 
+                                x-data={`{
+                                    hide_external_link_disclaimer: $persist(false),
+                                }`}
+                                x-show="hide_external_link_disclaimer"
+                            >
+                                <FlexInline>
+                                    <div class="basis-[450px]">
+                                        <TextGroup title={t('disable_external_link_prompt')}>
+                                            <small>{t('disable_external_link_prompt_description')}</small>
+                                        </TextGroup>
+                                    </div>
+                                    
+                                    <Button
+                                        size='sm'
+                                        x-on:click=`hide_external_link_disclaimer = false`
                                     >
                                         {t('reset')}
                                     </Button>
