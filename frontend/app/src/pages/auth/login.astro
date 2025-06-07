@@ -5,7 +5,6 @@ const { t, translatePath } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-import { query_string } from '@helpers/string';
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/'))
@@ -15,9 +14,13 @@ let user:User | null = null
 
 try {
     const error = Astro.url.searchParams.get('error') as string
+    const id = Astro.url.searchParams.get('id') as string
 
-    if (error)
-        throw new Error(t(error as any) !== undefined ? t(error as any) : t('exchange_token_failed'))
+    if (error) {
+        const error_text = t(error as any)
+        const error_message = error_text !== undefined ? error_text : t('exchange_token_failed')
+        throw new Error(`${error_message}. ${t('code_hint').replace('CODE', id ?? '---')}`)
+    }
 
     token = Astro.url.searchParams.get('token') as string
 
