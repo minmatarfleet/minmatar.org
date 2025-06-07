@@ -29,6 +29,9 @@ const {
 
 delete attributes.class
 
+const x_data = attributes['x-data'] ?? ''
+const x_data_elements = x_data ? x_data.slice(1, -1) : ''
+
 const button_background_color = `var(--${color})`;
 const button_color = (color !== 'transparent' ? 'var(--fleet-yellow)' : 'var(--highlight)');
 
@@ -55,8 +58,11 @@ const Element = href ? 'a' : 'button';
             }).then(accepted => {
                 if (accepted) window.open('${href}', '_blank')
             })
-        }
-    }` : undefined}
+        },
+        ${x_data_elements}
+    }` : `{
+        ${x_data_elements}
+    }`}
     x-on:click.prevent={external ?
         `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
         undefined
