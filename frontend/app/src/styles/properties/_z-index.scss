@@ -2,7 +2,8 @@
     --base-z-index: 10000;
 
     --tooltips-z-index: calc(var(--dialog-close-z-index) + 1);
-    --dialog-close-z-index: calc(var(--dialog-z-index) + 1);
+    --dialog-close-z-index: calc(var(--alert-z-index) + 1);
+    --alert-z-index: calc(var(--dialog-z-index) + 1);
     --dialog-z-index: calc(var(--backdrop-z-index) + 1);
     --backdrop-z-index: calc(var(--neocom-z-index) + 1);
     --neocom-z-index: calc(var(--header-z-index) + 1);

@@ -82,6 +82,10 @@ interface Props {
 </div>
 
 <style lang="scss">
+    :global(.alert-dialog .dialog) {
+        z-index: var(--alert-z-index);
+    }
+
     :global([alert-dialog-action] *) {
         pointer-events: none !important;
     }

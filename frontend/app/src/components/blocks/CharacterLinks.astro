@@ -20,6 +20,8 @@ import { get_zkillboard_character_link } from '@helpers/eve'
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import ExternalLink from '@components/blocks/ExternalLink.astro';
+
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
@@ -46,22 +48,11 @@ import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
             <AssetsEvEIcon />
         </a>
     }
-    <a
+    <ExternalLink
         data-tippy-content={t('zkillboard')}
         class="[ w-[32px] neocom-button neocom-button-focus ]"
         href={get_zkillboard_character_link(character_id)}
-        target="_blank"
-        rel="nofollow noopener noreferrer"
-        x-data={`{
-            show_external_link_disclaimer() {
-                show_alert_dialog({
-                    title: '${t('leaving_website')}',
-                    content: '${t('leaving_website_description')}',
-                }).then( (accepted) => accepted && window.location.href = "${get_zkillboard_character_link(character_id)}" )
-            }
-        }`}
-        x-on:click.prevent="show_external_link_disclaimer"
     >
         <ZkillboardEvEIcon />
-    </a>
+    </ExternalLink>
 </FlexInline>

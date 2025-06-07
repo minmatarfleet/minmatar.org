@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
@@ -34,12 +37,30 @@ const Element = href ? 'a' : 'button';
 
 <Element
     href={ href }
-    class:list={['[ button ]', { narrow: narrow } ,Astro.props.class]}
+    class:list={['[ button ]', { narrow: narrow }, Astro.props.class]}
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
     disabled={Element === 'button' ? 'disabled' : undefined}
     x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
+
+    target={external ? '_blank' : undefined }
+    rel={external ? 'nofollow noopener noreferrer' : undefined }
+    x-data={external ? `{
+        hide_external_link_disclaimer: $persist(false),
+        show_external_link_disclaimer() {
+            show_alert_dialog({
+                title: '${t('leaving_website')}',
+                partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
+            }).then(accepted => {
+                if (accepted) window.open('${href}', '_blank')
+            })
+        }
+    }` : undefined}
+    x-on:click.prevent={external ?
+        `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
+        undefined
+    }
 >
     <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'} justification={centered ? 'center' : 'flex-start'}>
         <slot name="icon" />
