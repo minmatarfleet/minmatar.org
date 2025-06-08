@@ -20,7 +20,7 @@ from fleets.models import (
 )
 from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
-from fleets.tasks import update_fleet_schedule
+from fleets.tasks import update_fleet_schedule, update_fleet_instances
 
 BASE_URL = "/api/fleets"
 
@@ -572,3 +572,64 @@ class FleetTaskTests(TestCase):
 
         self.assertEqual("complete", efi.eve_fleet.status)
         self.assertIsNotNone(efi.end_time)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_update_fleet_instances(self, discord, esi):
+        esi_mock = esi.return_value
+
+        fc_id = setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.status = "active"
+        fleet.save()
+
+        efi = EveFleetInstance.objects.create(
+            id=1234,
+            eve_fleet=fleet,
+            end_time=None,
+        )
+
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": efi.id,
+                "fleet_boss_id": fc_id,
+            },
+        )
+        fleet_member_response = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "character_id": fc_id,
+                    "join_time": timezone.now(),
+                    "role": "squad_member",
+                    "role_name": "squad_member",
+                    "ship_type_id": 1000,
+                    "squad_id": 10,
+                    "wing_id": 20,
+                    "solar_system_id": 3001,
+                    "station_id": 4001,
+                    "takes_fleet_warp": True,
+                }
+            ],
+        )
+        esi_mock.get_fleet_members.return_value = fleet_member_response
+        esi_mock.resolve_universe_names.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {"id": fc_id, "name": "Mr FC"},
+                {"id": 1000, "name": "X-Wing"},
+                {"id": 3001, "name": "Homesystem"},
+                {"id": 4001, "name": "Homestation"},
+            ],
+        )
+
+        update_fleet_instances()
+
+        fleet_member_response = EsiResponse(
+            response_code=404,
+            data="The fleet does not exist or you don't have access to it!",
+        )
+
+        update_fleet_instances()
