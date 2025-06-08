@@ -54,7 +54,7 @@ def update_character_affilliations():
         logger.info(
             "Update character affiliations, processing %d characters, %d results",
             len(character_ids_batch),
-            results.count(),
+            len(results),
         )
         update_count = 0
         for result in results:
