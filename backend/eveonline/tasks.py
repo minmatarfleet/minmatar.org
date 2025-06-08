@@ -87,14 +87,18 @@ def update_character_affilliations() -> int:
 
             if updated:
                 logger.info(
-                    "Update character affiliations, character updated: %s",
+                    "Update character affiliations, character updated: %s (%s)",
                     character_id,
+                    character.user_id,
                 )
                 update_count += 1
-                if task_config["async_apply_affiliations"]:
-                    update_affiliation.apply_async(args=[character.user.id])
-                else:
-                    update_affiliation(character.user.id)
+                if character.user:
+                    if task_config["async_apply_affiliations"]:
+                        update_affiliation.apply_async(
+                            args=[character.user.id]
+                        )
+                    else:
+                        update_affiliation(character.user.id)
 
     logger.info(
         "Update character affiliations complete with %d changes",
