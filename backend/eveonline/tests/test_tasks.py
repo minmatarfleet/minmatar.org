@@ -147,7 +147,6 @@ class EveOnlineTaskTests(TestCase):
             character_id=10001,
             character_name="Char1",
             user=self.user,
-            token=Token.objects.create(character_id=10001, user=self.user),
         )
 
         self.assertIsNone(

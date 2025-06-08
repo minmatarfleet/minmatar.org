@@ -38,9 +38,7 @@ task_config = {
 
 @app.task
 def update_character_affilliations() -> int:
-    character_ids = EveCharacter.objects.exclude(token=None).values_list(
-        "character_id", flat=True
-    )
+    character_ids = EveCharacter.objects.values_list("character_id", flat=True)
     logger.info(
         "Update character affiliations, %d characters found",
         len(character_ids),
