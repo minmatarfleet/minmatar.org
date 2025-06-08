@@ -95,16 +95,18 @@ class UserRouterTestCase(TestCase):
     def test_discord_login_redirect_api_new(self):
         """Test the API login redirect"""
 
+        username = "new_user"
+
         with patch("users.router.discord") as discord_request_mock:
             discord_request_mock.exchange_code.return_value = {
-                "id": 123,
-                "username": "Test User",
-                "discriminator": "123",
+                "id": 1000001,
+                "username": username,
+                "discriminator": "100",
                 "avatar": "http://avatar.gif",
             }
 
             response = self.client.get(
-                "/api/users/callback?code=123",
+                "/api/users/callback?code=20001",
             )
 
             self.assertEqual(response.status_code, 302)
@@ -112,7 +114,7 @@ class UserRouterTestCase(TestCase):
                 "https://my.minmatar.org/auth/login?token=", response.url
             )
 
-            new_django_user = User.objects.filter(username="Test User").first()
+            new_django_user = User.objects.filter(username=username).first()
             self.assertIsNotNone(new_django_user)
             new_discord_user = DiscordUser.objects.filter(
                 user=new_django_user
@@ -123,24 +125,27 @@ class UserRouterTestCase(TestCase):
     def test_discord_login_redirect_api_existing(self):
         """Test the API login redirect"""
 
+        username = self.user.username
+
         DiscordUser.objects.create(
-            id=123,
+            id=1000002,
             user=self.user,
-            discord_tag="testuser",
-            nickname="testuser",
+            discord_tag=username,
+            nickname=username,
             is_down_under=True,
+            avatar="http://before.gif",
         )
 
         with patch("users.router.discord") as discord_request_mock:
             discord_request_mock.exchange_code.return_value = {
-                "id": 123,
-                "username": "testuser",
-                "discriminator": "123",
-                "avatar": "http://avatar.gif",
+                "id": 1000002,
+                "username": username,
+                "discriminator": "12345",
+                "avatar": "http://after.gif",
             }
 
             response = self.client.get(
-                "/api/users/callback?code=123",
+                "/api/users/callback?code=20002",
             )
 
             self.assertEqual(response.status_code, 302)
@@ -148,12 +153,13 @@ class UserRouterTestCase(TestCase):
                 "https://my.minmatar.org/auth/login?token=", response.url
             )
 
-            django_user = User.objects.filter(username="testuser").first()
+            django_user = User.objects.filter(username=username).first()
             self.assertEqual(django_user, self.user)
 
             discord_user = DiscordUser.objects.filter(user=django_user).first()
             self.assertIsNotNone(discord_user)
             self.assertTrue(discord_user.is_down_under)
+            self.assertEqual("http://after.gif", discord_user.avatar)
 
     def test_login(self):
         fake_user = settings.FAKE_LOGIN_USER_ID

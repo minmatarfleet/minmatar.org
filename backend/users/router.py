@@ -43,7 +43,7 @@ def login(request, redirect_url: str):
     if not redirect_url:
         redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
-    logger.info(f"Current session: {request.session}")
+    # logger.info(f"Current session: {request.session}")
     return redirect(auth_url_discord)
 
 
@@ -51,7 +51,7 @@ def login(request, redirect_url: str):
 def callback(request, code: str):
     redirect_url = redirect_url_from_session(request)
 
-    logger.info("Recived discord callback with code: %s", code)
+    logger.info("Recived discord callback with code: ...%s", code[-5:])
 
     try:
         user = discord.exchange_code(code)
@@ -61,37 +61,61 @@ def callback(request, code: str):
         return redirect(f"{redirect_url}?error=EXCHG_CODE&id={error_id}")
 
     logger.debug("Successfully exchanged code for user: %s", user["username"])
-    if DiscordUser.objects.filter(id=user["id"]).exists():
-        logger.info("User %s already exists. Logging in...", user["username"])
-        discord_user = DiscordUser.objects.get(id=user["id"])
-        discord_user.discord_tag = (
-            user["username"] + "#" + user["discriminator"]
-        )
-        discord_user.avatar = user["avatar"]
-        discord_user.save()
 
-        django_user = User.objects.get(username=discord_user.user.username)
-        django_user.username = user["username"]
-        django_user.save()
-    else:
+    # if DiscordUser.objects.filter(id=user["id"]).exists():
+    #     logger.info("User %s already exists. Logging in...", user["username"])
+    #     discord_user = DiscordUser.objects.get(id=user["id"])
+    #     discord_user.discord_tag = (
+    #         user["username"] + "#" + user["discriminator"]
+    #     )
+    #     discord_user.avatar = user["avatar"]
+    #     discord_user.save()
+
+    #     django_user = User.objects.get(username=discord_user.user.username)
+    #     django_user.username = user["username"]
+    #     django_user.save()
+    # else:
+    #     logger.info(
+    #         "User %s does not exist. Creating user...", user["username"]
+    #     )
+    #     django_user, _ = User.objects.get_or_create(username=user["username"])
+    #     django_user.username = user["username"]
+    #     django_user.save()
+
+    #     discord_user = DiscordUser.objects.create(
+    #         user=django_user,
+    #         id=user["id"],
+    #         discord_tag=user["username"] + "#" + user["discriminator"],
+    #         avatar=user["avatar"],
+    #     )
+
+    discord_tag = user["username"] + "#" + user["discriminator"]
+
+    django_user, created = User.objects.get_or_create(
+        username=user["username"]
+    )
+    if created:
+        logger.info("Django user created: %s", django_user.username)
+
+    discord_user, created = DiscordUser.objects.get_or_create(
+        id=user["id"],
+        defaults={"user": django_user, "discord_tag": discord_tag},
+    )
+    if created:
         logger.info(
-            "User %s does not exist. Creating user...", user["username"]
-        )
-        django_user, _ = User.objects.get_or_create(username=user["username"])
-        django_user.username = user["username"]
-        django_user.save()
-
-        EvePlayer.objects.get_or_create(
-            user=django_user,
-            nickname=django_user.username,
+            "Discord user created: %s %s", discord_user.id, discord_tag
         )
 
-        discord_user = DiscordUser.objects.create(
-            user=django_user,
-            id=user["id"],
-            discord_tag=user["username"] + "#" + user["discriminator"],
-            avatar=user["avatar"],
-        )
+    discord_user.discord_tag = discord_tag
+    discord_user.avatar = user["avatar"]
+    discord_user.save()
+
+    discord_user.user = django_user
+    discord_user.save()
+
+    EvePlayer.objects.get_or_create(
+        user=django_user, defaults={"nickname": django_user.username}
+    )
 
     payload = {
         "user_id": django_user.id,
@@ -105,7 +129,7 @@ def callback(request, code: str):
     encoded_jwt_token = jwt.encode(
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
-    logger.debug("Signed JWT Token: %s", encoded_jwt_token)
+    logger.debug("Signed JWT Token: ...%s", encoded_jwt_token[-5:])
 
     logger.info("Redirecting to authentication URL... %s", redirect_url)
     redirect_url = redirect_url + "?token=" + encoded_jwt_token
