@@ -37,6 +37,10 @@ def update_character_affilliations():
     character_ids = EveCharacter.objects.exclude(token=None).values_list(
         "character_id", flat=True
     )
+    logger.info(
+        "Update character affiliations, %d characters found",
+        len(character_ids),
+    )
 
     character_id_batches = []
     # batch in groups of 1000
@@ -44,12 +48,15 @@ def update_character_affilliations():
         character_id_batches.append(character_ids[i : i + 1000])
 
     for character_ids_batch in character_id_batches:
-        logger.info(
-            "Processing batch of %s characters", len(character_ids_batch)
-        )
         results = esi.client.Character.post_characters_affiliation(
             characters=character_ids_batch
         ).results()
+        logger.info(
+            "Update character affiliations, processing %d characters, %d results",
+            len(character_ids_batch),
+            results.count(),
+        )
+        update_count = 0
         for result in results:
             character_id = result["character_id"]
             corporation_id = result.get("corporation_id")
@@ -57,8 +64,6 @@ def update_character_affilliations():
             faction_id = result.get("faction_id")
 
             character = EveCharacter.objects.get(character_id=character_id)
-            if character.esi_suspended:
-                continue
 
             create_or_update_affiliation_entities(
                 corporation_id=corporation_id,
@@ -74,9 +79,16 @@ def update_character_affilliations():
 
             if updated:
                 logger.info(
-                    "Updated affiliations for character %s", character_id
+                    "Update character affiliations, character updated: %s",
+                    character_id,
                 )
+                update_count += 1
                 update_affiliation.apply_async(args=[character.token.user.id])
+
+        logger.info(
+            "Update character affiliations complete with %d changes",
+            update_count,
+        )
 
 
 @app.task
