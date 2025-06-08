@@ -24,36 +24,8 @@ def update_fleet_instances():
     )
     for fleet_instance in active_fleet_instances:
         logger.info("Updating fleet instance %s", fleet_instance.id)
-        try:
-            fleet_instance.update_is_registered_status()
-            fleet_instance.update_fleet_members()
-        except Exception as e:
-            logger.warning(
-                "An error occurred while updating fleet instance %s: %s",
-                fleet_instance.id,
-                e,
-            )
-
-            closed_message = (
-                "The fleet does not exist or you don't have access to it!"
-            )
-
-            if closed_message in str(e):
-                fleet_instance.end_time = timezone.now()
-                fleet_instance.save()
-
-                try:
-                    fleet_instance.eve_fleet.status = "complete"
-                    fleet_instance.eve_fleet.save()
-                except Exception as e1:
-                    logger.error(
-                        "Error setting Fleet %d status, %s",
-                        fleet_instance.eve_fleet.id,
-                        e1,
-                    )
-                continue
-
-            raise e
+        fleet_instance.update_is_registered_status()
+        fleet_instance.update_fleet_members()
 
 
 @app.task()
