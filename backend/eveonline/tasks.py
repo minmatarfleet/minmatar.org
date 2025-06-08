@@ -79,7 +79,8 @@ def update_character_affilliations():
 
             if updated:
                 logger.info(
-                    "Update character affiliations, character updated: %s", character_id
+                    "Update character affiliations, character updated: %s",
+                    character_id,
                 )
                 update_count += 1
                 update_affiliation.apply_async(args=[character.token.user.id])
