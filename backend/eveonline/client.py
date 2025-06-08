@@ -280,3 +280,12 @@ class EsiClient:
         """
         value, _ = EveType.objects.get_or_create_esi(id=type_id)
         return value
+
+    def get_character_affiliations(self, character_ids) -> EsiResponse:
+        """
+        Returns the affiliations for a batch of characters.
+        """
+        operation = esi.client.Character.post_characters_affiliation(
+            characters=character_ids
+        )
+        return self._operation_results(operation)

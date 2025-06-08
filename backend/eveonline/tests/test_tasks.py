@@ -1,5 +1,7 @@
+import factory
 from typing import List
 from unittest.mock import patch, MagicMock
+from django.db.models import signals
 
 from app.test import TestCase
 from esi.models import Token, Scope
@@ -10,7 +12,9 @@ from eveonline.tasks import (
     update_character_assets,
     update_character_skills,
     update_corporation,
+    update_character_affilliations,
     setup_players,
+    task_config,
 )
 from eveonline.models import (
     EveCharacter,
@@ -127,3 +131,45 @@ class EveOnlineTaskTests(TestCase):
         setup_players()
 
         self.assertEqual(1, EvePlayer.objects.count())
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.tasks.EsiClient")
+    def test_update_character_affilliations(self, esi_mock):
+        esi_client = esi_mock.return_value
+
+        task_config["async_apply_affiliations"] = False
+
+        EveCorporation.objects.create(
+            corporation_id=20001,
+        )
+
+        EveCharacter.objects.create(
+            character_id=10001,
+            character_name="Char1",
+            user=self.user,
+            token=Token.objects.create(character_id=10001, user=self.user),
+        )
+
+        self.assertIsNone(
+            EveCharacter.objects.get(character_id=10001).corporation
+        )
+
+        esi_client.get_character_affiliations.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "character_id": 10001,
+                    "corporation_id": 20001,
+                    "alliance_id": None,
+                    "faction_id": None,
+                }
+            ],
+        )
+
+        updated = update_character_affilliations()
+
+        self.assertEqual(1, updated)
+
+        self.assertIsNotNone(
+            EveCharacter.objects.get(character_id=10001).corporation_id
+        )
