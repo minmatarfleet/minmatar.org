@@ -4,9 +4,9 @@ from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.test import Client
 from esi.models import Token
-from eveuniverse.models import EveFaction
 
 from app.test import TestCase
+from tech.testdata import minmil_faction
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -70,7 +70,7 @@ class UserAffiliationTestCase(TestCase):
         group = Group.objects.create(name="test_set_user_affiliation_success")
         corporation = EveCorporation.objects.create(corporation_id=98726134)
         alliance = EveAlliance.objects.create(alliance_id=99011978)
-        faction = EveFaction.objects.get_or_create_esi(id=500002)[0]
+        faction = minmil_faction()
         character = EveCharacter.objects.create(character_id=123)
         token = Token.objects.create(
             character_id=123,

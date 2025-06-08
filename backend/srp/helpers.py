@@ -61,7 +61,6 @@ def get_killmail_details(external_link: str, user: User):
     # ).result()
     character_id = result["victim"]["character_id"]
     ship_type_id = result["victim"]["ship_type_id"]
-    # ship_type, _ = EveType.objects.get_or_create_esi(id=ship_type_id)
     ship_type = EsiClient(None).get_eve_type(ship_type_id)
 
     primary_character = user_primary_character(user)
@@ -99,9 +98,6 @@ def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
     """
     Recalculate the amount for the ship
     """
-    # ship_type, _ = EveType.objects.get_or_create_esi(
-    #     id=reimbursement.ship_type_id
-    # )
     ship_type = EsiClient(None).get_eve_type(reimbursement.ship_type_id)
     reimbursement.amount = get_reimbursement_amount(ship_type)
     reimbursement.save()

@@ -4,7 +4,6 @@ from typing import List
 
 import pydantic
 from esi.clients import EsiClientProvider
-from eveuniverse.models import EveType
 from eveonline.client import EsiClient
 
 from eveonline.models import (
@@ -49,7 +48,7 @@ def upsert_character_skills(character_id: int):
 
 
 def upsert_character_skill(character: EveCharacter, esi_skill):
-    skill_type, _ = EveType.objects.get_or_create_esi(id=esi_skill["skill_id"])
+    skill_type = EsiClient(None).get_eve_type(esi_skill["skill_id"])
 
     qry = EveCharacterSkill.objects.filter(
         character=character, skill_id=esi_skill["skill_id"]

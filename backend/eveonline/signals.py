@@ -4,12 +4,11 @@ from django.db.models import signals
 from django.dispatch import receiver
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveuniverse.models import EveFaction
 
 from discord.client import DiscordClient
 from discord.helpers import DISCORD_PEOPLE_TEAM_CHANNEL_ID
 from eveonline.tasks import update_character_assets, update_character_skills
-
+from eveonline.client import EsiClient
 from .models import (
     EveAlliance,
     EveCharacter,
@@ -93,9 +92,9 @@ def eve_alliance_post_save(sender, instance, created, **kwargs):
             and esi_alliance["faction_id"] is not None
         ):
             logger.debug("Setting faction to %s", esi_alliance["faction_id"])
-            instance.faction = EveFaction.objects.get_or_create_esi(
-                id=esi_alliance["faction_id"],
-            )[0]
+            instance.faction = EsiClient(None).get_faction(
+                esi_alliance["faction_id"]
+            )
         instance.save()
 
 

@@ -2,7 +2,12 @@ from django.contrib.auth.models import User
 from django.db.models import signals
 from django.utils import timezone
 
-from eveonline.models import EveAlliance, EveCorporation, EveCharacter
+from eveonline.models import (
+    EveAlliance,
+    EveCorporation,
+    EveCharacter,
+    EveFaction,
+)
 from fleets.models import (
     EveFleet,
     EveFleetInstance,
@@ -156,3 +161,19 @@ def setup_fleets(fc: EveCharacter) -> EveFleet:
             "squad_id": 3100,
         },
     )
+
+
+def minmil_faction():
+    faction, _ = EveFaction.objects.get_or_create(
+        id=500002,
+        defaults={
+            "is_unique": True,
+            "militia_corporation_id": 1000182,
+            "name": "Minmatar Republic",
+            "description": "MinMil",
+            "size_factor": 5,
+            "station_count": 595,
+            "station_system_count": 306,
+        },
+    )
+    return faction

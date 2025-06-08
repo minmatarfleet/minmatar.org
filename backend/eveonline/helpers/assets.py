@@ -4,8 +4,8 @@ from typing import List, Optional
 
 import pydantic
 from esi.clients import EsiClientProvider
-from eveuniverse.models import EveGroup, EveStation, EveType
 
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveCharacterAsset
 from structures.models import EveStructure
 
@@ -38,27 +38,18 @@ def create_character_assets(character: EveCharacter):
     for asset in assets:
         logger.debug("Processing asset %s", asset)
         asset = EveAssetResponse(**asset)
-        eve_type, _ = EveType.objects.get_or_create_esi(
-            id=asset.type_id,
-            include_children=True,
-            wait_for_children=True,
-        )
+        esi_client = EsiClient(None)
+        eve_type = esi_client.get_eve_type(asset.type_id, True)
         if eve_type.eve_group is None:
             continue
-        eve_group, _ = EveGroup.objects.get_or_create_esi(
-            id=eve_type.eve_group.id,
-            include_children=True,
-            wait_for_children=True,
-        )
+        eve_group = esi_client.get_eve_group(eve_type.eve_group.id, True)
         eve_category = eve_group.eve_category
         if eve_category.name != "Ship":
             continue
         logger.debug("Found asset %s", eve_type.name)
         location = None
         if asset.location_type == "station":
-            location, _ = EveStation.objects.get_or_create_esi(
-                id=asset.location_id
-            )
+            location = esi_client.get_station(asset.location_id)
         elif asset.location_type == "item":
             if EveStructure.objects.filter(id=asset.location_id).exists():
                 location = EveStructure.objects.get(id=asset.location_id)
