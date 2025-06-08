@@ -31,9 +31,13 @@ from .models import (
 esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
+task_config = {
+    "async_apply_affiliations": True,
+}
+
 
 @app.task
-def update_character_affilliations():
+def update_character_affilliations() -> int:
     character_ids = EveCharacter.objects.exclude(token=None).values_list(
         "character_id", flat=True
     )
@@ -47,16 +51,22 @@ def update_character_affilliations():
     for i in range(0, len(character_ids), 1000):
         character_id_batches.append(character_ids[i : i + 1000])
 
+    update_count = 0
+
     for character_ids_batch in character_id_batches:
-        results = esi.client.Character.post_characters_affiliation(
-            characters=character_ids_batch
-        ).results()
+        # results = esi.client.Character.post_characters_affiliation(
+        #     characters=character_ids_batch
+        # ).results()
+        results = (
+            EsiClient(None)
+            .get_character_affiliations(character_ids_batch)
+            .results()
+        )
         logger.info(
             "Update character affiliations, processing %d characters, %d results",
             len(character_ids_batch),
             len(results),
         )
-        update_count = 0
         for result in results:
             character_id = result["character_id"]
             corporation_id = result.get("corporation_id")
@@ -83,12 +93,16 @@ def update_character_affilliations():
                     character_id,
                 )
                 update_count += 1
-                update_affiliation.apply_async(args=[character.token.user.id])
+                if task_config["async_apply_affiliations"]:
+                    update_affiliation.apply_async(args=[character.user.id])
+                else:
+                    update_affiliation(character.user.id)
 
-        logger.info(
-            "Update character affiliations complete with %d changes",
-            update_count,
-        )
+    logger.info(
+        "Update character affiliations complete with %d changes",
+        update_count,
+    )
+    return update_count
 
 
 @app.task
