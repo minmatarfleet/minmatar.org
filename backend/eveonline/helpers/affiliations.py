@@ -1,6 +1,10 @@
-from eveuniverse.models import EveFaction
-
-from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from eveonline.client import EsiClient
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EveFaction,
+)
 
 
 def create_or_update_affiliation_entities(
@@ -20,7 +24,7 @@ def create_or_update_affiliation_entities(
             corporation.save()
 
     if faction_id:
-        faction, _ = EveFaction.objects.get_or_create_esi(id=faction_id)
+        faction = EsiClient(None).get_faction(faction_id)
         if not corporation.faction or corporation.faction != faction:
             corporation.faction = faction
             corporation.save()

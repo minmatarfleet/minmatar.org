@@ -4,7 +4,15 @@ import requests
 from typing import List
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveuniverse.models import EveType
+from eveuniverse.models import (
+    EveType,
+    EveGroup,
+    EveSolarSystem,
+    EvePlanet,
+    EveMoon,
+    EveFaction,
+    EveStation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +56,12 @@ class EsiResponse:
 
 
 class EsiClient:
-    """An instance of the ESI client for a specific character"""
+    """
+    An instance of the ESI client for a specific character
+
+    Calls to the ESI API will use the token for that character. For
+    public APIs you can use `EsiToken(None)`.
+    """
 
     character_id: int
     character_esi_suspended: bool = False
@@ -272,15 +285,6 @@ class EsiClient:
                 data=response.text,
             )
 
-    def get_eve_type(self, type_id):
-        """
-        Returns the item with the specified type ID.
-
-        A copy of the item will be cached in the database.
-        """
-        value, _ = EveType.objects.get_or_create_esi(id=type_id)
-        return value
-
     def get_character_affiliations(self, character_ids) -> EsiResponse:
         """
         Returns the affiliations for a batch of characters.
@@ -289,3 +293,74 @@ class EsiClient:
             characters=character_ids
         )
         return self._operation_results(operation)
+
+    def get_eve_type(self, type_id, include_children: bool = False):
+        """
+        Returns the item with the specified type ID.
+
+        A copy of the item will be cached in the database.
+        """
+        value, _ = EveType.objects.get_or_create_esi(
+            id=type_id,
+            include_children=include_children,
+        )
+        return value
+
+    def get_eve_group(self, group_id, include_children: bool = False):
+        """
+        Returns the eve group with the specified ID.
+
+        A copy of the data will be cached in the database.
+        """
+        eve_group, _ = EveGroup.objects.get_or_create_esi(
+            id=group_id,
+            include_children=include_children,
+        )
+        return eve_group
+
+    def get_faction(self, faction_id):
+        """
+        Returns the faction with the specified ID.
+
+        A copy of the data will be cached in the database.
+        """
+        value, _ = EveFaction.objects.get_or_create_esi(id=faction_id)
+        return value
+
+    def get_solar_system(self, system_id):
+        """
+        Returns the solar system with the specified ID.
+
+        A copy of the system will be cached in the database.
+        """
+        value, _ = EveSolarSystem.objects.get_or_create_esi(id=system_id)
+        return value
+
+    def get_planet(self, planet_id):
+        """
+        Returns the planet with the specified ID.
+
+        A copy of the system will be cached in the database.
+        """
+        value, _ = EvePlanet.objects.get_or_create_esi(id=planet_id)
+        return value
+
+    def get_moon(self, moon_id):
+        """
+        Returns the moon with the specified ID.
+
+        A copy of the system will be cached in the database.
+        """
+        value, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
+        return value
+
+    def get_station(self, station_id):
+        """
+        Returns the station with the specified ID.
+
+        A copy of the data will be cached in the database.
+        """
+        station, _ = EveStation.objects.get_or_create_esi(
+            id=station_id,
+        )
+        return station

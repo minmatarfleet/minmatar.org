@@ -2,10 +2,9 @@ import logging
 import re
 from typing import List
 
-from eveuniverse.models import EveMoon as EsiMoon
-from eveuniverse.models import EvePlanet as EsiPlanet
-from eveuniverse.models import EveSolarSystem as EsiSolarSystem
 from pydantic import BaseModel
+
+from eveonline.client import EsiClient
 
 from moons.models import EveMoon, EveMoonDistribution
 
@@ -82,17 +81,18 @@ def process_moon_paste(
 
     ignored_moons = {}
 
+    esi = EsiClient(None)
+
     for parsed_moon in parsed_moons:
-        system, _ = EsiSolarSystem.objects.get_or_create_esi(
-            id=parsed_moon.system_id
-        )
+        system = esi.get_solar_system(parsed_moon.system_id)
+
         # Name comes back as Rahadalon VI
-        planet, _ = EsiPlanet.objects.get_or_create_esi(
-            id=parsed_moon.planet_id
-        )
+        planet = esi.get_planet(parsed_moon.planet_id)
         planet_number = planet.name.split(" ")[-1]
+
         # Name comes back as Rahadalon VI - Moon 1
-        moon, _ = EsiMoon.objects.get_or_create_esi(id=parsed_moon.moon_id)
+        moon = esi.get_moon(parsed_moon.moon_id)
+
         moon_number = int(moon.name.split(" ")[-1])
         eve_moon, created = EveMoon.objects.get_or_create(
             system=system.name,

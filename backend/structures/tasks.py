@@ -5,7 +5,6 @@ from datetime import datetime
 from django.utils import timezone
 from esi.clients import EsiClientProvider
 from esi.models import Token
-from eveuniverse.models import EveSolarSystem, EveType
 
 from app.celery import app
 
@@ -66,11 +65,11 @@ def update_corporation_structures(corporation_id: int):
             for structure in response:
                 logger.info("Updating structure %s", structure["name"])
                 logger.debug("Structure details %s", structure)
-                system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    id=structure["system_id"]
+                system = EsiClient(None).get_solar_system(
+                    structure["system_id"]
                 )
-                structure_type, _ = EveType.objects.get_or_create_esi(
-                    id=structure["type_id"]
+                structure_type = EsiClient(None).get_eve_type(
+                    structure["type_id"]
                 )
                 corporation = EveCorporation.objects.get(
                     corporation_id=structure["corporation_id"]
