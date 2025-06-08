@@ -273,7 +273,7 @@ class EsiClient:
         # Use direct call as Swagger validation fails
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/",
-            timeout=5,
+            timeout=10,
             headers={"Authorization": "Bearer " + token},
         )
 
