@@ -8,11 +8,21 @@ def docker_client():
     return docker.DockerClient(base_url="unix://var/run/docker.sock")
 
 
-def container_names():
-    return [
-        container.name
-        for container in docker_client().containers.list(limit=2)
-    ]
+def container_names(name: str = None):
+    if name:
+        filters = {
+            "name": name,
+        }
+        return [
+            container.name
+            for container in docker_client().containers.list(
+                filters=filters, limit=50
+            )
+        ]
+    else:
+        return [
+            container.name for container in docker_client().containers.list()
+        ]
 
 
 class DockerLogQuery:

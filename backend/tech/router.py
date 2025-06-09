@@ -150,7 +150,7 @@ def get_logs(
 
     all_logs: List[DockerLogEntry] = []
 
-    for container_name in container_names():
+    for container_name in container_names(container_match):
         if container_name.startswith("tools"):
             # Skip containers from old "tools" site
             logger.debug("Get logs, skipping %s", container_name)
