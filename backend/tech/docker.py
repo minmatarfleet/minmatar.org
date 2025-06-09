@@ -9,10 +9,13 @@ def docker_client():
 
 
 def container_names():
-    return [
-        f"{container.name} {container.status}"
-        for container in docker_client().containers.list(all=True, limit=50)
-    ]
+    return [container.name for container in docker_client().containers.list()]
+
+
+def get_containers(name_filter: str):
+    return docker_client().containers.list(
+        all=True, limit=50, filters={"name": name_filter}
+    )
 
 
 class DockerLogQuery:
@@ -85,10 +88,9 @@ def parse_docker_logs(
 class DockerContainer:
     """A connection to a Docker container"""
 
-    def __init__(self, container_name: str = None):
-        self.container_name = container_name
-        self.client = docker_client()
-        self.container = self.client.containers.get(self.container_name)
+    def __init__(self, container):
+        # self.client = docker_client()
+        self.container = container
 
     def logs(self, query: DockerLogQuery) -> str:
         raw_content = self.container.logs(
@@ -101,4 +103,4 @@ class DockerContainer:
 
     def log_entries(self, query: DockerLogQuery) -> List[DockerLogEntry]:
         log_text = self.logs(query)
-        return parse_docker_logs(self.container_name, log_text, query)
+        return parse_docker_logs(self.container.name, log_text, query)
