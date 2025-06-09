@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.conf import settings
 from django.db.models import signals
@@ -13,6 +13,7 @@ from eveonline.helpers.characters import (
     set_primary_character,
     user_primary_character,
 )
+from users.router import callback
 
 # Create your tests here.
 BASE_URL = "/api/users/"
@@ -160,6 +161,26 @@ class UserRouterTestCase(TestCase):
             self.assertIsNotNone(discord_user)
             self.assertTrue(discord_user.is_down_under)
             self.assertEqual("http://after.gif", discord_user.avatar)
+
+    @patch("discord.client.requests.post")
+    @patch("discord.client.requests.get")
+    def test_discord_login_redirect_error(self, profile_mock, exchange_mock):
+        exchange_mock.return_value.status_code = 400
+        profile_mock.return_value.status_code = 200
+        request = MagicMock()
+
+        response = callback(request, code="100001")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=EXCHG_CODE", response.url)
+
+        exchange_mock.return_value.status_code = 200
+        profile_mock.return_value.status_code = 400
+
+        response = callback(request, code="100001")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=GET_PROFILE", response.url)
 
     def test_login(self):
         fake_user = settings.FAKE_LOGIN_USER_ID
