@@ -1,7 +1,7 @@
 import logging
 import factory
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, MagicMock
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
@@ -187,30 +187,29 @@ class TechRoutesTestCase(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), ["app", "frontend", "celery_1"])
 
-    def test_get_logs(self):
+    @patch("tech.router.DockerContainer")
+    @patch("tech.router.get_containers")
+    def test_get_logs(self, container_list_mock, container_mock):
         self.make_superuser()
 
-        with patch("tech.router.DockerContainer") as container_mock:
-            with patch("tech.router.container_names") as container_list_mock:
+        container_mock.return_value.log_entries.return_value = [
+            DockerLogEntry("app_container", "123", "Test logs"),
+            DockerLogEntry("app_container", "124", "Line 2"),
+        ]
+        container = MagicMock()
+        container.name = "app_container"
 
-                container_list_mock.return_value = ["app_container"]
-                container = Mock()
-                container_mock.return_value = container
+        container_list_mock.return_value = [container]
 
-                container.log_entries.return_value = [
-                    DockerLogEntry("app_container", "123", "Test logs"),
-                    DockerLogEntry("app_container", "124", "Line 2"),
-                ]
-
-                response = self.client.get(
-                    f"{BASE_URL}/containers/app_container/logs",
-                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
-                )
-                self.assertEqual(response.status_code, 200)
-                content = response.content.decode("utf-8")
-                self.assertIn("app_container", content)
-                self.assertIn("Test logs", content)
-                self.assertIn("Line 2", content)
+        response = self.client.get(
+            f"{BASE_URL}/containers/app_container/logs",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("app_container", content)
+        self.assertIn("Test logs", content)
+        self.assertIn("Line 2", content)
 
     def test_setup_db_views(self):
         self.make_superuser()

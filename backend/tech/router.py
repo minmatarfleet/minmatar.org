@@ -19,6 +19,7 @@ from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
 from tech.docker import (
+    get_containers,
     container_names,
     sort_chronologically,
     DockerContainer,
@@ -150,15 +151,15 @@ def get_logs(
 
     all_logs: List[DockerLogEntry] = []
 
-    for container_name in container_names():
-        if container_name.startswith("tools"):
-            # Skip containers from old "tools" site
-            logger.debug("Get logs, skipping %s", container_name)
-            continue
-        if container_match in container_name:
-            logger.info("Get logs, fetching %s", container_name)
-            container_logs = DockerContainer(container_name).log_entries(query)
-            all_logs += container_logs
+    for container in get_containers(container_match):
+        # if container.name.startswith("tools"):
+        # Skip containers from old "tools" site
+        # logger.debug("Get logs, skipping %s", container.name)
+        # continue
+        # if container_match in container_name:
+        logger.info("Get logs, fetching %s", container.name)
+        container_logs = DockerContainer(container).log_entries(query)
+        all_logs += container_logs
 
     if query.aborted():
         logger.warning("Get logs, query aborted")
