@@ -1,7 +1,7 @@
 import logging
 
 import jwt
-from typing import List
+from typing import List, Optional
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
@@ -9,6 +9,7 @@ from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
+from app.errors import create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError
 from discord.models import DiscordUser
@@ -47,8 +48,24 @@ def login(request, redirect_url: str):
 
 
 @router.get("/callback", include_in_schema=False)
-def callback(request, code: str):
+def callback(
+    request,
+    code: Optional[str] = None,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
+):
     redirect_url = redirect_url_from_session(request)
+
+    # Note that while `code` is marked optional, the endpoint will not work without it
+    if code is None:
+        error_id = create_error_id()
+        logger.error(
+            "No code returned in Discord redirect: %s, %s (%s)",
+            error,
+            error_description,
+            error_id,
+        )
+        return redirect(f"{redirect_url}?error=DENIED&id={error_id}")
 
     logger.debug("Recived discord callback with code: ...%s", code[-5:])
 

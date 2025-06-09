@@ -182,6 +182,19 @@ class UserRouterTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=GET_PROFILE", response.url)
 
+    def test_discord_login_no_code(self):
+        request = MagicMock()
+
+        response = callback(
+            request,
+            code=None,
+            error="access_denied",
+            error_description="The resource owner or authorization server denied the request",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=DENIED", response.url)
+
     def test_login(self):
         fake_user = settings.FAKE_LOGIN_USER_ID
         del settings.FAKE_LOGIN_USER_ID
