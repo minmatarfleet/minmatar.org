@@ -1,5 +1,5 @@
 import docker
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from operator import attrgetter
 
@@ -9,7 +9,10 @@ def docker_client():
 
 
 def container_names():
-    return [container.name for container in docker_client().containers.list()]
+    return [
+        container.name
+        for container in docker_client().containers.list(limit=2)
+    ]
 
 
 class DockerLogQuery:
@@ -20,6 +23,8 @@ class DockerLogQuery:
     exclude: List[str]
     start_time: datetime
     end_time: datetime
+    abort_time: datetime
+    include_ended: bool | None
 
     def __init__(self, containers, start_time, end_time, search_for=None):
         self.container_names = containers
@@ -27,6 +32,17 @@ class DockerLogQuery:
         self.end_time = end_time
         self.search_for = search_for
         self.exclude = []
+        self.abort_time = None
+
+    def abort_after(self, delta: timedelta):
+        self.abort_time = datetime.now() + delta
+
+    def aborted(self) -> bool:
+        if not self.abort_time:
+            return False
+        if datetime.now() >= self.abort_time:
+            return True
+        return False
 
 
 class DockerLogEntry:
@@ -61,6 +77,8 @@ def parse_docker_logs(
             if not query.search_for.upper() in line.upper():
                 continue
         entries.append(DockerLogEntry(container_name, line[0:30], line[31:]))
+        if query and query.aborted():
+            break
     return entries
 
 

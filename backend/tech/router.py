@@ -146,6 +146,7 @@ def get_logs(
         end_time=end_time,
         search_for=search_for,
     )
+    query.abort_after(timedelta(seconds=5))
 
     all_logs: List[DockerLogEntry] = []
 
@@ -158,6 +159,9 @@ def get_logs(
             logger.info("Get logs, fetching %s", container_name)
             container_logs = DockerContainer(container_name).log_entries(query)
             all_logs += container_logs
+
+    if query.aborted():
+        logger.warning("Get logs, query aborted")
 
     logger.info("Get logs, sorting %d entries", len(all_logs))
 
