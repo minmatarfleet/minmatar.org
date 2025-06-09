@@ -9,9 +9,8 @@ from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
-from app.errors import create_error_id
 from authentication import AuthBearer
-from discord.client import DiscordClient
+from discord.client import DiscordClient, DiscordError
 from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
 from eveonline.models import EvePlayer
@@ -55,10 +54,14 @@ def callback(request, code: str):
 
     try:
         user = discord.exchange_code(code)
-    except Exception as e:
-        error_id = create_error_id()
-        logger.error("Error exchanging Discord code (%s): %s", error_id, e)
-        return redirect(f"{redirect_url}?error=EXCHG_CODE&id={error_id}")
+    except DiscordError as e:
+        logger.error(
+            "Error exchanging Discord code (%s): %d %s",
+            e.id,
+            e.status_code,
+            e.description,
+        )
+        return redirect(f"{redirect_url}?error={e.code}&id={e.id}")
 
     logger.debug("Successfully exchanged code for user: %s", user["username"])
 

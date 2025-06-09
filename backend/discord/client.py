@@ -9,6 +9,8 @@ from ratelimit import RateLimitException, limits
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
+from app.errors import create_error_id
+
 logger = logging.getLogger(__name__)
 
 GUILD_ID = 1041384161505722368
@@ -23,6 +25,26 @@ retry_strategy = Retry(
 
 s = requests.Session()
 s.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+
+
+class DiscordError(Exception):
+    """An error calling the Discord API"""
+
+    status_code: int
+    description: str
+    code: str
+    id: str
+
+    @classmethod
+    def for_response(
+        cls, description: str, code: str, response: requests.Response
+    ):
+        e = cls(description)
+        e.description = description
+        e.status_code = response.status_code
+        e.code = code
+        e.id = create_error_id()
+        return e
 
 
 class DiscordBaseClient:
@@ -135,7 +157,7 @@ class DiscordClient(DiscordBaseClient):
             "redirect_uri": settings.DISCORD_REDIRECT_URL,
             "scope": "identify",
         }
-        logger.info("Discord OAuth2 Token Body: %s", data)
+        logger.debug("Discord OAuth2 Token Body: %s", data)
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = requests.post(
             "https://discord.com/api/oauth2/token",
@@ -143,8 +165,12 @@ class DiscordClient(DiscordBaseClient):
             headers=headers,
             timeout=10,
         )
+        if response.status_code >= 400:
+            raise DiscordError.for_response(
+                "Error exchanging token", "EXCHG_CODE", response
+            )
         logger.debug("Discord OAuth2 Token Response: %s", response.json())
-        response.raise_for_status()
+        # response.raise_for_status()
         credentials = response.json()
         access_token = credentials["access_token"]
         response = requests.get(
@@ -152,7 +178,12 @@ class DiscordClient(DiscordBaseClient):
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=10,
         )
-        response.raise_for_status()
+        # response.raise_for_status()
+        if response.status_code >= 400:
+            raise DiscordError.for_response(
+                "Error fetching Discord profile", "GET_PROFILE", response
+            )
+
         user = response.json()
         return user
 
