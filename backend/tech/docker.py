@@ -10,8 +10,8 @@ def docker_client():
 
 def container_names():
     return [
-        container.name
-        for container in docker_client().containers.list(limit=50)
+        f"{container.name} {container.status}"
+        for container in docker_client().containers.list(all=True, limit=50)
     ]
 
 
