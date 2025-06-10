@@ -4,6 +4,7 @@ import logging
 from django.db.models import signals
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
+from esi.models import Token, Scope
 
 from app.test import TestCase
 from eveuniverse.models import EveType
@@ -13,8 +14,6 @@ from eveonline.models import (
     EveCharacterSkill,
     EveSkillset,
     EveLocation,
-    Token,
-    Scope,
 )
 from eveonline.helpers.skills import upsert_character_skill
 

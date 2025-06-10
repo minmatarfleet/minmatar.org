@@ -5,16 +5,13 @@ from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import User
 from esi.clients import EsiClientProvider
-from esi.models import Scope, Token
+from esi.models import Token
 from eveuniverse.models import EveFaction
 
-from eveonline.scopes import CEO_SCOPES
 from eveonline.client import EsiClient
 
 logger = logging.getLogger(__name__)
 esi = EsiClientProvider()
-
-active_corp_requires_all_ceo_scopes = False
 
 
 class EvePlayer(models.Model):
@@ -396,33 +393,14 @@ class EveCorporation(models.Model):
         if not self.ceo.token:
             return False
 
-        # Grab CEO token for the character
-        # token = Token.objects.filter(
-        #     character_id=self.ceo.character_id,
-        #     scopes__name="esi-corporations.read_corporation_membership.v1",
-        # ).first()
-        token = Token.get_token(
+        if not Token.get_token(
             self.ceo.character_id,
             ["esi-corporations.read_corporation_membership.v1"],
-        )
-        if not token:
+        ):
             logger.warning(
                 "CEO token does not have required scope: %s", self.name
             )
             return False
-
-        if active_corp_requires_all_ceo_scopes:
-            # Check if the token has the required scopes
-            required_scopes = set(CEO_SCOPES)
-            required_scopes = Scope.objects.filter(
-                name__in=required_scopes,
-            )
-
-            for scope in required_scopes:
-                if scope not in token.scopes.all():
-                    return False
-        else:
-            logger.info("Not checking for full CEO scopes")
 
         return True
 
