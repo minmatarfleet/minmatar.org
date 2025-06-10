@@ -171,7 +171,6 @@ class DiscordClient(DiscordBaseClient):
                 "Error exchanging token", "EXCHG_CODE", response
             )
         logger.debug("Discord OAuth2 Token Response: %s", response.json())
-        # response.raise_for_status()
         credentials = response.json()
         access_token = credentials["access_token"]
         response = requests.get(
@@ -179,7 +178,6 @@ class DiscordClient(DiscordBaseClient):
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=10,
         )
-        # response.raise_for_status()
         if response.status_code >= 400:
             raise DiscordError.for_response(
                 "Error fetching Discord profile", "GET_PROFILE", response
