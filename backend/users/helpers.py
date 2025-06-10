@@ -5,8 +5,7 @@ from django.db.models import signals
 
 from discord.models import DiscordUser
 from eveonline.helpers.characters import user_primary_character
-
-# from eveonline.models import EvePrimaryCharacter
+from eveonline.models import EvePlayer
 
 from .schemas import UserProfileSchema
 
@@ -119,3 +118,40 @@ def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
         except Exception:
             logger.error("Error expanding profile for user %d", user.id)
     return results
+
+
+def make_user_objects(user):
+    """
+    Makes database entities from a Discord user profile
+
+    Only creates entities that don't already exist.
+    """
+    discord_tag = user["username"] + "#" + user["discriminator"]
+
+    django_user, created = User.objects.get_or_create(
+        username=user["username"]
+    )
+    if created:
+        logger.info("Django user created: %s", django_user.username)
+
+    discord_user, created = DiscordUser.objects.get_or_create(
+        id=user["id"],
+        defaults={"user": django_user, "discord_tag": discord_tag},
+    )
+    if created:
+        logger.info(
+            "Discord user created: %s %s", discord_user.id, discord_tag
+        )
+
+    discord_user.discord_tag = discord_tag
+    discord_user.avatar = user["avatar"]
+    discord_user.save()
+
+    discord_user.user = django_user
+    discord_user.save()
+
+    EvePlayer.objects.get_or_create(
+        user=django_user, defaults={"nickname": django_user.username}
+    )
+
+    return django_user
