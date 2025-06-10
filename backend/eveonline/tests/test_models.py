@@ -1,6 +1,7 @@
 import random
 import factory
 import logging
+from typing import List
 from django.db.models import signals
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
@@ -272,6 +273,10 @@ class SkillsUpdateTestCase(TestCase):
         self.assertEqual(1, EveCharacterSkill.objects.count())
 
 
+def characters(player: EvePlayer) -> List[EveCharacter]:
+    return EveCharacter.objects.filter(user=player.user)
+
+
 class EvePlayerTestCase(TestCase):
     """
     Tests the EvePlayer database model
@@ -297,8 +302,8 @@ class EvePlayerTestCase(TestCase):
 
         self.assertEqual("somebody / Testpilot", str(player))
         self.assertEqual(123, player.primary_character.character_id)
-        self.assertEqual(1, len(player.characters()))
-        self.assertEqual("Testpilot", player.characters()[0].character_name)
+        self.assertEqual(1, len(characters(player)))
+        self.assertEqual("Testpilot", characters(player)[0].character_name)
 
     def test_duplicate_eveplayer_user_rejected(self):
         EvePlayer.objects.create(

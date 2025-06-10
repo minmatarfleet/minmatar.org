@@ -54,9 +54,6 @@ class EvePlayer(models.Model):
         )
         return f"{user_name} / {primary_char}"
 
-    def characters(self):
-        return EveCharacter.objects.filter(user=self.user)
-
 
 class EvePrimaryCharacter(models.Model):
     """DEPRECATED - use EvePlayer instead"""
@@ -363,6 +360,8 @@ class EveCorporation(models.Model):
     ticker = models.CharField(max_length=255, blank=True, null=True)
     member_count = models.IntegerField(blank=True, null=True)
 
+    recruitment_active = models.BooleanField(default=True)
+
     # relationships
     ceo = models.ForeignKey(
         "EveCharacter", on_delete=models.SET_NULL, blank=True, null=True
@@ -387,22 +386,23 @@ class EveCorporation(models.Model):
 
     @property
     def active(self):
-        if not self.ceo:
-            return False
+        return self.recruitment_active
+        # if not self.ceo:
+        #     return False
 
-        if not self.ceo.token:
-            return False
+        # if not self.ceo.token:
+        #     return False
 
-        if not Token.get_token(
-            self.ceo.character_id,
-            ["esi-corporations.read_corporation_membership.v1"],
-        ):
-            logger.warning(
-                "CEO token does not have required scope: %s", self.name
-            )
-            return False
+        # if not Token.get_token(
+        #     self.ceo.character_id,
+        #     ["esi-corporations.read_corporation_membership.v1"],
+        # ):
+        #     logger.debug(
+        #         "CEO token does not have required scope: %s", self.name
+        #     )
+        #     return False
 
-        return True
+        # return True
 
     def populate(self):
         logger.info(
