@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, User, Permission
 from django.db.models import signals
 
 from discord.models import DiscordUser
@@ -38,6 +38,16 @@ def get_user_permissions(user_id: int) -> list[str]:
 def get_user_profile(user_id: int) -> UserProfileSchema:
     user = User.objects.get(id=user_id)
     return expand_user_profile(user, True, True)
+
+
+def add_user_permission(user: User, permission: str):
+    """
+    Adds a specific permission to a user
+
+    Primarily used for testing.
+    """
+    permission = Permission.objects.get(codename=permission)
+    user.user_permissions.add(permission)
 
 
 def expand_user_profile(
