@@ -12,12 +12,14 @@ from pydantic import BaseModel
 from app.errors import create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError
-from discord.models import DiscordUser
+
+# from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
-from eveonline.models import EvePlayer
+
+# from eveonline.models import EvePlayer
 from groups.tasks import update_affiliation
 
-from .helpers import get_user_profile, get_user_profiles
+from .helpers import get_user_profile, get_user_profiles, make_user_objects
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)
@@ -82,33 +84,7 @@ def callback(
 
     logger.debug("Successfully exchanged code for user: %s", user["username"])
 
-    discord_tag = user["username"] + "#" + user["discriminator"]
-
-    django_user, created = User.objects.get_or_create(
-        username=user["username"]
-    )
-    if created:
-        logger.info("Django user created: %s", django_user.username)
-
-    discord_user, created = DiscordUser.objects.get_or_create(
-        id=user["id"],
-        defaults={"user": django_user, "discord_tag": discord_tag},
-    )
-    if created:
-        logger.info(
-            "Discord user created: %s %s", discord_user.id, discord_tag
-        )
-
-    discord_user.discord_tag = discord_tag
-    discord_user.avatar = user["avatar"]
-    discord_user.save()
-
-    discord_user.user = django_user
-    discord_user.save()
-
-    EvePlayer.objects.get_or_create(
-        user=django_user, defaults={"nickname": django_user.username}
-    )
+    django_user = make_user_objects(user)
 
     payload = {
         "user_id": django_user.id,
