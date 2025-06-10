@@ -2,23 +2,36 @@ import logging
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, ANY
 
+# import factory
+
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User, Permission
 from django.utils import timezone
 
 from app.test import TestCase
+from users.helpers import add_user_permission
 from eveonline.client import EsiResponse
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.helpers.characters import set_primary_character
 from discord.models import DiscordUser
+
+# from groups.models import Team
+# from groups.helpers import TECH_TEAM
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
+    EveStandingFleet,
 )
-from fleets.router import fixup_fleet_status, EveFleetTrackingResponse
+from fleets.router import (
+    fixup_fleet_status,
+    can_see_fleet,
+    # can_see_metrics,
+    time_region,
+    EveFleetTrackingResponse,
+)
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
 
@@ -464,6 +477,60 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(
             "ESI error 599 starting fleet 1", response.json()["detail"]
         )
+
+    def test_can_see_fleet(self):
+        fc_user = self.user
+        nobody = User.objects.create(username="Anybody")
+        somebody = User.objects.create(username="Somebody")
+        add_user_permission(somebody, "view_evefleet")
+        fleet = make_test_fleet("Hidden", fc_user, datetime.now())
+
+        self.assertTrue(can_see_fleet(fleet, fc_user))
+
+        fleet.audience = EveFleetAudience.objects.create(
+            name="Hidden", hidden=True
+        )
+        self.assertFalse(can_see_fleet(fleet, somebody))
+
+        fleet.audience = EveFleetAudience.objects.create(
+            name="Testing", hidden=False
+        )
+        self.assertTrue(can_see_fleet(fleet, somebody))
+        self.assertFalse(can_see_fleet(fleet, nobody))
+
+    # @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    # def test_can_see_metrics(self):
+    #     Team.objects.create(name=TECH_TEAM, group=Group.objects.create(name=TECH_TEAM))
+    #     somebody = User.objects.create(username="Somebody")
+
+    #     self.assertFalse(can_see_metrics(somebody))
+
+    #     add_user_permission(somebody, "end_evestandingfleet")
+    #     self.assertTrue(can_see_metrics(somebody))
+
+    def test_get_standing_fleets(self):
+        EveStandingFleet.objects.create(
+            external_fleet_id=1001,
+            active_fleet_commander_character_id=2001,
+            active_fleet_commander_character_name="Buck Rogers",
+        )
+        response = self.client.get(
+            f"{BASE_URL}/standingfleets",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+
+    def test_time_region(self):
+        def hour_time(hour: int) -> datetime:
+            return datetime(2025, 1, 1, hour, 30)
+
+        self.assertEqual("US", time_region(hour_time(23)))
+        self.assertEqual("US_AP", time_region(hour_time(6)))
+        self.assertEqual("AP", time_region(hour_time(11)))
+        self.assertEqual("EU", time_region(hour_time(17)))
+        self.assertEqual("EU_US", time_region(hour_time(20)))
 
 
 class FleetTaskTests(TestCase):

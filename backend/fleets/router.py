@@ -254,8 +254,11 @@ def get_fleets(request, upcoming: bool = True, active: bool = False):
     return [fleet.id for fleet in fleets]
 
 
-@router.get("/v2", response={200: List[EveFleetListResponse]})
+@router.get("/v2", deprecated=True, response={200: List[EveFleetListResponse]})
 def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
+    logger.warning(
+        "Deprecated /fleets/v2 endpoint called by user %s", request.user
+    )
     if active:
         fleets = (
             EveFleet.objects.filter(evefleetinstance__end_time=None)
@@ -612,6 +615,7 @@ def get_fleet(request, fleet_id: int):
     description="Get users for a given fleet, no permissions required",
 )
 def get_fleet_users(request, fleet_id: int):
+    logger.warning("Endpoint get_fleet_users called by user %s", request.user)
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
         return 404, None
