@@ -2,7 +2,6 @@ import logging
 
 from django.db.models import signals
 from django.dispatch import receiver
-from esi.clients import EsiClientProvider
 
 from eveonline.helpers.characters import user_primary_character
 
@@ -13,7 +12,6 @@ from .models import EveCorporationApplication
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
-esi = EsiClientProvider()
 
 APPLICATION_CHANNEL_ID = 1097522187952467989
 
