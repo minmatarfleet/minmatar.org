@@ -72,7 +72,7 @@ def callback(
     logger.debug("Recived discord callback with code: ...%s", code[-5:])
 
     try:
-        user = discord.exchange_code(code)
+        user = discord.exchange_code(code, settings.DISCORD_REDIRECT_URL)
     except DiscordError as e:
         logger.error(
             "Error exchanging Discord code (%s): %d %s",
