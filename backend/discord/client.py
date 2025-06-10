@@ -147,14 +147,14 @@ class DiscordBaseClient:
 class DiscordClient(DiscordBaseClient):
     """Discord API Client"""
 
-    def exchange_code(self, code: str):
+    def exchange_code(self, code: str, redirect_uri: str):
         """Exchange a Discord OAuth2 code for an access token"""
         data = {
             "client_id": settings.DISCORD_CLIENT_ID,
             "client_secret": settings.DISCORD_CLIENT_SECRET,
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": settings.DISCORD_REDIRECT_URL,
+            "redirect_uri": redirect_uri,
             "scope": "identify",
         }
         logger.debug("Discord OAuth2 Token Body: %s", data)
@@ -165,6 +165,7 @@ class DiscordClient(DiscordBaseClient):
             headers=headers,
             timeout=10,
         )
+
         if response.status_code >= 400:
             raise DiscordError.for_response(
                 "Error exchanging token", "EXCHG_CODE", response

@@ -42,7 +42,7 @@ def discord_login_redirect(request: HttpRequest):
         request.GET.get("code"),
     )
     code = request.GET.get("code")
-    user = discord.exchange_code(code)
+    user = discord.exchange_code(code, settings.DISCORD_ADMIN_REDIRECT_URL)
 
     if not user:
         redirect_to_error_page(request, "exchange_token_failed")
