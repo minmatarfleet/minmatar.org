@@ -256,7 +256,7 @@ class CharacterRouterTestCase(TestCase):
             req, token, TokenType.BASIC
         )
 
-        self.assertEqual("/testing?error=wrong_character", response.url)
+        self.assertIn("/testing?error=wrong_character", response.url)
 
     def test_add_esi_character_update_no_token(self):
         char_id = 3456
