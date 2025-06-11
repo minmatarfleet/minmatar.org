@@ -711,7 +711,7 @@ def get_character_tokens(request, character_id: int):
 
     response = []
 
-    for token in character.tokens:
+    for token in Token.objects.filter(character_id=character.character_id):
         if is_admin or token.user is request.user:
             scopes = scope_names(token)
 

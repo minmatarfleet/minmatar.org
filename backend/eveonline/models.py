@@ -110,10 +110,6 @@ class EveCharacter(models.Model):
 
     is_primary = models.BooleanField(null=True, help_text="Deprecated")
 
-    @property
-    def tokens(self):
-        return Token.objects.filter(character_id=self.character_id)
-
     def __str__(self):
         return str(self.character_name)
 

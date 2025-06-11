@@ -1,5 +1,8 @@
+import factory
 from django.db.models import signals
 from django.test import Client
+
+from esi.models import Token
 
 from app.test import TestCase
 from eveonline.models import (
@@ -98,3 +101,31 @@ class CorporationRouterTestCase(TestCase):
         update_character_with_affiliations(
             character_id=100, corporation_id=123, alliance_id=234
         )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_get_corp_members(self):
+        self.make_superuser()
+
+        corp = self.create_corp(12345, "TestCorp")
+        corp.ceo = EveCharacter.objects.create(
+            character_id=10001,
+            character_name="Boss Man",
+            corporation=corp,
+            user=self.user,
+            token=Token.objects.create(
+                character_id=10001,
+                user=self.user,
+            ),
+        )
+        corp.save()
+
+        response = self.client.get(
+            BASE_URL + "corporations/12345/members",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        members = response.json()
+        self.assertEqual(1, len(members))
+        self.assertEqual("Boss Man", members[0]["character_name"])
+        self.assertEqual(1, members[0]["token_count"])
