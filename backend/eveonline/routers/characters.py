@@ -12,6 +12,7 @@ from esi.models import Token
 from ninja import Router
 from pydantic import BaseModel
 
+from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
 from applications.models import EveCorporationApplication
 from eveonline.models import (
@@ -66,10 +67,6 @@ class CharacterAssetResponse(BaseModel):
     type_name: str
     location_id: int
     location_name: str
-
-
-class ErrorResponse(BaseModel):
-    detail: str
 
 
 class UserCharacter(BaseModel):
@@ -128,13 +125,11 @@ def get_characters(request, primary_character_id: int = None):
         if not EveCharacter.objects.filter(
             character_id=primary_character_id
         ).exists():
-            return 404, {"detail": "Primary character not found."}
+            return 404, ErrorResponse(detail="Primary character not found")
         character = EveCharacter.objects.get(character_id=primary_character_id)
         character_user = character.token.user
-        # characters = EveCharacter.objects.filter(token__user=character_user)
         characters = user_characters(character_user)
     else:
-        # characters = EveCharacter.objects.filter(token__user=request.user)
         characters = user_characters(request.user)
     response = []
     for character in characters:
@@ -177,7 +172,7 @@ def get_available_tags(request):
 )
 def get_character_by_id(request, character_id: int):
     if not EveCharacter.objects.filter(character_id=character_id).exists():
-        return 404, {"detail": "Character not found."}
+        return 404, ErrorResponse(detail="Character not found")
 
     character = EveCharacter.objects.get(character_id=character_id)
 
@@ -351,20 +346,6 @@ def put_primary_character(request, character_id: int):
     return 200, None
 
 
-# def fetch_primary_character(user) -> EvePrimaryCharacter | None:
-#     q = EvePrimaryCharacter.objects.filter(character__token__user=user)
-
-#     if q.count() > 1:
-#         logger.error(
-#             "User %s has %d primary characters", user.username, q.count()
-#         )
-
-#     if q.count() >= 1:
-#         return q.first()
-#     else:
-#         return None
-
-
 @router.get(
     "/primary",
     summary="Get primary character",
@@ -406,8 +387,11 @@ def handle_add_character_esi_callback(request, token, token_type):
                 str(token.character_id),
                 requested_char,
             )
+            error_id = create_error_id()
             return redirect(
-                request.session["redirect_url"] + "?error=wrong_character"
+                request.session["redirect_url"]
+                + "?error=wrong_character&error_id="
+                + error_id
             )
 
     if EveCharacter.objects.filter(character_id=token.character_id).exists():
@@ -503,9 +487,6 @@ def handle_add_character_esi_callback(request, token, token_type):
             request.user.username,
         )
         set_primary_character(request.user, character)
-        # EvePrimaryCharacter.objects.create(
-        #     character=character, user=request.user
-        # )
 
     # populate corporation if CEO token
     if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
@@ -591,7 +572,7 @@ def get_user_characters(
 
         if discord_id and character_name:
             return 400, ErrorResponse(
-                detail="Only one query parameter can be provided"
+                detail="Only 1 query parameter supported"
             )
 
     if character_name:
@@ -603,7 +584,9 @@ def get_user_characters(
             return 404, ErrorResponse(detail="No matching character found")
 
         if not char.user:
-            return 400, ErrorResponse(detail="Character not linked to a user")
+            return 400, ErrorResponse.log(
+                "Character not linked to a user", char.id
+            )
 
         char_user = char.user
 
@@ -612,7 +595,9 @@ def get_user_characters(
         discord_user = DiscordUser.objects.filter(id=discord_id).first()
 
         if not discord_user:
-            return 404, ErrorResponse(detail="No matching discord user found")
+            return 404, ErrorResponse.log(
+                "No matching discord user found", discord_id
+            )
 
         char_user = discord_user.user
     else:
@@ -621,7 +606,7 @@ def get_user_characters(
         discord_user = DiscordUser.objects.filter(user=char_user).first()
 
         if not discord_user:
-            return 404, ErrorResponse(detail="No matching discord user found")
+            return 404, ErrorResponse.new("No matching discord user found")
 
     response = UserCharacterResponse(
         user_id=char_user.id,
@@ -726,7 +711,7 @@ def get_character_tokens(request, character_id: int):
 
     response = []
 
-    for token in character.tokens:
+    for token in Token.objects.filter(character_id=character.character_id):
         if is_admin or token.user is request.user:
             scopes = scope_names(token)
 
@@ -775,9 +760,13 @@ def can_manage_tags(user: User, character: EveCharacter) -> bool:
     },
 )
 def get_character_tags(request, character_id: int):
-    character = EveCharacter.objects.get(character_id=character_id)
+    character = EveCharacter.objects.filter(character_id=character_id).first()
+    if not character:
+        return 403, ErrorResponse.log("Character not found", character_id)
     if not can_manage_tags(request.user, character):
-        return 403, ErrorResponse(detail="Cannot manage tags for this user")
+        return 403, ErrorResponse.log(
+            "Cannot manage tags for this character", character_id
+        )
 
     tags = EveCharacterTag.objects.filter(character=character)
     response = []

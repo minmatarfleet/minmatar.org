@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List, Optional
 
 from django.contrib.auth.models import User
+from django.db.models import Count
 from eveuniverse.models import EveFaction
 from ninja import Router, Schema
 
@@ -318,17 +319,20 @@ def get_corp_member_details(request, corporation_id: int):
 
     response = []
 
-    for character in corp_members(corporation_id):
+    members = EveCharacter.objects.filter(corporation=corporation).annotate(
+        token_count=Count("token")
+    )
+    for character in members:
         char = CorporationMemberDetails(
             character_id=character.character_id,
             character_name=character.character_name,
             esi_suspended=character.esi_suspended,
             exempt=character.exempt,
-            token_count=character.tokens.count(),
+            token_count=character.token_count,
             token_level=character.esi_token_level or "",
         )
-        if character.token:
-            char.user_name = character.token.user.username
+        if character.user:
+            char.user_name = character.user.username
 
         response.append(char)
 
@@ -361,7 +365,7 @@ def get_managed_corp_ids(request) -> List[int]:
 
 
 def can_manage_corp_members(user: User, corporation: EveCorporation) -> bool:
-    if corporation.ceo.token.user == user:
+    if corporation.ceo.user == user:
         return True
     if user_in_team(user, PEOPLE_TEAM):
         return True

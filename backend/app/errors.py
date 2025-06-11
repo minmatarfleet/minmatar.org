@@ -1,14 +1,26 @@
+import logging
+
 from pydantic import BaseModel
 from django.utils.crypto import get_random_string
 
+logger = logging.getLogger(__name__)
+
 
 class ErrorResponse(BaseModel):
+    """API error response"""
+
     detail: str
     id: str | None = None
 
     @classmethod
     def new(cls, detail: str):
         return cls(detail=detail, id=create_error_id())
+
+    @classmethod
+    def log(cls, detail: str, log_message: str = None):
+        response = cls(detail=detail, id=create_error_id())
+        logger.error("%s : %s (%s)", detail, log_message, response.id)
+        return response
 
 
 def create_error_id():

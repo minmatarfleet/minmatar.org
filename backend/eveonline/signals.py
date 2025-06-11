@@ -52,7 +52,7 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
 def populate_eve_character_private_data(sender, instance, created, **kwargs):
     """Populate skills for a character"""
     if created:
-        if not instance.tokens.exists():
+        if not instance.token:
             return
 
         # populate skills

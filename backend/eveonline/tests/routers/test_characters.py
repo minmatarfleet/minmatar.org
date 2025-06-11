@@ -1,3 +1,5 @@
+import factory
+
 from django.db.models import signals
 from django.http import HttpRequest
 from django.test import Client
@@ -256,7 +258,7 @@ class CharacterRouterTestCase(TestCase):
             req, token, TokenType.BASIC
         )
 
-        self.assertEqual("/testing?error=wrong_character", response.url)
+        self.assertIn("/testing?error=wrong_character", response.url)
 
     def test_add_esi_character_update_no_token(self):
         char_id = 3456
@@ -533,3 +535,29 @@ class CharacterRouterTestCase(TestCase):
             ],
             response.json(),
         )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_get_character_tokens(self):
+        self.make_superuser()
+
+        char = self.make_character(
+            user=self.user,
+            character_id=10001,
+            name="Test Pilot",
+            is_primary=True,
+        )
+        char.esi_token_level = "Basic"
+        char.save()
+
+        self.assertIsNotNone(char.token)
+
+        response = self.client.get(
+            f"{BASE_URL}{char.character_id}/tokens",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        tokens = response.json()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("ACTIVE", tokens[0]["token_state"])
+        self.assertEqual("Basic", tokens[0]["requested_level"])
+        self.assertEqual("Public", tokens[0]["actual_level"])

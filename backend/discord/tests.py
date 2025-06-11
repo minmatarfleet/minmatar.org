@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 from django.contrib.auth.models import User, Group
 from django.test import SimpleTestCase
@@ -16,7 +16,7 @@ from eveonline.helpers.characters import set_primary_character
 from app.test import TestCase
 from discord.core import make_nickname
 from discord.models import DiscordUser, DiscordRole
-from discord.views import discord_login_redirect
+from discord.views import discord_login_redirect, fake_login
 from discord.tasks import sync_discord_nickname, sync_discord_user
 
 
@@ -113,32 +113,12 @@ class DiscordTests(TestCase):
 
         with patch("discord.views.login"):
             with patch("discord.views.discord") as discord_client_mock:
-                # mock_post_response = Mock(
-                #     data="data",
-                #     status_code=200,
-                # )
                 discord_client_mock.exchange_code.return_value = {
                     "id": 12345,
                     "username": "testuser",
                     "discriminator": "123",
                     "avatar": "http://avatar.gif",
                 }
-                # mock_post_response
-                # mock_post_response.json.return_value = {
-                #     "access_token": "ABC123",
-                # }
-
-                # # mock_get_response = Mock(
-                # #     data="data",
-                # #     status_code=200,
-                # # )
-                # # discord_request_mock.get.return_value = mock_get_response
-                # mock_get_response.json.return_value = {
-                #     "id": 12345,
-                #     "username": "testuser",
-                #     "discriminator": "123",
-                #     "avatar": "http://avatar.gif",
-                # }
 
                 redirect_request_mock = Mock()
                 redirect_request_mock.GET.get.return_value = None
@@ -204,6 +184,11 @@ class DiscordTests(TestCase):
         user.groups.add(group)
 
         sync_discord_user(user.id)
+
+    def test_fake_login(self):
+        mock_request = MagicMock()
+        response = fake_login(mock_request)
+        self.assertEqual(302, response.status_code)
 
 
 if __name__ == "__main__":
