@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 class ErrorResponse(BaseModel):
     """API error response"""
+
     detail: str
     id: str | None = None
 
