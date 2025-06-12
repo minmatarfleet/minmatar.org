@@ -204,8 +204,8 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
             structure_response = get_structure_details(
                 payload.selected_item_window
             )
-    except ValueError:
-        return 400, ErrorResponse(detail="Invalid request")
+    except ValueError as e:
+        return 400, ErrorResponse.log("Invalid request", str(e))
 
     # Create the structure timer
     timer = EveStructureTimer.objects.create(
@@ -217,6 +217,8 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
         system_name=structure_response.location,
         name=structure_response.structure_name,
     )
+
+    logger.info("Timer %d submitted by %s", timer.id, request.user.username)
 
     response = {
         "id": timer.id,
@@ -300,6 +302,12 @@ def add_structure_manager(request, payload: CreateStructureManagerRequest):
         character=char,
         corporation=char.corporation,
         poll_time=payload.poll_time,
+    )
+
+    logger.info(
+        "Structure manager %s added by %s",
+        char.character_name,
+        request.user.username,
     )
 
     return esm.id
