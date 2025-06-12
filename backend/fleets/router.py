@@ -431,15 +431,14 @@ def create_standing_fleet(request):
             "detail": "User missing permission fleets.add_evestandingfleet"
         }
 
-    # eve_primary_character = EvePrimaryCharacter.objects.get(
-    #     character__token__user=request.user
-    # )
     primary_character = user_primary_character(request.user)
     if not primary_character:
         return 400, {"detail": "No primary character found"}
 
     try:
         EveStandingFleet.start(primary_character.character_id)
+
+        logger.info("Standing fleet started by %s", request.user.username)
     except Exception as e:
         return 400, {
             "detail": f"Error starting fleet for {primary_character}: {e}"
@@ -461,14 +460,13 @@ def claim_standing_fleet(request, fleet_id: int):
         }
 
     standing_fleet = EveStandingFleet.objects.get(id=fleet_id)
-    # eve_primary_character = EvePrimaryCharacter.objects.get(
-    #     character__token__user=request.user
-    # )
     primary_character = user_primary_character(request.user)
     if not primary_character:
         return 400, {"detail": "No primary character found"}
 
     standing_fleet.claim(primary_character.character_id)
+
+    logger.info("Standing fleet claimed by %s", request.user.username)
 
     return 200, None
 
@@ -726,6 +724,8 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
 
+    logger.info("Fleet %d created by %s", fleet.id, request.user.username)
+
     return EveFleetResponse(**payload)
 
 
@@ -854,9 +854,11 @@ def start_fleet(
         else:
             fleet.start(None)
     except Exception as e:
-        logger.error("Error starting fleet %d: %s", fleet_id, e)
-        return 400, {"detail": str(e)}
+        return 400, ErrorResponse.log(
+            f"Error starting fleet {fleet.id}", str(e)
+        )
 
+    logger.info("Fleet %d started by %s", fleet.id, request.user.username)
     return 200, None
 
 
@@ -875,6 +877,7 @@ def delete_fleet(request, fleet_id: int):
             "detail": "User does not have permission to delete this fleet"
         }
     fleet.delete()
+    logger.info("Fleet %d deleted by %s", fleet.id, request.user.username)
     return 200, None
 
 
@@ -905,4 +908,6 @@ def send_pre_ping(request, fleet_id):
     if sent:
         return 202, "Sent"
     else:
-        return 500, ErrorResponse(detail="Error sending pre-ping")
+        return 500, ErrorResponse.log(
+            "Error sending pre-ping", f"Unable to pre-ping fleet {fleet.id}"
+        )

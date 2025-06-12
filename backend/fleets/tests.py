@@ -475,7 +475,7 @@ class FleetRouterTestCase(TestCase):
         )
         self.assertEqual(400, response.status_code)
         self.assertEqual(
-            "ESI error 599 starting fleet 1", response.json()["detail"]
+            "Error starting fleet 1", response.json()["detail"]
         )
 
     def test_can_see_fleet(self):
