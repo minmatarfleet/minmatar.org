@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime
 from typing import List, Optional
 
@@ -10,6 +12,7 @@ from eveonline.models import EveCharacter, EveCorporation
 from .models import EveCorporationApplication
 
 router = Router(tags=["Applications"])
+logger = logging.getLogger(__name__)
 
 
 class CorporationApplicationResponse(BaseModel):
@@ -83,6 +86,13 @@ def create_corporation_application(
         user_id=request.user.id,
         description=payload.description,
     )
+
+    logger.info(
+        "Application to %s submitted by %s",
+        corporation.name,
+        request.user.username,
+    )
+
     return 200, {
         "status": application.status,
         "user_id": application.user.id,
@@ -149,6 +159,13 @@ def accept_corporation_application(
     application.status = "accepted"
     application.processed_by = request.user
     application.save()
+
+    logger.info(
+        "Application for %s accepted by %s",
+        application.user.username,
+        request.user.username,
+    )
+
     return {
         "status": application.status,
         "user_id": application.user.id,
@@ -181,6 +198,13 @@ def reject_corporation_application(
     application.status = "rejected"
     application.processed_by = request.user
     application.save()
+
+    logger.info(
+        "Application for %s rejected by %s",
+        application.user.username,
+        request.user.username,
+    )
+
     return {
         "status": application.status,
         "user_id": application.user.id,

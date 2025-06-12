@@ -320,7 +320,13 @@ def delete_character_by_id(request, character_id: int):
         EveCharacter.objects.filter(character_id=character_id).delete()
         Token.objects.filter(character_id=character_id).delete()
     except Exception as e:
-        return 500, str(e)
+        return 500, ErrorResponse.new(
+            "Error deleting character {character_id}", str(e)
+        )
+
+    logger.info(
+        "User %s deleted character %d", request.user.username, character_id
+    )
 
     return 200, None
 
@@ -382,12 +388,13 @@ def handle_add_character_esi_callback(request, token, token_type):
     if "add_character_id" in request.session:
         requested_char = request.session["add_character_id"]
         if str(token.character_id) != requested_char:
+            error_id = create_error_id()
             logger.error(
-                "Incorrect character in token refresh, %s != %s",
+                "Incorrect character in token refresh, %s != %s (%s)",
                 str(token.character_id),
                 requested_char,
+                error_id,
             )
-            error_id = create_error_id()
             return redirect(
                 request.session["redirect_url"]
                 + "?error=wrong_character&error_id="
@@ -395,7 +402,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             )
 
     if EveCharacter.objects.filter(character_id=token.character_id).exists():
-        logger.info(
+        logger.debug(
             "Character %s already exists, updating token",
             token.character_id,
         )
@@ -406,7 +413,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             and len(token.scopes.all()) >= len(character.token.scopes.all())
         ):
             logger.info(
-                "New token has at least as many scopes, deleting old token for %s",
+                "Replacing token for %s",
                 token.character_id,
             )
             old_token = character.token
