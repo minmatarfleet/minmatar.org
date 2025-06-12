@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
+from eveonline.helpers.characters import user_primary_character
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
@@ -361,3 +362,49 @@ def test_error_id(request):
     err = ErrorResponse.new(detail="Fake error")
     logger.error("Fake error for testing (%s): %s", err.id, err.detail)
     return 400, err
+
+
+class FleetConfigRequest(BaseModel):
+    """Request model for fleet configuration"""
+
+    motd_rat_quote: bool = True
+    motd_doctrine_link: Optional[str] = None
+
+
+def build_motd(config: FleetConfigRequest) -> str:
+    return (
+        f"My special MOTD: {config.motd_rat_quote} {config.motd_doctrine_link}"
+    )
+
+
+@router.post(
+    "/fleetconfig",
+    summary="Test fleet configuration",
+    auth=AuthBearer(),
+    response={200: None, 400: ErrorResponse},
+)
+def fleet_config_poc(request, config: FleetConfigRequest):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    eve_character = user_primary_character(request.user)
+
+    esi_response = EsiClient(eve_character).get_active_fleet()
+    if not esi_response.success():
+        return 400, ErrorResponse.log("Error getting active fleet", "Test")
+
+    fleet_instance = esi_response.results()
+    eve_fleet_id = (fleet_instance.data["fleet_id"],)
+    # fleet_boss_id = fleet_instance.data["fleet_boss_id"],
+    # fleet_role = fleet_instance.data["role"],
+
+    motd = build_motd(config)
+
+    update = {
+        "is_free_move": True,
+        "motd": motd,
+    }
+
+    EsiClient(eve_character).update_fleet_details(eve_fleet_id, update)
+
+    return 200
