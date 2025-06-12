@@ -474,9 +474,7 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            "Error starting fleet 1", response.json()["detail"]
-        )
+        self.assertEqual("Error starting fleet 1", response.json()["detail"])
 
     def test_can_see_fleet(self):
         fc_user = self.user
