@@ -94,6 +94,8 @@ class StructureTimertests(TestCase):
                 name="Megacorp",
             ),
         )
+        char.corporation.ceo = char
+        char.corporation.save()
 
         payload = {
             "character_id": char.character_id,
@@ -114,3 +116,11 @@ class StructureTimertests(TestCase):
                 character__character_id=char.character_id
             ).first()
         )
+
+        response = self.client.get(
+            f"/api/structures/managers?corp_id={char.corporation.corporation_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        managers = response.json()
+        self.assertEqual(1, len(managers))

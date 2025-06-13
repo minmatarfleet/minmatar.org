@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from ninja import Router
 from pydantic import BaseModel
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCorporation
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
@@ -96,6 +96,17 @@ class EveStructureTimerResponse(BaseModel):
     corporation_name: str | None = None
     alliance_name: str | None = None
     structure_id: int | None = None
+
+
+class StructureManagerResponse(BaseModel):
+    """Details of a corp Structure Manager"""
+
+    id: int
+    corp_id: int
+    character_id: int
+    character_name: str
+    poll_time: int
+    last_polled: Optional[datetime]
 
 
 class CreateStructureManagerRequest(BaseModel):
@@ -275,6 +286,40 @@ def verify_structure_timer(
     }
 
     return response
+
+
+@router.get(
+    "/managers",
+    auth=AuthBearer(),
+    response={
+        200: List[StructureManagerResponse],
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def get_structure_managers(request, corp_id: int):
+    corp = EveCorporation.objects.filter(corporation_id=corp_id).first()
+    if not corp:
+        return 404, ErrorResponse(detail=f"Corp not found: {corp_id}")
+
+    is_ceo = corp.ceo.user == request.user
+    if not (is_ceo or request.user.is_superuser):
+        return 403, ErrorResponse(detail="Access denied")
+
+    managers = []
+    for esm in EveStructureManager.objects.filter(corporation=corp):
+        managers.append(
+            StructureManagerResponse(
+                id=esm.id,
+                corp_id=esm.corporation_id,
+                character_id=esm.character_id,
+                character_name=esm.character.character_name,
+                poll_time=esm.poll_time,
+                last_polled=esm.last_polled,
+            )
+        )
+
+    return 200, managers
 
 
 @router.post(
