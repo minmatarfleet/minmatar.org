@@ -35,7 +35,7 @@ let character_errors:CharacterErrorUI[] = []
 import { get_user_permissions } from '@helpers/permissions'
 
 try {
-    const user_permissions = await get_user_permissions(user?.username)
+    user_permissions = await get_user_permissions(user?.username)
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
