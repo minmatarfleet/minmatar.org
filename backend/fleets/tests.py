@@ -311,6 +311,35 @@ class FleetRouterTestCase(TestCase):
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
+    def test_start_fleet_when_not_in_fleet(self, discord_mock, esi_mock):
+        setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.save()
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=404,
+            data={
+                "error": "Character is not in a fleet",
+            },
+        )
+        esi_mock_instance.update_fleet_details.return_value = EsiResponse(
+            response_code=204, data={}
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data=None,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        error = response.json()
+        self.assertEqual("Not currently in a fleet", error["detail"])
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
     def test_start_fleet_with_char(self, discord_mock, esi_mock):
         fc_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -459,7 +488,7 @@ class FleetRouterTestCase(TestCase):
 
         esi_mock.get_active_fleet.return_value = EsiResponse(
             response_code=599,
-            data="Error getting fleet",
+            data={"error": "Error getting fleet"},
         )
 
         setup_fc(self.user)
