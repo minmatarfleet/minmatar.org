@@ -39,11 +39,11 @@ if (Astro.request.method === "POST") {
         start_tracking = await start_fleet(auth_token as string, fleet_id)
         if (start_tracking) send_active_fleet_notification(auth_token as string, fleet_id)
     } catch (error) {
-        start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+        start_fleet_error = prod_error_messages() ? t('start_fleet_error') : (error.message as string)
 
         alert = {
             title: t('ping_fleet'),
-            content: start_fleet_error as string,
+            content: `${start_fleet_error}. ${t('not_in_fleet_notice')}`,
         }
     }
 }

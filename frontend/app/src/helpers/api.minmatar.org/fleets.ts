@@ -327,24 +327,20 @@ export async function start_fleet(access_token:string, fleet_id:number) {
     }
 
     const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/tracking`
+    const METHOD = 'POST'
 
     console.log(`Requesting POST: ${ENDPOINT}`)
 
     try {
         const response = await fetch(ENDPOINT, {
             headers: headers,
-            method: 'POST'
+            method: METHOD
         })
 
         // console.log(response)
 
-        if (!response.ok) {
-            let error = await response.json()
-            const error_msg = parse_error_message(error.detail)
-            error = error_msg ? error_msg : error?.detail
-
-            throw new Error(error ? error : get_error_message(response.status, `POST ${ENDPOINT}`))
-        }
+        if (!response.ok)
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
         
         return (response.status === 200);
     } catch (error) {
