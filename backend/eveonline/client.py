@@ -187,28 +187,17 @@ class EsiClient:
         return self._operation_results(operation)
 
     def get_active_fleet(self) -> EsiResponse:
-        def not_in_fleet(operation):
-            if operation.status_code != 404:
-                return False
-            if not operation.data:
-                return False
-            if operation.data["error"] != "Character is not in a fleet":
-                return False
-            return True
-
         token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Fleets.get_characters_character_id_fleet(
-            character_id=self.character_id,
-            token=token,
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/fleet/",
+            timeout=10,
+            headers={"Authorization": "Bearer " + token},
         )
 
-        if not_in_fleet(operation):
-            return EsiResponse(404, "Character is not in a fleet")
-
-        return self._operation_results(operation)
+        return EsiResponse(response_code=200, data=response.json())
 
     def get_fleet_members(self, fleet_id: int) -> EsiResponse:
         token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
