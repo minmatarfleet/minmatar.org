@@ -855,10 +855,10 @@ def start_fleet(
             fleet.start(None)
     except Exception as e:
         if "not in a fleet" in str(e):
-            return 400, ErrorResponse.log("Not currently in a fleet", str(e))
+            return 400, ErrorResponse.log("Not currently in a fleet", e)
         else:
             return 400, ErrorResponse.log(
-                f"Error starting fleet {fleet.id}", str(e)
+                f"Error starting fleet {fleet.id}", e
             )
 
     logger.info("Fleet %d started by %s", fleet.id, request.user.username)
