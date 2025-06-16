@@ -17,7 +17,7 @@ class ErrorResponse(BaseModel):
         return cls(detail=detail, id=create_error_id())
 
     @classmethod
-    def log(cls, detail: str, log_message: str = None):
+    def log(cls, detail: str, log_message):
         response = cls(detail=detail, id=create_error_id())
         logger.error("%s : %s (%s)", detail, log_message, response.id)
         return response
