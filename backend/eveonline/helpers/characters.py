@@ -131,10 +131,13 @@ def set_primary_character(user: User, character: EveCharacter):
     player = user_player(user)
     if player:
         player.primary_character = character
+        player.nickname = character.character_name
         player.save()
     else:
         EvePlayer.objects.create(
-            user=user, primary_character=character, nickname=user.username
+            user=user,
+            primary_character=character,
+            nickname=character.character_name,
         )
 
     # Legacy approach for transition period

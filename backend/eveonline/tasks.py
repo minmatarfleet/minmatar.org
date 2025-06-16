@@ -383,17 +383,32 @@ def setup_players():
 
 
 @app.task
-def delete_orphan_players():
+def update_players():
+    logger.info("Updating players")
+    updated = 0
     deleted = 0
     for player in EvePlayer.objects.filter(user__isnull=True):
-        player.delete()
-        logger.info(
-            "Deleted orphan EvePlayer for %s",
-            (
-                player.primary_character.character_name
-                if player.primary_character
-                else "Unknown"
-            ),
-        )
-        deleted += 1
-    logger.info("EvePlayers deleted: %d", deleted)
+        if not player.user:
+            player.delete()
+            logger.info(
+                "Deleted orphan EvePlayer for %s",
+                (
+                    player.primary_character.character_name
+                    if player.primary_character
+                    else "Unknown"
+                ),
+            )
+            deleted += 1
+
+        if player.primary_character:
+            new_nickname = player.primary_character.character_name
+        else:
+            new_nickname = player.user.username
+
+        if player.nickname != new_nickname:
+            player.nickname = new_nickname
+            player.save()
+            updated += 1
+            logger.info("Updated EvePlayer nickmame: %s", new_nickname)
+
+    logger.info("EvePlayers updated: %d, deleted: %d", updated, deleted)
