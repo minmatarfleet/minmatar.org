@@ -845,9 +845,10 @@ def start_fleet(
 ):
     fleet = EveFleet.objects.get(id=fleet_id)
     if request.user != fleet.created_by:
-        return 403, {
-            "detail": "User does not have permission to start tracking this fleet"
-        }
+        return 403, ErrorResponse.log(
+            "Not authorized to start this fleet",
+            f"User {request.user.username} does not have permission to start tracking fleet {fleet_id}",
+        )
     try:
         if payload and payload.fc_character_id:
             fleet.start(payload.fc_character_id)
