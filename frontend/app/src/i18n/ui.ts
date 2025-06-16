@@ -1437,5 +1437,6 @@ export const ui = {
         'disable_external_link_prompt_description': 'Displayed when opening an external link',
         'can_be_restored': 'Can be restored on account settings',
         'code_hint': 'Please quote error ID CODE when contacting support',
+        'not_in_fleet_notice': 'Make sure you are in a fleet with an advert and try again.',
     },
 } as const;
