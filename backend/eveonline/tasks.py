@@ -387,7 +387,7 @@ def update_players():
     logger.info("Updating players")
     updated = 0
     deleted = 0
-    for player in EvePlayer.objects.filter(user__isnull=True):
+    for player in EvePlayer.objects.all():
         if not player.user:
             player.delete()
             logger.info(

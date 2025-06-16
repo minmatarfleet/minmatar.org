@@ -93,8 +93,10 @@ class EveFleet(models.Model):
 
         esi_response = EsiClient(eve_character).get_active_fleet()
         if not esi_response.success():
-            if "Character is not in a fleet" in esi_response.data["error"]:
-                msg = f"Character {eve_character.character_name} not in a fleet (starting fkeet {self.id})"
+            if not esi_response.data:
+                msg = f"ESI error {esi_response.response_code} starting fleet {self.id}"
+            elif "Character is not in a fleet" in esi_response.data["error"]:
+                msg = f"Character {eve_character.character_name} not in a fleet (starting fleet {self.id})"
             else:
                 msg = f"ESI error {esi_response.response_code} starting fleet {self.id}, {esi_response.data}"
             raise RuntimeError(msg)
