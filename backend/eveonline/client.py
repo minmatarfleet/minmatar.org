@@ -197,7 +197,9 @@ class EsiClient:
             headers={"Authorization": "Bearer " + token},
         )
 
-        return EsiResponse(response_code=200, data=response.json())
+        return EsiResponse(
+            response_code=response.status_code, data=response.json()
+        )
 
     def get_fleet_members(self, fleet_id: int) -> EsiResponse:
         token, status = self.get_valid_token(["esi-fleets.read_fleet.v1"])
