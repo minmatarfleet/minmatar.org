@@ -96,8 +96,20 @@ from django.db.models import signals
 
 The backend can run as a standalone server using an embeded sqlite database.
 
+To configure this, the Django settings have the following values...
+
+```
+SECRET_KEY=testing
+FAKE_LOGIN_USER_ID=1
+MOCK_ESI=True
+```
+
 In this mode it will automatically create an initial admin user on startup
 and display the JWT token for that test user.
+
+Attempts to log in will bypass the Discord login process with that fake user.
+
+Calls to the Eve Swagger Interface (ESI) will be mocked.
 
 ## Commands
 ### Set local environment variables

@@ -119,3 +119,5 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # If this is set, Discord login will be bypassed and the user will be logged in with this ID
 FAKE_LOGIN_USER_ID = 1
+
+MOCK_ESI = True

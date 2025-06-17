@@ -1,7 +1,8 @@
 import logging
 import requests
-
 from typing import List
+
+from django.conf import settings
 from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveuniverse.models import (
@@ -16,7 +17,7 @@ from eveuniverse.models import (
 
 logger = logging.getLogger(__name__)
 
-esi = EsiClientProvider()
+esi_provider = EsiClientProvider()
 
 SUCCESS = 0
 UNKNOWN_CLIENT_ERROR = 901
@@ -99,7 +100,7 @@ class EsiClient:
 
     def get_character_public_data(self, char_id: int) -> EsiResponse:
         """Returns the public data for the specified Eve character."""
-        operation = esi.client.Character.get_characters_character_id(
+        operation = esi_provider.client.Character.get_characters_character_id(
             character_id=char_id
         )
         return self._operation_results(operation)
@@ -111,9 +112,11 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Skills.get_characters_character_id_skills(
-            character_id=self.character_id,
-            token=token,
+        operation = (
+            esi_provider.client.Skills.get_characters_character_id_skills(
+                character_id=self.character_id,
+                token=token,
+            )
         )
 
         try:
@@ -132,9 +135,11 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Assets.get_characters_character_id_assets(
-            character_id=self.character_id,
-            token=token,
+        operation = (
+            esi_provider.client.Assets.get_characters_character_id_assets(
+                character_id=self.character_id,
+                token=token,
+            )
         )
         try:
             return EsiResponse(
@@ -148,10 +153,8 @@ class EsiClient:
         self, killmail_id, killmail_hash
     ) -> EsiResponse:
         """Returns a character's killmail"""
-        operation = (
-            esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
-                killmail_id=killmail_id, killmail_hash=killmail_hash
-            )
+        operation = esi_provider.client.Killmails.get_killmails_killmail_id_killmail_hash(
+            killmail_id=killmail_id, killmail_hash=killmail_hash
         )
         return self._operation_results(operation)
 
@@ -164,7 +167,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Contracts.get_characters_character_id_contracts(
+        operation = esi_provider.client.Contracts.get_characters_character_id_contracts(
             character_id=self.character_id,
             token=token,
         )
@@ -177,12 +180,10 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi.client.Contracts.get_corporations_corporation_id_contracts(
-                corporation_id=corporation_id,
-                token=token,
-            ).results()
-        )
+        operation = esi_provider.client.Contracts.get_corporations_corporation_id_contracts(
+            corporation_id=corporation_id,
+            token=token,
+        ).results()
 
         return self._operation_results(operation)
 
@@ -206,15 +207,17 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Fleets.get_fleets_fleet_id_members(
+        operation = esi_provider.client.Fleets.get_fleets_fleet_id_members(
             fleet_id=fleet_id, token=token
         )
 
         return self._operation_results(operation)
 
     def get_corporation(self, corporation_id: int) -> EsiResponse:
-        operation = esi.client.Corporation.get_corporations_corporation_id(
-            corporation_id=corporation_id
+        operation = (
+            esi_provider.client.Corporation.get_corporations_corporation_id(
+                corporation_id=corporation_id
+            )
         )
         return self._operation_results(operation)
 
@@ -224,11 +227,9 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi.client.Corporation.get_corporations_corporation_id_members(
-                corporation_id=corporation_id,
-                token=token,
-            )
+        operation = esi_provider.client.Corporation.get_corporations_corporation_id_members(
+            corporation_id=corporation_id,
+            token=token,
         )
 
         return self._operation_results(operation)
@@ -239,7 +240,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Mail.post_characters_character_id_mail(
+        operation = esi_provider.client.Mail.post_characters_character_id_mail(
             mail=mail_details,
             character_id=self.character_id,
             token=token,
@@ -248,7 +249,9 @@ class EsiClient:
         return self._operation_results(operation)
 
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
-        operation = esi.client.Universe.post_universe_names(ids=ids_to_resolve)
+        operation = esi_provider.client.Universe.post_universe_names(
+            ids=ids_to_resolve
+        )
         return self._operation_results(operation)
 
     def update_fleet_details(self, fleet_id, update) -> EsiResponse:
@@ -257,7 +260,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi.client.Fleets.put_fleets_fleet_id(
+        operation = esi_provider.client.Fleets.put_fleets_fleet_id(
             fleet_id=fleet_id,
             new_settings=update,
             token=token,
@@ -293,7 +296,7 @@ class EsiClient:
         """
         Returns the affiliations for a batch of characters.
         """
-        operation = esi.client.Character.post_characters_affiliation(
+        operation = esi_provider.client.Character.post_characters_affiliation(
             characters=character_ids
         )
         return self._operation_results(operation)
@@ -368,3 +371,35 @@ class EsiClient:
             id=station_id,
         )
         return station
+
+
+def esi_for(character) -> EsiClient:
+    """
+    Returns an ESI client for the specified character.
+
+    The saved auth token for the character will be used.
+
+    The client might be a mock if configured for mocking in settings.py
+    """
+    if settings.MOCK_ESI:
+        # pylint: disable=import-outside-toplevel
+        # Import locally to avoid circular dependency
+        from eveonline.mock_esi.esi_mock import (
+            get_mock_esi,
+        )
+
+        return get_mock_esi(character)
+    else:
+        return EsiClient(character)
+
+
+def esi_public() -> EsiClient:
+    """
+    Returns an ESI client for accessing public ESI endpoints.
+
+    The saved auth token for the character will be used.
+
+    The client might be a mock if configured for mocking in settings.py
+    """
+
+    return esi_for(None)
