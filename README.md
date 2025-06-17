@@ -64,3 +64,15 @@ Once you set this up once it will keep your db setup between development instanc
 For frontend unit testing we use vitest. To get started you can run `npm run test` in the ./frontend/ folder. This will start vitest and watch for any changes.
 As you develop components you can use unit tests and snapshots to quickly test the expected output. If you make changes you can type `u` while vitest is running
 to update the snapshots of the changed code. You can also run `make test` at the root to quickly run the test suite in docker.
+
+# Standalone Execution
+
+A cut-down Docker Compose configuration is available that starts the frontend and backend containers, with no dependencies on Discord or ESI.
+
+It should be possible to launch this by checkout out the code and running 
+
+```
+docker-compose -f docker-compose-standalone.yml up --build
+```
+
+This configuration mocks Discord and ESI client calls, and initialises the embedded database with a small set of predefined test data.

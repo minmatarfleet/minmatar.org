@@ -167,3 +167,4 @@ dev/
 
 .astro/
 artifacts/
+.DS_Store

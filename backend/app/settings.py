@@ -121,3 +121,4 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 FAKE_LOGIN_USER_ID = 1
 
 MOCK_ESI = True
+SETUP_TEST_DATA = os.environ.get("SETUP_TEST_DATA", False)
