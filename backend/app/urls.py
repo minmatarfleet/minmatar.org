@@ -22,8 +22,11 @@ from django.urls import include, path
 from django.views.generic.base import RedirectView
 from ninja import NinjaAPI
 
+from authentication import UnauthorizedError
+from tech.testdata import setup_test_data
+from tech.router import router as tech_router
+
 from applications.router import router as applications_router
-from authentication import UnauthorizedError, make_test_user
 from combatlog.router import router as combatlog_router
 from discord.views import discord_login
 from eveonline.routers import router
@@ -42,7 +45,6 @@ from srp.router import router as srp_router
 from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
-from tech.router import router as tech_router
 from subscriptions.router import router as subscription_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
@@ -89,8 +91,8 @@ urlpatterns = [
     path("oauth2/", include("discord.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-if "sqlite3" in settings.DATABASES["default"]["ENGINE"]:
+if settings.SETUP_TEST_DATA:
     # Initialise data when running with an local development database.
     # This is done in urls.py because we know it is only called once.
     print("Starting in local development mode")
-    make_test_user(1, "Admin1", True)
+    setup_test_data()

@@ -100,3 +100,5 @@ sentry_sdk.init(
         "enable_logs": True
     },
 )
+
+SETUP_TEST_DATA = False

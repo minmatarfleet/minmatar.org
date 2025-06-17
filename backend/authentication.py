@@ -65,3 +65,5 @@ def make_test_user(uid: int, user_name: str, is_super: bool):
     print(
         f"User '{user_name}' (ID {uid}) created with token {encoded_jwt_token}"
     )
+
+    return user

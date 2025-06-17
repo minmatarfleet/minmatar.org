@@ -1,6 +1,11 @@
+import logging
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.db.models import signals
 from django.utils import timezone
+
+from authentication import make_test_user
 
 from eveonline.models import (
     EveAlliance,
@@ -8,24 +13,29 @@ from eveonline.models import (
     EveCharacter,
     EveFaction,
 )
+from eveonline.helpers.characters import set_primary_character
+from fittings.models import EveFitting
 from fleets.models import (
     EveFleet,
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetAudience,
-    EveFleetLocation,
+    EveLocation,
 )
+
+logger = logging.getLogger("authentication")
 
 
 def setup_test_data():
     """Setup test data in the database"""
 
-    print("Setting up test data...")
+    logger.info("Setting up test data...")
     disable_signals()
     user = setup_users()
     char = setup_orgs(user)
+    setup_fittings()
     setup_fleets(char)
-    print("Complete.")
+    logger.info("Complete.")
 
 
 def disable_signals():
@@ -51,14 +61,13 @@ def disable_signals():
 
 
 def setup_users() -> User:
-    user, _ = User.objects.get_or_create(
-        username="testerdude",
-    )
-    return user
+    user1 = make_test_user(1, "AdminDude", True)
+    make_test_user(2, "TesterDude", False)
+    return user1
 
 
 def setup_orgs(user: User) -> EveCharacter:
-    EveFleetLocation.objects.get_or_create(
+    EveLocation.objects.get_or_create(
         location_name="Homebase",
         defaults={
             "location_id": 1234,
@@ -70,15 +79,15 @@ def setup_orgs(user: User) -> EveCharacter:
             "market_active": True,
         },
     )
-    alliance, _ = EveAlliance.objects.get_or_create(
-        alliance_id=12345,
+    fl33t, _ = EveAlliance.objects.get_or_create(
+        alliance_id=99011978,
         name="FL33T",
         ticker="FL33T",
     )
     megacorp, _ = EveCorporation.objects.get_or_create(
         corporation_id=23456,
     )
-    megacorp.alliance = alliance
+    megacorp.alliance = fl33t
     megacorp.name = "MegaCorp"
     megacorp.ticker = "Mega"
     megacorp.save()
@@ -89,8 +98,17 @@ def setup_orgs(user: User) -> EveCharacter:
             "character_name": "Test Pilot",
         },
     )
-    setup_char(main, megacorp, user, True)
+    setup_char(main, megacorp, user)
     main.save()
+    megacorp.ceo = main
+    megacorp.save()
+
+    logger.info(
+        "Setting primary character for %s to %s",
+        user.username,
+        main.character_name,
+    )
+    set_primary_character(user, main)
 
     alt, _ = EveCharacter.objects.get_or_create(
         character_id=123457,
@@ -98,26 +116,60 @@ def setup_orgs(user: User) -> EveCharacter:
             "character_name": "Alt Pilot",
         },
     )
-    setup_char(alt, megacorp, user, False)
+    setup_char(alt, megacorp, user)
     alt.save()
 
     return main
 
 
-def setup_char(
-    char: EveCharacter, corp: EveCorporation, user: User, is_primary: bool
-):
+def setup_char(char: EveCharacter, corp: EveCorporation, user: User):
     char.corporation = corp
     char.alliance = corp.alliance
     char.user = user
-    char.is_primary = is_primary
+    char.esi_token_level = "Basic"
+
+
+def setup_fittings():
+    EveFitting.objects.get_or_create(
+        name="AC Rifter",
+        defaults={
+            "ship_id": 587,
+            "description": "AC Rifter",
+            "eft_format": """[Rifter, AC Rifter]
+
+Damage Control II
+400mm Rolled Tungsten Compact Plates
+Multispectrum Coating II
+Counterbalanced Compact Gyrostabilizer
+
+5MN Quad LiF Restrained Microwarpdrive
+Initiated Compact Warp Scrambler
+Fleeting Compact Stasis Webifier
+
+150mm Light Prototype Automatic Cannon
+150mm Light Prototype Automatic Cannon
+150mm Light Prototype Automatic Cannon
+
+Small Ancillary Current Router I
+Small Trimark Armor Pump I
+Small Trimark Armor Pump I
+
+
+Nanite Repair Paste x5
+Fusion S x2000
+Republic Fleet EMP S x720
+Republic Fleet Fusion S x720
+Republic Fleet Phased Plasma S x720
+""",
+        },
+    )
 
 
 def setup_fleets(fc: EveCharacter) -> EveFleet:
     rabble, _ = EveFleetAudience.objects.get_or_create(
         name="Rabble",
     )
-    homebase, _ = EveFleetLocation.objects.get_or_create(
+    homebase, _ = EveLocation.objects.get_or_create(
         location_name="Homebase",
         defaults={
             "location_id": 1234,
@@ -161,6 +213,21 @@ def setup_fleets(fc: EveCharacter) -> EveFleet:
             "squad_id": 3100,
         },
     )
+
+    historical, _ = EveFleet.objects.get_or_create(
+        id=124,
+        defaults={
+            "type": "strategic",
+            "start_time": timezone.now() - timedelta(days=7),
+        },
+    )
+    historical.description = "Whelped fleet"
+    historical.created_by = fc.user
+    historical.status = "complete"
+    historical.disable_motd = True
+    historical.audience = rabble
+    historical.location = homebase
+    historical.save()
 
 
 def minmil_faction():
