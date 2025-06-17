@@ -23,7 +23,7 @@ from django.views.generic.base import RedirectView
 from ninja import NinjaAPI
 
 from applications.router import router as applications_router
-from authentication import UnauthorizedError
+from authentication import UnauthorizedError, make_test_user
 from combatlog.router import router as combatlog_router
 from discord.views import discord_login
 from eveonline.routers import router
@@ -88,3 +88,9 @@ urlpatterns = [
     path("sso/", include("esi.urls")),
     path("oauth2/", include("discord.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+if "sqlite3" in settings.DATABASES["default"]["ENGINE"]:
+    # Initialise data when running with an local development database.
+    # This is done in urls.py because we know it is only called once.
+    print("Starting in local development mode")
+    make_test_user(1, "Admin1", True)

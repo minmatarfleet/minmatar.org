@@ -92,6 +92,12 @@ from django.db.models import signals
 @factory.django.mute_signals(signals.pre_save, signals.post_save)
 ```
 
+### Standalone backend server
+
+The backend can run as a standalone server using an embeded sqlite database.
+
+In this mode it will automatically create an initial admin user on startup
+and display the JWT token for that test user.
 
 ## Commands
 ### Set local environment variables

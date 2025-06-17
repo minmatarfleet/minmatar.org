@@ -75,6 +75,7 @@ def check_var(request, var_name: str) -> str:
     summary="Proof-of-concept for advanced fleet tracking",
     auth=AuthBearer(),
     response={200: int, 403: ErrorResponse, 404: ErrorResponse},
+    deprecated=True,
 )
 def fleet_tracking_poc(
     request, fleet_id: Optional[int] = None, start: bool = False
@@ -99,6 +100,50 @@ def fleet_tracking_poc(
 
     if start:
         fleet.start()
+
+    return 200, fleet.id
+
+
+class TestFleetCreationRequest(BaseModel):
+    """Request to create a test fleet"""
+
+    description: Optional[str] = "Technical test fleet"
+    type: Optional[str] = "training"
+    start_tracking: Optional[bool] = False
+    disable_motd: Optional[bool] = True
+    start_time: Optional[datetime] = None
+
+
+@router.post(
+    "/make_test_fleet",
+    summary="Create a hidden test fleet",
+    auth=AuthBearer(),
+    response={200: int, 403: ErrorResponse, 404: ErrorResponse},
+)
+def make_test_fleet(request, data: TestFleetCreationRequest):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    hidden_audience = EveFleetAudience.objects.filter(hidden=True).first()
+    if not hidden_audience:
+        return 404, ErrorResponse.log(detail="No hidden audience found")
+
+    if data.start_time is None:
+        data.start_time = timezone.now()
+
+    fleet = EveFleet.objects.create(
+        audience=hidden_audience,
+        description=data.description,
+        type=data.type,
+        start_time=data.start_time,
+        created_by=request.user,
+        disable_motd=data.disable_motd,
+    )
+
+    if data.start_tracking:
+        fleet.start()
+
+    logger.info("Test fleet %d created by %s", fleet.id, request.user.username)
 
     return 200, fleet.id
 

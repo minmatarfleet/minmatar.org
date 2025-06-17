@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
     dispatch_uid="update_fleet_schedule_on_save",
 )
 def update_fleet_schedule_on_save(sender, instance, created, **kwargs):
+    if instance.audience and not instance.audience.add_to_schedule:
+        return
     try:
         update_fleet_schedule()
     except Exception as e:
