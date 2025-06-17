@@ -4,7 +4,7 @@ services:
             context: ./backend/.
             dockerfile: Dockerfile.dev
         working_dir: /opt/minmatar
-        command: ./app-start.sh
+        command: ./dev-start.sh
         env_file:
             - ./backend/standalone.env
         networks:
@@ -13,6 +13,7 @@ services:
             - "8000:8000"
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+            - ./backend:/opt/minmatar
     frontend:
       build:
           context: ./frontend/
@@ -30,3 +31,6 @@ services:
 
 networks:
     local-network:
+
+volumes:
+    backend-src:

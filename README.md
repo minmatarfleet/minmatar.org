@@ -69,10 +69,24 @@ to update the snapshots of the changed code. You can also run `make test` at the
 
 A cut-down Docker Compose configuration is available that starts the frontend and backend containers, with no dependencies on Discord or ESI.
 
-It should be possible to launch this by checkout out the code and running 
+It should be possible to launch this by checkout out the code and running... 
 
 ```
 docker-compose -f docker-compose-standalone.yml up --build
 ```
 
-This configuration mocks Discord and ESI client calls, and initialises the embedded database with a small set of predefined test data.
+## Test data setup
+
+When starting up, the backend server initialises the embedded database with a small set of predefined test data. 
+
+## Mocked service dependencies
+
+This configuration mocks Discord and ESI client calls.
+
+Included in this is a fake login, where clicking on the login icon in the web site will immediately return fake authentication credentials to the frontend.
+
+Note that the mocking is nowhere near complete, meaning some functionality will simply fail.
+
+## Backend live reload
+
+The `app` (backend) container directly mounts the latest code and runs the Django dev server with live reload enabled. This means that any changes made to the backend source code on the host are immediately reflected in the container.

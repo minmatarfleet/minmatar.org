@@ -1,21 +1,26 @@
 FROM python:3.12-slim
 
 # install git for doctine pulling and various other dependencies
-RUN apt-get update && apt-get install -y git libmariadb-dev gcc
-RUN apt-get install sqlite3
+RUN apt-get update && apt-get install -y git libmariadb-dev gcc sqlite3
 
-# add user and set up repos
-WORKDIR /opt/minmatar
-COPY . /opt/minmatar/
-#TODO - what is the purpose of adding this user here? seems like root is what is actually used.
-WORKDIR /opt/minmatar
-RUN adduser --disabled-password --gecos '' minmatar && \
-  chmod +x app-start.sh && \
-  pip install pipenv && \
+WORKDIR /opt/dependencies
+
+# Copy dependencies files and build dependency cache
+COPY ./Pipfile /opt/dependencies/
+COPY ./Pipfile.lock /opt/dependencies/
+RUN pip install pipenv && \
   pipenv requirements > requirements.txt && \
   pip3 install -r requirements.txt && \
-  pip install docker && \
-  python3 manage.py collectstatic --noinput
+  pip install docker
+
+# Copy the rest of the backend source code
+# This will generally be replaced by a docker-compose directory mount
+COPY . /opt/minmatar
+
+WORKDIR /opt/minmatar
+
+RUN chmod +x *.sh
+RUN python3 manage.py collectstatic --noinput
 
 # keep open for debugging
 CMD ["tail", "-f", "/dev/null"]
