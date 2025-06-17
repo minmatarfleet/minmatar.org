@@ -52,7 +52,6 @@ def make_test_user(uid: int, user_name: str, is_super: bool):
 
     user = User(id=uid, username=user_name, is_superuser=is_super)
     user.save()
-    print(f"User {uid} saved to database")
 
     payload = {
         "user_id": uid,
@@ -63,4 +62,6 @@ def make_test_user(uid: int, user_name: str, is_super: bool):
         payload, settings.SECRET_KEY, algorithm="HS256"
     )
 
-    print(f"JWT bearer token: {encoded_jwt_token}")
+    print(
+        f"User '{user_name}' (ID {uid}) created with token {encoded_jwt_token}"
+    )

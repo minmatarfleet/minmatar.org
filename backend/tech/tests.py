@@ -17,7 +17,7 @@ from eveonline.models import (
     EveCorporation,
 )
 from eveonline.helpers.characters import set_primary_character
-from fleets.models import EveFleetAudience
+from fleets.models import EveFleet, EveFleetAudience
 from tech.docker import (
     parse_docker_logs,
     sort_chronologically,
@@ -170,6 +170,39 @@ class TechRoutesTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_make_test_fleet(self):
+        self.make_superuser()
+
+        token = Token.objects.create(
+            user=self.user,
+            character_id=123456,
+        )
+        char = EveCharacter.objects.create(
+            character_id=token.character_id,
+            character_name="Test Char",
+            token=token,
+        )
+        set_primary_character(self.user, char)
+
+        EveFleetAudience.objects.create(
+            name="Hidden",
+            hidden=True,
+            add_to_schedule=False,
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/make_test_fleet",
+            data={"description": "Test fleet 123", "type": "strategic"},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        fleet_id = response.json()
+        new_fleet = EveFleet.objects.filter(id=fleet_id).first()
+        self.assertIsNotNone(new_fleet)
+        self.assertEqual("Test fleet 123", new_fleet.description)
 
     def test_get_container_names(self):
         self.make_superuser()
