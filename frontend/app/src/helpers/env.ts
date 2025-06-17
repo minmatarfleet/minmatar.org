@@ -1,5 +1,5 @@
 const API_URL = import.meta.env.API_URL
-const API_REDIRECT_URL = import.meta.env.API_REDIRECT_URL ?? API_URL
+const API_PUBLIC_URL = import.meta.env.API_PUBLIC_URL ?? API_URL
 const APP_URL = import.meta.env.APP_URL
 const PROD_ERROR_MESSAGES = import.meta.env.PROD_ERROR_MESSAGES ?? false
 
@@ -12,7 +12,7 @@ export const is_prod_mode = () => {
 }
 
 export const get_auth_url = () => {
-    return `${API_REDIRECT_URL}/api/users/login?redirect_url=${APP_URL}/auth/login`
+    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${APP_URL}/auth/login`
 }
 
 export const get_friend_auth_url = () => {
