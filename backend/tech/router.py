@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
-from eveonline.client import EsiClient
+from eveonline.client import esi_for
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
@@ -197,11 +197,6 @@ def get_logs(
     all_logs: List[DockerLogEntry] = []
 
     for container in get_containers(container_match):
-        # if container.name.startswith("tools"):
-        # Skip containers from old "tools" site
-        # logger.debug("Get logs, skipping %s", container.name)
-        # continue
-        # if container_match in container_name:
         logger.info("Get logs, fetching %s", container.name)
         container_logs = DockerContainer(container).log_entries(query)
         all_logs += container_logs
@@ -286,7 +281,7 @@ def get_notifications(request, character_id: int):
     if not permitted(request.user):
         return 403, "Not authorised"
 
-    response = EsiClient(character_id).get_character_notifications()
+    response = esi_for(character_id).get_character_notifications()
 
     if not response.success():
         return 400, ErrorResponse(detail=str(response.response))

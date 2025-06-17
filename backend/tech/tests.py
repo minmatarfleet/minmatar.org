@@ -254,7 +254,7 @@ class TechRoutesTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    @patch("tech.router.EsiClient")
+    @patch("tech.router.esi_for")
     def test_get_notifications(self, esi_mock):
         self.make_superuser()
 
