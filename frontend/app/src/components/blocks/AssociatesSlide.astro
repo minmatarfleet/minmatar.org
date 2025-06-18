@@ -22,10 +22,10 @@ import Flexblock from "@components/compositions/Flexblock.astro"
 import TextBox from '@components/layout/TextBox.astro'
 
 import VerticalCenter from "@components/blocks/VerticalCenter.astro"
-import ButtonStack from "@components/blocks/ButtonStack.astro"
 import Button from "@components/blocks/Button.astro"
 
 import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FixedFluid
@@ -51,14 +51,22 @@ import Wrapper from '@components/compositions/Wrapper.astro'
             <TextBox>
                 <p>Minmatar Fleet Associates is a collection of small, medium, and large corporations focused on supplying the relentless war machine of the Minmatar Fleet. These organizations typically specialize in industry, resource collection, and logistics.</p>
             </TextBox>
-            <ButtonStack>
+            <FlexInline>
                 <Button
                     size='sm'
                     href={translatePath('/alliance/corporations/associates/')}
                 >
                     {t('view_associates')}
                 </Button>
-            </ButtonStack>
+                
+                <Button
+                    size='sm'
+                    href={translatePath('/market/contracts/')}
+                    color='green'
+                >
+                    {t('become_a_supplier')}
+                </Button>
+            </FlexInline>
         </Flexblock>
     </Wrapper>
     
