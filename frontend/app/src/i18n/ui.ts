@@ -1438,5 +1438,6 @@ export const ui = {
         'can_be_restored': 'Can be restored on account settings',
         'code_hint': 'Please quote error ID CODE when contacting support',
         'not_in_fleet_notice': 'Make sure you are in a fleet with an advert and try again.',
+        'become_a_supplier': 'Become a supplier',
     },
 } as const;
