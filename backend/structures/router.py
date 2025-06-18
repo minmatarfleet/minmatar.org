@@ -90,7 +90,7 @@ class EveStructureTimerResponse(BaseModel):
     timer: datetime
     created_at: datetime
     updated_at: datetime | None = None
-    created_by: int
+    created_by: int | None = None
     updated_by: int | None = None
     system_name: str
     corporation_name: str | None = None
