@@ -1,7 +1,10 @@
 import random
 import factory
 import logging
+
 from typing import List
+from unittest.mock import patch, MagicMock
+
 from django.db.models import signals
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
@@ -9,6 +12,7 @@ from esi.models import Token, Scope
 
 from app.test import TestCase
 from eveuniverse.models import EveType
+from eveonline.client import EsiResponse
 from eveonline.models import (
     EvePlayer,
     EveCharacter,
@@ -16,6 +20,7 @@ from eveonline.models import (
     EveSkillset,
     EveLocation,
 )
+from eveonline.signals import populate_eve_character_public_data
 from eveonline.helpers.skills import upsert_character_skill
 
 
@@ -356,3 +361,28 @@ class EveLocationTestCase(TestCase):
         )
 
         self.assertEqual(1, EveLocation.objects.count())
+
+
+class EveCharacterTestCase(TestCase):
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.signals.esi_public")
+    def test_populate_eve_character_public_data(self, esi_public):
+        esi_public.return_value.get_character_public_data.return_value = (
+            EsiResponse(
+                response_code=200,
+                data={
+                    "name": "Bob",
+                    "corporation_id": 2001,
+                },
+            )
+        )
+
+        instance = EveCharacter.objects.create(
+            character_id=1001,
+        )
+        populate_eve_character_public_data(MagicMock(), instance, True)
+
+        saved_char = EveCharacter.objects.get(character_id=1001)
+        self.assertEqual("Bob", saved_char.character_name)
+        self.assertEqual(2001, saved_char.corporation.corporation_id)
