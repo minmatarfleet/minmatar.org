@@ -4,7 +4,7 @@ import node from '@astrojs/node';
 import sentry from "@sentry/astro";
 import { loadEnv } from "vite";
 
-const env = loadEnv(import.meta.env.MODE, process.cwd(), "");
+const env = loadEnv(import.meta.env.MODE, process.cwd(), "")
 
 const SENTRY_AUTH_TOKEN = env.SENTRY_AUTH_TOKEN ?? false
 const SENTRY_DSN = env.SENTRY_DSN
@@ -15,6 +15,24 @@ if (SENTRY_DSN === undefined)
 
 if (SENTRY_PROJECT === undefined)
     throw new Error(`Please define enviroment variable SENTRY_PROJECT`)
+
+const integrations = [
+    tailwind({
+        applyBaseStyles: false,
+    })
+]
+
+if (SENTRY_AUTH_TOKEN)
+    integrations.push(sentry({
+        dsn: SENTRY_DSN,
+        sourceMapsUploadOptions: {
+            project: SENTRY_PROJECT,
+            authToken: SENTRY_AUTH_TOKEN,
+        },
+        _experiments: {
+            enableLogs: true,
+        },
+    }))
 
 // https://astro.build/config
 export default defineConfig({
@@ -27,21 +45,7 @@ export default defineConfig({
     },
     devToolbar: { enabled: false },
     prefetch: false,
-    integrations: [
-        tailwind({
-            applyBaseStyles: false,
-        }),
-        SENTRY_AUTH_TOKEN ?
-        sentry({
-            dsn: SENTRY_DSN,
-            sourceMapsUploadOptions: {
-                project: SENTRY_PROJECT,
-                authToken: SENTRY_AUTH_TOKEN,
-            },
-        })
-        :
-        null,
-    ],
+    integrations: integrations,
     vite: {
         server: {
             watch: {
