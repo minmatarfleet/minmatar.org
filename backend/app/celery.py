@@ -42,4 +42,5 @@ def init_sentry(**_kwargs):
         enable_tracing=True,
         traces_sample_rate=1.0,
         environment=settings.ENV,
+        _experiments={"enable_logs": True},
     )
