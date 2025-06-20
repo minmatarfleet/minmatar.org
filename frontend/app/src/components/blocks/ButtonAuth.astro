@@ -33,7 +33,7 @@ import Button from '@components/blocks/Button.astro';
     narrow={narrow}
     x-data={`{
         disabled: false,
-        show_join_request_dialog() {
+        show_auth_request_dialog() {
             this.disabled = true
             
             show_confirm_dialog({
@@ -45,7 +45,7 @@ import Button from '@components/blocks/Button.astro';
             })
         }
     }`}
-    x-on:click="show_join_request_dialog()"
+    x-on:click="show_auth_request_dialog()"
     type="button"
 >
     <slot />
