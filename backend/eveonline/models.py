@@ -4,14 +4,12 @@ from typing import List
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esi.clients import EsiClientProvider
 from esi.models import Token
 from eveuniverse.models import EveFaction
 
 from eveonline.client import EsiClient
 
 logger = logging.getLogger(__name__)
-esi = EsiClientProvider()
 
 
 class EvePlayer(models.Model):
