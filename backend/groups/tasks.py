@@ -1,7 +1,6 @@
 import logging
 
 from django.contrib.auth.models import User
-from esi.clients import EsiClientProvider
 
 from app.celery import app
 from discord.client import DiscordClient
@@ -21,7 +20,6 @@ from .models import (
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
-esi = EsiClientProvider()
 
 
 @app.task

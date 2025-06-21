@@ -3,14 +3,12 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from esi.clients import EsiClientProvider
 
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveCharacterAsset
 from structures.models import EveStructure
 
 logger = logging.getLogger(__name__)
-esi = EsiClientProvider()
 
 
 class EveAssetResponse(pydantic.BaseModel):
