@@ -364,6 +364,9 @@ class EveLocationTestCase(TestCase):
 
 
 class EveCharacterTestCase(TestCase):
+    """
+    Unit tests for the EveCharacter model
+    """
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.signals.esi_public")
