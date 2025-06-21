@@ -3,13 +3,11 @@ import math
 from datetime import datetime
 
 from django.utils import timezone
-from esi.clients import EsiClientProvider
-from esi.models import Token
 
 from app.celery import app
 
 from discord.client import DiscordClient
-from eveonline.client import EsiClient
+from eveonline.client import EsiClient, esi_for
 from eveonline.models import EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
@@ -20,7 +18,6 @@ from structures.helpers import (
     parse_esi_time,
 )
 
-esi = EsiClientProvider()
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
@@ -40,92 +37,88 @@ def update_structures():
 def update_corporation_structures(corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     logger.info("Updating structures for corporation %s", corporation)
-    if (
-        corporation.ceo
-        and corporation.ceo.token
-        and not corporation.ceo.esi_suspended
-    ):
+    if not corporation.ceo:
         logger.debug(
-            "Corporation %s has token for CEO: %s",
-            corporation,
-            corporation.ceo,
+            "Corporation %s has no CEO",
+            corporation.name,
         )
+        return
 
-        required_scopes = ["esi-corporations.read_structures.v1"]
+    # required_scopes = ["esi-corporations.read_structures.v1"]
 
-        token = Token.get_token(corporation.ceo.character_id, required_scopes)
-        if token:
-            logger.debug("Fetching structures for corporation %s", corporation)
-            response = esi.client.Corporation.get_corporations_corporation_id_structures(
-                corporation_id=corporation.corporation_id,
-                token=token.valid_access_token(),
-            ).results()
+    # token = Token.get_token(corporation.ceo.character_id, required_scopes)
+    # if token:
+    #     logger.debug("Fetching structures for corporation %s", corporation)
+    #     response = esi.client.Corporation.get_corporations_corporation_id_structures(
+    #         corporation_id=corporation.corporation_id,
+    #         token=token.valid_access_token(),
+    #     ).results()
 
-            known_structure_ids = []
-            for structure in response:
-                logger.info("Updating structure %s", structure["name"])
-                logger.debug("Structure details %s", structure)
-                system = EsiClient(None).get_solar_system(
-                    structure["system_id"]
+    esi = esi_for(corporation.ceo)
+
+    response = esi.get_corp_structures(corporation.corporation_id)
+    if response.success():
+        known_structure_ids = []
+        for structure in response.results():
+            logger.info("Updating structure %s", structure["name"])
+            logger.debug("Structure details %s", structure)
+            system = esi.get_solar_system(structure["system_id"])
+            structure_type = esi.get_eve_type(structure["type_id"])
+            corporation = EveCorporation.objects.get(
+                corporation_id=structure["corporation_id"]
+            )
+            if EveStructure.objects.filter(
+                id=structure["structure_id"]
+            ).exists():
+                logger.debug(
+                    "Updating existing structure %s", structure["name"]
                 )
-                structure_type = EsiClient(None).get_eve_type(
-                    structure["type_id"]
-                )
-                corporation = EveCorporation.objects.get(
-                    corporation_id=structure["corporation_id"]
-                )
-                if EveStructure.objects.filter(
+                eve_structure = EveStructure.objects.get(
                     id=structure["structure_id"]
-                ).exists():
-                    logger.debug(
-                        "Updating existing structure %s", structure["name"]
-                    )
-                    eve_structure = EveStructure.objects.get(
-                        id=structure["structure_id"]
-                    )
-                    eve_structure.state = structure["state"]
-                    eve_structure.state_timer_start = structure[
-                        "state_timer_start"
-                    ]
-                    eve_structure.state_timer_end = structure[
-                        "state_timer_end"
-                    ]
-                    eve_structure.fuel_expires = structure["fuel_expires"]
-                    eve_structure.name = structure["name"]
-                    eve_structure.save()
-                else:
-                    logger.debug(
-                        "Creating new structure %s", structure["name"]
-                    )
-                    eve_structure = EveStructure.objects.create(
-                        id=structure["structure_id"],
-                        system_id=structure["system_id"],
-                        system_name=system.name,
-                        type_id=structure["type_id"],
-                        type_name=structure_type.name,
-                        name=structure["name"],
-                        reinforce_hour=structure["reinforce_hour"],
-                        state=structure["state"],
-                        state_timer_start=structure["state_timer_start"],
-                        state_timer_end=structure["state_timer_end"],
-                        corporation=corporation,
-                    )
+                )
+                eve_structure.state = structure["state"]
+                eve_structure.state_timer_start = structure[
+                    "state_timer_start"
+                ]
+                eve_structure.state_timer_end = structure["state_timer_end"]
+                eve_structure.fuel_expires = structure["fuel_expires"]
+                eve_structure.name = structure["name"]
+                eve_structure.save()
+            else:
+                logger.debug("Creating new structure %s", structure["name"])
+                eve_structure = EveStructure.objects.create(
+                    id=structure["structure_id"],
+                    system_id=structure["system_id"],
+                    system_name=system.name,
+                    type_id=structure["type_id"],
+                    type_name=structure_type.name,
+                    name=structure["name"],
+                    reinforce_hour=structure["reinforce_hour"],
+                    state=structure["state"],
+                    state_timer_start=structure["state_timer_start"],
+                    state_timer_end=structure["state_timer_end"],
+                    corporation=corporation,
+                )
 
-                known_structure_ids.append(eve_structure.id)
+            known_structure_ids.append(eve_structure.id)
 
-            # delete structures that are no longer in the response
-            structures = EveStructure.objects.filter(corporation=corporation)
-            for structure in structures:
-                if structure.id not in known_structure_ids:
-                    logger.info("Deleting structure %s", structure.name)
-                    structure.delete()
-        else:
-            logger.warning("No CEO token with structure access scope")
+        # delete structures that are no longer in the response
+        structures = EveStructure.objects.filter(corporation=corporation)
+        for structure in structures:
+            if structure.id not in known_structure_ids:
+                logger.info("Deleting structure %s", structure.name)
+                structure.delete()
     else:
-        logger.info(
-            "Corporation %s does not have valid CEO token",
-            corporation,
+        logger.warning(
+            "Error %d accessing structures for %s",
+            response.response_code,
+            corporation.name,
         )
+    # else:
+    #     logger.info(
+    #         "Corporation %s does not have valid CEO token",
+    #         corporation,
+    #     )
 
 
 @app.task

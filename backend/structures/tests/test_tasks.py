@@ -1,5 +1,5 @@
 import factory
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.db.models import signals
 
@@ -12,13 +12,18 @@ from structures.tasks import (
     setup_structure_managers,
     structure_managers_for_minute,
     process_structure_notifications,
+    update_corporation_structures,
 )
-from structures.models import EveStructureManager, EveStructurePing
+from structures.models import (
+    EveStructureManager,
+    EveStructurePing,
+    EveStructure,
+)
 from structures.tests.test_helpers import make_character
 
 
-class StructureTimerTaskTests(TestCase):
-    """Task tests for structure timers"""
+class StructureTaskTests(TestCase):
+    """Task tests for structures and timers"""
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_setup_structure_managers(self):
@@ -111,3 +116,46 @@ class StructureTimerTaskTests(TestCase):
         self.assertEqual("Pilot 2002", ping.reported_by.character_name)
         self.assertEqual("StructureLostArmor", ping.notification_type)
         self.assertEqual(16, ping.event_time.minute)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.esi_for")
+    def test_update_corporation_structures(self, esi_mock):
+        corp = EveCorporation.objects.create(
+            corporation_id=2001,
+            name="MegaCorp",
+            ceo=EveCharacter.objects.create(
+                character_id=1001,
+                character_name="Mr CEO",
+                esi_token_level="ceo",
+            ),
+        )
+
+        esi = esi_mock.return_value
+        esi.get_corp_structures.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "structure_id": 100001,
+                    "corporation_id": corp.corporation_id,
+                    "name": "MegaStructure",
+                    "system_id": 100001,
+                    "type_id": 100001,
+                    "reinforce_hour": 12,
+                    "state": "testing",
+                    "state_timer_start": None,
+                    "state_timer_end": None,
+                    "fuel_expires": None,
+                }
+            ],
+        )
+        esi.get_solar_system.return_value = MagicMock(name="Home")
+
+        EveStructure.objects.create(
+            id=100001,
+            corporation=corp,
+            system_id=100001,
+            type_id=100001,
+            reinforce_hour=23,
+        )
+
+        update_corporation_structures(corp.corporation_id)
