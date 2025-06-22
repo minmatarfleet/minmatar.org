@@ -398,7 +398,7 @@ def esi_for(character) -> EsiClient:
 
     The client might be a mock if configured for mocking in settings.py
     """
-    if settings.MOCK_ESI:
+    if hasattr(settings, "MOCK_ESI") and settings.MOCK_ESI:
         # pylint: disable=import-outside-toplevel
         # Import locally to avoid circular dependency
         from eveonline.mock_esi.esi_mock import (
