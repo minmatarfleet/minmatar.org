@@ -167,13 +167,6 @@ def is_new_event(
     return True
 
 
-class NullStructure:
-    name: str = "unknown"
-    system_name: str = "unknown"
-    type_id: int = 0
-    type_name: str = "unknown"
-
-
 def discord_message_for_ping(ping: EveStructurePing) -> str:
     ping_text = "@everyone \n" ":scream: STRUCTURE UNDER ATTACK :scream: \n"
 
