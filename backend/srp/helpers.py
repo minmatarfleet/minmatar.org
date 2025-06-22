@@ -4,7 +4,6 @@ from random import randint
 
 from django.contrib.auth.models import User
 
-# from esi.clients import EsiClientProvider
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 
@@ -18,7 +17,6 @@ from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 from .models import EveFleetShipReimbursement
 
 logger = logging.getLogger(__name__)
-# esi = EsiClientProvider()
 
 
 class KillmailDetails(BaseModel):

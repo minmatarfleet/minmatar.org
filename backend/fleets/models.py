@@ -118,9 +118,6 @@ class EveFleet(models.Model):
             )
 
         fleet_instance.update_eve_fleet(self.disable_motd)
-        # if not self.disable_motd:
-        #     fleet_instance.update_motd()
-        # fleet_instance.update_free_move()
 
         if self.type != "strategic":
             doctrine = self.doctrine
@@ -228,7 +225,7 @@ class EveFleetInstance(models.Model):
         else:
             logger.warning("Error updating Eve fleet %d", self.id)
 
-    def update_motd(self):
+    def _update_motd(self):
         """
         Update the motd for the fleet
         """
@@ -313,10 +310,6 @@ class EveFleetInstance(models.Model):
         """
         Fetch the fleet members for the fleet
         """
-        # token = self.eve_fleet.token
-        # response = esi.client.Fleets.get_fleets_fleet_id_members(
-        #     fleet_id=self.id, token=token
-        # ).results()
         logger.info(
             "Updating members for fleet %d (%s)", self.eve_fleet.id, self.id
         )
@@ -338,9 +331,6 @@ class EveFleetInstance(models.Model):
             ids_to_resolve.add(esi_fleet_member["ship_type_id"])
             ids_to_resolve.add(esi_fleet_member["solar_system_id"])
         ids_to_resolve = list(ids_to_resolve)
-        # resolved_ids = esi.client.Universe.post_universe_names(
-        #     ids=ids_to_resolve
-        # ).results()
         resolved_ids = (
             EsiClient(None).resolve_universe_names(ids_to_resolve).results()
         )

@@ -3,7 +3,6 @@ import logging
 from typing import List
 
 import pydantic
-from esi.clients import EsiClientProvider
 from eveonline.client import EsiClient
 
 from eveonline.models import (
@@ -13,7 +12,6 @@ from eveonline.models import (
     EveSkillset,
 )
 
-esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
 

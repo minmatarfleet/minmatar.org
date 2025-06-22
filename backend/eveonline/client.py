@@ -301,6 +301,23 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_corp_structures(self, corp_id: int) -> EsiResponse:
+        """
+        Returns all the structures owned by a corp
+        """
+        token, status = self.get_valid_token(
+            ["esi-corporations.read_structures.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Corporation.get_corporations_corporation_id_structures(
+            corporation_id=corp_id,
+            token=token,
+        )
+
+        return self._operation_results(operation)
+
     def get_eve_type(self, type_id, include_children: bool = False):
         """
         Returns the item with the specified type ID.
@@ -381,7 +398,7 @@ def esi_for(character) -> EsiClient:
 
     The client might be a mock if configured for mocking in settings.py
     """
-    if settings.MOCK_ESI:
+    if hasattr(settings, "MOCK_ESI") and settings.MOCK_ESI:
         # pylint: disable=import-outside-toplevel
         # Import locally to avoid circular dependency
         from eveonline.mock_esi.esi_mock import (
