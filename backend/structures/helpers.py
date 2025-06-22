@@ -167,20 +167,21 @@ def is_new_event(
     return True
 
 
-class NullStructure:
-    name: str = "unknown"
-    system_name: str = "unknown"
-
-
 def discord_message_for_ping(ping: EveStructurePing) -> str:
+    ping_text = "@everyone \n" ":scream: STRUCTURE UNDER ATTACK :scream: \n"
+
     structure = EveStructure.objects.filter(id=ping.structure_id).first()
-    if not structure:
-        structure = NullStructure()
-    return (
-        "@everyone \n"
-        ":scream: Structure under attack \n"
-        f"Structure: {structure.name} ({ping.structure_id}) \n"
-        f"Location: {structure.system_name} \n"
-        f"Event: {ping.notification_type} \n"
+    if structure:
+        ping_text += (
+            f"Structure: {structure.name} ({ping.structure_id}) \n"
+            f"Type: {structure.type_name} ({structure.type_id}) \n"
+            f"Location: {structure.system_name} \n"
+        )
+    else:
+        ping_text += f"Structure: {ping.structure_id} (not in database) \n"
+
+    ping_text += (
+        f"Event: {ping.notification_type} ({ping.notification_id}) \n"
         f"Time: {ping.event_time} \n"
     )
+    return ping_text

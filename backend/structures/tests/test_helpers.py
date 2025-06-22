@@ -146,6 +146,7 @@ class StructureHelperTest(unittest.TestCase):
             system_id=1,
             system_name="Jita",
             type_id=1234,
+            type_name="Bouncy Castle",
             reinforce_hour=12,
             corporation_id=1,
         )
@@ -158,10 +159,11 @@ class StructureHelperTest(unittest.TestCase):
         )
         message = discord_message_for_ping(ping)
 
-        self.assertIn("Structure under attack", message)
+        self.assertIn("STRUCTURE UNDER ATTACK", message)
         self.assertIn("Homebase", message)
         self.assertIn("20001", message)
         self.assertIn("Jita", message)
+        self.assertIn("Bouncy Castle", message)
         self.assertIn("StructureIsSad", message)
 
         ping.structure_id = 98765
@@ -169,9 +171,9 @@ class StructureHelperTest(unittest.TestCase):
 
         message = discord_message_for_ping(ping)
 
-        self.assertIn("Structure under attack", message)
-        self.assertIn("unknown", message)
+        self.assertIn("STRUCTURE UNDER ATTACK", message)
         self.assertIn("98765", message)
+        self.assertIn("not in database", message)
         self.assertNotIn("Jita", message)
 
     def assertIsDateTime(self, value):
