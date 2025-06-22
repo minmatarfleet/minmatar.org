@@ -50,7 +50,7 @@ if (Astro.request.method === "POST") {
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
-            immediate_ping: (data.get('disable_motd' as string) === 'on'),
+            immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
         } as FleetRequest
         
         const new_fleet = await create_fleet(auth_token as string, fleet_data)
