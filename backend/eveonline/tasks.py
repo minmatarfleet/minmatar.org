@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from esi.clients import EsiClientProvider
 from esi.models import Token
@@ -166,9 +167,11 @@ def update_character_skills(eve_character_id):
 
 @app.task
 def update_character_assets(eve_character_id):
+    start = time.perf_counter()
+
     character = EveCharacter.objects.get(character_id=eve_character_id)
 
-    logger.info("Updating assets for character %s", eve_character_id)
+    logger.debug("Updating assets for character %s", eve_character_id)
 
     response = EsiClient(character).get_character_assets()
     if not response.success():
@@ -178,11 +181,26 @@ def update_character_assets(eve_character_id):
             character.character_name,
             character.character_id,
         )
-        return
+        return 0, 0, 0
 
     character.assets_json = json.dumps(response.results())
     character.save()
-    create_character_assets(character)
+
+    (created, updated, deleted) = create_character_assets(character)
+
+    elapsed = time.perf_counter() - start
+    elapsed_str = f"{elapsed:.6f}"
+
+    logger.info(
+        "Updated assets for %s in %s seconds (%d, %d, %d)",
+        character.character_name,
+        elapsed_str,
+        created,
+        updated,
+        deleted,
+    )
+
+    return created, updated, deleted
 
 
 @app.task(rate_limit="10/m")

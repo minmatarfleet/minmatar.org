@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class EveAssetResponse(pydantic.BaseModel):
-    is_blueprint_copy: Optional[bool]
+    is_blueprint_copy: Optional[bool] = None
     is_singleton: bool
     item_id: int
     location_flag: str
@@ -29,25 +29,28 @@ class EveStructureResponse(pydantic.BaseModel):
 
 def create_character_assets(character: EveCharacter):
     """Create assets for a character"""
-    logger.info("Creating assets for character %s", character.character_id)
-    EveCharacterAsset.objects.filter(character=character).delete()
+    updated = 0
+    created = 0
+    deleted = 0
+    logger.debug("Creating assets for character %s", character.character_id)
+    deleted, _ = EveCharacterAsset.objects.filter(character=character).delete()
     logger.debug("Loading assets for character %s", character.character_id)
+    esi = EsiClient(None)
     assets: List[EveAssetResponse] = json.loads(character.assets_json)
     for asset in assets:
         logger.debug("Processing asset %s", asset)
         asset = EveAssetResponse(**asset)
-        esi_client = EsiClient(None)
-        eve_type = esi_client.get_eve_type(asset.type_id, True)
+        eve_type = esi.get_eve_type(asset.type_id, True)
         if eve_type.eve_group is None:
             continue
-        eve_group = esi_client.get_eve_group(eve_type.eve_group.id, True)
+        eve_group = esi.get_eve_group(eve_type.eve_group.id, True)
         eve_category = eve_group.eve_category
         if eve_category.name != "Ship":
             continue
         logger.debug("Found asset %s", eve_type.name)
         location = None
         if asset.location_type == "station":
-            location = esi_client.get_station(asset.location_id)
+            location = esi.get_station(asset.location_id)
         elif asset.location_type == "item":
             if EveStructure.objects.filter(id=asset.location_id).exists():
                 location = EveStructure.objects.get(id=asset.location_id)
@@ -63,4 +66,6 @@ def create_character_assets(character: EveCharacter):
             location_name=location.name,
             character=character,
         )
-    return True
+        created += 1
+
+    return (created, updated, deleted)
