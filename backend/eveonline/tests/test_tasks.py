@@ -5,6 +5,7 @@ from django.db.models import signals
 
 from app.test import TestCase
 from esi.models import Token, Scope
+
 from eveonline.client import EsiResponse, EsiClient
 from eveonline.scopes import CEO_SCOPES
 
@@ -29,22 +30,46 @@ class EveOnlineTaskTests(TestCase):
     Tests methods of the EveOnline tasks.
     """
 
-    def test_update_character_asset_task(self):
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.assets.EsiClient")
+    @patch("eveonline.tasks.EsiClient")
+    def test_update_character_asset_task(self, task_mock, helper_mock):
         char = EveCharacter.objects.create(
             character_id=1,
             character_name="Test Char",
         )
 
-        with patch("eveonline.tasks.EsiClient") as esi_mock:
-            instance = esi_mock.return_value
-            instance.get_character_assets.return_value = EsiResponse(
-                response_code=200, data=[]
-            )
+        esi_mock = MagicMock(spec=EsiClient)
+        task_mock.return_value = esi_mock
+        helper_mock.return_value = esi_mock
 
-            #  No data returned by ESI, so won't actually test creating assets
+        esi_mock.get_character_assets.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "is_singleton": True,
+                    "item_id": 1041120583167,
+                    "location_flag": "Hangar",
+                    "location_id": 60004600,
+                    "location_type": "station",
+                    "quantity": 1,
+                    "type_id": 73794,
+                }
+            ],
+        )
+        esi_mock.get_eve_type.return_value.eve_group.id = 123
+        esi_mock.get_eve_type.return_value.id = 100
+        esi_mock.get_eve_type.return_value.name = "Thrasher"
+        esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
+        esi_mock.get_station.return_value.name = "Home Base"
 
-            update_character_assets(char.id)
+        (created, updated, deleted) = update_character_assets(char.id)
 
+        self.assertEqual(1, created)
+        self.assertEqual(0, updated)
+        self.assertEqual(0, deleted)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_update_character_skills(self):
         char = EveCharacter.objects.create(
             character_id=1,
@@ -65,6 +90,7 @@ class EveOnlineTaskTests(TestCase):
             scope, _ = Scope.objects.get_or_create(name=required_scope)
             token.scopes.add(scope)
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_update_corporation(self):
         alliance = EveAlliance.objects.create(
             alliance_id=99011978,
@@ -112,6 +138,7 @@ class EveOnlineTaskTests(TestCase):
 
                 self.assertEqual("TICK", updated_corp.ticker)
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_setup_players(self):
         EveCharacter.objects.create(
             character_id=1001,
