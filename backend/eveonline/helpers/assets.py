@@ -27,6 +27,33 @@ class EveStructureResponse(pydantic.BaseModel):
     solar_system_id: int
 
 
+def non_ship_location(location_flag: str) -> bool:
+    if "FighterTube" in location_flag:
+        return True
+    if "Slot" in location_flag:
+        return True
+    if "Hold" in location_flag:
+        return True
+    if "Bay" in location_flag:
+        return True
+    if location_flag in [
+        "BoosterBay",
+        "CorpseBay",
+        "DroneBay",
+        "FighterBay",
+        "HiddenModifiers",
+        "Implant",
+        "InfrastructureHangar",
+        "Locked",
+        "Skill",
+        "Unlocked",
+        "Wardrobe",
+    ]:
+        return True
+
+    return False
+
+
 def create_character_assets(character: EveCharacter):
     """Create assets for a character"""
     updated = 0
@@ -47,6 +74,9 @@ def create_character_assets(character: EveCharacter):
         logger.debug("Processing asset %s", asset)
         asset = EveAssetResponse(**asset)
 
+        if non_ship_location(asset.location_flag):
+            continue
+
         # Check location type first as it can rule out a lot of items quickly
         location = None
         if asset.location_type == "station":
@@ -57,6 +87,9 @@ def create_character_assets(character: EveCharacter):
             else:
                 continue
         else:
+            continue
+
+        if non_ship_location(asset.location_flag):
             continue
 
         if asset.is_blueprint_copy:
