@@ -10,6 +10,7 @@ from .models import (
     EveTag,
     EveCharacterTag,
     EveLocation,
+    EveCharacterAsset,
 )
 from .helpers.characters import user_primary_character
 
@@ -92,3 +93,18 @@ class EveLocationAdmin(admin.ModelAdmin):
         "freight_active",
         "staging_active",
     )
+
+
+@admin.register(EveCharacterAsset)
+class EveCharacterAssetAdmin(admin.ModelAdmin):
+    """Admin screen for EveCharacterAsset entity"""
+
+    list_display = (
+        "id",
+        "character__character_name",
+        "type_name",
+        "location_name",
+        "updated",
+    )
+
+    search_fields = ("character__character_name", "type_name", "location_name")

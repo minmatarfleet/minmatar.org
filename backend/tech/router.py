@@ -17,6 +17,7 @@ from authentication import AuthBearer
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.client import esi_for
 from eveonline.models import EveCharacter
+from eveonline.tasks import update_character_assets
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
@@ -428,6 +429,7 @@ def asset_summary(
     location_id: Optional[int] = None,
     location_flag: Optional[str] = None,
     fl33t_fittings: Optional[bool] = False,
+    refresh_char: Optional[bool] = False,
 ):
     if not permitted(request.user):
         return 403, ErrorResponse(detail="Not authorised")
@@ -437,6 +439,9 @@ def asset_summary(
         return 404, ErrorResponse(detail="Character not found")
     if not char.assets_json:
         return 404, ErrorResponse(detail="Character has no assets")
+
+    if refresh_char:
+        update_character_assets.apply_async(args=[character_id])
 
     start = time.perf_counter()
 
