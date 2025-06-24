@@ -122,6 +122,7 @@ def create_character_assets(character: EveCharacter):
             location_id=asset.location_id,
             location_name=location.name,
             character=character,
+            item_id=asset.item_id,
         )
         created += 1
 

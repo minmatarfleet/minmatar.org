@@ -1,6 +1,9 @@
 import json
 import logging
 import time
+from datetime import timedelta
+
+from django.utils import timezone
 
 from esi.clients import EsiClientProvider
 from esi.models import Token
@@ -24,6 +27,7 @@ from .models import (
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
+    EveCharacterAsset,
     EveCorporation,
     EveAlliance,
     EveSkillset,
@@ -114,7 +118,9 @@ def update_alliance_character_assets():
     for character in EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
     ).exclude(token=None):
-        logger.info("Updating assets for character %s", character.character_id)
+        logger.debug(
+            "Updating assets for character %s", character.character_id
+        )
         update_character_assets.apply_async(
             args=[character.character_id], countdown=counter % 3600
         )
@@ -205,6 +211,38 @@ def update_character_assets(eve_character_id):
     )
 
     return created, updated, deleted
+
+
+def _delete_orphan_assets(delete: bool):
+    """Delete asset records that aren't being updated"""
+
+    cutoff = timezone.now() - timedelta.days(2)
+
+    total = EveCharacterAsset.objects.count()
+    to_delete = EveCharacterAsset.objects.filter(updated__lt=cutoff)
+
+    logger.info(
+        "Found %d of %d stale EveCharacterAsset rows",
+        total,
+        to_delete.count(),
+    )
+
+    if delete:
+        deleted, _ = to_delete.delete()
+
+        logger.info("Deleted %d EveCharacterAsset rows", deleted)
+
+
+@app.task()
+def find_orphan_assets():
+    """Find asset records that aren't being updated"""
+    _delete_orphan_assets(False)
+
+
+@app.task()
+def delete_orphan_assets():
+    """Delete asset records that aren't being updated"""
+    _delete_orphan_assets(True)
 
 
 @app.task(rate_limit="10/m")
@@ -312,19 +350,6 @@ def update_corporation(corporation_id):
         return
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
-        # required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        # token = Token.get_token(corporation.ceo.character_id, required_scopes)
-        # if not token:
-        #     logger.warning("No valid CEO token for %s", corporation.name)
-        #     return
-
-        # logger.info("Updating corporation members for %s", corporation.name)
-        # esi_members = (
-        #     esi.client.Corporation.get_corporations_corporation_id_members(
-        #         corporation_id=corporation_id,
-        #         token=token.valid_access_token(),
-        #     ).results()
-        # )
         esi_members = EsiClient(corporation.ceo).get_corporation_members(
             corporation.corporation_id
         )

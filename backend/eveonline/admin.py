@@ -104,6 +104,7 @@ class EveCharacterAssetAdmin(admin.ModelAdmin):
         "character__character_name",
         "type_name",
         "location_name",
+        "item_id",
         "updated",
     )
 
