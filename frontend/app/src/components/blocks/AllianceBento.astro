@@ -12,14 +12,12 @@ const {
     user_is_director = false,
 } = Astro.props
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
@@ -62,7 +60,7 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
             </FlexInline>
             
             <Flexblock gap='var(--space-m)'>
-                <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
+                <Markdown markdown={t('groups.leading_text_p2')} inline={true} />
 
                 <FlexInline>
                     <Button size='sm' href={translatePath('/alliance/sigs/list/')}>

@@ -89,8 +89,6 @@ if (Astro.request.method === "POST") {
     }
 }
 
-import { marked } from 'marked';
-
 import { get_item_icon } from '@helpers/eve_image_server';
 import { get_structure_id } from '@helpers/eve';
 
@@ -126,6 +124,7 @@ import FlatPicker from '@components/blocks/FlatPicker.astro';
 import InputError from '@components/blocks/InputError.astro';
 import CountdownConverter from '@components/blocks/CountdownConverter.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -364,7 +363,10 @@ const page_title = t('intel.timers.add.page_title');
                                         <picture class="[ hidden sm:block ]">
                                             <TutorialIcon />
                                         </picture>
-                                        <p set:html={marked.parseInline(t('paste_above_tutorial_string'))} />
+                                        <Markdown
+                                            markdown={t('paste_above_tutorial_string')}
+                                            inline={true}
+                                        />
                                     </FixedFluid>
 
                                     <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">

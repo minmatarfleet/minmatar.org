@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
 
 import { get_friend_auth_url } from '@helpers/env'
 
@@ -18,6 +17,8 @@ import PageVideo from '@components/page/PageVideo.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import Button from '@components/blocks/Button.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
 
@@ -52,7 +53,11 @@ const page_description = t('friend.welcome.leading_text');
                     <ArrowRight />
                 </Button>
             </Flexblock>
-            <small set:html={marked.parseInline(t('friend.welcome.leading_text_sub'), { renderer })} />
+            <Markdown
+                markdown={t('friend.welcome.leading_text_sub')}
+                inline={true}
+                inline_element='small'
+            />
         </Flexblock>
     </PageVideo>
 </GuestsViewport>

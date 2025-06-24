@@ -27,9 +27,6 @@ try {
     get_corporation_info_error = (prod_error_messages() ? t('get_corporation_info_error') : error.message)
 }
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/corporation_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -44,6 +41,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import SectionH4 from '@components/blocks/SectionH4.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import AmarrLogo from '@components/logos/AmarrLogo.astro';
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro';
@@ -133,21 +131,21 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
             {corporation?.biography !== '' &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('description')}>
-                        <Flexblock set:html={marked.parse(corporation?.biography as string, { renderer })} />
+                        <Markdown markdown={corporation?.biography as string} />
                     </SectionH4>
                 </ComponentBlock>
             }
             {(corporation?.timezones.length ?? 0) > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('timezones')}>
-                        <Flexblock set:html={marked.parse(`- ${timezones?.join('- ')}`, { renderer })} />
+                        <Markdown markdown={`- ${timezones?.join('- ')}` as string} />
                     </SectionH4>
                 </ComponentBlock>
             }
             {(corporation?.requirements.length ?? 0) > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('requirements')}>
-                        <div set:html={marked.parse(corporation?.requirements.join('') as string, { renderer })} />
+                        <Markdown markdown={corporation?.requirements.join('') as string} />
                     </SectionH4>
                 </ComponentBlock>
             }

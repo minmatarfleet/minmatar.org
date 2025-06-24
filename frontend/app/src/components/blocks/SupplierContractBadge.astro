@@ -24,9 +24,6 @@ corporations_options = corporations_options.filter(option => claimed_by_user_cor
 
 const SUPPLIER_CONTRACT_BADGE_PARTIAL_URL = translatePath('/partials/supplier_contract_badge_component/')
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import { get_item_icon, get_corporation_logo } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -46,6 +43,7 @@ import OrSeparator from '@components/blocks/OrSeparator.astro';
 import PilotBadge from './PilotBadge.astro';
 import Grid from '@components/compositions/Grid.astro';
 import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
@@ -194,7 +192,11 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             <TutorialIcon />
                         </picture>
                         <Flexblock gap='var(--space-3xs)'>
-                            <small set:html={marked.parseInline(t('responsability_unclaim_tip'), { renderer })} />
+                            <Markdown
+                                markdown={t('responsability_unclaim_tip')}
+                                inline={true}
+                                inline_element='small'
+                            />
                         </Flexblock>
                     </FixedFluid>
                 </Wrapper>

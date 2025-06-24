@@ -13,10 +13,9 @@ const {
     animation = true,
 } = Astro.props
 
-import { marked } from 'marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 
 let url = new URL(args.partial, new URL(Astro.url.origin))
@@ -33,7 +32,11 @@ console.log(args)
 
 {(args.delay > MAX_RETRYING_TIME_SECONDS) ?
     <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
-        <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)} />
+        <Markdown
+            class="[ text-[var(--highlight)] ]"
+            markdown={args.message}
+            inline={true}
+        />
         <small>{t('too_many_tries')}</small>
     </Flexblock>
     :
@@ -47,7 +50,11 @@ console.log(args)
         {animation && <RifterIcon />}
             
         <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
-            <p class="[ text-[var(--highlight)] ]" set:html={marked.parseInline(args.message)} />
+            <Markdown
+                class="[ text-[var(--highlight)] ]"
+                markdown={args.message}
+                inline={true}
+            />
             <div
                 class="[ loading ]"
                 hx-get={`${url.toString()}`}

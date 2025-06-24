@@ -26,9 +26,6 @@ const {
 
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -39,6 +36,7 @@ import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
 import TutorialBadge from "@components/blocks/TutorialBadge.astro";
+import Markdown from "@components/blocks/Markdown.astro";
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
@@ -74,8 +72,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
             <h3>{t('srp_submit_dialog_title')}</h3>
             
             <Flexblock gap="var(--space-s)">
-
-                <Flexblock set:html={marked.parse(fleet_id > 0 ? t('srp_submit_dialog_text') : t('srp_no_fleet_submit_dialog_text'))} />
+                <Markdown markdown={fleet_id > 0 ? t('srp_submit_dialog_text') : t('srp_no_fleet_submit_dialog_text')} />
                 
                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                     <label for="srp-url">{t('external_killmail_link')}</label>
@@ -110,7 +107,10 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                 />
                 
                 <TutorialBadge>
-                    <p set:html={marked.parseInline(t('srp_wiki'), { renderer })} />
+                    <Markdown
+                        markdown={t('srp_wiki')}
+                        inline={true}
+                    />
                 </TutorialBadge>
             </Flexblock>
 

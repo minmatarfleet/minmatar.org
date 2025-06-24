@@ -1,0 +1,30 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    markdown:           string;
+    inline?:            boolean;
+    inline_element?:    'p' | 'span' | 'small';
+    [propName: string]: any;
+}
+
+const {
+    markdown,
+    inline = false,
+    inline_element = 'p',
+    ...attributes
+} = Astro.props
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+const InlineElement = inline_element
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+{inline ?
+    <InlineElement {...attributes} set:html={marked.parseInline(markdown, { renderer })} /> :
+    <Flexblock {...attributes} set:html={marked.parse(markdown, { renderer })} />
+}

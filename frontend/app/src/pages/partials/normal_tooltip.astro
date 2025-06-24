@@ -6,11 +6,11 @@ const title = Astro.url.searchParams.get('title')
 const description = Astro.url.searchParams.get('description')
 const tag = Astro.url.searchParams.get('tag')
 
-import { marked } from 'marked';
-
 import Context from '@components/layout/Context.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+
 import Tag from '@components/blocks/Tag.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 ---
 
 <Context>
@@ -24,7 +24,11 @@ import Tag from '@components/blocks/Tag.astro';
         </FlexInline>
     }
     {description &&
-        <span set:html={marked.parseInline(t(description as any))} />
+        <Markdown
+            markdown={t(description as any)}
+            inline={true}
+            inline_element='span'
+        />
     }
 </Context>
 
