@@ -2,15 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
@@ -49,8 +47,11 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
                         <DoctrinesEvEIcon />
                         <h2>{t('doctrines.page_title')}</h2>
                     </FlexInline>
-                        
-                    <p set:html={marked.parseInline(t('doctrines.leading_text'), { renderer })} />
+                    
+                    <Markdown
+                        markdown={t('doctrines.leading_text')}
+                        inline={true}
+                    />
                     <FlexInline>
                         <Button
                             size='sm'

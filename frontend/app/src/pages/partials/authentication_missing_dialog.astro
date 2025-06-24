@@ -2,8 +2,10 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
+import Markdown from '@components/blocks/Markdown.astro';
 ---
 
-<p set:html={marked.parseInline(t('authentication_missing_dialog'), { renderer })} />
+<Markdown
+    markdown={t('authentication_missing_dialog')}
+    inline={true}
+/>

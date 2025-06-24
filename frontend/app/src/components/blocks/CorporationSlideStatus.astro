@@ -32,8 +32,6 @@ reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS
 const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
 const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
 
-import { marked } from 'marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
@@ -42,6 +40,7 @@ import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
 import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
 import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 ---
 
 <Flexblock
@@ -117,7 +116,12 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
             <small class="[ status-text ]">{t('application_accepted_tooltip')}</small>
         :
         corporation?.status === 'rejected' && !is_re_applicable ?
-            <small class="[ status-text ]" set:html={marked.parseInline(APPLICATION_DENIED_TOOLTIP)} />
+            <Markdown
+                class="[ status-text ]"
+                markdown={APPLICATION_DENIED_TOOLTIP}
+                inline={true}
+                inline_element='small'
+            />
         :
         corporation?.status == 'pending' ?
             <small class="[ status-text ]">{t('pending_application_tooltip')}</small>

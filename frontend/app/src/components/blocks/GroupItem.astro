@@ -22,12 +22,10 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupStatus from '@components/blocks/GroupStatus.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
-
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
 
 const LOGO_TEXT = {
     'team': t('team_logo'),
@@ -93,7 +91,11 @@ const PLACEHOLDER_IMAGE = type === 'team' ? '/images/icons/48px-Augmentations.pn
                         </a>
                     </small>
                     :
-                    <small set:html={marked.parseInline(group.description as string, { renderer })} />
+                    <Markdown
+                        markdown={group.description as string}
+                        inline={true}
+                        inline_element='small'
+                    />
                 }
             </slot>
         </Flexblock>

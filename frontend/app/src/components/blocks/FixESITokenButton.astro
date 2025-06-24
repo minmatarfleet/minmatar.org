@@ -29,14 +29,12 @@ import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
 const user_selectable_esi_tokens_roles = esi_token_roles.filter(token => esi_token_roles.indexOf(CURRENT_ESI_TOKEN) <= esi_token_roles.indexOf(token))
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 import DialogButton from '@components/blocks/DialogButton.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
@@ -80,7 +78,10 @@ import TutorialBadge from '@components/blocks/TutorialBadge.astro';
                 </Grid>
                 
                 <TutorialBadge>
-                    <p set:html={marked.parseInline(t('esi_token_wiki'), { renderer })} />
+                    <Markdown
+                        markdown={t('esi_token_wiki')}
+                        inline={true}
+                    />
                 </TutorialBadge>
             </Flexblock>
 

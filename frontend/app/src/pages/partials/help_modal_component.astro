@@ -2,13 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import InterContext from '@components/layout/InterContext.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+
 import Hotkeys from '@components/blocks/Hotkeys.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 ---
 
 <Wrapper
@@ -21,7 +21,10 @@ import Hotkeys from '@components/blocks/Hotkeys.astro'
         
         <Flexblock>
             <h2>{t('contribute')}</h2>
-            <p set:html={marked.parseInline(t('report_issues_text'), { renderer })} />
+            <Markdown
+                markdown={t('report_issues_text')}
+                inline={true}
+            />
         </Flexblock>
     </InterContext>
 </Wrapper>

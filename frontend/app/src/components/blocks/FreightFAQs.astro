@@ -10,11 +10,10 @@ const {
     is_contract_page = false,
 } = Astro.props
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Markdown from '@components/blocks/Markdown.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
@@ -26,7 +25,10 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     </FixedFluid>
     {!is_contract_page &&
         <h3>{t('freight.standard.faq_4_title')}</h3>
-        <p set:html={marked.parseInline(t('freight.standard.faq_4_text'), { renderer })} />
+        <Markdown
+            markdown={t('freight.standard.faq_4_text')}
+            inline={true}
+        />
     }
     {is_contract_page &&
         <h3>{t('freight.contract.faq_1_title')}</h3>
@@ -35,5 +37,8 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     <h3>{t('freight.standard.faq_1_title')}</h3>
     <p>{t('freight.standard.faq_1_text')}</p>
     <h3>{t('freight.standard.faq_3_title')}</h3>
-    <p set:html={marked.parseInline(t('freight.standard.faq_3_text'))} />
+    <Markdown
+        markdown={t('freight.standard.faq_3_text')}
+        inline={true}
+    />
 </Flexblock>

@@ -10,12 +10,10 @@ const {
     is_friend = false,
 } = Astro.props
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import MumbleIcon from '@components/icons/MumbleIcon.astro';
 import MumbleConnectButton from './MumbleConnectButton.astro';
@@ -31,8 +29,15 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                 <MumbleIcon />
             </a>
             <Flexblock gap='var(--space-3xs)'>
-                <p set:html={marked.parseInline(t('mumble_details'), { renderer })} />
-                <small set:html={marked.parseInline(t('mumble_tutorial'), { renderer })} />
+                <Markdown
+                    markdown={t('mumble_details')}
+                    inline={true}
+                />
+                <Markdown
+                    markdown={t('mumble_tutorial')}
+                    inline={true}
+                    inline_element='small'
+                />
             </Flexblock>
         </FlexInline>
         

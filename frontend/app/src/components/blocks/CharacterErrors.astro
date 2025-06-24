@@ -13,14 +13,12 @@ const {
     character_errors
 } = Astro.props
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Wrapper from '@components/compositions/Wrapper.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 
+import Markdown from '@components/blocks/Markdown.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
 import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
@@ -53,7 +51,11 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                                 t(`${character_error.error}_title` as any)
                             }
                         </h4>
-                        <small set:html={marked.parseInline(t(`${character_error.error}_description` as any), { renderer })} />
+                        <Markdown
+                            markdown={t(`${character_error.error}_description` as any)}
+                            inline={true}
+                            inline_element='small'
+                        />
                     </Flexblock>
                 </FixedFluid>
                     

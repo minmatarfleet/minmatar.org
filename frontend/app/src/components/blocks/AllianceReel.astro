@@ -18,9 +18,6 @@ const {
     is_superuser = false,
 } = Astro.props
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
@@ -28,6 +25,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
 import Tag from '@components/blocks/Tag.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro';
 import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
@@ -78,7 +76,7 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
                         <h2>{t('groups.list.page_title')}</h2>
                     </FlexInline>
                         
-                    <p set:html={marked.parseInline(t('groups.leading_text_p2'), { renderer })} />
+                    <Markdown markdown={t('groups.leading_text_p2')} inline={true} />
                     <FlexInline>
                         <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
                             {t('view_groups')}
