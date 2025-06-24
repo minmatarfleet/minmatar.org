@@ -216,7 +216,7 @@ def update_character_assets(eve_character_id):
 def _delete_orphan_assets(delete: bool):
     """Delete asset records that aren't being updated"""
 
-    cutoff = timezone.now() - timedelta.days(2)
+    cutoff = timezone.now() - timedelta(days=2)
 
     total = EveCharacterAsset.objects.count()
     to_delete = EveCharacterAsset.objects.filter(updated__lt=cutoff)
