@@ -1,4 +1,6 @@
 import logging
+import json
+import time
 from datetime import timedelta, datetime
 
 from ninja import Router
@@ -18,6 +20,7 @@ from eveonline.models import EveCharacter
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
+from fittings.models import EveFitting
 from tech.docker import (
     get_containers,
     container_names,
@@ -401,3 +404,67 @@ def test_error_id(request):
     err = ErrorResponse.new(detail="Fake error")
     logger.error("Fake error for testing (%s): %s", err.id, err.detail)
     return 400, err
+
+
+class AssetSummary(BaseModel):
+    """Summary of assets"""
+
+    count: int
+    total: int
+    quantity: int
+    elapsed_time: float
+
+
+@router.get(
+    "/assets",
+    summary="Character asset summary",
+    auth=AuthBearer(),
+    response={200: AssetSummary, 403: ErrorResponse, 404: ErrorResponse},
+)
+def asset_summary(
+    request,
+    character_id: int,
+    type_id: Optional[int] = None,
+    location_id: Optional[int] = None,
+    location_flag: Optional[str] = None,
+    fl33t_fittings: Optional[bool] = False,
+):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    char = EveCharacter.objects.filter(character_id=character_id).first()
+    if not char:
+        return 404, ErrorResponse(detail="Character not found")
+    if not char.assets_json:
+        return 404, ErrorResponse(detail="Character has no assets")
+
+    start = time.perf_counter()
+
+    fitting_ids = []
+    if fl33t_fittings:
+        for fitting in EveFitting.objects.all():
+            fitting_ids.append(fitting.ship_id)
+
+    found = 0
+    quantity = 0
+    assets = json.loads(char.assets_json)
+    for asset in assets:
+        if type_id and type_id != asset["type_id"]:
+            continue
+        if location_id and location_id != asset["location_id"]:
+            continue
+        if location_flag and location_flag != asset["location_flag"]:
+            continue
+        if fl33t_fittings and asset["type_id"] not in fitting_ids:
+            continue
+        found += 1
+        quantity += asset["quantity"]
+
+    data = AssetSummary(
+        elapsed_time=time.perf_counter() - start,
+        total=len(assets),
+        count=found,
+        quantity=quantity,
+    )
+
+    return 200, data

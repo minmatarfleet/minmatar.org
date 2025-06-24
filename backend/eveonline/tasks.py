@@ -186,15 +186,19 @@ def update_character_assets(eve_character_id):
     character.assets_json = json.dumps(response.results())
     character.save()
 
+    fetch_time = time.perf_counter() - start
+    fetch_str = f"{fetch_time:.6f}"
+
     (created, updated, deleted) = create_character_assets(character)
 
     elapsed = time.perf_counter() - start
     elapsed_str = f"{elapsed:.6f}"
 
     logger.info(
-        "Updated assets for %s in %s seconds (%d, %d, %d)",
+        "Updated assets for %s in %s (%s) seconds (%d, %d, %d)",
         character.character_name,
         elapsed_str,
+        fetch_str,
         created,
         updated,
         deleted,
