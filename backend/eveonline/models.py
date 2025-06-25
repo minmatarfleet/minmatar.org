@@ -194,7 +194,7 @@ class EveCharacterAsset(models.Model):
     location_id = models.BigIntegerField(db_index=True)
     location_name = models.CharField(max_length=255)
     updated = models.DateTimeField(null=True, auto_now=True)
-    item_id = models.IntegerField(null=True, db_index=True)
+    item_id = models.BigIntegerField(null=True, db_index=True)
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
