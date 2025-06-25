@@ -223,8 +223,8 @@ def _delete_orphan_assets(delete: bool):
 
     logger.info(
         "Found %d of %d stale EveCharacterAsset rows",
-        total,
         to_delete.count(),
+        total,
     )
 
     if delete:
