@@ -227,6 +227,12 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def get_alliance(self, alliance_id: int) -> EsiResponse:
+        operation = esi_provider.client.Alliance.get_alliances_alliance_id(
+            alliance_id=alliance_id
+        )
+        return self._operation_results(operation)
+
     def get_corporation(self, corporation_id: int) -> EsiResponse:
         operation = (
             esi_provider.client.Corporation.get_corporations_corporation_id(
