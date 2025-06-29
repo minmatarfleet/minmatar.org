@@ -8,12 +8,13 @@ from typing import List, Optional
 
 from django.conf import settings
 from django.db.models import Count, F
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from discord.client import DiscordClient
 from groups.helpers import TECH_TEAM, user_in_team
 from eveonline.client import esi_for
 from eveonline.models import EveCharacter
@@ -473,3 +474,16 @@ def asset_summary(
     )
 
     return 200, data
+
+
+@router.get(
+    "/discordroles",
+    summary="Get Discord role details",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
+)
+def discord_roles(request):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    return JsonResponse(DiscordClient().get_roles)
