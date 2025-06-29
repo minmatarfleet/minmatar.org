@@ -336,3 +336,14 @@ class TechRoutesTestCase(TestCase):
         self.assertEqual(1, len(data))
         self.assertEqual(1, data[0]["tag_count"])
         self.assertEqual(data[0]["flags"], ["ESI_SUSPENDED", "NO_TOKENS"])
+
+    def test_full_refresh(self):
+        self.make_superuser()
+
+        response = self.client.get(
+            f"{BASE_URL}/force_refresh?username={self.user.username}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        logger.info("Response content: %s", response.content)

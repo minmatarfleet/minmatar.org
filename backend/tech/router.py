@@ -6,6 +6,7 @@ from datetime import timedelta, datetime
 from ninja import Router
 from typing import List, Optional
 
+from django.contrib.auth.models import User
 from django.conf import settings
 from django.db.models import Count, F
 from django.http import HttpResponse
@@ -15,10 +16,13 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from discord.client import DiscordClient
+from discord.models import DiscordUser
+from discord.tasks import sync_discord_user, sync_discord_nickname
 from groups.helpers import TECH_TEAM, user_in_team
+from groups.tasks import update_affiliation
 from eveonline.client import esi_for
-from eveonline.models import EveCharacter
-from eveonline.tasks import update_character_assets
+from eveonline.models import EveCharacter, EvePlayer
+from eveonline.tasks import update_character_assets, update_character_skills
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
@@ -32,6 +36,7 @@ from tech.docker import (
     DockerLogEntry,
 )
 from tech.dbviews import create_all_views
+
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -487,3 +492,77 @@ def discord_roles(request):
         return 403, ErrorResponse(detail="Not authorised")
 
     return json.dumps(DiscordClient().get_roles())
+
+
+@router.get(
+    "/force_refresh",
+    summary="Force a full player / character refresh",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse, 404: ErrorResponse},
+)
+def force_refresh(request, username: str):
+    """
+    Force a full player & character data refresh.
+    """
+
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    logger.info("Full refresh requested for user %s", username)
+
+    response = ""
+
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return 404, ErrorResponse.log(
+            "User not found, cannot refresh", f"User not found: {username}"
+        )
+
+    response += f"User {username} found, ID = {user.id} \n"
+
+    discord = DiscordUser.objects.filter(user=user).first()
+    if discord:
+        response += f"DiscordUser found for user, id = {discord.id} \n"
+    else:
+        response += f"No DiscordUser found for {username} \n"
+
+    player = EvePlayer.objects.filter(user=user).first()
+    if player:
+        response += (
+            f"Player found for user, primary = {player.primary_character} \n"
+        )
+    else:
+        player = EvePlayer.objects.create(
+            user=user,
+        )
+        response += f"Player found for {username} \n"
+
+    update_affiliation(user.id)
+    response += f"Updated affiliations for {username} \n"
+
+    sync_discord_user(user.id)
+    response += f"Synced Discord roles for {username} \n"
+
+    sync_discord_nickname(user.id, True)
+    response += f"Synced Discord nickname for {username} \n"
+
+    characters = EveCharacter.objects.filter(user=user)
+    if characters.count() == 0:
+        response += f"No characters found for {username} \n"
+
+    for char in characters:
+        response += (
+            f"Found character {char.character_name} ({char.character_id}) \n"
+        )
+
+        update_character_assets(char.character_id)
+        response += f"  Updated assets for character {char.character_name} \n"
+
+        update_character_skills(char.character_id)
+        response += f"  Updated assets for character {char.character_name} \n"
+
+    response += "Complete. \n"
+
+    logger.info("Full refresh complete for %s", username)
+
+    return response
