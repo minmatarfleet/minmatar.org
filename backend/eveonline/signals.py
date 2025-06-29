@@ -2,7 +2,7 @@ import logging
 
 from django.db.models import signals
 from django.dispatch import receiver
-from esi.clients import EsiClientProvider
+
 from esi.models import Token
 
 from discord.client import DiscordClient
@@ -18,7 +18,6 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
-esi = EsiClientProvider()
 
 
 @receiver(
@@ -87,9 +86,18 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
 def eve_alliance_post_save(sender, instance, created, **kwargs):
     if created:
         logger.info("Post create of alliance %s", instance.alliance_id)
-        esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
-            alliance_id=instance.alliance_id
-        ).results()
+        # esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
+        #     alliance_id=instance.alliance_id
+        # ).results()
+        esi_response = EsiClient(None).get_alliance(instance.alliance_id)
+        if not esi_response.success():
+            logger.warning(
+                "ESI error %d getting details of alliance %d",
+                esi_response.response_code,
+                instance.alliance_id,
+            )
+            return
+        esi_alliance = esi_response.results()
         logger.debug("ESI alliance data: %s", esi_alliance)
         # public info
         logger.debug("Setting name to %s", esi_alliance["name"])
@@ -129,7 +137,7 @@ def notify_people_team_of_primary_character_change(
 )
 def log_esi_token_creation(sender, instance, created, **kwargs):
     if created:
-        logger.info(
+        logger.debug(
             "ESI token created for user %s, %s",
             instance.user if hasattr(instance, "user") else "*unknown*",
             instance.pk if hasattr(instance, "pk") else "*unknown*",

@@ -5,7 +5,6 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from esi.clients import EsiClientProvider
 from esi.models import Token
 
 from app.celery import app
@@ -33,7 +32,6 @@ from .models import (
     EveSkillset,
 )
 
-esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
 task_config = {
@@ -57,9 +55,6 @@ def update_character_affilliations() -> int:
     update_count = 0
 
     for character_ids_batch in character_id_batches:
-        # results = esi.client.Character.post_characters_affiliation(
-        #     characters=character_ids_batch
-        # ).results()
         results = (
             EsiClient(None)
             .get_character_affiliations(character_ids_batch)
@@ -250,27 +245,41 @@ def update_character_killmails(eve_character_id):
     character = EveCharacter.objects.get(character_id=eve_character_id)
 
     logger.info("Updating killmails for character %s", eve_character_id)
-    required_scopes = [
-        "esi-killmails.read_killmails.v1",
-    ]
-    token = Token.get_token(character.character_id, required_scopes)
-    if character.esi_suspended or not token:
-        logger.info(
-            "Skipping killmail update for character %s", eve_character_id
+    # required_scopes = [
+    #     "esi-killmails.read_killmails.v1",
+    # ]
+    # token = Token.get_token(character.character_id, required_scopes)
+    # if character.esi_suspended or not token:
+    #     logger.info(
+    #         "Skipping killmail update for character %s", eve_character_id
+    #     )
+    #     return
+    # esi_killmails = (
+    #     esi.client.Killmails.get_characters_character_id_killmails_recent(
+    #         character_id=eve_character_id, token=token.valid_access_token()
+    #     ).results()
+    # )
+    esi = EsiClient(eve_character_id)
+
+    response = esi.get_recent_killmails()
+    if not response.success():
+        logger.warning(
+            "Skipping killmail update for character %s, %s",
+            eve_character_id,
+            response.response_code,
         )
         return
-    esi_killmails = (
-        esi.client.Killmails.get_characters_character_id_killmails_recent(
-            character_id=eve_character_id, token=token.valid_access_token()
-        ).results()
-    )
 
-    for killmail in esi_killmails:
-        details = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
-            killmail_id=killmail["killmail_id"],
-            killmail_hash=killmail["killmail_hash"],
-        ).results()
+    for killmail in response.results():
+        # details = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
+        #     killmail_id=killmail["killmail_id"],
+        #     killmail_hash=killmail["killmail_hash"],
+        # ).results()
         killmail_id = killmail["killmail_id"]
+        response = esi.get_character_killmail(
+            killmail_id, killmail["killmail_hash"]
+        )
+        details = response.results()
         if not EveCharacterKillmail.objects.filter(id=killmail_id).exists():
             killmail = EveCharacterKillmail.objects.create(
                 id=killmail_id,

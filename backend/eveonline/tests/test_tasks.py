@@ -1,6 +1,8 @@
 import factory
 from typing import List
 from unittest.mock import patch, MagicMock
+
+from django.utils import timezone
 from django.db.models import signals
 
 from app.test import TestCase
@@ -14,6 +16,7 @@ from eveonline.tasks import (
     update_character_skills,
     update_corporation,
     update_character_affilliations,
+    update_character_killmails,
     setup_players,
     task_config,
 )
@@ -22,6 +25,7 @@ from eveonline.models import (
     EveCorporation,
     EveAlliance,
     EvePlayer,
+    EveCharacterKillmail,
 )
 
 
@@ -199,3 +203,40 @@ class EveOnlineTaskTests(TestCase):
         self.assertIsNotNone(
             EveCharacter.objects.get(character_id=10001).corporation_id
         )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.tasks.EsiClient")
+    def test_update_character_killmails(self, esi_mock):
+        esi = esi_mock.return_value
+
+        char = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test Pilot",
+            user=self.user,
+            is_primary=False,
+        )
+
+        esi.get_recent_killmails.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "killmail_id": 12345678,
+                    "killmail_hash": "abc123xyz",
+                }
+            ],
+        )
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "solar_system_id": 100001,
+                "killmail_time": timezone.now(),
+                "victim": {"ship_type_id": 50001, "items": "list of items"},
+                "attackers": "list of attackers",
+            },
+        )
+
+        self.assertEqual(0, EveCharacterKillmail.objects.count())
+
+        update_character_killmails(char.character_id)
+
+        self.assertEqual(1, EveCharacterKillmail.objects.count())
