@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from django.conf import settings
 from django.db.models import Count, F
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
 
@@ -486,4 +486,4 @@ def discord_roles(request):
     if not permitted(request.user):
         return 403, ErrorResponse(detail="Not authorised")
 
-    return JsonResponse(DiscordClient().get_roles)
+    return json.dumps(DiscordClient().get_roles())
