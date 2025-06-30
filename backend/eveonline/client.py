@@ -55,6 +55,28 @@ class EsiResponse:
                 f"Cannot return data for failed ESI call ({self.response_code})"
             )
 
+    def error_text(self):
+        if self.success():
+            return ""
+        if self.response_code == 901:
+            return f"Unknown ESI Client error ({self.response_code})"
+        if self.response_code == 902:
+            return f"ESI token suspended ({self.response_code})"
+        if self.response_code == 903:
+            return f"No character found ({self.response_code})"
+        if self.response_code == 904:
+            return f"No valid access token ({self.response_code})"
+        if self.response_code == 905:
+            return f"No valid ESI token ({self.response_code})"
+        if self.response_code == 906:
+            return f"Error calling ESI ({self.response_code})"
+        if self.response_code < 500:
+            return f"HTTP client error ({self.response_code})"
+        if self.response_code < 600:
+            return f"HTTP server error ({self.response_code})"
+
+        return f"Unexpected ESI status ({self.response.code})"
+
 
 class EsiClient:
     """

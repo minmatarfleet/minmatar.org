@@ -498,7 +498,7 @@ def discord_roles(request):
     "/force_refresh",
     summary="Force a full player / character refresh",
     auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse, 404: ErrorResponse},
+    response={200: List[str], 403: ErrorResponse, 404: ErrorResponse},
 )
 def force_refresh(request, username: str):
     """
@@ -510,7 +510,7 @@ def force_refresh(request, username: str):
 
     logger.info("Full refresh requested for user %s", username)
 
-    response = ""
+    response = []
 
     user = User.objects.filter(username=username).first()
     if user is None:
@@ -518,50 +518,54 @@ def force_refresh(request, username: str):
             "User not found, cannot refresh", f"User not found: {username}"
         )
 
-    response += f"User {username} found, ID = {user.id} \n"
+    response.append(f"User {username} found, ID = {user.id}")
 
     discord = DiscordUser.objects.filter(user=user).first()
     if discord:
-        response += f"DiscordUser found for user, id = {discord.id} \n"
+        response.append(f"DiscordUser found for user, id = {discord.id}")
     else:
-        response += f"No DiscordUser found for {username} \n"
+        response.append(f"No DiscordUser found for {username}")
 
     player = EvePlayer.objects.filter(user=user).first()
     if player:
-        response += (
-            f"Player found for user, primary = {player.primary_character} \n"
+        response.append(
+            f"Player found for user, primary = {player.primary_character}"
         )
     else:
         player = EvePlayer.objects.create(
             user=user,
         )
-        response += f"Player found for {username} \n"
+        response.append(f"Player found for {username}")
 
     update_affiliation(user.id)
-    response += f"Updated affiliations for {username} \n"
+    response.append(f"Updated affiliations for {username}")
 
     sync_discord_user(user.id)
-    response += f"Synced Discord roles for {username} \n"
+    response.append(f"Synced Discord roles for {username}")
 
     sync_discord_nickname(user.id, True)
-    response += f"Synced Discord nickname for {username} \n"
+    response.append(f"Synced Discord nickname for {username}")
 
     characters = EveCharacter.objects.filter(user=user)
     if characters.count() == 0:
-        response += f"No characters found for {username} \n"
+        response.append(f"No characters found for {username}")
 
     for char in characters:
-        response += (
-            f"Found character {char.character_name} ({char.character_id}) \n"
+        response.append(
+            f"Found character {char.character_name} ({char.character_id})"
         )
 
         update_character_assets(char.character_id)
-        response += f"  Updated assets for character {char.character_name} \n"
+        response.append(
+            f"  Updated assets for character {char.character_name}"
+        )
 
         update_character_skills(char.character_id)
-        response += f"  Updated assets for character {char.character_name} \n"
+        response.append(
+            f"  Updated skills for character {char.character_name}"
+        )
 
-    response += "Complete. \n"
+    response.append("Complete.")
 
     logger.info("Full refresh complete for %s", username)
 

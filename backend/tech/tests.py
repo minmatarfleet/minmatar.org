@@ -340,10 +340,21 @@ class TechRoutesTestCase(TestCase):
     def test_full_refresh(self):
         self.make_superuser()
 
+        EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test Pilot",
+            user=self.user,
+            esi_suspended=True,
+            corporation=EveCorporation.objects.create(
+                corporation_id=2001,
+                name="MegaCorp",
+            ),
+        )
+
         response = self.client.get(
             f"{BASE_URL}/force_refresh?username={self.user.username}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
         self.assertEqual(response.status_code, 200)
-        logger.info("Response content: %s", response.content)
+        logger.info("Response content: %s", response.json())

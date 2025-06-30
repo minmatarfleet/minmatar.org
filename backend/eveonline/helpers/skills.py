@@ -34,10 +34,9 @@ def upsert_character_skills(character_id: int):
 
     if not response.success():
         logger.error(
-            "Error %d getting skills for %s (%d)",
-            response.response_code,
-            character.character_name,
-            character.character_id,
+            "Error %s getting skills for %s",
+            response.error_text(),
+            character.summary(),
         )
         return
 

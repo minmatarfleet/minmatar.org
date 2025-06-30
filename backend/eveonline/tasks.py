@@ -177,10 +177,9 @@ def update_character_assets(eve_character_id):
     response = EsiClient(character).get_character_assets()
     if not response.success():
         logger.error(
-            "Error %d fetching assets for %s (%d)",
-            response.response_code,
-            character.character_name,
-            character.character_id,
+            "Error %s fetching assets for %s",
+            response.error_text(),
+            character.summary(),
         )
         return 0, 0, 0
 
