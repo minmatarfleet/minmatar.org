@@ -11,6 +11,7 @@ from .models import (
     EveCharacterTag,
     EveLocation,
     EveCharacterAsset,
+    EveCharacterSkill,
 )
 from .helpers.characters import user_primary_character
 
@@ -109,3 +110,16 @@ class EveCharacterAssetAdmin(admin.ModelAdmin):
     )
 
     search_fields = ("character__character_name", "type_name", "location_name")
+
+
+@admin.register(EveCharacterSkill)
+class EveCharacterSkillAdmin(admin.ModelAdmin):
+    """Admin screen for EveCharacterSkill"""
+
+    list_display = (
+        "character__character_name",
+        "skill_name",
+        "skill_level",
+    )
+
+    search_fields = ("character__character_name", "skill_name")

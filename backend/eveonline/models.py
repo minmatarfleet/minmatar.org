@@ -111,6 +111,9 @@ class EveCharacter(models.Model):
     def __str__(self):
         return str(self.character_name)
 
+    def summary(self):
+        return f"{self.character_name} ({self.character_id})"
+
     class Meta:
         indexes = [
             models.Index(fields=["character_name"]),
