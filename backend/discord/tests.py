@@ -30,6 +30,7 @@ class DiscordSimpleTests(SimpleTestCase):
         discord = Mock(is_down_under=False, dress_wearer=False)
         self.assertEqual("[ABC] Bob", make_nickname(character, discord))
 
+
 class DiscordSignalTests(TestCase):
     """
     Django tests for Discord signal functionality.
