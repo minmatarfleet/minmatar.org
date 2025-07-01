@@ -1,6 +1,3 @@
-import upsidedown
-
-
 def make_nickname(character, discord_user):
     corporation = character.corporation
 
