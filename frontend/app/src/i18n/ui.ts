@@ -141,7 +141,7 @@ export const ui = {
 
         'friend.welcome.page_title': 'Welcome Honorary Rat',
         'friend.welcome.leading_text': 'If you are seeing this page you must has come here to fight alongside Minmatar Fleet Alliance. You honor us with your prescence and we hope you have a good time with us.\nWe like the game!',
-        'friend.welcome.leading_text_sub': 'Requires user in [Minmatar Fleet Discord](https://discord.com/invite/3hZfahmkFx)',
+        'friend.welcome.leading_text_sub': 'Requires joining [Minmatar Fleet Discord](https://discord.com/invite/3hZfahmkFx)',
 
         'friend.page_title': 'FL33T friend dashboard',
         'friend.leading_text': 'Hi friend, lets get you set everything for you to partake on Minmatar Fleet Alliance operations. Start by linking your main character. This is a requirement before checking your roles are properly set in our Discord server. You may refresh discord roles to fix them in case they are incorrect. Lastly, set Mumble with the help of the wiki guide.',
