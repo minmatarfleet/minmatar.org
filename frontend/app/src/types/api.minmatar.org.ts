@@ -637,7 +637,7 @@ export interface CharacterTag {
 export const esi_token_roles = [ 'Public', 'Basic', 'Advanced', 'Director', 'CEO', 'Freight', 'Market', 'Executor' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
 
-export const prime_times = [ 'US', 'US_AP', 'AP', 'AP_EU', 'EU', 'EU_US' ] as const
+export const prime_times = [ 'US', 'AP', 'EU' ] as const
 export type PrimeTime = typeof prime_times[number]
 
 export interface Player {
