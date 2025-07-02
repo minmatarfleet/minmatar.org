@@ -1440,7 +1440,7 @@ export const ui = {
         'not_in_fleet_notice': 'Make sure you are in a fleet with an advert and try again.',
         'become_a_supplier': 'Become a supplier',
         'set_prime_time': 'Set prime time',
-        'set_prime_time_description': 'Please take a moment to let us know which time zones you’re most active in.',
+        'set_prime_time_description': 'Please take a moment to let us know which time zone you’re most active in.',
         'US': 'USTZ',
         'US_AP': 'USTZ - AUTZ',
         'AP': 'AUTZ',
