@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_403_Forbidden()
+
+import type { Player, PrimeTime } from '@dtypes/api.minmatar.org'
+import { get_current_player, update_prime_time } from '@helpers/api.minmatar.org/players'
+import { prime_times } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+
+const nickname = Astro.url.searchParams.get('nickname') ?? ''
+
+let alert:Alert | false = false
+
+if (Astro.request.method === "PATCH") {
+    try {
+        const data = await Astro.request.formData()
+        const prime_time = data.get("prime-time") as PrimeTime
+
+        if (!prime_times.includes(prime_time))
+            throw new Error(t('invalid_prime_time'))
+
+        if (!nickname)
+            throw new Error(t('invalid_nickname'))
+
+        await update_prime_time(auth_token, prime_time, nickname)
+    } catch (error) {        
+        alert = {
+            title: t('set_prime_time'),
+            content: prod_error_messages() ? t('set_prime_time_error') : error.message,
+        } as Alert
+    }
+}
+
+let current_player:Player | null = null
+
+try {
+    current_player = await get_current_player(auth_token as string)
+} catch (error) {
+    return HTTP_500_Server_Error();
+}
+
+import PrimeTimezone from '@components/blocks/PrimeTimezone.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+<PrimeTimezone
+    prime_time={current_player.prime_time}
+    nickname={current_player.nickname}
+/>
