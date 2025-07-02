@@ -95,7 +95,7 @@ import Badge from '@components/blocks/Badge.astro';
                 name="tag"
                 value={tag.id}
                 checked={active_tags?.includes(tag.id)}
-                x-on:change="is_dirty = true; console.log(is_dirty)"
+                x-on:change="is_dirty = true"
             >
                 <Flexblock gap='var(--space-3xs)'>
                     <h4>{t(`${tag.description}_tag` as any)}</h4>

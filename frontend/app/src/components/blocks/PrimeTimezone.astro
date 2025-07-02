@@ -1,0 +1,46 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PrimeTime } from '@dtypes/api.minmatar.org'
+import { prime_times } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string';
+
+interface Porps {
+    nickname:       string;
+    prime_time:     null | PrimeTime;
+}
+
+const {
+    nickname,
+    prime_time,
+} = Astro.props
+
+const PRIME_TIMEZONE_PARTIAL_URL = translatePath(`/partials/primte_timezone_component?${query_string({
+    nickname: nickname,
+})}`)
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+
+import Select from '@components/blocks/Select.astro';
+---
+
+<Flexblock id="prime-timezone">
+    <p>{t('set_prime_time_description')}</p>
+
+    <FlexInline justification='space-between'>
+        <Select
+            name="prime-time"
+            hx-patch={PRIME_TIMEZONE_PARTIAL_URL}
+            hx-target="#prime-timezone"
+            hx-indicator=".loader"
+            hx-swap="outerHTML transition:true"
+        >
+            <option value="-1" selected={!prime_time ? 'selected' : undefined}>{t('select_timezone')}</option>
+            {prime_times.map(timezone =>
+                <option value={timezone} selected={timezone === prime_time ? 'selected' : undefined}>{t(timezone as any)}</option>
+            )}
+        </Select>
+    </FlexInline>
+</Flexblock>

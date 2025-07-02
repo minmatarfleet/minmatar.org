@@ -19,9 +19,10 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, Player } from '@dtypes/api.minmatar.org'
 import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_components'
 import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
+import { get_current_player } from '@helpers/api.minmatar.org/players'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 
 let user_permissions:string[] = []
@@ -31,6 +32,7 @@ let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
 let readiness_character_id = 0
 let character_errors:CharacterErrorUI[] = []
+let current_player:Player | null = null
 
 import { get_user_permissions } from '@helpers/permissions'
 
@@ -39,6 +41,8 @@ try {
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
+    current_player = await get_current_player(auth_token as string)
+    console.log(current_player)
 
     if (user_permissions.includes('eveonline.add_evecharactertag'))
         readiness_character_id = pilots[0]?.character_id ?? 0
@@ -87,6 +91,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CopyToken from '@components/blocks/CopyToken.astro';
 import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 import CharacterErrors from '@components/blocks/CharacterErrors.astro'
+import PrimeTimezone from '@components/blocks/PrimeTimezone.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -215,6 +220,15 @@ const page_title = t('account.page_title');
 
                 {readiness_character_id > 0 &&
                     <PilotReadinessBanner main_character_id={readiness_character_id} />
+                }
+
+                {current_player &&
+                    <ComponentBlock width='narrow'>
+                        <PrimeTimezone
+                            prime_time={current_player.prime_time}
+                            nickname={current_player.nickname}
+                        />
+                    </ComponentBlock>
                 }
 
                 <ComponentBlock 
