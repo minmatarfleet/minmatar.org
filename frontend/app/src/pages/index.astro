@@ -60,7 +60,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
-import NakahInfo from '@components/blocks/NakahInfo.astro';
 import EvatiInfo from '@components/blocks/EvatiInfo.astro';
 import VardInfo from '@components/blocks/VardInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
@@ -90,7 +89,6 @@ type StagingTranslation = {
 
 const STAGINGS_STATIONS:StagingTranslation = {
 	auga: 'Auga - Minmatar Militia HQ',
-	nakah: 'Nakah - Banana',
 	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
 	vard: 'Vard - Rickety Roost',
 	watermellon: 'Sosala - WATERMELLON',
@@ -99,7 +97,6 @@ const STAGINGS_STATIONS:StagingTranslation = {
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
 	auga: 'Auga',
-	nakah: 'Nakah',
 	evati: 'Evati',
 	vard: 'Vard',
 	watermellon: 'Sosala',
@@ -108,7 +105,6 @@ const STAGINGS_SYSTEMS:StagingTranslation = {
 
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
-const BALLS_DEEP_ID = 98252708
 const SOLTECH_ARMADA_ID = 98647659
 const EMPEROR_FAMILY_ID = 1000086
 
@@ -116,14 +112,18 @@ const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
 
 import { stagings } from '@dtypes/layout_components'
 
-const staging = IS_APRIL_FOOLS ?
-	'amarr' :
-	Astro.cookies.has('staging') ?
-	Astro.cookies.get('staging')?.value as StagingType :
-	stagings[Math.floor(Math.random() * (stagings.length - 1))] // removing amarr from random
-	
+const user_staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : false
+if (user_staging && !stagings.includes(user_staging))
+	Astro.cookies.delete('staging', { path: '/' })
+
 const is_random_staging = !Astro.cookies.has('staging')
 
+const staging = IS_APRIL_FOOLS ?
+	'amarr' :
+	is_random_staging ?
+	stagings[Math.floor(Math.random() * (stagings.length - 1))] : // removing amarr from random
+	user_staging
+	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
 if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
 
@@ -146,25 +146,21 @@ const page_description = t('index.leading_text');
     <PageLanding
         cover={{
 			video: staging === 'auga' ? '/videos/militia-loop.webm' :
-					staging === 'nakah' ? '/videos/banana-loop.webm' :
 					staging === 'vard' ? '/videos/rickety-loop.webm' :
 					staging === 'evati' ? '/videos/tzu-loop.webm' :
 					staging === 'amarr' ? '/videos/emperor-loop.webm' :
 					'/videos/watermelon-loop.webm',
 			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					staging === 'nakah' ? '/images/home-nakah-cover.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
 					'/images/home-cover.jpg',
             image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
             image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					   staging === 'nakah' ? '/images/home-nakah-cover-eve.jpg' :
 					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
 					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
@@ -192,7 +188,6 @@ const page_description = t('index.leading_text');
 				gap='0'
 			>
 				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
-					staging === 'nakah' ? <NakahInfo is_random={is_random_staging} /> :
 					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
 					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
@@ -205,9 +200,6 @@ const page_description = t('index.leading_text');
 								staging === 'auga' ? {
 									id: RATTINI_TRIBE_ID,
 									name: 'Rattini Tribe',
-								} : staging === 'nakah' ? {
-									id: BALLS_DEEP_ID,
-									name: 'Balls Deep Inc.',
 								} : staging === 'vard' ? {
 									id: SOLTECH_ARMADA_ID,
 									name: 'Soltech Armada.',
