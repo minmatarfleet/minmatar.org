@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from moons.models import EveMoon, EveMoonDistribution
+from moons.models import EveMoon
 
 from .parser import MoonParsingResult, process_moon_paste
 
@@ -87,7 +87,6 @@ def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:
     moon_counts = {}
 
     for moon in eve_moons:
-        print(moon.system, moon.planet, moon.moon)
         if moon.system not in moon_counts:
             moon_counts[moon.system] = 0
 
@@ -166,54 +165,3 @@ def get_moons(request, system: str = None):
 
         response.append(moon_response)
     return response
-
-
-# @moons_router.get("/{moon_id}", response=MoonResponse, auth=AuthBearer())
-def get_moon(request, moon_id: int):
-    if not request.user.has_perm("moons.view_evemoondistribution"):
-        return ErrorResponse(
-            detail="You do not have permission to view moon distributions"
-        )
-
-    moon = EveMoon.objects.get(id=moon_id)
-    distribution = EveMoonDistribution.objects.filter(moon=moon)
-
-    if moon.reported_by is None:
-        reported_by_user = "{Unknown}"
-    else:
-        reported_by_user = moon.reported_by.username
-
-    response = MoonResponse(
-        id=moon.id,
-        system=moon.system,
-        planet=moon.planet,
-        moon=moon.moon,
-        reported_by=reported_by_user,
-        monthly_revenue=moon.monthly_revenue,
-        distribution=[
-            MoonDistributionResponse(ore=d.ore, percentage=d.yield_percent)
-            for d in distribution
-        ],
-    )
-    return response
-
-
-# @moons_router.post("", response=int)
-def create_moon(request, moon_request: CreateMoonRequest):
-    if not request.user.has_perm("moons.add_evemoon"):
-        return ErrorResponse(detail="You do not have permission to add moons")
-
-    moon = EveMoon.objects.create(
-        system=moon_request.system,
-        planet=moon_request.planet,
-        moon=moon_request.moon,
-        reported_by=request.user,
-    )
-    for distribution in moon_request.distribution:
-        EveMoonDistribution.objects.create(
-            moon=moon,
-            ore=distribution.ore,
-            yield_percent=distribution.percentage,
-        )
-
-    return moon.id
