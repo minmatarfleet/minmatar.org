@@ -1,3 +1,4 @@
+import factory
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group, User
@@ -21,11 +22,13 @@ from groups.models import (
     SigRequest,
     Team,
     TeamRequest,
+    EveCorporationGroup,
 )
 from groups.tasks import (
     update_affiliations,
     create_sig_request_reminders,
     create_team_request_reminders,
+    sync_eve_corporation_groups,
 )
 
 
@@ -220,3 +223,38 @@ class UserAffiliationTestCase(TestCase):
         create_team_request_reminders()
 
         discord_mock.create_message.assert_called()
+
+
+class GroupTasksTestCase(TestCase):
+    """Unit tests for Groups tasks"""
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_eve_corporation_groups(self):
+        corp = EveCorporation.objects.create(
+            corporation_id=100001,
+            name="MegaCorp",
+        )
+        EveCorporationGroup.objects.create(
+            corporation=corp,
+            group=Group.objects.create(name=f"{corp.name} group"),
+        )
+        char = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test Pilot",
+            corporation=corp,
+        )
+        DiscordUser.objects.create(
+            id=1000000001,
+            user=self.user,
+            discord_tag="testpilot",
+        )
+        set_primary_character(self.user, char)
+
+        self.assertEqual(0, self.user.groups.count())
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(1, self.user.groups.count())
+        self.assertEqual(f"{corp.name} group", self.user.groups.all()[0].name)
