@@ -32,6 +32,10 @@ from fleets.router import (
     time_region,
     EveFleetTrackingResponse,
 )
+from fleets.signals import (
+    update_fleet_schedule_on_save,
+    update_fleet_schedule_on_delete,
+)
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
 
@@ -135,6 +139,34 @@ class FleetHelperTestCase(SimpleTestCase):
             fleet_voice_channel_link="link",
         )
         self.assertEqual("@everyone", notification["content"])
+
+
+class FleetSignalsTestCase(TestCase):
+    """Tests for fleet signals"""
+
+    @patch("fleets.tasks.discord_client")
+    def test_update_fleet_schedule_on_save(self, discord_mock):
+        instance = MagicMock(spec=EveFleet)
+
+        instance.audience.add_to_schedule = False
+
+        update_fleet_schedule_on_save(None, instance, False)
+
+        instance.audience.add_to_schedule = True
+
+        update_fleet_schedule_on_save(None, instance, False)
+
+        discord_mock.update_message.assert_called_once()
+
+    @patch("fleets.tasks.discord_client")
+    def test_update_fleet_schedule_on_delete(self, discord_mock):
+        instance = MagicMock(spec=EveFleet)
+
+        instance.audience.add_to_schedule = True
+
+        update_fleet_schedule_on_delete(None, instance)
+
+        discord_mock.update_message.assert_called_once()
 
 
 class FleetRouterTestCase(TestCase):
