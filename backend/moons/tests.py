@@ -2,6 +2,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.test import Client
 
 from app.test import TestCase
 from moons.helpers import calc_metanox_yield
@@ -10,6 +11,8 @@ from moons.router import count_scanned_moons
 from moons.tasks import update_moon_revenues
 
 from .parser import process_moon_paste
+
+BASE_URL = "/api/moons"
 
 paste = """
 Moon	Moon Product	Quantity	Ore TypeID	SolarSystemID	PlanetID	MoonID
@@ -106,3 +109,35 @@ class EveMoonQueryTest(TestCase):
 
         self.assertEqual("Jita", summary[0].system)
         self.assertEqual(2, summary[0].scanned_moons)
+
+
+class EveMoonRouterTest(TestCase):
+    """Tests for the EveMoon router"""
+
+    def setUp(self):
+        self.client = Client()
+
+        return super().setUp()
+
+    def test_get_moons(self):
+        EveMoon.objects.create(
+            system="Hek",
+            planet="1",
+            moon="1",
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}?system=Hek",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+
+        self.make_superuser()
+
+        response = self.client.get(
+            f"{BASE_URL}?system=Hek",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        moons = response.json()
+        self.assertEqual(1, len(moons))
