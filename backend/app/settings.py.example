@@ -54,6 +54,9 @@ DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = os.environ.get(
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
 ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
+ESI_USER_CONTACT_EMAIL = os.environ.get(
+    "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
+)
 
 # MUMBLE
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
