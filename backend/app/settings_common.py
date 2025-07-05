@@ -9,7 +9,6 @@ CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
     "groups.tasks",
-    "fittings.tasks",
     "discord.tasks",
     "fleets.tasks",
     "reminders.tasks",
