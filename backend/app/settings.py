@@ -57,6 +57,9 @@ ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
 ESI_CONNECTION_ERROR_MAX_RETRIES = 0  # 0 means no retries
 ESI_SERVER_ERROR_MAX_RETRIES = 0  # 0 means no retries
+ESI_USER_CONTACT_EMAIL = os.environ.get(
+    "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
+)
 
 # MUMBLE
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
