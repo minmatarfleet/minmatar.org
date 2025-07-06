@@ -72,7 +72,7 @@ def sig_members_changed(
 def team_directors_changed(
     sender, instance, action, reverse, model, pk_set, **kwargs
 ):
-    group, _ = Group.objects.get_or_create(name="Alliance Officer")
+    group, _ = Group.objects.get_or_create(name="Alliance Director")
     logger.info("Team directors changed (%s), updating user groups", action)
     if action == "pre_add":
         for user_id in pk_set:
