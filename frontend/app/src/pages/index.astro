@@ -112,7 +112,7 @@ const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
 
 import { stagings } from '@dtypes/layout_components'
 
-const user_staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : false
+const user_staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : ''
 if (user_staging && !stagings.includes(user_staging))
 	Astro.cookies.delete('staging', { path: '/' })
 
@@ -174,6 +174,11 @@ const page_description = t('index.leading_text');
 			show_stagging_info: true,
         }`}
     >
+		<video autoplay id="waifu-intro">
+			<source src="/videos/waifu-intro.mp4" type="video/mp4">
+			Your browser does not support the video tag.
+		</video>
+
 		{alert && <ShowAlert alert={alert} /> }
 
 		{is_referral_page && user &&
@@ -559,6 +564,19 @@ const page_description = t('index.leading_text');
 )}
 
 <style lang="scss">
+	#waifu-intro {
+		position: fixed;
+		right: 11vw;
+		top: 220px;
+		height: min(50%, 500px);
+		mix-blend-mode: screen;
+		display: none;
+
+		@media screen and (min-width:980px) {
+			display: block;
+		}
+	}
+
 	#decoration_overlay {
 		position: absolute;
 		inset: 0;
