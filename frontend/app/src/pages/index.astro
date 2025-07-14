@@ -174,7 +174,7 @@ const page_description = t('index.leading_text');
 			show_stagging_info: true,
         }`}
     >
-		<video autoplay id="waifu-intro">
+		<video id="waifu-intro" autoplay x-init="$el.play()">
 			<source src="/videos/waifu-intro.webm" type="video/webm">
 			<source src="/videos/waifu-intro.mp4" type="video/mp4">
 			Your browser does not support the video tag.
