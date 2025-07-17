@@ -28,4 +28,5 @@ reimbursement_ship_lookup = {
     "Scorpion": 250 * MILLION,
     "Zarmazd": 500 * MILLION,
     "Loki": 500 * MILLION,
+    "Armageddon": 250 * MILLION,
 }
