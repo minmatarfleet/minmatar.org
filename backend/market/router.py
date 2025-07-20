@@ -2,11 +2,14 @@ import logging
 from typing import List, Optional
 
 from django.db.models import Count, Q, Max
+from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from fittings.models import EveFitting
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
@@ -459,3 +462,72 @@ def get_market_locations(request) -> List[MarketLocationSummary]:
             )
         )
     return locations
+
+
+fitting_map = {}
+
+
+def get_fitting_id_for_contract(contract_summary: str) -> int:
+    if contract_summary in fitting_map:
+        return fitting_map[contract_summary]
+
+    fitting = EveFitting.objects.filter(name__iexact=contract_summary).first()
+    if not fitting:
+        return 0
+    else:
+        fitting_map[contract_summary] = fitting.id
+        return fitting.id
+
+
+@router.get(
+    "/market/summary",
+    description="A summary of the alliance contract market",
+    response={200: List[MarketContractResponse]},
+)
+def get_market_summary(request) -> List[MarketContractResponse]:
+    counts = {}
+
+    results = []
+
+    contracts = EsiClient(None).get_public_contracts(10000030).results()
+
+    for location in EveLocation.objects.filter(market_active=True):
+        for contract in contracts:
+            if not contract["type"] == "item_exchange":
+                continue
+            if not contract["start_location_id"] == 1049037316814:
+                continue
+            if contract["date_expired"] <= timezone.now():
+                continue
+            fitting_id = get_fitting_id_for_contract(contract["title"])
+            if fitting_id == 0:
+                logger.info("Ignoring (fitting) %s", contract["title"])
+                continue
+            if fitting_id not in counts:
+                counts[fitting_id] = 1
+            else:
+                counts[fitting_id] += 1
+
+        for key, value in counts.items():
+            fitting = EveFitting.objects.get(id=key)
+            expectation = EveMarketContractExpectation.objects.filter(
+                fitting=fitting
+            ).first()
+            results.append(
+                MarketContractResponse(
+                    fitting_id=key,
+                    current_quantity=value,
+                    expectation_id=expectation.id if expectation else 0,
+                    title=fitting.name,
+                    structure_id=location.location_id if location else 0,
+                    location_name=location.location_name if location else "",
+                    desired_quantity=(
+                        expectation.desired_quantity if expectation else 0
+                    ),
+                    latest_contract_timestamp=None,
+                    historical_quantity=[],
+                    responsibilities=[],
+                )
+            )
+
+    return results

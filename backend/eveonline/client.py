@@ -219,7 +219,16 @@ class EsiClient:
         operation = esi_provider.client.Contracts.get_corporations_corporation_id_contracts(
             corporation_id=corporation_id,
             token=token,
-        ).results()
+        )
+
+        return self._operation_results(operation)
+
+    def get_public_contracts(self, region_id) -> EsiResponse:
+        operation = (
+            esi_provider.client.Contracts.get_contracts_public_region_id(
+                region_id=region_id,
+            )
+        )
 
         return self._operation_results(operation)
 
