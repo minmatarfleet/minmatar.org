@@ -1,11 +1,15 @@
 import logging
+from datetime import datetime
 
 from django.db.models import Q
+from django.utils import timezone
 from esi.models import Token
 
 from app.celery import app
 from discord.client import DiscordClient
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.client import EsiClient
+from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from fittings.models import EveFitting
 from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
@@ -93,3 +97,119 @@ def notify_eve_market_contract_warnings():
             message += f"**{expectation.fitting.name}** ({expectation.current_quantity}/{expectation.desired_quantity})\n"
 
     discord.create_message(channel_id=NOTIFICATION_CHANNEL, message=message)
+
+
+@app.task()
+def fetch_eve_public_contracts():
+    start_time = timezone.now()
+
+    logger.info("Fetching and updating public contracts")
+
+    for location in EveLocation.objects.filter(market_active=True):
+        logger.info("Fetching contracts for %s", location.location_name)
+        if not location.region_id:
+            logger.info(
+                "Skipping contract update for location without region: %s",
+                location.location_name,
+            )
+            continue
+        esi_response = EsiClient(None).get_public_contracts(location.region_id)
+        if not esi_response.success():
+            logger.info(
+                "Error %d fetching contracts for region: %d",
+                esi_response.response_code,
+                location.region_id,
+            )
+        for contract in esi_response.results():
+            create_or_update_contract(contract, location)
+
+    logger.info("Public contracts updated")
+
+    update_completed_contracts(start_time)
+
+
+def create_or_update_contract(esi_contract, location: EveLocation):
+    if not esi_contract["type"] == EveMarketContract.esi_contract_type:
+        return
+    if not esi_contract["start_location_id"] == location.location_id:
+        return
+    if esi_contract["date_expired"] <= timezone.now():
+        return
+
+    fitting = get_fitting_for_contract(esi_contract["title"])
+    if not fitting:
+        logger.info(
+            "Ignoring public contract %d, unknown fitting: %s",
+            esi_contract["contract_id"],
+            esi_contract["title"],
+        )
+        return
+
+    if esi_contract["status"] == "outstanding":
+        status = "outstanding"
+    elif esi_contract["status"] == "finished":
+        status = "finished"
+    else:
+        status = "expired"
+
+    contract, _ = EveMarketContract.objects.get_or_create(
+        id=esi_contract["contract_id"],
+        defaults={
+            "price": esi_contract["price"],
+            "issuer_external_id": esi_contract["issuer_id"],
+        },
+    )
+    contract.title = esi_contract["title"]
+    contract.status = status
+    contract.assignee_id = esi_contract["assignee_id"]
+    contract.acceptor_id = esi_contract["acceptor_id"]
+    contract.expires_at = esi_contract["date_expired"]
+    contract.fitting = fitting
+    contract.location = location
+    contract.is_public = True
+    contract.last_updated = timezone.now()
+    contract.save()
+
+
+fitting_cache = {}
+
+
+def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
+    if contract_summary is None or contract_summary.strip() == "":
+        return None
+
+    if contract_summary in fitting_cache:
+        return fitting_cache[contract_summary]
+
+    contract_summary = contract_summary.replace("[FLEET]", "[FL33T]")
+
+    fitting = None
+
+    possible_matches = EveFitting.objects.filter(
+        Q(name__iexact=contract_summary)
+        | Q(aliases__contains=contract_summary)
+    )
+
+    for candidate in possible_matches:
+        if candidate.name.lower() == contract_summary.lower():
+            fitting = candidate
+            break
+        for alias in candidate.aliases.lower().split(","):
+            if alias == contract_summary.lower():
+                fitting = candidate
+                break
+
+    if not fitting:
+        return None
+
+    fitting_cache[contract_summary] = fitting
+    return fitting
+
+
+def update_completed_contracts(cutoff: datetime):
+    updated = (
+        EveMarketContract.objects.filter(expires_at__lt=cutoff)
+        .filter(status="outstanding")
+        .update(status="expired")
+    )
+    logger.info("Set %d public contracts to expired status", updated)

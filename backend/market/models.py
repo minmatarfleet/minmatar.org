@@ -95,9 +95,13 @@ class EveMarketContract(models.Model):
     acceptor_id = models.BigIntegerField(null=True, blank=True)
     issuer_external_id = models.BigIntegerField()
 
+    is_public = models.BooleanField(default=False)
+
     # audit fields
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    last_updated = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     # relationships
     location = models.ForeignKey(
