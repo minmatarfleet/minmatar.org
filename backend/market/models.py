@@ -1,6 +1,6 @@
 from django.db import models
 from eveuniverse.models import EveType
-from eveonline.models import EveLocation
+from eveonline.models import EveLocation, EveCharacter
 
 from fittings.models import EveFitting
 
@@ -165,3 +165,16 @@ class EveMarketItemTransaction(models.Model):
 
     def __str__(self):
         return str(f"{self.item.name} - {self.location.name}")
+
+
+class EveMarketContractError(models.Model):
+    """Contracts not matched to fittings"""
+
+    title = models.CharField(max_length=255, db_index=True)
+    quantity = models.IntegerField(default=1)
+    issuer = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
+    location = models.ForeignKey(
+        EveLocation,
+        on_delete=models.CASCADE,
+    )
+    updated_at = models.DateTimeField(auto_now=True)

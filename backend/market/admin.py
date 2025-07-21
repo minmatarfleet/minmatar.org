@@ -6,6 +6,7 @@ from market.models import (
     EveMarketItemExpectation,
     EveMarketLocation,
     EveMarketContract,
+    EveMarketContractError,
 )
 
 # Register your models here.
@@ -13,6 +14,7 @@ admin.site.register(EveMarketLocation)
 admin.site.register(EveMarketContractExpectation)
 admin.site.register(EveMarketItemExpectation)
 admin.site.register(EveMarketContractResponsibility)
+admin.site.register(EveMarketContractError)
 
 
 @admin.register(EveMarketContract)

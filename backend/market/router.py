@@ -7,7 +7,6 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from fittings.models import EveFitting
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
@@ -18,6 +17,7 @@ from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
+    EveMarketContractError,
 )
 
 logger = logging.getLogger(__name__)
@@ -86,6 +86,14 @@ class MarketLocationSummary(BaseModel):
     contracts: int = 0
     expectations: int = 0
     structure_id: Optional[int] = None
+
+
+class MarketContractErrorResponse(BaseModel):
+    location_name: str
+    issuer_id: int
+    issuer_name: str
+    title: str
+    quantity: int
 
 
 def _get_entity_ids(request):
@@ -462,16 +470,22 @@ def get_market_locations(request) -> List[MarketLocationSummary]:
     return locations
 
 
-fitting_map = {}
-
-
-def get_fitting_id_for_contract(contract_summary: str) -> int:
-    if contract_summary in fitting_map:
-        return fitting_map[contract_summary]
-
-    fitting = EveFitting.objects.filter(name__iexact=contract_summary).first()
-    if not fitting:
-        return 0
-    else:
-        fitting_map[contract_summary] = fitting.id
-        return fitting.id
+@router.get(
+    "/errors",
+    description="Fetch details of errors matching public contracts",
+    auth=AuthBearer(),
+    response={200: List[MarketContractErrorResponse]},
+)
+def get_public_contract_errors(request) -> List[MarketContractErrorResponse]:
+    results = []
+    for contract_error in EveMarketContractError.objects.all():
+        results.append(
+            MarketContractErrorResponse(
+                location_name=contract_error.location.location_name,
+                issuer_id=contract_error.issuer.character_id,
+                issuer_name=contract_error.issuer.character_name,
+                title=contract_error.title,
+                quantity=contract_error.quantity,
+            )
+        )
+    return results
