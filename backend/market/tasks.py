@@ -95,6 +95,7 @@ def notify_eve_market_contract_warnings():
     for expectation in EveMarketContractExpectation.objects.all():
         if expectation.is_understocked:
             message += f"**{expectation.fitting.name}** ({expectation.current_quantity}/{expectation.desired_quantity})\n"
+    message += "\n\nhttps://my.minmatar.org/market/contracts/"
 
     discord.create_message(channel_id=NOTIFICATION_CHANNEL, message=message)
 
