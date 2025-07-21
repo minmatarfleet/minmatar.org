@@ -177,6 +177,8 @@ def record_unmatched_contract(esi_contract, location):
     if (
         char
         and char.corporation
+        and char.corporation.alliance
+        and char.corporation.alliance.ticker
         and char.corporation.alliance.ticker in ["FL33T", "BUILD"]
     ):
         contract_error, created = EveMarketContractError.objects.get_or_create(
