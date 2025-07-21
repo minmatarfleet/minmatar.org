@@ -470,6 +470,7 @@ class EveLocation(models.Model):
     solar_system_id = models.BigIntegerField()
     solar_system_name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=32)
+    region_id = models.BigIntegerField(null=True)
 
     structure = models.ForeignKey(
         "structures.EveStructure",

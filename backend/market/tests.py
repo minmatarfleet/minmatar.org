@@ -1,4 +1,5 @@
 import factory
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.test import Client
@@ -19,6 +20,10 @@ from market.models import (
 from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
+)
+from market.tasks import (
+    fetch_eve_public_contracts,
+    get_fitting_for_contract,
 )
 
 BASE_URL = "/api/market"
@@ -257,3 +262,104 @@ class MarketHelperTestCase(TestCase):
         contract = EveMarketContract.objects.filter(id=contract_id).first()
         self.assertIsNotNone(contract)
         self.assertEqual(fitting.name, contract.title)
+
+
+class MarketTaskTestCase(TestCase):
+    """Test cases for the market tasks."""
+
+    @patch("market.tasks.EsiClient")
+    def test_fetch_eve_public_contracts(self, esi_mock):
+
+        location = EveLocation.objects.create(
+            location_id=1001,
+            location_name="Home base",
+            market_active=True,
+            region_id=100001,
+            solar_system_id=100002,
+        )
+        fitting = EveFitting.objects.create(
+            name="[FL33T] Thrasher",
+            eft_format="[Thrasher, [FL33T] Thrasher]",
+            ship_id=1001,
+        )
+
+        esi = esi_mock.return_value
+        esi.get_public_contracts.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "contract_id": 10000001,
+                    "type": EveMarketContract.esi_contract_type,
+                    "start_location_id": location.location_id,
+                    "date_issued": timezone.now() - timedelta(days=10),
+                    "date_expired": timezone.now() + timedelta(days=20),
+                    "title": fitting.name,
+                    "price": 12.34,
+                    "issuer_id": 1,
+                },
+                {
+                    "contract_id": 10000002,
+                    "type": EveMarketContract.esi_contract_type,
+                    "start_location_id": location.location_id,
+                    "date_expired": timezone.now() + timedelta(days=30),
+                    "title": "Random contract",
+                    "price": 12.34,
+                    "issuer_id": 1,
+                },
+                {
+                    "contract_id": 10000003,
+                    "type": EveMarketContract.esi_contract_type,
+                    "start_location_id": location.location_id + 1,
+                    "date_expired": timezone.now() + timedelta(days=30),
+                    "title": "Random contract",
+                    "price": 12.34,
+                    "issuer_id": 1,
+                },
+                {
+                    "contract_id": 10000004,
+                    "type": "courier",
+                    "start_location_id": location.location_id + 1,
+                    "date_expired": timezone.now() + timedelta(days=30),
+                    "title": "Random contract",
+                    "price": 12.34,
+                    "issuer_id": 1,
+                },
+            ],
+        )
+
+        fetch_eve_public_contracts()
+
+        contracts = EveMarketContract.objects.all()
+
+        self.assertEqual(1, contracts.count())
+        self.assertEqual(10000001, contracts[0].id)
+        self.assertEqual(fitting.id, contracts[0].fitting.id)
+        self.assertEqual(
+            location.location_id, contracts[0].location.location_id
+        )
+
+    def test_get_fitting_id_for_contract(self):
+        fitting = EveFitting.objects.create(
+            name="[FL33T] Thrasher",
+            eft_format="[Thrasher, [FL33T] Thrasher]",
+            ship_id=1001,
+            aliases="[NVY-5] Thrasher,[L3ARN] Thrasher",
+        )
+
+        self.assertEquals(
+            fitting, get_fitting_for_contract("[FL33T] Thrasher")
+        )
+        self.assertEquals(
+            fitting, get_fitting_for_contract("[fl33t] thrasher")
+        )
+        self.assertEquals(
+            fitting, get_fitting_for_contract("[NVY-5] Thrasher")
+        )
+        self.assertEquals(
+            fitting, get_fitting_for_contract("[FLEET] Thrasher")
+        )
+
+        self.assertIsNone(get_fitting_for_contract(None))
+        self.assertIsNone(get_fitting_for_contract(""))
+        self.assertIsNone(get_fitting_for_contract("[FL33T] Stabber"))
+        self.assertIsNone(get_fitting_for_contract("Thrasher"))
