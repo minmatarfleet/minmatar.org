@@ -14,7 +14,11 @@ from market.helpers import (
     create_character_market_contracts,
     create_corporation_market_contracts,
 )
-from market.models import EveMarketContract, EveMarketContractExpectation
+from market.models import (
+    EveMarketContract,
+    EveMarketContractExpectation,
+    EveMarketContractError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +108,8 @@ def notify_eve_market_contract_warnings():
 def fetch_eve_public_contracts():
     start_time = timezone.now()
 
+    EveMarketContractError.objects.all().delete()
+
     logger.info("Fetching and updating public contracts")
 
     for location in EveLocation.objects.filter(market_active=True):
@@ -138,11 +144,7 @@ def create_or_update_contract(esi_contract, location: EveLocation):
 
     fitting = get_fitting_for_contract(esi_contract["title"])
     if not fitting:
-        logger.info(
-            "Ignoring public contract %d, unknown fitting: %s",
-            esi_contract["contract_id"],
-            esi_contract["title"],
-        )
+        record_unmatched_contract(esi_contract, location)
         return
 
     contract, _ = EveMarketContract.objects.get_or_create(
@@ -161,6 +163,33 @@ def create_or_update_contract(esi_contract, location: EveLocation):
     contract.is_public = True
     contract.last_updated = timezone.now()
     contract.save()
+
+
+def record_unmatched_contract(esi_contract, location):
+    logger.info(
+        "Ignoring public contract %d, unknown fitting: %s",
+        esi_contract["contract_id"],
+        esi_contract["title"],
+    )
+    char = EveCharacter.objects.filter(
+        character_id=esi_contract["issuer_id"]
+    ).first()
+    if (
+        char
+        and char.corporation
+        and char.corporation.alliance.ticker in ["FL33T", "BUILD"]
+    ):
+        contract_error, created = EveMarketContractError.objects.get_or_create(
+            location=location,
+            issuer=char,
+            title=esi_contract["title"],
+            defaults={
+                "quantity": 1,
+            },
+        )
+        if not created:
+            contract_error.quantity += 1
+            contract_error.save()
 
 
 fitting_cache = {}
