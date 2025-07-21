@@ -133,8 +133,6 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         return
     if not esi_contract["start_location_id"] == location.location_id:
         return
-    if esi_contract["date_expired"] <= timezone.now():
-        return
 
     fitting = get_fitting_for_contract(esi_contract["title"])
     if not fitting:
@@ -145,13 +143,6 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         )
         return
 
-    if esi_contract["status"] == "outstanding":
-        status = "outstanding"
-    elif esi_contract["status"] == "finished":
-        status = "finished"
-    else:
-        status = "expired"
-
     contract, _ = EveMarketContract.objects.get_or_create(
         id=esi_contract["contract_id"],
         defaults={
@@ -160,9 +151,8 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         },
     )
     contract.title = esi_contract["title"]
-    contract.status = status
-    contract.assignee_id = esi_contract["assignee_id"]
-    contract.acceptor_id = esi_contract["acceptor_id"]
+    contract.status = "outstanding"
+    contract.issued_at = esi_contract["date_issued"]
     contract.expires_at = esi_contract["date_expired"]
     contract.fitting = fitting
     contract.location = location

@@ -102,6 +102,7 @@ class EveMarketContract(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     last_updated = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
+    issued_at = models.DateTimeField(null=True, blank=True)
 
     # relationships
     location = models.ForeignKey(
