@@ -24,6 +24,8 @@ from market.helpers import (
 from market.tasks import (
     fetch_eve_public_contracts,
     get_fitting_for_contract,
+    update_completed_contracts,
+    update_expired_contracts,
 )
 
 BASE_URL = "/api/market"
@@ -363,3 +365,50 @@ class MarketTaskTestCase(TestCase):
         self.assertIsNone(get_fitting_for_contract(""))
         self.assertIsNone(get_fitting_for_contract("[FL33T] Stabber"))
         self.assertIsNone(get_fitting_for_contract("Thrasher"))
+
+    def test_update_completed_contracts(self):
+        cutoff = timezone.now()
+
+        EveMarketContract.objects.create(
+            id=10001,
+            title="Should be marked complete",
+            price=12.34,
+            issuer_external_id=1,
+            status="outstanding",
+            is_public=True,
+            expires_at=cutoff + timedelta(days=1),
+            last_updated=cutoff - timedelta(hours=1),
+        )
+        EveMarketContract.objects.create(
+            id=10002,
+            title="Updated after cutoff",
+            price=12.34,
+            issuer_external_id=1,
+            status="outstanding",
+            is_public=True,
+            expires_at=cutoff + timedelta(days=1),
+            last_updated=cutoff + timedelta(seconds=10),
+        )
+        EveMarketContract.objects.create(
+            id=10003,
+            title="Expired before cutoff",
+            price=12.34,
+            issuer_external_id=1,
+            status="outstanding",
+            is_public=True,
+            expires_at=cutoff - timedelta(hours=1),
+        )
+
+        completed = update_completed_contracts(cutoff)
+
+        self.assertEqual(1, completed)
+        self.assertEqual(
+            "finished", EveMarketContract.objects.get(id=10001).status
+        )
+
+        expired = update_expired_contracts(cutoff)
+
+        self.assertEqual(1, expired)
+        self.assertEqual(
+            "expired", EveMarketContract.objects.get(id=10003).status
+        )

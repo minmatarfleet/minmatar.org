@@ -127,6 +127,7 @@ def fetch_eve_public_contracts():
     logger.info("Public contracts updated")
 
     update_completed_contracts(start_time)
+    update_expired_contracts(start_time)
 
 
 def create_or_update_contract(esi_contract, location: EveLocation):
@@ -197,10 +198,24 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
     return fitting
 
 
-def update_completed_contracts(cutoff: datetime):
+def update_completed_contracts(cutoff: datetime) -> int:
     updated = (
-        EveMarketContract.objects.filter(expires_at__lt=cutoff)
-        .filter(status="outstanding")
+        EveMarketContract.objects.filter(status="outstanding")
+        .filter(is_public=True)
+        .filter(expires_at__gt=cutoff)
+        .filter(last_updated__lt=cutoff)
+        .update(status="finished")
+    )
+    logger.info("Set %d public contracts to finished status", updated)
+    return updated
+
+
+def update_expired_contracts(cutoff: datetime) -> int:
+    updated = (
+        EveMarketContract.objects.filter(status="outstanding")
+        .filter(is_public=True)
+        .filter(expires_at__lt=cutoff)
         .update(status="expired")
     )
     logger.info("Set %d public contracts to expired status", updated)
+    return updated
