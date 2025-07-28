@@ -233,7 +233,10 @@ class FleetRouterTestCase(TestCase):
 
         self.assertEqual("Test fleet", fleet.description)
 
-        update = {"description": "Updated"}
+        update = {
+            "description": "Updated",
+            "aar_link": "https://discord/channel/thread",
+        }
 
         response = self.client.patch(
             f"{BASE_URL}/{fleet.id}",

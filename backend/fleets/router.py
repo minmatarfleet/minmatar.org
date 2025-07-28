@@ -77,6 +77,7 @@ class EveFleetResponse(BaseModel):
     location: str
     disable_motd: bool = False
     status: Optional[str] = None
+    aar_link: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -131,6 +132,7 @@ class UpdateEveFleetRequest(BaseModel):
     location_id: Optional[int] = None
     disable_motd: Optional[bool] = False
     status: Optional[str] = None
+    aar_link: Optional[str] = None
 
 
 class CreateEveFleetReimbursementRequest(BaseModel):
@@ -600,6 +602,7 @@ def get_fleet(request, fleet_id: int):
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fleet.status,
+        "aar_link": fleet.aar_link,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
@@ -806,6 +809,9 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     if payload.doctrine_id:
         doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
         fleet.doctrine = doctrine
+
+    if payload.aar_link:
+        fleet.aar_link = payload.aar_link
 
     fleet.save()
 

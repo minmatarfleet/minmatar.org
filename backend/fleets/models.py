@@ -65,6 +65,10 @@ class EveFleet(models.Model):
         max_length=32, choices=fleet_statuses, default="unknown"
     )
 
+    # Link to After Action Report in Discord
+    # e.g. https://discord.com/channels/1041384161505722368/1398825964225695945
+    aar_link = models.CharField(max_length=120, null=True)
+
     @property
     def token(self):
         if self.fleet_commander and self.fleet_commander.token:

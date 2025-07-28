@@ -15,6 +15,13 @@ class EveFleetShipReimbursement(models.Model):
         ("rejected", "Rejected"),
         ("withdrawn", "Withdrawn"),
     )
+    category_choices = (
+        ("logistics", "Logistics"),
+        ("support", "Support"),
+        ("dps", "DPS"),
+        ("capital", "Capital"),
+        ("other", "Other"),
+    )
     fleet = models.ForeignKey(
         EveFleet,
         on_delete=models.CASCADE,
@@ -24,6 +31,9 @@ class EveFleetShipReimbursement(models.Model):
     external_killmail_link = models.CharField(max_length=255)
     status = models.CharField(
         max_length=32, choices=status_choices, default="pending"
+    )
+    category = models.CharField(
+        max_length=32, choices=category_choices, null=True
     )
 
     # populated fields
@@ -38,6 +48,9 @@ class EveFleetShipReimbursement(models.Model):
     is_corp_ship = models.BooleanField(default=False)
     corp_id = models.BigIntegerField(null=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
         indexes = [
