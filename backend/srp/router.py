@@ -1,6 +1,7 @@
 import logging
 
 from typing import List, Literal, Optional
+from enum import Enum
 
 from django.contrib.auth.models import User
 from ninja import Router
@@ -26,10 +27,18 @@ router = Router(tags=["SRP"])
 logger = logging.getLogger(__name__)
 
 
+class SrpCategory(str, Enum):
+    LOGISTICS = "logistics"
+    SUPPORT = "support"
+    DPS = "dps"
+    CAPITAL = "capital"
+
+
 class CreateEveFleetReimbursementRequest(BaseModel):
     external_killmail_link: str
     fleet_id: int = None
     is_corp_ship: bool = False
+    category: Optional[SrpCategory] = None
 
 
 class UpdateEveFleetReimbursementRequest(BaseModel):
@@ -54,7 +63,8 @@ class EveFleetReimbursementResponse(BaseModel):
     killmail_id: int
     amount: int
     is_corp_ship: bool
-    corp_id: Optional[int]
+    corp_id: Optional[int] = None
+    category: Optional[SrpCategory] = None
 
 
 class SrpPatchResult(BaseModel):
@@ -74,6 +84,8 @@ class SrpPatchResult(BaseModel):
     description="Request SRP for a fleet, must be a member of the fleet",
 )
 def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
+    logger.info("Creating SRP for %s", request.user.username)
+
     if payload.fleet_id:
         fleet = EveFleet.objects.get(id=payload.fleet_id)
     else:
@@ -120,6 +132,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
             if details.victim_character
             else None
         ),
+        category=payload.category if payload.category else None,
     )
 
     if fleet:
@@ -146,6 +159,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
             if details.victim_character
             else None
         ),
+        category=reimbursement.category,
     )
 
 
@@ -202,6 +216,7 @@ def get_fleet_srp(
                 "amount": reimbursement.amount,
                 "is_corp_ship": reimbursement.is_corp_ship,
                 "corp_id": reimbursement.corp_id,
+                "category": reimbursement.category,
             }
         )
 
