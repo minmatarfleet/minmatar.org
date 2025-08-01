@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group, User, Permission
 from django.db.models import signals
 
 from discord.models import DiscordUser
+from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EvePlayer
 
@@ -133,6 +134,12 @@ def make_user_objects(user):
     )
     if created:
         logger.info("Django user created: %s", django_user.username)
+
+        AuditEntry.objects.create(
+            user=django_user,
+            category="user_registered",
+            summary=f"User created: {django_user.username}",
+        )
 
     discord_user, created = DiscordUser.objects.get_or_create(
         id=user["id"],

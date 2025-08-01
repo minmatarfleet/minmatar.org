@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
+from audit.models import AuditEntry
 from applications.models import EveCorporationApplication
 from eveonline.models import (
     EveCharacter,
@@ -317,6 +318,11 @@ def delete_character_by_id(request, character_id: int):
                 set_primary_character(request.user, characters.first())
 
     try:
+        AuditEntry.objects.create(
+            user=request.user,
+            category="character_deleted",
+            summary=f"User {request.user.username} deleted character {character_id}",
+        )
         EveCharacter.objects.filter(character_id=character_id).delete()
         Token.objects.filter(character_id=character_id).delete()
     except Exception as e:
@@ -481,6 +487,12 @@ def handle_add_character_esi_callback(request, token, token_type):
             esi_token_level=token_type_str(token_type),
             token=token,
             user=token.user,
+        )
+        AuditEntry.objects.create(
+            user=request.user,
+            character=character,
+            category="character_added",
+            summary=f"User {request.user.username} added character {character.character_name}",
         )
     EveCharacterLog.objects.create(
         username=request.user.username,
