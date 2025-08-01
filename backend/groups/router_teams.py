@@ -248,6 +248,12 @@ def remove_team_member(request, team_id: int, user_id: int):
     if not user:
         return 404, {"detail": "User is not a member of this team."}
     team.members.remove(user)
+    logger.info(
+        "User %s removed from team %s by %s",
+        user.username,
+        team.name,
+        request.user.username,
+    )
     return TeamSchema(
         id=team.id,
         name=team.name,

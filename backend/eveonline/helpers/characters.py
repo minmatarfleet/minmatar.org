@@ -5,6 +5,7 @@ from typing import List
 from django.contrib.auth.models import User
 from pydantic import BaseModel
 
+from audit.models import AuditEntry
 from eveonline.models import (
     EvePlayer,
     EvePrimaryCharacter,
@@ -76,6 +77,13 @@ def set_primary_character(user: User, character: EveCharacter):
             username=user.username,
             previous_character_name=current_primary.character_name,
             new_character_name=character.character_name,
+        )
+        AuditEntry.objects.create(
+            user=user,
+            character=character,
+            old_character=current_primary,
+            category="primary_char",
+            summary=f"User {user.username} set primary character to {character.character_name}",
         )
         current_primary.is_primary = False
         current_primary.save()
