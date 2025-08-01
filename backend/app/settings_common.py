@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     "referrals",
     # User subscriptions
     "subscriptions",
+    # Audit history
+    "audit",
 ]
 
 # Discord Login
