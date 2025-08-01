@@ -81,7 +81,7 @@ def set_primary_character(user: User, character: EveCharacter):
         AuditEntry.objects.create(
             user=user,
             character=character,
-            old_character=current_primary,
+            old_character_id=current_primary.character_id,
             category="primary_char",
             summary=f"User {user.username} set primary character to {character.character_name}",
         )
