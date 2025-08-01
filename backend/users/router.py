@@ -16,6 +16,8 @@ from discord.client import DiscordClient, DiscordError
 # from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
 
+from audit.models import AuditEntry
+
 # from eveonline.models import EvePlayer
 from groups.tasks import update_affiliation
 
@@ -181,6 +183,10 @@ def query_multiple_users(
     auth=AuthBearer(),
 )
 def delete_account(request):
+    AuditEntry.objects.create(
+        category="user_deleted",
+        summary=f"User self-deleted: {request.user.username}",
+    )
     request.user.delete()
     request.session.flush()
     return "Account deleted successfully"

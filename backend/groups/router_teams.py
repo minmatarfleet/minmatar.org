@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from authentication import AuthBearer
 
+from audit.models import AuditEntry
 from .models import Team, TeamRequest
 
 logger = logging.getLogger(__name__)
@@ -183,6 +184,11 @@ def approve_team_request(request, team_id: int, request_id: int):
     team_request.approved = True
     team_request.approved_by = request.user
     team_request.save()
+    AuditEntry.objects.create(
+        user=request.user,
+        category="team_change",
+        summary=f"User {team_request.user.username} added to team {team.name} by {request.user.username}",
+    )
     return TeamRequestSchema(
         id=team_request.id,
         user=team_request.user.id,
@@ -253,6 +259,11 @@ def remove_team_member(request, team_id: int, user_id: int):
         user.username,
         team.name,
         request.user.username,
+    )
+    AuditEntry.objects.create(
+        user=request.user,
+        category="team_change",
+        summary=f"User {user.username} removed from team {team.name} by {request.user.username}",
     )
     return TeamSchema(
         id=team.id,

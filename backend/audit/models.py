@@ -12,6 +12,8 @@ class AuditEntry(models.Model):
         ("user_deleted", "User deleteed"),
         ("primary_char", "Primary character set"),
         ("character_added", "Character added"),
+        ("character_deleted", "Character deleted"),
+        ("team_change", "Team changed"),
         ("other", "Other"),
     )
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
