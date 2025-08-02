@@ -39,6 +39,7 @@ class CreateEveFleetReimbursementRequest(BaseModel):
     fleet_id: int = None
     is_corp_ship: bool = False
     category: Optional[SrpCategory] = None
+    comments: Optional[str] = None
 
 
 class UpdateEveFleetReimbursementRequest(BaseModel):
@@ -65,6 +66,7 @@ class EveFleetReimbursementResponse(BaseModel):
     is_corp_ship: bool
     corp_id: Optional[int] = None
     category: Optional[SrpCategory] = None
+    comments: Optional[str] = None
 
 
 class SrpPatchResult(BaseModel):
@@ -133,6 +135,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
             else None
         ),
         category=payload.category if payload.category else None,
+        comments=payload.comments,
     )
 
     if fleet:
@@ -160,6 +163,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
             else None
         ),
         category=reimbursement.category,
+        comments=reimbursement.comments,
     )
 
 
@@ -217,6 +221,7 @@ def get_fleet_srp(
                 "is_corp_ship": reimbursement.is_corp_ship,
                 "corp_id": reimbursement.corp_id,
                 "category": reimbursement.category,
+                "comments": reimbursement.comments,
             }
         )
 
