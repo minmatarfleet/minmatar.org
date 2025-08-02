@@ -4,7 +4,6 @@ import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
-from esi.clients import EsiClientProvider
 
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
@@ -15,7 +14,6 @@ from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 
 discord = DiscordClient()
-esi = EsiClientProvider()
 logger = logging.getLogger(__name__)
 
 
@@ -252,10 +250,16 @@ class EveFleetInstance(models.Model):
                 else "Kitchen Sink"
             ),
         )
-        token = self.eve_fleet.token
-        response = esi.client.Fleets.put_fleets_fleet_id(
-            fleet_id=self.id, new_settings={"motd": motd}, token=token
-        ).results()
+        # token = self.eve_fleet.token
+        update = {"motd": motd}
+        response = (
+            EsiClient(self.eve_fleet.fleet_commander)
+            .update_fleet_details(self.id, update)
+            .results()
+        )
+        # response = esi.client.Fleets.put_fleets_fleet_id(
+        #     fleet_id=self.id, new_settings={"motd": motd}, token=token
+        # ).results()
         self.motd = motd
         self.save()
         return response
@@ -270,12 +274,17 @@ class EveFleetInstance(models.Model):
                 self.eve_fleet.id,
             )
             return None
-        token = self.eve_fleet.token
-        response = esi.client.Fleets.put_fleets_fleet_id(
-            fleet_id=self.id,
-            new_settings={"is_free_move": True},
-            token=token,
-        ).results()
+        # token = self.eve_fleet.token
+        # response = esi.client.Fleets.put_fleets_fleet_id(
+        #     fleet_id=self.id,
+        #     new_settings={"is_free_move": True},
+        #     token=token,
+        # ).results()
+        update = {"is_free_move": True}
+        response = (
+            self.esi_client().update_fleet_details(self.id, update).results()
+        )
+
         self.is_free_move = True
         self.save()
         return response
@@ -285,10 +294,11 @@ class EveFleetInstance(models.Model):
         Fetch the advert status for the fleet
         """
         try:
-            token = self.eve_fleet.token
-            response = esi.client.Fleets.get_fleets_fleet_id(
-                fleet_id=self.id, token=token
-            ).results()
+            # token = self.eve_fleet.token
+            # response = esi.client.Fleets.get_fleets_fleet_id(
+            #     fleet_id=self.id, token=token
+            # ).results()
+            response = self.esi_client().get_fleet(self.id).results()
 
             self.is_registered = response["is_registered"]
             self.save()
@@ -551,12 +561,16 @@ class EveStandingFleet(models.Model):
         eve_character = EveCharacter.objects.get(
             character_id=fleet_commander_character_id
         )
-        token = eve_character.token.valid_access_token()
+        # token = eve_character.token.valid_access_token()
 
-        response = esi.client.Fleets.get_characters_character_id_fleet(
-            character_id=eve_character.character_id,
-            token=token,
-        ).results()
+        response = (
+            EsiClient(eve_character.character_id).get_active_fleet().results()
+        )
+
+        # response = esi.client.Fleets.get_characters_character_id_fleet(
+        #     character_id=eve_character.character_id,
+        #     token=token,
+        # ).results()
 
         if EveStandingFleet.objects.filter(
             external_fleet_id=response["fleet_id"]
@@ -585,17 +599,20 @@ class EveStandingFleet(models.Model):
         """
         # attempt to get fleet members
         # if fails, they are not valid to claim
-        token = EveCharacter.objects.get(
-            character_id=character_id
-        ).token.valid_access_token()
+        # token = EveCharacter.objects.get(
+        #     character_id=character_id
+        # ).token.valid_access_token()
         new_fleet_commander = EveCharacter.objects.get(
             character_id=character_id
         )
         old_fleet_commander = self.fleet_commander
         try:
-            esi.client.Fleets.get_fleets_fleet_id_members(
-                fleet_id=self.external_fleet_id,
-                token=token,
+            # esi.client.Fleets.get_fleets_fleet_id_members(
+            #     fleet_id=self.external_fleet_id,
+            #     token=token,
+            # ).results()
+            EsiClient(character_id).get_fleet_members(
+                self.external_fleet_id
             ).results()
 
             EveStandingFleetCommanderLog.objects.create(
@@ -624,19 +641,28 @@ class EveStandingFleet(models.Model):
         - Add new standing fleet members
         - Delete old standing fleet members and create a log record
         """
-        token = self.fleet_commander.token.valid_access_token()
-        response = esi.client.Fleets.get_fleets_fleet_id_members(
-            fleet_id=self.external_fleet_id,
-            token=token,
-        ).results()
+        # token = self.fleet_commander.token.valid_access_token()
+        # response = esi.client.Fleets.get_fleets_fleet_id_members(
+        #     fleet_id=self.external_fleet_id,
+        #     token=token,
+        # ).results()
+
+        response = (
+            EsiClient(self.fleet_commander)
+            .get_fleet_members(self.external_fleet_id)
+            .results()
+        )
 
         ids_to_resolve = set()
         for esi_fleet_member in response:
             ids_to_resolve.add(esi_fleet_member["character_id"])
         ids_to_resolve = list(ids_to_resolve)
-        resolved_ids = esi.client.Universe.post_universe_names(
-            ids=ids_to_resolve
-        ).results()
+        # resolved_ids = esi.client.Universe.post_universe_names(
+        #     ids=ids_to_resolve
+        # ).results()
+        resolved_ids = (
+            EsiClient(None).resolve_universe_names(ids_to_resolve).results()
+        )
         resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
 
         for esi_fleet_member in response:

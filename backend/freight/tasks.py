@@ -1,37 +1,41 @@
 import logging
 
-from esi.clients import EsiClientProvider
-from esi.models import Token
 from bravado.exception import HTTPNotModified
 
 from app.celery import app
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 from freight.models import EveFreightContract
 from structures.models import EveStructure
 
 logger = logging.getLogger(__name__)
 
-esi = EsiClientProvider()
-
 
 @app.task()
 def update_contracts():
     """Update freight contracts."""
     logger.info("Updating contracts")
-    required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
-    token = Token.get_token(
-        EveFreightContract.supported_ceo_id, required_scopes
-    )
-    if not token:
-        logger.error("Unable to get valid EveFreightContract CEO token")
-        return
+    # required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
+    # token = Token.get_token(
+    #     EveFreightContract.supported_ceo_id, required_scopes
+    # )
+    # if not token:
+    #     logger.error("Unable to get valid EveFreightContract CEO token")
+    #     return
 
     try:
+        # contracts_data = (
+        #     esi.client.Contracts.get_corporations_corporation_id_contracts(
+        #         corporation_id=EveFreightContract.supported_corporation_id,
+        #         token=token.valid_access_token(),
+        #     ).results()
+        # )
         contracts_data = (
-            esi.client.Contracts.get_corporations_corporation_id_contracts(
-                corporation_id=EveFreightContract.supported_corporation_id,
-                token=token.valid_access_token(),
-            ).results()
+            EsiClient(EveFreightContract.supported_ceo_id)
+            .get_corporation_contracts(
+                EveFreightContract.supported_corporation_id
+            )
+            .results()
         )
     except HTTPNotModified:
         logger.debug(
@@ -67,13 +71,15 @@ def update_contract(esi_contract):
 
     start_location = "Unknown"
     if 60000000 < start_id < 61000000:
-        system_id = esi.client.Universe.get_universe_stations_station_id(
-            station_id=start_id
-        ).results()["system_id"]
-        system_name = esi.client.Universe.get_universe_systems_system_id(
-            system_id=system_id
-        ).results()["name"]
-        start_location = system_name
+        station = EsiClient(None).get_station(start_id)
+        start_location = station.eve_solar_system.name
+        # system_id = esi.client.Universe.get_universe_stations_station_id(
+        #     station_id=start_id
+        # ).results()["system_id"]
+        # system_name = esi.client.Universe.get_universe_systems_system_id(
+        #     system_id=system_id
+        # ).results()["name"]
+        # start_location = system_name
     else:
         if EveStructure.objects.filter(id=start_id).exists():
             start_location = EveStructure.objects.get(id=start_id).name
@@ -82,13 +88,15 @@ def update_contract(esi_contract):
 
     end_location = "Unknown"
     if 60000000 < end_id < 61000000:
-        system_id = esi.client.Universe.get_universe_stations_station_id(
-            station_id=end_id
-        ).results()["system_id"]
-        system_name = esi.client.Universe.get_universe_systems_system_id(
-            system_id=system_id
-        ).results()["name"]
-        end_location = system_name
+        station = EsiClient(None).get_station(end_id)
+        end_location = station.eve_solar_system.name
+        # system_id = esi.client.Universe.get_universe_stations_station_id(
+        #     station_id=end_id
+        # ).results()["system_id"]
+        # system_name = esi.client.Universe.get_universe_systems_system_id(
+        #     system_id=system_id
+        # ).results()["name"]
+        # end_location = system_name
     else:
         if EveStructure.objects.filter(id=end_id).exists():
             end_location = EveStructure.objects.get(id=end_id).name

@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, ANY
 
-# import factory
+import factory
 
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
@@ -560,16 +560,6 @@ class FleetRouterTestCase(TestCase):
         self.assertTrue(can_see_fleet(fleet, somebody))
         self.assertFalse(can_see_fleet(fleet, nobody))
 
-    # @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    # def test_can_see_metrics(self):
-    #     Team.objects.create(name=TECH_TEAM, group=Group.objects.create(name=TECH_TEAM))
-    #     somebody = User.objects.create(username="Somebody")
-
-    #     self.assertFalse(can_see_metrics(somebody))
-
-    #     add_user_permission(somebody, "end_evestandingfleet")
-    #     self.assertTrue(can_see_metrics(somebody))
-
     def test_get_standing_fleets(self):
         EveStandingFleet.objects.create(
             external_fleet_id=1001,
@@ -594,10 +584,26 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual("EU", time_region(hour_time(17)))
         self.assertEqual("EU_US", time_region(hour_time(20)))
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_get_fleet_members(self):
+        fleet = make_test_fleet("Test", self.user)
+        instance = EveFleetInstance.objects.create(id=1, eve_fleet=fleet)
+        self.add_fleet_member(instance, 1)
+
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}/members",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("Pilot 1", data[0]["character_name"])
+
 
 class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_update_fleet_schedule_task(self):
         setup_fleet_reference_data()
         make_test_fleet("Test fleet 1", self.user)
@@ -622,6 +628,7 @@ class FleetTaskTests(TestCase):
             discord_mock.create_message.assert_called()
             discord_mock.delete_message.assert_called()
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
     def test_fleet_member_update(self, discord, esi):
@@ -702,6 +709,7 @@ class FleetTaskTests(TestCase):
         self.assertEqual("complete", efi.eve_fleet.status)
         self.assertIsNotNone(efi.end_time)
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
     def test_update_fleet_instances(self, discord, esi):
@@ -717,6 +725,7 @@ class FleetTaskTests(TestCase):
             id=1234,
             eve_fleet=fleet,
             end_time=None,
+            boss_id=fc_id,
         )
 
         esi_mock.get_active_fleet.return_value = EsiResponse(
@@ -752,6 +761,10 @@ class FleetTaskTests(TestCase):
                 {"id": 3001, "name": "Homesystem"},
                 {"id": 4001, "name": "Homestation"},
             ],
+        )
+        esi_mock.get_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={"is_registered": True},
         )
 
         update_fleet_instances()
