@@ -305,6 +305,19 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_fleet(self, fleet_id) -> EsiResponse:
+        required_scopes = ["esi-fleets.read_fleet.v1"]
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Fleets.get_fleets_fleet_id(
+            fleet_id=fleet_id,
+            token=token,
+        )
+
+        return self._operation_results(operation)
+
     def update_fleet_details(self, fleet_id, update) -> EsiResponse:
         required_scopes = ["esi-fleets.write_fleet.v1"]
         token, status = self._valid_token(required_scopes)
