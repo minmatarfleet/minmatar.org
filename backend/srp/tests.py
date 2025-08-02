@@ -69,6 +69,7 @@ class SrpRouterTestCase(TestCase):
             "fleet_id": self.fleet.id,
             "is_corp_ship": False,
             "category": "dps",
+            "comments": "Testing FTW",
         }
         response = self.client.post(
             f"{BASE_URL}",
@@ -80,6 +81,7 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         data = response.json()
         self.assertEqual("dps", data["category"])
+        self.assertEqual("Testing FTW", data["comments"])
 
     @patch("srp.helpers.EsiClient")
     def test_non_fleet_srp(self, esi_mock):

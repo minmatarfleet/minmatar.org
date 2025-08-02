@@ -49,6 +49,8 @@ class EveFleetShipReimbursement(models.Model):
     corp_id = models.BigIntegerField(null=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
+    comments = models.CharField(max_length=255, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
