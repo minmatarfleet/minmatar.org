@@ -73,22 +73,22 @@ const REEL_GAP = 20
     {trade_hubs.map((trade_hub) =>
         trade_hub.name === active_hub &&
             <BlockList class="[ doctrine-groups ]" gap='var(--space-2xl)'>
-                {tabular ?
+                {tabular &&
                     <ContractListItemRow
                         contracts={contracts}
                         is_supplier={is_supplier}
                         characters_options={characters_options}
                         corporations_options={corporations_options}
-                    /> :
-                    trade_hub.contract_groups.map(contract_group => {
-                        <ContractListItemCard
-                            contract_group={contract_group}
-                            is_supplier={is_supplier}
-                            characters_options={characters_options}
-                            corporations_options={corporations_options}
-                        />
-                    })
+                    />
                 }
+                {!tabular && trade_hub.contract_groups.map(contract_group =>
+                    <ContractListItemCard
+                        contract_group={contract_group}
+                        is_supplier={is_supplier}
+                        characters_options={characters_options}
+                        corporations_options={corporations_options}
+                    />
+                )}
             </BlockList>
     )}
 </Flexblock>
