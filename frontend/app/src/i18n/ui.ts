@@ -1453,5 +1453,9 @@ export const ui = {
         'set_prime_time_error': 'An error occurred while setting prime time.',
         'invalid_prime_time': 'The prime time is not valid.',
         'invalid_nickname': 'The nickname is not valid.',
+        'claim_contract': 'Claim contract',
+        'cards_view': 'Cards view',
+        'tabular_view': 'Tabular view',
+        'check_contract': 'Check contract',
     },
 } as const;
