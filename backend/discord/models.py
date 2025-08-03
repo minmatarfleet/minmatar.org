@@ -25,6 +25,9 @@ class DiscordUser(models.Model):
     is_down_under = models.BooleanField(default=False)
     dress_wearer = models.BooleanField(default=False)
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
     def __str__(self):
         return str(self.discord_tag)
 
@@ -38,6 +41,8 @@ class DiscordRole(models.Model):
     group = models.OneToOneField(
         Group, on_delete=models.CASCADE, related_name="discord_group"
     )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self) -> str:
         return str(self.name)
