@@ -43,6 +43,12 @@ const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}
 
 const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
 
+const view_mode = Astro.url.searchParams.get('view_mode')
+if (view_mode)
+    Astro.cookies.set('contracts_view_mode', view_mode, { path: '/' })
+
+const contracts_view_mode = Astro.cookies.has('contracts_view_mode') ? (Astro.cookies.get('contracts_view_mode')?.value as string) : 'cards'
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -123,8 +129,8 @@ const page_description = t('contracts.leading_text')
             </Input>
         </FlexInline>
 
-        {user &&
-            <FlexInline slot="subheader">
+        <FlexInline slot="subheader">
+            {user &&
                 <AddSupplierButton />
                 <Button
                     type="button"
@@ -134,8 +140,15 @@ const page_description = t('contracts.leading_text')
                 >
                     {t('show_owned_contracts')}
                 </Button>
-            </FlexInline>
-        }
+            }
+            <Button
+                type="button"
+                size='sm'
+                href={`${translatePath('/market/contracts/')}?view_mode=${contracts_view_mode !== 'tabular' ? 'tabular' : 'cards'}`}
+            >
+                {t(contracts_view_mode === 'tabular' ? 'cards_view' : 'tabular_view')}
+            </Button>
+        </FlexInline>
     
         {data_fetching_error ?
             <ErrorRefetch
@@ -152,6 +165,7 @@ const page_description = t('contracts.leading_text')
                 corporations_options={corporations_options}
                 is_supplier={is_supplier}
                 active_hub={staging}
+                tabular={contracts_view_mode === 'tabular'}
             />
             <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
         }

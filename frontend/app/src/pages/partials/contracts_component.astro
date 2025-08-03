@@ -43,6 +43,8 @@ import { query_string } from '@helpers/string';
 
 let staging = Astro.url.searchParams.get('staging')
 
+const contracts_view_mode = Astro.cookies.has('contracts_view_mode') ? (Astro.cookies.get('contracts_view_mode')?.value as string) : 'cards'
+
 const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?staging=${query_string(staging)}`
 
 const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
@@ -68,6 +70,7 @@ import ContractsList from '@components/blocks/ContractsList.astro'
         corporations_options={corporations_options}
         is_supplier={is_supplier}
         active_hub={staging}
+        tabular={contracts_view_mode === 'tabular'}
     />
     <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
     

@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { TradeHub, SelectOptions, CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
+import type { TradeHub, SelectOptions, ContractUI } from '@dtypes/layout_components'
 
 interface Props {
     trade_hubs:             TradeHub[];
@@ -10,6 +10,7 @@ interface Props {
     characters_options:     SelectOptions[];
     corporations_options:   SelectOptions[];
     active_hub:             string | null;
+    tabular?:               boolean;
 }
 
 const {
@@ -18,19 +19,27 @@ const {
     corporations_options,
     is_supplier,
     active_hub,
+    tabular = false,
 } = Astro.props
 
-import { get_ship_type_icon } from '@helpers/eve';
+let contracts:ContractUI[] = []
+if (tabular) {
+    const active_trade_hub = trade_hubs.find(trade_hub => trade_hub.name === active_hub)
+    const unsorted_contracts:ContractUI[] = active_trade_hub ? 
+        active_trade_hub.contract_groups.flatMap(group => group.contracts) :
+        []
+
+    contracts = unsorted_contracts.sort((a, b) => (b.desired_quantity - b.current_quantity) - (a.desired_quantity - a.current_quantity))
+}
+
 import { query_string } from '@helpers/string';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Grid from '@components/compositions/Grid.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
-import ContractBadge from '@components/blocks/ContractBadge.astro';
-import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astro';
+import ContractListItemCard from '@components/blocks/ContractListItemCard.astro';
+import ContractListItemRow from '@components/blocks/ContractListItemRow.astro';
 import StagingsReel from '@components/blocks/StagingsReel.astro';
 import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -63,77 +72,23 @@ const REEL_GAP = 20
 
     {trade_hubs.map((trade_hub) =>
         trade_hub.name === active_hub &&
-            <BlockList class="[ doctrine-groups ]" gap='var(--space-2xl)'>        
-                {trade_hub.contract_groups.map(contract_group =>
-                    <BlockList class="[ doctrine-contract-group ]" gap='var(--space-m)'>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <picture>
-                                <img
-                                    src={`/images/icons/ships/${get_ship_type_icon(contract_group.ship_type)}`}
-                                    height="32"
-                                    width="32"
-                                    alt={`${contract_group.ship_type} icon`}
-                                />
-                            </picture>
-                            <h3>{contract_group.ship_type}</h3>
-                        </FlexInline>
-                        <Grid
-                            role="list"
-                            class="[ w-full grid-fill ]"
-                            min_item_width='350px'
-                        >
-                            {contract_group.contracts.map(contract => {
-                                let claimed_by_user_characters:CharacterBasic[] = []
-                                characters_options.forEach(characters_option => {
-                                    if (contract.responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
-                                        claimed_by_user_characters.push({
-                                            character_id: characters_option.value as number,
-                                            character_name: characters_option.label,
-                                        })
-                                    }
-                                })
-
-                                const filtered_characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
-
-                                let claimed_by_user_corporations:CorporationBasic[] = []
-                                corporations_options.forEach(corporations_option => {
-                                    if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
-                                        claimed_by_user_corporations.push({
-                                            id: corporations_option.value as number,
-                                            name: corporations_option.label,
-                                        })
-                                    }
-                                })
-
-                                const filtered_corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
-
-                                const is_claimed = claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0
-
-                                return (
-                                    <div
-                                        class="[ contract-badge-container ]"
-                                        x-show={`show_item($el) && (${JSON.stringify(is_claimed)} ? true : show_all)`}
-                                        x-bind:id="id"
-                                        x-data={`{
-                                            id: $id('contract-badge-container'),
-                                        }`}
-                                    >
-                                        {is_supplier ?
-                                            <SupplierContractBadge
-                                                contract={contract}
-                                                characters_options={filtered_characters_options}
-                                                corporations_options={filtered_corporations_options}
-                                                claimed_by_user_characters={claimed_by_user_characters}
-                                                claimed_by_user_corporations={claimed_by_user_corporations}
-                                            /> :
-                                            <ContractBadge contract={contract} is_supplier={false} />
-                                        }
-                                    </div>
-                                )
-                            })}
-                        </Grid>
-                    </BlockList>
-                )}
+            <BlockList class="[ doctrine-groups ]" gap='var(--space-2xl)'>
+                {tabular ?
+                    <ContractListItemRow
+                        contracts={contracts}
+                        is_supplier={is_supplier}
+                        characters_options={characters_options}
+                        corporations_options={corporations_options}
+                    /> :
+                    trade_hub.contract_groups.map(contract_group => {
+                        <ContractListItemCard
+                            contract_group={contract_group}
+                            is_supplier={is_supplier}
+                            characters_options={characters_options}
+                            corporations_options={corporations_options}
+                        />
+                    })
+                }
             </BlockList>
     )}
 </Flexblock>

@@ -1,0 +1,95 @@
+---
+import type { MarketShipGroup, CharacterBasic, CorporationBasic, SelectOptions } from '@dtypes/layout_components'
+
+interface Props {
+    contract_group:         MarketShipGroup;
+    is_supplier:            boolean;
+    characters_options:     SelectOptions[];
+    corporations_options:   SelectOptions[];
+}
+
+const {
+    contract_group,
+    characters_options,
+    corporations_options,
+    is_supplier,
+} = Astro.props
+
+import { get_ship_type_icon } from '@helpers/eve';
+
+import Grid from '@components/compositions/Grid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import ContractBadge from '@components/blocks/ContractBadge.astro';
+import SupplierContractBadge from '@components/blocks/SupplierContractBadge.astro';
+---
+
+<BlockList class="[ doctrine-contract-group ]" gap='var(--space-m)'>
+    <FlexInline gap='var(--space-2xs)'>
+        <picture>
+            <img
+                src={`/images/icons/ships/${get_ship_type_icon(contract_group.ship_type)}`}
+                height="32"
+                width="32"
+                alt={`${contract_group.ship_type} icon`}
+            />
+        </picture>
+        <h3>{contract_group.ship_type}</h3>
+    </FlexInline>
+    <Grid
+        role="list"
+        class="[ w-full grid-fill ]"
+        min_item_width='350px'
+    >
+        {contract_group.contracts.map(contract => {
+            let claimed_by_user_characters:CharacterBasic[] = []
+            characters_options.forEach(characters_option => {
+                if (contract.responsabilities.find(responsability => responsability.entity_id === characters_option.value as number) !== undefined) {
+                    claimed_by_user_characters.push({
+                        character_id: characters_option.value as number,
+                        character_name: characters_option.label,
+                    })
+                }
+            })
+
+            const filtered_characters_options = characters_options.filter(option => claimed_by_user_characters.find(contract_entity => contract_entity.character_id === option.value) === undefined)
+
+            let claimed_by_user_corporations:CorporationBasic[] = []
+            corporations_options.forEach(corporations_option => {
+                if (contract.responsabilities.find(responsability => responsability.entity_id === corporations_option.value as number) !== undefined) {
+                    claimed_by_user_corporations.push({
+                        id: corporations_option.value as number,
+                        name: corporations_option.label,
+                    })
+                }
+            })
+
+            const filtered_corporations_options = corporations_options.filter(option => claimed_by_user_corporations.find(contract_entity => contract_entity.id === option.value) === undefined)
+
+            const is_claimed = claimed_by_user_characters.length > 0 || claimed_by_user_corporations.length > 0
+
+            return (
+                <div
+                    class="[ contract-badge-container ]"
+                    x-show={`show_item($el) && (${JSON.stringify(is_claimed)} ? true : show_all)`}
+                    x-bind:id="id"
+                    x-data={`{
+                        id: $id('contract-badge-container'),
+                    }`}
+                >
+                    {is_supplier ?
+                        <SupplierContractBadge
+                            contract={contract}
+                            characters_options={filtered_characters_options}
+                            corporations_options={filtered_corporations_options}
+                            claimed_by_user_characters={claimed_by_user_characters}
+                            claimed_by_user_corporations={claimed_by_user_corporations}
+                        /> :
+                        <ContractBadge contract={contract} is_supplier={false} />
+                    }
+                </div>
+            )
+        })}
+    </Grid>
+</BlockList>
