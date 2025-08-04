@@ -108,6 +108,9 @@ class EveCharacter(models.Model):
 
     is_primary = models.BooleanField(null=True, help_text="Deprecated")
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
     def __str__(self):
         return str(self.character_name)
 
@@ -128,12 +131,18 @@ class EveTag(models.Model):
     description = models.CharField(max_length=255)
     image_name = models.CharField(max_length=255, null=True)
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
 
 class EveCharacterTag(models.Model):
     """The tags applied to a specific EveCharacter"""
 
     character = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
     tag = models.ForeignKey(EveTag, on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         unique_together = (("character", "tag"),)
@@ -146,6 +155,8 @@ class EveCharacterLog(models.Model):
     character_name = models.CharField(max_length=255)
     added = models.DateTimeField(auto_now_add=True, null=True)
 
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
 
 class EveCharacterSkill(models.Model):
     """Character skill model"""
@@ -156,6 +167,9 @@ class EveCharacterSkill(models.Model):
     skill_level = models.IntegerField()
 
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
 
 class EveCharacterKillmail(models.Model):
@@ -174,6 +188,8 @@ class EveCharacterKillmail(models.Model):
     attackers = models.TextField()
     items = models.TextField()
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
 
 class EveCharacterKillmailAttacker(models.Model):
@@ -218,6 +234,8 @@ class EveSkillset(models.Model):
     name = models.CharField(max_length=255)
     skills = models.TextField(blank=True)
     total_skill_points = models.BigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return str(self.name)
@@ -372,6 +390,9 @@ class EveCorporation(models.Model):
         EveFaction, on_delete=models.SET_NULL, blank=True, null=True
     )
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
     @property
     def type(self):
         if self.alliance and self.alliance.alliance_id == 99011978:
@@ -458,6 +479,9 @@ class EveAlliance(models.Model):
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True)
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
     def __str__(self):
         return str(self.name)
 
@@ -482,6 +506,9 @@ class EveLocation(models.Model):
     market_active = models.BooleanField(default=False)
     freight_active = models.BooleanField(default=False)
     staging_active = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return str(f"{self.location_name}")
