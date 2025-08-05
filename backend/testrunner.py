@@ -2,6 +2,7 @@ import logging
 import os
 
 from django.test.runner import DiscoverRunner
+from django.conf import settings
 from unittest import TextTestRunner, TextTestResult, TestCase
 
 log = logging.getLogger(__name__)
@@ -87,7 +88,16 @@ class Runner(DiscoverRunner):
     def run_tests(self, test_labels, **kwargs):
         """Override parent to report results afterwards"""
 
+        ## override any database configuration to use local sqlite3
+        settings.DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": ":memory:",
+            }
+        }
+
         log.info("Using custom TestRunner...")
+        log.info("Using in memory SQLite database for tests")
         result = super().run_tests(test_labels, **kwargs)
 
         with open("testresults.txt", mode="w", encoding="utf-8") as f:
