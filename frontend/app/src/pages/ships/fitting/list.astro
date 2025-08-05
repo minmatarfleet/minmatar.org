@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath, t } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -40,6 +40,8 @@ for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
 fitting_type_filter.sort( (a, b) => a.localeCompare(b))
 
+const search_type = Astro.url.searchParams.get('type')
+
 for (let i in ship_type)
     ship_type_filter.push(ship_type[i])
 ship_type_filter.sort( (a, b) => a.localeCompare(b))
@@ -78,7 +80,7 @@ const page_title = t('fitting.list.page_title');
         }}
         x-data={`{
             fitting_name_filter: '',
-            fitting_type_filter: '-1',
+            fitting_type_filter: '${!fitting_type_filter.includes(search_type ?? '') ? -1 : search_type}',
             ship_type_filter: '-1',
             fits_count: ${fittings.length},
             countVisibleElements(selector, parent = document) {
