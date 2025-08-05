@@ -28,6 +28,7 @@ pillow = "*"
 factory-boy = "*"
 docker = "*"
 coverage = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 pylint = "*"
