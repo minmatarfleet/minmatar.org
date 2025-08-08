@@ -1,6 +1,7 @@
 import logging
 
 from django.utils import timezone
+from django.conf import settings
 
 from app.celery import app
 from discord.client import DiscordClient
@@ -9,8 +10,8 @@ from fleets.models import EveFleet, EveFleetInstance, EveStandingFleet
 discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
 
-FLEET_SCHEDULE_CHANNEL_ID = 1174169403873558658
-FLEET_SCHEDULE_MESSAGE_ID = 1244656126302224466
+FLEET_SCHEDULE_CHANNEL_ID = settings.DISCORD_FLEET_SCHEDULE_CHANNEL_ID
+FLEET_SCHEDULE_MESSAGE_ID = settings.DISCORD_FLEET_SCHEDULE_MESSAGE_ID
 
 
 @app.task()

@@ -15,7 +15,9 @@ from .models import DiscordRole, DiscordUser
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = settings.DISCORD_PEOPLE_TEAM_CHANNEL_ID
-DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = settings.DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID
+DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = (
+    settings.DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID
+)
 
 
 def get_expected_nickname(user: User):
