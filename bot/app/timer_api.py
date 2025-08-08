@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from app.settings import settings
 
-API_URL = "https://api.minmatar.org/api"
+API_URL = settings.API_URL
 TIMERS_URL = f"{API_URL}/structures/timers"
 
 
