@@ -13,7 +13,7 @@ from app.errors import create_error_id
 
 logger = logging.getLogger(__name__)
 
-GUILD_ID = 1041384161505722368
+GUILD_ID = settings.DISCORD_GUILD_ID
 BASE_URL = "https://discord.com/api/v9"
 
 

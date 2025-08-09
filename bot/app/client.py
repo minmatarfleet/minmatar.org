@@ -10,9 +10,10 @@ from .timer_form import TimerForm
 
 # The guild in which this slash command will be registered.
 # It is recommended to have a test guild to separate from your "production" bot
-GUILD_IDS = [1041384161505722368]
+GUILD_ID = settings.DISCORD_GUILD_ID
+GUILD_IDS = [GUILD_ID]
 GUILDS = [discord.Object(id=guild_id) for guild_id in GUILD_IDS]
-
+DISCORD_STANDINGFLEET_VOICE_CHANNEL_ID = settings.DISCORD_STANDINGFLEET_VOICE_CHANNEL_ID
 
 class MyClient(discord.Client):
     def __init__(self) -> None:
@@ -59,8 +60,8 @@ async def check_standing_fleet_channel():
     to the API for tracking
     """
 
-    voice_channel_id = 1306515072650313728
-    guild = client.get_guild(1041384161505722368)
+    voice_channel_id = DISCORD_STANDINGFLEET_VOICE_CHANNEL_ID
+    guild = client.get_guild(GUILD_ID)
     if guild:
         voice_channel = guild.get_channel(voice_channel_id)
         if not voice_channel:

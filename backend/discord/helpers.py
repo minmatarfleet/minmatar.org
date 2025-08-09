@@ -2,6 +2,7 @@ import logging
 
 import requests
 from django.contrib.auth.models import User
+from django.conf import settings
 
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter
@@ -13,8 +14,10 @@ from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
-DISCORD_PEOPLE_TEAM_CHANNEL_ID = 1098974756356771870
-DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = 1174095095537078312
+DISCORD_PEOPLE_TEAM_CHANNEL_ID = settings.DISCORD_PEOPLE_TEAM_CHANNEL_ID
+DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = (
+    settings.DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID
+)
 
 
 def get_expected_nickname(user: User):
