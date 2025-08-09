@@ -3,19 +3,17 @@ from django.contrib.auth.models import User, Group
 from django.db import transaction
 from django.conf import settings
 import requests
-from authentication import make_test_user
 from structures.models import EveStructure
 from eveonline.models import (
     EveAlliance,
     EveCorporation,
     EveCharacter,
-    EveFaction,
     EveTag,
+    EsiClient,
 )
-from posts.models import EvePost, EveTag as PostsEveTag
+from posts.models import EveTag as PostsEveTag
 from market.models import EveMarketContractExpectation
 from groups.models import AffiliationType, EveCorporationGroup, Team, Sig
-from eveonline.client import EsiClient
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 from fleets.models import EveFleetAudience, EveLocation
 
@@ -32,9 +30,7 @@ def seed_database_for_development():
 
     # Verify we have required settings
     if not settings.ESI_SSO_CLIENT_ID or not settings.ESI_SSO_CLIENT_SECRET:
-        logger.error(
-            "ESI Client ID and Secret Key must be set in settings"
-        )
+        logger.error("ESI Client ID and Secret Key must be set in settings")
         return False
     if not settings.DISCORD_BOT_TOKEN or not settings.DISCORD_GUILD_ID:
         logger.error("Discord Bot Token and Guild ID must be set in settings")
@@ -87,9 +83,7 @@ def seed_core_alliances():
             logger.info(f"Created alliance: {alliance.name}")
 
     # Fetch and create corporations for each alliance
-    for alliance in EveAlliance.objects.filter(
-        alliance_id__in=[99011978, 99012009]
-    ):
+    for alliance in EveAlliance.objects.all():
         logger.info(f"Fetching corporations for alliance {alliance.name}")
         esi_response = EsiClient(None).get_alliance_corporations(
             alliance.alliance_id
@@ -157,7 +151,7 @@ def seed_corporation_groups():
         ).first()
 
         if eve_corporation:
-            corp_group, created = EveCorporationGroup.objects.get_or_create(
+            _, created = EveCorporationGroup.objects.get_or_create(
                 group=group,
                 corporation=eve_corporation,
             )
@@ -236,12 +230,10 @@ def seed_market_expectations():
 
     expectations_created = 0
     for doctrine_fitting in EveDoctrineFitting.objects.all():
-        expectation, created = (
-            EveMarketContractExpectation.objects.get_or_create(
-                fitting=doctrine_fitting.fitting,
-                location=location,
-                defaults={"quantity": 5},
-            )
+        _, created = EveMarketContractExpectation.objects.get_or_create(
+            fitting=doctrine_fitting.fitting,
+            location=location,
+            defaults={"quantity": 5},
         )
         if created:
             expectations_created += 1
@@ -310,7 +302,7 @@ def sync_production_fittings():
 
     fittings_created = 0
     for fitting in fittings_data:
-        fitting_obj, created = EveFitting.objects.get_or_create(
+        _, created = EveFitting.objects.get_or_create(
             id=fitting["id"],
             defaults={
                 "name": fitting["name"],
@@ -389,7 +381,7 @@ def sync_tag_definitions():
 
     tags_created = 0
     for tag in tags_data:
-        tag_obj, created = EveTag.objects.get_or_create(
+        _, created = EveTag.objects.get_or_create(
             id=tag["id"],
             defaults={
                 "title": tag["title"],
@@ -418,7 +410,7 @@ def sync_post_tags():
 
     tags_created = 0
     for tag in tags_data:
-        tag_obj, created = PostsEveTag.objects.get_or_create(
+        _, created = PostsEveTag.objects.get_or_create(
             id=tag["tag_id"], defaults={"tag": tag["tag"]}
         )
         if created:
@@ -516,7 +508,7 @@ def process_entity(entity_data, entity_type, mappings, discord_channels):
         )
 
     entity_class = Team if entity_type == "team" else Sig
-    entity_obj, created = entity_class.objects.get_or_create(
+    _, created = entity_class.objects.get_or_create(
         id=entity_id,
         defaults={
             "name": entity_name,
