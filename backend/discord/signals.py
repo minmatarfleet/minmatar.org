@@ -4,9 +4,10 @@ from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.dispatch import receiver
 
+from discord.helpers import remove_all_roles_from_guild_member
 from discord.client import DiscordClient
 
-from .models import DiscordRole
+from .models import DiscordRole, DiscordUser
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -108,3 +109,15 @@ def user_group_changed(
         for role in discord_user.groups.all():
             discord.remove_user_role(discord_user.id, role.role_id)
             role.members.remove(discord_user)
+
+
+@receiver(
+    signals.post_delete,
+    sender=DiscordUser,
+    dispatch_uid="discord_user_deleted",
+)
+def discord_user_deleted(
+    sender, instance, **kwargs
+):  # pylint: disable=unused-argument
+    logger.info("Discord user deleted, removing roles")
+    remove_all_roles_from_guild_member(instance.id)

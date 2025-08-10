@@ -17,7 +17,9 @@ from app.test import TestCase
 from discord.core import make_nickname
 from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect, fake_login
+
 from discord.tasks import sync_discord_nickname, sync_discord_user
+from discord.helpers import remove_all_roles_from_guild_member
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -60,6 +62,54 @@ class DiscordTests(TestCase):
     """
     Django tests for Discord functionality.
     """
+
+    @patch("discord.helpers.discord")
+    def test_remove_all_roles_from_guild_member(self, discord_client_mock):
+        """Test removing all roles from a Discord user on the guild."""
+        # Case 1: DiscordUser exists in DB, should not remove roles
+        DiscordUser.objects.create(id=111, user=self.user)
+        discord_client_mock.get_user.return_value = {
+            "nick": "TestNick",
+            "roles": [1, 2, 3],
+        }
+        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
+            filter_mock.return_value.first.return_value = DiscordUser(
+                id=111, user=self.user
+            )
+            with patch.object(
+                discord_client_mock, "remove_user_role"
+            ) as remove_role_mock:
+                remove_all_roles_from_guild_member(111)
+                remove_role_mock.assert_not_called()
+
+        # Case 2: DiscordUser does not exist, should remove all roles
+        discord_client_mock.get_user.return_value = {
+            "nick": "TestNick",
+            "roles": [1, 2, 3],
+        }
+        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
+            filter_mock.return_value.first.return_value = None
+            with patch.object(
+                discord_client_mock, "remove_user_role"
+            ) as remove_role_mock:
+                remove_all_roles_from_guild_member(111)
+                remove_role_mock.assert_any_call(111, 1)
+                remove_role_mock.assert_any_call(111, 2)
+                remove_role_mock.assert_any_call(111, 3)
+                self.assertEqual(remove_role_mock.call_count, 3)
+
+        # Case 3: No roles to remove
+        discord_client_mock.get_user.return_value = {
+            "nick": "TestNick",
+            "roles": [],
+        }
+        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
+            filter_mock.return_value.first.return_value = None
+            with patch.object(
+                discord_client_mock, "remove_user_role"
+            ) as remove_role_mock:
+                remove_all_roles_from_guild_member(111)
+                remove_role_mock.assert_not_called()
 
     def disconnect_signals(self):
         signals.post_save.disconnect(

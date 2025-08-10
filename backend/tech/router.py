@@ -18,6 +18,10 @@ from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
+from discord.helpers import (
+    remove_all_roles_from_guild_member,
+    DiscordUserNotFound,
+)
 from groups.helpers import TECH_TEAM, user_in_team
 from groups.tasks import update_affiliation
 from eveonline.client import esi_for
@@ -570,3 +574,27 @@ def force_refresh(request, username: str):
     logger.info("Full refresh complete for %s", username)
 
     return response
+
+
+@router.post(
+    "/remove_discord_roles",
+    summary="Remove all roles from a discord user on a discord server",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        403: ErrorResponse,
+        404: ErrorResponse,
+        409: ErrorResponse,
+    },
+)
+def remove_discord_roles(request, user_id: int):
+    if not permitted(request.user):
+        return 403, ErrorResponse(detail="Not authorised")
+
+    try:
+        remove_all_roles_from_guild_member(user_id)
+    except DiscordUserNotFound as e:
+        return 404, ErrorResponse(detail=str(e))
+    except ValueError as e:
+        return 409, ErrorResponse(detail=str(e))
+    return 200, None
