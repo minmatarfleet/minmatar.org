@@ -199,7 +199,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
                 )
                 if is_new_event(event):
                     send_discord_structure_notification(
-                        event, settings.DISCORD_LEADERSHIP_CHANNEL_ID
+                        event, settings.DISCORD_STRUCTURE_PINGS_CHANNEL_ID
                     )
                     total_new += 1
 
