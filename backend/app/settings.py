@@ -38,7 +38,7 @@ SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
-WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "http://my.minmatar.org")
+WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
