@@ -1,5 +1,5 @@
 import logging
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.conf import settings
 import requests
@@ -37,11 +37,7 @@ def seed_database_for_development():
         return False
 
     # Verify database is empty
-    if (
-        User.objects.exists()
-        or EveCharacter.objects.exists()
-        or EveAlliance.objects.exists()
-    ):
+    if EveCharacter.objects.exists() or EveAlliance.objects.exists():
         logger.error("Database is not empty. Please reset before seeding")
         return False
 

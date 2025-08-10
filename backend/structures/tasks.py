@@ -3,6 +3,7 @@ import math
 from datetime import datetime
 
 from django.utils import timezone
+from django.conf import settings
 
 from app.celery import app
 
@@ -196,10 +197,9 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     event.notification_type,
                     is_new_event(event),
                 )
-                # test_channel = 1127086469631180830
                 if is_new_event(event):
                     send_discord_structure_notification(
-                        event, 1270780039272595549
+                        event, settings.DISCORD_STRUCTURE_PINGS_CHANNEL_ID
                     )
                     total_new += 1
 

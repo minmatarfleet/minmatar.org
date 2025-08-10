@@ -38,6 +38,8 @@ SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
+WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
+
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
@@ -65,6 +67,12 @@ DISCORD_FLEET_SCHEDULE_CHANNEL_ID = int(
 )
 DISCORD_FLEET_SCHEDULE_MESSAGE_ID = int(
     os.environ.get("DISCORD_FLEET_SCHEDULE_MESSAGE_ID", 1244656126302224466)
+)
+DISCORD_STRUCTURE_PINGS_CHANNEL_ID = int(
+    os.environ.get("DISCORD_STRUCTURE_PINGS_CHANNEL_ID", 1270780039272595549)
+)
+DISCORD_SUPPLY_CHANNEL_ID = int(
+    os.environ.get("DISCORD_SUPPLY_CHANNEL_ID", 1174095138197340300)
 )
 
 # ESI
