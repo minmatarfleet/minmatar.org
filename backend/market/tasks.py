@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.db.models import Q
 from django.utils import timezone
+from django.conf import settings
 from esi.models import Token
 
 from app.celery import app
@@ -23,8 +24,6 @@ from market.models import (
 logger = logging.getLogger(__name__)
 
 discord = DiscordClient()
-
-NOTIFICATION_CHANNEL = 1174095138197340300
 
 
 @app.task()
@@ -99,9 +98,9 @@ def notify_eve_market_contract_warnings():
     for expectation in EveMarketContractExpectation.objects.all():
         if expectation.is_understocked:
             message += f"**{expectation.fitting.name}** ({expectation.current_quantity}/{expectation.desired_quantity})\n"
-    message += "\n\nhttps://my.minmatar.org/market/contracts/"
+    message += f"\n\n{settings.WEB_LINK_URL}/market/contracts/"
 
-    discord.create_message(channel_id=NOTIFICATION_CHANNEL, message=message)
+    discord.create_message(channel_id=settings.DISCORD_SUPPLY_CHANNEL_ID, message=message)
 
 
 @app.task()
