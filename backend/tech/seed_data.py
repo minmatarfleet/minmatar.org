@@ -38,8 +38,7 @@ def seed_database_for_development():
 
     # Verify database is empty
     if (
-        User.objects.exists()
-        or EveCharacter.objects.exists()
+        EveCharacter.objects.exists()
         or EveAlliance.objects.exists()
     ):
         logger.error("Database is not empty. Please reset before seeding")
