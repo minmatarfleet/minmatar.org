@@ -100,7 +100,9 @@ def notify_eve_market_contract_warnings():
             message += f"**{expectation.fitting.name}** ({expectation.current_quantity}/{expectation.desired_quantity})\n"
     message += f"\n\n{settings.WEB_LINK_URL}/market/contracts/"
 
-    discord.create_message(channel_id=settings.DISCORD_SUPPLY_CHANNEL_ID, message=message)
+    discord.create_message(
+        channel_id=settings.DISCORD_SUPPLY_CHANNEL_ID, message=message
+    )
 
 
 @app.task()
