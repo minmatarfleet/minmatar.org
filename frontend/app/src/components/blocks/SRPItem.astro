@@ -180,6 +180,20 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <ClipboardButton id={`srp-dialog-copy-name-${srp.id}`}>{srp.primary_character_name}</ClipboardButton>
                         </FlexInline>
                     </Flexblock>
+
+                    {srp.category &&
+                        <Flexblock gap='var(--space-3xs)'>
+                            <label for="srp-category">{t('category')}</label>
+                            <p id="srp-category" class="[ srp-category ]">{t(srp.category)}</p>
+                        </Flexblock>
+                    }
+
+                    {srp.comments &&
+                        <Flexblock gap='var(--space-3xs)'>
+                            <label for="srp-comments">{t('comments')}</label>
+                            <p id="srp-comments" class="[ srp-comments ]">{srp.comments}</p>
+                        </Flexblock>
+                    }
                     
                     {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
                 </Flexblock>

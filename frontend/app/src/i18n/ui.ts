@@ -1457,5 +1457,12 @@ export const ui = {
         'cards_view': 'Cards view',
         'tabular_view': 'Tabular view',
         'check_contract': 'Check contract',
+        'invalid_srp_category': 'SRP category is not valid.',
+        'category': 'Category',
+        'select_category': 'Select category',
+        'logistics': 'Logistics',
+        'dps': 'DPS',
+        'capital': 'Capital',
+        'comments': 'Comments',
     },
 } as const;

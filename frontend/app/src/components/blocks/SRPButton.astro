@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { ButtonSizes } from '@dtypes/layout_components';
+import { srp_categories } from '@dtypes/api.minmatar.org';
 
 interface Props {
     fleet_id:       number;
@@ -31,6 +32,8 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+import Textarea from '@components/blocks/Textarea.astro';
 import Button from '@components/blocks/Button.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
@@ -59,6 +62,8 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         x-data={`{
             is_corp_ship: false,
             external_killmail_link: '',
+            category: '',
+            comments: '',
             clear_form() {
                 $nextTick(() => {
                     this.external_killmail_link = ''
@@ -88,7 +93,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             <picture class="[ hidden sm:block ]">
                                 <TutorialIcon />
                             </picture>
-                            <p>{t('paste_above_tutorial_string')}</p>
+                            <small>{t('paste_above_tutorial_string')}</small>
                         </FixedFluid>
 
                         <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
@@ -96,6 +101,21 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             Your browser does not support the video tag.
                         </video>
                     </CollapsibleBlock>
+                </Flexblock>
+
+                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                    <label for="srp-category">{t('category')}</label>
+                    <Select id="srp-category" x-model="category" name="category" required>
+                        <option value="" selected disabled>{t('select_category')}</option>
+                        {srp_categories.map((cat) => 
+                            <option value={cat}>{t(cat)}</option>
+                        )}
+                    </Select>
+                </Flexblock>
+
+                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                    <label for="srp-comments">{t('comments')}</label>
+                    <Textarea rows="2" id="srp-comments" x-model="comments" name="comments" />
                 </Flexblock>
                 
                 <SwitchSquare
@@ -110,6 +130,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     <Markdown
                         markdown={t('srp_wiki')}
                         inline={true}
+                        inline_element='small'
                     />
                 </TutorialBadge>
             </Flexblock>

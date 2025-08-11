@@ -933,7 +933,7 @@ export interface ContractUI {
     entities:               number;
 }
 
-import type { SRPStatus } from '@dtypes/api.minmatar.org'
+import type { SRPStatus, SRPCategory } from '@dtypes/api.minmatar.org'
 
 export interface SRPUI {
     id:                         number;
@@ -951,6 +951,8 @@ export interface SRPUI {
     is_corp_ship:               boolean;
     corporation_id:             number;
     corporation_name:           string;
+    comments:                   string;
+    category:                   SRPCategory;
 }
 
 export interface FleetSRPUI {
