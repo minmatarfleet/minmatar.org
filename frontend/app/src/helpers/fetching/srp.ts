@@ -33,8 +33,9 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
                 status: api_srp.status,
                 is_corp_ship: api_srp.is_corp_ship,
                 corporation_id: api_srp.corp_id,
-                corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation'
-
+                corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation',
+                category: api_srp.category,
+                comments: api_srp.comments ?? '',
             } as SRPUI
         })
 
@@ -70,8 +71,9 @@ export async function fetch_fleet_srps(access_token:string, fleet_id?: number, s
             status: api_srp.status,
             is_corp_ship: api_srp.is_corp_ship,
             corporation_id: api_srp.corp_id,
-            corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation'
-    
+            corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation',
+            category: api_srp.category,
+            comments: api_srp.comments ?? '',
         } as SRPUI
     })
 }

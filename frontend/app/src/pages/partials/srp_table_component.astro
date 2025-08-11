@@ -20,8 +20,9 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { create_fleet_srp, update_fleet_srp } from '@helpers/api.minmatar.org/srp'
-import type { SRPStatus, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { SRPStatus, EveCharacterProfile, SRPCategory } from '@dtypes/api.minmatar.org'
 import { srp_status } from '@dtypes/api.minmatar.org'
+import { srp_categories } from '@dtypes/api.minmatar.org'
 import type { SRPUI, Alert, FleetUI } from '@dtypes/layout_components'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
@@ -45,11 +46,22 @@ if (Astro.request.method === "POST") {
         const data = await Astro.request.formData()
         const external_killmail_link = data.get('external_killmail_link' as string) as string
         const is_corp_ship = data.get('is_corp_ship' as string) === 'on'
+        const category = data.get('category' as string) as SRPCategory
+        const comments = data.get('comments' as string) as string
+
+        if (!srp_categories.includes(category))
+            throw new Error(t('invalid_srp_category'))
 
         if (!is_valid_http_url(external_killmail_link))
             throw new Error(t('invalid_srp_url'))
 
-        await create_fleet_srp(auth_token as string, fleet_id, external_killmail_link, is_corp_ship)
+        await create_fleet_srp(auth_token as string, {
+            fleet_id: fleet_id,
+            external_killmail_link: external_killmail_link,
+            is_corp_ship: is_corp_ship,
+            category: category,
+            comments: comments ?? '',
+        })
     } catch (error) {
         submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
 

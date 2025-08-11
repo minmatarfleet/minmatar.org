@@ -547,9 +547,11 @@ export interface SRP {
     amount:                     number;
     is_corp_ship:               boolean;
     corp_id:                    number;
+    comments:                   string;
+    category:                   SRPCategory;
 }
 
-export interface SRPRequest {
+export interface SRPFilter {
     fleet_id?:  number;
     status?:    SRPStatus;
 }
@@ -646,4 +648,16 @@ export interface Player {
     user_id:                number;
     primary_character_id:   number;
     prime_time:             PrimeTime | null;
+}
+
+
+export const srp_categories = [ 'logistics', 'support', 'dps', 'capital' ] as const
+export type SRPCategory = typeof srp_categories[number]
+
+export interface SRPRequest {
+    external_killmail_link:     string;
+    fleet_id?:                  number;
+    is_corp_ship:               boolean;
+    category:                   SRPCategory;
+    comments:                   string;
 }

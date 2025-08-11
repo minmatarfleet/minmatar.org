@@ -1,15 +1,15 @@
 import { parse_response_error, query_string } from '@helpers/string'
-import type { SRP, SRPStatus, SRPRequest } from '@dtypes/api.minmatar.org'
+import type { SRP, SRPStatus, SRPFilter, SRPRequest } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
 
-export async function get_fleet_srp(access_token:string, srp_request:SRPRequest) {
+export async function get_fleet_srp(access_token:string, srp_filter:SRPFilter) {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`
     }
     
-    const { fleet_id, status } = srp_request
+    const { fleet_id, status } = srp_filter
 
     const query_params = {
         ...(fleet_id && { fleet_id }),
@@ -40,10 +40,14 @@ export async function get_fleet_srp(access_token:string, srp_request:SRPRequest)
     }
 }
 
-export async function create_fleet_srp(access_token:string, fleet_id:number, external_killmail_link:string, is_corp_ship:boolean) {
+export async function create_fleet_srp(access_token:string, srp_request:SRPRequest) {
+    const fleet_id = srp_request.fleet_id
+    
     const data = JSON.stringify({
-        external_killmail_link: external_killmail_link,
-        is_corp_ship: is_corp_ship,
+        external_killmail_link: srp_request.external_killmail_link,
+        is_corp_ship: srp_request.is_corp_ship,
+        category: srp_request.category,
+        comments: srp_request.comments,
         ...(fleet_id && { fleet_id }),
     })
 
