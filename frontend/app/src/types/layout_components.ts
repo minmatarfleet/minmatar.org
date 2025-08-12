@@ -681,6 +681,7 @@ export interface FleetUI {
     audience:               string;
     disable_motd:           boolean;
     status?:                TrackingStatus;
+    aar_link:               string;
 }
 
 export interface Tracking {

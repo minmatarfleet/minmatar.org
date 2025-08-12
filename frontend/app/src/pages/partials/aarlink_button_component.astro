@@ -1,0 +1,95 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { update_fleet } from '@helpers/api.minmatar.org/fleets'
+import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { Alert, FleetUI } from '@dtypes/layout_components'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { is_valid_http_url } from '@helpers/string';
+import { get_user_character } from '@helpers/fetching/characters'
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+let data_fetching_error:string | false = false
+let update_fleet_aar_link_error:string | false = false
+let alert:Alert | false = false
+let fleet:FleetUI | false = false
+
+if (Astro.request.method === "PATCH") {
+    try {
+        const data = await Astro.request.formData()
+        const aar_link = data.get('aar_link' as string) as string
+
+        if (!is_valid_http_url(aar_link))
+            throw new Error(t('invalid_aar_link'))
+
+        await update_fleet(auth_token as string, { aar_link: aar_link }, fleet_id)
+    } catch (error) {
+        update_fleet_aar_link_error = prod_error_messages() ? t('update_fleet_aar_link_error') : error.message
+
+        alert = {
+            title: t('aar_link_dialog_title'),
+            content: update_fleet_aar_link_error as string,
+        }
+    }
+}
+
+let user_character:EveCharacterProfile | null = null
+
+try {
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    user_character = await get_user_character(user.user_id)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const can_remove_fleet = is_superuser ||
+                         user_permissions.includes('fleets.delete_evefleet') ||
+                         user_character?.character_id === (fleet ? fleet.fleet_commander_id : 0)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/aarlink_button_component')}?fleet_id=${fleet_id}`
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+import AARLinkButton from '@components/blocks/AARLinkButton.astro';
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: SRP_TABLE_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <AARLinkButton
+        aarlink={(fleet as FleetUI).aar_link ? (fleet as FleetUI).aar_link : undefined}
+        fleet_id={(fleet as FleetUI).id}
+        can_edit={can_remove_fleet}
+    />
+}

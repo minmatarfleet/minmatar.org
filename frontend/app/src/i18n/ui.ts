@@ -1464,5 +1464,12 @@ export const ui = {
         'dps': 'DPS',
         'capital': 'Capital',
         'comments': 'Comments',
+        'add_aar_link': 'Add AAR link',
+        'edit_aar_link': 'Edit AAR link',
+        'aar_link_dialog_title': 'AAR link',
+        'aar_link_dialog_text': 'Add the link to the After Action Report (AAR)',
+        'update_fleet_aar_link_error': 'An error occurred while updating the fleet AAR link.',
+        'invalid_aar_link': 'AAR link is not valid.',
+        'discord_aar_link': 'Discord AAR Link',
     },
 } as const;

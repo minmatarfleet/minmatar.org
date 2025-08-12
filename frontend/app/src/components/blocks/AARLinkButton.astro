@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    aarlink?:       string;
+    fleet_id:       number;
+    size?:          ButtonSizes;
+    can_edit?:      boolean;
+}
+
+const {
+    aarlink,
+    fleet_id,
+    size = 'sm',
+    can_edit = false,
+} = Astro.props
+
+const AARLINK_BUTTON_PARTIAL_URL = `${translatePath('/partials/aarlink_button_component')}?fleet_id=${fleet_id}`
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Input from '@components/blocks/Input.astro';
+import Button from '@components/blocks/Button.astro';
+import DialogButton from "@components/blocks/DialogButton.astro";
+---
+
+{(can_edit || aarlink) &&
+    <FlexInline id="aarlink-button" gap="var(--space-s)">
+        {aarlink && <p>{aarlink}</p>}
+
+        {can_edit &&
+            <DialogButton
+                size={size}
+                color='green'
+            >
+                {aarlink ? t('edit_aar_link') : t('add_aar_link')}
+
+                <form
+                    slot="dialog" 
+                    hx-patch={AARLINK_BUTTON_PARTIAL_URL}
+                    hx-trigger="submit"
+                    hx-target="#aarlink-button"
+                    hx-indicator=".loader"
+                    hx-swap="outerHTML transition:true"
+                    x-data={`{
+                        aar_link: '',
+                        clear_form() {
+                            $nextTick(() => {
+                                this.aar_link = ''
+                            })
+                        }
+                    }`}
+                    x-on:submit="close_dialog(); clear_form()"
+                >
+                    <Flexblock gap="var(--space-l)">
+                        <h3>{t('aar_link_dialog_title')}</h3>
+                        
+                        <Flexblock gap="var(--space-s)">
+                            <p>{t('aar_link_dialog_text')}</p>
+                            
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label for="arr-link">{t('discord_aar_link')}</label>
+                                <Input id="arr-link" x-model="aar_link" name="aar_link" type="text" autocomplete="off" required />
+                            </Flexblock>
+                        </Flexblock>
+
+                        <FlexInline justification='flex-end'>
+                            <Button
+                                size='sm'
+                                type="submit"
+                            >
+                                {t('submit')}
+                            </Button>
+                            <Button
+                                type="button"
+                                size='sm'
+                                x-on:click="close_dialog()"
+                            >
+                                {t('close')}
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </form>
+            </DialogButton>
+        }
+    </FlexInline>
+}

@@ -58,7 +58,7 @@ import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
-import PrepingButton from '@components/blocks/PrepingButton.astro';
+import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -136,6 +136,14 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
                     </TextBox>
                 </Flexblock>
+
+                {history &&
+                    <AARLinkButton
+                        aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+                        fleet_id={fleet.id}
+                        can_edit={can_remove_fleet}
+                    />
+                }
 
                 <!--<VerticalCenter>
                     <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>

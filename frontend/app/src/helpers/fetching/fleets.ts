@@ -94,6 +94,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         audience: fleet.audience,
         disable_motd: fleet.disable_motd,
         status: fleet.status,
+        aar_link: fleet.aar_link ?? '',
     } as FleetUI
 }
 

@@ -190,6 +190,7 @@ export interface Fleet {
     disable_motd:       boolean;
     tracking?:          Tracking;
     status?:            TrackingStatus;
+    aar_link:           string;
 }
 
 export interface FleetBasic {
@@ -226,6 +227,7 @@ export interface FleetPatchRequest {
     disable_motd?:      boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
+    aar_link?:          string;
 }
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
