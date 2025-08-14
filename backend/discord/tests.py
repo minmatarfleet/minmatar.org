@@ -1,3 +1,5 @@
+import requests
+from requests.models import Response
 import unittest
 from unittest.mock import patch
 from unittest.mock import Mock, MagicMock
@@ -19,7 +21,10 @@ from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
-from discord.helpers import remove_all_roles_from_guild_member
+from discord.helpers import (
+    remove_all_roles_from_guild_member,
+    DiscordUserNotFound,
+)
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -66,7 +71,8 @@ class DiscordTests(TestCase):
     @patch("discord.helpers.discord")
     def test_remove_all_roles_from_guild_member(self, discord_client_mock):
         """Test removing all roles from a Discord user on the guild."""
-        # Case 1: DiscordUser exists in DB, should not remove roles
+
+        # Case 1: DiscordUser exists in DB, should raise ValueError
         DiscordUser.objects.create(id=111, user=self.user)
         discord_client_mock.get_user.return_value = {
             "nick": "TestNick",
@@ -79,10 +85,11 @@ class DiscordTests(TestCase):
             with patch.object(
                 discord_client_mock, "remove_user_role"
             ) as remove_role_mock:
-                remove_all_roles_from_guild_member(111)
+                with self.assertRaises(ValueError):
+                    remove_all_roles_from_guild_member(111)
                 remove_role_mock.assert_not_called()
 
-        # Case 2: DiscordUser does not exist, should remove all roles
+        # Case 2: DiscordUser does not exist in DB, should remove all roles
         discord_client_mock.get_user.return_value = {
             "nick": "TestNick",
             "roles": [1, 2, 3],
@@ -110,6 +117,27 @@ class DiscordTests(TestCase):
             ) as remove_role_mock:
                 remove_all_roles_from_guild_member(111)
                 remove_role_mock.assert_not_called()
+
+        # Case 4: Discord user not found on Discord server, should raise DiscordUserNotFound
+        discord_client_mock.get_user.side_effect = Exception(
+            "Should not be called"
+        )  # prevent accidental call
+        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
+            filter_mock.return_value.first.return_value = None
+            with patch("discord.helpers.discord.get_user") as get_user_mock:
+                http_error = requests.exceptions.HTTPError()
+                http_error.response = Response()
+                http_error.response.status_code = 404
+                get_user_mock.side_effect = http_error
+                with self.assertRaises(DiscordUserNotFound):
+                    remove_all_roles_from_guild_member(111)
+
+                http_error = requests.exceptions.HTTPError()
+                http_error.response = Response()
+                http_error.response.status_code = 404
+                get_user_mock.side_effect = http_error
+                with self.assertRaises(DiscordUserNotFound):
+                    remove_all_roles_from_guild_member(111)
 
     def disconnect_signals(self):
         signals.post_save.disconnect(
