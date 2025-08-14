@@ -11,7 +11,7 @@ The code can be run in a number of different configurations, which are referred 
 | Django dev | django | self | mock  | synth |
 | Local dev | npm + django | local | alt | local |
 | Standalone | docker | docker | mock  | synth | 
-| Full dev | docker | docker | alt | copy
+| Full dev | docker + npm + django | self | alt | copy
 
 * `Host` refers to the method of launching the application, either directly using `npm` (FE) or `manage.py` (BE), or as a docker container.
 * `API` identifies how the frontend connects to the backend. `live` means using the production API, `self` means the profile is the API, `local` means use the API running locally with `manage.py`, and `docker` means use the API running locally under docker.
@@ -47,6 +47,12 @@ The backend mounts the source code folder directly and uses live reload to pick 
 Silvatek maintains this.
 
 ### Full Dev
-A local copy of production, running in docker-compose with a copy of production data and using the developer's own ESI and Discord credentials.
+uses the developer's own ESI application credentials to access tranquility
+uses the developer's own Discord Server, and own Discord application/bot and credentials.
+sets up live-like data
+
+docker compose is used to host backend dependencies of Redis and MariaDB
+front end run via `npm run dev`
+backend run via `manage.py` and `celery`
 
 SmokeMeAKipper maintains this.
