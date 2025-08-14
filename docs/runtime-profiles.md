@@ -47,8 +47,8 @@ The backend mounts the source code folder directly and uses live reload to pick 
 Silvatek maintains this.
 
 ### Full Dev
-uses the developer's own ESI application to access tranquility
-uses the developer's own Discord Server, and own Discord application/bot.
+uses the developer's own ESI application credentials to access tranquility
+uses the developer's own Discord Server, and own Discord application/bot and credentials.
 sets up live-like data
 
 docker compose is used to host backend dependencies of Redis and MariaDB
