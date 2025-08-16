@@ -12,7 +12,7 @@ interface Props {
 }
 
 const {
-    aarlink,
+    aarlink = 'https://discord.com/channels/1041384161505722368/1405781794392899614',
     fleet_id,
     size = 'sm',
     can_edit = false,
@@ -26,16 +26,22 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
+import ExternalLink from "@components/blocks/ExternalLink.astro";
+import TextGroup from '@components/blocks/TextGroup.astro';
 ---
 
 {(can_edit || aarlink) &&
     <FlexInline id="aarlink-button" gap="var(--space-s)">
-        {aarlink && <p>{aarlink}</p>}
+        {aarlink &&
+            <TextGroup title={t('aar_link')}>
+                <ExternalLink href={aarlink} title={t('aar_title')}>{aarlink}</ExternalLink>
+            </TextGroup>
+        }
 
         {can_edit &&
             <DialogButton
                 size={size}
-                color='green'
+                color={aarlink ? 'fleet-red' : 'green'}
             >
                 {aarlink ? t('edit_aar_link') : t('add_aar_link')}
 
