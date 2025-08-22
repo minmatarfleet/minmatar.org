@@ -37,7 +37,7 @@ class EvePostListResponse(BaseModel):
     title: str
     seo_description: str
     slug: str
-    content: str
+    image: str  # Changed from 'content' to 'image'
     date_posted: datetime
     user_id: int
     tag_ids: List[int]
@@ -114,7 +114,7 @@ def get_posts(
                 seo_description=post.seo_description,
                 title=post.title,
                 slug=post.slug,
-                content=image_link,  # Use the extracted image link instead of the full content
+                image=image_link,  # Use the extracted image link with the new field name 'image'
                 date_posted=post.date_posted,
                 user_id=post.user.id,
                 tag_ids=[tag.id for tag in post.tags.all()],
