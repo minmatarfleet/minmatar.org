@@ -20,6 +20,7 @@ class EvePostListResponse(BaseModel):
     title: str
     seo_description: str
     slug: str
+    content: str
     date_posted: datetime
     user_id: int
     tag_ids: List[int]
@@ -93,6 +94,7 @@ def get_posts(
                 seo_description=post.seo_description,
                 title=post.title,
                 slug=post.slug,
+                content=post.content,
                 date_posted=post.date_posted,
                 user_id=post.user.id,
                 tag_ids=[tag.id for tag in post.tags.all()],
