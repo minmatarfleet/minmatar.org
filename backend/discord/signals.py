@@ -112,12 +112,12 @@ def user_group_changed(
 
 
 @receiver(
-    signals.post_delete,
+    signals.pre_delete,
     sender=DiscordUser,
-    dispatch_uid="discord_user_deleted",
+    dispatch_uid="discord_user_deleting",
 )
-def discord_user_deleted(
+def discord_user_deleting(
     sender, instance, **kwargs
 ):  # pylint: disable=unused-argument
-    logger.info("Discord user deleted, removing roles")
+    logger.info("Discord user deleting, removing roles")
     remove_all_roles_from_guild_member(instance.id)

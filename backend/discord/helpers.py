@@ -10,12 +10,6 @@ from .core import make_nickname
 from .models import DiscordRole, DiscordUser
 
 
-class DiscordUserNotFound(Exception):
-    """Raised when a Discord user is not found on the Discord server."""
-
-    pass
-
-
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = settings.DISCORD_PEOPLE_TEAM_CHANNEL_ID
@@ -122,34 +116,26 @@ def remove_all_roles_from_guild_member(discord_user_id: int):
         guild_user = discord.get_user(discord_user_id)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
-            logger.error(
-                "Discord user %s not found on discord server.", discord_user_id
+            logger.info(
+                "Discord user %s not found on discord server so roles already removed.",
+                discord_user_id,
             )
-            raise DiscordUserNotFound(
-                "Discord user not found on discord server."
-            ) from e
-        raise
+        return
 
     guild_user_nick = guild_user["nick"]
-    discord_user = DiscordUser.objects.filter(id=discord_user_id).first()
-    if discord_user:
-        logger.error("discord user still exists in our system.")
-        raise ValueError(
-            "Discord user still exists in the system; not removing roles."
+    roles = guild_user["roles"]
+    if not roles:
+        logger.info(
+            "No roles found for discord user %s with nickname %s",
+            discord_user_id,
+            guild_user_nick,
         )
     else:
-        roles = guild_user["roles"]
-        if not roles:
-            logger.info(
-                "No roles found for discord user %s with nickname %s",
-                discord_user_id,
-                guild_user_nick,
-            )
-        else:
-            logger.info(
-                "Removing all discord roles for discord user %s with nickname %s",
-                discord_user_id,
-                guild_user_nick,
-            )
-            for role_id in roles:
-                discord.remove_user_role(discord_user_id, role_id)
+        for role_id in roles:
+            discord.remove_user_role(discord_user_id, role_id)
+        logger.info(
+            "Removing %s discord roles for discord user %s with nickname %s",
+            len(roles),
+            discord_user_id,
+            guild_user_nick,
+        )

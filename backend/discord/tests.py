@@ -1,8 +1,5 @@
-import requests
-from requests.models import Response
 import unittest
-from unittest.mock import patch
-from unittest.mock import Mock, MagicMock
+from unittest.mock import patch, Mock, MagicMock
 
 from django.contrib.auth.models import User, Group
 from django.test import SimpleTestCase
@@ -21,10 +18,9 @@ from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
-from discord.helpers import (
-    remove_all_roles_from_guild_member,
-    DiscordUserNotFound,
-)
+from discord.helpers import remove_all_roles_from_guild_member
+
+from requests.exceptions import HTTPError
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -67,77 +63,6 @@ class DiscordTests(TestCase):
     """
     Django tests for Discord functionality.
     """
-
-    @patch("discord.helpers.discord")
-    def test_remove_all_roles_from_guild_member(self, discord_client_mock):
-        """Test removing all roles from a Discord user on the guild."""
-
-        # Case 1: DiscordUser exists in DB, should raise ValueError
-        DiscordUser.objects.create(id=111, user=self.user)
-        discord_client_mock.get_user.return_value = {
-            "nick": "TestNick",
-            "roles": [1, 2, 3],
-        }
-        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
-            filter_mock.return_value.first.return_value = DiscordUser(
-                id=111, user=self.user
-            )
-            with patch.object(
-                discord_client_mock, "remove_user_role"
-            ) as remove_role_mock:
-                with self.assertRaises(ValueError):
-                    remove_all_roles_from_guild_member(111)
-                remove_role_mock.assert_not_called()
-
-        # Case 2: DiscordUser does not exist in DB, should remove all roles
-        discord_client_mock.get_user.return_value = {
-            "nick": "TestNick",
-            "roles": [1, 2, 3],
-        }
-        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
-            filter_mock.return_value.first.return_value = None
-            with patch.object(
-                discord_client_mock, "remove_user_role"
-            ) as remove_role_mock:
-                remove_all_roles_from_guild_member(111)
-                remove_role_mock.assert_any_call(111, 1)
-                remove_role_mock.assert_any_call(111, 2)
-                remove_role_mock.assert_any_call(111, 3)
-                self.assertEqual(remove_role_mock.call_count, 3)
-
-        # Case 3: No roles to remove
-        discord_client_mock.get_user.return_value = {
-            "nick": "TestNick",
-            "roles": [],
-        }
-        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
-            filter_mock.return_value.first.return_value = None
-            with patch.object(
-                discord_client_mock, "remove_user_role"
-            ) as remove_role_mock:
-                remove_all_roles_from_guild_member(111)
-                remove_role_mock.assert_not_called()
-
-        # Case 4: Discord user not found on Discord server, should raise DiscordUserNotFound
-        discord_client_mock.get_user.side_effect = Exception(
-            "Should not be called"
-        )  # prevent accidental call
-        with patch("discord.models.DiscordUser.objects.filter") as filter_mock:
-            filter_mock.return_value.first.return_value = None
-            with patch("discord.helpers.discord.get_user") as get_user_mock:
-                http_error = requests.exceptions.HTTPError()
-                http_error.response = Response()
-                http_error.response.status_code = 404
-                get_user_mock.side_effect = http_error
-                with self.assertRaises(DiscordUserNotFound):
-                    remove_all_roles_from_guild_member(111)
-
-                http_error = requests.exceptions.HTTPError()
-                http_error.response = Response()
-                http_error.response.status_code = 404
-                get_user_mock.side_effect = http_error
-                with self.assertRaises(DiscordUserNotFound):
-                    remove_all_roles_from_guild_member(111)
 
     def disconnect_signals(self):
         signals.post_save.disconnect(
@@ -250,6 +175,43 @@ class DiscordTests(TestCase):
         mock_request = MagicMock()
         response = fake_login(mock_request)
         self.assertEqual(302, response.status_code)
+
+    @patch("discord.helpers.discord")
+    def test_remove_all_roles_from_guild_member_removes_roles(
+        self, mock_discord
+    ):
+        # Simulate a user with roles
+        mock_discord.get_user.return_value = {
+            "nick": "TestNick",
+            "roles": [1, 2, 3],
+        }
+        remove_all_roles_from_guild_member(12345)
+        # Should call remove_user_role for each role
+        assert mock_discord.remove_user_role.call_count == 3
+        mock_discord.remove_user_role.assert_any_call(12345, 1)
+        mock_discord.remove_user_role.assert_any_call(12345, 2)
+        mock_discord.remove_user_role.assert_any_call(12345, 3)
+
+    @patch("discord.helpers.discord")
+    def test_remove_all_roles_from_guild_member_no_roles(self, mock_discord):
+        # Simulate a user with no roles
+        mock_discord.get_user.return_value = {"nick": "TestNick", "roles": []}
+        remove_all_roles_from_guild_member(12345)
+        # Should not call remove_user_role
+        mock_discord.remove_user_role.assert_not_called()
+
+    @patch("discord.helpers.discord")
+    def test_remove_all_roles_from_guild_member_user_not_found(
+        self, mock_discord
+    ):
+        # Simulate a 404 error from Discord API
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        http_error = HTTPError(response=mock_response)
+        mock_discord.get_user.side_effect = http_error
+        # Should not raise, should just return
+        remove_all_roles_from_guild_member(12345)
+        mock_discord.remove_user_role.assert_not_called()
 
 
 if __name__ == "__main__":
