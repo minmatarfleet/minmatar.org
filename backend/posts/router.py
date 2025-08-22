@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+import re
 
 from ninja import Router
 from pydantic import BaseModel
@@ -10,6 +11,22 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 
 from .models import EvePost, EveTag
+
+
+def extract_first_image_link(content: str) -> str:
+    """
+    Extract the first image link from markdown content.
+    
+    Looks for patterns like ![image](https://example.com/image.png) and returns the URL.
+    Returns an empty string if no image link is found.
+    """
+    # Pattern to match markdown image syntax: ![alt text](url)
+    pattern = r'!\[.*?\]\((https?://[^\s)]+)\)'
+    match = re.search(pattern, content)
+    
+    if match:
+        return match.group(1)
+    return ""
 
 router = Router(tags=["Posts"])
 
@@ -87,6 +104,9 @@ def get_posts(
 
     response = []
     for post in posts:
+        # Extract the first image link from the content
+        image_link = extract_first_image_link(post.content)
+        
         response.append(
             EvePostListResponse(
                 post_id=post.id,
@@ -94,7 +114,7 @@ def get_posts(
                 seo_description=post.seo_description,
                 title=post.title,
                 slug=post.slug,
-                content=post.content,
+                content=image_link,  # Use the extracted image link instead of the full content
                 date_posted=post.date_posted,
                 user_id=post.user.id,
                 tag_ids=[tag.id for tag in post.tags.all()],
