@@ -1,16 +1,14 @@
 import logging
-
 import requests
 from django.contrib.auth.models import User
 from django.conf import settings
-
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
 from users.helpers import offboard_user
-
 from .core import make_nickname
 from .models import DiscordRole, DiscordUser
+
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -108,3 +106,36 @@ def notify_technology_team(location: str):
         DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
         message=f"Encountered error in {location}",
     )
+
+
+def remove_all_roles_from_guild_member(discord_user_id: int):
+    """
+    Removes all roles from a Discord user on the discord server.
+    """
+    try:
+        guild_user = discord.get_user(discord_user_id)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            logger.info(
+                "Discord user %s not found on discord server so roles already removed.",
+                discord_user_id,
+            )
+        return
+
+    guild_user_nick = guild_user["nick"]
+    roles = guild_user["roles"]
+    if not roles:
+        logger.info(
+            "No roles found for discord user %s with nickname %s",
+            discord_user_id,
+            guild_user_nick,
+        )
+    else:
+        for role_id in roles:
+            discord.remove_user_role(discord_user_id, role_id)
+        logger.info(
+            "Removing %s discord roles for discord user %s with nickname %s",
+            len(roles),
+            discord_user_id,
+            guild_user_nick,
+        )
