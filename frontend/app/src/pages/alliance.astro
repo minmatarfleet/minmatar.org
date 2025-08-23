@@ -58,7 +58,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import AllianceReel from '@components/blocks/AllianceReel.astro';
 import PostsList from '@components/blocks/PostsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
+import PostersReel from '@components/blocks/PostersReel.astro';
 
 const page_title = t('alliance.page_title');
 const leading_text = t('alliance.leading_text');
@@ -100,6 +100,8 @@ const leading_text = t('alliance.leading_text');
                 is_superuser={is_superuser}
             />
 
+            <h2>{t('newsreel')}</h2>
+            <PostersReel posts={posts} />
             
             <Flexblock gap='var(--space-l)'>
                 <h2>{t('news_timeline')}</h2>

@@ -3,19 +3,21 @@ interface Props {
     pagination?:        boolean;
     gap?:               number;
     initial_slide?:     number;
+    align?:             'start' | 'center' | 'end';
 }
 
 const {
     pagination = true,
     gap = 40,
     initial_slide = 0,
+    align = 'start',
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FlexInline
-    class="[ swiper-wrapper ][ select-none ]"
+    class:list={['swiper-wrapper select-none', `!items-${align}`]}
     gap='0'
     x-data={`{
         swiper: null,

@@ -1473,5 +1473,8 @@ export const ui = {
         'invalid_aar_link': 'AAR link is not valid.',
         'discord_aar_link': 'Discord AAR Link',
         'aar_title': 'Read AAR in Discord',
+        'newsreel': 'Our newsreel and propaganda posters',
+        'gallery_description': 'A collection of epic Reddit propaganda publications.',
+        'zoomed_image': 'Zoomed image',
     },
 } as const;
