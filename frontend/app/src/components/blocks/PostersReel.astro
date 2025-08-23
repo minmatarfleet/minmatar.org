@@ -1,0 +1,89 @@
+---
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    posts:  PostListUI[];
+}
+
+const {
+    posts,
+} = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+---
+
+<Wrapper
+    id="posters-reel"
+    hx-swap-oob="true"
+    class="[ posters-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <div class="[ swiper ][ w-full pb-10 ]">
+        <LandingSwiper align='center'>
+            {posts.map(post => {
+                if (!post.image)
+                    return
+
+                return (<div class="[ swiper-slide light-transparency card component ]" style="margin-right: 40px">
+                    <img class="[ zoomable ]" src={post.image} alt={post.title} />
+                </div>)
+            })}
+        </LandingSwiper>
+    </div>
+
+    <div class="[ swiper-button-prev hidden lg:block ]"></div>
+    <div class="[ swiper-button-next hidden lg:block ]"></div>
+</Wrapper>
+
+<style lang="scss">
+    :global(.medium-zoom-image--opened) {
+        z-index: var(--sticky-z-index);
+    }
+    :global(.medium-zoom-overlay) {
+        z-index: 1;
+    }
+
+    .posters-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 350px);
+    }
+</style>

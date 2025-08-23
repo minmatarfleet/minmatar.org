@@ -324,6 +324,7 @@ export interface Post {
     seo_description:    string;
     slug:               string;
     content?:           string;
+    image?:             string;
     date_posted:        Date;
     user_id:            number;
     tag_ids:            number[];

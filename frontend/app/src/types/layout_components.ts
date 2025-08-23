@@ -818,6 +818,7 @@ export interface PostListUI {
     user_id:            number;
     author:             CharacterBasic;
     tags:               string[];
+    image:              string;
 }
 
 export interface PostUI {
