@@ -99,16 +99,14 @@ const leading_text = t('alliance.leading_text');
                 can_view_corp_members={can_view_corp_members}
                 is_superuser={is_superuser}
             />
-
-            <h2>{t('newsreel')}</h2>
-            <PostersReel posts={posts} />
             
             <Flexblock gap='var(--space-l)'>
-                <h2>{t('news_timeline')}</h2>
+                <h2>{t('newsreel')}</h2>
                 <TextBox>
                     <p>{t('news_timeline_description')}</p>
                 </TextBox>
             </Flexblock>
+
             {post_fetching_error ?
                 <ErrorRefetch
                     args={{
@@ -119,6 +117,7 @@ const leading_text = t('alliance.leading_text');
                 />
                 :
                 posts.length > 0 ?
+                    <PostersReel posts={posts} />
                     <PostsList posts={posts} total_pages={total_pages} current_page={1} /> :
                     t('no_posts')
             }
