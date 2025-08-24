@@ -12,6 +12,7 @@ const {
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import ZoomableImage from '@components/blocks/ZoomableImage.astro';
 ---
 
 <Wrapper
@@ -28,8 +29,13 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                 if (!post.image)
                     return
 
-                return (<div class="[ swiper-slide light-transparency card component ]" style="margin-right: 40px">
-                    <img class="[ zoomable ]" src={post.image} alt={post.title} />
+                return (<div class="[ swiper-slide light-transparency card component ]"
+                    style="margin-right: 40px"
+                >
+                    <ZoomableImage
+                        src={post.image}
+                        alt={post.title}
+                    />
                 </div>)
             })}
         </LandingSwiper>
