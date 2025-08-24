@@ -1,0 +1,22 @@
+---
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    posts:              PostListUI[];
+    total_pages:        number;
+    current_page?:      number;
+}
+
+const {
+    posts,
+    total_pages,
+    current_page = 1,
+} = Astro.props
+
+
+import PostsList from '@components/blocks/PostsList.astro';
+import PostersReel from '@components/blocks/PostersReel.astro';
+---
+
+<PostersReel posts={posts} />
+<PostsList posts={posts} total_pages={total_pages} current_page={current_page} />
