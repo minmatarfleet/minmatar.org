@@ -72,10 +72,10 @@ class DiscordTests(TestCase):
     def test_find_unregistered_guild_members_some_unregistered(
         self, mock_discord, mock_discord_user
     ):
-        # Mock guild members returned by discord.get_members()
-        member1 = Mock(id=1)
-        member2 = Mock(id=2)
-        member3 = Mock(id=3)
+        # member2 is not registered, member3 is a bot and should be excluded
+        member1 = {"user": {"id": 1}}
+        member2 = {"user": {"id": 2}}
+        member3 = {"user": {"id": 3, "bot": True}}
         mock_discord.get_members.return_value = [member1, member2, member3]
         # Only member1 and member3 are registered
         mock_discord_user.objects.values_list.return_value = [1, 3]
@@ -87,8 +87,8 @@ class DiscordTests(TestCase):
     def test_find_unregistered_guild_members_all_registered(
         self, mock_discord, mock_discord_user
     ):
-        member1 = Mock(id=1)
-        member2 = Mock(id=2)
+        member1 = {"user": {"id": 1}}
+        member2 = {"user": {"id": 2, "bot": True}}
         mock_discord.get_members.return_value = [member1, member2]
         mock_discord_user.objects.values_list.return_value = [1, 2]
         result = find_unregistered_guild_members()
@@ -99,12 +99,14 @@ class DiscordTests(TestCase):
     def test_find_unregistered_guild_members_none_registered(
         self, mock_discord, mock_discord_user
     ):
-        member1 = Mock(id=1)
-        member2 = Mock(id=2)
-        mock_discord.get_members.return_value = [member1, member2]
+        member1 = {"user": {"id": 1}}
+        member2 = {"user": {"id": 2, "bot": True}}
+        member3 = {"user": {"id": 3}}
+        mock_discord.get_members.return_value = [member1, member2, member3]
         mock_discord_user.objects.values_list.return_value = []
         result = find_unregistered_guild_members()
-        self.assertEqual(result, [member1, member2])
+        # Only non-bots should be returned
+        self.assertEqual(result, [member1, member3])
 
     @patch("discord.helpers.DiscordUser")
     @patch("discord.helpers.discord")

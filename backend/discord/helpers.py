@@ -115,7 +115,8 @@ def find_unregistered_guild_members():
     guild_members = discord.get_members()
     registered_ids = set(DiscordUser.objects.values_list("id", flat=True))
     return [
-        member for member in guild_members if member.id not in registered_ids
+        member for member in guild_members
+        if not member['user'].get('bot') and int(member['user']['id']) not in registered_ids
     ]
 
 
