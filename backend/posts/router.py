@@ -16,17 +16,18 @@ from .models import EvePost, EveTag
 def extract_first_image_link(content: str) -> str:
     """
     Extract the first image link from markdown content.
-    
+
     Looks for patterns like ![image](https://example.com/image.png) and returns the URL.
     Returns an empty string if no image link is found.
     """
     # Pattern to match markdown image syntax: ![alt text](url)
-    pattern = r'!\[.*?\]\((https?://[^\s)]+)\)'
+    pattern = r"!\[.*?\]\((https?://[^\s)]+)\)"
     match = re.search(pattern, content)
-    
+
     if match:
         return match.group(1)
     return ""
+
 
 router = Router(tags=["Posts"])
 
@@ -106,7 +107,7 @@ def get_posts(
     for post in posts:
         # Extract the first image link from the content
         image_link = extract_first_image_link(post.content)
-        
+
         response.append(
             EvePostListResponse(
                 post_id=post.id,

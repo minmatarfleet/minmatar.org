@@ -6,9 +6,11 @@ from app.celery import app
 from discord.client import DiscordClient
 
 from .helpers import (
+    find_unregistered_guild_members,
     get_discord_user,
     get_expected_nickname,
     notify_technology_team,
+    remove_all_roles_from_guild_member,
 )
 from .models import DiscordRole, DiscordUser
 
@@ -26,6 +28,13 @@ def import_external_roles():
             continue
         if not Group.objects.filter(name=role["name"]).exists():
             Group.objects.create(name=role["name"])
+
+
+@app.task()
+def remove_roles_from_unregistered_guild_members():
+    unregistered_members = find_unregistered_guild_members()
+    for member in unregistered_members:
+        remove_all_roles_from_guild_member(member["user"]["id"])
 
 
 @app.task()
