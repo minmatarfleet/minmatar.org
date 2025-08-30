@@ -108,6 +108,17 @@ def notify_technology_team(location: str):
     )
 
 
+def find_unregistered_guild_members():
+    """
+    Get guild members from discord who do not have a discord user.
+    """
+    guild_members = discord.get_members()
+    registered_ids = set(DiscordUser.objects.values_list("id", flat=True))
+    return [
+        member for member in guild_members if member.id not in registered_ids
+    ]
+
+
 def remove_all_roles_from_guild_member(discord_user_id: int):
     """
     Removes all roles from a Discord user on the discord server.

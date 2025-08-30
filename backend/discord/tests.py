@@ -18,7 +18,10 @@ from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
-from discord.helpers import remove_all_roles_from_guild_member
+from discord.helpers import (
+    remove_all_roles_from_guild_member,
+    find_unregistered_guild_members,
+)
 
 from requests.exceptions import HTTPError
 
@@ -63,6 +66,55 @@ class DiscordTests(TestCase):
     """
     Django tests for Discord functionality.
     """
+
+    @patch("discord.helpers.DiscordUser")
+    @patch("discord.helpers.discord")
+    def test_find_unregistered_guild_members_some_unregistered(
+        self, mock_discord, mock_discord_user
+    ):
+        # Mock guild members returned by discord.get_members()
+        member1 = Mock(id=1)
+        member2 = Mock(id=2)
+        member3 = Mock(id=3)
+        mock_discord.get_members.return_value = [member1, member2, member3]
+        # Only member1 and member3 are registered
+        mock_discord_user.objects.values_list.return_value = [1, 3]
+        result = find_unregistered_guild_members()
+        self.assertEqual(result, [member2])
+
+    @patch("discord.helpers.DiscordUser")
+    @patch("discord.helpers.discord")
+    def test_find_unregistered_guild_members_all_registered(
+        self, mock_discord, mock_discord_user
+    ):
+        member1 = Mock(id=1)
+        member2 = Mock(id=2)
+        mock_discord.get_members.return_value = [member1, member2]
+        mock_discord_user.objects.values_list.return_value = [1, 2]
+        result = find_unregistered_guild_members()
+        self.assertEqual(result, [])
+
+    @patch("discord.helpers.DiscordUser")
+    @patch("discord.helpers.discord")
+    def test_find_unregistered_guild_members_none_registered(
+        self, mock_discord, mock_discord_user
+    ):
+        member1 = Mock(id=1)
+        member2 = Mock(id=2)
+        mock_discord.get_members.return_value = [member1, member2]
+        mock_discord_user.objects.values_list.return_value = []
+        result = find_unregistered_guild_members()
+        self.assertEqual(result, [member1, member2])
+
+    @patch("discord.helpers.DiscordUser")
+    @patch("discord.helpers.discord")
+    def test_find_unregistered_guild_members_empty_guild(
+        self, mock_discord, mock_discord_user
+    ):
+        mock_discord.get_members.return_value = []
+        mock_discord_user.objects.values_list.return_value = [1, 2]
+        result = find_unregistered_guild_members()
+        self.assertEqual(result, [])
 
     def disconnect_signals(self):
         signals.post_save.disconnect(
