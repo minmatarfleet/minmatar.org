@@ -34,7 +34,7 @@ def import_external_roles():
 def remove_roles_from_unregistered_guild_members():
     unregistered_members = find_unregistered_guild_members()
     for member in unregistered_members:
-        remove_all_roles_from_guild_member(member['user']['id'])
+        remove_all_roles_from_guild_member(member["user"]["id"])
 
 
 @app.task()
