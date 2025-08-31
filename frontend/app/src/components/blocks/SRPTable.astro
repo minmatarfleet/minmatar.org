@@ -31,7 +31,7 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
 
 <Flexblock 
     {...attributes}
-    class="[ w-full ]"
+    class="[ srp-table w-full ]"
     gap='var(--space-m)'
     id={fleet_title ? `srp-table-${fleet_id}` : 'srp-table'}
 >
@@ -74,3 +74,21 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
         </Grid>
     }
 </Flexblock>
+
+
+
+<style lang="scss">
+    .srp-table:not(:has(.srp-item:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
+    }
+</style>

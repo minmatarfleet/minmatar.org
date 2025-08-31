@@ -60,6 +60,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             this.srp_process_dialog_open = false
         },
     }`}
+    x-show={`srp_category_filter === null || srp_category_filter === '${srp.category}' || (srp_category_filter === 'uncategorized' && ${!srp.category})`}
 >
     <WrapperElement
         class={readonly ? '!cursor-default w-full' : 'w-full'}
@@ -180,6 +181,8 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <ClipboardButton id={`srp-dialog-copy-name-${srp.id}`}>{srp.primary_character_name}</ClipboardButton>
                         </FlexInline>
                     </Flexblock>
+                    
+                    {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
 
                     {srp.category &&
                         <Flexblock gap='var(--space-3xs)'>
@@ -194,8 +197,6 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <p id="srp-comments" class="[ srp-comments ]">{srp.comments}</p>
                         </Flexblock>
                     }
-                    
-                    {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
                 </Flexblock>
 
                 <FlexInline justification='space-between'>

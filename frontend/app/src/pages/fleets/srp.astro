@@ -22,9 +22,10 @@ const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_e
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
 import { get_user_character } from '@helpers/fetching/characters'
+import { srp_categories } from '@dtypes/api.minmatar.org'
 
 let fetch_srp_error:string | false = false
-let fleets_srps:FleetSRPUI[] | null = []
+let fleets_srps:FleetSRPUI[] = []
 let srps_count:number = 0
 let fleetless:boolean = false
 
@@ -65,6 +66,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import SRPButton from '@components/blocks/SRPButton.astro'
 import Button from '@components/blocks/Button.astro'
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
 
 const page_title = t('fleets.srp.page_title');
 ---
@@ -86,6 +88,7 @@ const page_title = t('fleets.srp.page_title');
         }}
         x-data={`{
             srps_count: ${srps_count},
+            srp_category_filter: null,
             update_srp_count() {
                 this.srps_count = document.querySelectorAll('.srp-item').length
             }
@@ -107,6 +110,28 @@ const page_title = t('fleets.srp.page_title');
                     {t('add_killmail')}
                 </Button>
             </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader">
+            <label>{t('categories')}</label>
+            {srp_categories.map(category =>
+                <UnstyledRadioCheckButton
+                    type='radio'
+                    name="srp_filter"
+                    x-model="srp_category_filter"
+                    label={t(category)}
+                    value={category}
+                    x-on:click={`console.log(srp_category_filter);srp_category_filter = (srp_category_filter === '${category}' ? null : '${category}')`}
+                />
+            )}
+            <UnstyledRadioCheckButton
+                type='radio'
+                name="srp_filter"
+                x-model="srp_category_filter"
+                label={t('uncategorized')}
+                value='uncategorized'
+                x-on:click={`console.log(srp_category_filter);srp_category_filter = (srp_category_filter === 'uncategorized' ? null : 'uncategorized')`}
+            />
         </FlexInline>
 
         <SRPButton
