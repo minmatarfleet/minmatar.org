@@ -1476,5 +1476,7 @@ export const ui = {
         'newsreel': 'Our newsreel and propaganda posters',
         'gallery_description': 'A collection of epic Reddit propaganda publications.',
         'zoomed_image': 'Zoomed image',
+        'uncategorized': 'Uncategorized',
+        'categories': 'Categories',
     },
 } as const;
