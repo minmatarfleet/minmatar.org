@@ -58,3 +58,21 @@ class EveFleetShipReimbursement(models.Model):
         indexes = [
             models.Index(fields=["status", "fleet", "user"]),
         ]
+
+
+class ShipReimbursementAmount(models.Model):
+    """
+    Stores the reimbursement values for destroyed ships.
+    """
+
+    kind_choices = (
+        ("class", "Ship Class"),
+        ("type", "Ship Type"),
+    )
+
+    kind = models.CharField(max_length=20, choices=kind_choices, null=False)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    srp_value = models.BigIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)

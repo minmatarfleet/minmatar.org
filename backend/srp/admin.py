@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import EveFleetShipReimbursement
+from .models import EveFleetShipReimbursement, ShipReimbursementAmount
 
 
 @admin.register(EveFleetShipReimbursement)
@@ -17,3 +17,17 @@ class SrpAdmin(admin.ModelAdmin):
     )
     search_fields = ("character_name", "ship_name", "killmail_id")
     list_filter = ["status"]
+
+
+@admin.register(ShipReimbursementAmount)
+class SrpValuesAdmin(admin.ModelAdmin):
+    """Admin page for SRP ship values"""
+
+    list_display = (
+        "id",
+        "kind",
+        "name",
+        "srp_value",
+    )
+    search_fields = ["name"]
+    list_filter = ["kind"]

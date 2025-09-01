@@ -14,7 +14,7 @@ from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from reminders.messages.rat_quotes import rat_quotes
 from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 
-from .models import EveFleetShipReimbursement
+from .models import EveFleetShipReimbursement, ShipReimbursementAmount
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +54,6 @@ def get_killmail_details(external_link: str, user: User):
         .get_character_killmail(killmail_id, killmail_hash)
         .results()
     )
-    # result = esi.client.Killmails.get_killmails_killmail_id_killmail_hash(
-    #     killmail_id=killmail_id, killmail_hash=killmail_hash
-    # ).result()
     character_id = result["victim"]["character_id"]
     ship_type_id = result["victim"]["ship_type_id"]
     ship_type = EsiClient(None).get_eve_type(ship_type_id)
@@ -85,6 +82,26 @@ def get_reimbursement_amount(ship: EveType):
     """
     Get the reimbursement amount for a ship
     """
+
+    # Lookup in the database by ship name first
+    db_val = (
+        ShipReimbursementAmount.objects.filter(kind="type")
+        .filter(name=ship.name)
+        .first()
+    )
+    if db_val:
+        return db_val.srp_value
+
+    # Next, lookup in the database by ship class
+    db_val = (
+        ShipReimbursementAmount.objects.filter(kind="class")
+        .filter(name=ship.eve_group.name)
+        .first()
+    )
+    if db_val:
+        return db_val.srp_value
+
+    # Fallback to the hard-coded values
     if ship.name in reimbursement_ship_lookup:
         return reimbursement_ship_lookup[ship.name]
     if ship.eve_group.name in reimbursement_class_lookup:

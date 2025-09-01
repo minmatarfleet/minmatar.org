@@ -13,7 +13,8 @@ from fleets.tests import (
     setup_fleet_reference_data,
     make_test_fleet,
 )
-from srp.models import EveFleetShipReimbursement
+from srp.models import EveFleetShipReimbursement, ShipReimbursementAmount
+from srp.helpers import get_reimbursement_amount
 
 BASE_URL = "/api/srp"
 
@@ -256,3 +257,40 @@ class SrpRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(403, response.status_code)
+
+    def test_srp_values_from_database(self):
+        ShipReimbursementAmount.objects.create(
+            kind="type",
+            name="Thrasher",
+            srp_value=12000000,
+        )
+        ShipReimbursementAmount.objects.create(
+            kind="class",
+            name="Cruiser",
+            srp_value=20000000,
+        )
+
+        thrasher = EveType(
+            name="Thrasher",
+            eve_group=EveGroup(
+                name="Destroyer",
+            ),
+        )
+        self.assertEqual(12000000, get_reimbursement_amount(thrasher))
+
+        stabber = EveType(
+            name="Stabber",
+            eve_group=EveGroup(
+                name="Cruiser",
+            ),
+        )
+        self.assertEqual(20000000, get_reimbursement_amount(stabber))
+
+        # Test fallback to hard-coded values
+        zirn = EveType(
+            name="Zirnitra",
+            eve_group=EveGroup(
+                name="Dreadnaught",
+            ),
+        )
+        self.assertEqual(4000000000, get_reimbursement_amount(zirn))
