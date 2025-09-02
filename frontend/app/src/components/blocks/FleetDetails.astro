@@ -13,6 +13,7 @@ interface Props {
     fleet_radar?:           FleetRadarUI[];
     fleet_srps?:            SRPUI[];
     saved_logs?:            FleetCombatLog[];
+    can_add_srp:            boolean;
 }
 
 const {
@@ -24,6 +25,7 @@ const {
     fleet_radar,
     fleet_srps,
     saved_logs = [],
+    can_add_srp,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -201,7 +203,12 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     </Flexblock>
 
     <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
-        <SRPTable fleet_id={fleet.id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_remove_fleet} />
+        <SRPTable
+            fleet_id={fleet.id}
+            fleet_srps={fleet_srps as SRPUI[]}
+            readonly={!can_remove_fleet}
+            can_add_srp={can_add_srp}
+        />
     </Wrapper>
 
     <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>

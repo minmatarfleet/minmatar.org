@@ -18,6 +18,8 @@ if (!user)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+
 import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { create_fleet_srp, update_fleet_srp } from '@helpers/api.minmatar.org/srp'
 import type { SRPStatus, EveCharacterProfile, SRPCategory } from '@dtypes/api.minmatar.org'
@@ -141,9 +143,20 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
     />
     :
     fleet_srps.length > 0 ?
-        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_view_srp} fleet_title={fleet_title} /> :
+        <SRPTable
+            fleet_id={fleet_id}
+            fleet_srps={fleet_srps as SRPUI[]}
+            readonly={!can_view_srp}
+            fleet_title={fleet_title}
+            can_add_srp={can_add_srp}
+        /> :
     fleet_srps.length === 0 ?
         fleet_id === 0 && <div id="srp-table-0" class="[ hidden ]" /> :
         !remove_table &&
-        <SRPTable fleet_id={fleet_id} fleet_srps={fleet_srps as SRPUI[]} readonly={!can_view_srp} />
+        <SRPTable
+            fleet_id={fleet_id}
+            fleet_srps={fleet_srps as SRPUI[]}
+            readonly={!can_view_srp}
+            can_add_srp={can_add_srp}
+        />
 }
