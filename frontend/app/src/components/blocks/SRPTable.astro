@@ -35,7 +35,7 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
 
 <Flexblock 
     {...attributes}
-    class="[ srp-table w-full ]"
+    class:list={[ 'srp-table w-full', { 'filterable': filterable } ]}
     gap='var(--space-m)'
     id={fleet_title ? `srp-table-${fleet_id}` : 'srp-table'}
 >
@@ -84,10 +84,8 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
     }
 </Flexblock>
 
-
-
 <style lang="scss">
-    .srp-table:not(:has(.srp-item:not([style="display: none;"]))) {
+    .srp-table.filterable:not(:has(.srp-item:not([style="display: none;"]))) {
         border: 0;
         clip: rect(0 0 0 0);
         height: auto;
