@@ -10,6 +10,7 @@ interface Props {
     readonly:           boolean;
     fleet_title?:       boolean;
     can_add_srp:        boolean;
+    filterable?:        boolean;
     [propName: string]: any;
 }
 
@@ -19,6 +20,7 @@ const {
     readonly,
     fleet_title = false,
     can_add_srp,
+    filterable = false,
     ...attributes
 } = Astro.props
 
@@ -53,7 +55,11 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
             </Flexblock>
         </FlexInline>
         {!fleet_title && can_add_srp &&
-            <SRPButton fleet_id={fleet_id} target={fleet_title ? `#srp-table-${fleet_id}` : undefined} />
+            <SRPButton
+                fleet_id={fleet_id}
+                target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
+                filterable={filterable}
+            />
         }
     </FlexInline>
     {fleet_srps.length > 0 &&
@@ -71,6 +77,7 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
                     target={fleet_title ? `#srp-table-${fleet_id}` : undefined}
                     remove_table={fleet_title ? true : undefined}
                     fleet_title={fleet_title}
+                    filterable={filterable}
                 />
             )}
         </Grid>
