@@ -15,7 +15,7 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_srp = (user !== false)
+const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 
 import type { FleetItem, Alert } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
