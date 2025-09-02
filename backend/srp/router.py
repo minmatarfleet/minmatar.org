@@ -204,26 +204,27 @@ def get_fleet_srp(
 
     response = []
     for reimbursement in reimbursements:
-        response.append(
-            {
-                "id": reimbursement.id,
-                "fleet_id": reimbursement.fleet_id,
-                "external_killmail_link": reimbursement.external_killmail_link,
-                "status": reimbursement.status,
-                "character_id": reimbursement.character_id,
-                "character_name": reimbursement.character_name,
-                "primary_character_id": reimbursement.primary_character_id,
-                "primary_character_name": reimbursement.primary_character_name,
-                "ship_type_id": reimbursement.ship_type_id,
-                "ship_name": reimbursement.ship_name,
-                "killmail_id": reimbursement.killmail_id,
-                "amount": reimbursement.amount,
-                "is_corp_ship": reimbursement.is_corp_ship,
-                "corp_id": reimbursement.corp_id,
-                "category": reimbursement.category,
-                "comments": reimbursement.comments,
-            }
-        )
+        if can_update(request.user, reimbursement):
+            response.append(
+                {
+                    "id": reimbursement.id,
+                    "fleet_id": reimbursement.fleet_id,
+                    "external_killmail_link": reimbursement.external_killmail_link,
+                    "status": reimbursement.status,
+                    "character_id": reimbursement.character_id,
+                    "character_name": reimbursement.character_name,
+                    "primary_character_id": reimbursement.primary_character_id,
+                    "primary_character_name": reimbursement.primary_character_name,
+                    "ship_type_id": reimbursement.ship_type_id,
+                    "ship_name": reimbursement.ship_name,
+                    "killmail_id": reimbursement.killmail_id,
+                    "amount": reimbursement.amount,
+                    "is_corp_ship": reimbursement.is_corp_ship,
+                    "corp_id": reimbursement.corp_id,
+                    "category": reimbursement.category,
+                    "comments": reimbursement.comments,
+                }
+            )
 
     return response
 
