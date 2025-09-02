@@ -151,6 +151,7 @@ const page_title = t('fleets.srp.page_title');
                 size='lg'
                 fleet_title={true}
                 hidden={true}
+                filterable={true}
             />
         }
         
@@ -177,6 +178,7 @@ const page_title = t('fleets.srp.page_title');
                         readonly={!can_view_all_srp}
                         fleet_title={true}
                         can_add_srp={false}
+                        filterable={true}
                     />
                 )}
                 {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}

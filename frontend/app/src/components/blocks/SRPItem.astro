@@ -10,6 +10,7 @@ interface Props {
     target?:        string;
     remove_table?:  boolean;
     fleet_title?:   boolean;
+    filterable:     boolean;
 }
 
 const {
@@ -18,11 +19,17 @@ const {
     target = '#srp-table',
     remove_table = false,
     fleet_title = false,
+    filterable,
 } = Astro.props
 
 import { number_name } from '@helpers/numbers.ts';
 import { query_string } from '@helpers/string';
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
+
+const options = query_string({
+    filterable: filterable,
+})
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
 
 const WrapperElement = readonly ? 'div' : StylessButton
 
@@ -60,7 +67,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             this.srp_process_dialog_open = false
         },
     }`}
-    x-show={`srp_category_filter === null || srp_category_filter === '${srp.category}' || (srp_category_filter === 'uncategorized' && ${!srp.category})`}
+    x-show={filterable ? `srp_category_filter === null || srp_category_filter === '${srp.category}' || (srp_category_filter === 'uncategorized' && ${!srp.category})` : undefined}
 >
     <WrapperElement
         class={readonly ? '!cursor-default w-full' : 'w-full'}

@@ -13,6 +13,7 @@ interface Props {
     fleet_title?:   boolean;
     hidden?:        boolean;
     id?:            string;
+    filterable?:    boolean;
 }
 
 const {
@@ -23,9 +24,19 @@ const {
     fleet_title = false,
     hidden = false,
     id,
+    filterable = false,
 } = Astro.props
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}&fleet_title=${JSON.stringify(fleet_title)}`
+import { query_string } from '@helpers/string';
+
+const options = query_string({
+    fleet_id: fleet_id,
+    remove_table: remove_table,
+    fleet_title: fleet_title,
+    filterable: filterable,
+})
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';

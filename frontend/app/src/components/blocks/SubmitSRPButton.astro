@@ -14,7 +14,14 @@ const {
     remove_table = false,
 } = Astro.props
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?fleet_id=${fleet_id}&remove_table=${JSON.stringify(remove_table)}`
+import { query_string } from '@helpers/string';
+
+const options = query_string({
+    fleet_id: fleet_id,
+    remove_table: remove_table,
+})
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
 const DIALOG_SRP_PARTIAL_URL = translatePath('/partials/dialog_srp_submit')
 
 import Button from '@components/blocks/Button.astro';
