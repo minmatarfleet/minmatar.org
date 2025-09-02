@@ -202,14 +202,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         }
     </Flexblock>
 
-    <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
-        <SRPTable
-            fleet_id={fleet.id}
-            fleet_srps={fleet_srps as SRPUI[]}
-            readonly={!can_remove_fleet}
-            can_add_srp={can_add_srp}
-        />
-    </Wrapper>
+    {can_add_srp &&
+        <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
+            <SRPTable
+                fleet_id={fleet.id}
+                fleet_srps={fleet_srps as SRPUI[]}
+                readonly={!can_remove_fleet}
+                can_add_srp={can_add_srp}
+            />
+        </Wrapper>
+    }
 
     <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
         <FleetCombatLogTable saved_logs={saved_logs} fleet_id={fleet.id} />

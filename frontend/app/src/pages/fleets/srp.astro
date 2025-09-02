@@ -26,7 +26,6 @@ if (!can_view_srp)
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
-import { get_user_character } from '@helpers/fetching/characters'
 import { srp_categories } from '@dtypes/api.minmatar.org'
 
 let fetch_srp_error:string | false = false
@@ -37,20 +36,6 @@ let fleetless:boolean = false
 try {
     fleets_srps = await fetch_srps(auth_token as string)
     fleetless = fleets_srps.find(srp => srp.fleet_id === 0) !== undefined
-
-    if (!can_view_all_srp) {
-        const user_character = await get_user_character(user.user_id)
-
-        fleets_srps = fleets_srps.map(fleet_srps => {
-            return {
-                fleet_id: fleet_srps.fleet_id,
-                srps: fleet_srps.srps.filter(srp => srp.primary_character_id === user_character?.character_id)
-            } as FleetSRPUI
-        })
-
-        fleets_srps = fleets_srps.filter(fleet_srps => fleet_srps.srps.length > 0)
-    }
-
     srps_count = fleets_srps.reduce((c, v) => c + v.srps.length, 0)
 } catch (error) {
     fetch_srp_error = prod_error_messages() ? t('fetch_srp_error') : error.message
