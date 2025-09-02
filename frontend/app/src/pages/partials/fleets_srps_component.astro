@@ -18,6 +18,7 @@ if (!user)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
 const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
@@ -73,7 +74,13 @@ import SRPTable from '@components/blocks/SRPTable.astro';
     <div x-data={`{ srps_count: ${srps_count} }`} x-init="el.remove()"></div>
     <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
         {fleets_srps.map(fleet_srps =>
-            <SRPTable fleet_id={fleet_srps.fleet_id ?? 0} fleet_srps={fleet_srps.srps} readonly={!can_view_all_srp} fleet_title={true} />
+            <SRPTable
+                fleet_id={fleet_srps.fleet_id ?? 0}
+                fleet_srps={fleet_srps.srps}
+                readonly={!can_view_all_srp}
+                fleet_title={true}
+                can_add_srp={can_add_srp}
+            />
         )}
         {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}
     </Flexblock>

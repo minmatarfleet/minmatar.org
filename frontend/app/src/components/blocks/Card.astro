@@ -23,8 +23,8 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
         <Wrapper
             class="[ card-header ]"
-            padding_block="var(--space-2xs)"
-            padding_inline="var(--space-2xs)"
+            padding_block='0'
+            padding_inline='0'
         >
             <slot name="header" />
         </Wrapper>
@@ -56,8 +56,8 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
         .card-header {
             position: absolute;
-            top: var(--space-3xs);
-            left: var(--space-3xs);
+            top: var(--space-2xs);
+            left: var(--space-2xs);
         }
 
         .card-actions {

@@ -17,7 +17,12 @@ if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redir
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
+const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
 const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+
+if (!can_view_srp)
+    return HTTP_403_Forbidden()
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
@@ -105,11 +110,13 @@ const page_title = t('fleets.srp.page_title');
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
-                <Button color='green' x-on:click="document.getElementById('submit-srp-button').click()">
-                    {t('add_killmail')}
-                </Button>
-            </FlexInline>
+            {can_add_srp &&
+                <FlexInline>
+                    <Button color='green' x-on:click="document.getElementById('submit-srp-button').click()">
+                        {t('add_killmail')}
+                    </Button>
+                </FlexInline>
+            }
         </FlexInline>
 
         {can_view_all_srp &&
@@ -122,7 +129,7 @@ const page_title = t('fleets.srp.page_title');
                         x-model="srp_category_filter"
                         label={t(category)}
                         value={category}
-                        x-on:click={`console.log(srp_category_filter);srp_category_filter = (srp_category_filter === '${category}' ? null : '${category}')`}
+                        x-on:click={`srp_category_filter = (srp_category_filter === '${category}' ? null : '${category}')`}
                     />
                 )}
                 <UnstyledRadioCheckButton
@@ -131,19 +138,21 @@ const page_title = t('fleets.srp.page_title');
                     x-model="srp_category_filter"
                     label={t('uncategorized')}
                     value='uncategorized'
-                    x-on:click={`console.log(srp_category_filter);srp_category_filter = (srp_category_filter === 'uncategorized' ? null : 'uncategorized')`}
+                    x-on:click={`srp_category_filter = (srp_category_filter === 'uncategorized' ? null : 'uncategorized')`}
                 />
             </FlexInline>
         }
 
-        <SRPButton
-            id='submit-srp-button'
-            fleet_id={0}
-            target='#srp-table-0'
-            size='lg'
-            fleet_title={true}
-            hidden={true}
-        />
+        {can_add_srp &&
+            <SRPButton
+                id='submit-srp-button'
+                fleet_id={0}
+                target='#srp-table-0'
+                size='lg'
+                fleet_title={true}
+                hidden={true}
+            />
+        }
         
         {fetch_srp_error ?
             <ErrorRefetch
@@ -167,6 +176,7 @@ const page_title = t('fleets.srp.page_title');
                         fleet_srps={fleet_srps.srps}
                         readonly={!can_view_all_srp}
                         fleet_title={true}
+                        can_add_srp={false}
                     />
                 )}
                 {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}

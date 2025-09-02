@@ -17,6 +17,8 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
@@ -126,6 +128,7 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 can_remove_fleet={can_remove_fleet}
                 fleet_srps={fleet_srps}
                 saved_logs={saved_logs}
+                can_add_srp={can_add_srp}
             />
         }
     </PageDefault>
