@@ -598,6 +598,11 @@ export interface ShipInfo {
     meta:    ShipsMetaType;
 }
 
+export interface ShipType {
+    ship_id:    number;
+    type:       string;
+}
+
 export interface ShipDNA {
     model:  string;
     skin:   string;
@@ -955,6 +960,7 @@ export interface SRPUI {
     corporation_name:           string;
     comments:                   string;
     category:                   SRPCategory;
+    ship_type:                  string;
 }
 
 export interface FleetSRPUI {

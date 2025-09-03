@@ -24,14 +24,18 @@ if (!can_view_srp)
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
+import { srp_categories } from '@dtypes/api.minmatar.org'
 
 let fetch_srp_error:string | false = false
 let fleets_srps:FleetSRPUI[] | null = []
 let srps_count:number = 0
 let fleetless:boolean = false
+let ship_types:string[] = []
 
 try {
-    fleets_srps = await fetch_srps(auth_token as string)
+    const fleets_srps_data = await fetch_srps(auth_token as string)
+    ship_types = fleets_srps_data.ship_types
+    fleets_srps = fleets_srps_data.fleets_srps
     fleetless = fleets_srps.find(srp => srp.fleet_id === 0) !== undefined
     srps_count = fleets_srps.reduce((c, v) => c + v.srps.length, 0)
 } catch (error) {
@@ -46,6 +50,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
+import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro';
 ---
         
 {fetch_srp_error ?
@@ -57,7 +62,10 @@ import SRPTable from '@components/blocks/SRPTable.astro';
         }}
     />
     :
-    <div x-data={`{ srps_count: ${srps_count} }`} x-init="el.remove()"></div>
+    <div x-data={`{ srps_count: ${srps_count} }`} x-init="$el.remove()"></div>
+
+    <SRPFiltersSwiper ship_types={ship_types} />
+
     <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
         {fleets_srps.map(fleet_srps =>
             <SRPTable

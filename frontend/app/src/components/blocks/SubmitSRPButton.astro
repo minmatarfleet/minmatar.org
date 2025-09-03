@@ -21,7 +21,7 @@ const options = query_string({
     remove_table: remove_table,
 })
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?${options}`
 const DIALOG_SRP_PARTIAL_URL = translatePath('/partials/dialog_srp_submit')
 
 import Button from '@components/blocks/Button.astro';

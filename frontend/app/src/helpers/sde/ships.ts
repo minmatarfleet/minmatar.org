@@ -1,8 +1,8 @@
 import { sde_db } from '@helpers/sde_db';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, and, or, sql, inArray } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
-import type { ShipFittingCapabilities, ShipInfo, ShipDNA } from '@dtypes/layout_components'
+import type { ShipFittingCapabilities, ShipInfo, ShipDNA, ShipType } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
     console.log(`Requesting: sde_db.get_ship_fitting_capabilities(${ship_name})`)
@@ -127,4 +127,28 @@ export async function get_ship_graphics(ship_id:number) {
         } as ShipDNA
     } else
         return null
+}
+
+export async function get_ships_type(ships_id:number[]) {
+    // console.log(`Requesting: sde_db.get_ship_info(${ship_id})`)
+
+    const q = await sde_db.select({
+        typeID: schema.invTypes.typeID,
+        groupName: schema.invGroups.groupName,
+    })
+    .from(schema.invGroups)
+    .innerJoin(
+        schema.invTypes,
+        eq(schema.invGroups.groupID, schema.invTypes.groupID),
+    )
+    .where(
+        inArray(schema.invTypes.typeID, ships_id),
+    )
+
+    return q.map(i => {
+        return {
+            ship_id: i.typeID,
+            type: i.groupName,
+        } as ShipType
+    })
 }
