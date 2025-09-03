@@ -36,7 +36,7 @@ const options = query_string({
     filterable: filterable,
 })
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?${options}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';

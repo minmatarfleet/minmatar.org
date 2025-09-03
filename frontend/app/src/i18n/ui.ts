@@ -1478,5 +1478,6 @@ export const ui = {
         'zoomed_image': 'Zoomed image',
         'uncategorized': 'Uncategorized',
         'categories': 'Categories',
+        'unknown_ship': 'Unknown ship',
     },
 } as const;

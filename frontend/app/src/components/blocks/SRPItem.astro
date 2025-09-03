@@ -25,11 +25,7 @@ const {
 import { number_name } from '@helpers/numbers.ts';
 import { query_string } from '@helpers/string';
 
-const options = query_string({
-    filterable: filterable,
-})
-
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
 
 const WrapperElement = readonly ? 'div' : StylessButton
 
@@ -60,6 +56,12 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
     x-data={`{
         srp_process_dialog_open: false,
         action: 'approve',
+        show() {
+            const show_by_category = srp_category_filter.length === 0 || srp_category_filter.includes('${srp.category}') || (srp_category_filter.includes('uncategorized') && ${!srp.category})
+            const show_by_type = srp_ship_type_filter.length === 0 || srp_ship_type_filter.includes('${srp.ship_type}')
+
+            return show_by_category && show_by_type
+        },
         open_dialog() {
             this.srp_process_dialog_open = true
         },
@@ -67,7 +69,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             this.srp_process_dialog_open = false
         },
     }`}
-    x-show={filterable ? `srp_category_filter === null || srp_category_filter === '${srp.category}' || (srp_category_filter === 'uncategorized' && ${!srp.category})` : undefined}
+    x-show={filterable ? 'show()' : undefined}
 >
     <WrapperElement
         class={readonly ? '!cursor-default w-full' : 'w-full'}
@@ -105,6 +107,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                                         reimbursement_id : JSON.stringify(srp.id),
                                         remove_table: JSON.stringify(remove_table),
                                         fleet_title: JSON.stringify(fleet_title),
+                                        filterable: JSON.stringify(filterable),
                                         status: 'withdrawn',
                                     })}',
                                     target: '${target}',
@@ -219,6 +222,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                                 reimbursement_id : JSON.stringify(srp.id),
                                 remove_table: JSON.stringify(remove_table),
                                 fleet_title: JSON.stringify(fleet_title),
+                                filterable: JSON.stringify(filterable),
                                 status: 'approved'
                             })}`}
                             hx-target={target}
@@ -237,6 +241,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                                 reimbursement_id : JSON.stringify(srp.id),
                                 remove_table: JSON.stringify(remove_table),
                                 fleet_title: JSON.stringify(fleet_title),
+                                filterable: JSON.stringify(filterable),
                                 status: 'rejected'
                             })}`}
                             hx-target={target}

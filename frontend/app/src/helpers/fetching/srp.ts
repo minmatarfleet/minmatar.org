@@ -5,17 +5,26 @@ import type { SRPUI, FleetSRPUI } from '@dtypes/layout_components'
 import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 import type { SRP, SRPStatus } from '@dtypes/api.minmatar.org'
 import { get_fleet_srp } from '@helpers/api.minmatar.org/srp'
-import { unique_values } from '@helpers/array'
+import { unique_values, get_unique_by_key } from '@helpers/array'
+import { get_ships_type } from '@helpers/sde/ships'
 
 export async function fetch_srps(access_token:string, status:SRPStatus = 'pending') {
     let api_fleet_srps:SRP[]
 
     const api_corporations = await get_all_corporations('alliance')
     const CORP_NAMES = {}
+    const ship_types = {}
     api_corporations.map(api_corporation => CORP_NAMES[api_corporation.corporation_id] = api_corporation.corporation_name)
 
     api_fleet_srps = await get_fleet_srp(access_token, { status: status})
     const fleet_ids = unique_values(api_fleet_srps.map(srp => srp.fleet_id))
+    
+    const ships_id = api_fleet_srps.flatMap(api_fleet_srp => api_fleet_srp.ship_type_id)
+    const ship_class = await get_ships_type(ships_id)
+    ship_class.map(i => {
+        ship_types[i.ship_id] = i.type
+    })
+
     const fleets_srps = fleet_ids.map(fleet_id => {
         const srps = api_fleet_srps.filter(srp => srp.fleet_id === fleet_id).map(api_srp => {
             return {
@@ -36,6 +45,7 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
                 corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation',
                 category: api_srp.category,
                 comments: api_srp.comments ?? '',
+                ship_type: ship_types[api_srp.ship_type_id] ?? t('unknown_ship'),
             } as SRPUI
         })
 
@@ -45,7 +55,10 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
         } as FleetSRPUI
     })
 
-    return fleets_srps.sort((a, b) => a.fleet_id - b.fleet_id)
+    return {
+        ship_types: get_unique_by_key(ship_class, 'type').map(i => i.type).sort(),
+        fleets_srps: fleets_srps.sort((a, b) => a.fleet_id - b.fleet_id)
+    }
 }
 
 export async function fetch_fleet_srps(access_token:string, fleet_id?: number, status:SRPStatus = 'pending') {

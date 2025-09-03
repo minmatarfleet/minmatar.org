@@ -122,6 +122,7 @@ try {
 const can_view_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement') || is_fleet_commander
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
 const filterable = JSON.parse(Astro.url.searchParams.get('filterable') ?? 'false')
 
 import { query_string } from '@helpers/string';
@@ -133,7 +134,7 @@ const options = query_string({
     filterable: filterable,
 })
 
-const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?=${options}`
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?${options}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';

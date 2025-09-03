@@ -1,0 +1,133 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { srp_categories } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    ship_types: string[];
+}
+
+const {
+    ship_types,
+} = Astro.props
+
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+---
+
+<div 
+    hx-swap-oob="true"
+    id="srp-filters"
+>
+    <div
+        class="[ swiper w-full ]"
+        x-data={`{
+            swiper: null,
+            init() {
+                this.swiper = new Swiper($el, {
+                    slidesPerView: "auto",
+                    spaceBetween: 24,
+                    loop: false,
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                });
+            }
+        }`}
+    >
+        <div class="swiper-wrapper">
+            <div class="[ swiper-slide ]" style="margin-right: 24px">
+                <label>{t('categories')}</label>
+            </div>
+            {srp_categories.map(category =>
+                <div class="[ swiper-slide ]" style="margin-right: 24px">
+                    <UnstyledRadioCheckButton
+                        type='checkbox'
+                        name="srp_filter"
+                        x-model="srp_category_filter"
+                        label={t(category)}
+                        value={category}
+                    />
+                </div>
+            )}
+
+            <div class="[ swiper-slide ]" style="margin-right: 24px">
+                <UnstyledRadioCheckButton
+                    type='checkbox'
+                    name="srp_filter"
+                    x-model="srp_category_filter"
+                    label={t('uncategorized')}
+                    value='uncategorized'
+                />
+            </div>
+            {ship_types.length > 0 &&
+                <div class="[ swiper-slide ]" style="margin-right: 24px">
+                    <label>{t('ship_type')}</label>    
+                </div>
+            }
+            {ship_types.map(type =>
+                <div class="[ swiper-slide ]" style="margin-right: 24px">
+                    <UnstyledRadioCheckButton
+                        type='checkbox'
+                        name="srp_ship_type_filter"
+                        x-model="srp_ship_type_filter"
+                        label={type}
+                        value={type}
+                    />
+                </div>
+            )}
+        </div>
+    </div>
+
+    <div class="[ swiper-button-prev ]"></div>
+    <div class="[ swiper-button-next ]"></div>
+</div>
+
+<style lang="scss">
+    #srp-filters {
+        position: relative;
+        width: 100%;
+    }
+
+    .swiper-slide {
+        width: auto;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -32px;
+        --swiper-navigation-size: 22px;
+        --swiper-navigation-top-offset: 32px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+</style>
