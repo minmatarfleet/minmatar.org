@@ -14,6 +14,7 @@ from srp.helpers import (
     CharacterDoesNotExist,
     PrimaryCharacterDoesNotExist,
     UserCharacterMismatch,
+    InvalidKillmailLink,
     get_killmail_details,
     get_reimbursement_amount,
     is_valid_for_reimbursement,
@@ -86,12 +87,17 @@ class SrpPatchResult(BaseModel):
     description="Request SRP for a fleet, must be a member of the fleet",
 )
 def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
-    logger.info("Creating SRP for %s", request.user.username)
+    logger.info(
+        "Creating SRP request for %s, %s",
+        request.user.username,
+        payload.external_killmail_link,
+    )
 
     if payload.fleet_id:
         fleet = EveFleet.objects.get(id=payload.fleet_id)
     else:
         fleet = None
+
     try:
         details = get_killmail_details(
             payload.external_killmail_link, request.user
@@ -102,9 +108,16 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         return 404, {"detail": str(e)}
     except UserCharacterMismatch:
         return 403, {"detail": "Character does not belong to user"}
+    except InvalidKillmailLink:
+        return 400, ErrorResponse.log(
+            "Killmail link not valid",
+            f"Bad killmail link: '{payload.external_killmail_link}'",
+        )
     except Exception as e:
-        logger.error("Error parsing killmail: %s", e)
-        return 400, {"detail": "Unexpected error processing killmail"}
+        return 400, ErrorResponse.log(
+            "Unexpected error processing killmail",
+            f"Error parsing killmail: user={request.user} killmail={payload.external_killmail_link} error={e}",
+        )
 
     if duplicate_kill(details):
         return 400, {"detail": "SRP already exists for this killmail"}
