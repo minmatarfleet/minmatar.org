@@ -142,10 +142,12 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     </Select>
                 </Flexblock>
 
-                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                    <label for="srp-comments">{t('comments')}</label>
-                    <Textarea rows="2" id="srp-comments" x-model="comments" name="comments" />
-                </Flexblock>
+                {fleet_id === 0 &&
+                    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                        <label for="srp-comments">{t('comments')}</label>
+                        <Textarea rows="2" id="srp-comments" x-model="comments" name="comments" />
+                    </Flexblock>
+                }
                 
                 <SwitchSquare
                     class="[ w-full ]"
