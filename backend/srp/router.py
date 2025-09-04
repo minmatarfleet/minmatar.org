@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from ninja import Router
 from pydantic import BaseModel
 
-from app.errors import ErrorResponse, create_error_id
+from app.errors import ErrorResponse
 from authentication import AuthBearer
 from fleets.models import EveFleet
 from srp.helpers import (
