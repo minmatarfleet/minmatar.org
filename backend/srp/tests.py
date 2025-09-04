@@ -294,3 +294,20 @@ class SrpRouterTestCase(TestCase):
             ),
         )
         self.assertEqual(4000000000, get_reimbursement_amount(zirn))
+
+    def test_invalid_killmail_link(self):
+        data = {
+            "external_killmail_link": "This won't work",
+            "is_corp_ship": False,
+            "category": "dps",
+            "comments": "Testing FTW",
+        }
+        response = self.client.post(
+            f"{BASE_URL}",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("Killmail link not valid", response.json()["detail"])

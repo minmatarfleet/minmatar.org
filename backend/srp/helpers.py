@@ -42,13 +42,20 @@ class UserCharacterMismatch(Exception):
     pass
 
 
+class InvalidKillmailLink(Exception):
+    pass
+
+
 def get_killmail_details(external_link: str, user: User):
     """
     Get details of a killmail
     """
     # https://esi.evetech.net/v1/killmails/122700189/95c87afb0ce8399e0c2d9b3d7a51936ea722d491/?datasource=tranquility
-    killmail_id = external_link.split("/")[5]
-    killmail_hash = external_link.split("/")[6]
+    link_parts = external_link.split("/")
+    if len(link_parts) < 6:
+        raise InvalidKillmailLink()
+    killmail_id = link_parts[5]
+    killmail_hash = link_parts[6]
     result = (
         EsiClient(None)
         .get_character_killmail(killmail_id, killmail_hash)
