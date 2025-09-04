@@ -1171,7 +1171,6 @@ export const ui = {
         'external_killmail_link': 'External killmail link',
         'submit_srp_error': 'An error occurred while submitting the SRP.',
         'add_killmail': 'Add killmail',
-        'invalid_srp_url': 'The SRP link entered is not valid.',
         'srp_submit_success': 'The killmail has been attached to the fleet SRP.',
         'paste_above_tutorial_string': 'Click here for more information on how to obtain the value to paste above',
         'ship_replacement_program': 'Ship Replacement Program',
@@ -1479,5 +1478,6 @@ export const ui = {
         'uncategorized': 'Uncategorized',
         'categories': 'Categories',
         'unknown_ship': 'Unknown ship',
+        'invalid_killmail_link': 'The killmail link entered is not valid.',
     },
 } as const;
