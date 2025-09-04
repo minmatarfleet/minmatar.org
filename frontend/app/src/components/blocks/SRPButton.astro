@@ -80,7 +80,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     this.external_killmail_link = ''
                     this.is_corp_ship = false
                 })
-            }
+            },
         }`}
         x-on:submit="close_dialog(); clear_form()"
     >
@@ -92,7 +92,25 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                 
                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                     <label for="srp-url">{t('external_killmail_link')}</label>
-                    <Input id="srp-url" x-model="external_killmail_link" name="external_killmail_link" type="text" autocomplete="off" required />
+                    <Input
+                        id="srp-url"
+                        x-model="external_killmail_link"
+                        name="external_killmail_link"
+                        type="text"
+                        autocomplete="off"
+                        required
+                        x-data={`{
+                            update_validity() {
+                                if (!external_killmail_link) return
+
+                                if (!external_killmail_link.trim().startsWith('https://esi.evetech.net/v1/killmails/'))
+                                    $el.setCustomValidity('${t('invalid_killmail_link')}')
+                                else
+                                    $el.setCustomValidity('')
+                            }
+                        }`}
+                        x-on:input="update_validity()"
+                    />
 
                     <CollapsibleBlock padding_inline='0'>
                         <FixedFluid

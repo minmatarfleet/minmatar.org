@@ -54,8 +54,8 @@ if (Astro.request.method === "POST") {
         if (!srp_categories.includes(category))
             throw new Error(t('invalid_srp_category'))
 
-        if (!is_valid_http_url(external_killmail_link))
-            throw new Error(t('invalid_srp_url'))
+        if (!external_killmail_link.trim().startsWith('https://esi.evetech.net/v1/killmails/'))
+            throw new Error(t('invalid_killmail_link'))
 
         await create_fleet_srp(auth_token as string, {
             fleet_id: fleet_id,
