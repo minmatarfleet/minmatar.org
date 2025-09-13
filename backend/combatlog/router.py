@@ -7,6 +7,7 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
+from django.contrib.auth.models import User
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from fleets.models import EveFleet
@@ -130,7 +131,7 @@ def query_saved_logs(request, user_id: int = None, fleet_id: int = None):
 
     results = []
     for record in combat_logs:
-        if not can_view(record, user_id, fc_id):
+        if not can_view(record, user_id, fc_id, request.user):
             continue
 
         summary = LogSummary(
@@ -169,7 +170,7 @@ def get_saved_log(request, log_id: int):
         else:
             fc_id = None
 
-        if not can_view(db_log, request.user.id, fc_id):
+        if not can_view(db_log, request.user.id, fc_id, request.user):
             return 403, ErrorResponse(
                 detail="Not authorised to see this combat log"
             )
@@ -227,7 +228,11 @@ def set_ids(analysis, db_rec):
         analysis.fleet_id = db_rec.fleet_id
 
 
-def can_view(combat_log: CombatLog, user_id: int, fc_id: int) -> bool:
+def can_view(
+    combat_log: CombatLog, user_id: int, fc_id: int, current_user: User | None
+) -> bool:
+    if is_srp_admin(current_user):
+        return True
     if combat_log.created_by is None:
         return False
     if user_id is None and fc_id is None:
@@ -237,3 +242,9 @@ def can_view(combat_log: CombatLog, user_id: int, fc_id: int) -> bool:
     if user_id == fc_id:
         return True
     return False
+
+
+def is_srp_admin(current_user):
+    return current_user and current_user.has_perm(
+        "srp.change_evefleetshipreimbursement"
+    )
