@@ -28,7 +28,9 @@ import { srp_categories } from '@dtypes/api.minmatar.org'
 import type { SRPUI, Alert, FleetUI } from '@dtypes/layout_components'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
-import { is_valid_http_url } from '@helpers/string';
+import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
+import { b64_to_Uint8Array } from '@helpers/string'
+import type { CombatLogAnalysis } from '@dtypes/layout_components'
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
@@ -50,6 +52,8 @@ if (Astro.request.method === "POST") {
         const is_corp_ship = data.get('is_corp_ship') === 'on'
         const category = data.get('category') as SRPCategory
         const comments = (data.get('comments') ?? '') as string
+        const base64_gziped_combatlog = data.get("gziped_combatlog")?.valueOf()
+        const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 
         if (!srp_categories.includes(category))
             throw new Error(t('invalid_srp_category'))
@@ -57,8 +61,17 @@ if (Astro.request.method === "POST") {
         if (!external_killmail_link.trim().startsWith('https://esi.evetech.net/v1/killmails/'))
             throw new Error(t('invalid_killmail_link'))
 
+        let combat_log_analysis:CombatLogAnalysis | null = null
+        if (gziped_combatlog) {
+            combat_log_analysis = await fetch_combatlog_analysis(gziped_combatlog, true, {
+                access_token: auth_token as string,
+                fleet_id: fleet_id
+            })
+        }
+
         await create_fleet_srp(auth_token as string, {
             fleet_id: fleet_id,
+            combatlog_id: combat_log_analysis?.id,
             external_killmail_link: external_killmail_link,
             is_corp_ship: is_corp_ship,
             category: category,

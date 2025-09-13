@@ -51,6 +51,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import Markdown from './Markdown.astro'
 ---
 
 <div
@@ -206,7 +207,16 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                                     id="combat_log_file"
                                     x-on:change="update_status($el)"
                                 />
-                                <small>{t('combat_log_file_text')}</small>
+                                <FixedFluid
+                                    width='48'
+                                    breakpoint='70%'
+                                    class="[ w-full items-center ]"
+                                >
+                                    <picture class="[ hidden sm:block ]">
+                                        <TutorialIcon />
+                                    </picture>
+                                    <Markdown markdown={t('combat_log_file_text')} inline={true} inline_element='small' />
+                                </FixedFluid>
                             </Flexblock>
                             <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
                         </BlockList>

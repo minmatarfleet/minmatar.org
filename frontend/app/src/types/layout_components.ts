@@ -840,6 +840,7 @@ export interface PostUI {
 }
 
 export interface CombatLogAnalysis {
+    id:                     number;
     logged_events:          number;
     damage_done:            number;
     damage_taken:           number;
@@ -945,6 +946,7 @@ import type { SRPStatus, SRPCategory } from '@dtypes/api.minmatar.org'
 export interface SRPUI {
     id:                         number;
     fleet_id:                   number;
+    combat_log_id:              number;
     external_killmail_link:     string;
     status:                     SRPStatus;
     character_id:               number;
