@@ -552,6 +552,7 @@ export interface SRP {
     corp_id:                    number;
     comments:                   string;
     category:                   SRPCategory;
+    combat_log_id:              number;
 }
 
 export interface SRPFilter {
@@ -660,6 +661,7 @@ export type SRPCategory = typeof srp_categories[number]
 export interface SRPRequest {
     external_killmail_link:     string;
     fleet_id?:                  number;
+    combatlog_id?:              number;
     is_corp_ship:               boolean;
     category:                   SRPCategory;
     comments:                   string;

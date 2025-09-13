@@ -100,6 +100,7 @@ async function process_analysis(analysis:CombatLog) {
     console.log(repairs_modules)
     
     return {
+        id: analysis.db_id,
         logged_events: analysis.logged_events,
         damage_done: analysis.damage_done,
         damage_taken: analysis.damage_taken,

@@ -75,10 +75,30 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
             external_killmail_link: '',
             category: '',
             comments: '',
+            gziped_combatlog: '',
+            combatlogfile: '',
+            async update_status(combatlogfileinput) {
+                let array_buffer = this.str2ab(this.combatlog)
+
+                if (combatlogfileinput) {
+                    const file = combatlogfileinput.files[0]
+                    array_buffer = await file.arrayBuffer()
+                }
+
+                const compressed_data = pako.gzip(new Uint8Array(array_buffer))
+                const b64encoded_string = btoa(String.fromCharCode.apply(null, compressed_data))
+                this.gziped_combatlog = b64encoded_string
+            },
+            str2ab(str) {
+                const encoder = new TextEncoder()
+                return encoder.encode(str)
+            },
             clear_form() {
                 $nextTick(() => {
                     this.external_killmail_link = ''
                     this.is_corp_ship = false
+                    this.gziped_combatlog = ''
+                    this.combatlogfile = ''
                 })
             },
         }`}
@@ -147,6 +167,30 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                         <label for="srp-comments">{t('comments')}</label>
                         <Textarea rows="2" id="srp-comments" x-model="comments" name="comments" />
                     </Flexblock>
+
+                    <Flexblock
+                        class="[ w-full ]"
+                        gap="var(--space-3xs)"
+                    >
+                        <label for="combat_log_file">{t('combatlog')}</label>
+                        <Input
+                            x-model="combatlogfile"
+                            type="file"
+                            id="combat_log_file"
+                            x-on:change="update_status($el)"
+                        />
+                        <FixedFluid
+                            width='48'
+                            breakpoint='70%'
+                            class="[ w-full items-center ]"
+                        >
+                            <picture class="[ hidden sm:block ]">
+                                <TutorialIcon />
+                            </picture>
+                            <Markdown markdown={t('combat_log_file_text')} inline={true} inline_element='small' />
+                        </FixedFluid>
+                    </Flexblock>
+                    <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
                 }
                 
                 <SwitchSquare
@@ -156,15 +200,15 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     description={t('corp_ship_description')}
                     x-model="is_corp_ship"
                 />
-                
-                <TutorialBadge>
-                    <Markdown
-                        markdown={t('srp_wiki')}
-                        inline={true}
-                        inline_element='small'
-                    />
-                </TutorialBadge>
             </Flexblock>
+                
+            <TutorialBadge>
+                <Markdown
+                    markdown={t('srp_wiki')}
+                    inline={true}
+                    inline_element='small'
+                />
+            </TutorialBadge>
 
             <FlexInline justification='flex-end'>
                 <Button
@@ -184,3 +228,5 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         </Flexblock>
     </form>
 </DialogButton>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>

@@ -207,6 +207,18 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                             <p id="srp-comments" class="[ srp-comments ]">{srp.comments}</p>
                         </Flexblock>
                     }
+
+                    {srp.combat_log_id > 0 &&
+                        <div>
+                            <Button
+                                size='sm'
+                                href={translatePath(`/intel/combatlog/${srp.combat_log_id}`)}
+                                target="_blank"
+                            >
+                                {t('open_combatlog')}
+                            </Button>
+                        </div>
+                    }
                 </Flexblock>
 
                 <FlexInline justification='space-between'>

@@ -46,6 +46,7 @@ export async function fetch_srps(access_token:string, status:SRPStatus = 'pendin
                 category: api_srp.category,
                 comments: api_srp.comments ?? '',
                 ship_type: ship_types[api_srp.ship_type_id] ?? t('unknown_ship'),
+                combat_log_id: api_srp.combat_log_id,
             } as SRPUI
         })
 
@@ -87,6 +88,7 @@ export async function fetch_fleet_srps(access_token:string, fleet_id?: number, s
             corporation_name: CORP_NAMES[api_srp.corp_id] ?? 'Unknown Corporation',
             category: api_srp.category,
             comments: api_srp.comments ?? '',
+            combat_log_id: api_srp.combat_log_id,
         } as SRPUI
     })
 }
