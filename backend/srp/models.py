@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 
 from fleets.models import EveFleet
+from combatlog.models import CombatLog
 
 
 class EveFleetShipReimbursement(models.Model):
@@ -50,6 +51,9 @@ class EveFleetShipReimbursement(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     comments = models.CharField(max_length=255, null=True)
+    combat_log = models.ForeignKey(
+        CombatLog, on_delete=models.SET_NULL, null=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
