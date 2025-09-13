@@ -41,6 +41,7 @@ class CreateEveFleetReimbursementRequest(BaseModel):
     is_corp_ship: bool = False
     category: Optional[SrpCategory] = None
     comments: Optional[str] = None
+    combat_log_id: Optional[int] = None
 
 
 class UpdateEveFleetReimbursementRequest(BaseModel):
@@ -68,6 +69,7 @@ class EveFleetReimbursementResponse(BaseModel):
     corp_id: Optional[int] = None
     category: Optional[SrpCategory] = None
     comments: Optional[str] = None
+    combat_log_id: Optional[int] = None
 
 
 class SrpPatchResult(BaseModel):
@@ -149,6 +151,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         ),
         category=payload.category if payload.category else None,
         comments=payload.comments,
+        combat_log_id=payload.combat_log_id if payload.combat_log_id else None,
     )
 
     if fleet:
@@ -236,6 +239,11 @@ def get_fleet_srp(
                     "corp_id": reimbursement.corp_id,
                     "category": reimbursement.category,
                     "comments": reimbursement.comments,
+                    "combat_log_id": (
+                        reimbursement.combat_log.id
+                        if reimbursement.combat_log
+                        else None
+                    ),
                 }
             )
 

@@ -8,6 +8,7 @@ from app.test import TestCase
 from eveonline.client import EsiResponse
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import set_primary_character
+from combatlog.models import CombatLog
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -311,3 +312,53 @@ class SrpRouterTestCase(TestCase):
 
         self.assertEqual(400, response.status_code)
         self.assertEqual("Killmail link not valid", response.json()["detail"])
+
+    @patch("srp.helpers.EsiClient")
+    def test_srp_with_log(self, esi_mock):
+        self.make_superuser()
+        esi = esi_mock.return_value
+
+        fc_char = EveCharacter.objects.create(
+            character_id=KM_CHAR,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400,
+            description="Jaguar",
+            eve_group=EveGroup(),
+        )
+
+        combat_log = CombatLog.objects.create()
+
+        data = {
+            "external_killmail_link": KM_LINK,
+            "fleet_id": self.fleet.id,
+            "is_corp_ship": False,
+            "category": "dps",
+            "comments": "Testing FTW",
+            "combat_log_id": combat_log.id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual("dps", data["category"])
+        self.assertEqual("Testing FTW", data["comments"])
