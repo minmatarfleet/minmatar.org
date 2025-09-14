@@ -57,5 +57,6 @@ main .prose {
 
     .bleed {
         max-width: calc(100vw - calc(var(--space-2xl-3xl) + var(--space-l-xl)));
+        width: fit-content;
     }
 }
