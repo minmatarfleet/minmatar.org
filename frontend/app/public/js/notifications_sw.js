@@ -3,8 +3,6 @@ self.addEventListener('activate', async (e) => {
 })
 
 async function subscribe() {
-    console.log('Subscribing...')
-
     const url = new URL(location)
     const endpoint = url.searchParams.get('endpoint')
     const public_key = url.searchParams.get('public_key')
@@ -42,7 +40,6 @@ const MINUTE = 60*1000
 setInterval(check_and_subscribe, MINUTE)
 
 async function check_and_subscribe() {
-    console.log('checking subscription...')
     self.registration.pushManager
         .getSubscription()
         .then((subscription) => {
