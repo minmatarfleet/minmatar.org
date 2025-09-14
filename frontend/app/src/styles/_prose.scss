@@ -1,4 +1,4 @@
-main .post {
+main .prose {
     font-size: var(--normal-font-size);
 
     * {
@@ -53,5 +53,9 @@ main .post {
 
     li + li {
         margin-block-start: var(--space-m) !important;
+    }
+
+    .bleed {
+        max-width: calc(100vw - calc(var(--space-2xl-3xl) + var(--space-l-xl)));
     }
 }
