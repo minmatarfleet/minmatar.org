@@ -36,6 +36,15 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
     padding_inline='0'
     max_width='100%'
 >
+    {can_add_moons &&
+        <AddMoonButton
+            size='sm'
+            color='fleet-red'
+            iconed={false}
+            hidden={true}
+        />
+    }
+    
     <div
         class="[ swiper ][ w-full pb-10 ]"
         id="corporations-list"
@@ -108,11 +117,12 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                                 </Button>
                             }
                             {can_add_moons &&
-                                <AddMoonButton
+                                <Button
                                     size='sm'
-                                    color='fleet-red'
-                                    iconed={false}
-                                />
+                                    x-on:click="document.getElementById('add-moon-button').click()"
+                                >
+                                    {t('add_moon')}
+                                </Button>
                             }
                         </FlexInline>
                     </SwiperCard>
