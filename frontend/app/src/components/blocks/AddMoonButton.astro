@@ -8,12 +8,14 @@ interface Porps {
     size?:      ButtonSizes;
     iconed?:    boolean;
     color?:     ButtonColors;
+    hidden?:    boolean;
 }
 
 const {
     size = 'lg',
     iconed = true,
     color = 'green',
+    hidden = false,
 } = Astro.props
 
 const ADD_MOON_RESULT_PARTIAL_URL = translatePath('/partials/add_moon_result_component/')
@@ -29,8 +31,10 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
 <DialogButton
+    id="add-moon-button"
     size={size}
     color={color}
+    hidden={hidden}
 >
     {iconed && <AddIcon slot="icon" />}    
     {t('add_moon')}
