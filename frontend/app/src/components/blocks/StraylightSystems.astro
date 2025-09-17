@@ -1,0 +1,149 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const CHAD_VANGAALEN_ID = 1907307618
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="straylight-slide"
+    ceo_image='/images/corporations/straylight/ceo.png'
+    ceo_character_id={CHAD_VANGAALEN_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <img slot="ships" class="[ redeemer ]" src="/images/corporations/straylight/redeemer.png" />
+    <img slot="ships" class="[ devoter ]" src="/images/corporations/straylight/devoter.png" />
+    <img slot="ships" class="[ curse ]" src="/images/corporations/straylight/curse.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('straylight_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .redeemer {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 59%;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .devoter {
+        position: absolute;
+        top: 35%;
+        left: -40%;
+        width: 71%;
+        height: auto;
+        z-index: 3;
+        transform: scale(0);
+    }
+
+    .curse {
+        position: absolute;
+        left: -38%;
+        top: 39%;
+        width: 57%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    @keyframes redeemer {
+        from {
+            transform: scale(0);
+            top: 30%;
+            left: -38%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 0%;
+            left: 30%;
+        }
+    }
+
+    @keyframes devoter {
+        from {
+            transform: scale(0);
+            top: 45%;
+            left: -40%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 16%;
+            left: 30%;
+        }
+    }
+
+    @keyframes curse {
+        from {
+            transform: scale(0);
+            left: -40%;
+            top: 30%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 41%;
+            left: 20%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #straylight-slide .ceo {
+        left: -1%;
+    }
+
+    .swiper-slide-active {
+        .redeemer {
+            animation: redeemer cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .devoter {
+            animation: devoter cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .curse {
+            animation: curse cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
