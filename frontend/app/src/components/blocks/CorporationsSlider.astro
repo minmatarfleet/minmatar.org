@@ -21,6 +21,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Rapid Unscheduled Disassembly.',
     'Soltech Armada',
     'Criterion.',
+    'Straylight Systems',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -77,6 +78,7 @@ import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import Jump2BeaconSlide from '@components/blocks/Jump2BeaconSlide.astro';
 import CriterionSlide from '@components/blocks/CriterionSlide.astro';
+import StraylightSystems from '@components/blocks/StraylightSystems.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -141,8 +143,8 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
-                    {corporation.corporation_name == 'Jump 2 Beacon' &&
-                        <Jump2BeaconSlide
+                    {corporation.corporation_name == 'Straylight Systems' &&
+                        <StraylightSystems
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
