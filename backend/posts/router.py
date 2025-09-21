@@ -309,48 +309,48 @@ def get_gallery_images(
     # Cursor Pagination
     limit: int = 30,
     cursor: str = None,
-    
+
     # Content Filtering
     user_id: int = None,
     tag_id: int = None,
     status: str = "published",
     date_from: str = None,
     date_to: str = None,
-    
+
     # Gallery Options
     sort_by: str = "date_desc",
     include_metadata: bool = True,
 ):
     """
     Get images from blog posts for gallery display with cursor-based pagination.
-    
+
     This endpoint extracts all images from published blog posts and returns them
     in a flattened format suitable for endless scroll galleries.
     """
     # Build base queryset
     posts = EvePost.objects.filter(state=status).order_by("-date_posted")
-    
+
     # Apply filters
     if user_id:
         posts = posts.filter(user_id=user_id)
-    
+
     if tag_id:
         posts = posts.filter(eveposttag__tag_id=tag_id)
-    
+
     if date_from:
         try:
             from_date = datetime.fromisoformat(date_from)
             posts = posts.filter(date_posted__gte=from_date)
         except ValueError:
             pass  # Invalid date format, ignore filter
-    
+
     if date_to:
         try:
             to_date = datetime.fromisoformat(date_to)
             posts = posts.filter(date_posted__lte=to_date)
         except ValueError:
             pass  # Invalid date format, ignore filter
-    
+
     # Apply sorting
     if sort_by == "date_asc":
         posts = posts.order_by("date_posted")
@@ -360,7 +360,7 @@ def get_gallery_images(
         posts = posts.order_by("?")
     else:  # default: date_desc
         posts = posts.order_by("-date_posted")
-    
+
     # Handle cursor-based pagination
     cursor_data = None
     if cursor:
@@ -368,8 +368,7 @@ def get_gallery_images(
         if cursor_data:
             cursor_date = datetime.fromisoformat(cursor_data["date"])
             cursor_post_id = cursor_data["post_id"]
-            cursor_image_index = cursor_data["image_index"]
-            
+
             # Filter posts based on cursor position
             if sort_by == "date_asc":
                 posts = posts.filter(
@@ -385,23 +384,23 @@ def get_gallery_images(
                     date_posted=cursor_date,
                     id__lt=cursor_post_id
                 )
-    
+
     # Collect images from posts
     gallery_images = []
     posts_processed = 0
     max_posts_to_check = limit * 3  # Check more posts to ensure we get enough images
-    
+
     for post in posts[:max_posts_to_check]:
         posts_processed += 1
         images = extract_all_image_links(post.content)
-        
+
         for idx, image_url in enumerate(images):
             # Skip images before cursor position if we're continuing from a cursor
             if cursor_data and post.id == cursor_data["post_id"] and idx <= cursor_data["image_index"]:
                 continue
-            
+
             cursor_id = generate_cursor(post.date_posted, post.id, idx)
-            
+
             gallery_image = GalleryImageResponse(
                 image_url=image_url,
                 post_id=post.id,
@@ -412,26 +411,26 @@ def get_gallery_images(
                 image_index=idx,
                 cursor_id=cursor_id
             )
-            
+
             gallery_images.append(gallery_image)
-            
+
             # Stop when we have enough images
             if len(gallery_images) >= limit:
                 break
-        
+
         # Stop when we have enough images
         if len(gallery_images) >= limit:
             break
-    
+
     # Determine if there are more images
     has_more = len(gallery_images) == limit and posts_processed < posts.count()
-    
+
     # Generate next cursor
     next_cursor = None
     if has_more and gallery_images:
         last_image = gallery_images[-1]
         next_cursor = last_image.cursor_id
-    
+
     return GalleryResponse(
         images=gallery_images,
         next_cursor=next_cursor,

@@ -86,15 +86,15 @@ class PostsRouterTestCase(TestCase):
         # Test gallery endpoint
         response = self.client.get(f"{BASE_URL}/gallery")
         self.assertEqual(200, response.status_code)
-        
+
         gallery_data = response.json()
         self.assertIn("images", gallery_data)
         self.assertIn("next_cursor", gallery_data)
         self.assertIn("has_more", gallery_data)
-        
+
         # Should have 2 images from the post
         self.assertEqual(2, len(gallery_data["images"]))
-        
+
         # Check image data structure
         image = gallery_data["images"][0]
         self.assertIn("image_url", image)
@@ -109,11 +109,11 @@ class PostsRouterTestCase(TestCase):
         # Test with status filter
         response = self.client.get(f"{BASE_URL}/gallery?status=draft")
         self.assertEqual(200, response.status_code)
-        
+
         # Test with limit
         response = self.client.get(f"{BASE_URL}/gallery?limit=10")
         self.assertEqual(200, response.status_code)
-        
+
         # Test with include_metadata=false
         response = self.client.get(f"{BASE_URL}/gallery?include_metadata=false")
         self.assertEqual(200, response.status_code)
