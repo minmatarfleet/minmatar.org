@@ -1,6 +1,9 @@
 import requests
+import logging
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RedditClient:
@@ -18,7 +21,7 @@ class RedditClient:
         self.username = settings.REDDIT_USERNAME
         self.password = settings.REDDIT_PASSWORD
 
-    def get_access_token(self) -> str:
+    def get_access_token(self) -> str | None:
         client_auth = requests.auth.HTTPBasicAuth(
             self.client_id, self.client_secret
         )
@@ -35,11 +38,26 @@ class RedditClient:
             headers=headers,
             data=post_data,
         )
-        return response.json()["access_token"]
+        if response.status_code >= 400:
+            logger.error(
+                "Error %d getting Reddit access token: %s",
+                response.status_code,
+                response.text,
+            )
+            return None
+        data = response.json()
+        if data["access_token"]:
+            return data["access_token"]
+        else:
+            logger.error("No access token found in %s", data)
+            return None
 
     def get_my_details(self):
+        token = self.get_access_token()
+        if not token:
+            return
         headers = {
-            "Authorization": "bearer " + self.get_access_token(),
+            "Authorization": "bearer " + token,
             "User-Agent": self.user_agent,
         }
         response = requests.get(
