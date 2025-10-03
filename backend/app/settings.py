@@ -149,3 +149,8 @@ FAKE_LOGIN_USER_ID = 1
 
 MOCK_ESI = True
 SETUP_TEST_DATA = os.environ.get("SETUP_TEST_DATA", False)
+
+REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
+REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
+REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
+REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
