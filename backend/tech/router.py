@@ -611,4 +611,4 @@ def reddit_test(request):
 
     logger.info("Reddit API test")
 
-    return 200, RedditClient().get_my_details()["icon_img"]
+    return 200, RedditClient().get_my_details()["name"]
