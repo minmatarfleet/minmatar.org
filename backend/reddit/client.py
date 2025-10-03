@@ -46,7 +46,7 @@ class RedditClient:
             )
             return None
         data = response.json()
-        if data["access_token"]:
+        if "access_token" in data:
             return data["access_token"]
         else:
             logger.error("No access token found in %s", data)
