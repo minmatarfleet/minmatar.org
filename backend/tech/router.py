@@ -599,7 +599,7 @@ def remove_discord_roles(request, user_id: int):
     "/reddit_test",
     summary="Test calling the Reddit API",
     auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
+    response={200: str, 403: ErrorResponse, 500: ErrorResponse},
 )
 def reddit_test(request):
     """
@@ -607,8 +607,12 @@ def reddit_test(request):
     """
 
     if not permitted(request.user):
-        return 403, ErrorResponse(detail="Not authorised")
+        return 403, ErrorResponse.log("Not authorised for tech endpoints")
 
     logger.info("Reddit API test")
 
-    return 200, RedditClient().get_my_details()["name"]
+    details = RedditClient().get_my_details()
+    if details is None:
+        return 500, ErrorResponse.log("Unable to fetch reddit user details")
+
+    return 200, details["name"]

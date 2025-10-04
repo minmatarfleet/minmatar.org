@@ -20,8 +20,14 @@ class RedditClient:
         self.client_secret = settings.REDDIT_SECRET
         self.username = settings.REDDIT_USERNAME
         self.password = settings.REDDIT_PASSWORD
+        self.user_agent = "minmatar.org " + settings.ENV
 
     def get_access_token(self) -> str | None:
+        logger.info(
+            "Getting reddit access token for %s / %s",
+            self.username,
+            self.client_id,
+        )
         client_auth = requests.auth.HTTPBasicAuth(
             self.client_id, self.client_secret
         )
