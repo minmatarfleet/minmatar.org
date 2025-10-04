@@ -18,7 +18,8 @@ class RedditClient:
     def __init__(self):
         self.client_id = settings.REDDIT_CLIENT_ID
         self.client_secret = settings.REDDIT_SECRET
-        self.username = settings.REDDIT_USERNAME
+        # Temporary hack for email instead of username (?)
+        self.username = settings.REDDIT_USERNAME.split(".")[0]
         self.password = settings.REDDIT_PASSWORD
         self.user_agent = "minmatar.org " + settings.ENV
 
