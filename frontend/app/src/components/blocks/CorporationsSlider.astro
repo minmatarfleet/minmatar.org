@@ -22,6 +22,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Soltech Armada',
     'Criterion.',
     'Straylight Systems',
+    'The Dark Tribe',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -78,7 +79,8 @@ import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import Jump2BeaconSlide from '@components/blocks/Jump2BeaconSlide.astro';
 import CriterionSlide from '@components/blocks/CriterionSlide.astro';
-import StraylightSystems from '@components/blocks/StraylightSystems.astro';
+import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
+import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -144,7 +146,14 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                         />
                     }
                     {corporation.corporation_name == 'Straylight Systems' &&
-                        <StraylightSystems
+                        <StraylightSystemsSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'The Dark Tribe' &&
+                        <TheDarkTribeSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}

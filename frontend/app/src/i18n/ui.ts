@@ -871,6 +871,7 @@ export const ui = {
         'balls_deep_expeditionary_description_fallback': 'You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.',
         'l34rn_description_fallback': 'Enjoy a tailored learning experience while contibruting to one of the most active PvP alliances in the game.',
         'soltech_armada_description_fallback': 'Fly dangerous! Die gloriously! Reship!',
+        'darktribe_description_fallback': 'In the void where stars refuse to shine, The Dark Tribe rose from the abyss—unyielding, unseen, unbreakable.  We are the shadows that swallow empires, the storm that devours fleets, leaving nothing but echoes of the vanquished’s screams in the stellar wind.  When the darkness calls, we answer.',
         'exitstrategy_description_fallback': 'Over a decade of experience in wormhole space, operating when most of the universe is asleep.',
         'protean_description_fallback': 'Be the dog that catches the car. Driven by relentless aggression, quick pivots, and a versatile toolkit, AD4PT turns impossible situations into victories.',
         'criterion_expeditionary_description_fallback': 'Just a bunch of homies collecting tears for 13 years now.',
