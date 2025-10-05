@@ -17,7 +17,7 @@ def scheduled_reddit_posts():
     for post in RedditScheduledPost.objects.filter(posting_day=today):
         logging.info(">  %s", post.title)
 
-        title = post.title.replace("{ID}", create_error_id)
+        title = post.title.replace("{ID}", create_error_id())
 
         RedditClient().submit_post(
             subreddit=post.subreddit,
