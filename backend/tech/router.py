@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
 
-from app.errors import ErrorResponse
+from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
@@ -601,7 +601,7 @@ def remove_discord_roles(request, user_id: int):
     auth=AuthBearer(),
     response={200: str, 403: ErrorResponse, 500: ErrorResponse},
 )
-def reddit_test(request):
+def reddit_test(request, subreddit: str):
     """
     Test of the Reddit API
     """
@@ -611,8 +611,18 @@ def reddit_test(request):
 
     logger.info("Reddit API test")
 
-    details = RedditClient().get_my_details()
+    reddit = RedditClient()
+
+    details = reddit.get_my_details()
     if details is None:
         return 500, ErrorResponse.log("Unable to fetch reddit user details")
+    logger.info("Found name: %s", details["name"])
 
-    return 200, details["name"]
+    with open("reddit/posts/rattini.md", encoding="utf-8") as f:
+        content = "\n".join(f.readlines())
+
+    post_id = create_error_id()
+
+    reddit.submit_post(subreddit, "Tech team test post " + post_id, content)
+
+    return 200, post_id

@@ -5,6 +5,10 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+EVEJOBS_SR = "/r/evejobs"
+FL33T_SR = "/r/MinmatarFleet"
+TEST_SR = "r/sltest1"
+
 
 class RedditClient:
     """Client for accessing the Reddit API"""
@@ -76,3 +80,28 @@ class RedditClient:
             "https://oauth.reddit.com/api/v1/me", headers=headers
         )
         return response.json()
+
+    def submit_post(self, subreddit: str, title: str, content: str):
+        token = self.get_access_token()
+        if not token:
+            return
+
+        response = requests.post(
+            url="https://oauth.reddit.com/api/submit",
+            headers={
+                "Authorization": "bearer " + token,
+                "User-Agent": self.user_agent,
+            },
+            data=(
+                ("kind", "self"),
+                ("sr", subreddit),
+                ("title", title),
+                ("text", content),
+            ),
+        )
+        logger.info(
+            "Submit post: %s (%d) = %s",
+            title,
+            response.status_code,
+            response.text,
+        )
