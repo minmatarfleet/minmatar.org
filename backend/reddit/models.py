@@ -21,6 +21,8 @@ class RedditScheduledPost(models.Model):
     ]
 
     posting_day = models.CharField(max_length=12, choices=day_choices)
-    last_post_at = models.DateTimeField()
+    last_post_at = models.DateTimeField(null=True, blank=True)
 
-    updated_at = models.DateTimeField(auto_now=True)
+    discord_channel = models.CharField(max_length=250, null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)

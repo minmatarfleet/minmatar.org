@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
 
-from app.errors import ErrorResponse, create_error_id
+from app.errors import ErrorResponse
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from discord.models import DiscordUser
@@ -37,7 +37,7 @@ from tech.docker import (
     DockerLogEntry,
 )
 from tech.dbviews import create_all_views
-from reddit.client import RedditClient
+from reddit.service import RedditService
 
 
 router = Router(tags=["Tech"])
@@ -609,20 +609,9 @@ def reddit_test(request, subreddit: str):
     if not permitted(request.user):
         return 403, ErrorResponse.log("Not authorised for tech endpoints")
 
-    logger.info("Reddit API test")
+    result = RedditService().post_test(subreddit)
 
-    reddit = RedditClient()
-
-    details = reddit.get_my_details()
-    if details is None:
+    if result is None:
         return 500, ErrorResponse.log("Unable to fetch reddit user details")
-    logger.info("Found name: %s", details["name"])
 
-    with open("reddit/posts/rattini.md", encoding="utf-8") as f:
-        content = "\n".join(f.readlines())
-
-    post_id = create_error_id()
-
-    reddit.submit_post(subreddit, "Tech team test post " + post_id, content)
-
-    return 200, post_id
+    return 200, result
