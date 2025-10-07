@@ -194,25 +194,30 @@ const page_description = await strip_markdown(fitting?.description ?? '')
             </FlexInline>
         </FlexInline>
 
-        {(minimum_pod.length > 0 || recommended_pod.length > 0) &&
-            <FlexInline slot="subheader">
-                {minimum_pod.length > 0 &&
-                    <CopyPodButton
-                        pod={minimum_pod}
-                        text={t('copy_minimun_pod')}
-                        id="minumun-pod"
-                    />
-                }
+        <FlexInline slot="subheader">
+            {minimum_pod.length > 0 &&
+                <CopyPodButton
+                    pod={minimum_pod}
+                    text={t('copy_minimun_pod')}
+                    id="minumun-pod"
+                />
+            }
 
-                {recommended_pod.length > 0 &&
-                    <CopyPodButton
-                        pod={recommended_pod}
-                        text={t('copy_recommended_pod')}
-                        id="recommended-pod"
-                    />
-                }
-            </FlexInline>
-        }
+            {recommended_pod.length > 0 &&
+                <CopyPodButton
+                    pod={recommended_pod}
+                    text={t('copy_recommended_pod')}
+                    id="recommended-pod"
+                />
+            }
+
+            <Button
+                href={translatePath('/ships/fitting/list')}
+                size='sm'
+            >
+                {t('fittings')}
+            </Button>
+        </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
