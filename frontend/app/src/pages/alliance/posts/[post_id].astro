@@ -118,7 +118,22 @@ const page_description = post?.excerpt ?? page_title
                         </FlexInline>
                     }
 
-                    <Flexblock class="[ prose ]" gap='var(--space-m)' set:html={marked.parse(post?.content as string, { renderer })}>
+                    <Flexblock
+                        class="[ prose ]"
+                        gap='var(--space-m)'
+                        set:html={marked.parse(post?.content as string, { renderer })}
+                        x-data={`{
+                            init_zoom() {
+                                mediumZoom('img[data-zoomable]', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                    />
                 </Flexblock>
             </TextBox>
         </Flexblock>
