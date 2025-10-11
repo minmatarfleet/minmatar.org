@@ -81,7 +81,26 @@ class RedditClient:
         )
         return response.json()
 
-    def submit_post(self, subreddit: str, title: str, content: str):
+    def flair_options(self, subreddit: str):
+        token = self.get_access_token()
+        if not token:
+            return
+        response = requests.get(
+            url=f"https://oauth.reddit.com/{subreddit}/api/link_flair.json",
+            headers={
+                "Authorization": "bearer " + token,
+                "User-Agent": self.user_agent,
+            },
+        )
+        return response.json()
+
+    def submit_post(
+        self,
+        subreddit: str,
+        title: str,
+        content: str,
+        flair: str = "",
+    ):
         token = self.get_access_token()
         if not token:
             return
@@ -97,6 +116,7 @@ class RedditClient:
                 ("sr", subreddit),
                 ("title", title),
                 ("text", content),
+                ("flair_id", flair),
             ),
         )
         logger.info(
