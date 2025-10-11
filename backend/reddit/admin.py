@@ -13,5 +13,7 @@ class RedditPostAdmin(admin.ModelAdmin):
         "last_post_at",
     ]
 
+    readonly_fields = ("last_post_at", "updated_at", "latest_comment_url", "latest_fullname")
+
 
 admin.site.register(RedditScheduledPost, RedditPostAdmin)

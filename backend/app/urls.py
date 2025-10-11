@@ -46,6 +46,7 @@ from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
 from subscriptions.router import router as subscription_router
+from reddit.router import router as reddit_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -65,11 +66,12 @@ api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
 api.add_router("moon_paste", moons_paste_router)
 api.add_router("market", market_router)
-api.add_router("standingfleet", standingfleet_router)
+api.add_router("reddit", reddit_router)
 api.add_router("referrals", referrals_router)
 api.add_router("srp", srp_router)
-api.add_router("tech", tech_router)
+api.add_router("standingfleet", standingfleet_router)
 api.add_router("subscriptions", subscription_router)
+api.add_router("tech", tech_router)
 
 
 @api.exception_handler(UnauthorizedError)

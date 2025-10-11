@@ -37,7 +37,6 @@ from tech.docker import (
     DockerLogEntry,
 )
 from tech.dbviews import create_all_views
-from reddit.service import RedditService
 
 
 router = Router(tags=["Tech"])
@@ -593,25 +592,3 @@ def remove_discord_roles(request, user_id: int):
     except ValueError as e:
         return 409, ErrorResponse(detail=str(e))
     return 200, None
-
-
-@router.get(
-    "/reddit_test",
-    summary="Test calling the Reddit API",
-    auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse, 500: ErrorResponse},
-)
-def reddit_test(request, subreddit: str):
-    """
-    Test of the Reddit API
-    """
-
-    if not permitted(request.user):
-        return 403, ErrorResponse.log("Not authorised for tech endpoints")
-
-    result = RedditService().post_test(subreddit)
-
-    if result is None:
-        return 500, ErrorResponse.log("Unable to fetch reddit user details")
-
-    return 200, result
