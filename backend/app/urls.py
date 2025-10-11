@@ -46,6 +46,7 @@ from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
 from subscriptions.router import router as subscription_router
+
 # from reddit.router import router as reddit_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
