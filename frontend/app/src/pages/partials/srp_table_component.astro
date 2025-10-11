@@ -53,7 +53,6 @@ if (Astro.request.method === "POST") {
         const category = data.get('category') as SRPCategory
         const comments = (data.get('comments') ?? '') as string
         const base64_gziped_combatlog = data.get("gziped_combatlog")?.valueOf()
-        const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
 
         if (!srp_categories.includes(category))
             throw new Error(t('invalid_srp_category'))
@@ -62,7 +61,9 @@ if (Astro.request.method === "POST") {
             throw new Error(t('invalid_killmail_link'))
 
         let combat_log_analysis:CombatLogAnalysis | null = null
-        if (gziped_combatlog) {
+        if (base64_gziped_combatlog) {
+            const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
+
             combat_log_analysis = await fetch_combatlog_analysis(gziped_combatlog, true, {
                 access_token: auth_token as string,
                 fleet_id: fleet_id
