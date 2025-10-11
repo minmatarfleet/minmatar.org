@@ -5,12 +5,16 @@ from ninja import Router
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers import TECH_TEAM, user_in_team
 
-from tech.router import permitted
 from reddit.client import RedditClient
 
 router = Router(tags=["Reddit"])
 logger = logging.getLogger(__name__)
+
+
+def permitted(user) -> bool:
+    return user.is_superuser or user_in_team(user, TECH_TEAM)
 
 
 @router.get(
@@ -19,7 +23,7 @@ logger = logging.getLogger(__name__)
     auth=AuthBearer(),
     response={200: str, 403: ErrorResponse},
 )
-def poc(request, endpoint: str):
+def explore(request, endpoint: str):
     if not permitted(request.user):
         return 403, ErrorResponse.new("Not authorised")
 
