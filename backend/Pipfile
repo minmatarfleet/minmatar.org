@@ -28,7 +28,6 @@ pillow = "*"
 factory-boy = "*"
 docker = "*"
 coverage = "*"
-tomli = "==2.3.0"
 
 [dev-packages]
 pylint = "*"
