@@ -28,6 +28,10 @@ pillow = "*"
 factory-boy = "*"
 docker = "*"
 coverage = "*"
+platformdirs = "==4.4.0"
+tomli = "==2.2.1"
+virtualenv = "==20.34.0"
+filelock = "==3.19.1"
 
 [dev-packages]
 pylint = "*"
