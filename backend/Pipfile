@@ -34,7 +34,7 @@ virtualenv = "==20.34.0"
 filelock = "==3.19.1"
 
 [dev-packages]
-pylint = "*"
+pylint = "==3.3.8"
 isort = "*"
 black = "*"
 flake8 = "*"
