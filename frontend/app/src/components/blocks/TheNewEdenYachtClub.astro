@@ -1,0 +1,227 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const TJ_TAMIL_ID = 93738465
+const URBAN_OXIDE_ID = 92601770
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<CorporationSlide
+    id="yacht-slide"
+    ceo_image='/images/corporations/yacht/ceo.png'
+    ceo_character_id={URBAN_OXIDE_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <StylessButton
+        class="[ co-ceo ]"
+        slot="coceo"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: TJ_TAMIL_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/yacht/co-ceo.png" height="496" width="940" />
+    </StylessButton>
+    
+    <img slot="ships" class="[ naglfar ]" src="/images/corporations/yacht/naglfar.png" />
+    <img slot="ships" class="[ vargur_2 ]" src="/images/corporations/yacht/vargur.png" />
+    <img slot="ships" class="[ sabre ]" src="/images/corporations/yacht/sabre.png" />
+
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('yacht_description_fallback'), { renderer })} />
+</CorporationSlide>
+
+<style lang="scss">
+    img {
+        image-rendering: pixelated;
+    }
+
+    .co-ceo {
+        z-index: 11;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: -9%;
+        top: 0;
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
+    }
+
+    .naglfar {
+        position: absolute;
+        top: 14%;
+        left: -39%;
+        height: auto;
+        width: 29%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .vargur_2 {
+        position: absolute;
+        top: 41%;
+        left: -20%;
+        width: 70%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .sabre {
+        position: absolute;
+        top: 39%;
+        left: -12%;
+        width: 64%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    @keyframes naglfar {
+        from {
+            transform: scale(0);
+            top: 36%;
+            left: -34%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 0%;
+            left: 36%;
+        }
+    }
+
+    @keyframes vargur_2 {
+        from {
+            transform: scale(0);
+            top: 43%;
+            left: -61%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 6%;
+            left: 33%;
+        }
+    }
+
+    @keyframes sabre {
+        from {
+            transform: scale(0);
+            left: -50%;
+            top: 41%;
+        }
+
+        to {
+            transform: scale(1);
+            top: 43%;
+            left: 34%;
+        }
+    }
+
+    @keyframes coceo {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #yacht-slide .ceo {
+        left: 6%;
+
+        img {
+            height: 92%;
+        }
+    }
+
+    .swiper-slide-active {
+        .naglfar {
+            animation: naglfar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .vargur_2 {
+            animation: vargur_2 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.2s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+        
+        .sabre {
+            animation: sabre cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation-delay: 2.4s;
+            animation-iteration-count: 1;
+            transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+
+        .co-ceo {
+            animation: coceo ease-out 1.5s;
+            animation-delay: 0s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>

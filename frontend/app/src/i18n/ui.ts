@@ -876,6 +876,7 @@ export const ui = {
         'protean_description_fallback': 'Be the dog that catches the car. Driven by relentless aggression, quick pivots, and a versatile toolkit, AD4PT turns impossible situations into victories.',
         'criterion_expeditionary_description_fallback': 'Just a bunch of homies collecting tears for 13 years now.',
         'straylight_description_fallback': 'A small, tight-knit fold that has been a part of the lowsec narrative since YC120. Known for their off-beat tactics and considerable warmth towards eachother, Straylight pilots leave their mark upon the void through black ops, blockades, hit & runs - and madness.',
+        'yacht_description_fallback': 'The Yacht Club is a tight-knit crew of wormhole refugees who live for adventure. We chase great fights with friendship, grit and teamwork. Win or lose, we undock together, learn together, die together and give it our very best.\n\nOh, and we always take the bait.',
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',

@@ -23,6 +23,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Criterion.',
     'Straylight Systems',
     'The Dark Tribe',
+    'The New Eden Yacht Club',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -77,7 +78,7 @@ import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
 import RapidUnscheduledDisassemblySlide from '@components/blocks/RapidUnscheduledDisassemblySlide.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
-import Jump2BeaconSlide from '@components/blocks/Jump2BeaconSlide.astro';
+import TheNewEdenYachtClub from '@components/blocks/TheNewEdenYachtClub.astro';
 import CriterionSlide from '@components/blocks/CriterionSlide.astro';
 import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
@@ -154,6 +155,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'The Dark Tribe' &&
                         <TheDarkTribeSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'The New Eden Yacht Club' &&
+                        <TheNewEdenYachtClub
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
