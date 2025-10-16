@@ -820,7 +820,7 @@ export const ui = {
         'visit': 'Visit',
         'destroyer_guide_title': 'The Navy Destroyer Metagame',
         'destroyer_guide_description': 'In this guide you will find all the common archetypes for the navy destroyers with several fits. Written by ',
-        'reddit_article': 'Read Reddit article',
+        'reddit_article': 'Read Reddit post',
         'guide_download': 'Open guide',
         'show_credentials': 'Show credentials',
         'username': 'Username',
