@@ -24,11 +24,12 @@ import StylessButton from './StylessButton.astro';
         gap='0'
     >
         <PilotBadge
-            class="[ basis-[220px] ]"
+            class="[ basis-[240px] ]"
             character_id={fleet.fleet_commander_id}
             character_name={fleet.fleet_commander_name}
-        />
-        <small>{t(fleet.type as any)} {t('fleet')}</small>
+        >
+            <small>{t(fleet.type as any)} {t('fleet')}</small>
+        </PilotBadge>
         <div class="[ text-center basis-[340px] ]">
             {fleet?.status === 'cancelled' &&
                 <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
