@@ -19,10 +19,7 @@ import StylessButton from './StylessButton.astro';
 ---
 
 <StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
-    <FlexInline
-        justification='space-between'
-        gap='0'
-    >
+    <FlexInline justification='flex-end'>
         <PilotBadge
             class="[ basis-[240px] ]"
             character_id={fleet.fleet_commander_id}
@@ -30,7 +27,7 @@ import StylessButton from './StylessButton.astro';
         >
             <small>{t(fleet.type as any)} {t('fleet')}</small>
         </PilotBadge>
-        <div class="[ text-center basis-[340px] ]">
+        <div class="[ text-center basis-[280px] ]">
             {fleet?.status === 'cancelled' &&
                 <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
             }
