@@ -27,7 +27,7 @@ import StylessButton from './StylessButton.astro';
         >
             <small>{t(fleet.type as any)} {t('fleet')}</small>
         </PilotBadge>
-        <div class="[ text-center basis-[280px] ]">
+        <div class="[ fleet-status-text-wrapper ]">
             {fleet?.status === 'cancelled' &&
                 <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
             }
@@ -69,6 +69,12 @@ import StylessButton from './StylessButton.astro';
         outline-color: var(--highlight);
         outline-style: double;
         outline-offset: -1px;
+    }
+
+    .fleet-status-text-wrapper {
+        text-align: center;
+        flex-basis: 280px;
+        padding-right: var(--space-m);
     }
     
     .fleet-status-text {
