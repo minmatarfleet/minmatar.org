@@ -19,9 +19,8 @@ import StylessButton from './StylessButton.astro';
 ---
 
 <StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
-    <FlexInline justification='flex-end'>
+    <FlexInline class="[ flex-nowrap ]" justification='flex-end'>
         <PilotBadge
-            class="[ basis-[240px] ]"
             character_id={fleet.fleet_commander_id}
             character_name={fleet.fleet_commander_name}
         >
