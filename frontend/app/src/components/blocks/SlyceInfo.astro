@@ -1,0 +1,30 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_random:  boolean;
+}
+
+const {
+    is_random,
+} = Astro.props
+
+import Dropdown from '@components/blocks/Dropdown.astro';
+import StationInfo from '@components/blocks/StationInfo.astro';
+import StationsSelector from '@components/blocks/StationsSelector.astro';
+---
+
+<Dropdown>    
+    <StationInfo
+        system="8KE-YS"
+        security="-0.1"
+        constellation="8AO-5V"
+        region="Etherium Reach"
+        station_name="8KE-YS - SLYCE GIFT"
+        station_description={t('slyce_hq_description')}
+        slot="button"
+    />
+
+    <StationsSelector selected={!is_random ? 'slyce' : undefined} />
+</Dropdown>
