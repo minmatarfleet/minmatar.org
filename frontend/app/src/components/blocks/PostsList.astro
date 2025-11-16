@@ -38,12 +38,6 @@ import PostItem from '@components/blocks/PostItem.astro';
 ---
 
 <Flexblock id="posts-list" gap='var(--space-xl)'>
-    <Grid class="[ w-full grid-fill ]" row_gap='var(--space-2xl)' column_gap='var(--space-2xl)' min_item_width='500px'>
-        {posts.map(post =>
-            <PostItem post={post} />
-        )}
-    </Grid>
-
     <FlexInline justification='center'>
         {total_pages > 4 &&
             <PostPaginationButton page={1} text={t('first_page')} active={current_page === 1 ? true : undefined} />
@@ -55,4 +49,10 @@ import PostItem from '@components/blocks/PostItem.astro';
             <PostPaginationButton page={total_pages} text={t('last_page')} active={current_page === total_pages ? true : undefined} />
         }
     </FlexInline>
+
+    <Grid class="[ w-full grid-fill ]" row_gap='var(--space-2xl)' column_gap='var(--space-2xl)' min_item_width='500px'>
+        {posts.map(post =>
+            <PostItem post={post} />
+        )}
+    </Grid>
 </Flexblock>
