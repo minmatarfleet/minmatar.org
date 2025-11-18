@@ -57,7 +57,7 @@ const no_audience_option = {
     value: -1
 } as SelectOptions
 
-const DEPRECATED_AUDIENCES_ID = [ 2 ]
+const DEPRECATED_AUDIENCES_ID = [ 2, 3 ]
 const filtered_audiences = audiences.filter(audience => !DEPRECATED_AUDIENCES_ID.includes(audience.id) )
 
 let AUDIENCES = {}
@@ -84,7 +84,7 @@ const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
 const default_location = fleet_location_id ?? DEFAULT_LOCATION
 const default_location_name = fleet?.location ?? DEFAULT_LOCATION_NAME
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
-const default_audience = fleet_audience_id ?? audiences_select_options[0].value
+const default_audience = fleet_audience_id ?? (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
 
 const AUDIENCE_ICONS = {
     1: '/images/fleet-logo.svg',
@@ -208,7 +208,9 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             required
                                         >
                                             {audiences_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
+                                                <option value={option.value}>
+                                                    {option.label}
+                                                </option>
                                             )}
                                         </Select>
                                     </div>
