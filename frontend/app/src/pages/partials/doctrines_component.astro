@@ -7,6 +7,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType, DoctrineTypes } from '@dtypes/layout_components'
 import { doctrine_types } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
 
 let doctrines:DoctrineType[] = []
 let fetch_doctrines_error:string | false = false
@@ -26,6 +27,13 @@ try {
             type: doctrine_type,
             doctrines: doctrines.filter((doctrine) => doctrine.type === doctrine_type)
         })
+    })
+
+    doctrines_by_groups = doctrines_by_groups.map(group => {
+        return {
+            type: group.type,
+            doctrines: group.doctrines.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type))
+        }
     })
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
