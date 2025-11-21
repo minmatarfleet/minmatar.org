@@ -139,6 +139,52 @@ export const get_ship_type_icon = (ship_type:string):string => {
     return SHIP_TYPE_ICONS[ship_type] ?? null
 }
 
+export const SHIP_TYPES_SORTED = [
+    'Frigate',
+    'Electronic Attack Ship',
+    'Assault Frigate',
+    'Logistics Frigate',
+    'Covert Ops',
+    'Stealth Bomber',
+    'Interceptor',
+    'Destroyer',
+    'Interdictor',
+    'Command Destroyer',
+    'Tactical Destroyer',
+    'Cruiser',
+    'Heavy Assault Cruiser',
+    'Heavy Interdiction Cruiser',
+    'Logistics',
+    'Logistics Crusiers',
+    'Strategic Cruiser',
+    'Recon Ship',
+    'Force Recon Ship',
+    'Combat Recon Ship',
+    'Battlecruiser',
+    'Combat Battlecruiser',
+    'Attack Battlecruiser',
+    'Command Ship',
+    'Battleship',
+    'Marauder',
+    'Black Ops',
+    'Capital',
+    'Dreadnought',
+    'Lancer Dreadnought',
+    'Carrier',
+    'Force Auxiliary',
+    'Supercapital',
+    'Supercarrier',
+    'Titan',
+    'Miningfrigate',
+    'Expedition Frigate',
+    'Miningbarge',
+    'Industrial',
+    'Transport Ship',
+    'Freighter',
+    'Jump Freighters',
+    'Industrialcommand'
+]
+
 const METERS_IN_A_YEAR_LIGHT = 9460528400000000
 
 export const get_distance_among_systems = (system_a:sde_system, system_b:sde_system):number => {
