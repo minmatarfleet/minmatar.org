@@ -1484,5 +1484,7 @@ export const ui = {
         'unknown_ship': 'Unknown ship',
         'invalid_killmail_link': 'The killmail link entered is not valid.',
         'open_combatlog': 'Open combatlog',
+        'all_fitting_types': 'All fitting types',
+        'all_ship_type': 'All ship types',
     },
 } as const;

@@ -6,6 +6,7 @@ import { prod_error_messages } from '@helpers/env'
 
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
@@ -25,26 +26,23 @@ fittings.forEach((fitting) => {
         console.log(fitting.ship_type)
 })
 
-const fitting_ship_types = Object.keys(ship_type)
+let fitting_ship_types = Object.keys(ship_type)
+fitting_ship_types = fitting_ship_types.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a) - SHIP_TYPES_SORTED.indexOf(b))
 
 let fittings_grouped_by_ship_type:FittingItem[][] = []
 fitting_ship_types.forEach((fitting_ship_type) => {
-    fittings_grouped_by_ship_type.push(fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)))
-     // = [ ...fittings_grouped_by_ship_type, ...fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)) ]
+    fittings_grouped_by_ship_type.push(
+        fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
+    )
 })
 
 let fitting_type_filter:string[] = [];
-let ship_type_filter:string[] = [];
 
 for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
 fitting_type_filter.sort( (a, b) => a.localeCompare(b))
 
 const search_type = Astro.url.searchParams.get('type')
-
-for (let i in ship_type)
-    ship_type_filter.push(ship_type[i])
-ship_type_filter.sort( (a, b) => a.localeCompare(b))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -132,7 +130,7 @@ const page_title = t('fitting.list.page_title');
                         x-model="fitting_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
-                        <option selected value="-1">{t('fitting_type')}</option>
+                        <option selected value="-1">{t('all_fitting_types')}</option>
                         {fitting_type_filter.map((option) => 
                             <option value={option}>{option}</option>
                         )}
@@ -144,8 +142,8 @@ const page_title = t('fitting.list.page_title');
                         x-model="ship_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
-                        <option selected value="-1">{t('ship_type')}</option>
-                        {ship_type_filter.map((option) => 
+                        <option selected value="-1">{t('all_ship_type')}</option>
+                        {fitting_ship_types.map((option) => 
                             <option value={option}>{option}</option>
                         )}
                     </Select>
