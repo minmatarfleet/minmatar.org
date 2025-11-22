@@ -778,6 +778,7 @@ export const ui = {
         'nakah_hq_description': 'Minmatar Fleet Alliance FOB',
         'evati_hq_description': 'Minmatar Fleet Alliance FOB',
         'vard_hq_description': 'The Tips Must Touch - Tip I',
+        'fw_hq_description': 'Faction Warfare FOB',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
         'fetching_assets': 'Fetching assets',
