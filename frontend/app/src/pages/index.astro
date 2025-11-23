@@ -61,9 +61,10 @@ import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AugaInfo from '@components/blocks/AugaInfo.astro';
 import EvatiInfo from '@components/blocks/EvatiInfo.astro';
-import VardInfo from '@components/blocks/VardInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
 import SlyceInfo from '@components/blocks/SlyceInfo.astro';
+import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
+import LXQ2Info from '@components/blocks/LXQ2Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
@@ -91,34 +92,33 @@ type StagingTranslation = {
 const STAGINGS_STATIONS:StagingTranslation = {
 	auga: 'Auga - Minmatar Militia HQ',
 	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
-	vard: 'Vard - Rickety Roost',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
-	slyce: '8KE-YS - Xadr\'s Pleasure Palace (SLYCE)'
+	amamake: 'Amamake - 5 times nearly AT winners',
+	lxq2: 'LXQ2-T - Today was Fruitful',
+	slyce: '8KE-YS - Xadr\'s Pleasure Palace'
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
 	auga: 'Auga',
 	evati: 'Evati',
-	vard: 'Vard',
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
+	amamake: 'Amamake',
+	lxq2: 'LXQ2-T',
 	slyce: '8KE-YS',
 }
 
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
-const SOLTECH_ARMADA_ID = 98647659
 const EMPEROR_FAMILY_ID = 1000086
+const OBLIVION_WATCH_ID = 98217709
+const DJS_RETIREMENT_FUND_ID = 1344654522
 
 const STAGING_CORPORATIONS = {
 	auga: {
 		id: RATTINI_TRIBE_ID,
 		name: 'Rattini Tribe',
-	},
-	vard: {
-		id: SOLTECH_ARMADA_ID,
-		name: 'Soltech Armada.',
 	},
 	evati: {
 		id: RATTINI_TRIBE_ID,
@@ -131,6 +131,14 @@ const STAGING_CORPORATIONS = {
 	slyce: {
 		id: RATTINI_TRIBE_ID,
 		name: 'Rattini Tribe'
+	},
+	amamake: {
+		id: OBLIVION_WATCH_ID,
+		name: 'Oblivion Watch'
+	},
+	lxq2: {
+		id: DJS_RETIREMENT_FUND_ID,
+		name: 'DJ\'s Retirement Fund'
 	},
 	watermellon:  {
 		id: BLACK_OMEGA_SECUTIRY_ID,
@@ -176,28 +184,32 @@ const page_description = t('index.leading_text');
     <PageLanding
         cover={{
 			video: staging === 'auga' ? '/videos/militia-loop.webm' :
-					staging === 'vard' ? '/videos/rickety-loop.webm' :
 					staging === 'evati' ? '/videos/tzu-loop.webm' :
 					staging === 'amarr' ? '/videos/emperor-loop.webm' :
 					staging === 'slyce' ? '/videos/slyce-loop.webm' :
+					staging === 'amamake' ? '/videos/amamake-loop.webm' :
+					staging === 'lxq2' ? '/videos/lxq2-loop.mp4' :
 					'/videos/watermelon-loop.webm',
 			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					staging === 'vard' ? '/images/home-vard-cover.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
 					staging === 'slyce' ? '/images/home-slyce-cover.jpg' :
+					staging === 'amamake' ? '/images/home-amamake-cover.jpg' :
+					staging === 'lxq2' ? '/images/home-lxq2-cover.jpg' :
 					'/images/home-cover.jpg',
             image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
 					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
+					staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
+					staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
             image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
 					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
 					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					   staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
+					   staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
+					   staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
             animated: false,
         }}
@@ -222,10 +234,11 @@ const page_description = t('index.leading_text');
 				gap='0'
 			>
 				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
-					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
 					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
 					staging === 'slyce' ? <SlyceInfo is_random={is_random_staging} /> :
+					staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
+					staging === 'lxq2' ? <LXQ2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
 				<FlexInline gap='var(--space-3xs)'>
