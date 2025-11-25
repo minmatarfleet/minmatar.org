@@ -779,6 +779,7 @@ export const ui = {
         'evati_hq_description': 'Minmatar Fleet Alliance FOB',
         'vard_hq_description': 'The Tips Must Touch - Tip I',
         'fw_hq_description': 'Faction Warfare Pub',
+        'watermellon_description': 'Will be always remembered',
         'null_realstate_description': 'Etherium Reach free real estate',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
