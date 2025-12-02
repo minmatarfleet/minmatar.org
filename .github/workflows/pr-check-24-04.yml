@@ -1,8 +1,8 @@
 name: PR Check 24.04
 on:
-  push:
+  pull_request:
     branches:
-      - silvatek:silvatek-0091
+      - main
 jobs:
   backend-check:
     runs-on: ubuntu-24.04
