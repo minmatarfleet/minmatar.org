@@ -447,16 +447,16 @@ class MarketTaskTestCase(TestCase):
             aliases="[NVY-5] Thrasher,[L3ARN] Thrasher",
         )
 
-        self.assertEquals(
+        self.assertEqual(
             fitting, get_fitting_for_contract("[FL33T] Thrasher")
         )
-        self.assertEquals(
+        self.assertEqual(
             fitting, get_fitting_for_contract("[fl33t] thrasher")
         )
-        self.assertEquals(
+        self.assertEqual(
             fitting, get_fitting_for_contract("[NVY-5] Thrasher")
         )
-        self.assertEquals(
+        self.assertEqual(
             fitting, get_fitting_for_contract("[FLEET] Thrasher")
         )
 
