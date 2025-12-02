@@ -159,7 +159,7 @@ const is_random_staging = !Astro.cookies.has('staging')
 const staging = IS_APRIL_FOOLS ?
 	'amarr' :
 	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 1))] : // removing amarr from random
+	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and evati from random
 	user_staging
 	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
