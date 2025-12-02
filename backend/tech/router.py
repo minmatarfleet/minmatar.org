@@ -58,6 +58,15 @@ def ping(request):
 
 
 @router.get(
+    "/pong",
+    description="Check that the server is available. Always returns 'OK'.",
+    response={200: str},
+)
+def pong(request):
+    return "Still OK"
+
+
+@router.get(
     "/auth_ping",
     description="Verify authentication.",
     auth=AuthBearer(),
