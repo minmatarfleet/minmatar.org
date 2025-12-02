@@ -77,7 +77,9 @@ class RedditClient:
             "User-Agent": self.user_agent,
         }
         response = requests.get(
-            "https://oauth.reddit.com/api/v1/me", headers=headers
+            "https://oauth.reddit.com/api/v1/me",
+            headers=headers,
+            timeout=10,
         )
         return response.json()
 
@@ -88,6 +90,7 @@ class RedditClient:
 
         response = requests.post(
             url="https://oauth.reddit.com/api/submit",
+            timeout=10,
             headers={
                 "Authorization": "bearer " + token,
                 "User-Agent": self.user_agent,
