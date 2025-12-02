@@ -1,0 +1,55 @@
+name: PR Check
+on:
+  pull_request:
+    branches:
+      - silvatek-0091
+jobs:
+  backend-check:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint flake8
+      - name: Lint with pylint
+        run: |
+          pylint .
+      - name: Lint with flake8
+        run: |
+          flake8 .
+      - name: Lint with black
+        run: |
+          pip install black
+          black --check .
+      - name: Run tests
+        run: |
+          pip install pipenv
+          pipenv install --dev
+          pipenv install coverage
+          pipenv run coverage run manage.py test --testrunner="testrunner.Runner" 
+          pipenv run coverage json
+      - name: Display test results
+        run: cat testresults.txt
+      - name: Write coverage summary
+        run: python testsummary.py
+      - name: Publish results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/testresults.txt
+          retention-days: 1
+  frontend-check:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run frontend unit tests
+        run: make front-end-unit-tests
+
+      - name: Show front-end test summary
+        run: frontend/summary.sh
