@@ -75,7 +75,7 @@ def setup_discord_user(user):
             "user_id": user.id,
             "discord_tag": user.username,
             "nickname": user.username,
-        }
+        },
     )
 
 
