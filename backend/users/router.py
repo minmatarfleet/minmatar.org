@@ -40,7 +40,11 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
-    if hasattr(settings, "FAKE_LOGIN_USER_ID"):
+    if (
+        hasattr(settings, "FAKE_LOGIN_USER_ID")
+        and settings.FAKE_LOGIN_USER_ID
+        and settings.FAKE_LOGIN_USER_ID > ""
+    ):
         return fake_login(request, redirect_url)
 
     logger.debug(f"Adding redirect URL to session: {redirect_url}")
