@@ -47,7 +47,7 @@ jobs:
           path: backend/testresults.txt
           retention-days: 1
   frontend-check:
-    runs-on: ubuntu-22.04
+    runs-on: node:lts
 
     steps:
       - uses: actions/checkout@v2
