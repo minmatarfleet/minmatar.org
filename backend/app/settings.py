@@ -145,9 +145,9 @@ CSRF_COOKIE_SECURE = False
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # If this is set, Discord login will be bypassed and the user will be logged in with this ID
-FAKE_LOGIN_USER_ID = 1
+FAKE_LOGIN_USER_ID = os.environ.get("FAKE_LOGIN_USER_ID ", None)
 
-MOCK_ESI = True
+MOCK_ESI = os.environ.get("MOCK_ESI ", False)
 SETUP_TEST_DATA = os.environ.get("SETUP_TEST_DATA", False)
 
 REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from authentication import make_test_user
 
+from discord.models import DiscordUser
 from eveonline.models import (
     EveAlliance,
     EveCorporation,
@@ -32,6 +33,7 @@ def setup_test_data():
     logger.info("Setting up test data...")
     disable_signals()
     user = setup_users()
+    setup_discord_user(user)
     char = setup_orgs(user)
     setup_fittings()
     setup_fleets(char)
@@ -64,6 +66,17 @@ def setup_users() -> User:
     user1 = make_test_user(1, "AdminDude", True)
     make_test_user(2, "TesterDude", False)
     return user1
+
+
+def setup_discord_user(user):
+    DiscordUser.objects.get_or_create(
+        id=1,
+        defaults={
+            "user_id": user.id,
+            "discord_tag": user.username,
+            "nickname": user.username,
+        }
+    )
 
 
 def setup_orgs(user: User) -> EveCharacter:
