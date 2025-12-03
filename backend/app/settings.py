@@ -139,10 +139,11 @@ sentry_sdk.init(
 )
 
 # Local settings only, not for production
-SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SECURE = False
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", False)
+SESSION_COOKIE_HTTPONLY = os.environ.get("SESSION_COOKIE_HTTPONLY", False)
+CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", False)
+if not SESSION_COOKIE_SECURE:
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # If this is set, Discord login will be bypassed and the user will be logged in with this ID
 FAKE_LOGIN_USER_ID = os.environ.get("FAKE_LOGIN_USER_ID ", None)
