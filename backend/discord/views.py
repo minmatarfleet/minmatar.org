@@ -31,7 +31,11 @@ def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     1) Admin page access
     2) Authentication during the ESI SSO process for getting/refreshing tokens
     """
-    if hasattr(settings, "FAKE_LOGIN_USER_ID") and settings.FAKE_LOGIN_USER_ID:
+    if (
+        hasattr(settings, "FAKE_LOGIN_USER_ID")
+        and settings.FAKE_LOGIN_USER_ID
+        and settings.FAKE_LOGIN_USER_ID > ""
+    ):
         return fake_login(request, settings.FAKE_LOGIN_USER_ID)
 
     # get next and store in session
@@ -90,13 +94,15 @@ def redirect_to_error_page(request, error_code):
 
 
 def fake_login(request: HttpRequest, user_id):
+    logger.info("Fake login user ID %d", user_id)
+
     django_user = User.objects.get(id=user_id)
     django_user.is_superuser = True
     django_user.is_staff = True
     django_user.save()
 
-    login(request, django_user)
-
     logger.info("Fake login as user %s", django_user.username)
+
+    login(request, django_user)
 
     return redirect("/admin")
