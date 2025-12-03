@@ -32,7 +32,7 @@ def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     2) Authentication during the ESI SSO process for getting/refreshing tokens
     """
     if hasattr(settings, "FAKE_LOGIN_USER_ID"):
-        return fake_login(request)
+        return fake_login(request, settings.FAKE_LOGIN_USER_ID)
 
     # get next and store in session
     logger.debug("Adding redirect URL to session: %s", request.GET.get("next"))
@@ -89,8 +89,8 @@ def redirect_to_error_page(request, error_code):
     return redirect(redirect_url)
 
 
-def fake_login(request: HttpRequest):
-    django_user = User.objects.get(id=settings.FAKE_LOGIN_USER_ID)
+def fake_login(request: HttpRequest, user_id):
+    django_user = User.objects.get(id=user_id)
     django_user.is_superuser = True
     django_user.is_staff = True
     django_user.save()

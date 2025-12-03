@@ -321,8 +321,9 @@ def sync_production_fittings():
 
     doctrines_created = 0
     for doctrine in doctrines_data:
+        doctrine_id = doctrine["id"]
         composition_response = requests.get(
-            f"https://api.minmatar.org/api/doctrines/{doctrine['id']}/composition",
+            f"https://api.minmatar.org/api/doctrines/{doctrine_id}/composition",
             timeout=10,
         )
         composition_response.raise_for_status()
