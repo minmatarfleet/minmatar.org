@@ -226,8 +226,9 @@ class DiscordTests(TestCase):
         sync_discord_user(user.id)
 
     def test_fake_login(self):
+        User.objects.create(id=1234)
         mock_request = MagicMock()
-        response = fake_login(mock_request)
+        response = fake_login(mock_request, 1234)
         self.assertEqual(302, response.status_code)
 
     @patch("discord.helpers.discord")

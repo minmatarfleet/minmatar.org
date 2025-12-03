@@ -95,6 +95,7 @@ class RedditClient:
                 "Authorization": "bearer " + token,
                 "User-Agent": self.user_agent,
             },
+            timeout=10,
             data=(
                 ("kind", "self"),
                 ("sr", subreddit),
