@@ -60,8 +60,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
-import AugaInfo from '@components/blocks/AugaInfo.astro';
-import EvatiInfo from '@components/blocks/EvatiInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
 import SlyceInfo from '@components/blocks/SlyceInfo.astro';
 import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
@@ -91,7 +89,6 @@ type StagingTranslation = {
 }
 
 const STAGINGS_STATIONS:StagingTranslation = {
-	auga: 'Auga - Minmatar Militia HQ',
 	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
@@ -234,11 +231,9 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
-					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
+				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
 					staging === 'slyce' ? <SlyceInfo is_random={is_random_staging} /> :
-					staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'lxq2' ? <LXQ2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
