@@ -26,7 +26,8 @@ let post_fetching_error:string | false = false
 
 try {
     const market_locations = await get_market_locations()
-	contracts_service_staging = market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
+	const non_empty_market_locations =  market_locations.filter(market_location => market_location.expectations > 0)
+	contracts_service_staging = non_empty_market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
 
     const paginated_posts = await fetch_posts({
         page_num: 1,
