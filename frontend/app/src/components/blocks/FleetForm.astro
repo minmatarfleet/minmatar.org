@@ -90,6 +90,8 @@ const AUDIENCE_ICONS = {
     1: '/images/fleet-logo.svg',
     2: '/images/minmatar-logo.svg',
     3: '/images/muscle-logo.png',
+    5: '/images/warzone-logo.png',
+    6: '/images/etherium-logo.png',
 }
 
 import Context from '@components/layout/Context.astro';
@@ -192,7 +194,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             <img
                                                 class:list={{ selected: option.id === default_audience}}
                                                 x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                                src={AUDIENCE_ICONS[option.id]}
+                                                src={AUDIENCE_ICONS[option.id] ?? AUDIENCE_ICONS[0]}
                                                 height="128"
                                                 width="128"
                                             />
