@@ -23,6 +23,7 @@ import StylessButton from './StylessButton.astro';
         <PilotBadge
             character_id={fleet.fleet_commander_id}
             character_name={fleet.fleet_commander_name}
+            heading={true}
         >
             <small>{t(fleet.type as any)} {t('fleet')}</small>
         </PilotBadge>

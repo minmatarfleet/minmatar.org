@@ -18,7 +18,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 <ComponentBlock class:list={['relative ', Astro.props.class ]}>
     <img class="[ z-0 ]" src={cover} />
     
-    <BlockList class="[ relative z-10 !justify-between min-h-[340px] ]">
+    <BlockList class="[ relative z-10 !justify-end min-h-[340px] ]">
         <slot name="header" />
         
         <Flexblock gap='var(--space-m)'>

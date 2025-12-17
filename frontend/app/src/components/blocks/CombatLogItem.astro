@@ -74,23 +74,27 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
     </FlexInline>
 
     <Flexblock gap='var(--space-3xs)'>
-        {log.fleet_id > 0 ?
-            <h4>{t('fleet')} {log.fleet_id}</h4> :
-        log.fitting_id > 0 ?
-            <h4>{fitting?.name ?? t('unknown_fitting_name')}</h4> :
-            <h4>{log.character_name}</h4>
-        }
         <small>{format_date_time(lang, log.uploaded_at)}</small>
+        {log.fleet_id > 0 ?
+            <h3>{t('fleet')} {log.fleet_id}</h3> :
+        log.fitting_id > 0 ?
+            <h3>{fitting?.name ?? t('unknown_fitting_name')}</h3> :
+            <h3>{log.character_name}</h3>
+        }
     </Flexblock>
 </PictureCard>
 
 <style lang="scss">
     .icon {
-        margin-top: -13px;
-        margin-left: -15px;
+        margin-top: -8px;
+        margin-left: -10px;
     }
 
     small {
         color:  var(--fleet-yellow);
+    }
+
+    h3 {
+        font-size: var(--step-1);
     }
 </style>
