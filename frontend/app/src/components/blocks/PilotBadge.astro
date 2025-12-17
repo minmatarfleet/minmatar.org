@@ -55,7 +55,7 @@ delete attributes.class
         icon_quality={icon_quality}
     />
     <VerticalCenter>
-        <Flexblock gap='0' class="[ w-full ]">
+        <Flexblock gap={heading ? 'var(--space-3xs)' : '0'} class="[ w-full ]">
             <TitleElement
                 class="truncate text-[var(--highlight)] cursor-pointer max-w-fit"
                 set:text={character_id > 0 ? character_name : `[ ${t('unknown_character')} ]`}
