@@ -1,6 +1,5 @@
 ---
 import type { FittingItem } from '@dtypes/layout_components';
-import { get_ship_type_icon } from '@helpers/eve';
 
 interface Props {
     fitting:        FittingItem;
@@ -36,25 +35,10 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
         />
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='var(--space-3xs)'>
-                <h4>{title ? title : fitting.fitting_name}</h4>
                 {subtitle && <small>{subtitle}</small>}
+                <h3>{title ? title : fitting.fitting_name}</h3>
             </Flexblock>
         </Wrapper>
-        <picture
-            class="[ ship-type-icon ]"
-            data-tippy-content={fitting.ship_type}
-            x-init={`tippy($el, {
-                delay: [ 100, 200 ],
-                arrow: true,
-            })`}
-        >
-            <img
-                src={`/images/icons/ships/${get_ship_type_icon(fitting.ship_type)}`}
-                height="32"
-                width="32"
-                alt={`${fitting.ship_type} icon`}
-            />
-        </picture>
         <Wrapper class="[ fitting-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
         </Wrapper>
@@ -101,8 +85,8 @@ import ClipboardButton from "@components/blocks/ClipboardButton.astro";
         }
     }
 
-    h4 {
-        font-weight: 400;
+    h3 {
+        font-size: var(--step-1);
     }
 
     small {

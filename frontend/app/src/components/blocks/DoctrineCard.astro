@@ -40,8 +40,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         />
         <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='var(--space-3xs)'>
-                <h4>{title ? title : doctrine.name}</h4>
                 {subtitle && <small>{subtitle}</small>}
+                <h3>{title ? title : doctrine.name}</h3>
             </Flexblock>
         </Wrapper>
 
@@ -91,7 +91,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
         .doctrine-card-body {
             position: absolute;
-            bottom: 0;
+            bottom: 0%;
             left: 0;
             right: 0;
         }
@@ -103,8 +103,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         }
     }
 
-    h4 {
-        font-weight: 400;
+    h3 {
+        font-size: var(--step-1);
     }
 
     small {

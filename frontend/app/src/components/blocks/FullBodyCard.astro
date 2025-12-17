@@ -38,18 +38,20 @@ const image_alt = {
     {thumb_name &&
         <figcaption>
             <Flexblock gap={(thumb_title ? 'var(--space-3xs)' : '0')}>
-                <h4>{thumb_title}</h4>
                 <Flexblock gap='0'>
-                    <FixedFluid width={(logo ? '32px' : '0')} gap={(logo ? 'var(--space-3xs)' : '0')} class="[ items-center ]">
-                        {logo &&
-                            <img loading="lazy" src={logo} width="32" height="32" />
-                        }
-                        <p>{thumb_name}</p>
-                    </FixedFluid>
+                    {thumb_title &&
+                        <FixedFluid width={(logo ? '32px' : '0')} gap={(logo ? 'var(--space-3xs)' : '0')} class="[ items-center ]">
+                            {logo &&
+                                <img loading="lazy" src={logo} width="32" height="32" />
+                            }
+                            <p>{thumb_title}</p>
+                        </FixedFluid>
+                    }
                     {thumb_sub &&
                         <small>{thumb_sub}</small>
                     }
                 </Flexblock>
+                <h3>{thumb_name}</h3>
             </Flexblock>
         </figcaption>
     }
@@ -74,5 +76,9 @@ const image_alt = {
             inset-inline: 0;
             padding: var(--space-2xs) var(--space-xs) var(--space-2xs);
         }
+    }
+
+    h3 {
+        font-size: var(--step-1);
     }
 </style>
