@@ -1490,6 +1490,7 @@ export const ui = {
         'all_fitting_types': 'All fitting types',
         'all_ship_type': 'All ship types',
         'back_to_sigs': 'Back to SIGs',
+        'back_to_teams': 'Back to teams',
         'join_group': 'Join group',
         'join_team': 'Join team',
         'leave_group': 'Leave group',
