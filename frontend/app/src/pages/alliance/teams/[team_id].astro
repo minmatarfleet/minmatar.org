@@ -1,0 +1,169 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { prod_error_messages } from '@helpers/env'
+import type { GroupItemUI } from '@dtypes/layout_components'
+import { HTTP_404_Not_Found, HTTP_500_Server_Error } from '@helpers/http_responses'
+import { get_group_by_id_auth, get_group_by_id } from '@helpers/fetching/groups'
+
+const team_id = parseInt(Astro.params.team_id as string)
+
+if (isNaN(team_id))
+    return HTTP_404_Not_Found()
+
+let group:GroupItemUI | null = null
+let get_group_request_error:string | false = false
+
+try {
+    group = auth_token && user ?
+            await get_group_by_id_auth(auth_token, team_id, user.user_id, 'team') :
+            await get_group_by_id(team_id, 'team')
+} catch (error) {
+    get_group_request_error = prod_error_messages() ? t('get_group_request_error') : error.message
+    return HTTP_500_Server_Error()
+}
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+import { strip_markdown } from '@helpers/string';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro'
+import GroupStatus from '@components/blocks/GroupStatus.astro'
+
+import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
+
+const LOGO_TEXT = {
+    'team': t('team_logo'),
+    'group': t('group_logo'),
+}
+
+const COVERS = {
+    'Warzone Coordination': '/images/warzone-cover.jpg'
+}
+
+const page_title = group?.name
+const page_description = group?.description ?? ''
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: COVERS[group.name] ?? "/images/groups-cover.jpg",
+            image_990: COVERS[group.name] ?? "/images/groups-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <FlexInline class="[ !items-start ]" justification='space-between'>
+                <FlexInline>
+                    {!group?.image_url ?
+                        <picture class="bordered">
+                            <GroupsEvEIcon />
+                        </picture> :
+                        <img
+                            loading="lazy"
+                            src={group.image_url}
+                            width="64"
+                            height="64"
+                            alt={`${group.name} ${LOGO_TEXT['team']}`}
+                            onerror={`
+                                this.onerror=null;
+                                this.src='${'/images/icons/48px-Grouplist.png'}';
+                                this.closest('picture').classList.add('bordered')
+                                this.height = 48
+                                this.width = 48
+                            `}
+                        />
+                    }
+                    <TextBox>
+                        <h1>{group?.name}</h1>
+                    </TextBox>
+                </FlexInline>
+                <FlexInline class="[ !items-start ]">
+                    <Button href={translatePath('/alliance/teams/list')} >
+                        {t('back_to_sigs')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+
+            <TextBox>
+                <Flexblock gap='var(--space-xl)'>
+                    {group?.description &&
+                        <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(group?.description as string, { renderer })}></Flexblock>
+                    }
+
+                    {user &&
+                        <FlexInline class="[ !items-start ]">
+                            <GroupStatus
+                                group={group}
+                                group_type='team'
+                            />
+                        </FlexInline>
+                    }
+
+                    {group?.content &&
+                        <Flexblock
+                            class="[ prose ]"
+                            gap='var(--space-m)'
+                            set:html={marked.parse(group?.content as string, { renderer })}
+                            x-data={`{
+                                init_zoom() {
+                                    mediumZoom('img[data-zoomable]', {
+                                        background: 'var(--solid-transparency-background)',
+                                        scrollOffset: 0,
+                                        margin: 24,
+                                        metaClick: false,
+                                    })
+                                }
+                            }`}
+                            x-init="init_zoom()"
+                        />
+                    }
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+    }
+
+    picture {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        aspect-ratio: 1/1;
+
+        &.bordered {
+            border: solid 1px var(--border-color)
+        }
+    }
+</style>

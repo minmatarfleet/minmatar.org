@@ -265,7 +265,8 @@ const page_title = post?.title ?? t('new_post')
 </Viewport>
 
 <style lang="scss">
-    .excerpt {
+    .excerpt,
+    :global(.excerpt p) {
         font-size: var(--step-1);
     }
 </style>

@@ -1,0 +1,141 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user_id = !user ? false : user.user_id
+
+if (!auth_token || !user_id)
+    return HTTP_403_Forbidden()
+
+import type { Alert, GroupItemType, GroupItemUI } from '@dtypes/layout_components'
+const group_id = parseInt(Astro.url.searchParams.get('id') as string)
+const type = Astro.url.searchParams.get('type') as GroupItemType
+
+let alert:Alert | false = false
+
+import { get_group_by_id_auth } from '@helpers/fetching/groups'
+import {
+    create_group_request as create_sig_request,
+    remove_group_member as remove_sig_member,
+} from '@helpers/api.minmatar.org/sigs'
+import {
+    create_group_request as create_team_request,
+    remove_group_member as remove_team_member
+} from '@helpers/api.minmatar.org/teams'
+import { query_string } from '@helpers/string';
+
+let create_group_request_error:string | false = false
+if (Astro.request.method === "POST") {
+    try {
+        if (type === 'team')
+            await create_team_request(auth_token, group_id)
+        else
+            await create_sig_request(auth_token, group_id)
+    } catch (error) {
+        create_group_request_error = prod_error_messages() ? t('create_group_joining_request_error') : error.message
+    }
+}
+
+let delete_member_error:string | false = false
+if (Astro.request.method === "DELETE") {
+    try {
+        if (type === 'team')
+            await remove_team_member(auth_token, group_id, user_id)
+        else
+            await remove_sig_member(auth_token, group_id, user_id)
+    } catch (error) {
+        delete_member_error = prod_error_messages() ? t('delete_member_error') : error.message
+    }
+}
+
+let group:GroupItemUI | null = null
+let get_group_request_error:string | false = false
+try {
+    group = await get_group_by_id_auth(auth_token, group_id, user_id, type)
+} catch (error) {
+    get_group_request_error = prod_error_messages() ? t('get_group_request_error') : error.message
+}
+
+if (create_group_request_error) {
+    const ALERT_TITLE = {
+        'team': t('team_join_request_dialog_title'),
+        'group': t('group_join_request_dialog_title'),
+    }
+
+    alert = {
+        title: ALERT_TITLE[type],
+        content: create_group_request_error,
+    }
+
+    if (group) {
+        const params = query_string({
+            name: group.name,
+            description: group.description,
+            image_url: JSON.stringify(group.image_url),
+            message: create_group_request_error,
+            type: type,
+        })
+
+        alert.partial = `${translatePath('/partials/dialog_with_group/')}?${params}`
+    }
+}
+
+if (delete_member_error) {
+    const ALERT_TITLE = {
+        'team': t('team_leave_request_dialog_title'),
+        'group': t('group_leave_request_dialog_title'),
+    }
+
+    alert = {
+        title: ALERT_TITLE[type],
+        content: delete_member_error,
+    }
+
+    if (group) {
+        const params = query_string({
+            name: group.name,
+            description: group.description,
+            image_url: JSON.stringify(group.image_url),
+            message: delete_member_error,
+            type: type,
+        })
+
+        alert.partial = `${translatePath('/partials/dialog_with_group/')}?${params}`
+    }
+}
+
+const GROUP_STATUS_PARTIAL_URL = translatePath('/partials/group_status_component/')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import GroupStatus from '@components/blocks/GroupStatus.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+const partial_query_string = query_string({
+    id: group_id.toString(),
+    type: type,
+})
+---
+
+{get_group_request_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${GROUP_STATUS_PARTIAL_URL}${partial_query_string}`,
+            message: get_group_request_error,
+            delay: delay,
+        }}
+    />
+    :
+    <GroupStatus
+        group={group as GroupItemUI }
+        group_type={type}
+    />
+}

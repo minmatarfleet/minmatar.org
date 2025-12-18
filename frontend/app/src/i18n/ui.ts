@@ -1489,5 +1489,12 @@ export const ui = {
         'open_combatlog': 'Open combatlog',
         'all_fitting_types': 'All fitting types',
         'all_ship_type': 'All ship types',
+        'back_to_sigs': 'Back to SIGs',
+        'join_group': 'Join group',
+        'join_team': 'Join team',
+        'leave_group': 'Leave group',
+        'leave_team': 'Leave team',
+        'request_pending': 'Request pending',
+        'request_denied': 'Request denied',
     },
 } as const;

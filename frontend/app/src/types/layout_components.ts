@@ -417,6 +417,7 @@ export interface GroupItemUI {
     name:           string;
     description:    string | null;
     image_url:      string | null;
+    content?:       string | null;
     status?:        GroupStatus;
     last_update?:    Date;
 }
