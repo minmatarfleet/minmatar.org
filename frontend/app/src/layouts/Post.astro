@@ -263,7 +263,8 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 		height: 100%;
 	}
 
-    .excerpt {
-        font-size: var(--step-1) !important;
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
     }
 </style>

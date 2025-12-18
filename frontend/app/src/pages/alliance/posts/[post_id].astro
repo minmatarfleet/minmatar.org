@@ -141,7 +141,8 @@ const page_description = post?.excerpt ?? page_title
 </Viewport>
 
 <style lang="scss">
-    .excerpt {
+    .excerpt,
+    :global(.excerpt p) {
         font-size: var(--step-1);
     }
 </style>

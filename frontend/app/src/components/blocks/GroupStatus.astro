@@ -2,17 +2,19 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { Alert, GroupItemUI, GroupItemType } from '@dtypes/layout_components'
+import type { Alert, GroupItemUI, GroupItemType, ButtonSizes } from '@dtypes/layout_components'
 
 interface Props {
     group:      GroupItemUI;
     group_type: GroupItemType;
+    size?:      ButtonSizes;
     alert?:     Alert | false;
 }
 
 const {
     group,
     group_type,
+    size = 'sm',
     alert = false,
 } = Astro.props
 
@@ -20,7 +22,7 @@ const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
 
 import { query_string } from '@helpers/string'
-const GROUP_ITEM_PARTIAL_URL = translatePath('/partials/group_item_component/')
+const GROUP_STATUS_PARTIAL_URL = translatePath('/partials/group_status_component/')
 
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
@@ -48,6 +50,16 @@ const LEAVE_DIALOG_TEXT = {
     'group': t('group_leave_request_dialog_text')
 }
 
+const JOIN_DIALOG_TEXT = {
+    'team': t('join_team'),
+    'group': t('join_group')
+}
+
+const LEAVE_BUTTON_TEXT = {
+    'team': t('leave_team'),
+    'group': t('leave_group')
+}
+
 import { hours_diff, from_now_diff } from '@helpers/date'
 const hours_since_last_app = hours_diff(group.last_update as Date, new Date())
 const REAPPLY_PERIOD_HOURS = 1
@@ -70,16 +82,16 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
         {(group?.status == 'available' && !primary_character_id) &&
             <ButtonAddPrimary
                 color='green'
-                size='sm'
+                size={size}
                 dialog_title={DIALOG_TITLE[group_type]}
             >
-                {t('join')}
+                {JOIN_DIALOG_TEXT[group_type]}
             </ButtonAddPrimary>
         }
         {((group?.status == 'available' && primary_character_id) || (group?.status == 'denied' && is_re_applicable && primary_character_id)) &&
             <Button
                 type="button"
-                size='sm'
+                size={size}
                 color='green'
                 x-bind:disabled="disabled"
                 x-data={`{
@@ -99,11 +111,11 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
                             return_on_accept: ${group.id},
                             hx: {
                                 method: 'post',
-                                url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                url: '${GROUP_STATUS_PARTIAL_URL}?${query_string({
                                     id: group.id.toString(),
                                     type: group_type,
                                 })}',
-                                target: '#group-item-${group.id}',
+                                target: '#corporation-status-${group.id}',
                                 swap: 'outerHTML transition:true'
                             }
                         }).then( (group_id) => { this.disabled = !!group_id } )
@@ -112,22 +124,22 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
                 x-on:click="show_join_request_dialog()"
                 type="button"
             >
-                {t('join')}
+                {JOIN_DIALOG_TEXT[group_type]}
             </Button>
         }
         {group?.status == 'unauth' &&
             <ButtonAuth
-                size='sm'
+                size={size}
                 color='green'
-                size='sm'
+                size={size}
                 dialog_title={DIALOG_TITLE[group_type]}
             >
-                {t('join')}
+                {JOIN_DIALOG_TEXT[group_type]}
             </ButtonAuth>
         }
         {group?.status == 'confirmed' &&
             <Button
-                size='sm'
+                size={size}
                 type="button"
                 x-data={`{
                     show_leave_group_dialog() {
@@ -143,11 +155,11 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
                             return_on_accept: ${group.id},
                             hx: {
                                 method: 'delete',
-                                url: '${GROUP_ITEM_PARTIAL_URL}?${query_string({
+                                url: '${GROUP_STATUS_PARTIAL_URL}?${query_string({
                                     id: group.id.toString(),
                                     type: group_type,
                                 })}',
-                                target: '#group-item-${group.id}',
+                                target: '#corporation-status-${group.id}',
                                 swap: 'outerHTML transition:true'
                             }
                         })
@@ -155,7 +167,7 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
                 }`}
                 x-on:click="show_leave_group_dialog()"
             >
-                {t('leave')}
+                {LEAVE_BUTTON_TEXT[group_type]}
             </Button>
         }
         {group?.status == 'requested' &&
@@ -163,14 +175,14 @@ const REQUEST_DENIED_TOOLTIP = t('request_denied_tooltip').replace('TIME_TO_REAP
                 data-tippy-content={group_type === 'team' ? t('pending_team_request_tooltip') : t('pending_group_request_tooltip')}
                 x-init="tippy($el, tippy_options)"
                 color='alliance-blue'
-                text={t('pending')} 
+                text={t('request_pending')} 
             />
         }
         {group?.status == 'denied' && !is_re_applicable &&
             <Tag
                 data-tippy-content={REQUEST_DENIED_TOOLTIP}
                 x-init="tippy($el, tippy_options)"
-                text={t('denied')} 
+                text={t('request_denied')} 
             />
         }
         {group?.status == 'error' &&
