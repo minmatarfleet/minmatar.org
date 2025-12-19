@@ -84,7 +84,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 <a href={translatePath(`/alliance/${GROUP_SLUG[groups_type]}/${group.id}`)} class:list={{ 'desature-bg': group?.status !== 'confirmed' }}>
     <PictureCard
-        src={(groups_type === 'team' ? team_covers[group.name] : sigs_covers[group.name]) ?? '/images/sigs/generic-group-cover.jpg'}
+        src={(groups_type === 'team' ? team_covers[group.name] : sigs_covers[group.name]) ?? `/images/sigs/generic-${groups_type}-cover.jpg`}
         alt={group.name}
         narrow={true}
     >
