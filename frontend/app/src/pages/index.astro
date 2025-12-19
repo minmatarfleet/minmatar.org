@@ -395,10 +395,13 @@ const page_description = t('index.leading_text');
 	<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@3.2.0/tsparticles.preset.snow.bundle.min.js"></script>
 
 	<script is:inline>
-		(async (engine) => {
-			await loadSnowPreset(engine);
+		async function initSnow() {
+			// Prevent duplicate canvas if navigating back
+			if (tsParticles.domItem("decoration_overlay")) return
 
-            await engine.load({
+			await loadSnowPreset(tsParticles)
+
+			await tsParticles.load({
 				id: "decoration_overlay",
 				options: {
 					preset: "snow",
@@ -410,7 +413,9 @@ const page_description = t('index.leading_text');
 					}
 				}
 			});
-		})(tsParticles);
+		}
+
+		document.addEventListener("astro:page-load", initSnow)
 	</script>
 )}
 
