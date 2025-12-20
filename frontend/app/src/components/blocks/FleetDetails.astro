@@ -141,6 +141,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </TextBox>
                 </Flexblock>
 
+                <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} fleet_tracking_texts={fleet_tracking_texts} />
+
                 {history &&
                     <AARLinkButton
                         aarlink={fleet.aar_link ? fleet.aar_link : undefined}
@@ -154,8 +156,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         {fleet.tracking}
                     </TextGroup>
                 </VerticalCenter> -->
-
-                <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} fleet_tracking_texts={fleet_tracking_texts} />
             </Flexblock>
         </ComponentBlock>
 
