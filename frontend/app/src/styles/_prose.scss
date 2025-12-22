@@ -6,17 +6,16 @@ main .prose {
     }
 
     h1 {
-        font-size: var(--step-5);
         line-height: 1.1;
     }
     
     h2 {
-        font-size: var(--step-3);
+        // font-size: var(--step-3);
         line-height: 1.1;
     }
     
     h3 {
-        font-size: var(--step-2);
+        // font-size: var(--step-2);
         line-height: 1.1;
     }
     
@@ -38,8 +37,11 @@ main .prose {
         font-weight: 600;
     }
 
-    * + h2 {
-        margin-block-start: var(--space-xl) !important;
+    code {
+        &:after,
+        &:before {
+            content: '' !important;
+        }
     }
 
     ol,
@@ -49,10 +51,6 @@ main .prose {
         > li::marker {
             color: var(--highlight);
         }
-    }
-
-    li + li {
-        margin-block-start: var(--space-m) !important;
     }
 
     .bleed {
