@@ -102,7 +102,11 @@ const page_description = post?.excerpt ?? page_title
             </FlexInline>
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
-                    <PilotBadge character_id={post?.author?.character_id as number} character_name={post?.author?.character_name as string}>
+                    <PilotBadge
+                        character_id={post?.author?.character_id as number}
+                        character_name={post?.author?.character_name as string}
+                        heading={true}
+                    >
                         <small>{format_date(lang, post?.date_posted)}</small>
                     </PilotBadge>
 
@@ -118,9 +122,8 @@ const page_description = post?.excerpt ?? page_title
                         </FlexInline>
                     }
 
-                    <Flexblock
+                    <div
                         class="[ prose ]"
-                        gap='var(--space-m)'
                         set:html={marked.parse(post?.content as string, { renderer })}
                         x-data={`{
                             init_zoom() {
