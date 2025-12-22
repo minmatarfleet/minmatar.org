@@ -24,7 +24,7 @@ import Button from '@components/blocks/Button.astro';
     size='sm'
     hx-get={`${POSTS_LIST_PARTIAL_URL}?page=${page}`}
     hx-swap="outerHTML transition:true"
-    hx-target="#posts-list"
+    hx-target="#posts-feeds"
     hx-indicator=".loader"
 >
     {text}
