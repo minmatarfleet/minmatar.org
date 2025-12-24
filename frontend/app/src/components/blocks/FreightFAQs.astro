@@ -18,27 +18,29 @@ import Markdown from '@components/blocks/Markdown.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 ---
 
-<Flexblock>
+<Flexblock gap='var(--space-l)'>
     <FixedFluid width="48" class="[ items-center ]">
         <TutorialIcon />
         <h2>{t('freight.standard.faq_title')}</h2>
     </FixedFluid>
-    {!is_contract_page &&
-        <h3>{t('freight.standard.faq_4_title')}</h3>
+    <div class="[ prose ]">
+        {!is_contract_page &&
+            <h3>{t('freight.standard.faq_4_title')}</h3>
+            <Markdown
+                markdown={t('freight.standard.faq_4_text')}
+                inline={true}
+            />
+        }
+        {is_contract_page &&
+            <h3>{t('freight.contract.faq_1_title')}</h3>
+            <p>{t('freight.contract.faq_1_text')}</p>
+        }
+        <h3>{t('freight.standard.faq_1_title')}</h3>
+        <p>{t('freight.standard.faq_1_text')}</p>
+        <h3>{t('freight.standard.faq_3_title')}</h3>
         <Markdown
-            markdown={t('freight.standard.faq_4_text')}
+            markdown={t('freight.standard.faq_3_text')}
             inline={true}
         />
-    }
-    {is_contract_page &&
-        <h3>{t('freight.contract.faq_1_title')}</h3>
-        <p>{t('freight.contract.faq_1_text')}</p>
-    }
-    <h3>{t('freight.standard.faq_1_title')}</h3>
-    <p>{t('freight.standard.faq_1_text')}</p>
-    <h3>{t('freight.standard.faq_3_title')}</h3>
-    <Markdown
-        markdown={t('freight.standard.faq_3_text')}
-        inline={true}
-    />
+    </div>
 </Flexblock>
