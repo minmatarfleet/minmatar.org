@@ -61,7 +61,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
-import SlyceInfo from '@components/blocks/SlyceInfo.astro';
 import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
 import LXQ2Info from '@components/blocks/LXQ2Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
@@ -93,7 +92,6 @@ const STAGINGS_STATIONS:StagingTranslation = {
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 	amamake: 'Amamake - 5 times nearly AT winners',
 	lxq2: 'LXQ2-T - Today was Fruitful',
-	slyce: '8KE-YS - Xadr\'s Pleasure Palace'
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
@@ -101,7 +99,6 @@ const STAGINGS_SYSTEMS:StagingTranslation = {
 	amarr: 'Amarr',
 	amamake: 'Amamake',
 	lxq2: 'LXQ2-T',
-	slyce: '8KE-YS',
 }
 
 const RATTINI_TRIBE_ID = 98726134
@@ -114,10 +111,6 @@ const STAGING_CORPORATIONS = {
 	amarr: {
 		id: EMPEROR_FAMILY_ID,
 		name: 'Emperor Family',
-	},
-	slyce: {
-		id: RATTINI_TRIBE_ID,
-		name: 'Rattini Tribe'
 	},
 	amamake: {
 		id: OBLIVION_WATCH_ID,
@@ -171,22 +164,18 @@ const page_description = t('index.leading_text');
     <PageLanding
         cover={{
 			video: staging === 'amarr' ? '/videos/emperor-loop.webm' :
-					staging === 'slyce' ? '/videos/slyce-loop.webm' :
 					staging === 'amamake' ? '/videos/amamake-loop.webm' :
 					staging === 'lxq2' ? '/videos/lxq2-loop.webm' :
 					'/videos/watermelon-loop.webm',
 			video_thumb: staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
-					staging === 'slyce' ? '/images/home-slyce-cover.jpg' :
 					staging === 'amamake' ? '/images/home-amamake-cover.jpg' :
 					staging === 'lxq2' ? '/images/home-lxq2-cover.jpg' :
 					'/images/home-cover.jpg',
             image: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
 					staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
 					staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
             image_990: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					   staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
 					   staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
 					   staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
@@ -214,7 +203,6 @@ const page_description = t('index.leading_text');
 			>
 				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
-					staging === 'slyce' ? <SlyceInfo is_random={is_random_staging} /> :
 					staging === 'lxq2' ? <LXQ2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
