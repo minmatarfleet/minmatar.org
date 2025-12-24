@@ -39,7 +39,9 @@ body,
 }
 
 .component {
-    // background-color: var(--component-background);
+    h2 {
+        font-size: var(--step-1);
+    }
 
     h4, p, li {
         font-size: var(--step--1);
