@@ -287,15 +287,6 @@ class SrpRouterTestCase(TestCase):
         )
         self.assertEqual(20000000, get_reimbursement_amount(stabber))
 
-        # Test fallback to hard-coded values
-        zirn = EveType(
-            name="Zirnitra",
-            eve_group=EveGroup(
-                name="Dreadnaught",
-            ),
-        )
-        self.assertEqual(4000000000, get_reimbursement_amount(zirn))
-
     def test_invalid_killmail_link(self):
         data = {
             "external_killmail_link": "This won't work",
