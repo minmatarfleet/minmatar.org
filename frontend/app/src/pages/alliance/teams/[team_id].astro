@@ -84,7 +84,7 @@ const page_description = group?.description ?? ''
     >
         <Flexblock gap='var(--space-2xl)'>
             <FlexInline class="[ !items-start ]" justification='space-between'>
-                <FlexInline>
+                <FlexInline gap='var(--space-m)'>
                     {!group?.image_url ?
                         <picture class="bordered">
                             <GroupsEvEIcon />
@@ -92,8 +92,8 @@ const page_description = group?.description ?? ''
                         <img
                             loading="lazy"
                             src={group.image_url}
-                            width="64"
-                            height="64"
+                            width="96"
+                            height="96"
                             alt={`${group.name} ${LOGO_TEXT['team']}`}
                             onerror={`
                                 this.onerror=null;
