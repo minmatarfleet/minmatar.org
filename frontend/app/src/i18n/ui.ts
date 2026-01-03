@@ -208,11 +208,11 @@ export const ui = {
         'groups.add.page_title': 'Add group',
 
         'groups.list.page_title': 'Special Interest Groups',
-        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by one of our group officers, and you will be contacted via Discord for further details',
+        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by one of our group officers, and you will be contacted via Discord for further details.',
         'groups.list.meta_description': 'Learn more about special interest groups in Minmatar Fleet Alliance, the community led groups that create the majority of our in-game content.',
 
         'teams.list.page_title': 'Teams',
-        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details',
+        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details.',
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
         'groups.requests.page_title': 'SIGs requests',
@@ -1497,5 +1497,7 @@ export const ui = {
         'leave_team': 'Leave team',
         'request_pending': 'Request pending',
         'request_denied': 'Request denied',
+        'origin': 'Origin',
+        'destination': 'Destination',
     },
 } as const;
