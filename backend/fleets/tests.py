@@ -615,7 +615,7 @@ class FleetTaskTests(TestCase):
     @patch("fleets.tasks.settings")
     def test_update_fleet_schedule_task(self, settings_mock):
         setup_fleet_reference_data()
-        fleet = make_test_fleet(
+        make_test_fleet(
             "Test fleet 1", self.user
         )  # pylint: disable=unused-variable
 
