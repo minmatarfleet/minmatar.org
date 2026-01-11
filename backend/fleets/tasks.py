@@ -11,7 +11,22 @@ discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
 
 FLEET_SCHEDULE_CHANNEL_ID = settings.DISCORD_FLEET_SCHEDULE_CHANNEL_ID
-FLEET_SCHEDULE_MESSAGE_ID = settings.DISCORD_FLEET_SCHEDULE_MESSAGE_ID
+
+
+def get_fleet_emoji(fleet_type):
+    """Get the emoji string in format <:name:id> for a fleet type"""
+    # Convert fleet_type underscore to hyphen for matching (non_strategic -> non-strategic)
+    emoji_name = fleet_type.replace("_", "-")
+
+    # Search through DISCORD_FLEET_EMOJIS to find matching emoji_name
+    for (
+        name,
+        emoji_id,
+    ) in settings.DISCORD_FLEET_EMOJIS.values():
+        if name == emoji_name and emoji_id:
+            return f"<:{name}:{emoji_id}>"
+
+    return ""
 
 
 @app.task()
@@ -56,16 +71,41 @@ def update_fleet_schedule():
         EveFleet.objects.filter(start_time__gte=timezone.now())
         .exclude(status="cancelled")
         .order_by("start_time")
+        .select_related("location", "audience", "created_by")
     )
+
+    # Group fleets by location
+    fleets_by_location = {}
+    for fleet in fleets:
+        if fleet.audience and fleet.audience.add_to_schedule:
+            location_name = (
+                fleet.location.location_name
+                if fleet.location
+                else "No Location"
+            )
+            if location_name not in fleets_by_location:
+                fleets_by_location[location_name] = []
+            fleets_by_location[location_name].append(fleet)
+
     message = "## Fleet Schedule\n"
 
-    for fleet in fleets:
-        if fleet.audience.add_to_schedule:
-            # pylint: disable=inconsistent-quotes
-            message += f"- {fleet.get_type_display()} | {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet.start_time.timestamp())}> LOCAL | <@{fleet.fleet_commander.user.discord_user.id}>\n"
-
-    if not fleets:
+    if not fleets_by_location:
         message += "- No upcoming fleets, go touch grass you nerd"
+    else:
+        # Sort locations alphabetically
+        for location_name in sorted(fleets_by_location.keys()):
+            message += f"\n**{location_name}**\n"
+            for fleet in fleets_by_location[location_name]:
+                fleet_emoji = get_fleet_emoji(fleet.type)
+                fc_mention = (
+                    f"<@{fleet.fleet_commander.user.discord_user.id}>"
+                    if fleet.fleet_commander
+                    and fleet.fleet_commander.user
+                    and fleet.fleet_commander.user.discord_user
+                    else ""
+                )
+                # pylint: disable=inconsistent-quotes
+                message += f"- {fleet_emoji} {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE (<t:{int(fleet.start_time.timestamp())}>) {fc_mention}\n"
     payload = {
         "content": message,
         "components": [
@@ -91,25 +131,13 @@ def update_fleet_schedule():
         ],
     }
 
-    if (
-        discord_client.get_message(
-            FLEET_SCHEDULE_CHANNEL_ID, FLEET_SCHEDULE_MESSAGE_ID
-        )["content"]
-        == message
-    ):
-        logger.debug("Fleet schedule message is up to date, skipping update")
-        return
+    # Delete all messages in the channel
+    messages = discord_client.get_messages(FLEET_SCHEDULE_CHANNEL_ID)
+    for msg in messages:
+        try:
+            discord_client.delete_message(FLEET_SCHEDULE_CHANNEL_ID, msg["id"])
+        except Exception as e:
+            logger.warning("Failed to delete message %s: %s", msg["id"], e)
 
-    discord_client.update_message(
-        FLEET_SCHEDULE_CHANNEL_ID, FLEET_SCHEDULE_MESSAGE_ID, payload=payload
-    )
-
-    # Create reminder message and delete it
-    updated_notification_id = discord_client.create_message(
-        FLEET_SCHEDULE_CHANNEL_ID,
-        message="Fleet has been posted, or fleet details have changed",
-    ).json()["id"]
-
-    discord_client.delete_message(
-        FLEET_SCHEDULE_CHANNEL_ID, updated_notification_id
-    )
+    # Post new message
+    discord_client.create_message(FLEET_SCHEDULE_CHANNEL_ID, payload=payload)

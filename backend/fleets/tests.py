@@ -152,21 +152,29 @@ class FleetSignalsTestCase(TestCase):
 
         update_fleet_schedule_on_save(None, instance, False)
 
+        # Should not be called when add_to_schedule is False
+        discord_mock.get_messages.assert_not_called()
+
         instance.audience.add_to_schedule = True
+        discord_mock.get_messages.return_value = []
 
         update_fleet_schedule_on_save(None, instance, False)
 
-        discord_mock.update_message.assert_called_once()
+        # Should be called when add_to_schedule is True
+        discord_mock.get_messages.assert_called_once()
+        discord_mock.create_message.assert_called_once()
 
     @patch("fleets.tasks.discord_client")
     def test_update_fleet_schedule_on_delete(self, discord_mock):
         instance = MagicMock(spec=EveFleet)
 
         instance.audience.add_to_schedule = True
+        discord_mock.get_messages.return_value = []
 
         update_fleet_schedule_on_delete(None, instance)
 
-        discord_mock.update_message.assert_called_once()
+        discord_mock.get_messages.assert_called_once()
+        discord_mock.create_message.assert_called_once()
 
 
 class FleetRouterTestCase(TestCase):
@@ -604,9 +612,12 @@ class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_update_fleet_schedule_task(self):
+    @patch("fleets.tasks.settings")
+    def test_update_fleet_schedule_task(self, settings_mock):
         setup_fleet_reference_data()
-        make_test_fleet("Test fleet 1", self.user)
+        make_test_fleet(
+            "Test fleet 1", self.user
+        )  # pylint: disable=unused-variable
 
         fc = EveCharacter.objects.create(
             character_id=1234,
@@ -621,12 +632,47 @@ class FleetTaskTests(TestCase):
             user=self.user,
         )
 
-        with patch("fleets.tasks.discord_client") as discord_mock:
-            update_fleet_schedule()
+        # Mock settings
+        settings_mock.DISCORD_FLEET_SCHEDULE_CHANNEL_ID = 12345
+        settings_mock.DISCORD_FLEET_EMOJIS = {
+            "Training": ("training", 999999),
+        }
 
-            discord_mock.update_message.assert_called()
-            discord_mock.create_message.assert_called()
-            discord_mock.delete_message.assert_called()
+        # Patch the module-level constant that was set at import time
+        with patch("fleets.tasks.FLEET_SCHEDULE_CHANNEL_ID", 12345):
+            with patch("fleets.tasks.discord_client") as discord_mock:
+                # Mock get_messages to return some messages
+                discord_mock.get_messages.return_value = [
+                    {"id": "123"},
+                    {"id": "456"},
+                ]
+
+                update_fleet_schedule()
+
+                # Verify Discord API calls
+                discord_mock.get_messages.assert_called_once_with(12345)
+                discord_mock.create_message.assert_called_once()
+                # delete_message should be called for each message
+                self.assertEqual(discord_mock.delete_message.call_count, 2)
+
+                # Verify the message payload
+                call_args = discord_mock.create_message.call_args
+                self.assertEqual(call_args[0][0], 12345)  # channel_id
+                payload = call_args[1]["payload"]
+
+                # Verify message structure
+                self.assertIn("content", payload)
+                self.assertIn("components", payload)
+                content = payload["content"]
+
+                # Verify message starts with header
+                self.assertTrue(content.startswith("## Fleet Schedule"))
+                # Verify location grouping
+                self.assertIn("**Test Location**", content)
+                # Verify FC mention
+                self.assertIn("<@1>", content)
+                # Verify emoji is included (if set)
+                self.assertIn("<:training:999999>", content)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
