@@ -764,6 +764,8 @@ export const doctrine_types = [
     'skirmish',
     'strategic',
     'specialized',
+    'faction_warfare',
+    'nullsec',
 ]
 
 export interface SystemCardInfo {

@@ -59,7 +59,7 @@ export const ui = {
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
         'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE',
-        
+
         'fleets.srp.page_title': 'Ship Replacement Program',
         'fleets.srp.leading_text': 'Designed to minimize downtime, SRP rewards participation in fleet operations by covering a portion or all of the lost ship’s cost.',
         'fleets.srp.cover_alt': 'Basilisk spawned on the landing pad of a player station.',
@@ -123,18 +123,18 @@ export const ui = {
 
         'intel.timers.page_title': 'Active structure timers',
         'intel.timers.leading_text': 'Offensive and defensive timers reported by our pilots. These typically turn into fleets, and we encourage all pilots to report intel.',
-        
+
         'intel.timers.add.page_title': 'Add structure timer',
-        
+
         'intel.timers.history.page_title': 'Structure timers history',
 
         'intel.add_structure.page_title': 'Add structure',
 
         'intel.moon_tracking.page_title': 'Moon tracking',
         'intel.moon_tracking.leading_text': 'Information on moons within our sphere of influence. Critical for passive income sources.',
-        
+
         'intel.moon_tracking.system.leading_text': 'Assess the level of completion for scanning on moons in the system and colaborate scanning the missing ones.',
-        
+
         'intel.combatlog.page_title': 'Combatlog analyzer',
         'intel.combatlog.leading_text': 'Get an insight of the fight and analize why your ship ended into a pile of debris.',
         'intel.combatlog.cover_alt': 'A fleet of Munins hammering a Machariel',
@@ -180,7 +180,7 @@ export const ui = {
 
         'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
         'assets.description': 'Locate your personal assets accross New Eden. Minmatar Fleet only tracks assets in NPC and structures owned by our alliance. This is not a replacement for the in-game asset window',
-        
+
         'posts.page_title': 'Posts',
         'posts.cover_alt': 'Planet with a moon in the backgraound of an asteroid field',
         'posts.description': 'Create, update and manage your alliance news timeline posts.',
@@ -1019,7 +1019,11 @@ export const ui = {
         'strategic': 'Strategic',
         'strategic_description': 'These doctrines are more advanced, and require additional support (e.g capitals) and knowledge to utilize properly. Due to their cost, they are less abundant on contracts.',
         'specialized': 'Specialized',
-        'specialized_description': 'These doctrines have a specific use case, and are only used in situations where they’re the right tool for the job. They are commonly deployed by special interest groups. Certain doctrines (e.g tornados) will be available on contract.',
+        'specialized_description': 'These doctrines have a specific use case, and are only used in situations where they\'re the right tool for the job. They are commonly deployed by special interest groups. Certain doctrines (e.g tornados) will be available on contract.',
+        'faction_warfare': 'Faction warfare',
+        'faction_warfare_description': 'These doctrines are optimized for faction warfare operations, designed for the ship size limitations of complexes and NVY battlefields. They are designed to be versatile from 5 to 30 pilots, which the vast majority of fights fall within.',
+        'nullsec': 'Nullsec',
+        'nullsec_description': 'These doctrines are designed for null-sec operations, designed for larger scale fleet engagements beyond 30 pilots. They feature more specialized roles to leverage the additional mechanics like bubbles, bombs, and other tactics.',
         'moon_tracking': 'Moon tracking',
         'add_moon': 'Add moon',
         'add_moon_dialog_title': 'Add moon',
