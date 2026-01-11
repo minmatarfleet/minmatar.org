@@ -66,6 +66,8 @@ class EveDoctrine(models.Model):
         ("strategic", "Strategic"),
         ("specialized", "Specialized"),
         ("casual", "Casual"),
+        ("faction_warfare", "Faction warfare"),
+        ("nullsec", "Nullsec"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)
