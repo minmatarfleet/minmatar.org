@@ -17,10 +17,7 @@ logger = logging.getLogger(__name__)
 def update_fleet_schedule_on_save(sender, instance, created, **kwargs):
     if instance.audience and not instance.audience.add_to_schedule:
         return
-    try:
-        update_fleet_schedule()
-    except Exception as e:
-        logger.error("Unable to update fleet schedule, %s", e)
+    update_fleet_schedule()
 
 
 @receiver(signals.post_delete, sender=EveFleet)
