@@ -31,6 +31,7 @@ jobs:
           black --check .
       - name: Run tests
         run: |
+          cp app/settings_testsuite.py app/settings.py
           pip install pipenv
           pipenv install --dev
           pipenv install coverage

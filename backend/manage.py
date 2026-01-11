@@ -9,14 +9,6 @@ def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
     try:
         import dotenv  # noqa
-
-        dotenv.read_dotenv(
-            os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "./backend/.env.local",
-            )
-        )
-        print("successfully loaded .env.local")
     except ImportError:
         pass
     try:

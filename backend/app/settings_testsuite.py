@@ -1,6 +1,5 @@
 """
 Django settings for my.minmatar.org project.
-
 Some Docker configs replace this with a copy of settings.py.example
 """
 
