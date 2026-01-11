@@ -33,7 +33,7 @@ The source code is hosted on GitHub, and the CI/CD pipeline is built using GitHu
 - Create an application called `Minmatar - Local`
 - Go to OAuth2 and add `http://localhost:8000/api/users/callback` and `http://localhost:8000/oauth2/login/redirect` to Redirects
 - Go to Bot and enable it
-- Go to Installation and install the bot / application to your discord
+- Go to OAuth2, select the "bot" scope, give it admin role, and copy the link it creates to invite the bot to your server
 
 # Quickstart
 ## Frontend
