@@ -8,11 +8,8 @@ services:
             MYSQL_ROOT_PASSWORD: example
         volumes:
             - database:/var/lib/mysql
-            - ./backend/sql:/docker-entrypoint-initdb.d
         ports:
             - "3306:3306"
-        networks:
-            - local-network
         healthcheck:
             test:
                 [
@@ -29,142 +26,12 @@ services:
 
     redis:
         image: redis:6.0.9-alpine
-        networks:
-            - local-network
+        ports:
+            - "6379:6379"
         volumes:
             - "redis:/var/lib/redis"
             - "redis:/data"
 
-    app:
-        build:
-            context: ./backend/
-            dockerfile: Dockerfile
-        working_dir: /opt/minmatar
-        command: ./app-start.sh
-        env_file:
-            - backend/.env
-        networks:
-            - local-network
-        depends_on:
-            db:
-                condition: service_healthy
-        ports:
-            - "8000:8000"
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-
-    bot:
-        build:
-            context: ./bot/
-            dockerfile: Dockerfile
-        working_dir: /opt/bot
-        command: python3 main.py
-        env_file:
-            - bot/.env
-        networks:
-            - local-network
-        depends_on:
-            db:
-                condition: service_healthy
-
-
-    frontend:
-        build:
-            context: ./frontend/
-            dockerfile: Dockerfile
-        depends_on:
-            - app
-        env_file:
-            - frontend/.env
-        networks:
-            local-network:
-                aliases:
-                    - local.minmatar.org
-        ports:
-            - "4321:4321"
-        volumes:
-            - "./frontend/app/src/data:/app/src/data"
-
-    proxy:
-        image: nginx:stable
-        restart: always
-        volumes:
-            - ./proxy/reverse_proxy_local.conf:/etc/nginx/conf.d/default.conf:ro
-        ports:
-            - "80:80"
-            - "443:443"
-        depends_on:
-            - app
-            - frontend
-        networks:
-            local-network:
-                aliases:
-                    - api.local.minmatar.org
-
-    beat:
-        build:
-            context: ./backend/
-            dockerfile: Dockerfile
-        restart: always
-        env_file: backend/.env
-        command: celery -A app beat -l info
-        networks:
-            - local-network
-        depends_on:
-            - db
-            - app
-
-    celery:
-        build:
-            context: ./backend/
-            dockerfile: Dockerfile
-        restart: always
-        env_file: backend/.env
-        command: celery -A app worker -l info
-        networks:
-            - local-network
-        depends_on:
-            - db
-            - app
-
-    mumble_murmur:
-        image: mumblevoip/mumble-server:v1.4.230-6
-        hostname: murmur
-        restart: on-failure
-        volumes:
-            - murmur_data:/data
-            - ./mumble/murmur/murmur.ini:/data/murmur.ini
-        environment:
-            - MUMBLE_CUSTOM_CONFIG_FILE=/data/murmur.ini
-            - MUMBLE_VERBOSE=true
-        networks:
-            - local-network
-        ports:
-            - 64738:64738
-            - 64738:64738/udp
-        expose:
-            - 6502
-
-    mumble_auth:
-        build:
-            context: ./backend/.
-            dockerfile: Dockerfile.mumble
-        restart: on-failure
-        command: python3 mumble.py
-        env_file:
-            - .env
-        networks:
-            - local-network
-        depends_on:
-            - mumble_murmur
-            - db
-        expose:
-            - 6502
-
 volumes:
     database: {}
     redis: {}
-    murmur_data: {}
-
-networks:
-    local-network:
