@@ -49,7 +49,7 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
             const slides = [
                 <div class="[ swiper-slide ]">
                     <Wrapper max_width="656px" padding_inline="var(--space-s)" padding_block="var(--component-padding-block)">
-                        <FluidFixed width='115px' breakpoint='20%' class="[ !items-center ]">
+                        <FluidFixed width='135px' breakpoint='20%' class="[ !items-center ]">
                             <PostItem post={post} />
                             <Button class="[ !hidden sm:!flex ]" size='sm' href={translatePath(`/alliance/posts/${post.slug}-${post.post_id}`)}>
                                 {t('read_more')}
@@ -118,6 +118,6 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
 
     .swiper-slide {
         width: 100% !important;
-        min-height: 172px;
+        min-height: 170px;
     }
 </style>

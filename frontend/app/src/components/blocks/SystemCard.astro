@@ -38,13 +38,13 @@ import Progress from '@components/blocks/Progress.astro';
         <Flexblock class="[ system-card-body ]" gap='0'>
             <Wrapper padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
                 <Flexblock gap='var(--space-3xs)'>
-                    <FlexInline gap='var(--space-3xs)'>
-                        <h4>
-                            {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
-                        </h4>
-                        <small>🌕 {system.moons_count}</small>
-                    </FlexInline>
                     <small>{system.constellation_name} ‹ {system.region_name}</small>
+                    <FlexInline gap='var(--space-3xs)'>
+                        <h3>
+                            {system.system_name} <span class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
+                        </h3>
+                    </FlexInline>
+                    <span>{system.moons_count} moons</span>
                 </Flexblock>
             </Wrapper>
             <Progress
@@ -92,8 +92,8 @@ import Progress from '@components/blocks/Progress.astro';
         }
     }
 
-    h4 {
-        font-weight: 400;
+    h3 {
+        font-size: var(--step-1);
     }
 
     small {

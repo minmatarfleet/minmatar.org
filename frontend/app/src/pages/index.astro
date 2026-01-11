@@ -26,7 +26,8 @@ let post_fetching_error:string | false = false
 
 try {
     const market_locations = await get_market_locations()
-	contracts_service_staging = market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
+	const non_empty_market_locations =  market_locations.filter(market_location => market_location.expectations > 0)
+	contracts_service_staging = non_empty_market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
 
     const paginated_posts = await fetch_posts({
         page_num: 1,
@@ -59,10 +60,7 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
-import AugaInfo from '@components/blocks/AugaInfo.astro';
-import EvatiInfo from '@components/blocks/EvatiInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
-import SlyceInfo from '@components/blocks/SlyceInfo.astro';
 import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
 import LXQ2Info from '@components/blocks/LXQ2Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
@@ -90,23 +88,17 @@ type StagingTranslation = {
 }
 
 const STAGINGS_STATIONS:StagingTranslation = {
-	auga: 'Auga - Minmatar Militia HQ',
-	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 	amamake: 'Amamake - 5 times nearly AT winners',
 	lxq2: 'LXQ2-T - Today was Fruitful',
-	slyce: '8KE-YS - Xadr\'s Pleasure Palace'
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
-	auga: 'Auga',
-	evati: 'Evati',
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
 	amamake: 'Amamake',
 	lxq2: 'LXQ2-T',
-	slyce: '8KE-YS',
 }
 
 const RATTINI_TRIBE_ID = 98726134
@@ -116,21 +108,9 @@ const OBLIVION_WATCH_ID = 98217709
 const DJS_RETIREMENT_FUND_ID = 1344654522
 
 const STAGING_CORPORATIONS = {
-	auga: {
-		id: RATTINI_TRIBE_ID,
-		name: 'Rattini Tribe',
-	},
-	evati: {
-		id: RATTINI_TRIBE_ID,
-		name: 'Rattini Tribe',
-	},
 	amarr: {
 		id: EMPEROR_FAMILY_ID,
 		name: 'Emperor Family',
-	},
-	slyce: {
-		id: RATTINI_TRIBE_ID,
-		name: 'Rattini Tribe'
 	},
 	amamake: {
 		id: OBLIVION_WATCH_ID,
@@ -159,7 +139,7 @@ const is_random_staging = !Astro.cookies.has('staging')
 const staging = IS_APRIL_FOOLS ?
 	'amarr' :
 	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and evati from random
+	stagings[Math.floor(Math.random() * (stagings.length - 1))] : // removing amarr from random
 	user_staging
 	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
@@ -183,31 +163,19 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-			video: staging === 'auga' ? '/videos/militia-loop.webm' :
-					staging === 'evati' ? '/videos/tzu-loop.webm' :
-					staging === 'amarr' ? '/videos/emperor-loop.webm' :
-					staging === 'slyce' ? '/videos/slyce-loop.webm' :
+			video: staging === 'amarr' ? '/videos/emperor-loop.webm' :
 					staging === 'amamake' ? '/videos/amamake-loop.webm' :
 					staging === 'lxq2' ? '/videos/lxq2-loop.webm' :
 					'/videos/watermelon-loop.webm',
-			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					staging === 'evati' ? '/images/home-evati-cover.jpg' :
-					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
-					staging === 'slyce' ? '/images/home-slyce-cover.jpg' :
+			video_thumb: staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
 					staging === 'amamake' ? '/images/home-amamake-cover.jpg' :
 					staging === 'lxq2' ? '/images/home-lxq2-cover.jpg' :
 					'/images/home-cover.jpg',
-            image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
-					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
+            image: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
 					staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
-            image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
-					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					   staging === 'slyce' ? '/images/home-slyce-cover-eve.jpg' :
+            image_990: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
 					   staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
 					   staging === 'lxq2' ? '/images/home-lxq2-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
@@ -233,11 +201,8 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
-					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
+				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
-					staging === 'slyce' ? <SlyceInfo is_random={is_random_staging} /> :
-					staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'lxq2' ? <LXQ2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
@@ -413,69 +378,27 @@ const page_description = t('index.leading_text');
     </PageLanding>
 </Viewport>
 
+
 {WINTER_NEXUS_DECORATION && (
+	<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@3.2.0/tsparticles.preset.snow.bundle.min.js"></script>
+
 	<script is:inline>
-		(async () => {
-			const canvas = document.getElementById("decoration_overlay")
-			console.log(canvas)
+		async function initSnow() {
+			if (!document.getElementById('decoration_overlay')) return
 
-			canvas.confetti =
-				canvas.confetti || (await confetti.create(canvas, { resize: true }))
-		
-			let skew = 1
-			let tick = 0
+			await loadSnowPreset(tsParticles)
 
-			function randomInRange(min, max) {
-				return Math.random() * (max - min) + min
-			}
+			await tsParticles.load({
+				id: "decoration_overlay",
+				options: {
+					preset: "snow",
+					fullScreen: { enable: false },
+					background: { opacity: 0 },
+				},
+			})
+		}
 
-			(function frame() {
-				skew = 0.8
-				tick += 1
-
-				const DEFAULTS = {
-					particleCount: 1,
-					startVelocity: 0,
-					origin: {
-						x: Math.random(),
-						y: Math.random() * skew - 0.2,
-					},
-					colors: ["#ffffff"],
-					shapes: ["image"],
-					shapeOptions: {
-						image: {
-							src: "/images/snowflake.svg",
-							replaceColor: true,
-							width: 21,
-							height: 24,
-						},
-					},
-					gravity: randomInRange(0.4, 0.6),
-					scalar: randomInRange(0.4, 1),
-					drift: randomInRange(-0.4, 0.4),
-				}
-
-				tick % 100 === 0 && canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(2, 4),
-					ticks: 200,
-				})
-
-				tick % 30 === 0 && canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(1, 1.5),
-					ticks: 200,
-				})
-
-				canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(0.3, 0.6),
-					ticks: 200,
-				})
-
-				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
-			})();
-		})();
+		document.addEventListener("astro:page-load", initSnow)
 	</script>
 )}
 

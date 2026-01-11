@@ -528,7 +528,9 @@ export interface MarketExpectation {
 export interface MarketLocation {
     id:             number;
     name:           string;
+    system_name:    string;
     contracts:      number;
+    expectations:   number;
     structure_id:   number;
 }
 

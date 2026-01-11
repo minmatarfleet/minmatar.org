@@ -1,4 +1,5 @@
 :root {
     --fast-transition: all ease 0.1s;
     --slow-transition: all ease 1s;
+    --slowest-transition: all cubic-bezier(0, 0.92, 0, 0.99) 8s;
 }

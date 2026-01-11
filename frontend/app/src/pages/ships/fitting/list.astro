@@ -7,6 +7,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
+import { get_ship_type_icon } from '@helpers/eve'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
@@ -117,10 +118,12 @@ const page_title = t('fitting.list.page_title');
                 </Flexblock>
             </FlexInline>
             <FlexInline class="[ !items-start ]">
-                <Input type="text"
+                <Input
+                    type="text"
                     placeholder={t('filter')}
                     x-model="fitting_name_filter"
                     x-on:keyup="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') })"
+                    x-init="$el.focus()"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
@@ -158,7 +161,16 @@ const page_title = t('fitting.list.page_title');
                         class="[ fitting-groups ]"
                         gap='var(--space-m)'
                     >
-                        <h2>{group_fittings[0].ship_type}</h2>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <img
+                                class="[ mt-[2px] ]"
+                                src={`/images/icons/ships/${get_ship_type_icon(group_fittings[0].ship_type)}`}
+                                height="32"
+                                width="32"
+                                alt={`${group_fittings[0].ship_type} icon`}
+                            />
+                            <h2>{group_fittings[0].ship_type}</h2>
+                        </FlexInline>
                         <Grid
                             role="list"
                             class="[ w-full grid-fill ]"
