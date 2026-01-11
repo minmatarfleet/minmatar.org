@@ -615,7 +615,9 @@ class FleetTaskTests(TestCase):
     @patch("fleets.tasks.settings")
     def test_update_fleet_schedule_task(self, settings_mock):
         setup_fleet_reference_data()
-        fleet = make_test_fleet("Test fleet 1", self.user)
+        fleet = make_test_fleet(
+            "Test fleet 1", self.user
+        )  # pylint: disable=unused-variable
 
         fc = EveCharacter.objects.create(
             character_id=1234,
@@ -642,7 +644,7 @@ class FleetTaskTests(TestCase):
                 {"id": "123"},
                 {"id": "456"},
             ]
-            
+
             update_fleet_schedule()
 
             # Verify Discord API calls
@@ -650,17 +652,17 @@ class FleetTaskTests(TestCase):
             discord_mock.create_message.assert_called_once()
             # delete_message should be called for each message
             self.assertEqual(discord_mock.delete_message.call_count, 2)
-            
+
             # Verify the message payload
             call_args = discord_mock.create_message.call_args
             self.assertEqual(call_args[0][0], 12345)  # channel_id
             payload = call_args[1]["payload"]
-            
+
             # Verify message structure
             self.assertIn("content", payload)
             self.assertIn("components", payload)
             content = payload["content"]
-            
+
             # Verify message starts with header
             self.assertTrue(content.startswith("## Fleet Schedule"))
             # Verify location grouping

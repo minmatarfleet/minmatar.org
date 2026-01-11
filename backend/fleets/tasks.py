@@ -17,12 +17,15 @@ def get_fleet_emoji(fleet_type):
     """Get the emoji string in format <:name:id> for a fleet type"""
     # Convert fleet_type underscore to hyphen for matching (non_strategic -> non-strategic)
     emoji_name = fleet_type.replace("_", "-")
-    
+
     # Search through DISCORD_FLEET_EMOJIS to find matching emoji_name
-    for settings_key, (name, emoji_id) in settings.DISCORD_FLEET_EMOJIS.items():
+    for (
+        name,
+        emoji_id,
+    ) in settings.DISCORD_FLEET_EMOJIS.values():
         if name == emoji_name and emoji_id:
             return f"<:{name}:{emoji_id}>"
-    
+
     return ""
 
 
@@ -70,18 +73,22 @@ def update_fleet_schedule():
         .order_by("start_time")
         .select_related("location", "audience", "created_by")
     )
-    
+
     # Group fleets by location
     fleets_by_location = {}
     for fleet in fleets:
         if fleet.audience and fleet.audience.add_to_schedule:
-            location_name = fleet.location.location_name if fleet.location else "No Location"
+            location_name = (
+                fleet.location.location_name
+                if fleet.location
+                else "No Location"
+            )
             if location_name not in fleets_by_location:
                 fleets_by_location[location_name] = []
             fleets_by_location[location_name].append(fleet)
-    
+
     message = "## Fleet Schedule\n"
-    
+
     if not fleets_by_location:
         message += "- No upcoming fleets, go touch grass you nerd"
     else:
@@ -90,7 +97,13 @@ def update_fleet_schedule():
             message += f"\n**{location_name}**\n"
             for fleet in fleets_by_location[location_name]:
                 fleet_emoji = get_fleet_emoji(fleet.type)
-                fc_mention = f"<@{fleet.fleet_commander.user.discord_user.id}>" if fleet.fleet_commander and fleet.fleet_commander.user and fleet.fleet_commander.user.discord_user else ""
+                fc_mention = (
+                    f"<@{fleet.fleet_commander.user.discord_user.id}>"
+                    if fleet.fleet_commander
+                    and fleet.fleet_commander.user
+                    and fleet.fleet_commander.user.discord_user
+                    else ""
+                )
                 # pylint: disable=inconsistent-quotes
                 message += f"- {fleet_emoji} {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE (<t:{int(fleet.start_time.timestamp())}>) {fc_mention}\n"
     payload = {
@@ -124,11 +137,7 @@ def update_fleet_schedule():
         try:
             discord_client.delete_message(FLEET_SCHEDULE_CHANNEL_ID, msg["id"])
         except Exception as e:
-            logger.warning(
-                "Failed to delete message %s: %s", msg["id"], e
-            )
+            logger.warning("Failed to delete message %s: %s", msg["id"], e)
 
     # Post new message
-    discord_client.create_message(
-        FLEET_SCHEDULE_CHANNEL_ID, payload=payload
-    )
+    discord_client.create_message(FLEET_SCHEDULE_CHANNEL_ID, payload=payload)
