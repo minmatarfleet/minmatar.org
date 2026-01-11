@@ -71,10 +71,20 @@ DISCORD_SUPPLY_CHANNEL_ID = int(
 )
 
 DISCORD_FLEET_EMOJIS = {
-    "Strategic": os.environ.get("DISCORD_STRATEGIC_EMOJI", 1460000857495044158),
-    "Non-strategic": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI", 1460000857495044158),
-    "Training": os.environ.get("DISCORD_TRAINING_EMOJI", 1460000857495044158),
+    "Strategic": {
+        "name": os.environ.get("DISCORD_STRATEGIC_EMOJI", "strategic"),
+        "id": os.environ.get("DISCORD_STRATEGIC_EMOJI_ID", None),
+    },
+    "Non-strategic": {
+        "name": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI", "non-strategic"),
+        "id": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI_ID", None),
+    },
+    "Training": {
+        "name": os.environ.get("DISCORD_TRAINING_EMOJI", "training"),
+        "id": os.environ.get("DISCORD_TRAINING_EMOJI_ID", None),
+    },
 }
+
 
 # ESI
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
