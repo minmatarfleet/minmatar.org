@@ -1,8 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
 
 interface Props {
     corporation:            CorporationObject;
@@ -18,19 +20,38 @@ const {
 } = Astro.props
 
 const ANGSKEL_ISSOD_ID = 856157051
+const PSYPHER_LOCKE_ID = 90754906
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 ---
 
 <CorporationSlide
     id="l34rn-slide"
     ceo_image='/images/corporations/l34rn/ceo.png'
-    ceo_character_id={ANGSKEL_ISSOD_ID}
+    ceo_character_id={PSYPHER_LOCKE_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
     picture_placement='left'
     mirror_slide={picture_placement === 'right'}
 >
+    <StylessButton
+        class="[ co-ceo ]"
+        slot="coceo"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: ANGSKEL_ISSOD_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/l34rn/co-ceo.png" height="496" width="940" />
+    </StylessButton>
+
     <img slot="ships" class="[ vigil ]" src="/images/corporations/l34rn/vigil.png" />
     <img slot="ships" class="[ burst ]" src="/images/corporations/l34rn/burst.png" />
     <img slot="ships" class="[ talwar ]" src="/images/corporations/l34rn/talwar.png" />
@@ -41,6 +62,34 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 <style lang="scss">
     img {
         image-rendering: pixelated;
+    }
+
+    .co-ceo {
+        z-index: 11;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: 5%;
+        top: 0;
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
     }
 
     .vigil {
@@ -113,12 +162,24 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
             top: 52%;
             left: 26%;
         }
+    }    
+
+    @keyframes coceo {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 </style>
 
 <style lang="scss" is:global>
     #l34rn-slide .ceo {
-        left: 0%;
+        left: -10%;
     }
 
     .swiper-slide-active {
@@ -143,6 +204,14 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
             animation-delay: 2.4s;
             animation-iteration-count: 1;
             transform-origin: top right;
+            animation-fill-mode: forwards;
+        }
+
+        #l34rn-slide .co-ceo {
+            animation: coceo ease-out 1.5s;
+            animation-delay: 0.25s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
             animation-fill-mode: forwards;
         }
     }

@@ -23,7 +23,6 @@ const CORPORATIONS_WITH_SLIDE = [
     'Criterion.',
     'Straylight Systems',
     'The Dark Tribe',
-    'The New Eden Yacht Club',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -38,6 +37,7 @@ const VINDICTA_EXPEDITIONARY_ID  = 98760041
 const EXIT_STRATEGY_ID  = 98380820
 const PROTEAN_CONCEPT_ID = 98633005
 const TEMPORARY_SOLUTIONS_UNLIMITED_ID = 98821223
+const THE_NEW_EDEN_YACHT_CLUB_ID = 98442405
 const CORPORATIONS_FILTER = [
     MINMATAR_FLEET_HOLDINGS_ID,
     BLACK_RIFTER_COFFIN_COMPANY_ID,
@@ -45,6 +45,7 @@ const CORPORATIONS_FILTER = [
     PROTEAN_CONCEPT_ID,
     EXIT_STRATEGY_ID,
     TEMPORARY_SOLUTIONS_UNLIMITED_ID,
+    THE_NEW_EDEN_YACHT_CLUB_ID,
 ]
 corporations = corporations.filter( (i) => !CORPORATIONS_FILTER.includes(i.corporation_id) )
 
@@ -86,7 +87,6 @@ import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
 import RapidUnscheduledDisassemblySlide from '@components/blocks/RapidUnscheduledDisassemblySlide.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
-import TheNewEdenYachtClub from '@components/blocks/TheNewEdenYachtClub.astro';
 import CriterionSlide from '@components/blocks/CriterionSlide.astro';
 import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
@@ -163,13 +163,6 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'The Dark Tribe' &&
                         <TheDarkTribeSlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
-                    {corporation.corporation_name == 'The New Eden Yacht Club' &&
-                        <TheNewEdenYachtClub
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
