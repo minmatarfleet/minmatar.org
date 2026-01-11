@@ -638,39 +638,41 @@ class FleetTaskTests(TestCase):
             "Training": ("training", 999999),
         }
 
-        with patch("fleets.tasks.discord_client") as discord_mock:
-            # Mock get_messages to return some messages
-            discord_mock.get_messages.return_value = [
-                {"id": "123"},
-                {"id": "456"},
-            ]
+        # Patch the module-level constant that was set at import time
+        with patch("fleets.tasks.FLEET_SCHEDULE_CHANNEL_ID", 12345):
+            with patch("fleets.tasks.discord_client") as discord_mock:
+                # Mock get_messages to return some messages
+                discord_mock.get_messages.return_value = [
+                    {"id": "123"},
+                    {"id": "456"},
+                ]
 
-            update_fleet_schedule()
+                update_fleet_schedule()
 
-            # Verify Discord API calls
-            discord_mock.get_messages.assert_called_once_with(12345)
-            discord_mock.create_message.assert_called_once()
-            # delete_message should be called for each message
-            self.assertEqual(discord_mock.delete_message.call_count, 2)
+                # Verify Discord API calls
+                discord_mock.get_messages.assert_called_once_with(12345)
+                discord_mock.create_message.assert_called_once()
+                # delete_message should be called for each message
+                self.assertEqual(discord_mock.delete_message.call_count, 2)
 
-            # Verify the message payload
-            call_args = discord_mock.create_message.call_args
-            self.assertEqual(call_args[0][0], 12345)  # channel_id
-            payload = call_args[1]["payload"]
+                # Verify the message payload
+                call_args = discord_mock.create_message.call_args
+                self.assertEqual(call_args[0][0], 12345)  # channel_id
+                payload = call_args[1]["payload"]
 
-            # Verify message structure
-            self.assertIn("content", payload)
-            self.assertIn("components", payload)
-            content = payload["content"]
+                # Verify message structure
+                self.assertIn("content", payload)
+                self.assertIn("components", payload)
+                content = payload["content"]
 
-            # Verify message starts with header
-            self.assertTrue(content.startswith("## Fleet Schedule"))
-            # Verify location grouping
-            self.assertIn("**Test Location**", content)
-            # Verify FC mention
-            self.assertIn("<@1>", content)
-            # Verify emoji is included (if set)
-            self.assertIn("<:training:999999>", content)
+                # Verify message starts with header
+                self.assertTrue(content.startswith("## Fleet Schedule"))
+                # Verify location grouping
+                self.assertIn("**Test Location**", content)
+                # Verify FC mention
+                self.assertIn("<@1>", content)
+                # Verify emoji is included (if set)
+                self.assertIn("<:training:999999>", content)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
