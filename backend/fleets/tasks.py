@@ -16,10 +16,6 @@ FLEET_SCHEDULE_CHANNEL_ID = settings.DISCORD_FLEET_SCHEDULE_CHANNEL_ID
 def get_fleet_emoji(fleet_type):
     """Get the emoji string in format <:name:id> for a fleet type"""
     logger.info("Getting fleet emoji for %s", fleet_type)
-    # Convert fleet_type underscore to hyphen for matching (non_strategic -> non-strategic)
-    emoji_name = fleet_type.replace("_", "-")
-
-    # Search through DISCORD_FLEET_EMOJIS to find matching emoji_name
     if fleet_type in settings.DISCORD_FLEET_EMOJIS:
         return f"<:{settings.DISCORD_FLEET_EMOJIS[fleet_type]['name']}:{settings.DISCORD_FLEET_EMOJIS[fleet_type]['id']}>"
     return ""
