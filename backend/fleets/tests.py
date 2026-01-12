@@ -635,7 +635,7 @@ class FleetTaskTests(TestCase):
         # Mock settings
         settings_mock.DISCORD_FLEET_SCHEDULE_CHANNEL_ID = 12345
         settings_mock.DISCORD_FLEET_EMOJIS = {
-            "Training": ("training", 999999),
+            "training": {"name": "training", "id": 999999},
         }
 
         # Patch the module-level constant that was set at import time
