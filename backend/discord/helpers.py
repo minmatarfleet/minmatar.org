@@ -31,9 +31,6 @@ def get_expected_nickname(user: User):
         if group in valid_user_group_names:
             is_valid_for_nickname = True
     discord_user = DiscordUser.objects.get(user_id=user.id)
-    # eve_primary_character = EvePrimaryCharacter.objects.filter(
-    #     character__token__user=user
-    # ).first()
     eve_primary_character = user_primary_character(user)
 
     if not eve_primary_character or not is_valid_for_nickname:

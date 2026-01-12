@@ -94,6 +94,9 @@ class EveLocationAdmin(admin.ModelAdmin):
         "freight_active",
         "staging_active",
     )
+    search_fields = ("location_name", "short_name", "solar_system_name")
+    list_filter = ("market_active", "freight_active", "staging_active")
+    ordering = ("location_name",)
 
 
 @admin.register(EveCharacterAsset)

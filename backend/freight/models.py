@@ -4,20 +4,6 @@ from eveonline.models import EveLocation
 
 
 # Create your models here.
-class EveFreightLocation(models.Model):
-    """
-    DEPRECATED - see eveonline.EveLocation
-    Model for a freight depot.
-    """
-
-    location_id = models.BigIntegerField(unique=True)
-    name = models.CharField(max_length=255)
-    short_name = models.CharField(max_length=32)
-
-    def __str__(self):
-        return str(self.name)
-
-
 class EveFreightContract(models.Model):
     """Model for a freight contract."""
 
@@ -57,20 +43,6 @@ class EveFreightContract(models.Model):
 class EveFreightRoute(models.Model):
     """Model for a freight route."""
 
-    orgin = models.ForeignKey(
-        EveFreightLocation,
-        on_delete=models.CASCADE,
-        related_name="orgin",
-        null=True,
-        help_text="Deprecated, use origin_location",
-    )
-    destination = models.ForeignKey(
-        EveFreightLocation,
-        on_delete=models.CASCADE,
-        related_name="destination",
-        null=True,
-        help_text="Deprecated, use destination_location",
-    )
     origin_location = models.ForeignKey(
         EveLocation,
         on_delete=models.CASCADE,
@@ -87,7 +59,9 @@ class EveFreightRoute(models.Model):
     active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.orgin.short_name} -> {self.destination.short_name}"
+        origin_name = self.origin_location.short_name if self.origin_location else "Unknown"
+        dest_name = self.destination_location.short_name if self.destination_location else "Unknown"
+        return f"{origin_name} -> {dest_name}"
 
 
 class EveFreightRouteOption(models.Model):

@@ -21,8 +21,8 @@ from discord.tasks import sync_discord_user, sync_discord_nickname
 from discord.helpers import remove_all_roles_from_guild_member
 from groups.helpers import TECH_TEAM, user_in_team
 from groups.tasks import update_affiliation
-from eveonline.client import esi_for
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.client import esi_for, EsiClient
+from eveonline.models import EveCharacter, EvePlayer, EveCharacterAsset
 from eveonline.tasks import update_character_assets, update_character_skills
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
@@ -445,11 +445,25 @@ def asset_summary(
     char = EveCharacter.objects.filter(character_id=character_id).first()
     if not char:
         return 404, ErrorResponse(detail="Character not found")
-    if not char.assets_json:
-        return 404, ErrorResponse(detail="Character has no assets")
+    
+    # Check if character has any processed assets
+    has_assets = EveCharacterAsset.objects.filter(character=char).exists()
+    if not has_assets and not refresh_char:
+        return 404, ErrorResponse(detail="Character has no assets. Use refresh_char=true to fetch assets.")
 
     if refresh_char:
         update_character_assets.apply_async(args=[character_id])
+        # Fetch assets from ESI for immediate use
+        response = EsiClient(char).get_character_assets()
+        if not response.success():
+            return 404, ErrorResponse(detail="Failed to fetch assets from ESI")
+        assets = response.results()
+    else:
+        # Fetch assets from ESI on-demand
+        response = EsiClient(char).get_character_assets()
+        if not response.success():
+            return 404, ErrorResponse(detail="Failed to fetch assets from ESI")
+        assets = response.results()
 
     start = time.perf_counter()
 
@@ -460,7 +474,6 @@ def asset_summary(
 
     found = 0
     quantity = 0
-    assets = json.loads(char.assets_json)
     for asset in assets:
         if type_id and type_id != asset["type_id"]:
             continue

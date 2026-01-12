@@ -7,7 +7,6 @@ from django.db.models import signals
 
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacterChangeLog,
     EveCorporation,
 )
 from eveonline.helpers.characters import set_primary_character
@@ -126,10 +125,6 @@ class DiscordTests(TestCase):
         signals.post_save.disconnect(
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_private_data",
-        )
-        signals.post_save.disconnect(
-            sender=EvePrimaryCharacterChangeLog,
-            dispatch_uid="notify_people_team_of_primary_character_change",
         )
         signals.post_save.disconnect(
             sender=Group,

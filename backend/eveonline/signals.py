@@ -13,7 +13,6 @@ from .models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
-    EvePrimaryCharacterChangeLog,
 )
 
 logger = logging.getLogger(__name__)
@@ -113,21 +112,6 @@ def eve_alliance_post_save(sender, instance, created, **kwargs):
                 esi_alliance["faction_id"]
             )
         instance.save()
-
-
-@receiver(
-    signals.post_save,
-    sender=EvePrimaryCharacterChangeLog,
-    dispatch_uid="notify_people_team_of_primary_character_change",
-)
-def notify_people_team_of_primary_character_change(
-    sender, instance, created, **kwargs
-):
-    if created:
-        discord.create_message(
-            DISCORD_PEOPLE_TEAM_CHANNEL_ID,
-            f"Primary character change for {instance.username} from {instance.previous_character_name} to {instance.new_character_name}",
-        )
 
 
 @receiver(

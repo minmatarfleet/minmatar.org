@@ -148,13 +148,17 @@ class EveOnlineTaskTests(TestCase):
             character_id=1001,
             character_name="Testpilot1",
             user=self.user,
-            is_primary=False,
         )
-        EveCharacter.objects.create(
+        primary_char = EveCharacter.objects.create(
             character_id=1002,
             character_name="Testpilot2",
             user=self.user,
-            is_primary=True,
+        )
+        # Set up the primary character via EvePlayer (old way that setup_players migrates)
+        EvePlayer.objects.create(
+            user=self.user,
+            primary_character=primary_char,
+            nickname=self.user.username,
         )
 
         self.assertEqual(0, EvePlayer.objects.count())
@@ -213,7 +217,6 @@ class EveOnlineTaskTests(TestCase):
             character_id=1001,
             character_name="Test Pilot",
             user=self.user,
-            is_primary=False,
         )
 
         esi.get_recent_killmails.return_value = EsiResponse(
