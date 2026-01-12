@@ -445,11 +445,13 @@ def asset_summary(
     char = EveCharacter.objects.filter(character_id=character_id).first()
     if not char:
         return 404, ErrorResponse(detail="Character not found")
-    
+
     # Check if character has any processed assets
     has_assets = EveCharacterAsset.objects.filter(character=char).exists()
     if not has_assets and not refresh_char:
-        return 404, ErrorResponse(detail="Character has no assets. Use refresh_char=true to fetch assets.")
+        return 404, ErrorResponse(
+            detail="Character has no assets. Use refresh_char=true to fetch assets."
+        )
 
     if refresh_char:
         update_character_assets.apply_async(args=[character_id])

@@ -149,7 +149,11 @@ class EveFleet(models.Model):
                 payload=get_fleet_discord_notification(
                     fleet_id=self.id,
                     fleet_type=self.get_type_display(),
-                    fleet_location=self.formup_location.location_name if self.formup_location else "Ask FC",
+                    fleet_location=(
+                        self.formup_location.location_name
+                        if self.formup_location
+                        else "Ask FC"
+                    ),
                     fleet_audience=self.audience.name,
                     fleet_commander_name=self.fleet_commander.character_name,
                     fleet_commander_id=self.fleet_commander.character_id,
@@ -513,5 +517,3 @@ class EveFleetAudience(models.Model):
 
     def __str__(self):
         return str(self.name)
-
-

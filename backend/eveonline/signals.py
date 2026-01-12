@@ -6,7 +6,6 @@ from django.dispatch import receiver
 from esi.models import Token
 
 from discord.client import DiscordClient
-from discord.helpers import DISCORD_PEOPLE_TEAM_CHANNEL_ID
 from eveonline.tasks import update_character_assets, update_character_skills
 from eveonline.client import EsiClient, esi_public
 from .models import (

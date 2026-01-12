@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from datetime import timedelta
@@ -186,7 +185,9 @@ def update_character_assets(eve_character_id):
     fetch_time = time.perf_counter() - start
     fetch_str = f"{fetch_time:.6f}"
 
-    (created, updated, deleted) = create_character_assets(character, response.results())
+    (created, updated, deleted) = create_character_assets(
+        character, response.results()
+    )
 
     elapsed = time.perf_counter() - start
     elapsed_str = f"{elapsed:.6f}"

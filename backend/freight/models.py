@@ -59,8 +59,16 @@ class EveFreightRoute(models.Model):
     active = models.BooleanField(default=True)
 
     def __str__(self):
-        origin_name = self.origin_location.short_name if self.origin_location else "Unknown"
-        dest_name = self.destination_location.short_name if self.destination_location else "Unknown"
+        origin_name = (
+            self.origin_location.short_name
+            if self.origin_location
+            else "Unknown"
+        )
+        dest_name = (
+            self.destination_location.short_name
+            if self.destination_location
+            else "Unknown"
+        )
         return f"{origin_name} -> {dest_name}"
 
 

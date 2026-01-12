@@ -14,7 +14,6 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from eveonline.models import EveLocation
 from eveonline.helpers.characters import (
-    user_primary_character,
     user_characters,
 )
 from eveonline.client import EsiClient
@@ -352,7 +351,9 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
         "location": (
-            fleet.formup_location.location_name if fleet.formup_location else "Ask FC"
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else "Ask FC"
         ),
         "audience": fleet.audience.name,
         "tracking": tracking,
@@ -426,9 +427,7 @@ def can_see_metrics(user: User) -> bool:
 )
 def get_fleet_metrics(request):
     if not can_see_metrics(request.user):
-        return 403, {
-            "detail": "User missing permission to view metrics"
-        }
+        return 403, {"detail": "User missing permission to view metrics"}
 
     metrics = []
     one_year_ago = timezone.now() - timedelta(days=365)
@@ -436,7 +435,12 @@ def get_fleet_metrics(request):
         EveFleet.objects.filter(start_time__gte=one_year_ago)
         .annotate(instances=Count("evefleetinstance"))
         .annotate(members=Count("evefleetinstance__evefleetinstancemember"))
-        .annotate(location_name=Coalesce(F("audience__staging_location__location_name"), F("location__location_name")))
+        .annotate(
+            location_name=Coalesce(
+                F("audience__staging_location__location_name"),
+                F("location__location_name"),
+            )
+        )
         .annotate(
             fc_corp_name=F(
                 "created_by__eveprimarycharacter__character__corporation__name"
@@ -515,7 +519,9 @@ def get_fleet(request, fleet_id: int):
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
         "location": (
-            fleet.formup_location.location_name if fleet.formup_location else "Ask FC"
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else "Ask FC"
         ),
         "audience": fleet.audience.name,
         "tracking": tracking,
@@ -605,7 +611,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         return 400, {"detail": "Audience does not exist"}
 
     audience = EveFleetAudience.objects.get(id=payload.audience_id)
-    
+
     # DEPRECATED: location_id is deprecated, prefer audience.staging_location
     # Still accept it for backward compatibility
     location = None
@@ -615,7 +621,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         ).exists():
             return 400, {"detail": "Location does not exist"}
         location = EveLocation.objects.get(location_id=payload.location_id)
-    
+
     fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
@@ -645,7 +651,11 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
-        "location": fleet.formup_location.location_name if fleet.formup_location else None,
+        "location": (
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else None
+        ),
         "audience": fleet.audience.name,
     }
 
@@ -663,7 +673,11 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
         is_pre_ping=True,
         fleet_id=fleet.id,
         fleet_type=fleet.get_type_display(),
-        fleet_location=fleet.formup_location.location_name if fleet.formup_location else "Ask FC",
+        fleet_location=(
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else "Ask FC"
+        ),
         fleet_audience=fleet.audience.name,
         fleet_commander_name=fleet.fleet_commander.character_name,
         fleet_commander_id=fleet.fleet_commander.character_id,
@@ -751,7 +765,11 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "description": fleet.description,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else None,
-        "location": fleet.formup_location.location_name if fleet.formup_location else None,
+        "location": (
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else None
+        ),
         "audience": fleet.audience.name if fleet.audience else None,
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "status": fleet.status,

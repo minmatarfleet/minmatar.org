@@ -12,6 +12,7 @@ Channels: <a href="joinChannel:player_4a392b7086c611ecaf859abe94f5a39b">Minmatar
 <font size="13" color="#ff00ff00"><b>Fleet tracking is active, managed by https://my.minmatar.org/.</b></font>
 """
 
+
 def get_motd(
     fc_character_id,
     fc_character_name,

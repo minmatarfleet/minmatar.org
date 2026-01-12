@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import List, Optional
 
@@ -69,7 +68,9 @@ def create_character_assets(character: EveCharacter, assets_data: List[dict]):
     type_names = {}
 
     esi = EsiClient(None)
-    assets: List[EveAssetResponse] = [EveAssetResponse(**asset) for asset in assets_data]
+    assets: List[EveAssetResponse] = [
+        EveAssetResponse(**asset) for asset in assets_data
+    ]
     for asset in assets:
         logger.debug("Processing asset %s", asset)
 

@@ -28,17 +28,28 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
         "location__short_name",
     )
     list_filter = ("location", "fitting")
-    readonly_fields = ("current_quantity", "desired_quantity", "is_fulfilled", "is_understocked")
+    readonly_fields = (
+        "current_quantity",
+        "desired_quantity",
+        "is_fulfilled",
+        "is_understocked",
+    )
     autocomplete_fields = ("fitting", "location")
     ordering = ("fitting__name", "location__location_name")
     fieldsets = (
-        ("Details", {
-            "fields": ("fitting", "location", "quantity")
-        }),
-        ("Status", {
-            "fields": ("current_quantity", "desired_quantity", "is_fulfilled", "is_understocked"),
-            "classes": ("collapse",)
-        }),
+        ("Details", {"fields": ("fitting", "location", "quantity")}),
+        (
+            "Status",
+            {
+                "fields": (
+                    "current_quantity",
+                    "desired_quantity",
+                    "is_fulfilled",
+                    "is_understocked",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
 
@@ -71,10 +82,12 @@ class EveMarketContractResponsibilityAdmin(admin.ModelAdmin):
 
     def get_fitting(self, obj):
         return obj.expectation.fitting.name
+
     get_fitting.short_description = "Fitting"
 
     def get_location(self, obj):
         return obj.expectation.location.location_name
+
     get_location.short_description = "Location"
 
 
@@ -123,21 +136,36 @@ class EveMarketContractAdmin(admin.ModelAdmin):
         "fitting",
         "created_at",
     )
-    readonly_fields = ("created_at", "completed_at", "last_updated", "issued_at", "expires_at")
+    readonly_fields = (
+        "created_at",
+        "completed_at",
+        "last_updated",
+        "issued_at",
+        "expires_at",
+    )
     date_hierarchy = "created_at"
     autocomplete_fields = ("location", "fitting")
     fieldsets = (
-        ("Contract Details", {
-            "fields": ("id", "title", "status", "price", "is_public")
-        }),
-        ("Parties", {
-            "fields": ("issuer_external_id", "assignee_id", "acceptor_id")
-        }),
-        ("Relationships", {
-            "fields": ("location", "fitting")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "issued_at", "expires_at", "completed_at", "last_updated"),
-            "classes": ("collapse",)
-        }),
+        (
+            "Contract Details",
+            {"fields": ("id", "title", "status", "price", "is_public")},
+        ),
+        (
+            "Parties",
+            {"fields": ("issuer_external_id", "assignee_id", "acceptor_id")},
+        ),
+        ("Relationships", {"fields": ("location", "fitting")}),
+        (
+            "Timestamps",
+            {
+                "fields": (
+                    "created_at",
+                    "issued_at",
+                    "expires_at",
+                    "completed_at",
+                    "last_updated",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
     )

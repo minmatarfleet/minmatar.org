@@ -39,8 +39,13 @@ def get_fleet_discord_notification(
                     {
                         "style": 5,
                         "label": "Join Voice Channel",
-                        "url": fleet_voice_channel_link if fleet_voice_channel_link else "https://discord.gg/minmatar",
-                        "disabled": is_pre_ping or not fleet_voice_channel_link,
+                        "url": (
+                            fleet_voice_channel_link
+                            if fleet_voice_channel_link
+                            else "https://discord.gg/minmatar"
+                        ),
+                        "disabled": is_pre_ping
+                        or not fleet_voice_channel_link,
                         "type": 2,
                     },
                     {
