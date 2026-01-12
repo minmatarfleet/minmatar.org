@@ -71,15 +71,15 @@ DISCORD_SUPPLY_CHANNEL_ID = int(
 )
 
 DISCORD_FLEET_EMOJIS = {
-    "Strategic": {
+    "strategic": {
         "name": os.environ.get("DISCORD_STRATEGIC_EMOJI", "strategic"),
         "id": os.environ.get("DISCORD_STRATEGIC_EMOJI_ID", None),
     },
-    "Non-strategic": {
+    "non-strategic": {
         "name": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI", "non-strategic"),
         "id": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI_ID", None),
     },
-    "Training": {
+    "training": {
         "name": os.environ.get("DISCORD_TRAINING_EMOJI", "training"),
         "id": os.environ.get("DISCORD_TRAINING_EMOJI_ID", None),
     },
