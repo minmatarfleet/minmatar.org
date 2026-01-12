@@ -669,8 +669,8 @@ class FleetTaskTests(TestCase):
                 self.assertTrue(content.startswith("## Fleet Schedule"))
                 # Verify location grouping
                 self.assertIn("**Test Location**", content)
-                # Verify FC mention
-                self.assertIn("<@1>", content)
+                # Verify FC character name is included
+                self.assertIn("Mr FC", content)
                 # Verify emoji is included (if set)
                 self.assertIn("<:training:999999>", content)
 

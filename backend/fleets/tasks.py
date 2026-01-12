@@ -57,7 +57,7 @@ def update_standing_fleet_instances():
 def update_fleet_schedule():
     """
     Updates fleet schedule message to display all upcoming fleets
-    Message format: <fleet type> | <eve time> | <local discord timestamp> | <fleet commander>
+    Message format: <fleet type> | <eve time> | <local discord timestamp> | <fleet commander name>
     """
     fleets = (
         EveFleet.objects.filter(start_time__gte=timezone.now())
@@ -89,15 +89,13 @@ def update_fleet_schedule():
             message += f"\n**{location_name}**\n"
             for fleet in fleets_by_location[location_name]:
                 fleet_emoji = get_fleet_emoji(fleet.type)
-                fc_mention = (
-                    f"<@{fleet.fleet_commander.user.discord_user.id}>"
+                fc_name = (
+                    fleet.fleet_commander.character_name
                     if fleet.fleet_commander
-                    and fleet.fleet_commander.user
-                    and fleet.fleet_commander.user.discord_user
                     else ""
                 )
                 # pylint: disable=inconsistent-quotes
-                message += f"- {fleet_emoji} {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE (<t:{int(fleet.start_time.timestamp())}>) {fc_mention}\n"
+                message += f"- {fleet_emoji} {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE (<t:{int(fleet.start_time.timestamp())}>) {fc_name}\n"
     payload = {
         "content": message,
         "components": [
