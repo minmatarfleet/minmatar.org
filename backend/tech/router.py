@@ -424,7 +424,9 @@ class AssetSummary(BaseModel):
     elapsed_time: float
 
 
-def _fetch_character_assets(character: EveCharacter, refresh_char: bool) -> tuple[list, Optional[ErrorResponse]]:
+def _fetch_character_assets(
+    character: EveCharacter, refresh_char: bool
+) -> tuple[list, Optional[ErrorResponse]]:
     """Fetch assets for a character from ESI"""
     if refresh_char:
         update_character_assets.apply_async(args=[character.character_id])
@@ -441,8 +443,14 @@ def _get_fitting_ship_ids() -> set[int]:
     return {fitting.ship_id for fitting in EveFitting.objects.all()}
 
 
-def _filter_asset(asset: dict, type_id: Optional[int], location_id: Optional[int],
-                  location_flag: Optional[str], fitting_ids: set[int], fl33t_fittings: bool) -> bool:
+def _filter_asset(
+    asset: dict,
+    type_id: Optional[int],
+    location_id: Optional[int],
+    location_flag: Optional[str],
+    fitting_ids: set[int],
+    fl33t_fittings: bool,
+) -> bool:
     """Check if asset matches all filter criteria"""
     if type_id and type_id != asset["type_id"]:
         return False
@@ -494,7 +502,14 @@ def asset_summary(
     found = 0
     quantity = 0
     for asset in assets:
-        if _filter_asset(asset, type_id, location_id, location_flag, fitting_ids, fl33t_fittings):
+        if _filter_asset(
+            asset,
+            type_id,
+            location_id,
+            location_flag,
+            fitting_ids,
+            fl33t_fittings,
+        ):
             found += 1
             quantity += asset["quantity"]
 
