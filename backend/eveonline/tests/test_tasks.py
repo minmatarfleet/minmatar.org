@@ -144,28 +144,27 @@ class EveOnlineTaskTests(TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_setup_players(self):
-        EveCharacter.objects.create(
-            character_id=1001,
-            character_name="Testpilot1",
-            user=self.user,
-        )
         primary_char = EveCharacter.objects.create(
             character_id=1002,
             character_name="Testpilot2",
             user=self.user,
         )
-        # Set up the primary character via EvePlayer (old way that setup_players migrates)
+        # Set up the primary character via EvePlayer (simulating existing data)
         EvePlayer.objects.create(
             user=self.user,
             primary_character=primary_char,
             nickname=self.user.username,
         )
 
-        self.assertEqual(0, EvePlayer.objects.count())
+        self.assertEqual(1, EvePlayer.objects.count())
 
+        # setup_players should ensure EvePlayer exists for users with primary characters
         setup_players()
 
+        # Should still be 1 (get_or_create won't create duplicate)
         self.assertEqual(1, EvePlayer.objects.count())
+        player = EvePlayer.objects.get(user=self.user)
+        self.assertEqual(player.primary_character, primary_char)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.tasks.EsiClient")
