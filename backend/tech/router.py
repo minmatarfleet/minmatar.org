@@ -424,6 +424,37 @@ class AssetSummary(BaseModel):
     elapsed_time: float
 
 
+def _fetch_character_assets(character: EveCharacter, refresh_char: bool) -> tuple[list, Optional[ErrorResponse]]:
+    """Fetch assets for a character from ESI"""
+    if refresh_char:
+        update_character_assets.apply_async(args=[character.character_id])
+
+    response = EsiClient(character).get_character_assets()
+    if not response.success():
+        return [], ErrorResponse(detail="Failed to fetch assets from ESI")
+
+    return response.results(), None
+
+
+def _get_fitting_ship_ids() -> set[int]:
+    """Get set of ship IDs for fleet fittings"""
+    return {fitting.ship_id for fitting in EveFitting.objects.all()}
+
+
+def _filter_asset(asset: dict, type_id: Optional[int], location_id: Optional[int],
+                  location_flag: Optional[str], fitting_ids: set[int], fl33t_fittings: bool) -> bool:
+    """Check if asset matches all filter criteria"""
+    if type_id and type_id != asset["type_id"]:
+        return False
+    if location_id and location_id != asset["location_id"]:
+        return False
+    if location_flag and location_flag != asset["location_flag"]:
+        return False
+    if fl33t_fittings and asset["type_id"] not in fitting_ids:
+        return False
+    return True
+
+
 @router.get(
     "/assets",
     summary="Character asset summary",
@@ -453,40 +484,19 @@ def asset_summary(
             detail="Character has no assets. Use refresh_char=true to fetch assets."
         )
 
-    if refresh_char:
-        update_character_assets.apply_async(args=[character_id])
-        # Fetch assets from ESI for immediate use
-        response = EsiClient(char).get_character_assets()
-        if not response.success():
-            return 404, ErrorResponse(detail="Failed to fetch assets from ESI")
-        assets = response.results()
-    else:
-        # Fetch assets from ESI on-demand
-        response = EsiClient(char).get_character_assets()
-        if not response.success():
-            return 404, ErrorResponse(detail="Failed to fetch assets from ESI")
-        assets = response.results()
+    assets, error = _fetch_character_assets(char, refresh_char)
+    if error:
+        return 404, error
 
     start = time.perf_counter()
-
-    fitting_ids = []
-    if fl33t_fittings:
-        for fitting in EveFitting.objects.all():
-            fitting_ids.append(fitting.ship_id)
+    fitting_ids = _get_fitting_ship_ids() if fl33t_fittings else set()
 
     found = 0
     quantity = 0
     for asset in assets:
-        if type_id and type_id != asset["type_id"]:
-            continue
-        if location_id and location_id != asset["location_id"]:
-            continue
-        if location_flag and location_flag != asset["location_flag"]:
-            continue
-        if fl33t_fittings and asset["type_id"] not in fitting_ids:
-            continue
-        found += 1
-        quantity += asset["quantity"]
+        if _filter_asset(asset, type_id, location_id, location_flag, fitting_ids, fl33t_fittings):
+            found += 1
+            quantity += asset["quantity"]
 
     data = AssetSummary(
         elapsed_time=time.perf_counter() - start,
