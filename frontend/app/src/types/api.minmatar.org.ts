@@ -210,7 +210,7 @@ export interface FleetRequest {
     description:        string;
     start_time:         Date;
     doctrine_id:        number | null;
-    location_id:        number;
+    location_id?:       number | null;
     audience_id:        number;
     disable_motd:       boolean;
     immediate_ping?:    boolean;
@@ -243,6 +243,7 @@ export interface Audience {
     id:                     number;
     display_name:           string;
     display_channel_name:   string;
+    image_url:              string | null;
 }
 
 export interface FleetMember {

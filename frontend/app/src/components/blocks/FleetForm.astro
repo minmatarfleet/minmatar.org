@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience, Location } from '@dtypes/api.minmatar.org'
+import type { Audience } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
@@ -11,7 +11,6 @@ interface Porps {
     fleet?:                         FleetUI;
     audiences:                      Audience[];
     doctrines:                      DoctrineType[];
-    locations:                      Location[];
     fleet_commander:                CharacterBasic;
     eve_date:                       string;
     eve_time:                       string;
@@ -23,7 +22,6 @@ const {
     fleet = null,
     audiences,
     doctrines,
-    locations,
     fleet_commander,
     eve_date,
     eve_time,
@@ -46,53 +44,32 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
     return {value: i, label: t(i as any)}
 } )
 
-let FLEET_LOCATIONS = {}
-const locations_select_options = locations.map( (i):SelectOptions => {
-    FLEET_LOCATIONS[i.location_id] = i.location_name
-    return {value: i.location_id, label: i.location_name} 
-} )
+// Locations are no longer used - staging location comes from audience
 
 const no_audience_option = {
     label: t('select_audience'),
     value: -1
 } as SelectOptions
 
-const DEPRECATED_AUDIENCES_ID = [ 2, 3 ]
-const filtered_audiences = audiences.filter(audience => !DEPRECATED_AUDIENCES_ID.includes(audience.id) )
-
 let AUDIENCES = {}
 const audiences_select_options = [  no_audience_option  ].concat(
-    filtered_audiences.map( (i):SelectOptions => {
+    audiences.map( (i):SelectOptions => {
         AUDIENCES[i.id] = i.display_name
         return { label: i.display_name, value: i.id }
     } )
 )
 
 let fleet_audience_id
-let fleet_location_id
 if (fleet) {
     const fleet_audience = audiences_select_options.find((option) => option.label === fleet.audience)
     fleet_audience_id = fleet_audience !== undefined ? fleet_audience?.value : null
-    const fleet_location = locations_select_options.find((option) => option.label === fleet.location)
-    fleet_location_id = fleet_location !== undefined ? fleet_location?.value : null
 }
 
-const DEFAULT_LOCATION = 1049037316814
-const DEFAULT_LOCATION_NAME = 'Vard - Rickety Roost'
-
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
-const default_location = fleet_location_id ?? DEFAULT_LOCATION
-const default_location_name = fleet?.location ?? DEFAULT_LOCATION_NAME
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
 const default_audience = fleet_audience_id ?? (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
 
-const AUDIENCE_ICONS = {
-    1: '/images/fleet-logo.svg',
-    2: '/images/minmatar-logo.svg',
-    3: '/images/muscle-logo.png',
-    5: '/images/warzone-logo.png',
-    6: '/images/etherium-logo.png',
-}
+// AUDIENCE_ICONS is deprecated - use audience.image_url instead
 
 import Context from '@components/layout/Context.astro';
 
@@ -137,11 +114,9 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             fleet_type: '${default_fleet_type}',
             eve_date: '${eve_date}',
             eve_time: '${eve_time}',
-            location: ${default_location},
             audience: ${default_audience},
             doctrine_id: '${default_doctrine}',
             local_datetime: '',
-            locations: ${JSON.stringify(FLEET_LOCATIONS)},
             audiences: ${JSON.stringify(AUDIENCES)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
@@ -185,19 +160,30 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
                                 <label>{t('select_audience')}</label>
                                 <FlexInline class="[ audiences ]">
-                                    {filtered_audiences.map((option) => 
+                                    {audiences.map((option) => 
                                         <StylessButton
                                             x-on:click={`audience = ${option.id}`}
                                             type="button"
                                             data-tippy-content={option.display_name}
                                         >
-                                            <img
-                                                class:list={{ selected: option.id === default_audience}}
-                                                x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                                src={AUDIENCE_ICONS[option.id] ?? AUDIENCE_ICONS[0]}
-                                                height="128"
-                                                width="128"
-                                            />
+                                            {option.image_url ?
+                                                <img
+                                                    class:list={{ selected: option.id === default_audience}}
+                                                    x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                    src={option.image_url}
+                                                    height="256"
+                                                    width="256"
+                                                    alt={option.display_name}
+                                                />
+                                                :
+                                                <div
+                                                    class:list={{ selected: option.id === default_audience}}
+                                                    x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                    style="width: 256px; height: 256px; background: var(--color-bg-secondary); display: flex; align-items: center; justify-content: center;"
+                                                >
+                                                    {option.display_name}
+                                                </div>
+                                            }
                                         </StylessButton>
                                     )}
                                     <div class="[ visually-hidden ]">
@@ -290,14 +276,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </Select>
                             </FixedFluid>
 
-                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                <label for="location">{t('location')}</label>
-                                <Select id="location" x-model="location" name="location">
-                                    {locations_select_options.map((option) => 
-                                        <option value={option.value} selected={option.value === default_location ? 'true' : undefined}>{option.label}</option>
-                                    )}
-                                </Select>
-                            </FixedFluid>
 
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
@@ -358,9 +336,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
                                 >
                                     {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                                </TextGroup>
-                                <TextGroup title={t('location')} x-text="locations[location]">
-                                    {default_location_name}
                                 </TextGroup>
                             </Flexblock>
                         </VerticalCenter>
