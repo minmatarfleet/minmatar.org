@@ -40,15 +40,15 @@ const alert = !flash_form_error ? false : {
     content: flash_form_error
 } as Alert
 
-import { get_locations } from '@helpers/api.minmatar.org/fleets'
-import type { Location } from '@dtypes/api.minmatar.org'
-let locations:Location[] = []
-let fetch_doctrines_error:string | null = null
+import { get_audiences } from '@helpers/api.minmatar.org/fleets'
+import type { Audience } from '@dtypes/api.minmatar.org'
+let audiences:Audience[] = []
+let fetch_audiences_error:string | null = null
 
 try {
-    locations = await get_locations(auth_token as string)
+    audiences = await get_audiences(auth_token as string)
 } catch (error) {
-    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    fetch_audiences_error = error.message
 }
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
@@ -145,7 +145,9 @@ const page_title = t('fleets.upcoming.page_title');
             }
         </FlexInline>
 
-        <FlashFormButton locations={locations} hidden={true} />
+        {!fetch_audiences_error &&
+            <FlashFormButton audiences={audiences} hidden={true} />
+        }
         
         {fetch_fleets_error ?
             <ErrorRefetch

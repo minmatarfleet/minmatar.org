@@ -106,11 +106,9 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             </Flexblock>
         </VerticalCenter>
 
-        <VerticalCenter>
-            <TextGroup title={t('description')} full={true}>
-                <Flexblock slot="outside" class="[ wrap-break-word max-w-full ]" gap="var(--space-s-m)" set:html={marked.parse(fleet.description ?? '', { renderer })} />
-            </TextGroup>
-        </VerticalCenter>
+        <TextGroup title={t('description')} full={true}>
+            <Flexblock slot="outside" class="[ wrap-break-word max-w-full ]" gap="var(--space-s-m)" set:html={marked.parse(fleet.description ?? '', { renderer })} />
+        </TextGroup>
 
         <VerticalCenter class="[ justify-center ]">
             <Flexblock>
