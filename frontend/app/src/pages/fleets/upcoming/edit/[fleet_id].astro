@@ -27,9 +27,8 @@ const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import { update_fleet, get_locations, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
+import { update_fleet, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
-import type { Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -45,7 +44,6 @@ if (Astro.request.method === "POST") {
         const fleet_data = {
             doctrine_id: doctrine_id,
             description: data.get('description') as string,
-            location_id: parseInt(data.get('location') as string),
             start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
@@ -89,7 +87,6 @@ let doctrines:DoctrineType[] = []
 let fleet:FleetUI | null = null
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error:string | false = false
-let locations:Location[] | null = null
 let audiences:Audience[] | null = null
 
 try {
@@ -99,7 +96,6 @@ try {
         character_name: fleet.fleet_commander_name,
     }
     doctrines = await fetch_doctrines()
-    locations = await get_locations(auth_token as string)
     audiences = await get_audiences(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
@@ -189,7 +185,6 @@ const eve_time = eve_datetime.toTimeString().slice(0, 5)
                     fleet={fleet}
                     audiences={audiences}
                     doctrines={doctrines}
-                    locations={locations}
                     fleet_commander={fleet_commander}
                     eve_date={eve_date}
                     eve_time={eve_time}

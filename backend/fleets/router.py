@@ -44,6 +44,7 @@ class EveFleetChannelResponse(BaseModel):
     id: int
     display_name: str
     display_channel_name: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class EveFleetTrackingResponse(BaseModel):
@@ -108,7 +109,7 @@ class CreateEveFleetRequest(BaseModel):
     start_time: datetime
     doctrine_id: Optional[int] = None
     audience_id: int
-    location_id: int
+    location_id: Optional[int] = None
     disable_motd: bool = False
     immediate_ping: bool = False
     status: Optional[str] = None
@@ -222,6 +223,7 @@ def get_fleet_audiences(request):
                 "id": audience.id,
                 "display_name": audience.name,
                 "display_channel_name": audience.discord_channel_name,
+                "image_url": audience.image_url,
             }
         )
     return response
@@ -621,6 +623,9 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         ).exists():
             return 400, {"detail": "Location does not exist"}
         location = EveLocation.objects.get(location_id=payload.location_id)
+    elif audience.staging_location:
+        # Use audience staging location if no location_id provided
+        location = audience.staging_location
 
     fleet = EveFleet.objects.create(
         type=payload.type,
@@ -654,7 +659,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "location": (
             fleet.formup_location.location_name
             if fleet.formup_location
-            else None
+            else "Ask FC"
         ),
         "audience": fleet.audience.name,
     }

@@ -510,6 +510,12 @@ class EveFleetAudience(models.Model):
         blank=True,
         default=None,
     )
+    image_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL to the image to display for this fleet audience",
+    )
     add_to_schedule = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
