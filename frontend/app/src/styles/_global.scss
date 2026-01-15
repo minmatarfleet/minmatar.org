@@ -272,3 +272,7 @@ ul {
     cursor: pointer;
     max-width: 60ch;
 }
+
+.collapse-borders > .border + .border {
+    border-top: none;
+}

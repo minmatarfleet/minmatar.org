@@ -7,7 +7,7 @@ import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtyp
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 
-interface Porps {
+interface Props {
     fleet?:                         FleetUI;
     audiences:                      Audience[];
     doctrines:                      DoctrineType[];
@@ -48,7 +48,7 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
 
 const no_audience_option = {
     label: t('select_audience'),
-    value: -1
+    value: ''
 } as SelectOptions
 
 let AUDIENCES = {}
@@ -114,7 +114,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             fleet_type: '${default_fleet_type}',
             eve_date: '${eve_date}',
             eve_time: '${eve_time}',
-            audience: ${default_audience},
+            audience: '${default_audience}',
             doctrine_id: '${default_doctrine}',
             local_datetime: '',
             audiences: ${JSON.stringify(AUDIENCES)},
@@ -149,7 +149,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
         x-on:submit="launch_confetti(get_images()); submitted = true;"
     >
         <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-            <Flexblock>
+            <Flexblock gap='var(--space-3xs)'>
                 <ComponentBlock width='narrow'>
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                         <h2>{t('fleet_information')} (1/3)</h2>
@@ -159,31 +159,21 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         <Flexblock>
                             <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
                                 <label>{t('select_audience')}</label>
-                                <FlexInline class="[ audiences ]">
-                                    {audiences.map((option) => 
+                                <FlexInline class="[ audiences !justify-center ]">
+                                    {audiences.map((option) =>
                                         <StylessButton
                                             x-on:click={`audience = ${option.id}`}
                                             type="button"
                                             data-tippy-content={option.display_name}
                                         >
-                                            {option.image_url ?
-                                                <img
-                                                    class:list={{ selected: option.id === default_audience}}
-                                                    x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                                    src={option.image_url}
-                                                    height="256"
-                                                    width="256"
-                                                    alt={option.display_name}
-                                                />
-                                                :
-                                                <div
-                                                    class:list={{ selected: option.id === default_audience}}
-                                                    x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                                    style="width: 256px; height: 256px; background: var(--color-bg-secondary); display: flex; align-items: center; justify-content: center;"
-                                                >
-                                                    {option.display_name}
-                                                </div>
-                                            }
+                                            <img
+                                                class:list={{ selected: option.id === default_audience}}
+                                                x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                src={option.image_url ?? '/images/fleet-logo.svg'}
+                                                height="256"
+                                                width="256"
+                                                alt={option.display_name}
+                                            />
                                         </StylessButton>
                                     )}
                                     <div class="[ visually-hidden ]">
@@ -276,7 +266,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </Select>
                             </FixedFluid>
 
-
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="description">{t('description')}</label>
@@ -293,7 +282,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                     </Flexblock>
                 </ComponentBlock>
 
-                <Flexblock gap='var(--space-3xs)'>
+                <Flexblock gap='0' class="[ collapse-borders ]">
                     <ComponentBlock width='narrow'>
                         <h2>{t('confirm')} (2/3)</h2>
                     </ComponentBlock>
@@ -326,19 +315,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </div>
                             </template>
                         </div>
-
-                        <VerticalCenter>
-                            <Flexblock gap="var(--space-s-m)">
-                                <TextGroup
-                                    class:list={{ 'text-red': default_audience < 1 }}
-                                    x-bind:class="{ 'text-red': audience < 1 }"
-                                    title={t('audience')}
-                                    x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
-                                >
-                                    {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                                </TextGroup>
-                            </Flexblock>
-                        </VerticalCenter>
                         
                         <VerticalCenter>
                             <Flexblock gap="var(--space-s-m)">
@@ -358,6 +334,17 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </TextGroup>
                             </Flexblock>
                         </VerticalCenter>
+
+                        <Flexblock gap="var(--space-s-m)">
+                            <TextGroup
+                                class:list={{ 'text-red': default_audience < 1 }}
+                                x-bind:class="{ 'text-red': audience < 1 }"
+                                title={t('audience')}
+                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                            >
+                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                            </TextGroup>
+                        </Flexblock>
                     </ThumbCard>
 
                     <template x-if="doctrine_id !== '-1'">
