@@ -659,7 +659,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "location": (
             fleet.formup_location.location_name
             if fleet.formup_location
-            else None
+            else "Ask FC"
         ),
         "audience": fleet.audience.name,
     }
