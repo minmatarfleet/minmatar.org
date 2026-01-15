@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
             "eveonline",
             "0067_evealliance_created_at_evealliance_updated_at_and_more",
         ),
-        ("eveuniverse", "0011_extend_industry_activites"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
