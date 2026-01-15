@@ -70,7 +70,7 @@ def setup_fleet_reference_data():
         staging_active=True,
     )
 
-    audience = EveFleetAudience.objects.create(
+   EveFleetAudience.objects.create(
         name="Test Audience",
         discord_channel_name="TestChannel",
         staging_location=location,
