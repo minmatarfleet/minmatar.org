@@ -5,26 +5,6 @@ from eveonline.models import EveLocation, EveCharacter
 from fittings.models import EveFitting
 
 
-class EveMarketLocation(models.Model):
-    """
-    DEPRECATED - Model for tracking market locations
-    """
-
-    location_id = models.BigIntegerField(primary_key=True)
-    location_name = models.CharField(max_length=255)
-    solar_system_id = models.BigIntegerField()
-    solar_system_name = models.CharField(max_length=255)
-    structure = models.ForeignKey(
-        "structures.EveStructure",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-
-    def __str__(self):
-        return str(f"{self.location_name}")
-
-
 class EveMarketContractExpectation(models.Model):
     """Model for seeding a quantity of fittings"""
 

@@ -5,7 +5,7 @@ from django.conf import settings
 
 from app.celery import app
 from discord.client import DiscordClient
-from fleets.models import EveFleet, EveFleetInstance, EveStandingFleet
+from fleets.models import EveFleet, EveFleetInstance
 
 discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -37,23 +37,6 @@ def update_fleet_instances():
 
 
 @app.task()
-def update_standing_fleet_instances():
-    for standing_fleet in EveStandingFleet.objects.filter(end_time=None):
-        logger.debug("Updating standing fleet instance %s", standing_fleet.id)
-        try:
-            standing_fleet.update_fleet_members()
-        except Exception as e:
-            logger.error(
-                "An error occurred while updating standing fleet instance %s: %s",
-                standing_fleet.id,
-                e,
-            )
-            logger.debug("Assuming fleet is closed")
-            standing_fleet.end_time = timezone.now()
-            standing_fleet.save()
-
-
-@app.task()
 def update_fleet_schedule():
     """
     Updates fleet schedule message to display all upcoming fleets
@@ -71,8 +54,8 @@ def update_fleet_schedule():
     for fleet in fleets:
         if fleet.audience and fleet.audience.add_to_schedule:
             location_name = (
-                fleet.location.location_name
-                if fleet.location
+                fleet.formup_location.location_name
+                if fleet.formup_location
                 else "No Location"
             )
             if location_name not in fleets_by_location:

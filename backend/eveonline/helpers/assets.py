@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import List, Optional
 
@@ -54,8 +53,8 @@ def non_ship_location(location_flag: str) -> bool:
     return False
 
 
-def create_character_assets(character: EveCharacter):
-    """Create assets for a character"""
+def create_character_assets(character: EveCharacter, assets_data: List[dict]):
+    """Create assets for a character from ESI assets data"""
     updated = 0
     created = 0
     deleted = 0
@@ -69,10 +68,11 @@ def create_character_assets(character: EveCharacter):
     type_names = {}
 
     esi = EsiClient(None)
-    assets: List[EveAssetResponse] = json.loads(character.assets_json)
+    assets: List[EveAssetResponse] = [
+        EveAssetResponse(**asset) for asset in assets_data
+    ]
     for asset in assets:
         logger.debug("Processing asset %s", asset)
-        asset = EveAssetResponse(**asset)
 
         if non_ship_location(asset.location_flag):
             continue

@@ -19,7 +19,8 @@ def get_fleet_discord_notification(
         # pylint: disable=inconsistent-quotes
         description += f"**START TIME**: {fleet_start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet_start_time.timestamp())}> LOCAL\n"
     else:
-        description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
+        if fleet_voice_channel:
+            description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
     description += f"**LOCATION**: {fleet_location.upper()}\n"
     description += f"**AUDIENCE**: {fleet_audience.upper()}\n"
     description += f"\n**OBJECTIVE**: {fleet_description}\n"
@@ -38,8 +39,13 @@ def get_fleet_discord_notification(
                     {
                         "style": 5,
                         "label": "Join Voice Channel",
-                        "url": fleet_voice_channel_link,
-                        "disabled": is_pre_ping,
+                        "url": (
+                            fleet_voice_channel_link
+                            if fleet_voice_channel_link
+                            else "https://discord.gg/minmatar"
+                        ),
+                        "disabled": is_pre_ping
+                        or not fleet_voice_channel_link,
                         "type": 2,
                     },
                     {

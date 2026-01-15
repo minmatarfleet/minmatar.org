@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import EveFreightLocation, EveFreightRoute, EveFreightRouteOption
+from .models import EveFreightRoute, EveFreightRouteOption
 
 
 class FreightRouteAdmin(admin.ModelAdmin):
@@ -14,6 +14,5 @@ class FreightRouteAdmin(admin.ModelAdmin):
     ]
 
 
-admin.site.register(EveFreightLocation)
 admin.site.register(EveFreightRoute, FreightRouteAdmin)
 admin.site.register(EveFreightRouteOption)

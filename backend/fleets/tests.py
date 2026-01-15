@@ -23,7 +23,6 @@ from fleets.models import (
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
-    EveStandingFleet,
 )
 from fleets.router import (
     fixup_fleet_status,
@@ -567,20 +566,6 @@ class FleetRouterTestCase(TestCase):
         )
         self.assertTrue(can_see_fleet(fleet, somebody))
         self.assertFalse(can_see_fleet(fleet, nobody))
-
-    def test_get_standing_fleets(self):
-        EveStandingFleet.objects.create(
-            external_fleet_id=1001,
-            active_fleet_commander_character_id=2001,
-            active_fleet_commander_character_name="Buck Rogers",
-        )
-        response = self.client.get(
-            f"{BASE_URL}/standingfleets",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertEqual(1, len(data))
 
     def test_time_region(self):
         def hour_time(hour: int) -> datetime:

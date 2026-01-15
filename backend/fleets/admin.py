@@ -5,8 +5,6 @@ from django.contrib import admin
 from .models import (
     EveFleet,
     EveFleetAudience,
-    EveFleetAudienceWebhook,
-    EveFleetLocation,
     EveFleetInstance,
     EveFleetInstanceMember,
 )
@@ -75,8 +73,6 @@ class FleetAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EveFleet, FleetAdmin)
-admin.site.register(EveFleetLocation)
 admin.site.register(EveFleetAudience)
-admin.site.register(EveFleetAudienceWebhook)
 admin.site.register(EveFleetInstance)
 admin.site.register(EveFleetInstanceMember)

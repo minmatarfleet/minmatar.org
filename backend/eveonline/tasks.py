@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from datetime import timedelta
@@ -183,13 +182,12 @@ def update_character_assets(eve_character_id):
         )
         return 0, 0, 0
 
-    character.assets_json = json.dumps(response.results())
-    character.save()
-
     fetch_time = time.perf_counter() - start
     fetch_str = f"{fetch_time:.6f}"
 
-    (created, updated, deleted) = create_character_assets(character)
+    (created, updated, deleted) = create_character_assets(
+        character, response.results()
+    )
 
     elapsed = time.perf_counter() - start
     elapsed_str = f"{elapsed:.6f}"
@@ -416,7 +414,9 @@ def setup_players():
     """Setup EvePlayer entities based on primary character data"""
 
     created = 0
-    for char in EveCharacter.objects.filter(is_primary=True):
+    # Find characters that are primary via EvePlayer
+    for player in EvePlayer.objects.filter(primary_character__isnull=False):
+        char = player.primary_character
         if not char.user:
             logger.warning(
                 "EveCharacter with primary but not user: %s",

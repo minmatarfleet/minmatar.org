@@ -21,8 +21,8 @@ from discord.tasks import sync_discord_user, sync_discord_nickname
 from discord.helpers import remove_all_roles_from_guild_member
 from groups.helpers import TECH_TEAM, user_in_team
 from groups.tasks import update_affiliation
-from eveonline.client import esi_for
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.client import esi_for, EsiClient
+from eveonline.models import EveCharacter, EvePlayer, EveCharacterAsset
 from eveonline.tasks import update_character_assets, update_character_skills
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
@@ -424,6 +424,45 @@ class AssetSummary(BaseModel):
     elapsed_time: float
 
 
+def _fetch_character_assets(
+    character: EveCharacter, refresh_char: bool
+) -> tuple[list, Optional[ErrorResponse]]:
+    """Fetch assets for a character from ESI"""
+    if refresh_char:
+        update_character_assets.apply_async(args=[character.character_id])
+
+    response = EsiClient(character).get_character_assets()
+    if not response.success():
+        return [], ErrorResponse(detail="Failed to fetch assets from ESI")
+
+    return response.results(), None
+
+
+def _get_fitting_ship_ids() -> set[int]:
+    """Get set of ship IDs for fleet fittings"""
+    return {fitting.ship_id for fitting in EveFitting.objects.all()}
+
+
+def _filter_asset(
+    asset: dict,
+    type_id: Optional[int],
+    location_id: Optional[int],
+    location_flag: Optional[str],
+    fitting_ids: set[int],
+    fl33t_fittings: bool,
+) -> bool:
+    """Check if asset matches all filter criteria"""
+    if type_id and type_id != asset["type_id"]:
+        return False
+    if location_id and location_id != asset["location_id"]:
+        return False
+    if location_flag and location_flag != asset["location_flag"]:
+        return False
+    if fl33t_fittings and asset["type_id"] not in fitting_ids:
+        return False
+    return True
+
+
 @router.get(
     "/assets",
     summary="Character asset summary",
@@ -445,33 +484,34 @@ def asset_summary(
     char = EveCharacter.objects.filter(character_id=character_id).first()
     if not char:
         return 404, ErrorResponse(detail="Character not found")
-    if not char.assets_json:
-        return 404, ErrorResponse(detail="Character has no assets")
 
-    if refresh_char:
-        update_character_assets.apply_async(args=[character_id])
+    # Check if character has any processed assets
+    has_assets = EveCharacterAsset.objects.filter(character=char).exists()
+    if not has_assets and not refresh_char:
+        return 404, ErrorResponse(
+            detail="Character has no assets. Use refresh_char=true to fetch assets."
+        )
+
+    assets, error = _fetch_character_assets(char, refresh_char)
+    if error:
+        return 404, error
 
     start = time.perf_counter()
-
-    fitting_ids = []
-    if fl33t_fittings:
-        for fitting in EveFitting.objects.all():
-            fitting_ids.append(fitting.ship_id)
+    fitting_ids = _get_fitting_ship_ids() if fl33t_fittings else set()
 
     found = 0
     quantity = 0
-    assets = json.loads(char.assets_json)
     for asset in assets:
-        if type_id and type_id != asset["type_id"]:
-            continue
-        if location_id and location_id != asset["location_id"]:
-            continue
-        if location_flag and location_flag != asset["location_flag"]:
-            continue
-        if fl33t_fittings and asset["type_id"] not in fitting_ids:
-            continue
-        found += 1
-        quantity += asset["quantity"]
+        if _filter_asset(
+            asset,
+            type_id,
+            location_id,
+            location_flag,
+            fitting_ids,
+            fl33t_fittings,
+        ):
+            found += 1
+            quantity += asset["quantity"]
 
     data = AssetSummary(
         elapsed_time=time.perf_counter() - start,
