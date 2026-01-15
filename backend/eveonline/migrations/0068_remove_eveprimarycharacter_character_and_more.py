@@ -7,7 +7,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("esi", "0013_squashed_0012_fix_token_type_choices"),
         (
             "eveonline",
             "0067_evealliance_created_at_evealliance_updated_at_and_more",
