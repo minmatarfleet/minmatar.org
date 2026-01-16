@@ -10,7 +10,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_components';
 
-interface Porps {
+interface Props {
     size?:              ButtonSizes;
     color?:             ButtonColors;
     target:             string;
