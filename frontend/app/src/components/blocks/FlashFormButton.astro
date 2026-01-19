@@ -7,7 +7,7 @@ import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_co
 
 import { get_app_url } from '@helpers/env'
 
-interface Porps {
+interface Props {
     size?:              ButtonSizes;
     color?:             ButtonColors;
     audiences:          Audience[];
@@ -182,15 +182,12 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     </FixedFluid>
 
                     <Flexblock class="[ mt-5 ]">
-                        <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
-                            <p class="basis-[250px]"><a href={translatePath('/fleets/flash_form?audience=2')}>{t('warzone_flash_form_hint_title')}</a></p>
-                            <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:!flex relative ]">{translatePath('/fleets/flash_form?audience=2')}</ClipboardButton>
-                        </FlexInline>
-
-                        <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
-                            <p class="basis-[250px]"><a href={translatePath('/fleets/flash_form?audience=1')}>{t('etherium_flash_form_hint_title')}</a></p>
-                            <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:!flex relative ]">{translatePath('/fleets/flash_form?audience=1')}</ClipboardButton>
-                        </FlexInline>
+                        {audiences.map((option) =>
+                            <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
+                                <p class="basis-[250px]"><a href={translatePath(`/fleets/flash_form?audience=${option.id}`)}>{option.display_name}</a></p>
+                                <ClipboardButton id={`copy-form-express-${option.id}`} class="[ hidden md:flex relative ]">{translatePath(`/fleets/flash_form?audience=${option.id}`)}</ClipboardButton>
+                            </FlexInline>
+                        )}
                     </Flexblock>
                 </CollapsibleBlock>
 
