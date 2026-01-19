@@ -139,7 +139,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             slot="head"
                             class="[ w-full items-center ]"
                         >
-                            <picture class="[ hidden sm:block ]">
+                            <picture class="[ hidden sm:block! ]">
                                 <TutorialIcon />
                             </picture>
                             <small>{t('paste_above_tutorial_string')}</small>
@@ -184,7 +184,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             breakpoint='70%'
                             class="[ w-full items-center ]"
                         >
-                            <picture class="[ hidden sm:block ]">
+                            <picture class="[ hidden sm:block! ]">
                                 <TutorialIcon />
                             </picture>
                             <Markdown markdown={t('combat_log_file_text')} inline={true} inline_element='small' />

@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
+// import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 import sentry from "@sentry/astro";
 import { loadEnv } from "vite";
@@ -17,9 +18,7 @@ if (SENTRY_PROJECT === undefined)
     throw new Error(`Please define enviroment variable SENTRY_PROJECT`)
 
 const integrations = [
-    tailwind({
-        applyBaseStyles: false,
-    })
+  //tailwind()
 ]
 
 if (SENTRY_AUTH_TOKEN)
@@ -51,6 +50,7 @@ export default defineConfig({
             watch: {
                 usePolling: true
             }
-        }
+        },
+        plugins: [tailwindcss()],
     }
 });

@@ -1,5 +1,6 @@
 ---
 interface Props {
+    swiper_selector?:   string;
     pagination?:        boolean;
     gap?:               number;
     initial_slide?:     number;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 const {
+    swiper_selector = '.swiper',
     pagination = true,
     gap = 5,
     initial_slide = 0,
@@ -25,7 +27,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             return this.pagination_icons[index]
         },
         init() {
-            this.swiper = new Swiper('.swiper', {
+            this.swiper = new Swiper('${swiper_selector}', {
                 initialSlide: ${initial_slide},
                 slidesPerView: "auto",
                 spaceBetween: ${gap},
@@ -39,8 +41,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                     crossFade: true
                 },
                 navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
+                    nextEl: '${swiper_selector}-button-next',
+                    prevEl: '${swiper_selector}-button-prev',
                 },
             });
         }
@@ -49,7 +51,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     <slot />
 </FlexInline>
 
-<div class="swiper-pagination"></div>
+{pagination && <div class="swiper-pagination"></div>}
 
 <style lang="scss">
     :global(.swiper-pagination-bullet) {

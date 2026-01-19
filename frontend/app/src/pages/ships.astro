@@ -28,13 +28,13 @@ const page_description = t('ships.leading_text');
     >
         <Flexblock gap='var(--space-2xl)'>
             <Wrapper
-                max_width="var(--max-landing-width)"
+                max_width="var(--max-text-width)"
                 padding_inline="0"
                 padding_block="0"
             >
                 <Flexblock gap='var(--space-xl)'>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p>{page_description}</p>
+                    <p class="[ excerpt ]">{page_description}</p>
                 </Flexblock>
             </Wrapper>
 

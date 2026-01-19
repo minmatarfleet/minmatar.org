@@ -7,6 +7,7 @@ interface Props {
     size?:      ImageSize;
     narrow?:    boolean;
     mask?:      boolean;
+    zoomable?:  boolean;
 }
 
 const {
@@ -15,18 +16,29 @@ const {
     size = 64,
     narrow = false,
     mask = false,
+    zoomable = false,
 } = Astro.props
+
+import ZoomableImage from "@components/blocks/ZoomableImage.astro";
 ---
 
 <picture class="animated">
-    <img
-        class:list={{ mask }}
-        loading="lazy"
-        height={narrow ? 412 : size}
-        width={size}
-        src={src}
-        alt={alt ? alt : undefined}
-    />
+    {zoomable ?
+        <ZoomableImage
+            class:list={[{ mask }, 'h-auto']}
+            src={src}
+            alt={alt ? alt : undefined}
+            loading="lazy"
+        /> :
+        <img
+            class:list={{ mask }}
+            loading="lazy"
+            height={narrow ? 412 : size}
+            width={size}
+            src={src}
+            alt={alt ? alt : undefined}
+        />
+    }
 </picture>
 
 <style lang="scss">
@@ -35,8 +47,8 @@ const {
         width: 100%;
     }
 
-    .mask {
-        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
-        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
+    .mask:not(.medium-zoom-image--opened) {
+        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
+        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
     }
 </style>
