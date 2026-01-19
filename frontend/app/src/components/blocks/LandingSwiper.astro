@@ -30,6 +30,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             this.swiper = new Swiper('${swiper_selector}', {
                 initialSlide: ${initial_slide},
                 slidesPerView: "auto",
+                watchSlidesVisibility: true,
                 spaceBetween: ${gap},
                 pagination: ${pagination ? JSON.stringify({
                     clickable: true,
