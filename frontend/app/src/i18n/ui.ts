@@ -29,7 +29,7 @@ export const ui = {
         'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of an space structure.',
-        'index.description': 'Outer view of your favorite Minmatar Fleet staging',
+        'index.description': 'Outer view of your favorite Minmatar Fleet staging.',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
@@ -51,20 +51,20 @@ export const ui = {
         'alliance.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, internal groups and recent events.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
-        'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events',
+        'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events.',
         'alliance.description.directors': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams members and applications. Read about our recent events',
         'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications. Read about our recent events',
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications. Read about our recent events',
 
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
-        'propaganda.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, internal groups and recent events.',
-        'propaganda.description': 'Take a look to our content outside the game',
+        'propaganda.meta_description': 'All our propaganda in a single place.',
+        'propaganda.description': 'All our propaganda in a single place.',
 
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
-        'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE',
+        'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE.',
 
         'fleets.srp.page_title': 'Ship Replacement Program',
         'fleets.srp.leading_text': 'Designed to minimize downtime, SRP rewards participation in fleet operations by covering a portion or all of the lost ship’s cost.',
@@ -103,7 +103,7 @@ export const ui = {
         'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
-        'fleets.description': 'Schedule fleets and check those yet to come',
+        'fleets.description': 'Schedule fleets and check those yet to come.',
 
         'fleets.upcoming.page_title': 'Upcoming fleets',
         'fleets.upcoming.empty_message': 'There are no fleets on schedule. Be the one adding the first one.',
@@ -156,7 +156,7 @@ export const ui = {
         'market.leading_text': 'The Minmatar Republic bleeds nearly half a trillion ISK per month in faction warfare losses. The sheer scale of the conflict has made importing resources logistically impossible, even for the most resourceful capsuleers. This interesting challenge demands a fundamental shift in strategy: local industry must become the backbone of our military strategy.',
         'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
-        'market.description': 'Request alliance freight service and check for opportunities with our contract service',
+        'market.description': 'Request alliance freight service and check for opportunities with our contract service.',
 
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Minmatar Fleet is supplied by individuals like YOU rather than a tight knit cartel of leadership. Learn more about our available contracts, and become a supplier!',
