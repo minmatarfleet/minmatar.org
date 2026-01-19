@@ -172,13 +172,13 @@ import Markdown from './Markdown.astro'
                             >
                                 <Textarea id="combatlog-texarea" x-model="combatlog" x-on:change="update_status()" rows="5" />
                                 
-                                <CollapsableButton x-on:click="toggle_collapse()" class="[ !w-full ]">
+                                <CollapsableButton x-on:click="toggle_collapse()" class="[ w-full! ]">
                                     <FixedFluid
                                         width='48'
                                         breakpoint='70%'
                                         class="[ w-full items-center ]"
                                     >
-                                        <picture class="[ hidden sm:block ]">
+                                        <picture class="[ hidden sm:block! ]">
                                             <TutorialIcon />
                                         </picture>
                                         <small>{t('paste_combatlog_tutorial')}</small>
@@ -190,7 +190,7 @@ import Markdown from './Markdown.astro'
                                     x-collapse.duration.0ms
                                     style="display: none"
                                 >
-                                    <video autoplay controls loop class="[ mt-[var(--space-xs)] w-full ]">
+                                    <video autoplay controls loop class="[ mt-(--space-xs) w-full ]">
                                         <source src="/videos/combatlog-tutorial.mp4" type="video/mp4" />
                                         Your browser does not support the video tag.
                                     </video>
@@ -212,7 +212,7 @@ import Markdown from './Markdown.astro'
                                     breakpoint='70%'
                                     class="[ w-full items-center ]"
                                 >
-                                    <picture class="[ hidden sm:block ]">
+                                    <picture class="[ hidden sm:block! ]">
                                         <TutorialIcon />
                                     </picture>
                                     <Markdown markdown={t('combat_log_file_text')} inline={true} inline_element='small' />

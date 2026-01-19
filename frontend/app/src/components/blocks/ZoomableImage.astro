@@ -1,12 +1,14 @@
 ---
 interface Props {
-    src:      string;
-    alt:        string;
+    src:    string;
+    alt?:   string;
+    [propName: string]: any;
 }
 
 const {
     src,
     alt = '',
+    ...attributes
 } = Astro.props
 ---
 
@@ -27,5 +29,7 @@ const {
         data-zoomable
         src={src}
         alt={alt}
+        loading="lazy"
+        {...attributes}
     />
 </figure>

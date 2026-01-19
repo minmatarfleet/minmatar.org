@@ -112,7 +112,7 @@ const page_title = t('intel.structures.page_title');
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:block ]">
+                <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="region_filter"
                         x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"
@@ -124,7 +124,7 @@ const page_title = t('intel.structures.page_title');
                     </Select>
                 </div>
 
-                <div class="[ hidden xl:block ]">
+                <div class="[ hidden xl:!block ]">
                     <Select
                         x-model="alliance_filter"
                         x-on:change="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length }, 100)"

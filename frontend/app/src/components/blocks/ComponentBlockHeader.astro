@@ -42,7 +42,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             width='narrow'
             class="[ border-bottom ]"
         >
-            <CollapsableButton class="[ !block !w-full ]" x-on:click="toggle_collapse()">
+            <CollapsableButton class="[ !block w-full! ]" x-on:click="toggle_collapse()">
                 <slot name="header">
                     <DebugTag set:html={marked.parse(t('block_missing_header_slot'))} />
                 </slot>

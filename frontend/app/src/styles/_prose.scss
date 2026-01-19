@@ -1,7 +1,7 @@
 main .prose {
     font-size: var(--normal-font-size);
 
-    * {
+    /** {
         line-height: 1.5;
     }
 
@@ -51,7 +51,7 @@ main .prose {
         > li::marker {
             color: var(--highlight);
         }
-    }
+    }*/
 
     .bleed {
         max-width: calc(100vw - calc(var(--space-2xl-3xl) + var(--space-l-xl)));

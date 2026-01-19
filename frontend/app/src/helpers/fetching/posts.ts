@@ -88,3 +88,24 @@ export async function fetch_user_posts(post_request:PostRequest) {
         } as PostListUI
     })
 }
+
+export async function fetch_posts_grouped_by_tags() {
+    const { total, chunk } = await fetch_posts({ status: 'published' })
+
+    const posts_tags = await get_posts_tags()
+    const tags_by_id: Record<string, string> = {}
+
+    for (const post_tag of posts_tags)
+        tags_by_id[post_tag.tag_id] = post_tag.tag
+
+    const posts_by_tag: Record<string, PostListUI[]> = {}
+
+    for (const post of chunk) {
+        const tag_id = post.tags[0]
+        if (!tag_id) continue
+        
+        (posts_by_tag[tag_id] ??= []).push(post)
+    }
+
+    return posts_by_tag
+}

@@ -1,0 +1,71 @@
+---
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    title:          string;
+    description:    string;
+    posts:          PostListUI[];
+    cover?:         string;
+}
+
+const {
+    title,
+    description,
+    posts,
+    cover,
+} = Astro.props
+
+import { slugify } from '@helpers/string'
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import PostersReel from '@components/blocks/PostersReel.astro';
+---
+
+<section class="[ relative ]">
+    {cover &&
+        <img
+            class="[
+                cover
+                timeline-view animate-blurred-fade-in animate-range-[entry_0%_contain_-30%]
+                hidden
+                2xl:!block
+            ]"
+            src={cover}
+        />
+    }
+
+    <Flexblock gap='var(--space-l)'>
+        <TextBox>
+            <Flexblock>
+                <h2>{title}</h2>
+                <p>{description}</p>
+            </Flexblock>
+        </TextBox>
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+        >
+            <PostersReel
+                posts={posts}
+                small={true}
+                swiper_id={slugify(title).toLowerCase()}
+            />
+        </Wrapper>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .cover {
+        position: absolute;
+        right: 0;
+        z-index: -1;
+        max-height: 580px;
+        top: 50%;
+        translate: 0 -50%;
+    }
+</style>

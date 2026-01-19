@@ -1,50 +1,84 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang, translatePath } = i18n(Astro.url)
+
 import type { PostListUI } from '@dtypes/layout_components'
 
 interface Props {
-    posts:  PostListUI[];
+    posts:      PostListUI[];
+    small?:     boolean;
+    swiper_id?: string;
+
 }
 
 const {
     posts,
+    small = false,
+    swiper_id = 'posters-reel-swiper',
 } = Astro.props
 
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_date } from '@helpers/date'
+
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
-import ZoomableImage from '@components/blocks/ZoomableImage.astro';
+import PictureCard from '@components/blocks/PictureCard.astro';
 ---
 
 <Wrapper
-    id="posters-reel"
-    class="[ posters-reel ]"
+    class:list={[ 'posters-reel', { 'posters-reel-small': small} ]}
     padding_block='0'
     padding_inline='0'
     max_width='100%'
 >
-    <div class="[ swiper ][ w-full pb-10 ]">
-        <LandingSwiper align='center'>
-            {posts.map(post => {
-                if (!post.image)
-                    return
-
-                return (<div class="[ swiper-slide light-transparency card component ]"
+    <div id={swiper_id} class="[ swiper ][ w-full pb-10! ]">
+        <LandingSwiper align='center' swiper_selector={`#${swiper_id}`} align='end'>
+            {posts.map(post =>
+                <div class="[ swiper-slide ]"
                     style="margin-right: 5px"
                 >
-                    <ZoomableImage
-                        src={post.image}
+                    <PictureCard
+                        src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
                         alt={post.title}
-                    />
-                </div>)
-            })}
+                        narrow={true}
+                        zoomable={post.image ? true : false}
+                    >
+                        <Flexblock gap='var(--space-3xs)'>
+                            <small>{format_date(lang, post.date_posted)}</small>
+                            <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                <h3>{post.title}</h3>
+                            </a>
+                        </Flexblock>
+                    </PictureCard>
+                    {/*<Flexblock gap='var(--space-2xs)'>
+                        <div>
+                            <ZoomableImage
+                                src={post.image}
+                                alt={post.title}
+                            />
+                            <div class="swiper-lazy-preloader"></div>
+                        </div>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h4><a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>{post.title}</a></h4>
+                            <small>{format_date(lang, post.date_posted)}</small>
+                        </Flexblock>
+                    </Flexblock>*/}
+                </div>
+            )}
         </LandingSwiper>
     </div>
 
-    <div class="[ swiper-button-prev hidden lg:block ]"></div>
-    <div class="[ swiper-button-next hidden lg:block ]"></div>
+    <div id={`${swiper_id}-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+    <div id={`${swiper_id}-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
 </Wrapper>
 
 <style lang="scss">
+    h3 {
+        font-size: var(--step-0);
+    }
+
     :global(.medium-zoom-image--opened) {
         z-index: var(--sticky-z-index);
     }
@@ -91,4 +125,14 @@ import ZoomableImage from '@components/blocks/ZoomableImage.astro';
     .swiper-slide {
         width: min(100%, 350px);
     }
+
+    .posters-reel-small .swiper-slide {
+        width: min(100%, 250px);
+    }
+
+    .swiper-lazy-preloader {
+        border-color: var(--fleet-yellow);
+        border-top-color: transparent;
+    }
+
 </style>

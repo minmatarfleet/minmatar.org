@@ -128,7 +128,7 @@ const page_title = t('fitting.list.page_title');
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:block ]">
+                <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="fitting_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
@@ -140,7 +140,7 @@ const page_title = t('fitting.list.page_title');
                     </Select>
                 </div>
 
-                <div class="[ hidden xl:block ]">
+                <div class="[ hidden xl:!block ]">
                     <Select
                         x-model="ship_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
