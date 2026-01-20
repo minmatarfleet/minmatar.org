@@ -15,6 +15,7 @@ const {
 const metropolis_posts:PostListUI[] = posts['Metropolis'] ?? []
 const frontlines_posts:PostListUI[] = posts['Frontlines'] ?? []
 const propaganda_posts:PostListUI[] = posts['Propaganda'] ?? []
+const mdn_posts_posts:PostListUI[] = posts['Metro Daily News'] ?? []
 const the_cope_posts:PostListUI[] = posts['The Cope'] ?? []
 const rust_and_blood_posts:PostListUI[] = posts['Rust and Blood'] ?? []
 const waifu_wars_posts:PostListUI[] = posts['Waifu Wars'] ?? []
@@ -49,6 +50,24 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             title="The odd bunch"
             description={t('odd_bunch_description')}
             posts={propaganda_posts}
+        />
+    }
+    {mdn_posts_posts.length > 0 &&
+        <PropagandaSection
+            title="Metro Daily News"
+            description={t('metro_dn_description')}
+            posts={mdn_posts_posts}
+            cover="/images/metrodn-cover.png"
+            is_video={true}
+        />
+    }
+    {the_cope_posts.length > 0 &&
+        <PropagandaSection
+            title="The COPE"
+            description={t('the_cope_description')}
+            posts={the_cope_posts}
+            cover="/images/cope-cover.png"
+            is_video={true}
         />
     }
     <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>

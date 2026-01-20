@@ -6,6 +6,7 @@ interface Props {
     description:    string;
     posts:          PostListUI[];
     cover?:         string;
+    is_video?:      boolean;
 }
 
 const {
@@ -13,6 +14,7 @@ const {
     description,
     posts,
     cover,
+    is_video = false,
 } = Astro.props
 
 import { slugify } from '@helpers/string'
@@ -54,6 +56,7 @@ import PostersReel from '@components/blocks/PostersReel.astro';
                 posts={posts}
                 small={true}
                 swiper_id={slugify(title).toLowerCase()}
+                is_video={is_video}
             />
         </Wrapper>
     </Flexblock>
