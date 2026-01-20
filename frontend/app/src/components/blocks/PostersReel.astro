@@ -38,7 +38,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
     max_width='100%'
 >
     <div id={swiper_id} class="[ swiper ][ w-full pb-10! ]">
-        <LandingSwiper align='center' swiper_selector={`#${swiper_id}`} align='end'>
+        <LandingSwiper swiper_selector={`#${swiper_id}`} align={is_video ? 'start' : 'end'}>
             {posts.map(post =>
                 <div class="[ swiper-slide ]"
                     style="margin-right: 5px"
@@ -57,7 +57,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
                                 </a>
                             </Flexblock>
                         </PictureCard> :
-                        <Flexblock gap='var(--space-3xs)'>
+                        <Flexblock gap='var(--space-xs)'>
                             <a class="[ youtube ]" href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
                                 <PlayIcon />
                                 <img
