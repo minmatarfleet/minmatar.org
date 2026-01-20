@@ -8,6 +8,7 @@ interface Props {
     posts:      PostListUI[];
     small?:     boolean;
     swiper_id?: string;
+    is_video?:  boolean;
 
 }
 
@@ -15,6 +16,7 @@ const {
     posts,
     small = false,
     swiper_id = 'posters-reel-swiper',
+    is_video = false,
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
@@ -25,6 +27,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import PictureCard from '@components/blocks/PictureCard.astro';
+
+import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
 ---
 
 <Wrapper
@@ -39,19 +43,36 @@ import PictureCard from '@components/blocks/PictureCard.astro';
                 <div class="[ swiper-slide ]"
                     style="margin-right: 5px"
                 >
-                    <PictureCard
-                        src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
-                        alt={post.title}
-                        narrow={true}
-                        zoomable={post.image ? true : false}
-                    >
+                    {!is_video ?
+                        <PictureCard
+                            src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
+                            alt={post.title}
+                            narrow={true}
+                            zoomable={post.image ? true : false}
+                        >
+                            <Flexblock gap='var(--space-3xs)'>
+                                <small>{format_date(lang, post.date_posted)}</small>
+                                <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                    <h3>{post.title}</h3>
+                                </a>
+                            </Flexblock>
+                        </PictureCard> :
                         <Flexblock gap='var(--space-3xs)'>
-                            <small>{format_date(lang, post.date_posted)}</small>
-                            <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
-                                <h3>{post.title}</h3>
+                            <a class="[ youtube ]" href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                <PlayIcon />
+                                <img
+                                    src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
+                                    alt={post.title}
+                                />
                             </a>
+                            <Flexblock gap='var(--space-3xs)'>
+                                <small>{format_date(lang, post.date_posted)}</small>
+                                <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                    <h3>{post.title}</h3>
+                                </a>
+                            </Flexblock>
                         </Flexblock>
-                    </PictureCard>
+                    }
                     {/*<Flexblock gap='var(--space-2xs)'>
                         <div>
                             <ZoomableImage
@@ -77,6 +98,25 @@ import PictureCard from '@components/blocks/PictureCard.astro';
 <style lang="scss">
     h3 {
         font-size: var(--step-0);
+    }
+
+    .youtube {
+        position: relative;
+
+        &:before {
+            content: ' ';
+            position: absolute;
+            inset: 0;
+            background-color: var(--background);
+            opacity: 0.4;
+        }
+
+        :global(svg) {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     }
 
     :global(.medium-zoom-image--opened) {
