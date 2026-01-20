@@ -1526,6 +1526,6 @@ export const ui = {
         'propaganda_new_page_description': 'Well you wont find it here anymore. We have moved all our propaganda posters and comics to a new cool dedicated page. Click the button to check it out!',
         'store_banner_first': 'Minmatar FLEET Store',
         'metro_dn_description': 'Newsreels from MD News!',
-        'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news',
+        'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news.',
     },
 } as const;
