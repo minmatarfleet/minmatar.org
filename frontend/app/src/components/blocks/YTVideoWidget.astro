@@ -48,7 +48,9 @@ import Wrapper from "@components/compositions/Wrapper.astro";
                     })
                 }
             }`}
-        />
+        >
+            <slot name="image" slot="image" />
+        </lite-youtube>
     </div>
     {credits !== false &&
         <p>{t('credits')}:

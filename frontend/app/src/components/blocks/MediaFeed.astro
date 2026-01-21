@@ -3,48 +3,63 @@ const FEEDS = [
     {
         title: 'FL33T YC127 In Review',
         id: '-BIQ5UIF3N0',
+        cover: 'https://i.ytimg.com/vi/-BIQ5UIF3N0/maxresdefault.jpg',
     }, {
         title: 'FL33T 2024 In Review',
         id: '6aBxAbMp5sQ',
+        cover: 'https://i.ytimg.com/vi_webp/6aBxAbMp5sQ/maxresdefault.webp',
     }, {
         title: 'We Are Minmatar (Fleet Alliance)',
         id: 'JMddiOzaDsA',
+        cover: 'https://i.ytimg.com/vi/JMddiOzaDsA/maxresdefault.jpg',
     }, {
         title: 'Minmatar Fleet Alliance ATXX Advertisement',
         id: 'jC0v8p0SHfM',
+        cover: 'https://i.ytimg.com/vi_webp/jC0v8p0SHfM/maxresdefault.webp',
     }, {
         title: 'Minmatar Fleet Alliance vs Sedition: The Drill Wars',
         id: 'QW_Z3nQXdsQ',
+        cover: 'https://i.ytimg.com/vi/QW_Z3nQXdsQ/maxresdefault.jpg',
     }, {
         title: 'RUDE takes FL33T to Pochven',
         id: 'zExlJ2PWH24',
+        cover: 'https://i.ytimg.com/vi/zExlJ2PWH24/maxresdefault.jpg',
     }, {
         title: 'FL33T + Shadow Cartel vs SEDIT. Drill Fight',
         id: 'e8kRJwuUPx0',
+        cover: 'https://i.ytimg.com/vi/e8kRJwuUPx0/maxresdefault.jpg',
     }, {
         title: 'Minmatar Fleet Alliance: The Drums of Liberation',
         id: 'juN4ET8kFxk',
+        cover: 'https://i.ytimg.com/vi/juN4ET8kFxk/maxresdefault.jpg',
     }, {
         title: 'This is FL33T: The Moon Wars',
         id: 'ZeRKPROksXg',
+        cover: 'https://i.ytimg.com/vi/ZeRKPROksXg/maxresdefault.jpg',
     }, {
         title: 'TYPHOONS | EVE ONLINE',
         id: 'VbDzNRCEJlw',
+        cover: 'https://i.ytimg.com/vi/VbDzNRCEJlw/maxresdefault.jpg',
     }, {
         title: 'FL33T Structure Defense',
         id: 'BBcYuOGhfMU',
+        cover: 'https://i.ytimg.com/vi/BBcYuOGhfMU/maxresdefault.jpg',
     }, {
         title: 'Back in New Eden(Lowsec PVP)',
         id: 'HT6KjhWQ4mU',
+        cover: 'https://i.ytimg.com/vi_webp/HT6KjhWQ4mU/maxresdefault.webp',
     }, {
         title: 'Talwars - Eve Online Minmatar Faction Warfare',
         id: 'M7VAjMgjBP4',
+        cover: 'https://i.ytimg.com/vi/M7VAjMgjBP4/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF18quKqQMa8AEB-AH-CYAC0AWKAgwIABABGH8gHigYMA8=&rs=AOn4CLBWWDKENw89_AnTHIzTBj1mjOwqTw',
     }, {
         title: 'EVE Online - PVP - Anti-Provi BLOPS Campagin',
         id: 'GkTzWSbV2SQ',
+        cover: 'https://i.ytimg.com/vi/GkTzWSbV2SQ/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF18quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgXChIMA8=&rs=AOn4CLBdWBNXdtzEEuwHj5Qb18n2w1v9EQ',
     }, {
         title: 'How to die in EVE Online | Minmatar Training Video',
         id: 'sP-iIc6nn5k',
+        cover: 'https://i.ytimg.com/vi_webp/sP-iIc6nn5k/maxresdefault.webp',
     },
 ]
 
@@ -85,7 +100,9 @@ import YTVideoWidget from '@components/blocks/YTVideoWidget.astro';
                 <YTVideoWidget
                     videoid={feed.id}
                     videotitle={feed.title}
-                />
+                >
+                    {feed.cover && <img slot="image" src={feed.cover} />}
+                </YTVideoWidget>
             </div>
         )}
     </div>
