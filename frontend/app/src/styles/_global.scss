@@ -280,3 +280,8 @@ ul {
 .collapse-borders > .border + .border {
     border-top: none;
 }
+
+lite-youtube {
+    /* No Shadow */
+    --lite-youtube-frame-shadow-visible: no;
+}
