@@ -75,6 +75,7 @@ export async function get_group_by_id(group_id:number, group_type:GroupItemType)
         name: api_group.name,
         description: api_group.description,
         image_url: api_group.image_url,
+        content: api_group.content,
         status: 'unauth'
     } as GroupItemUI
 }
@@ -92,6 +93,7 @@ const add_status_to_group = async (
         name: api_group.name,
         description: api_group.description,
         image_url: api_group.image_url,
+        content: api_group.content,
         status: 'available',
     }
 
