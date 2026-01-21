@@ -167,6 +167,11 @@ class EveFleet(models.Model):
         self.status = "active"
         self.save()
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["start_time"]),
+        ]
+
 
 class EveFleetInstance(models.Model):
     """
@@ -490,6 +495,11 @@ class EveFleetInstanceMember(models.Model):
     wing_id = models.BigIntegerField()
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["character_id"]),
+        ]
 
 
 class EveFleetAudience(models.Model):

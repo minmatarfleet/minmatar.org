@@ -176,6 +176,11 @@ class EveCharacterKillmail(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["killmail_time"]),
+        ]
+
 
 class EveCharacterKillmailAttacker(models.Model):
     """Killmail attacker model"""
@@ -466,6 +471,11 @@ class EveAlliance(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["name"]),
+        ]
 
     def __str__(self):
         return str(self.name)
