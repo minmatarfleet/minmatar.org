@@ -17,6 +17,7 @@ const frontlines_posts:PostListUI[] = posts['Frontlines'] ?? []
 const propaganda_posts:PostListUI[] = posts['Propaganda'] ?? []
 const mdn_posts_posts:PostListUI[] = posts['Metro Daily News'] ?? []
 const the_cope_posts:PostListUI[] = posts['The Cope'] ?? []
+const videos_posts:PostListUI[] = posts['Videos'] ?? []
 const rust_and_blood_posts:PostListUI[] = posts['Rust and Blood'] ?? []
 const waifu_wars_posts:PostListUI[] = posts['Waifu Wars'] ?? []
 
@@ -67,6 +68,14 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             description={t('the_cope_description')}
             posts={the_cope_posts}
             cover="/images/cope-cover.png"
+            is_video={true}
+        />
+    }
+    {videos_posts.length > 0 &&
+        <PropagandaSection
+            title="Videos"
+            description={t('videos_description')}
+            posts={videos_posts}
             is_video={true}
         />
     }
