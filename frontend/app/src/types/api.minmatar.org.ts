@@ -21,6 +21,7 @@ export interface Group {
     officers?:      number[];
     directors?:     number[];
     members:        number[];
+    content?:       string;
 }
 
 export interface SigRequest {
