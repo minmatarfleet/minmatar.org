@@ -1527,5 +1527,6 @@ export const ui = {
         'store_banner_first': 'Minmatar FLEET Store',
         'metro_dn_description': 'Newsreels from MD News!',
         'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news.',
+        'videos_description': 'Content creators from the alliance.',
     },
 } as const;
