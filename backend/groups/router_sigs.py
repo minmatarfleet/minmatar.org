@@ -21,6 +21,7 @@ class SigSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
+    content: Optional[str] = None
     image_url: Optional[str]
     officers: List[int] = []
     members: List[int] = []
@@ -40,6 +41,7 @@ def get_sigs(request):
                 id=sig.id,
                 name=sig.name,
                 description=sig.description,
+                content=sig.content,
                 image_url=sig.image_url,
                 officers=[officer.id for officer in sig.officers.all()],
                 members=[member.id for member in sig.members.all()],
@@ -66,6 +68,7 @@ def get_current_sigs(request, officer: bool = False):
                 id=sig.id,
                 name=sig.name,
                 description=sig.description,
+                content=sig.content,
                 image_url=sig.image_url,
                 officers=[officer.id for officer in sig.officers.all()],
                 members=[member.id for member in sig.members.all()],
@@ -87,6 +90,7 @@ def get_sig_by_id(request, sig_id: int):
         id=sig.id,
         name=sig.name,
         description=sig.description,
+        content=sig.content,
         image_url=sig.image_url,
         officers=[officer.id for officer in sig.officers.all()],
         members=[member.id for member in sig.members.all()],
@@ -253,6 +257,7 @@ def remove_sig_member(request, sig_id: int, user_id: int):
         id=sig.id,
         name=sig.name,
         description=sig.description,
+        content=sig.content,
         image_url=sig.image_url,
         officers=[officer.id for officer in sig.officers.all()],
         members=[member.id for member in sig.members.all()],
