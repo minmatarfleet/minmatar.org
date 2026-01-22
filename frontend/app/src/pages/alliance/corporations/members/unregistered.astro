@@ -191,10 +191,6 @@ const page_title = t('corporations.members.unregistered.page_title')
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
-            <TextBox>
-                <p>{t('corporations.members.unregistered.leading_text')}</p>
-            </TextBox>
-
             {data_fetching_error ?
                 <ErrorRefetch
                     args={{

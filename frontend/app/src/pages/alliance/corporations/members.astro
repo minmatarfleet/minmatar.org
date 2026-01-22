@@ -86,7 +86,7 @@ const page_title = t('corporations.members.page_title')
             main_count: ${main_count},
             alliance_members_count: ${alliance_members_count},
             unregistered_count: ${unregistered_count},
-            global_collapsed: [],
+            global_collapse: false,
             corporations_members: ${JSON.stringify(corporations_members)},
             corporations_unfiltered: ${JSON.stringify(corporations_unfiltered)},
             corporations_filtered: ${JSON.stringify(corporations_unfiltered)},
@@ -191,10 +191,6 @@ const page_title = t('corporations.members.page_title')
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
-            <TextBox>
-                <p>{t('corporations.members.leading_text')}</p>
-            </TextBox>
-
             {data_fetching_error ?
                 <ErrorRefetch
                     args={{
