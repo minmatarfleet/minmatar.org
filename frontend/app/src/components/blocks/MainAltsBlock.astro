@@ -19,6 +19,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import MainAltItem from '@components/blocks/MainAltItem.astro';
 import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 ---
 
 <div
@@ -36,46 +37,61 @@ import ComponentBlockHeader from '@components/blocks/ComponentBlockHeader.astro'
     }`}
     x-show="show_main()"
 >
-    <ComponentBlockHeader
-        id={main.character_id.toString()}
-    >
-        <PilotBadge
-            slot="header"
-            character_id={main.character_id}
-            character_name={main.character_name}
-            corporation={{
-                id: main.corporation_id,
-                name: main.corporation_name,
-            }}
+    {main.alts.length > 0 ?
+        <ComponentBlockHeader
+            id={main.character_id.toString()}
         >
-            <small
-                x-text={'`${get_alts_count()} ${get_alts_count() != 1 ? `'+t('alts').toLowerCase()+'` : `'+t('alt').toLowerCase()+'`}`'}
+            <PilotBadge
+                slot="header"
+                character_id={main.character_id}
+                character_name={main.character_name}
+                corporation={{
+                    id: main.corporation_id,
+                    name: main.corporation_name,
+                }}
             >
-                {main.alts.length} {main.alts.length != 1 ? t('alts').toLowerCase() : t('alt').toLowerCase()}
-            </small>
-        </PilotBadge>
+                <small
+                    x-text={'`${get_alts_count()} ${get_alts_count() != 1 ? `'+t('alts').toLowerCase()+'` : `'+t('alt').toLowerCase()+'`}`'}
+                >
+                    {main.alts.length} {main.alts.length != 1 ? t('alts').toLowerCase() : t('alt').toLowerCase()}
+                </small>
+            </PilotBadge>
 
-        <BlockList
-            gap='var(--space-3xs)'
-            class="[ min-h-[64px] !justify-center ]"
-            x-show="expanded"
-            x-collapse.duration.100ms
-        >
-            {main.alts.map( (alt) => 
-                <MainAltItem
-                    member={alt}
-                    corporation_id={main.corporation_id}
-                    x-data={`{
-                        show_item() {
-                            return ("${main.character_id}" in mains_filtered) && mains_filtered[${main.character_id}].includes(${alt.character_id})
-                        }
-                    }`}
-                    x-show="show_item()"
-                />
-            )}
-            {main.alts.length === 0 &&
-                <p>{t('no_alts')}</p>
-            }
-        </BlockList>
-    </ComponentBlockHeader>
+            <BlockList
+                gap='var(--space-3xs)'
+                class="[ min-h-[64px] !justify-center ]"
+                x-show="expanded"
+                x-collapse.duration.100ms
+            >
+                {main.alts.map( (alt) => 
+                    <MainAltItem
+                        member={alt}
+                        corporation_id={main.corporation_id}
+                        x-data={`{
+                            show_item() {
+                                return ("${main.character_id}" in mains_filtered) && mains_filtered[${main.character_id}].includes(${alt.character_id})
+                            }
+                        }`}
+                        x-show="show_item()"
+                    />
+                )}
+            </BlockList>
+        </ComponentBlockHeader> :
+        <ComponentBlock width='narrow'>
+            <PilotBadge
+                character_id={main.character_id}
+                character_name={main.character_name}
+                corporation={{
+                    id: main.corporation_id,
+                    name: main.corporation_name,
+                }}
+            >
+                <small
+                    x-text={'`${get_alts_count()} ${get_alts_count() != 1 ? `'+t('alts').toLowerCase()+'` : `'+t('alt').toLowerCase()+'`}`'}
+                >
+                    {main.alts.length} {main.alts.length != 1 ? t('alts').toLowerCase() : t('alt').toLowerCase()}
+                </small>
+            </PilotBadge>
+        </ComponentBlock>
+    }
 </div>

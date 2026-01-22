@@ -36,9 +36,9 @@ const Element = href ? 'a' : 'button';
             })
         },
         ${x_data_elements}
-    }` : `{
+    }` : x_data_elements ? `{
         ${x_data_elements}
-    }`}
+    }` : undefined}
     x-on:click.prevent={external ?
         `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
         x_on

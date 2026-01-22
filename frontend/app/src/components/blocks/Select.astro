@@ -32,6 +32,7 @@ const {
         right: var(--space-xs);
         top: 50%;
         transform: translateY(-50%);
+        z-index: 1;
     }
 
     [size="1"] + svg {
@@ -52,6 +53,7 @@ const {
         transition: var(--fast-transition);
         position: relative;
         width: 100%;
+        backdrop-filter: blur(var(--input-backdrop-blur));
 
         -webkit-appearance: none;
         appearance: none;
