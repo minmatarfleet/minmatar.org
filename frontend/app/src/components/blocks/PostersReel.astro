@@ -58,7 +58,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
                             </Flexblock>
                         </PictureCard> :
                         <Flexblock gap='var(--space-xs)'>
-                            <a class="[ youtube ]" href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                            <a class="[ youtube border ]" href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
                                 <PlayIcon />
                                 <img
                                     src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
