@@ -3,7 +3,17 @@ import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/eveonline/locations`
 
-export async function get_locations() {
+let locations_cache: Location[] | null = null
+
+/**
+ * Fetch all locations from the API.
+ * Results are cached to avoid multiple requests.
+ */
+export async function get_locations(): Promise<Location[]> {
+    if (locations_cache !== null) {
+        return locations_cache
+    }
+
     const headers = {
         'Content-Type': 'application/json',
     }
@@ -24,37 +34,30 @@ export async function get_locations() {
             ));
         }
 
-        return await response.json() as Location[];
+        locations_cache = await response.json() as Location[]
+        return locations_cache
     } catch (error) {
         throw new Error(`Error fetching locations: ${error.message}`);
     }
 }
 
-export async function get_locations_by_ids(location_ids: number[]) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
+/**
+ * Get locations by their IDs. Filters the full locations list client-side.
+ * @param location_ids Array of location IDs to filter by
+ * @returns Filtered array of locations matching the provided IDs
+ */
+export async function get_locations_by_ids(location_ids: number[]): Promise<Location[]> {
+    const all_locations = await get_locations()
+    const ids_set = new Set(location_ids)
+    return all_locations.filter(location => ids_set.has(location.location_id))
+}
 
-    const ids_string = location_ids.join(',')
-    const ENDPOINT = `${API_ENDPOINT}/by-ids?location_ids=${ids_string}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ));
-        }
-
-        return await response.json() as Location[];
-    } catch (error) {
-        throw new Error(`Error fetching locations by IDs: ${error.message}`);
-    }
+/**
+ * Get locations filtered by market_active flag.
+ * @returns Array of locations where market_active is true
+ */
+export async function get_market_locations(): Promise<Location[]> {
+    const all_locations = await get_locations()
+    return all_locations.filter(location => location.market_active)
 }
 

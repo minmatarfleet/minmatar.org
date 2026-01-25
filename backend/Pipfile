@@ -26,9 +26,9 @@ gitpython = "*"
 upsidedown = "*"
 pillow = "*"
 factory-boy = "*"
-docker = "*"
 coverage = "*"
 black = "*"
+docker = "*"
 
 [dev-packages]
 pylint = "*"
