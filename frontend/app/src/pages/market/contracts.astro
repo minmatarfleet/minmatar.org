@@ -61,7 +61,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
-import Grid from '@components/compositions/Grid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ContractsList from '@components/blocks/ContractsList.astro'
@@ -178,10 +178,8 @@ const page_description = t('contracts.leading_text')
                                         {location.doctrines.map((doctrine) => (
                                             <Flexblock gap='var(--space-md)' class="[ doctrine-section ]">
                                                 <Wrapper padding_block='calc(var(--space-lg) + 3px)' padding_inline='calc(var(--space-lg) + 3px)'>
-                                                    <Grid
-                                                        min_item_width='220px'
-                                                        row_gap='calc(var(--space-lg) + 3px)'
-                                                        column_gap='calc(var(--space-lg) + 3px)'
+                                                    <BlockList
+                                                        gap='var(--space-3xs)'
                                                         class="[ w-full ]"
                                                     >
                                                         {doctrine.fittings.map((fitting) => (
@@ -189,7 +187,7 @@ const page_description = t('contracts.leading_text')
                                                                 <MarketFittingCard fitting={fitting} />
                                                             </div>
                                                         ))}
-                                                    </Grid>
+                                                    </BlockList>
                                                 </Wrapper>
                                             </Flexblock>
                                         ))}
