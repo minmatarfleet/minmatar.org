@@ -272,7 +272,7 @@ export const ui = {
         'corporations.cover_alt': 'Outspace starry sky',
         
         'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
-        'community.leading_text': 'Get to know the people and groups that make up FL33T: our member corporations, Specialized Interest Groups (SIGs), operational teams, and the propaganda that bring our culture to life.',
+        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, and the propaganda that gives our culture its voice..',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
