@@ -58,5 +58,8 @@ The source code is hosted on GitHub, and the CI/CD pipeline is built using GitHu
 - `DISCORD_GUILD_ID` is the ID when you right click your server icon and press Copy ID
 - `DISCORD_PEOPLE_TEAM_CHANNEL_ID` (and other channel IDs) are from copy ID on channels, but you can just put it all to the same channel ID
 1. `cd backend/`
+1. `pipenv install`
+1. `pipenv shell`
+1. `mysql -u minmatar -p -h 127.0.0.1 < backend/sql/init.sql`
 1. `pipenv run python3 manage.py migrate`
 1. `pipenv run python3 manage.py runserver`
