@@ -174,11 +174,11 @@ class MarketRouterTestCase(TestCase):
             short_name="Two",
             market_active=True,
         )
-        
+
         # Verify locations are created correctly
         self.assertFalse(location_inactive.market_active)
         self.assertTrue(location_active.market_active)
-        
+
         # Verify filtering works at the model level
         active_locations = EveLocation.objects.filter(market_active=True)
         self.assertEqual(1, active_locations.count())

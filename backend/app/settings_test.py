@@ -2,13 +2,14 @@
 Django settings for test suite.
 This file is used specifically for running tests.
 """
+
 import os
 from pathlib import Path
 
 import sentry_sdk
 
-from app.settings_celery import *  # noqa
-from app.settings_common import *  # noqa
+from app.settings_celery import *  # noqa # pylint: disable=wildcard-import
+from app.settings_common import *  # noqa # pylint: disable=wildcard-import
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -106,9 +107,9 @@ STATIC_ROOT = os.path.join(
 )
 
 # Monitoring
-ENV = "production"
+ENV = "production"  # pylint: disable=invalid-name
 if DEBUG:
-    ENV = "development"
+    ENV = "development"  # pylint: disable=invalid-name
 
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),
@@ -141,4 +142,3 @@ REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
 REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
 REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
-
