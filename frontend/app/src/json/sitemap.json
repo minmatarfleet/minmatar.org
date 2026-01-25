@@ -43,21 +43,21 @@
         "description": "page_finder.alliance.description"
     },
     {
-        "slug": "story",
+        "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
         "description": "page_finder.story.description",
         "keywords": [ "story" ]
     },
     {
-        "slug": "values",
+        "slug": "alliance.values",
         "path": "/alliance/values/",
         "publish": true,
         "description": "page_finder.values.description",
         "keywords": [ "values" ]
     },
     {
-        "slug": "values",
+        "slug": "alliance.playstyle",
         "path": "/alliance/playstyle/",
         "publish": true,
         "description": "page_finder.playstyle.description",
