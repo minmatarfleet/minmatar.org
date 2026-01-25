@@ -2,13 +2,14 @@ import { useTranslations } from '@i18n/utils';
 
 import { prod_error_messages } from '@helpers/env'
 
-import { fetch_market_contracts } from '@helpers/fetching/market'
+import { fetch_market_contracts, fetch_market_locations_with_doctrines, type LocationMarketData } from '@helpers/fetching/market'
 import { get_market_characters, get_market_corporations } from '@helpers/api.minmatar.org/market'
 import type { Character, MarketCorporation } from '@dtypes/api.minmatar.org'
 import type { TradeHub, SelectOptions } from '@dtypes/layout_components'
 
 export interface ContractsData {
     contracts_trade_hubs?:      TradeHub[];
+    market_locations?:          LocationMarketData[];
     characters_options?:        SelectOptions[];
     corporations_options?:      SelectOptions[];
 }
@@ -17,13 +18,16 @@ export async function get_contracts_data(auth_token:string | false, lang:'en' = 
     const t = useTranslations(lang)
 
     let contracts_trade_hubs:TradeHub[] = []
+    let market_locations:LocationMarketData[] = []
     let market_characters:Character[] = []
     let market_corporations:MarketCorporation[] = []
     let characters_options:SelectOptions[] = []
     let corporations_options:SelectOptions[] = []
 
     try {
+        // Fetch both old format (for backwards compatibility) and new format
         contracts_trade_hubs = await fetch_market_contracts()
+        market_locations = await fetch_market_locations_with_doctrines()
         
         if (auth_token) {
             market_characters = await get_market_characters(auth_token)
@@ -48,6 +52,7 @@ export async function get_contracts_data(auth_token:string | false, lang:'en' = 
 
     return {
         contracts_trade_hubs: contracts_trade_hubs,
+        market_locations: market_locations,
         characters_options: characters_options,
         corporations_options: corporations_options,
     } as ContractsData
