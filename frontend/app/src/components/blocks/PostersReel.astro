@@ -38,10 +38,10 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
     max_width='100%'
 >
     <div id={swiper_id} class="[ swiper ][ w-full pb-10! ]">
-        <LandingSwiper swiper_selector={`#${swiper_id}`} align={is_video ? 'start' : 'end'}>
+        <LandingSwiper swiper_selector={`#${swiper_id}`} align={is_video ? 'start' : 'end'} gap={is_video ? 45 : 5}>
             {posts.map(post =>
-                <div class="[ swiper-slide ]"
-                    style="margin-right: 5px"
+                <div class:list={[ 'swiper-slide', { 'wide': is_video } ]}
+                    style={`margin-right: ${is_video ? 45 : 5}px`}
                 >
                     {!is_video ?
                         <PictureCard
@@ -52,13 +52,13 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
                         >
                             <Flexblock gap='var(--space-3xs)'>
                                 <small>{format_date(lang, post.date_posted)}</small>
-                                <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                <a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
                                     <h3>{post.title}</h3>
                                 </a>
                             </Flexblock>
                         </PictureCard> :
                         <Flexblock gap='var(--space-xs)'>
-                            <a class="[ youtube border ]" href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                            <a class="[ youtube border ]" href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
                                 <PlayIcon />
                                 <img
                                     src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
@@ -67,7 +67,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
                             </a>
                             <Flexblock gap='var(--space-3xs)'>
                                 <small>{format_date(lang, post.date_posted)}</small>
-                                <a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>
+                                <a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
                                     <h3>{post.title}</h3>
                                 </a>
                             </Flexblock>
@@ -82,7 +82,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
                             <div class="swiper-lazy-preloader"></div>
                         </div>
                         <Flexblock gap='var(--space-3xs)'>
-                            <h4><a href={translatePath(`/propaganda/${post.slug}-${post.post_id}`)}>{post.title}</a></h4>
+                            <h4><a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>{post.title}</a></h4>
                             <small>{format_date(lang, post.date_posted)}</small>
                         </Flexblock>
                     </Flexblock>*/}
@@ -168,6 +168,10 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
 
     .posters-reel-small .swiper-slide {
         width: min(100%, 250px);
+
+        &.wide {
+            width: min(100%, 330px);
+        }
     }
 
     .swiper-lazy-preloader {

@@ -31,20 +31,10 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
 <FlexInline class="[ !items-center ]" gap='var(--space-xs)'>
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
         <slot />
+        {is_referral_page && user &&
+            <ReferralLink user_id={user.user_id} />
+        }
     </h1>
-    <div class="[ hidden ]">
-        <Flexblock>
-            <code>is_referral_page: {JSON.stringify(is_referral_page)}</code>
-            <code>user: {JSON.stringify(user)}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[0]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[1]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[2]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[3]) : 'undefined'}</code>
-        </Flexblock>
-    </div>
-    {is_referral_page && user &&
-        <ReferralLink user_id={user.user_id} />
-    }
 </FlexInline>
 
 <style lang="scss">
