@@ -537,8 +537,6 @@ export interface DoctrineFitting {
     fitting_id:         number;
     fitting_name:       string;
     role:               string;
-    quantity:           number;
-    has_expectation:    boolean;
 }
 
 export interface MarketDoctrine {
