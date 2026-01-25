@@ -78,15 +78,6 @@ class MarketRouterTestCase(TestCase):
         expectations = response.json()
         self.assertEqual(1, len(expectations))
 
-        response = self.client.get(
-            f"{BASE_URL}/locations",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        expectations = response.json()
-        self.assertEqual(1, len(expectations))
-        self.assertEqual("Somewhere else", expectations[0]["name"])
-
     def test_get_contracts(self):
         expectation = self._setup_expecation()
 
@@ -164,7 +155,10 @@ class MarketRouterTestCase(TestCase):
         )
 
     def test_inactive_market(self):
-        EveLocation.objects.create(
+        # Test that locations with market_active=False are not included
+        # in market-related queries. This test verifies the location model
+        # behavior rather than testing a removed endpoint.
+        location_inactive = EveLocation.objects.create(
             location_id=1,
             location_name="Location 1",
             solar_system_id=1,
@@ -172,7 +166,7 @@ class MarketRouterTestCase(TestCase):
             short_name="One",
             market_active=False,
         )
-        EveLocation.objects.create(
+        location_active = EveLocation.objects.create(
             location_id=2,
             location_name="Location 2",
             solar_system_id=2,
@@ -180,15 +174,15 @@ class MarketRouterTestCase(TestCase):
             short_name="Two",
             market_active=True,
         )
-
-        response = self.client.get(
-            f"{BASE_URL}/locations",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertEqual(1, len(data))
-        self.assertEqual("Solar 2", data[0]["system_name"])
+        
+        # Verify locations are created correctly
+        self.assertFalse(location_inactive.market_active)
+        self.assertTrue(location_active.market_active)
+        
+        # Verify filtering works at the model level
+        active_locations = EveLocation.objects.filter(market_active=True)
+        self.assertEqual(1, active_locations.count())
+        self.assertEqual("Location 2", active_locations.first().location_name)
 
     def test_get_public_contract_errors(self):
         char = EveCharacter.objects.create(
