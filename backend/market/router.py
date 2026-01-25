@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,

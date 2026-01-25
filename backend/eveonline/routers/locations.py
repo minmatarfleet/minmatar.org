@@ -42,5 +42,3 @@ def get_locations(request) -> List[LocationResponse]:
         )
         for location in locations
     ]
-
-

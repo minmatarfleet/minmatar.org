@@ -28,6 +28,7 @@ from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
 from fittings.models import EveFitting
+
 try:
     from tech.docker import (
         get_containers,
@@ -37,6 +38,7 @@ try:
         DockerLogQuery,
         DockerLogEntry,
     )
+
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
