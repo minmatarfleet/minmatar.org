@@ -43,6 +43,25 @@ class MarketExpectationResponse(BaseModel):
     quantity: int
 
 
+class LocationFittingExpectationResponse(BaseModel):
+    """Expectation for a fitting at a location"""
+
+    fitting_id: int
+    fitting_name: str
+    expectation_id: int
+    quantity: int
+
+
+class LocationExpectationsResponse(BaseModel):
+    """Location with its fitting expectations"""
+
+    location_id: int
+    location_name: str
+    solar_system_name: str
+    short_name: str
+    expectations: List[LocationFittingExpectationResponse]
+
+
 class MarketCharacterResponse(BaseModel):
     character_id: int
     character_name: str
@@ -440,6 +459,63 @@ def fetch_eve_market_contract(request, expectation_id: int):
         ],
         responsibilities=responsibilities,
     )
+
+
+@router.get(
+    "/expectations/by-location",
+    description="Get all market contract expectations grouped by location and fitting",
+    response=List[LocationExpectationsResponse],
+)
+def get_expectations_by_location(
+    request,
+) -> List[LocationExpectationsResponse]:
+    """
+    Returns all market contract expectations grouped by location.
+    Each location contains a list of fitting expectations.
+    """
+    # Get all expectations with their locations
+    expectations = EveMarketContractExpectation.objects.select_related(
+        "location", "fitting"
+    ).order_by("location__location_name", "fitting__name")
+
+    # Group by location
+    location_map = {}
+    for expectation in expectations:
+        location_id = expectation.location.location_id
+        if location_id not in location_map:
+            location_map[location_id] = {
+                "location": expectation.location,
+                "expectations": [],
+            }
+        location_map[location_id]["expectations"].append(expectation)
+
+    response = []
+    for location_id, data in location_map.items():
+        location = data["location"]
+        expectations_list = data["expectations"]
+
+        fitting_expectations = []
+        for expectation in expectations_list:
+            fitting_expectations.append(
+                LocationFittingExpectationResponse(
+                    fitting_id=expectation.fitting.id,
+                    fitting_name=expectation.fitting.name,
+                    expectation_id=expectation.id,
+                    quantity=expectation.quantity,
+                )
+            )
+
+        response.append(
+            LocationExpectationsResponse(
+                location_id=location.location_id,
+                location_name=location.location_name,
+                solar_system_name=location.solar_system_name,
+                short_name=location.short_name,
+                expectations=fitting_expectations,
+            )
+        )
+
+    return response
 
 
 @router.get(
