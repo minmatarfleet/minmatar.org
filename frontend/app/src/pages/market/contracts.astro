@@ -17,6 +17,7 @@ const is_supplier = user_is_superadmin || user_permissions.includes('market.add_
 
 import { get_contracts_data } from '@helpers/pages/contracts'
 import type { ContractsData } from '@helpers/pages/contracts'
+import type { LocationMarketData } from '@helpers/fetching/market'
 
 let contracts_data:ContractsData = {}
 let data_fetching_error
@@ -30,24 +31,27 @@ try {
 import { query_string } from '@helpers/string';
 
 const {
-    contracts_trade_hubs = [],
+    market_locations = [],
     characters_options = [],
     corporations_options = [],
 } = contracts_data
 
-let staging = Astro.url.searchParams.get('staging')
-if (!staging && contracts_trade_hubs.length > 0)
-    staging = contracts_trade_hubs[0].name
+// Calculate total contracts count from market locations
+const contracts_count = market_locations.reduce((total, location) => {
+    return total + location.doctrines.reduce((doctrineTotal, doctrine) => {
+        return doctrineTotal + doctrine.fittings.length
+    }, 0)
+}, 0)
 
-const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?staging=${query_string(staging)}`
+// Get active location from query param or default to first
+let active_location_id: number | null = null
+const location_id_param = Astro.url.searchParams.get('location_id')
+if (location_id_param) {
+    active_location_id = parseInt(location_id_param)
+} else if (market_locations.length > 0) {
+    active_location_id = market_locations[0].location_id
+}
 
-const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
-
-const view_mode = Astro.url.searchParams.get('view_mode')
-if (view_mode)
-    Astro.cookies.set('contracts_view_mode', view_mode, { path: '/' })
-
-const contracts_view_mode = Astro.cookies.has('contracts_view_mode') ? (Astro.cookies.get('contracts_view_mode')?.value as string) : 'cards'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -56,14 +60,20 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ContractsList from '@components/blocks/ContractsList.astro'
 import Input from '@components/blocks/Input.astro'
-import AddSupplierButton from '@components/blocks/AddSupplierButton.astro'
-import Button from '@components/blocks/Button.astro'
+import StagingsReel from '@components/blocks/StagingsReel.astro';
+import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const REEL_GAP = 20
 
 const page_title = t('contracts.page_title')
 const page_description = t('contracts.leading_text')
@@ -86,7 +96,6 @@ const page_description = t('contracts.leading_text')
             overlay: true
         }}
         x-data={`{
-            show_all: true,
             contracts_count: ${contracts_count},
             item_name_filter: '',
             countVisibleElements(selector, parent = document) {
@@ -111,14 +120,9 @@ const page_description = t('contracts.leading_text')
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>
-                        {page_title}
-                    </PageTitle>
-                    <small x-text={`\`${t('showing')} \${contracts_count} \${contracts_count !== 1 ? '${t('contracts')}' : '${t('contract')}'}\``}>
-                        {t('showing')} {contracts_count} {contracts_count !== 1 ? t('contracts') : t('contract')}
-                    </small>
-                </Flexblock>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
             </FlexInline>
             <Input type="text"
                 placeholder={t('filter')}
@@ -129,45 +133,84 @@ const page_description = t('contracts.leading_text')
             </Input>
         </FlexInline>
 
-        <FlexInline slot="subheader">
-            {user &&
-                <AddSupplierButton />
-                <Button
-                    type="button"
-                    size='sm'
-                    x-on:click="show_all = !show_all; setTimeout(() => { contracts_count = countVisibleElements('.title') }, 50)"
-                    x-text={`show_all ? '${t('show_owned_contracts')}' : '${t('show_all_contracts')}'`}
-                >
-                    {t('show_owned_contracts')}
-                </Button>
-            }
-            <Button
-                type="button"
-                size='sm'
-                href={`${translatePath('/market/contracts/')}?view_mode=${contracts_view_mode !== 'tabular' ? 'tabular' : 'cards'}`}
-            >
-                {t(contracts_view_mode === 'tabular' ? 'cards_view' : 'tabular_view')}
-            </Button>
-        </FlexInline>
     
         {data_fetching_error ?
             <ErrorRefetch
                 args={{
-                    partial: CONTRACTS_PARTIAL_URL,
+                    partial: '',
                     message: data_fetching_error,
                     delay: 0,
                 }}
             />
             :
-            <ContractsList
-                trade_hubs={contracts_trade_hubs}
-                characters_options={characters_options}
-                corporations_options={corporations_options}
-                is_supplier={is_supplier}
-                active_hub={staging}
-                tabular={contracts_view_mode === 'tabular'}
-            />
-            <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
+            market_locations.length > 0 ?
+                <Flexblock role="list" gap='var(--space-xl)'>
+                    <StagingsReel gap={REEL_GAP}>
+                        {market_locations.map(location => {
+                            const fitting_count = location.doctrines.reduce((total, doctrine) => total + doctrine.fittings.length, 0)
+                            return (
+                                <StagingReelSlide gap={REEL_GAP}>
+                                    <Wrapper padding_block='0' padding_inline='0' max_width='350px'>
+                                        {active_location_id === location.location_id ?
+                                            <Flexblock gap="var(--space-3xs)">
+                                                <h2>{location.short_name || location.location_name}</h2>
+                                                <small>{fitting_count} {fitting_count !== 1 ? t('fittings') : t('fitting')}</small>
+                                            </Flexblock>
+                                            :
+                                            <StylessButton class="[ w-full staging-selector ]" href={translatePath(`/market/contracts/?${query_string({location_id: location.location_id})}`)}>
+                                                <Flexblock gap="var(--space-3xs)">
+                                                    <h2>{location.short_name || location.location_name}</h2>
+                                                    <small>{fitting_count} {fitting_count !== 1 ? t('fittings') : t('fitting')}</small>
+                                                </Flexblock>
+                                            </StylessButton>
+                                        }
+                                    </Wrapper>
+                                </StagingReelSlide>
+                            )
+                        })}
+                    </StagingsReel>
+
+                    {market_locations.map((location) =>
+                        location.location_id === active_location_id &&
+                            <Flexblock gap='var(--space-xl)'>
+                                {location.doctrines.length > 0 && (
+                                    <Flexblock gap='var(--space-lg)'>
+                                        {location.doctrines.map((doctrine) => (
+                                            <Flexblock gap='var(--space-md)' class="[ doctrine-section ]">
+                                                <Grid
+                                                    min_item_width='234px'
+                                                    row_gap='var(--space-sm)'
+                                                    column_gap='var(--space-sm)'
+                                                    class="[ w-full grid-fill ]"
+                                                >
+                                                    {doctrine.fittings.map((fitting) => (
+                                                        <div class="[ fitting-card-container ]" x-show="show_item($el)">
+                                                            <MarketFittingCard fitting={fitting} />
+                                                        </div>
+                                                    ))}
+                                                </Grid>
+                                            </Flexblock>
+                                        ))}
+                                    </Flexblock>
+                                )}
+                            </Flexblock>
+                    )}
+                </Flexblock>
+                :
+                <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
         }
 	</PageWide>
 </Viewport>
+
+<style lang="scss">
+    .staging-selector {
+        h2 {
+            color: var(--faded);
+        }
+
+        small {
+            color: var(--fleet-yellow);
+        }
+    }
+
+</style>

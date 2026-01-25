@@ -5,6 +5,11 @@ from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
+from eveonline.models import EveLocation
+from market.models import (
+    EveMarketContract,
+    EveMarketContractExpectation,
+)
 
 from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
@@ -162,3 +167,113 @@ def get_fitting(request, fitting_id: int):
     fitting = EveFitting.objects.get(id=fitting_id)
     fitting_response = make_fitting_response(fitting)
     return fitting_response
+
+
+class DoctrineFittingResponse(BaseModel):
+    """Fitting in a doctrine with market information"""
+    fitting_id: int
+    fitting_name: str
+    role: str
+    quantity: int  # expectation quantity if exists, otherwise current quantity
+    has_expectation: bool
+
+
+class DoctrineMarketResponse(BaseModel):
+    """Doctrine with its fittings and market data"""
+    doctrine_id: int
+    doctrine_name: str
+    fittings: List[DoctrineFittingResponse]
+
+
+class MarketLocationDoctrineResponse(BaseModel):
+    """Location with its doctrines and fittings"""
+    location_id: int
+    location_name: str
+    solar_system_name: str
+    short_name: str
+    doctrines: List[DoctrineMarketResponse]
+
+
+@doctrines_router.get(
+    "/market/locations",
+    description="Fetch all market-active locations with their doctrines and fittings",
+    response=List[MarketLocationDoctrineResponse],
+)
+def get_market_locations_with_doctrines(request) -> List[MarketLocationDoctrineResponse]:
+    """
+    Returns all locations with market_active=True, grouped by doctrine.
+    For each fitting in a doctrine, shows expectation quantity if it exists,
+    otherwise shows current quantity of outstanding contracts.
+    """
+    # Get all market-active locations
+    active_locations = EveLocation.objects.filter(market_active=True).order_by("location_name")
+    
+    response = []
+    
+    for location in active_locations:
+        # Get all doctrines that use this location
+        doctrines = EveDoctrine.objects.filter(locations=location).order_by("name")
+        
+        doctrine_responses = []
+        
+        for doctrine in doctrines:
+            # Get all fittings for this doctrine
+            doctrine_fittings = EveDoctrineFitting.objects.filter(
+                doctrine=doctrine
+            ).select_related("fitting").order_by("fitting__name")
+            
+            fitting_responses = []
+            
+            for doctrine_fitting in doctrine_fittings:
+                fitting = doctrine_fitting.fitting
+                
+                # Check if there's an expectation for this fitting at this location
+                expectation = EveMarketContractExpectation.objects.filter(
+                    fitting=fitting,
+                    location=location
+                ).first()
+                
+                if expectation:
+                    # Use expectation quantity
+                    quantity = expectation.quantity
+                    has_expectation = True
+                else:
+                    # Use current quantity of outstanding contracts
+                    quantity = EveMarketContract.objects.filter(
+                        fitting=fitting,
+                        location=location,
+                        status="outstanding"
+                    ).count()
+                    has_expectation = False
+                
+                fitting_responses.append(
+                    DoctrineFittingResponse(
+                        fitting_id=fitting.id,
+                        fitting_name=fitting.name,
+                        role=doctrine_fitting.role,
+                        quantity=quantity,
+                        has_expectation=has_expectation,
+                    )
+                )
+            
+            if fitting_responses:  # Only add doctrine if it has fittings
+                doctrine_responses.append(
+                    DoctrineMarketResponse(
+                        doctrine_id=doctrine.id,
+                        doctrine_name=doctrine.name,
+                        fittings=fitting_responses,
+                    )
+                )
+        
+        if doctrine_responses:  # Only add location if it has doctrines with fittings
+            response.append(
+                MarketLocationDoctrineResponse(
+                    location_id=location.location_id,
+                    location_name=location.location_name,
+                    solar_system_name=location.solar_system_name,
+                    short_name=location.short_name,
+                    doctrines=doctrine_responses,
+                )
+            )
+    
+    return response

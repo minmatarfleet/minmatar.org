@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { TradeHub, SelectOptions, ContractUI } from '@dtypes/layout_components'
+import type { TradeHub, SelectOptions } from '@dtypes/layout_components'
 
 interface Props {
     trade_hubs:             TradeHub[];
@@ -10,7 +10,6 @@ interface Props {
     characters_options:     SelectOptions[];
     corporations_options:   SelectOptions[];
     active_hub:             string | null;
-    tabular?:               boolean;
 }
 
 const {
@@ -19,18 +18,7 @@ const {
     corporations_options,
     is_supplier,
     active_hub,
-    tabular = false,
 } = Astro.props
-
-let contracts:ContractUI[] = []
-if (tabular) {
-    const active_trade_hub = trade_hubs.find(trade_hub => trade_hub.name === active_hub)
-    const unsorted_contracts:ContractUI[] = active_trade_hub ? 
-        active_trade_hub.contract_groups.flatMap(group => group.contracts) :
-        []
-
-    contracts = unsorted_contracts.sort((a, b) => (b.desired_quantity - b.current_quantity) - (a.desired_quantity - a.current_quantity))
-}
 
 import { query_string } from '@helpers/string';
 
@@ -39,7 +27,6 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
 import ContractListItemCard from '@components/blocks/ContractListItemCard.astro';
-import ContractListItemRow from '@components/blocks/ContractListItemRow.astro';
 import StagingsReel from '@components/blocks/StagingsReel.astro';
 import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -73,15 +60,7 @@ const REEL_GAP = 20
     {trade_hubs.map((trade_hub) =>
         trade_hub.name === active_hub &&
             <BlockList class="[ doctrine-groups ]" gap='var(--space-2xl)'>
-                {tabular &&
-                    <ContractListItemRow
-                        contracts={contracts}
-                        is_supplier={is_supplier}
-                        characters_options={characters_options}
-                        corporations_options={corporations_options}
-                    />
-                }
-                {!tabular && trade_hub.contract_groups.map(contract_group =>
+                {trade_hub.contract_groups.map(contract_group =>
                     <ContractListItemCard
                         contract_group={contract_group}
                         is_supplier={is_supplier}

@@ -1,0 +1,129 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FittingMarketData } from '@helpers/fetching/market'
+
+interface Props {
+    fitting: FittingMarketData;
+    [propName: string]: any;
+}
+
+const {
+    fitting,
+    ...attributes
+} = Astro.props
+
+const expected_quantity = fitting.expectation_quantity ?? 0
+const current_quantity = fitting.current_quantity ?? 0
+const low_amount = expected_quantity > 0 && (current_quantity <= (20 * expected_quantity) / 100)
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+---
+
+<ComponentBlock class="[ fitting-card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
+    <Flexblock gap="0" class="[ fitting-card-container ]">
+        <div class="[ fitting-card-image-wrapper ]">
+            <ItemPicture
+                item_id={fitting.ship_id}
+                item_name={fitting.ship_name}
+                size={256}
+                narrow={true}
+                icon_quality={512}
+                mask={true}
+            />
+        </div>
+        <div class="[ expectation-badge ]">
+            <span class:list={{ 'text-red': low_amount }}>{current_quantity}</span>/{expected_quantity}
+        </div>
+        <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <Flexblock gap='var(--space-3xs)'>
+                <h3 
+                    x-on:click.stop.prevent={`copyFitToClipboard('fitting-name-${fitting.fitting_id}')`}
+                    class="[ cursor-pointer title ]"
+                    x-data={`{
+                        original_text: '${fitting.fitting_name}',
+                    }`}
+                    x-on:click.throttle.750ms={`$el.textContent = '${t('copied')}'; setTimeout(() => $el.textContent = original_text, 2000)`}
+                >
+                    {fitting.fitting_name}
+                </h3>
+            </Flexblock>
+        </Wrapper>
+        <textarea class="[ hidden ]" id={`fitting-name-${fitting.fitting_id}`} readonly>{fitting.fitting_name}</textarea>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fitting-card {
+        position: relative;
+        height: 234px;
+        overflow: hidden;
+        width: 100%;
+
+        .fitting-card-container {
+            height: 100%;
+        }
+
+        .fitting-card-image-wrapper {
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+
+            &::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.4);
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            :global(picture),
+            :global(img) {
+                height: 100%;
+                width: 100%;
+                object-fit: cover;
+            }
+        }
+
+        .expectation-badge {
+            position: absolute;
+            top: var(--space-3xs);
+            right: var(--space-3xs);
+            z-index: 3;
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            font-size: var(--step-0);
+            font-weight: 400;
+            color: var(--highlight);
+        }
+
+        .fitting-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 2;
+        }
+    }
+
+    h3 {
+        font-size: var(--step-0);
+        line-height: 1.2;
+    }
+
+    small {
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+    }
+</style>
+

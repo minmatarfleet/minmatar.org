@@ -533,6 +533,28 @@ export interface MarketLocation {
     structure_id:   number;
 }
 
+export interface DoctrineFitting {
+    fitting_id:         number;
+    fitting_name:       string;
+    role:               string;
+    quantity:           number;
+    has_expectation:    boolean;
+}
+
+export interface MarketDoctrine {
+    doctrine_id:        number;
+    doctrine_name:      string;
+    fittings:           DoctrineFitting[];
+}
+
+export interface MarketLocationDoctrine {
+    location_id:        number;
+    location_name:      string;
+    solar_system_name:  string;
+    short_name:         string;
+    doctrines:          MarketDoctrine[];
+}
+
 export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const
 export type SRPStatus = typeof srp_status[number]
 
