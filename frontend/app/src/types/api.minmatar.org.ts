@@ -171,6 +171,7 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
     sig_ids:            number[];
+    location_ids:       number[];
 }
 
 export const fleet_status = ['active', 'upcoming', 'recent'] as const
@@ -261,6 +262,11 @@ export interface Location {
     location_name:      string;
     solar_system_id:    number;
     solar_system_name:  string;
+    short_name:         string;
+    region_id:          number | null;
+    market_active:      boolean;
+    freight_active:     boolean;
+    staging_active:     boolean;
 }
 
 export interface FleetUsers {
@@ -371,15 +377,6 @@ export interface RouteCost {
     cost:       number;
 }
 
-export interface DoctrineComposition {
-    ideal_fleet_size:   number;
-    composition:        Ships[];
-}
-
-export interface Ships {
-    fitting:            Fitting;
-    ideal_ship_count:   number;
-}
 
 export interface SystemMoon {
     id:         number;

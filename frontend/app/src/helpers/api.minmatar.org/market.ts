@@ -61,6 +61,34 @@ export async function get_market_locations() {
     }
 }
 
+export async function get_locations_by_ids(location_ids: number[]) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ids_string = location_ids.join(',')
+    const ENDPOINT = `${API_ENDPOINT}/locations/by-ids?location_ids=${ids_string}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as MarketLocation[];
+    } catch (error) {
+        throw new Error(`Error fetching locations by IDs: ${error.message}`);
+    }
+}
+
 export async function get_market_contract_by_id(expectation_id:number) {
     const headers = {
         'Content-Type': 'application/json',

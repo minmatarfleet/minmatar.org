@@ -1,43 +1,14 @@
-import type { Doctrine } from '@dtypes/api.minmatar.org'
+import type { Location } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
-const API_ENDPOINT = `${import.meta.env.API_URL}/api/doctrines`
+const API_ENDPOINT = `${import.meta.env.API_URL}/api/eveonline/locations`
 
-export async function get_doctrines() {
+export async function get_locations() {
     const headers = {
         'Content-Type': 'application/json',
     }
 
-    const ENDPOINT = API_ENDPOINT
-
-    console.log(`Requesting: ${ENDPOINT}/`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ));
-        }
-
-        return await response.json() as Doctrine[];
-    } catch (error) {
-        throw new Error(`Error fetching sigs: ${error.message}`);
-    }
-}
-
-export async function get_doctrine_by_id(id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${id}`
+    const ENDPOINT = `${API_ENDPOINT}/`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
@@ -46,7 +17,33 @@ export async function get_doctrine_by_id(id:number) {
             headers: headers
         })
 
-        // console.log(response)
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
+        }
+
+        return await response.json() as Location[];
+    } catch (error) {
+        throw new Error(`Error fetching locations: ${error.message}`);
+    }
+}
+
+export async function get_locations_by_ids(location_ids: number[]) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ids_string = location_ids.join(',')
+    const ENDPOINT = `${API_ENDPOINT}/by-ids?location_ids=${ids_string}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
 
         if (!response.ok) {
             throw new Error(get_error_message(
@@ -55,8 +52,9 @@ export async function get_doctrine_by_id(id:number) {
             ));
         }
 
-        return await response.json() as Doctrine;
+        return await response.json() as Location[];
     } catch (error) {
-        throw new Error(`Error fetching sigs: ${error.message}`);
+        throw new Error(`Error fetching locations by IDs: ${error.message}`);
     }
 }
+

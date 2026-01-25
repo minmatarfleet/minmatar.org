@@ -335,9 +335,6 @@ def sync_production_fittings():
                 "name": doctrine["name"],
                 "type": doctrine["type"],
                 "description": doctrine.get("description", ""),
-                "ideal_fleet_size": composition_data.get(
-                    "ideal_fleet_size", 1
-                ),
             },
         )
         if created:
