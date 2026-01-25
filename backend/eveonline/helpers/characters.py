@@ -12,7 +12,6 @@ from eveonline.models import (
 )
 from eveonline.scopes import TokenType, scopes_for
 
-
 logger = logging.getLogger(__name__)
 
 

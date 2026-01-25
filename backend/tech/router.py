@@ -39,7 +39,6 @@ from tech.docker import (
 from tech.dbviews import create_all_views
 from reddit.service import RedditService
 
-
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
 

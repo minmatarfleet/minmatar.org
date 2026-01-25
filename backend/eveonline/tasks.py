@@ -185,7 +185,7 @@ def update_character_assets(eve_character_id):
     fetch_time = time.perf_counter() - start
     fetch_str = f"{fetch_time:.6f}"
 
-    (created, updated, deleted) = create_character_assets(
+    created, updated, deleted = create_character_assets(
         character, response.results()
     )
 

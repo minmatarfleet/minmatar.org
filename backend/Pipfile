@@ -28,6 +28,7 @@ pillow = "*"
 factory-boy = "*"
 docker = "*"
 coverage = "*"
+black = "*"
 
 [dev-packages]
 pylint = "*"
