@@ -42,9 +42,27 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
             mask={true}
         />
         <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <Flexblock gap='var(--space-3xs)'>
-                {subtitle && <small>{subtitle}</small>}
-                <h3>{title ? title : doctrine.name}</h3>
+            <Flexblock gap='var(--space-xs)'>
+                {!doctrine?.sigs?.length &&
+                    <picture
+                        data-tippy-content={t('alliance_doctrine_description')}
+                        x-init={`tippy($el, {
+                            delay: [ 100, 200 ],
+                            arrow: true,
+                        })`}
+                    >
+                        <FleetLogo
+                            square={true}
+                            slot="picture"
+                            width="32"
+                        />
+                    </picture>
+                }
+
+                <Flexblock gap='var(--space-3xs)'>
+                    {subtitle && <small>{subtitle}</small>}
+                    <h3>{title ? title : doctrine.name}</h3>
+                </Flexblock>
             </Flexblock>
         </Wrapper>
 
@@ -89,22 +107,6 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                         />
                     </picture>
                 )}
-                {!doctrine?.sigs?.length &&
-                    <picture
-                        class="[ p-[var(--space-3xs)] ]"
-                        data-tippy-content={t('alliance_doctrine_description')}
-                        x-init={`tippy($el, {
-                            delay: [ 100, 200 ],
-                            arrow: true,
-                        })`}
-                    >
-                        <FleetLogo
-                            square={true}
-                            slot="picture"
-                            width="32"
-                        />
-                    </picture>
-                }
             </FlexInline>
         </div>
     </Flexblock>
@@ -123,8 +125,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 
         .doctrine-type-icon {
             position: absolute;
-            top: var(--space-3xs);
-            left: var(--space-3xs);
+            top: 0;
+            left: 0;
         }
 
         .doctrine-sigs {

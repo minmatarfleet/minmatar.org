@@ -994,3 +994,9 @@ export interface CharacterErrorUI {
     character?:         SummaryCharacter,
     error:              CharacterErrors;
 }
+
+export interface DoctrineLocationUI {
+    name:               string;
+    doctrine_count:     number;
+    doctrines:          DoctrineType[];
+}

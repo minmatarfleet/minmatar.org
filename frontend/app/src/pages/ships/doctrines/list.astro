@@ -9,12 +9,13 @@ import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 import type { Location } from '@dtypes/api.minmatar.org'
+import type { DoctrineLocationUI } from '@dtypes/layout_components'
 
 let doctrines:DoctrineType[] = []
 let fetch_doctrines_error:string | null = null
 let all_locations:Location[] = []
 let location_doctrine_counts_map: Map<number, number> = new Map()
-let filtered_doctrines:DoctrineType[] = []
+let all_locations_ui: DoctrineLocationUI[] = []
 
 try {
     doctrines = await fetch_doctrines()
@@ -47,22 +48,20 @@ try {
         }
     }
 
-    // Get active location from query parameter
-    const location_id_param = Astro.url.searchParams.get('location_id')
-    const active_location_id = location_id_param ? parseInt(location_id_param) : null
-
-    // Filter doctrines by location if a location is selected
-    filtered_doctrines = doctrines
-    if (active_location_id) {
-        filtered_doctrines = doctrines.filter(doctrine => 
-            doctrine.location_ids && doctrine.location_ids.includes(active_location_id)
+    all_locations_ui = all_locations.map(locaction => {
+        const location_doctrines = doctrines.filter(doctrine => 
+            doctrine.location_ids && doctrine.location_ids.includes(locaction.location_id)
         )
-    }
+        const sorted_location_doctrines = location_doctrines.sort((a, b) => 
+            SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
+        )
 
-    // Sort all doctrines by ship type (no grouping by doctrine type)
-    filtered_doctrines = filtered_doctrines.sort((a, b) => 
-        SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
-    )
+        return {
+            name: locaction.location_name,
+            doctrine_count: location_doctrine_counts_map.get(locaction.location_id) || 0,
+            doctrines: sorted_location_doctrines
+        } as DoctrineLocationUI
+    })
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
@@ -71,7 +70,6 @@ const are_sigs_doctrines = doctrines.find((doctrine) => doctrine.sigs.length > 0
 
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component`)
 
-import { query_string } from '@helpers/string';
 import { semantic_list } from '@helpers/array';
 
 import Viewport from '@layouts/Viewport.astro';
@@ -79,23 +77,14 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import TextBox from '@components/layout/TextBox.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Button from '@components/blocks/Button.astro';
 import DoctrineCard from '@components/blocks/DoctrineCard.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import StagingsReel from '@components/blocks/StagingsReel.astro';
-import StagingReelSlide from '@components/blocks/StagingReelSlide.astro';
-import StylessButton from '@components/blocks/StylessButton.astro';
 
-const REEL_GAP = 20
-const location_id_param = Astro.url.searchParams.get('location_id')
-const active_location_id = location_id_param ? parseInt(location_id_param) : null
 const page_title = t('doctrines.page_title');
 ---
 
@@ -152,53 +141,35 @@ const page_title = t('doctrines.page_title');
             />
             :
             <Flexblock role="list" gap='var(--space-xl)'>
-                {all_locations.length > 0 &&
-                    <StagingsReel gap={REEL_GAP}>
-                        {all_locations.map(location => {
-                            const doctrine_count = location_doctrine_counts_map.get(location.location_id) || 0
-                            return (
-                                <StagingReelSlide gap={REEL_GAP}>
-                                    <Wrapper padding_block='0' padding_inline='0' max_width='350px'>
-                                        {active_location_id === location.location_id ?
-                                            <Flexblock gap="var(--space-3xs)">
-                                                <h2>{location.short_name}</h2>
-                                                <small>{doctrine_count} {doctrine_count !== 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}</small>
-                                            </Flexblock>
-                                            :
-                                            <StylessButton class="[ w-full staging-selector ]" href={translatePath(`/ships/doctrines/list/?${query_string({location_id: location.location_id})}`)}>
-                                                <Flexblock gap="var(--space-3xs)">
-                                                    <h2>{location.short_name}</h2>
-                                                    <small>{doctrine_count} {doctrine_count !== 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}</small>
-                                                </Flexblock>
-                                            </StylessButton>
-                                        }
-                                    </Wrapper>
-                                </StagingReelSlide>
-                            )
-                        })}
-                    </StagingsReel>
-                }
+                {all_locations_ui.map(location =>
+                    <Flexblock gap='var(--space-m)'>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h2>{location.name}</h2>
+                            <small>{`${location.doctrine_count} ${location.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}`}</small>
+                        </Flexblock>
 
-                <Grid
-                    role="list"
-                    class="[ w-full grid-fill ]"
-                    min_item_width='240px'
-                    row_gap='var(--space-3xs)'
-                    column_gap='var(--space-3xs)'
-                >
-                    {filtered_doctrines.map((doctrine) =>
-                        <a
-                            class="[ doctrine-card-container ]"
-                            x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
-                            href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='240px'
+                            row_gap='var(--space-3xs)'
+                            column_gap='var(--space-3xs)'
                         >
-                            <DoctrineCard
-                                doctrine={doctrine}
-                                subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
-                            />
-                        </a>
-                    )}
-                </Grid>
+                            {location.doctrines.map((doctrine) =>
+                                <a
+                                    class="[ doctrine-card-container ]"
+                                    x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
+                                    href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
+                                >
+                                    <DoctrineCard
+                                        doctrine={doctrine}
+                                        subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
+                                    />
+                                </a>
+                            )}
+                        </Grid>
+                    </Flexblock>
+                )}
             </Flexblock>
         }
     </PageWide>

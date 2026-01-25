@@ -56,6 +56,10 @@ export const ui = {
         'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications. Read about our recent events',
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications. Read about our recent events',
 
+        'alliance.story.page_title': 'Our story',
+        'alliance.values.page_title': 'Minmatar FL33T Alliance Tenets',
+        'alliance.playstyle.page_title': 'Our playstyle',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
