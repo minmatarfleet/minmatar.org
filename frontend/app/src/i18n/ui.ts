@@ -221,6 +221,42 @@ export const ui = {
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details.',
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
+        'teams.conversion.page_title': 'Conversion Team',
+        'page_finder.teams.conversion.description': 'Conversion Team description and join request',
+
+        'teams.supply.page_title': 'Supply Team',
+        'page_finder.teams.supply.description': 'Supply Team description and join request',
+
+        'teams.tech.page_title': 'Technology Team',
+        'page_finder.teams.tech.description': 'Technology Team description and join request',
+
+        'teams.thinkspeak.page_title': 'Thinkspeak Team',
+        'page_finder.teams.thinkspeak.description': 'Thinkspeak Team description and join request',
+
+        'teams.readiness.page_title': 'Readiness Division',
+        'page_finder.teams.readiness.description': 'Readiness Division description and join request',
+
+        'teams.advocate.page_title': 'Advocate',
+        'page_finder.teams.advocate.description': 'Advocate description and join request',
+
+        'groups.blackops.page_title': 'Black Ops',
+        'page_finder.groups.blackops.description': 'Black Ops description and join request',
+
+        'groups.faxes.page_title': 'FAXES',
+        'page_finder.groups.faxes.description': 'FAXES description and join request',
+
+        'groups.dreads.page_title': 'Dreads',
+        'page_finder.groups.dreads.description': 'Dreads description and join request',
+
+        'groups.carriers.page_title': 'Carriers',
+        'page_finder.groups.carriers.description': 'Carriers description and join request',
+
+        'groups.tournaments.page_title': 'Tournaments',
+        'page_finder.groups.tournaments.description': 'Tournaments description and join request',
+
+        'groups.mining.page_title': 'Mining',
+        'page_finder.groups.mining.description': 'Mining description and join request',
+
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
 
@@ -234,6 +270,9 @@ export const ui = {
         'corporations.page_title': 'Corporations',
         'corporations.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.cover_alt': 'Outspace starry sky',
+        
+        'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
+        'community.leading_text': 'Get to know the people and groups that make up FL33T: our member corporations, Specialized Interest Groups (SIGs), operational teams, and the propaganda that bring our culture to life.',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
@@ -644,6 +683,9 @@ export const ui = {
         'view_members': 'Members',
         'error_loading_content_reload': 'An error ocurred fetching the content. You may reload the page to fix it.',
         'page_finder.alliance.description': 'Alliance landing page',
+        'page_finder.story.description': 'Learn more about our story.',
+        'page_finder.values.description': 'Learn more about our values.',
+        'page_finder.playstyle.description': 'Learn more about our playstyle.',
         'page_finder.teams.description': 'Teams landing page',
         'page_finder.groups.description': 'Special Interest Groups landing page',
         'page_finder.market.description': 'Market landing page',
@@ -1528,5 +1570,12 @@ export const ui = {
         'metro_dn_description': 'Newsreels from MD News!',
         'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news.',
         'videos_description': 'Content creators from the alliance.',
+        'philosophy': 'Philosophy',
+        'our_values': 'Our values',
+        'our_story': 'Our story',
+        'our_playstyle': 'Our playstyle',
+        'content':  'Content',
+        'our_dna': 'Our DNA',
+        'our_community': 'Our community',
     },
 } as const;

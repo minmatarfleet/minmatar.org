@@ -33,7 +33,7 @@ import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
 ---
 
 <Wrapper
-    class:list={[ 'referral-link', 'relative', position ]}
+    class:list={[ 'referral-link relative inline-block!', position ]}
     max_width='32px'
     padding_block='0'
     padding_inline='0'
@@ -79,6 +79,9 @@ import BrowserEVEIcon from '@components/icons/BrowserEVEIcon.astro';
     }
 
     small {
+        font-family: var(--content-font);
+        text-transform: none;
+        font-size: var(--small-font-font);
         position: absolute;
         top: 7px;
         white-space: nowrap;

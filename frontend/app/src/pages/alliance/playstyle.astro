@@ -1,0 +1,91 @@
+---
+import * as page from './playstyle.md';
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+import { strip_markdown } from '@helpers/string';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+const page_title = page.frontmatter.title
+const page_description = page.frontmatter.excerpt
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Wrapper
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap='var(--space-xl)'>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]" set:html={marked.parseInline(page_description as string, { renderer })} />
+                </Flexblock>
+            </Wrapper>
+
+            <TextBox>
+                <Flexblock gap='var(--space-xl)'>
+                    <div
+                        class="[ prose ]"
+                        set:html={marked.parse(page.rawContent(), { renderer })}
+                        x-data={`{
+                            init_zoom() {
+                                mediumZoom('img[data-zoomable]', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                    />
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+    }
+
+    picture {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        aspect-ratio: 1/1;
+
+        &.bordered {
+            border: solid 1px var(--border-color)
+        }
+    }
+</style>

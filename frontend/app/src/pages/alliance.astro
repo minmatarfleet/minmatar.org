@@ -2,23 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
-import { is_officer, is_director } from '@helpers/fetching/groups'
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-const can_view_applications = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
-const can_view_corp_members = is_superuser || user_permissions.includes('eveonline.view_evecorporation')
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -64,23 +47,7 @@ const leading_text = t('alliance.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <AllianceReel
-                can_view_applications={can_view_applications}
-                user_is_officer={user_is_officer}
-                user_is_director={user_is_director}
-                can_view_corp_members={can_view_corp_members}
-                is_superuser={is_superuser}
-            />
-
-            <TutorialBadge>
-                <FlexInline class="[ items-center! ]">
-                    <Flexblock gap='var(--space-3xs)' class="[ basis-[650px] ]">
-                        <h4>{t('propaganda_new_page')}</h4>
-                        <small>{t('propaganda_new_page_description')}</small>
-                    </Flexblock>
-                    <Button size='sm' href={translatePath('/propaganda')}>{t('browse')}</Button>
-                </FlexInline>
-            </TutorialBadge>
+            <AllianceReel />
         </Flexblock>
     </PageLanding>
 </Viewport>

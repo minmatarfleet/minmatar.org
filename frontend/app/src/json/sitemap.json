@@ -43,59 +43,25 @@
         "description": "page_finder.alliance.description"
     },
     {
-        "slug": "teams.list",
-        "alt": "icon.augmentation.alt",
-        "path": "/alliance/teams/list/",
-        "icon": "/images/icons/48px-Augmentations.png",
+        "slug": "story",
+        "path": "/alliance/story/",
         "publish": true,
-        "description": "page_finder.teams.list.description"
+        "description": "page_finder.story.description",
+        "keywords": [ "story" ]
     },
     {
-        "slug": "teams.requests",
-        "path": "/alliance/teams/requests/",
+        "slug": "values",
+        "path": "/alliance/values/",
         "publish": true,
-        "description": "page_finder.teams.requests.description",
-        "permissions" : {
-            "team_director": true
-        }
+        "description": "page_finder.values.description",
+        "keywords": [ "values" ]
     },
     {
-        "slug": "teams.members",
-        "path": "/alliance/teams/members/",
+        "slug": "values",
+        "path": "/alliance/playstyle/",
         "publish": true,
-        "description": "page_finder.teams.members.description",
-        "permissions" : {
-            "team_director": true
-        }
-    },
-    {
-        "slug": "groups.list",
-        "keywords": [ "sigs" ],
-        "alt": "icon.groups.alt",
-        "path": "/alliance/sigs/list/",
-        "icon": "/images/icons/48px-Grouplist.png",
-        "publish": true,
-        "description": "page_finder.groups.list.description"
-    },
-    {
-        "slug": "groups.requests",
-        "keywords": [ "special", "interest", "groups" ],
-        "path": "/alliance/sigs/requests/",
-        "publish": true,
-        "description": "page_finder.groups.requests.description",
-        "permissions" : {
-            "group_officer": true
-        }
-    },
-    {
-        "slug": "groups.members",
-        "path": "/alliance/sigs/members/",
-        "keywords": [ "special", "interest", "groups" ],
-        "publish": true,
-        "description": "page_finder.groups.requests.description",
-        "permissions" : {
-            "group_officer": true
-        }
+        "description": "page_finder.playstyle.description",
+        "keywords": [ "playstyle" ]
     },
     {
         "slug": "corporations.list",
@@ -158,6 +124,160 @@
         "permissions" : {
             "user": [ "eveonline.view_evecorporation" ]
         }
+    },
+    {
+        "slug": "teams.list",
+        "alt": "icon.augmentation.alt",
+        "path": "/alliance/teams/list/",
+        "icon": "/images/icons/48px-Augmentations.png",
+        "publish": true,
+        "description": "page_finder.teams.list.description"
+    },
+    {
+        "slug": "teams.conversion",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/6/",
+        "icon": "https://lh3.googleusercontent.com/d/1bCPLdbK86fHoW285tBjNYtI3UVu5VXc9",
+        "publish": true,
+        "description": "page_finder.teams.conversion.description"
+    },
+    {
+        "slug": "teams.supply",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/7/",
+        "icon": "/images/icons/groups/supply_2160.png",
+        "publish": true,
+        "description": "page_finder.teams.supply.description"
+    },
+    {
+        "slug": "teams.tech",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/8/",
+        "icon": "/images/icons/groups/technology_2160.png",
+        "publish": true,
+        "description": "page_finder.teams.tech.description"
+    },
+    {
+        "slug": "teams.thinkspeak",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/9/",
+        "icon": "/images/icons/groups/thinkspeak_2160.png",
+        "publish": true,
+        "description": "page_finder.teams.thinkspeak.description"
+    },
+    {
+        "slug": "teams.readiness",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/18/",
+        "publish": true,
+        "description": "page_finder.teams.readiness.description"
+    },
+    {
+        "slug": "teams.advocate",
+        "keywords": [ "teams" ],
+        "path": "/alliance/teams/19/",
+        "icon": "/images/icons/groups/advocate.png",
+        "publish": true,
+        "description": "page_finder.teams.advocate.description"
+    },
+    {
+        "slug": "teams.requests",
+        "path": "/alliance/teams/requests/",
+        "publish": true,
+        "description": "page_finder.teams.requests.description",
+        "permissions" : {
+            "team_director": true
+        }
+    },
+    {
+        "slug": "teams.members",
+        "path": "/alliance/teams/members/",
+        "publish": true,
+        "description": "page_finder.teams.members.description",
+        "permissions" : {
+            "team_director": true
+        }
+    },
+    {
+        "slug": "groups.list",
+        "keywords": [ "sigs" ],
+        "alt": "icon.groups.alt",
+        "path": "/alliance/sigs/list/",
+        "icon": "/images/icons/48px-Grouplist.png",
+        "publish": true,
+        "description": "page_finder.groups.list.description"
+    },
+    {
+        "slug": "groups.blackops",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/5/",
+        "icon": "/images/icons/groups/blackops.png",
+        "publish": true,
+        "description": "page_finder.groups.blackops.description"
+    },
+    {
+        "slug": "groups.faxes",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/15/",
+        "publish": true,
+        "description": "page_finder.groups.faxes.description"
+    },
+    {
+        "slug": "groups.dreads",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/16/",
+        "icon": "https://wiki.minmatar.org/team_icons/capitals.svg",
+        "publish": true,
+        "description": "page_finder.groups.dreads.description"
+    },
+    {
+        "slug": "groups.carriers",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/17/",
+        "publish": true,
+        "description": "page_finder.groups.carriers.description"
+    },
+    {
+        "slug": "groups.tournaments",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/20/",
+        "publish": true,
+        "description": "page_finder.groups.tournaments.description"
+    },
+    {
+        "slug": "groups.mining",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/23/",
+        "publish": true,
+        "description": "page_finder.groups.mining.description"
+    },
+    {
+        "slug": "groups.requests",
+        "keywords": [ "special", "interest", "groups" ],
+        "path": "/alliance/sigs/requests/",
+        "publish": true,
+        "description": "page_finder.groups.requests.description",
+        "permissions" : {
+            "group_officer": true
+        }
+    },
+    {
+        "slug": "groups.members",
+        "path": "/alliance/sigs/members/",
+        "keywords": [ "special", "interest", "groups" ],
+        "publish": true,
+        "description": "page_finder.groups.requests.description",
+        "permissions" : {
+            "group_officer": true
+        }
+    },
+    {
+        "slug": "propaganda",
+        "alt": "icon.tv.alt",
+        "path": "/alliance/propaganda/",
+        "publish": true,
+        "icon": "/images/icons/48px-Scopenetwork.png",
+        "description": "page_finder.propaganda.description"
     },
     {
         "slug": "ships",
@@ -314,14 +434,6 @@
         "publish": true,
         "icon": "/images/icons/48px-Log.png",
         "description": "page_finder.intel.combatlog.description"
-    },
-    {
-        "slug": "propaganda",
-        "alt": "icon.tv.alt",
-        "path": "/propaganda/",
-        "publish": true,
-        "icon": "/images/icons/48px-Scopenetwork.png",
-        "description": "page_finder.propaganda.description"
     },
     {
         "slug": "posts",

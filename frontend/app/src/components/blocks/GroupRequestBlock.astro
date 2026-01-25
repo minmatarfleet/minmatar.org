@@ -43,19 +43,18 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
             type={group_type}
         />
 
-        <Flexblock
-            gap='var(--space-3xs)'
-            class="[ min-h-[64px] !justify-center ]"
-        >
-            {group_requests.requests.map( (group_request) => 
-                <GroupRequestItem
-                    group_request={group_request} 
-                    group_type={group_type}
-                />
-            )}
-            {group_requests.requests.length == 0 &&
-                t('empty_group_request_text')
-            }
-        </Flexblock>
+        {group_requests.requests.length > 0 &&
+            <Flexblock
+                gap='var(--space-3xs)'
+                class="[ min-h-[64px] !justify-center ]"
+            >
+                {group_requests.requests.map( (group_request) => 
+                    <GroupRequestItem
+                        group_request={group_request} 
+                        group_type={group_type}
+                    />
+                )}
+            </Flexblock>
+        }
     </Flexblock>
 </ComponentBlock>
