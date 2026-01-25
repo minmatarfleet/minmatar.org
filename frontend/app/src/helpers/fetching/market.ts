@@ -2,14 +2,14 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import { get_market_contracts } from '@helpers/api.minmatar.org/market'
+import { get_market_contracts, get_market_locations_with_doctrines, get_market_expectations_by_location, type LocationExpectations } from '@helpers/api.minmatar.org/market'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import type { TradeHub, MarketShipGroup, ContractUI } from '@dtypes/layout_components'
 import { get_ship_info } from '@helpers/sde/ships'
 import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
 import { get_fitting_item } from '@helpers/fetching/ships'
-import type { Location, Doctrine, Contract } from '@dtypes/api.minmatar.org'
+import type { Location, Doctrine, Contract, DoctrineFitting } from '@dtypes/api.minmatar.org'
 
 const CAPSULE_TYPE_ID = 670
 
@@ -99,22 +99,32 @@ export async function fetch_market_contracts() {
 }
 
 export async function fetch_market_locations_with_doctrines(): Promise<LocationMarketData[]> {
-    // Fetch all required data
-    const [locations, doctrines, contracts] = await Promise.all([
+    // Fetch all required data using new endpoints
+    const [locations, doctrines, fittings, expectations, contracts] = await Promise.all([
         get_market_locations(), // Only market-active locations
-        get_doctrines(),
-        get_market_contracts()
+        get_doctrines(), // Need doctrines to know which fittings belong to which doctrines
+        get_market_locations_with_doctrines(), // New endpoint: flat list of fittings
+        get_market_expectations_by_location(), // New endpoint: expectations grouped by location
+        get_market_contracts() // For current_quantity
     ])
 
-    // Create a map of contracts by location_id and fitting_id for quick lookup
-    const contractMap = new Map<string, Contract>()
+    // Create a map of expectations by location_id and fitting_id for quick lookup
+    const expectationMap = new Map<string, { quantity: number, expectation_id: number }>()
+    expectations.forEach(locationExpectations => {
+        locationExpectations.expectations.forEach(expectation => {
+            const key = `${locationExpectations.location_id}-${expectation.fitting_id}`
+            expectationMap.set(key, {
+                quantity: expectation.quantity,
+                expectation_id: expectation.expectation_id
+            })
+        })
+    })
+
+    // Create a map of current quantities by location_name and fitting_id
+    const currentQuantityMap = new Map<string, number>()
     contracts.forEach(contract => {
-        // Find the location_id for this contract's location_name
-        const location = locations.find(loc => loc.location_name === contract.location_name)
-        if (location) {
-            const key = `${location.location_id}-${contract.fitting_id}`
-            contractMap.set(key, contract)
-        }
+        const key = `${contract.location_name}-${contract.fitting_id}`
+        currentQuantityMap.set(key, contract.current_quantity)
     })
 
     // Organize data by location
@@ -129,27 +139,37 @@ export async function fetch_market_locations_with_doctrines(): Promise<LocationM
         const doctrineData: DoctrineMarketData[] = []
 
         for (const doctrine of locationDoctrines) {
-            // Combine all fittings from the doctrine (excluding secondary)
-            const allFittings = [
-                ...doctrine.primary_fittings.map(f => ({ ...f, role: 'primary' as const })),
-                ...doctrine.support_fittings.map(f => ({ ...f, role: 'support' as const }))
-            ]
+            // Find fittings that belong to this doctrine from the new endpoint
+            // The new endpoint returns fittings from doctrines, so we match by doctrine's fittings
+            const doctrineFittings = fittings.filter(fitting => {
+                // Check if this fitting is in the doctrine's primary or support fittings (excluding secondary)
+                const isPrimary = doctrine.primary_fittings.some(f => f.id === fitting.fitting_id)
+                const isSupport = doctrine.support_fittings.some(f => f.id === fitting.fitting_id)
+                return isPrimary || isSupport
+            })
 
-            const fittingData: FittingMarketData[] = await Promise.all(allFittings.map(async fitting => {
-                const contractKey = `${location.location_id}-${fitting.id}`
-                const contract = contractMap.get(contractKey)
+            const fittingData: FittingMarketData[] = await Promise.all(doctrineFittings.map(async fitting => {
+                const expectationKey = `${location.location_id}-${fitting.fitting_id}`
+                const expectation = expectationMap.get(expectationKey)
+                
+                // Get current quantity from contracts
+                const currentQuantityKey = `${location.location_name}-${fitting.fitting_id}`
+                const currentQuantity = currentQuantityMap.get(currentQuantityKey) || 0
 
-                // Get full fitting item to get ship_name
-                const fittingItem = await get_fitting_item(fitting)
+                // Get full fitting from doctrine to get ship_id
+                const fullFitting = doctrine.primary_fittings.find(f => f.id === fitting.fitting_id) ||
+                                  doctrine.support_fittings.find(f => f.id === fitting.fitting_id)
+
+                const fittingItem = fullFitting ? await get_fitting_item(fullFitting) : null
 
                 return {
-                    fitting_id: fitting.id,
-                    fitting_name: fitting.name,
-                    ship_id: fitting.ship_id,
-                    ship_name: fittingItem.ship_name,
-                    role: fitting.role,
-                    expectation_quantity: contract ? contract.desired_quantity : null,
-                    current_quantity: contract ? contract.current_quantity : 0
+                    fitting_id: fitting.fitting_id,
+                    fitting_name: fitting.fitting_name,
+                    ship_id: fullFitting?.ship_id || 0,
+                    ship_name: fittingItem?.ship_name || '',
+                    role: fitting.role as 'primary' | 'support',
+                    expectation_quantity: expectation ? expectation.quantity : null,
+                    current_quantity: currentQuantity
                 }
             }))
 
