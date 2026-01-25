@@ -177,18 +177,20 @@ const page_description = t('contracts.leading_text')
                                     <Flexblock gap='var(--space-lg)'>
                                         {location.doctrines.map((doctrine) => (
                                             <Flexblock gap='var(--space-md)' class="[ doctrine-section ]">
-                                                <Grid
-                                                    min_item_width='234px'
-                                                    row_gap='var(--space-md)'
-                                                    column_gap='var(--space-md)'
-                                                    class="[ w-full grid-fill ]"
-                                                >
-                                                    {doctrine.fittings.map((fitting) => (
-                                                        <div class="[ fitting-card-container ]" x-show="show_item($el)">
-                                                            <MarketFittingCard fitting={fitting} />
-                                                        </div>
-                                                    ))}
-                                                </Grid>
+                                                <Wrapper padding_block='calc(var(--space-lg) + 3px)' padding_inline='calc(var(--space-lg) + 3px)'>
+                                                    <Grid
+                                                        min_item_width='220px'
+                                                        row_gap='calc(var(--space-lg) + 3px)'
+                                                        column_gap='calc(var(--space-lg) + 3px)'
+                                                        class="[ w-full ]"
+                                                    >
+                                                        {doctrine.fittings.map((fitting) => (
+                                                            <div class="[ fitting-card-container ]" x-show="show_item($el)">
+                                                                <MarketFittingCard fitting={fitting} />
+                                                            </div>
+                                                        ))}
+                                                    </Grid>
+                                                </Wrapper>
                                             </Flexblock>
                                         ))}
                                     </Flexblock>
@@ -211,6 +213,11 @@ const page_description = t('contracts.leading_text')
         small {
             color: var(--fleet-yellow);
         }
+    }
+
+    .fitting-card-container {
+        min-width: 0;
+        width: 100%;
     }
 
 </style>

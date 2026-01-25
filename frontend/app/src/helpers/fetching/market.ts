@@ -129,10 +129,9 @@ export async function fetch_market_locations_with_doctrines(): Promise<LocationM
         const doctrineData: DoctrineMarketData[] = []
 
         for (const doctrine of locationDoctrines) {
-            // Combine all fittings from the doctrine
+            // Combine all fittings from the doctrine (excluding secondary)
             const allFittings = [
                 ...doctrine.primary_fittings.map(f => ({ ...f, role: 'primary' as const })),
-                ...doctrine.secondary_fittings.map(f => ({ ...f, role: 'secondary' as const })),
                 ...doctrine.support_fittings.map(f => ({ ...f, role: 'support' as const }))
             ]
 

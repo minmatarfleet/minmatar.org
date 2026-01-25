@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import List
 
+from django.db.models import OuterRef, Subquery
 from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from eveonline.models import EveLocation
+from eveuniverse.models import EveType
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -211,7 +213,7 @@ def get_market_locations_with_doctrines(
     otherwise shows current quantity of outstanding contracts.
     """
     # Get all market-active locations
-    active_locations = EveLocation.objects.filter(market_active=True).order_by(
+    active_locations = EveLocation.objects.filter(market_active=True).distinct().order_by(
         "location_name"
     )
 
@@ -225,12 +227,13 @@ def get_market_locations_with_doctrines(
 
         seen_location_ids.add(location.location_id)
         # Get all doctrines that use this location
-        doctrines = EveDoctrine.objects.filter(locations=location).order_by(
+        doctrines = EveDoctrine.objects.filter(locations=location).distinct().order_by(
             "name"
         )
 
         doctrine_responses = []
         seen_doctrine_ids = set()
+        seen_fitting_ids = set()  # Track fittings across all doctrines in this location
 
         for doctrine in doctrines:
             # Skip if we've already added this doctrine to avoid duplicates
@@ -239,19 +242,29 @@ def get_market_locations_with_doctrines(
 
             seen_doctrine_ids.add(doctrine.id)
             # Get all fittings for this doctrine
+            # Exclude secondary fittings
+            # Join with EveType to sort by ship volume (size), then by name
+            ship_volume_subquery = EveType.objects.filter(
+                id=OuterRef('fitting__ship_id')
+            ).values('packaged_volume')[:1]
+            
             doctrine_fittings = (
                 EveDoctrineFitting.objects.filter(doctrine=doctrine)
+                .exclude(role='secondary')
                 .select_related("fitting")
-                .order_by("fitting__name")
+                .annotate(
+                    ship_volume=Subquery(ship_volume_subquery)
+                )
+                .distinct()
+                .order_by('-ship_volume', 'fitting__name')
             )
 
             fitting_responses = []
-            seen_fitting_ids = set()
 
             for doctrine_fitting in doctrine_fittings:
                 fitting = doctrine_fitting.fitting
 
-                # Skip if we've already added this fitting to avoid duplicates
+                # Skip if we've already added this fitting to avoid duplicates across all doctrines
                 if fitting.id in seen_fitting_ids:
                     continue
 
