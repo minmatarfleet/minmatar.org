@@ -28,17 +28,28 @@ from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
 from fittings.models import EveFitting
-from tech.docker import (
-    get_containers,
-    container_names,
-    sort_chronologically,
-    DockerContainer,
-    DockerLogQuery,
-    DockerLogEntry,
-)
+
+try:
+    from tech.docker import (
+        get_containers,
+        container_names,
+        sort_chronologically,
+        DockerContainer,
+        DockerLogQuery,
+        DockerLogEntry,
+    )
+
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+    get_containers = None
+    container_names = None
+    sort_chronologically = None
+    DockerContainer = None
+    DockerLogQuery = None
+    DockerLogEntry = None
 from tech.dbviews import create_all_views
 from reddit.service import RedditService
-
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -164,11 +175,14 @@ def make_test_fleet(request, data: TestFleetCreationRequest):
     "/containers",
     summary="List all Docker containers",
     auth=AuthBearer(),
-    response={200: List[str], 403: ErrorResponse},
+    response={200: List[str], 403: ErrorResponse, 503: ErrorResponse},
 )
 def list_containers(request):
     if not permitted(request.user):
         return 403, "Not authorised"
+
+    if not DOCKER_AVAILABLE:
+        return 503, ErrorResponse(detail="Docker module not available")
 
     return container_names()
 
@@ -180,7 +194,7 @@ def list_containers(request):
     "and duration (how long to include logs for from that point) in minutes, "
     "as well as the name of the container. ",
     auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
+    response={200: str, 403: ErrorResponse, 503: ErrorResponse},
 )
 def get_logs(
     request,
@@ -191,6 +205,9 @@ def get_logs(
 ):
     if not permitted(request.user):
         return 403, "Not authorised"
+
+    if not DOCKER_AVAILABLE:
+        return 503, ErrorResponse(detail="Docker module not available")
 
     now = timezone.now()
     start_time = now - timedelta(minutes=start_delta_mins)

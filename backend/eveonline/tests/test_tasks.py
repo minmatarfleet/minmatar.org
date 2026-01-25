@@ -67,7 +67,7 @@ class EveOnlineTaskTests(TestCase):
         esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
         esi_mock.get_station.return_value.name = "Home Base"
 
-        (created, updated, deleted) = update_character_assets(char.id)
+        created, updated, deleted = update_character_assets(char.id)
 
         self.assertEqual(1, created)
         self.assertEqual(0, updated)

@@ -1,6 +1,6 @@
 """
-Django settings for my.minmatar.org project.
-Some Docker configs replace this with a copy of settings.py.example
+Django settings for test suite.
+This file is used specifically for running tests.
 """
 
 import os
@@ -8,12 +8,11 @@ from pathlib import Path
 
 import sentry_sdk
 
-from app.settings_celery import *  # noqa
-from app.settings_common import *  # noqa
+from app.settings_celery import *  # noqa # pylint: disable=wildcard-import
+from app.settings_common import *  # noqa # pylint: disable=wildcard-import
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -87,25 +86,13 @@ ESI_USER_CONTACT_EMAIL = os.environ.get(
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
 MUMBLE_MURMUR_PORT = os.environ.get("MUMBLE_MURMUR_PORT", "")
 
-if SECRET_KEY == "testing":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+# Always use SQLite for tests - no database permissions needed
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "test_db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_NAME", "minmatar"),
-            "USER": os.environ.get("DB_USER", "root"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "example"),
-            "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("DB_PORT", "3306"),
-            "OPTIONS": {"charset": "utf8mb4"},
-        },
-    }
+}
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
@@ -120,9 +107,9 @@ STATIC_ROOT = os.path.join(
 )
 
 # Monitoring
-ENV = "production"
+ENV = "production"  # pylint: disable=invalid-name
 if DEBUG:
-    ENV = "development"
+    ENV = "development"  # pylint: disable=invalid-name
 
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),

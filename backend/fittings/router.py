@@ -42,16 +42,7 @@ class DoctrineResponse(BaseModel):
     secondary_fittings: List[FittingResponse]
     support_fittings: List[FittingResponse]
     sig_ids: List[int]
-
-
-class DoctrineCompositionItemResponse(BaseModel):
-    fitting: FittingResponse
-    ideal_ship_count: int
-
-
-class DoctrineCompositionResponse(BaseModel):
-    ideal_fleet_size: int
-    composition: List[DoctrineCompositionItemResponse]
+    location_ids: List[int]
 
 
 @doctrines_router.get("", response=List[DoctrineResponse])
@@ -83,6 +74,9 @@ def get_doctrines(request):
             secondary_fittings=secondary_fittings,
             support_fittings=support_fittings,
             sig_ids=[sig.id for sig in doctrine.sigs.all()],
+            location_ids=[
+                location.location_id for location in doctrine.locations.all()
+            ],
         )
         response.append(doctrine_response)
     return response
@@ -123,40 +117,11 @@ def get_doctrine(request, doctrine_id: int):
         secondary_fittings=secondary_fittings,
         support_fittings=support_fittings,
         sig_ids=[sig.id for sig in doctrine.sigs.all()],
+        location_ids=[
+            location.location_id for location in doctrine.locations.all()
+        ],
     )
     return doctrine_response
-
-
-@doctrines_router.get(
-    "/{doctrine_id}/composition",
-    response={
-        200: DoctrineCompositionResponse,
-        404: ErrorResponse,
-    },
-)
-def get_doctrine_composition(request, doctrine_id: int):
-    try:
-        doctrine = EveDoctrine.objects.get(id=doctrine_id)
-        fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
-    except EveDoctrine.DoesNotExist:
-        return 404, ErrorResponse(
-            status=404,
-            detail="Doctrine details not found",
-        )
-
-    doctrine_items = []
-    for doctrine_fitting in fittings:
-        fitting = doctrine_fitting.fitting
-        composition_item = DoctrineCompositionItemResponse(
-            fitting=make_fitting_response(fitting),
-            ideal_ship_count=doctrine_fitting.ideal_ship_count,
-        )
-        doctrine_items.append(composition_item)
-
-    return DoctrineCompositionResponse(
-        ideal_fleet_size=doctrine.ideal_fleet_size,
-        composition=doctrine_items,
-    )
 
 
 def make_fitting_response(fitting: EveFitting) -> FittingResponse:

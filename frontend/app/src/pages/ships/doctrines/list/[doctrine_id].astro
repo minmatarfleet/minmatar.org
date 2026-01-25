@@ -11,7 +11,6 @@ import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
-
 let doctrine:DoctrineType | null = null
 let fetch_doctrine_error:string | false = false
 let recently_fleets:FleetItem[] | null = null
@@ -55,7 +54,6 @@ const page_description = doctrine?.description
             overlay: true
         }}
         x-data={`{
-            ideal_fleet_size: ${doctrine?.ideal_composition?.ideal_fleet_size ?? 0},
             recently_fleets_count: ${recently_fleets?.length},
         }`}
     >
@@ -64,9 +62,6 @@ const page_description = doctrine?.description
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <small x-text={`\`\${ideal_fleet_size} ${t('ideal_fleet_size')}\``}>
-                    {`${doctrine?.ideal_composition?.ideal_fleet_size ?? 0} ${t('ideal_fleet_size')}`}
-                </small>
             </Flexblock>
             <FlexInline>
                 <Button href={translatePath('/ships/doctrines/list/')} class="[ !hidden md:!flex ]">
@@ -84,7 +79,10 @@ const page_description = doctrine?.description
                 }}
             />
             :
-            <DoctrineDetails doctrine={doctrine as DoctrineType } recently_fleets={recently_fleets as FleetItem[]} />
+            <DoctrineDetails 
+                doctrine={doctrine as DoctrineType} 
+                recently_fleets={recently_fleets as FleetItem[]}
+            />
         }
     </PageWide>
 </Viewport>

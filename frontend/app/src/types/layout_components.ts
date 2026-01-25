@@ -640,12 +640,7 @@ export interface DoctrineType {
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
     sigs:                   GroupBasic[];
-    ideal_composition?:     IdealComposition;
-}
-
-export interface IdealComposition {
-    ideal_fleet_size:   number;
-    [propName: string]: number;
+    location_ids:           number[];
 }
 
 export interface FittingGroup {
@@ -760,13 +755,10 @@ export interface RouteStations {
 export type DoctrineTypes = typeof doctrine_types[number]
 
 export const doctrine_types = [
-    'casual',
-    'skirmish',
+    'non_strategic',
+    'training',
     'strategic',
-    'specialized',
-    'faction_warfare',
-    'nullsec',
-]
+] as const
 
 export interface SystemCardInfo {
     system_name:            string;

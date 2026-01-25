@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,
@@ -440,34 +440,6 @@ def fetch_eve_market_contract(request, expectation_id: int):
         ],
         responsibilities=responsibilities,
     )
-
-
-@router.get(
-    "/locations",
-    description="Fetch summaries of all market locations",
-    response={200: List[MarketLocationSummary]},
-)
-def get_market_locations(request) -> List[MarketLocationSummary]:
-    locations = []
-    for location in EveLocation.objects.filter(market_active=True):
-        contract_count = EveMarketContract.objects.filter(
-            location=location,
-            status="outstanding",
-        ).count()
-        expectation_count = EveMarketContractExpectation.objects.filter(
-            location=location
-        ).count()
-        locations.append(
-            MarketLocationSummary(
-                id=location.location_id,
-                name=location.location_name,
-                system_name=location.solar_system_name,
-                structure_id=location.structure_id,
-                contracts=contract_count,
-                expectations=expectation_count,
-            )
-        )
-    return locations
 
 
 @router.get(

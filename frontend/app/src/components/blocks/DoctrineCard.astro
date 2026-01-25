@@ -26,6 +26,9 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import StratopIcon from '@components/icons/StratopIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
 ---
 
 <ComponentBlock class="[ doctrine-card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
@@ -45,9 +48,32 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             </Flexblock>
         </Wrapper>
 
-        <div class="[ doctrine-groups ]">
-            {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
-                <FlexInline gap='var(--space-3xs)'>
+        <div class="[ doctrine-type-icon ]">
+            <div
+                data-tippy-content={
+                    doctrine.type === 'strategic' ?
+                    t('strategic') :
+                    doctrine.type === 'training' ?
+                    t('training') :
+                    t('non_strategic')
+                }
+                x-init={`tippy($el, {
+                    delay: [ 100, 200 ],
+                    arrow: true,
+                })`}
+            >
+                {doctrine.type === 'strategic' ?
+                    <StratopIcon /> :
+                    doctrine.type === 'training' ?
+                    <TrainingIcon /> :
+                    <NonStrategicIcon />
+                }
+            </div>
+        </div>
+
+        <div class="[ doctrine-sigs ]">
+            <FlexInline gap='var(--space-3xs)'>
+                {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
                     <picture
                         data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
                         x-init={`tippy($el, {
@@ -62,25 +88,24 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                             alt={`${sig.name} icon`}
                         />
                     </picture>
-                </FlexInline>
-            )}
-
-            {!doctrine?.sigs?.length &&
-                <picture
-                    class="[ p-[var(--space-3xs)] ]"
-                    data-tippy-content={t('alliance_doctrine_description')}
-                    x-init={`tippy($el, {
-                        delay: [ 100, 200 ],
-                        arrow: true,
-                    })`}
-                >
-                    <FleetLogo
-                        square={true}
-                        slot="picture"
-                        width="32"
-                    />
-                </picture>
-            }
+                )}
+                {!doctrine?.sigs?.length &&
+                    <picture
+                        class="[ p-[var(--space-3xs)] ]"
+                        data-tippy-content={t('alliance_doctrine_description')}
+                        x-init={`tippy($el, {
+                            delay: [ 100, 200 ],
+                            arrow: true,
+                        })`}
+                    >
+                        <FleetLogo
+                            square={true}
+                            slot="picture"
+                            width="32"
+                        />
+                    </picture>
+                }
+            </FlexInline>
         </div>
     </Flexblock>
 </ComponentBlock>
@@ -96,10 +121,16 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             right: 0;
         }
 
-        .doctrine-groups {
+        .doctrine-type-icon {
             position: absolute;
             top: var(--space-3xs);
             left: var(--space-3xs);
+        }
+
+        .doctrine-sigs {
+            position: absolute;
+            bottom: var(--space-3xs);
+            right: var(--space-3xs);
         }
     }
 

@@ -11,7 +11,6 @@ import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
-
 let doctrine:DoctrineType | null = null
 let fetch_doctrine_error:string | false = false
 let recently_fleets:FleetItem[] = []
@@ -43,11 +42,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <DoctrineDetails doctrine={doctrine as DoctrineType} recently_fleets={recently_fleets} />
+    <DoctrineDetails 
+        doctrine={doctrine as DoctrineType} 
+        recently_fleets={recently_fleets}
+    />
     
     <span x-data={`{
         init() {
-            ideal_fleet_size = ${doctrine?.ideal_composition?.ideal_fleet_size ?? 0}
             recently_fleets_count = ${recently_fleets?.length ?? 0}
             $el.remove()
         }

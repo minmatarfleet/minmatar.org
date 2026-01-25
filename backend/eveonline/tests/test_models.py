@@ -23,7 +23,6 @@ from eveonline.models import (
 from eveonline.signals import populate_eve_character_public_data
 from eveonline.helpers.skills import upsert_character_skill
 
-
 logger = logging.getLogger("test.models")
 
 

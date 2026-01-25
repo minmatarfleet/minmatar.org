@@ -29,7 +29,6 @@ from .models import (
 )
 from .notifications import get_fleet_discord_notification
 
-
 router = Router(tags=["Fleets"])
 logger = logging.getLogger(__name__)
 

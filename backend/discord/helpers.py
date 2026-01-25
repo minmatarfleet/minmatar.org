@@ -9,7 +9,6 @@ from users.helpers import offboard_user
 from .core import make_nickname
 from .models import DiscordRole, DiscordUser
 
-
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = settings.DISCORD_PEOPLE_TEAM_CHANNEL_ID
