@@ -58,8 +58,10 @@ def get_locations_by_ids(request, location_ids: str) -> List[LocationResponse]:
         ids = [int(id.strip()) for id in location_ids.split(",") if id.strip()]
     except ValueError:
         return []
-    
-    locations = EveLocation.objects.filter(location_id__in=ids).order_by("location_name")
+
+    locations = EveLocation.objects.filter(location_id__in=ids).order_by(
+        "location_name"
+    )
     return [
         LocationResponse(
             location_id=location.location_id,
@@ -74,4 +76,3 @@ def get_locations_by_ids(request, location_ids: str) -> List[LocationResponse]:
         )
         for location in locations
     ]
-

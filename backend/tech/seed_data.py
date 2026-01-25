@@ -327,7 +327,7 @@ def sync_production_fittings():
             timeout=10,
         )
         composition_response.raise_for_status()
-        composition_data = composition_response.json()
+        composition_response.json()
 
         doctrine_obj, created = EveDoctrine.objects.get_or_create(
             id=doctrine["id"],

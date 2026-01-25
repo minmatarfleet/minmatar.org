@@ -475,7 +475,9 @@ def get_market_locations(request) -> List[MarketLocationSummary]:
     description="Fetch location information by location IDs",
     response={200: List[MarketLocationSummary]},
 )
-def get_locations_by_ids(request, location_ids: str) -> List[MarketLocationSummary]:
+def get_locations_by_ids(
+    request, location_ids: str
+) -> List[MarketLocationSummary]:
     """
     Fetch location information for given location IDs.
     location_ids should be a comma-separated string of location IDs.
@@ -484,7 +486,7 @@ def get_locations_by_ids(request, location_ids: str) -> List[MarketLocationSumma
         ids = [int(id.strip()) for id in location_ids.split(",") if id.strip()]
     except ValueError:
         return []
-    
+
     locations = []
     for location in EveLocation.objects.filter(location_id__in=ids):
         contract_count = EveMarketContract.objects.filter(

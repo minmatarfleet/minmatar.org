@@ -11,10 +11,10 @@ def migrate_doctrine_types(apps, schema_editor):
     - Everything else (skirmish, specialized, faction_warfare, nullsec) -> non_strategic
     """
     EveDoctrine = apps.get_model("fittings", "EveDoctrine")
-    
+
     # Map casual to training
     EveDoctrine.objects.filter(type="casual").update(type="training")
-    
+
     # Map everything else that's not strategic to non_strategic
     old_types = ["skirmish", "specialized", "faction_warfare", "nullsec"]
     for old_type in old_types:
@@ -28,10 +28,10 @@ def reverse_migrate_doctrine_types(apps, schema_editor):
     We'll map training back to casual, and non_strategic to skirmish.
     """
     EveDoctrine = apps.get_model("fittings", "EveDoctrine")
-    
+
     # Reverse training -> casual
     EveDoctrine.objects.filter(type="training").update(type="casual")
-    
+
     # Reverse non_strategic -> skirmish (best guess)
     EveDoctrine.objects.filter(type="non_strategic").update(type="skirmish")
 
@@ -43,5 +43,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrate_doctrine_types, reverse_migrate_doctrine_types),
+        migrations.RunPython(
+            migrate_doctrine_types, reverse_migrate_doctrine_types
+        ),
     ]
