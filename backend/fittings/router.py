@@ -216,16 +216,28 @@ def get_market_locations_with_doctrines(
     )
 
     response = []
+    seen_location_ids = set()
 
     for location in active_locations:
+        # Skip if we've already added this location to avoid duplicates
+        if location.location_id in seen_location_ids:
+            continue
+
+        seen_location_ids.add(location.location_id)
         # Get all doctrines that use this location
         doctrines = EveDoctrine.objects.filter(locations=location).order_by(
             "name"
         )
 
         doctrine_responses = []
+        seen_doctrine_ids = set()
 
         for doctrine in doctrines:
+            # Skip if we've already added this doctrine to avoid duplicates
+            if doctrine.id in seen_doctrine_ids:
+                continue
+
+            seen_doctrine_ids.add(doctrine.id)
             # Get all fittings for this doctrine
             doctrine_fittings = (
                 EveDoctrineFitting.objects.filter(doctrine=doctrine)
@@ -234,9 +246,16 @@ def get_market_locations_with_doctrines(
             )
 
             fitting_responses = []
+            seen_fitting_ids = set()
 
             for doctrine_fitting in doctrine_fittings:
                 fitting = doctrine_fitting.fitting
+
+                # Skip if we've already added this fitting to avoid duplicates
+                if fitting.id in seen_fitting_ids:
+                    continue
+
+                seen_fitting_ids.add(fitting.id)
 
                 # Check if there's an expectation for this fitting at this location
                 expectation = EveMarketContractExpectation.objects.filter(

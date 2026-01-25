@@ -26,7 +26,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 ---
 
-<ComponentBlock class="[ fitting-card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
+<ComponentBlock class="[ fitting-card card-animated ]" padding_block='var(--space-2xs)' padding_inline='var(--space-2xs)' {...attributes}>
     <Flexblock gap="0" class="[ fitting-card-container ]">
         <div class="[ fitting-card-image-wrapper ]">
             <ItemPicture
@@ -38,11 +38,8 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
                 mask={true}
             />
         </div>
-        <div class="[ expectation-badge ]">
-            <span class:list={{ 'text-red': low_amount }}>{current_quantity}</span>/{expected_quantity}
-        </div>
-        <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <Flexblock gap='var(--space-3xs)'>
+        <Wrapper class="[ fitting-card-bar ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <FlexInline justification='space-between' class="[ items-center ]">
                 <h3 
                     x-on:click.stop.prevent={`copyFitToClipboard('fitting-name-${fitting.fitting_id}')`}
                     class="[ cursor-pointer title ]"
@@ -53,7 +50,10 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
                 >
                     {fitting.fitting_name}
                 </h3>
-            </Flexblock>
+                <div class="[ expectation-badge ]">
+                    <span class:list={{ 'text-red': low_amount }}>{current_quantity}</span>/{expected_quantity}
+                </div>
+            </FlexInline>
         </Wrapper>
         <textarea class="[ hidden ]" id={`fitting-name-${fitting.fitting_id}`} readonly>{fitting.fitting_name}</textarea>
     </Flexblock>
@@ -62,16 +62,17 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
 <style lang="scss">
     .fitting-card {
         position: relative;
-        height: 234px;
         overflow: hidden;
         width: 100%;
 
         .fitting-card-container {
-            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .fitting-card-image-wrapper {
-            height: 100%;
+            flex: 1;
+            min-height: 180px;
             overflow: hidden;
             position: relative;
 
@@ -95,29 +96,23 @@ import ItemPicture from "@components/blocks/ItemPicture.astro";
             }
         }
 
-        .expectation-badge {
-            position: absolute;
-            top: var(--space-3xs);
-            right: var(--space-3xs);
-            z-index: 3;
-            font-family: var(--heading-font);
-            text-transform: uppercase;
-            font-size: var(--step-0);
-            font-weight: 400;
-            color: var(--highlight);
+        .fitting-card-bar {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
         }
 
-        .fitting-card-body {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 2;
+        .expectation-badge {
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            font-size: var(--step--1);
+            font-weight: 400;
+            color: var(--highlight);
+            white-space: nowrap;
         }
     }
 
     h3 {
-        font-size: var(--step-0);
+        font-size: var(--step--1);
         line-height: 1.2;
     }
 
