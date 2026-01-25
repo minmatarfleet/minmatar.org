@@ -1,5 +1,6 @@
 ---
-import * as page from './playstyle.md';
+import * as page_fw from './playstyle-faction-warfare.md';
+import * as page_abroad from './playstyle-abroad.md';
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
@@ -16,8 +17,8 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-const page_title = page.frontmatter.title
-const page_description = page.frontmatter.excerpt
+const page_title = 'Our Playstyle'
+const page_description = 'Minmatar Fleet is a content-driven community that pulls fights from everywhere. Faction warfare is where many of our explosions happen, but we’re never confined to it.'
 ---
 
 <Viewport
@@ -52,9 +53,8 @@ const page_description = page.frontmatter.excerpt
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
                     <div
-                        class="[ prose ]"
-                        set:html={marked.parse(page.rawContent(), { renderer })}
                         x-data={`{
+                            activeTab: 'faction-warfare',
                             init_zoom() {
                                 mediumZoom('img[data-zoomable]', {
                                     background: 'var(--solid-transparency-background)',
@@ -65,7 +65,39 @@ const page_description = page.frontmatter.excerpt
                             }
                         }`}
                         x-init="init_zoom()"
-                    />
+                        class="[ tabs-container ]"
+                    >
+                        <div class="[ tabs-header ]">
+                            <button
+                                @click="activeTab = 'faction-warfare'"
+                                :class="{ 'active': activeTab === 'faction-warfare' }"
+                                class="[ tab-button ]"
+                            >
+                                Faction Warfare
+                            </button>
+                            <button
+                                @click="activeTab = 'abroad'"
+                                :class="{ 'active': activeTab === 'abroad' }"
+                                class="[ tab-button ]"
+                            >
+                                Abroad
+                            </button>
+                        </div>
+
+                        <div
+                            x-show="activeTab === 'faction-warfare'"
+                            x-transition
+                            class="[ prose ]"
+                            set:html={marked.parse(page_fw.rawContent(), { renderer })}
+                        />
+
+                        <div
+                            x-show="activeTab === 'abroad'"
+                            x-transition
+                            class="[ prose ]"
+                            set:html={marked.parse(page_abroad.rawContent(), { renderer })}
+                        />
+                    </div>
                 </Flexblock>
             </TextBox>
         </Flexblock>
@@ -86,6 +118,38 @@ const page_description = page.frontmatter.excerpt
 
         &.bordered {
             border: solid 1px var(--border-color)
+        }
+    }
+
+    .tabs-container {
+        width: 100%;
+    }
+
+    .tabs-header {
+        display: flex;
+        gap: var(--space-s);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--space-xl);
+    }
+
+    .tab-button {
+        padding: var(--space-s) var(--space-m);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        font-size: var(--step-0);
+        color: var(--text-color-secondary);
+        transition: all 0.2s ease;
+        margin-bottom: -1px;
+
+        &:hover {
+            color: var(--text-color);
+        }
+
+        &.active {
+            color: var(--text-color);
+            border-bottom-color: var(--accent-color);
         }
     }
 </style>
