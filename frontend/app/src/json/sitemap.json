@@ -252,6 +252,34 @@
         "description": "page_finder.groups.mining.description"
     },
     {
+        "slug": "groups.ship_production",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/24/",
+        "publish": true,
+        "description": "page_finder.groups.ship_production.description"
+    },
+    {
+        "slug": "groups.capital_production",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/25/",
+        "publish": true,
+        "description": "page_finder.groups.capital_production.description"
+    },
+    {
+        "slug": "groups.consumables",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/26/",
+        "publish": true,
+        "description": "page_finder.groups.consumables.description"
+    },
+    {
+        "slug": "groups.freighters",
+        "keywords": [ "sigs" ],
+        "path": "/alliance/sigs/27/",
+        "publish": true,
+        "description": "page_finder.groups.freighters.description"
+    },
+    {
         "slug": "groups.requests",
         "keywords": [ "special", "interest", "groups" ],
         "path": "/alliance/sigs/requests/",
