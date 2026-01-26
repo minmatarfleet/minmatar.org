@@ -17,10 +17,10 @@ const {
 
 const sigs_covers = {
     'Black Ops': '/images/support-card.jpg',
-    'FAXES': '/images/fax-card.jpg',
-    'DREADS': '/images/dread-card.jpg',
-    'CARRIERS': '/images/carrier-card.jpg',
-    'TOURNAMENTS': '/images/tournament-card.jpg',
+    'Force Auxiliary Carriers': '/images/fax-card.jpg',
+    'Dreads': '/images/dread-card.jpg',
+    'Carriers': '/images/carrier-card.jpg',
+    'Tournaments': '/images/tournament-card.jpg',
     'Mining': '/images/mining-card.jpg',
     'Capital production': '/images/capital-production-card.jpg',
     'Ship production': '/images/ship-production-card.jpg',
@@ -92,7 +92,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 <a href={translatePath(`/alliance/${GROUP_SLUG[groups_type]}/${group.id}`)} class:list={{ 'desature-bg': group?.status !== 'confirmed' }}>
     <PictureCard
-        src={(groups_type === 'team' ? team_covers[group.name] : sigs_covers[group.name]) ?? `/images/sigs/generic-${groups_type}-cover.jpg`}
+        src={(groups_type === 'team' ? team_covers[group.name] : sigs_covers[group.name]) ?? `/images/generic-${groups_type}-cover.jpg`}
         alt={group.name}
         narrow={true}
     >
