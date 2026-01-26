@@ -225,16 +225,16 @@ export const ui = {
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details.',
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
-        'teams.conversion.page_title': 'Conversion Team',
+        'teams.conversion.page_title': 'Conversion',
         'page_finder.teams.conversion.description': 'Conversion Team description and join request',
 
-        'teams.supply.page_title': 'Supply Team',
+        'teams.supply.page_title': 'Supply',
         'page_finder.teams.supply.description': 'Supply Team description and join request',
 
-        'teams.tech.page_title': 'Technology Team',
+        'teams.tech.page_title': 'Technology',
         'page_finder.teams.tech.description': 'Technology Team description and join request',
 
-        'teams.thinkspeak.page_title': 'Thinkspeak Team',
+        'teams.thinkspeak.page_title': 'Thinkspeak',
         'page_finder.teams.thinkspeak.description': 'Thinkspeak Team description and join request',
 
         'teams.readiness.page_title': 'Readiness Division',
@@ -246,8 +246,8 @@ export const ui = {
         'groups.blackops.page_title': 'Black Ops',
         'page_finder.groups.blackops.description': 'Black Ops description and join request',
 
-        'groups.faxes.page_title': 'FAXES',
-        'page_finder.groups.faxes.description': 'FAXES description and join request',
+        'groups.faxes.page_title': 'Force Auxiliary Carriers',
+        'page_finder.groups.faxes.description': 'Force Auxiliary Carriers description and join request',
 
         'groups.dreads.page_title': 'Dreads',
         'page_finder.groups.dreads.description': 'Dreads description and join request',
@@ -260,6 +260,18 @@ export const ui = {
 
         'groups.mining.page_title': 'Mining',
         'page_finder.groups.mining.description': 'Mining description and join request',
+
+        'groups.ship_production.page_title': 'Ship production',
+        'page_finder.groups.ship_production.description': 'Ship production description and join request',
+
+        'groups.capital_production.page_title': 'Capital production',
+        'page_finder.groups.capital_production.description': 'Capital production description and join request',
+
+        'groups.consumables.page_title': 'Consumables',
+        'page_finder.groups.consumables.description': 'Consumables description and join request',
+
+        'groups.freighters.page_title': 'Freighters',
+        'page_finder.groups.freighters.description': 'Freighters description and join request',
 
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
