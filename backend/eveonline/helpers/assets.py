@@ -4,8 +4,7 @@ from typing import List, Optional
 import pydantic
 
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacter, EveCharacterAsset
-from structures.models import EveStructure
+from eveonline.models import EveCharacter, EveCharacterAsset, EveLocation
 
 logger = logging.getLogger(__name__)
 
@@ -78,14 +77,18 @@ def create_character_assets(character: EveCharacter, assets_data: List[dict]):
             continue
 
         # Check location type first as it can rule out a lot of items quickly
-        location = None
+        location_name = None
         if asset.location_type == "station":
-            location = esi.get_station(asset.location_id)
+            location_name = esi.get_station(asset.location_id).name
         elif asset.location_type == "item":
-            if EveStructure.objects.filter(id=asset.location_id).exists():
-                location = EveStructure.objects.get(id=asset.location_id)
+            if EveLocation.objects.filter(
+                location_id=asset.location_id
+            ).exists():
+                location_name = EveLocation.objects.get(
+                    location_id=asset.location_id
+                ).location_name
             else:
-                continue
+                location_name = "Unknown Location - " + str(asset.location_id)
         else:
             continue
 
@@ -120,7 +123,7 @@ def create_character_assets(character: EveCharacter, assets_data: List[dict]):
             type_id=eve_type.id,
             type_name=type_name,
             location_id=asset.location_id,
-            location_name=location.name,
+            location_name=location_name,
             character=character,
             item_id=asset.item_id,
         )

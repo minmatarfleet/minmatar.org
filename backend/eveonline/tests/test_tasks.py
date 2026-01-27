@@ -26,6 +26,8 @@ from eveonline.models import (
     EveAlliance,
     EvePlayer,
     EveCharacterKillmail,
+    EveLocation,
+    EveCharacterAsset,
 )
 
 
@@ -72,6 +74,105 @@ class EveOnlineTaskTests(TestCase):
         self.assertEqual(1, created)
         self.assertEqual(0, updated)
         self.assertEqual(0, deleted)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.assets.EsiClient")
+    @patch("eveonline.tasks.EsiClient")
+    def test_update_character_asset_task_with_evelocation(
+        self, task_mock, helper_mock
+    ):
+        char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Test Char",
+        )
+
+        # Create an EveLocation for testing
+        EveLocation.objects.create(
+            location_id=123456789,
+            location_name="Test Structure",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="TEST",
+        )
+
+        esi_mock = MagicMock(spec=EsiClient)
+        task_mock.return_value = esi_mock
+        helper_mock.return_value = esi_mock
+
+        esi_mock.get_character_assets.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "is_singleton": True,
+                    "item_id": 1041120583168,
+                    "location_flag": "Hangar",
+                    "location_id": 123456789,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 73794,
+                }
+            ],
+        )
+        esi_mock.get_eve_type.return_value.eve_group.id = 123
+        esi_mock.get_eve_type.return_value.id = 100
+        esi_mock.get_eve_type.return_value.name = "Thrasher"
+        esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
+
+        created, updated, deleted = update_character_assets(char.id)
+
+        self.assertEqual(1, created)
+        self.assertEqual(0, updated)
+        self.assertEqual(0, deleted)
+
+        # Verify the asset was created with the correct location name
+        asset = EveCharacterAsset.objects.get(character=char)
+        self.assertEqual(asset.location_name, "Test Structure")
+        self.assertEqual(asset.location_id, 123456789)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.assets.EsiClient")
+    @patch("eveonline.tasks.EsiClient")
+    def test_update_character_asset_task_with_missing_evelocation(
+        self, task_mock, helper_mock
+    ):
+        char = EveCharacter.objects.create(
+            character_id=1,
+            character_name="Test Char",
+        )
+
+        esi_mock = MagicMock(spec=EsiClient)
+        task_mock.return_value = esi_mock
+        helper_mock.return_value = esi_mock
+
+        esi_mock.get_character_assets.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "is_singleton": True,
+                    "item_id": 1041120583169,
+                    "location_flag": "Hangar",
+                    "location_id": 999999999,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 73794,
+                }
+            ],
+        )
+        esi_mock.get_eve_type.return_value.eve_group.id = 123
+        esi_mock.get_eve_type.return_value.id = 100
+        esi_mock.get_eve_type.return_value.name = "Thrasher"
+        esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
+
+        created, updated, deleted = update_character_assets(char.id)
+
+        self.assertEqual(1, created)
+        self.assertEqual(0, updated)
+        self.assertEqual(0, deleted)
+
+        # Verify the asset was created with the unknown location name
+        asset = EveCharacterAsset.objects.get(character=char)
+        self.assertEqual(asset.location_name, "Unknown Location - 999999999")
+        self.assertEqual(asset.location_id, 999999999)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_update_character_skills(self):

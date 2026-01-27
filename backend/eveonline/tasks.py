@@ -3,6 +3,7 @@ import time
 from datetime import timedelta
 
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 from esi.models import Token
 
@@ -108,10 +109,23 @@ def update_character_affilliations() -> int:
 
 @app.task
 def update_alliance_character_assets():
-    counter = 0
-    for character in EveCharacter.objects.filter(
+    # Get all characters in the alliance
+    alliance_characters = EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
-    ).exclude(token=None):
+    )
+
+    # Get all users who have at least one character in the alliance
+    users_with_alliance_chars = User.objects.filter(
+        evecharacter__in=alliance_characters
+    ).distinct()
+
+    # Get all characters belonging to those users (including alts)
+    all_characters = EveCharacter.objects.filter(
+        user__in=users_with_alliance_chars
+    ).exclude(token=None)
+
+    counter = 0
+    for character in all_characters:
         logger.debug(
             "Updating assets for character %s", character.character_id
         )
