@@ -1000,3 +1000,12 @@ export interface DoctrineLocationUI {
     doctrine_count:     number;
     doctrines:          DoctrineType[];
 }
+
+import type { FittingMarketData } from '../helpers/fetching/market';
+
+export interface MarketLocationUI {
+    name:               string;
+    doctrine_count:     number;
+    completion:         number;
+    fittings:           FittingMarketData[];
+}

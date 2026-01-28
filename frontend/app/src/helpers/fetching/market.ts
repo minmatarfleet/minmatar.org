@@ -9,18 +9,20 @@ import { get_ship_info } from '@helpers/sde/ships'
 import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
 import { get_fitting_item } from '@helpers/fetching/ships'
-import type { Location, Doctrine, Contract, DoctrineFitting } from '@dtypes/api.minmatar.org'
+import type { Fitting } from '@dtypes/api.minmatar.org'
 
 const CAPSULE_TYPE_ID = 670
 
 export interface FittingMarketData {
-    fitting_id: number
-    fitting_name: string
-    ship_id: number
-    ship_name: string
-    role: 'primary' | 'secondary' | 'support'
-    expectation_quantity: number | null
-    current_quantity: number
+    fitting_id:             number;
+    fitting_name:           string
+    ship_id:                number;
+    ship_name:              string;
+    role:                   'primary' | 'secondary' | 'support';
+    expectation_quantity:   number | null;
+    current_quantity:       number;
+    doctrine_name?:         string;
+    eft?:                   string;
 }
 
 export interface DoctrineMarketData {
@@ -148,6 +150,8 @@ export async function fetch_market_locations_with_doctrines(): Promise<LocationM
                 return isPrimary || isSupport
             })
 
+            const doctrine_fittings:Fitting[] = [ ...doctrine.primary_fittings, ...doctrine.support_fittings ]
+
             const fittingData: FittingMarketData[] = await Promise.all(doctrineFittings.map(async fitting => {
                 const expectationKey = `${location.location_id}-${fitting.fitting_id}`
                 const expectation = expectationMap.get(expectationKey)
@@ -169,8 +173,9 @@ export async function fetch_market_locations_with_doctrines(): Promise<LocationM
                     ship_name: fittingItem?.ship_name || '',
                     role: fitting.role as 'primary' | 'support',
                     expectation_quantity: expectation ? expectation.quantity : null,
-                    current_quantity: currentQuantity
-                }
+                    current_quantity: currentQuantity,
+                    eft: doctrine_fittings.find(doctrine_fitting => doctrine_fitting.id === fitting.fitting_id)?.eft_format
+                } as FittingMarketData
             }))
 
             if (fittingData.length > 0) {

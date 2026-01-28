@@ -4,7 +4,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 interface Props {
     padding_block?:     string;
     padding_inline?:    string;
-    width?:             'narrow' | 'normal';
+    width?:             'narrow' | 'normal' | 'thin';
     heavier?:           boolean;
     [propName: string]: any;
 }
@@ -26,7 +26,7 @@ delete attributes.class
     class:list={['[ card border component ]', Astro.props.class, effect]}
     padding_block={padding_block}
     padding_inline={padding_inline}
-    max_width={(width == 'narrow' ? 'var(--max-text-width)' : '100%')}
+    max_width={(width == 'narrow' ? 'var(--max-text-width)' : width == 'thin' ? '650px' : '100%')}
     {...attributes}>
     <slot />
 </Wrapper>
