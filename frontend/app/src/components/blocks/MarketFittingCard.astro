@@ -33,6 +33,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Progress from '@components/blocks/Progress.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import FittingLink from '@components/blocks/FittingLink.astro';
 ---
 
 <ComponentBlock
@@ -49,7 +50,11 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                     <img loading="lazy" src={get_item_icon(fitting.ship_id, 64)} width={64} height={64} />
                 </picture>
                 <Flexblock gap='var(--space-3xs)'>
-                    <h4 class="[ title ]">{fitting.fitting_name}</h4>
+                    <h4 class="[ title ]">
+                        <FittingLink fitting_id={fitting.fitting_id}>
+                            {fitting.fitting_name}
+                        </FittingLink>
+                    </h4>
                     <small class="[ subtitle ]">{fitting.doctrine_name}</small>
                 </Flexblock>
             </FixedFluid>
