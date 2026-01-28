@@ -153,6 +153,10 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
             )}
         </FlexInline>
     </div>
+
+    <div class="[ credits ][ absolute ]">
+        <Markdown inline={true} inline_element='small' markdown={t('models_credits')} />
+    </div>
 </div>
 
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -178,6 +182,12 @@ import FittingSlot from '@components/blocks/FittingSlot.astro';
         left: 30%;
         background-color: var(--highlight);
         box-shadow: 0 0 10px 0px var(--highlight);
+    }
+
+    .credits {
+        bottom: var(--space-xs);
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .fitting-grid {

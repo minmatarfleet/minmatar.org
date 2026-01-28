@@ -328,7 +328,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                                 href={translatePath('/ships/fitting/list')}
                                 size='sm'
                             >
-                                {t('fittings')}
+                                {t('back_to_fittings')}
                             </Button>
                         </FlexInline>
                     </Flexblock>
@@ -425,7 +425,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
         </Wrapper>
 
         <FittingCustom
-            ship_id={ship_id}
+            ship_id={ship_id ?? 0}
             fitting={fitting_parsed}
             text={!ship_dna ? t('ship_preview_not_available') : undefined}
         />
