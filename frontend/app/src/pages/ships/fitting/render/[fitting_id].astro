@@ -425,6 +425,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
         </Wrapper>
 
         <FittingCustom
+            ship_id={ship_id}
             fitting={fitting_parsed}
             text={!ship_dna ? t('ship_preview_not_available') : undefined}
         />
