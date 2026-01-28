@@ -53,26 +53,6 @@ class EvePlayer(models.Model):
         return f"{user_name} / {primary_char}"
 
 
-class EvePrimaryCharacter(models.Model):
-    """DEPRECATED - use EvePlayer instead"""
-
-    character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
-
-    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True)
-
-    def __str__(self):
-        return str(self.character.character_name)
-
-
-class EvePrimaryCharacterChangeLog(models.Model):
-    """Primary character change log model"""
-
-    username = models.CharField(max_length=255)
-    date = models.DateTimeField(auto_now_add=True)
-    previous_character_name = models.CharField(max_length=255)
-    new_character_name = models.CharField(max_length=255)
-
-
 class EveCharacter(models.Model):
     """Character model"""
 
@@ -99,14 +79,8 @@ class EveCharacter(models.Model):
     # The level of access to Eve Swagger Interface APIs granted by this character
     esi_token_level = models.CharField(max_length=40, null=True, blank=True)
 
-    # data
-    skills_json = models.TextField(blank=True, default="{}")
-    assets_json = models.TextField(blank=True, default="{}")
-
     # The my.minmatar.org user that owns this Eve character
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-
-    is_primary = models.BooleanField(null=True, help_text="Deprecated")
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
@@ -117,10 +91,21 @@ class EveCharacter(models.Model):
     def summary(self):
         return f"{self.character_name} ({self.character_id})"
 
+    @property
+    def is_primary(self) -> bool:
+        """Check if this character is the primary character via EvePlayer"""
+        if not self.user:
+            return False
+        try:
+            player = self.user.eveplayer
+            return player.primary_character == self
+        except EvePlayer.DoesNotExist:
+            return False
+
     class Meta:
         indexes = [
             models.Index(fields=["character_name"]),
-            models.Index(fields=["user", "is_primary"]),
+            models.Index(fields=["user"]),
         ]
 
 
@@ -190,6 +175,11 @@ class EveCharacterKillmail(models.Model):
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["killmail_time"]),
+        ]
 
 
 class EveCharacterKillmailAttacker(models.Model):
@@ -481,6 +471,11 @@ class EveAlliance(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["name"]),
+        ]
 
     def __str__(self):
         return str(self.name)

@@ -2,16 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience, Location } from '@dtypes/api.minmatar.org'
+import type { Audience } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 
-interface Porps {
+interface Props {
     fleet?:                         FleetUI;
     audiences:                      Audience[];
     doctrines:                      DoctrineType[];
-    locations:                      Location[];
     fleet_commander:                CharacterBasic;
     eve_date:                       string;
     eve_time:                       string;
@@ -23,7 +22,6 @@ const {
     fleet = null,
     audiences,
     doctrines,
-    locations,
     fleet_commander,
     eve_date,
     eve_time,
@@ -46,51 +44,32 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
     return {value: i, label: t(i as any)}
 } )
 
-let FLEET_LOCATIONS = {}
-const locations_select_options = locations.map( (i):SelectOptions => {
-    FLEET_LOCATIONS[i.location_id] = i.location_name
-    return {value: i.location_id, label: i.location_name} 
-} )
+// Locations are no longer used - staging location comes from audience
 
 const no_audience_option = {
     label: t('select_audience'),
-    value: -1
+    value: ''
 } as SelectOptions
-
-const DEPRECATED_AUDIENCES_ID = [ 2 ]
-const filtered_audiences = audiences.filter(audience => !DEPRECATED_AUDIENCES_ID.includes(audience.id) )
 
 let AUDIENCES = {}
 const audiences_select_options = [  no_audience_option  ].concat(
-    filtered_audiences.map( (i):SelectOptions => {
+    audiences.map( (i):SelectOptions => {
         AUDIENCES[i.id] = i.display_name
         return { label: i.display_name, value: i.id }
     } )
 )
 
 let fleet_audience_id
-let fleet_location_id
 if (fleet) {
     const fleet_audience = audiences_select_options.find((option) => option.label === fleet.audience)
     fleet_audience_id = fleet_audience !== undefined ? fleet_audience?.value : null
-    const fleet_location = locations_select_options.find((option) => option.label === fleet.location)
-    fleet_location_id = fleet_location !== undefined ? fleet_location?.value : null
 }
-
-const DEFAULT_LOCATION = 1049037316814
-const DEFAULT_LOCATION_NAME = 'Vard - Rickety Roost'
 
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
-const default_location = fleet_location_id ?? DEFAULT_LOCATION
-const default_location_name = fleet?.location ?? DEFAULT_LOCATION_NAME
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
-const default_audience = fleet_audience_id ?? audiences_select_options[0].value
+const default_audience = fleet_audience_id ?? (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
 
-const AUDIENCE_ICONS = {
-    1: '/images/fleet-logo.svg',
-    2: '/images/minmatar-logo.svg',
-    3: '/images/muscle-logo.png',
-}
+// AUDIENCE_ICONS is deprecated - use audience.image_url instead
 
 import Context from '@components/layout/Context.astro';
 
@@ -135,11 +114,9 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             fleet_type: '${default_fleet_type}',
             eve_date: '${eve_date}',
             eve_time: '${eve_time}',
-            location: ${default_location},
-            audience: ${default_audience},
+            audience: '${default_audience}',
             doctrine_id: '${default_doctrine}',
             local_datetime: '',
-            locations: ${JSON.stringify(FLEET_LOCATIONS)},
             audiences: ${JSON.stringify(AUDIENCES)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
@@ -172,7 +149,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
         x-on:submit="launch_confetti(get_images()); submitted = true;"
     >
         <Wrapper max_width="var(--max-col-width)" padding_inline="0" padding_block="0">
-            <Flexblock>
+            <Flexblock gap='var(--space-3xs)'>
                 <ComponentBlock width='narrow'>
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                         <h2>{t('fleet_information')} (1/3)</h2>
@@ -182,8 +159,8 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         <Flexblock>
                             <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
                                 <label>{t('select_audience')}</label>
-                                <FlexInline class="[ audiences ]">
-                                    {filtered_audiences.map((option) => 
+                                <FlexInline class="[ audiences !justify-center ]">
+                                    {audiences.map((option) =>
                                         <StylessButton
                                             x-on:click={`audience = ${option.id}`}
                                             type="button"
@@ -192,9 +169,10 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             <img
                                                 class:list={{ selected: option.id === default_audience}}
                                                 x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                                src={AUDIENCE_ICONS[option.id]}
-                                                height="128"
-                                                width="128"
+                                                src={option.image_url ?? '/images/fleet-logo.svg'}
+                                                height="256"
+                                                width="256"
+                                                alt={option.display_name}
                                             />
                                         </StylessButton>
                                     )}
@@ -208,7 +186,9 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             required
                                         >
                                             {audiences_select_options.map((option) => 
-                                                <option value={option.value}>{option.label}</option>
+                                                <option value={option.value}>
+                                                    {option.label}
+                                                </option>
                                             )}
                                         </Select>
                                     </div>
@@ -286,15 +266,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </Select>
                             </FixedFluid>
 
-                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                <label for="location">{t('location')}</label>
-                                <Select id="location" x-model="location" name="location">
-                                    {locations_select_options.map((option) => 
-                                        <option value={option.value} selected={option.value === default_location ? 'true' : undefined}>{option.label}</option>
-                                    )}
-                                </Select>
-                            </FixedFluid>
-
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="description">{t('description')}</label>
@@ -311,7 +282,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                     </Flexblock>
                 </ComponentBlock>
 
-                <Flexblock gap='var(--space-3xs)'>
+                <Flexblock gap='0' class="[ collapse-borders ]">
                     <ComponentBlock width='narrow'>
                         <h2>{t('confirm')} (2/3)</h2>
                     </ComponentBlock>
@@ -344,22 +315,6 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </div>
                             </template>
                         </div>
-
-                        <VerticalCenter>
-                            <Flexblock gap="var(--space-s-m)">
-                                <TextGroup
-                                    class:list={{ 'text-red': default_audience < 1 }}
-                                    x-bind:class="{ 'text-red': audience < 1 }"
-                                    title={t('audience')}
-                                    x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
-                                >
-                                    {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                                </TextGroup>
-                                <TextGroup title={t('location')} x-text="locations[location]">
-                                    {default_location_name}
-                                </TextGroup>
-                            </Flexblock>
-                        </VerticalCenter>
                         
                         <VerticalCenter>
                             <Flexblock gap="var(--space-s-m)">
@@ -379,6 +334,17 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </TextGroup>
                             </Flexblock>
                         </VerticalCenter>
+
+                        <Flexblock gap="var(--space-s-m)">
+                            <TextGroup
+                                class:list={{ 'text-red': default_audience < 1 }}
+                                x-bind:class="{ 'text-red': audience < 1 }"
+                                title={t('audience')}
+                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                            >
+                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                            </TextGroup>
+                        </Flexblock>
                     </ThumbCard>
 
                     <template x-if="doctrine_id !== '-1'">

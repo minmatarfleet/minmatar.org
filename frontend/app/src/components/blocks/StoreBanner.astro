@@ -1,0 +1,95 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    thin?:  boolean;
+}
+
+const {
+    thin = false,
+} = Astro.props
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<StylessButton href='https://store.minmatar.org/' external={true}>
+    <div class:list={[ 'banner', { thin } ]}>
+        <img class="[ background-image ]" width="343" height="361" src="/images/store-cover.jpg" alt="Minmatar Store preview" />
+
+        <Wrapper padding_block='0' padding_inline='var(--space-s)' max_width='460px' class="[ relative ]">
+            <Flexblock>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h2>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <span set:html={marked.parseInline(t('store_banner_first'), { renderer })}></span>
+                        </Flexblock>
+                    </h2>
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+    </div>
+</StylessButton>
+
+<style lang="scss">
+    .banner {
+        position: relative;
+        min-height: 172px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        background-color: white;
+
+        &.thin {
+            min-height: 110px;
+        }
+
+        .background-image {
+            position: absolute;
+            right: 0;
+
+            animation: buoyancy_store ease both 30s;
+            animation-iteration-count: infinite;
+        }
+
+        h2 {
+            font-size: var(--step-2);
+            line-height: 1;
+
+            b {
+                font-weight: 500;
+            }
+        }
+
+        h2 {
+            color: var(--fleet-red);
+        }
+    }
+
+    .blinking {
+        animation-duration: 2s;
+        animation-name: blink;
+        animation-iteration-count: infinite;
+        font-size: var(--step-1);
+    }
+
+    @keyframes buoyancy_store {
+        0% {
+            bottom: -205px;
+        }
+
+        50% {
+            bottom: 10px;
+        }
+
+        100% {
+            bottom: -205px;
+        }
+    }
+</style>

@@ -21,12 +21,16 @@ import Button from '@components/blocks/Button.astro'
 import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
 ---
 
-<div class:list={[ 'banner', { thin } ]}>
+<Wrapper
+    class:list={[ 'banner border', { thin } ]}
+    padding_block='0'
+    padding_inline='0'
+    max_width='var(--max-text-width)'
+>
     <img src="/images/pilot_readiness_bg.jpg" height="233" width="960" />
     <Wrapper
         padding_block='0'
         padding_inline='var(--space-l-xl)'
-        max_width='var(--max-text-width)'
         class="[ relative w-full ]"
     >
         <FlexInline justification='space-between' class="[ !items-center w-full ]">
@@ -43,7 +47,7 @@ import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
             </Button>
         </FlexInline>
     </Wrapper>
-</div>
+</Wrapper>
 
 <style lang="scss">
     .banner {

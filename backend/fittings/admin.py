@@ -3,7 +3,18 @@ from django.contrib import admin
 from .forms import EveDoctrineForm
 from .models import EveDoctrine, EveDoctrineFitting, EveFitting, EveFittingTag
 
-admin.site.register(EveFitting)
+
+@admin.register(EveFitting)
+class EveFittingAdmin(admin.ModelAdmin):
+    """Admin screen for EveFitting entity"""
+
+    list_display = ("name", "ship_id", "description")
+    search_fields = ("name", "description", "aliases")
+    list_filter = ("ship_id",)
+    list_per_page = 50
+    ordering = ("name",)
+
+
 admin.site.register(EveFittingTag)
 
 
@@ -70,3 +81,7 @@ class EveDoctrineAdmin(admin.ModelAdmin):
                 EveDoctrineFitting.objects.filter(
                     doctrine=obj, fitting=fitting, role="support"
                 ).delete()
+
+        # Handle ManyToMany fields (sigs and locations)
+        obj.sigs.set(form.cleaned_data["sigs"])
+        obj.locations.set(form.cleaned_data["locations"])

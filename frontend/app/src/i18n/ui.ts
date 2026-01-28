@@ -11,6 +11,7 @@ export const ui = {
         'neocom.fleet_logo_alt': 'Minmatar Fleet',
         'neocom.fitting': 'Fitting',
         'neocom.alliance': 'Alliance',
+        'neocom.propaganda': 'Propaganda',
         'neocom.ships': 'Ships',
         'neocom.market': 'Market',
         'neocom.doctrines': 'Doctrines',
@@ -28,7 +29,7 @@ export const ui = {
         'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of an space structure.',
-        'index.description': 'Outer view of your favorite Minmatar Fleet staging',
+        'index.description': 'Outer view of your favorite Minmatar Fleet staging.',
 
         '404.page_title': '404 Not Found',
         '404.content_title': '404',
@@ -46,20 +47,29 @@ export const ui = {
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'alliance.page_title': 'Alliance',
-        'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Providence.',
+        'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Etherium Reach.',
         'alliance.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, internal groups and recent events.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
-        'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events',
+        'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events.',
         'alliance.description.directors': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams members and applications. Read about our recent events',
         'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications. Read about our recent events',
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications. Read about our recent events',
 
+        'alliance.story.page_title': 'Our story',
+        'alliance.values.page_title': 'Minmatar FL33T Alliance Tenets',
+        'alliance.playstyle.page_title': 'Our playstyle',
+
+        'propaganda.page_title': 'Propaganda',
+        'propaganda.leading_text': 'All our propaganda in a single place.',
+        'propaganda.meta_description': 'All our propaganda in a single place.',
+        'propaganda.description': 'All our propaganda in a single place.',
+
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
-        'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE',
-        
+        'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE.',
+
         'fleets.srp.page_title': 'Ship Replacement Program',
         'fleets.srp.leading_text': 'Designed to minimize downtime, SRP rewards participation in fleet operations by covering a portion or all of the lost ship’s cost.',
         'fleets.srp.cover_alt': 'Basilisk spawned on the landing pad of a player station.',
@@ -97,7 +107,7 @@ export const ui = {
         'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
-        'fleets.description': 'Schedule fleets and check those yet to come',
+        'fleets.description': 'Schedule fleets and check those yet to come.',
 
         'fleets.upcoming.page_title': 'Upcoming fleets',
         'fleets.upcoming.empty_message': 'There are no fleets on schedule. Be the one adding the first one.',
@@ -123,18 +133,18 @@ export const ui = {
 
         'intel.timers.page_title': 'Active structure timers',
         'intel.timers.leading_text': 'Offensive and defensive timers reported by our pilots. These typically turn into fleets, and we encourage all pilots to report intel.',
-        
+
         'intel.timers.add.page_title': 'Add structure timer',
-        
+
         'intel.timers.history.page_title': 'Structure timers history',
 
         'intel.add_structure.page_title': 'Add structure',
 
         'intel.moon_tracking.page_title': 'Moon tracking',
         'intel.moon_tracking.leading_text': 'Information on moons within our sphere of influence. Critical for passive income sources.',
-        
+
         'intel.moon_tracking.system.leading_text': 'Assess the level of completion for scanning on moons in the system and colaborate scanning the missing ones.',
-        
+
         'intel.combatlog.page_title': 'Combatlog analyzer',
         'intel.combatlog.leading_text': 'Get an insight of the fight and analize why your ship ended into a pile of debris.',
         'intel.combatlog.cover_alt': 'A fleet of Munins hammering a Machariel',
@@ -150,7 +160,7 @@ export const ui = {
         'market.leading_text': 'The Minmatar Republic bleeds nearly half a trillion ISK per month in faction warfare losses. The sheer scale of the conflict has made importing resources logistically impossible, even for the most resourceful capsuleers. This interesting challenge demands a fundamental shift in strategy: local industry must become the backbone of our military strategy.',
         'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
-        'market.description': 'Request alliance freight service and check for opportunities with our contract service',
+        'market.description': 'Request alliance freight service and check for opportunities with our contract service.',
 
         'contracts.page_title': 'Contract Service',
         'contracts.leading_text': 'Minmatar Fleet is supplied by individuals like YOU rather than a tight knit cartel of leadership. Learn more about our available contracts, and become a supplier!',
@@ -180,7 +190,7 @@ export const ui = {
 
         'assets.cover_alt': 'A Minmatar Fleet Guardian, with an Exequror NI in the background, stationed within a Fortizar.',
         'assets.description': 'Locate your personal assets accross New Eden. Minmatar Fleet only tracks assets in NPC and structures owned by our alliance. This is not a replacement for the in-game asset window',
-        
+
         'posts.page_title': 'Posts',
         'posts.cover_alt': 'Planet with a moon in the backgraound of an asteroid field',
         'posts.description': 'Create, update and manage your alliance news timeline posts.',
@@ -208,12 +218,60 @@ export const ui = {
         'groups.add.page_title': 'Add group',
 
         'groups.list.page_title': 'Special Interest Groups',
-        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by one of our group officers, and you will be contacted via Discord for further details',
+        'groups.list.leading_text': 'You are welcome to request membership in any of the following SIGs. Your request will be promptly reviewed by one of our group officers, and you will be contacted via Discord for further details.',
         'groups.list.meta_description': 'Learn more about special interest groups in Minmatar Fleet Alliance, the community led groups that create the majority of our in-game content.',
 
         'teams.list.page_title': 'Teams',
-        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details',
+        'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details.',
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
+
+        'teams.conversion.page_title': 'Conversion',
+        'page_finder.teams.conversion.description': 'Conversion Team description and join request',
+
+        'teams.supply.page_title': 'Supply',
+        'page_finder.teams.supply.description': 'Supply Team description and join request',
+
+        'teams.tech.page_title': 'Technology',
+        'page_finder.teams.tech.description': 'Technology Team description and join request',
+
+        'teams.thinkspeak.page_title': 'Thinkspeak',
+        'page_finder.teams.thinkspeak.description': 'Thinkspeak Team description and join request',
+
+        'teams.readiness.page_title': 'Readiness Division',
+        'page_finder.teams.readiness.description': 'Readiness Division description and join request',
+
+        'teams.advocate.page_title': 'Advocate',
+        'page_finder.teams.advocate.description': 'Advocate description and join request',
+
+        'groups.blackops.page_title': 'Black Ops',
+        'page_finder.groups.blackops.description': 'Black Ops description and join request',
+
+        'groups.faxes.page_title': 'Force Auxiliary Carriers',
+        'page_finder.groups.faxes.description': 'Force Auxiliary Carriers description and join request',
+
+        'groups.dreads.page_title': 'Dreads',
+        'page_finder.groups.dreads.description': 'Dreads description and join request',
+
+        'groups.carriers.page_title': 'Carriers',
+        'page_finder.groups.carriers.description': 'Carriers description and join request',
+
+        'groups.tournaments.page_title': 'Tournaments',
+        'page_finder.groups.tournaments.description': 'Tournaments description and join request',
+
+        'groups.mining.page_title': 'Mining',
+        'page_finder.groups.mining.description': 'Mining description and join request',
+
+        'groups.ship_production.page_title': 'Ship production',
+        'page_finder.groups.ship_production.description': 'Ship production description and join request',
+
+        'groups.capital_production.page_title': 'Capital production',
+        'page_finder.groups.capital_production.description': 'Capital production description and join request',
+
+        'groups.consumables.page_title': 'Consumables',
+        'page_finder.groups.consumables.description': 'Consumables description and join request',
+
+        'groups.freighters.page_title': 'Freighters',
+        'page_finder.groups.freighters.description': 'Freighters description and join request',
 
         'groups.requests.page_title': 'SIGs requests',
         'groups.requests.leading_text': 'Here a list of all the joining requests for your managed group(s).',
@@ -228,6 +286,9 @@ export const ui = {
         'corporations.page_title': 'Corporations',
         'corporations.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.cover_alt': 'Outspace starry sky',
+        
+        'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
+        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, and the propaganda that gives our culture its voice..',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
@@ -316,6 +377,7 @@ export const ui = {
         'icon.planet.alt': 'EVE Online Planet Icon',
         'icon.notepad.alt': 'EVE Online Notepad Icon',
         'icon.map.alt': 'EVE Online Map Icon',
+        'icon.tv.alt': 'EVE Online TV Icon',
         'icon.wallet.alt': 'EVE Online Wallet Icon',
         'icon.calendar.alt': 'EVE Online Calendar Icon',
         'icon.log.alt': 'EVE Online Log Icon',
@@ -637,6 +699,9 @@ export const ui = {
         'view_members': 'Members',
         'error_loading_content_reload': 'An error ocurred fetching the content. You may reload the page to fix it.',
         'page_finder.alliance.description': 'Alliance landing page',
+        'page_finder.story.description': 'Learn more about our story.',
+        'page_finder.values.description': 'Learn more about our values.',
+        'page_finder.playstyle.description': 'Learn more about our playstyle.',
         'page_finder.teams.description': 'Teams landing page',
         'page_finder.groups.description': 'Special Interest Groups landing page',
         'page_finder.market.description': 'Market landing page',
@@ -647,6 +712,7 @@ export const ui = {
         'page_finder.intel.moon_tracking.description': 'Explore for moons scanning completion',
         'page_finder.intel.combatlog.description': 'Get a summary of the fight',
         'page_finder.intel.timers.add.description': 'Submit a new structure timers',
+        'page_finder.propaganda.description': 'Propaganda landing page',
         'page_finder.assets.user.description': 'View all your characters assets',
         'page_finder.intel.tutorial.description': 'Video tutorial about scanning structures',
         'page_finder.teams.list.description': 'List of Teams available to apply',
@@ -746,7 +812,7 @@ export const ui = {
         'find_fitting_placeholder': 'Type fitting name to find',
         'no_fittings': 'No fittings found',
         'fitting_finder': 'Fitting finder',
-        'view_fittings': 'View',
+        'view_fittings': 'Browse',
         'view_doctrines': 'View',
         'icon.shieldarmor.alt': 'Shield Armor Icon',
         'icon.shield.alt': 'Shield Icon',
@@ -778,6 +844,9 @@ export const ui = {
         'nakah_hq_description': 'Minmatar Fleet Alliance FOB',
         'evati_hq_description': 'Minmatar Fleet Alliance FOB',
         'vard_hq_description': 'The Tips Must Touch - Tip I',
+        'fw_hq_description': 'Warzone staging',
+        'watermellon_description': 'Will be always remembered',
+        'null_realstate_description': 'Etherium Reach free real estate',
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
         'fetching_assets': 'Fetching assets',
@@ -820,7 +889,7 @@ export const ui = {
         'visit': 'Visit',
         'destroyer_guide_title': 'The Navy Destroyer Metagame',
         'destroyer_guide_description': 'In this guide you will find all the common archetypes for the navy destroyers with several fits. Written by ',
-        'reddit_article': 'Read Reddit article',
+        'reddit_article': 'Read Reddit post',
         'guide_download': 'Open guide',
         'show_credentials': 'Show credentials',
         'username': 'Username',
@@ -871,10 +940,12 @@ export const ui = {
         'balls_deep_expeditionary_description_fallback': 'You dont know what will happen, we dont know what will happen. All we know is it will be Balls Deep. We kill things, in specialized ways, often outnumbered. Experienced and self sustaining players feel free to apply to kill things with us.',
         'l34rn_description_fallback': 'Enjoy a tailored learning experience while contibruting to one of the most active PvP alliances in the game.',
         'soltech_armada_description_fallback': 'Fly dangerous! Die gloriously! Reship!',
+        'darktribe_description_fallback': 'In the void where stars refuse to shine, The Dark Tribe rose from the abyss—unyielding, unseen, unbreakable.  We are the shadows that swallow empires, the storm that devours fleets, leaving nothing but echoes of the vanquished’s screams in the stellar wind.  When the darkness calls, we answer.',
         'exitstrategy_description_fallback': 'Over a decade of experience in wormhole space, operating when most of the universe is asleep.',
         'protean_description_fallback': 'Be the dog that catches the car. Driven by relentless aggression, quick pivots, and a versatile toolkit, AD4PT turns impossible situations into victories.',
         'criterion_expeditionary_description_fallback': 'Just a bunch of homies collecting tears for 13 years now.',
         'straylight_description_fallback': 'A small, tight-knit fold that has been a part of the lowsec narrative since YC120. Known for their off-beat tactics and considerable warmth towards eachother, Straylight pilots leave their mark upon the void through black ops, blockades, hit & runs - and madness.',
+        'yacht_description_fallback': 'The Yacht Club is a tight-knit crew of wormhole refugees who live for adventure. We chase great fights with friendship, grit and teamwork. Win or lose, we undock together, learn together, die together and give it our very best.\n\nOh, and we always take the bait.',
         'requirements': 'Requirements',
         'timezones': 'Timezones',
         'learn_more_dialog_title': 'Learn more about corporation',
@@ -987,7 +1058,7 @@ export const ui = {
         'update': 'Update',
         'post_author': 'Post author',
         'wyswyg_placeholder': 'Write your story on the right [Markdown](https://www.markdownguide.org/) compatible **WYSWYG** editor and review it with the preview on the left.\r\rHola Macaco',
-        'visit_rat_bible': 'Visit The Rat Bible',
+        'visit_rat_bible': 'The Rat Bible',
         'holy_rat_quotes': 'Holy Rat quotes',
         'wiki_description': 'Welcome to the new wiki! This wiki is primarily meant to serve the Minmatar Fleet Alliance community.',
         'rat_quote': 'Rat Genesis 1:1 - ‘In the beginning, Rat created the holes and the cheese.’',
@@ -1014,7 +1085,11 @@ export const ui = {
         'strategic': 'Strategic',
         'strategic_description': 'These doctrines are more advanced, and require additional support (e.g capitals) and knowledge to utilize properly. Due to their cost, they are less abundant on contracts.',
         'specialized': 'Specialized',
-        'specialized_description': 'These doctrines have a specific use case, and are only used in situations where they’re the right tool for the job. They are commonly deployed by special interest groups. Certain doctrines (e.g tornados) will be available on contract.',
+        'specialized_description': 'These doctrines have a specific use case, and are only used in situations where they\'re the right tool for the job. They are commonly deployed by special interest groups. Certain doctrines (e.g tornados) will be available on contract.',
+        'faction_warfare': 'Faction warfare',
+        'faction_warfare_description': 'These doctrines are optimized for faction warfare operations, designed for the ship size limitations of complexes and NVY battlefields. They are designed to be versatile from 5 to 30 pilots, which the vast majority of fights fall within.',
+        'nullsec': 'Nullsec',
+        'nullsec_description': 'These doctrines are designed for null-sec operations, designed for larger scale fleet engagements beyond 30 pilots. They feature more specialized roles to leverage the additional mechanics like bubbles, bombs, and other tactics.',
         'moon_tracking': 'Moon tracking',
         'add_moon': 'Add moon',
         'add_moon_dialog_title': 'Add moon',
@@ -1276,7 +1351,11 @@ export const ui = {
         'start_formation': 'Start formation',
         'flash_form_error': 'An error occurred while initializing the flash form.',
         'flash_form_hint_title': 'Flash Form Express',
-        'flash_form_hint': 'You may instantly start a Flash Form by clicking this link or through a bookmark previously created with it',
+        'warzone_flash_form_hint_title': 'Warzone',
+        'etherium_flash_form_hint_title': 'Etherium',
+        'click_to_start_forming': 'Click above link to start forming',
+        'flash_form_express': 'Flash form express',
+        'flash_form_hint': 'You may instantly start a Flash Form with the links inside this collapsible',
         'responsability_unclaim_tip': 'Unclaim responsabilities by opening a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
         'rats_with_gats_subheading': 'Fl33t’s highsec wardec corp',
         'contact': 'Contact',
@@ -1356,6 +1435,7 @@ export const ui = {
         'auth_third_party_link_link': 'Authorized Third-Party applications',
         'auth_third_party_link_description': 'View your characters authorized third-party applications.',
         'amarr_hq_description': 'Minmatar Fleet Alliance HQ',
+        'slyce_hq_description': 'Nullsec Capital',
         'cancel': 'Cancel',
         'cancelled': 'Cancelled',
         'cancel_fleet_dialog_title': 'Cancel fleet',
@@ -1481,5 +1561,42 @@ export const ui = {
         'unknown_ship': 'Unknown ship',
         'invalid_killmail_link': 'The killmail link entered is not valid.',
         'open_combatlog': 'Open combatlog',
+        'all_fitting_types': 'All fitting types',
+        'all_ship_type': 'All ship types',
+        'back_to_sigs': 'Back to SIGs',
+        'back_to_teams': 'Back to teams',
+        'join_group': 'Join group',
+        'join_team': 'Join team',
+        'leave_group': 'Leave group',
+        'leave_team': 'Leave team',
+        'request_pending': 'Request pending',
+        'request_denied': 'Request denied',
+        'origin': 'Origin',
+        'destination': 'Destination',
+        'markeedragon_banner_first': '3% off at [markeedragon.com](https://markeedragon.com)',
+        'markeedragon_banner_second': 'use code MINMATAR',
+        'metropolis_description': 'Unbiased news from the Minmatar Republic. Just trust us bro.',
+        'frontlines_description': 'The Minmatar Feet Alliance wartime bulletin.',
+        'rust_description': 'Western style comic strip about the happenings on the Warzone.',
+        'waifus_description': 'Manga style comic about the adventures of the warzone alliance waifus.',
+        'odd_bunch_description': 'Endless scroll of memes and propaganda posters.',
+        'propaganda_new_page': 'Looking for our propaganda and news?',
+        'propaganda_new_page_description': 'Well you wont find it here anymore. We have moved all our propaganda posters and comics to a new cool dedicated page. Click the button to check it out!',
+        'store_banner_first': 'Minmatar FLEET Store',
+        'metro_dn_description': 'Newsreels from MD News!',
+        'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news.',
+        'videos_description': 'Content creators from the alliance.',
+        'philosophy': 'Philosophy',
+        'our_values': 'Our values',
+        'our_story': 'Our story',
+        'our_playstyle': 'Our playstyle',
+        'content':  'Content',
+        'our_dna': 'Our DNA',
+        'our_community': 'Our community',
+        'view_market_expectations': 'View market expectations',
+        'no_expectation': 'This fitting has no expectations.',
+        'all_doctrines': 'All doctrines',
+        'no_market_locations': 'There are currently no market locations.',
+        'all_locations': 'All locations',
     },
 } as const;

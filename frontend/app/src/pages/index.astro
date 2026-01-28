@@ -16,7 +16,7 @@ const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
-import { get_market_locations } from '@helpers/api.minmatar.org/market'
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { is_seasonal_date } from '@helpers/date'
 
 let contracts_service_staging:string[] = []
@@ -26,7 +26,8 @@ let post_fetching_error:string | false = false
 
 try {
     const market_locations = await get_market_locations()
-	contracts_service_staging = market_locations.map(contracts_trade_hub => contracts_trade_hub.name)
+	// Filter to only locations with market_active flag
+	contracts_service_staging = market_locations.map(location => location.location_name)
 
     const paginated_posts = await fetch_posts({
         page_num: 1,
@@ -59,10 +60,9 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import StationAssets from '@components/blocks/StationAssets.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
-import AugaInfo from '@components/blocks/AugaInfo.astro';
-import EvatiInfo from '@components/blocks/EvatiInfo.astro';
-import VardInfo from '@components/blocks/VardInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
+import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
+import R6Info from '@components/blocks/R6Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
@@ -88,25 +88,42 @@ type StagingTranslation = {
 }
 
 const STAGINGS_STATIONS:StagingTranslation = {
-	auga: 'Auga - Minmatar Militia HQ',
-	evati: 'Evati - Scurry Tzu\'s House of Wisdom',
-	vard: 'Vard - Rickety Roost',
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
+	amamake: 'Amamake - 5 times nearly AT winners',
+	r6: 'R-6KYM - Here be Rats',
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
-	auga: 'Auga',
-	evati: 'Evati',
-	vard: 'Vard',
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
+	amamake: 'Amamake',
+	r6: 'R-6KYM',
 }
 
 const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
-const SOLTECH_ARMADA_ID = 98647659
 const EMPEROR_FAMILY_ID = 1000086
+const OBLIVION_WATCH_ID = 98217709
+
+const STAGING_CORPORATIONS = {
+	amarr: {
+		id: EMPEROR_FAMILY_ID,
+		name: 'Emperor Family',
+	},
+	amamake: {
+		id: OBLIVION_WATCH_ID,
+		name: 'Oblivion Watch'
+	},
+	r6: {
+		id: RATTINI_TRIBE_ID,
+		name: 'R-6KYM - Here be Rats'
+	},
+	watermellon:  {
+		id: BLACK_OMEGA_SECUTIRY_ID,
+		name: 'Black Omega Security'
+	}
+}
 
 const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
 
@@ -145,25 +162,21 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-			video: staging === 'auga' ? '/videos/militia-loop.webm' :
-					staging === 'vard' ? '/videos/rickety-loop.webm' :
-					staging === 'evati' ? '/videos/tzu-loop.webm' :
-					staging === 'amarr' ? '/videos/emperor-loop.webm' :
+			video: staging === 'amarr' ? '/videos/emperor-loop.webm' :
+					staging === 'amamake' ? '/videos/amamake-loop.webm' :
+					staging === 'r6' ? '/videos/r6-loop.webm' :
 					'/videos/watermelon-loop.webm',
-			video_thumb: staging === 'auga' ? '/images/home-auga-cover.jpg' :
-					staging === 'vard' ? '/images/home-vard-cover.jpg' :
-					staging === 'evati' ? '/images/home-evati-cover.jpg' :
-					staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
+			video_thumb: staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
+					staging === 'amamake' ? '/images/home-amamake-cover.jpg' :
+					staging === 'r6' ? '/images/home-r6-cover.jpg' :
 					'/images/home-cover.jpg',
-            image: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
-					staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
-					staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
+            image: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
+					staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
+					staging === 'r6' ? '/images/home-r6-cover-eve.jpg' :
 					'/images/home-cover-eve.jpg',
-            image_990: staging === 'auga' ? '/images/home-auga-cover-eve.jpg' :
-					   staging === 'vard' ? '/images/home-vard-cover-eve.jpg' :
-					   staging === 'evati' ? '/images/home-evati-cover-eve.jpg' :
-					   staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
+            image_990: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
+					   staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
+					   staging === 'r6' ? '/images/home-r6-cover-eve.jpg' :
 					   '/images/home-cover-eve.jpg',
             animated: false,
         }}
@@ -174,12 +187,6 @@ const page_description = t('index.leading_text');
 			show_stagging_info: true,
         }`}
     >
-		<video id="waifu-intro" autoplay x-init="$el.play()">
-			<source src="/videos/waifu-intro.webm" type="video/webm">
-			<source src="/videos/waifu-intro.mp4" type="video/mp4">
-			Your browser does not support the video tag.
-		</video>
-
 		{alert && <ShowAlert alert={alert} /> }
 
 		{is_referral_page && user &&
@@ -193,41 +200,25 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'auga' ? <AugaInfo is_random={is_random_staging} /> :
-					staging === 'vard' ? <VardInfo is_random={is_random_staging} /> :
-					staging === 'evati' ? <EvatiInfo is_random={is_random_staging} /> :
+				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
+					staging === 'r6' ? <R6Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
 				<FlexInline gap='var(--space-3xs)'>
-					{user &&
+					{(user && staging !== 'watermellon' && STAGINGS_STATIONS[staging]) &&
 						<StationAssets
 							corporation={
-								staging === 'auga' ? {
-									id: RATTINI_TRIBE_ID,
-									name: 'Rattini Tribe',
-								} : staging === 'vard' ? {
-									id: SOLTECH_ARMADA_ID,
-									name: 'Soltech Armada.',
-								} : staging === 'evati' ? {
-									id: RATTINI_TRIBE_ID,
-									name: 'Rattini Tribe',
-								} : staging === 'amarr' ? {
-									id: EMPEROR_FAMILY_ID,
-									name: 'Emperor Family',
-								}: {
-									id: BLACK_OMEGA_SECUTIRY_ID,
-									name: 'Black Omega Security'
-								}
+								STAGING_CORPORATIONS[staging]
 							}
-							station={STAGINGS_STATIONS[staging] ?? 'Sosala - WATERMELLON'}
+							station={STAGINGS_STATIONS[staging]}
 						/>
 					}
 					{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
 						<a
 							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 							data-tippy-content={t('view_station_market_contracts')}
-							href={translatePath(`/market/contracts/?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
+							href={translatePath(`/market/contracts/?${query_string({location_name: STAGINGS_STATIONS[staging]})}`)}
 						>
 							<ContractsServiceEvEIcon />
 						</a>
@@ -386,69 +377,27 @@ const page_description = t('index.leading_text');
     </PageLanding>
 </Viewport>
 
+
 {WINTER_NEXUS_DECORATION && (
+	<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@3.2.0/tsparticles.preset.snow.bundle.min.js"></script>
+
 	<script is:inline>
-		(async () => {
-			const canvas = document.getElementById("decoration_overlay")
-			console.log(canvas)
+		async function initSnow() {
+			if (!document.getElementById('decoration_overlay')) return
 
-			canvas.confetti =
-				canvas.confetti || (await confetti.create(canvas, { resize: true }))
-		
-			let skew = 1
-			let tick = 0
+			await loadSnowPreset(tsParticles)
 
-			function randomInRange(min, max) {
-				return Math.random() * (max - min) + min
-			}
+			await tsParticles.load({
+				id: "decoration_overlay",
+				options: {
+					preset: "snow",
+					fullScreen: { enable: false },
+					background: { opacity: 0 },
+				},
+			})
+		}
 
-			(function frame() {
-				skew = 0.8
-				tick += 1
-
-				const DEFAULTS = {
-					particleCount: 1,
-					startVelocity: 0,
-					origin: {
-						x: Math.random(),
-						y: Math.random() * skew - 0.2,
-					},
-					colors: ["#ffffff"],
-					shapes: ["image"],
-					shapeOptions: {
-						image: {
-							src: "/images/snowflake.svg",
-							replaceColor: true,
-							width: 21,
-							height: 24,
-						},
-					},
-					gravity: randomInRange(0.4, 0.6),
-					scalar: randomInRange(0.4, 1),
-					drift: randomInRange(-0.4, 0.4),
-				}
-
-				tick % 100 === 0 && canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(2, 4),
-					ticks: 200,
-				})
-
-				tick % 30 === 0 && canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(1, 1.5),
-					ticks: 200,
-				})
-
-				canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(0.3, 0.6),
-					ticks: 200,
-				})
-
-				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
-			})();
-		})();
+		document.addEventListener("astro:page-load", initSnow)
 	</script>
 )}
 

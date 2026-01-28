@@ -23,28 +23,17 @@ import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
 
-<FlexInline class="[ !items-center ]" gap='var(--space-xs)'>
-    <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
-        <slot />
-    </h1>
-    <div class="[ hidden ]">
-        <Flexblock>
-            <code>is_referral_page: {JSON.stringify(is_referral_page)}</code>
-            <code>user: {JSON.stringify(user)}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[0]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[1]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[2]) : 'undefined'}</code>
-            <code>{debug !== undefined ? JSON.stringify(debug[3]) : 'undefined'}</code>
-        </Flexblock>
-    </div>
+<FlexInline class="[ page-title ][ !items-center relative ]" gap='var(--space-xs)'>
     {is_referral_page && user &&
         <ReferralLink user_id={user.user_id} />
     }
+    <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
+        <slot />
+    </h1>
 </FlexInline>
 
 <style lang="scss">
@@ -55,5 +44,10 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         &.is-landing {
             font-size: var(--step-5);
         }
+    }
+
+    :global(.page-title .referral-link) {
+        position: absolute;
+        left: -35px;
     }
 </style>

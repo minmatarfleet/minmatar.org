@@ -508,7 +508,7 @@ def analyze_parsed_log(content: str) -> LogAnalysis:
 
     analysis.final_system = last_combat_system(dmg_events)
 
-    (analysis.damage_done, analysis.damage_taken) = total_damage(dmg_events)
+    analysis.damage_done, analysis.damage_taken = total_damage(dmg_events)
 
     analysis.enemies = enemy_analysis(dmg_events)
     analysis.weapons = weapon_analysis(dmg_events)

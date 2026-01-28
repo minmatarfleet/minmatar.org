@@ -1,9 +1,9 @@
-import json
 import logging
 import time
 from datetime import timedelta
 
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 from esi.models import Token
 
@@ -109,10 +109,23 @@ def update_character_affilliations() -> int:
 
 @app.task
 def update_alliance_character_assets():
-    counter = 0
-    for character in EveCharacter.objects.filter(
+    # Get all characters in the alliance
+    alliance_characters = EveCharacter.objects.filter(
         alliance__name="Minmatar Fleet Alliance"
-    ).exclude(token=None):
+    )
+
+    # Get all users who have at least one character in the alliance
+    users_with_alliance_chars = User.objects.filter(
+        evecharacter__in=alliance_characters
+    ).distinct()
+
+    # Get all characters belonging to those users (including alts)
+    all_characters = EveCharacter.objects.filter(
+        user__in=users_with_alliance_chars
+    ).exclude(token=None)
+
+    counter = 0
+    for character in all_characters:
         logger.debug(
             "Updating assets for character %s", character.character_id
         )
@@ -183,13 +196,12 @@ def update_character_assets(eve_character_id):
         )
         return 0, 0, 0
 
-    character.assets_json = json.dumps(response.results())
-    character.save()
-
     fetch_time = time.perf_counter() - start
     fetch_str = f"{fetch_time:.6f}"
 
-    (created, updated, deleted) = create_character_assets(character)
+    created, updated, deleted = create_character_assets(
+        character, response.results()
+    )
 
     elapsed = time.perf_counter() - start
     elapsed_str = f"{elapsed:.6f}"
@@ -416,7 +428,9 @@ def setup_players():
     """Setup EvePlayer entities based on primary character data"""
 
     created = 0
-    for char in EveCharacter.objects.filter(is_primary=True):
+    # Find characters that are primary via EvePlayer
+    for player in EvePlayer.objects.filter(primary_character__isnull=False):
+        char = player.primary_character
         if not char.user:
             logger.warning(
                 "EveCharacter with primary but not user: %s",

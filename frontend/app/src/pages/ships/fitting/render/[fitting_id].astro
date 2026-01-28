@@ -323,6 +323,13 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                                     id="recommended-pod"
                                 />
                             }
+
+                            <Button
+                                href={translatePath('/ships/fitting/list')}
+                                size='sm'
+                            >
+                                {t('fittings')}
+                            </Button>
                         </FlexInline>
                     </Flexblock>
                     

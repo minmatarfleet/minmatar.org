@@ -52,11 +52,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 ---
 
 <ThumbCard
-    thumb_name={fleet.fleet_commander_name}
+    thumb_sub={t('fleet_commander')}
     thumb_image={get_player_icon(fleet.fleet_commander_id, 512)}
     thumb_image_small={get_player_icon(fleet.fleet_commander_id, 512)}
     thumb_image_alt={fleet.fleet_commander_name}
-    thumb_title={t('fleet_commander')}
+    thumb_name={fleet.fleet_commander_name}
     {...attributes}
 >
     <div
@@ -106,11 +106,9 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             </Flexblock>
         </VerticalCenter>
 
-        <VerticalCenter>
-            <TextGroup title={t('description')} full={true}>
-                <Flexblock slot="outside" class="[ wrap-break-word max-w-full ]" gap="var(--space-s-m)" set:html={marked.parse(fleet.description ?? '', { renderer })} />
-            </TextGroup>
-        </VerticalCenter>
+        <TextGroup title={t('description')} full={true}>
+            <Flexblock slot="outside" class="[ wrap-break-word max-w-full ]" gap="var(--space-s-m)" set:html={marked.parse(fleet.description ?? '', { renderer })} />
+        </TextGroup>
 
         <VerticalCenter class="[ justify-center ]">
             <Flexblock>

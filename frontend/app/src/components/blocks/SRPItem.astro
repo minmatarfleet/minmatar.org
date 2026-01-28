@@ -123,11 +123,11 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             }
 
             <Flexblock gap='var(--space-3xs)'>
-                <h3>{srp.amount > 0 ? `${srp.amount.toLocaleString()} ${t('isk')}` : t('no_srp_value')}</h3>
                 <FixedFluid width='16px' gap='var(--space-3xs)' class="[ !items-start ]">
                     <ItemPicture item_id={srp.ship_type_id} item_name={srp.ship_name} size={16} icon_quality={32} />
                     <small>{srp.character_name}’s {srp.ship_name}</small>
                 </FixedFluid>
+                <h3>{srp.amount > 0 ? `${srp.amount.toLocaleString()} ${t('isk')}` : t('no_srp_value')}</h3>
             </Flexblock>
         </CharacterCard>
     </WrapperElement>
@@ -325,5 +325,9 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
         &.bordered {
             border: solid 1px var(--border-color)
         }
+    }
+
+    h3 {
+        font-size: var(--step-1);
     }
 </style>

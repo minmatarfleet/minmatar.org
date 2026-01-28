@@ -21,52 +21,47 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
     max_width='100%'
 >
     <div
-        class="[ swiper ][ w-full pb-10 ]"
+        class="[ swiper ][ w-full pb-10! ]"
         id="ships-list"
     >
         <LandingSwiper>
             <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard class="[ animate-delay-0 ]" cover='/images/fittings-tile-background.jpg'>
-                    <FlexInline slot='header' gap='var(--space-2xs)'>
-                        <FitsEvEIcon />
-                        <h2>{t('fittings')}</h2>
-                    </FlexInline>
+                <SwiperCard
+                    class="[ animate-delay-0 ]"
+                    title={t('fittings')}
+                    description={t('fitting.leading_text')}
+                    cover='/images/fittings-tile-background.jpg'
+                >
+                    <FitsEvEIcon class="[ ml-[-7px] ]" slot="icon" />
                         
-                    <p>{t('fitting.leading_text')}</p>
-                    <FlexInline>
-                        <Button size='sm' href={translatePath('/ships/fitting/list/')}>
-                            {t('view_fittings')}
-                        </Button>
-                    </FlexInline>
+                    <Button size='sm' href={translatePath('/ships/fitting/list/')}>
+                        {t('view_fittings')}
+                    </Button>
                 </SwiperCard>
             </div>
 
             <div class="[ swiper-slide ]">
-                <SwiperCard class="[ animate-delay-200 ]" cover='/images/doctrines-tile-background.jpg'>
-                    <FlexInline slot="header" gap='var(--space-2xs)'>
-                        <DoctrinesEvEIcon />
-                        <h2>{t('doctrines.page_title')}</h2>
-                    </FlexInline>
+                <SwiperCard
+                    class="[ animate-delay-200 ]"
+                    title={t('doctrines.page_title')}
+                    description={t('doctrines.leading_text')}
+                    cover='/images/doctrines-tile-background.jpg'
+                >
+                    <DoctrinesEvEIcon class="[ ml-[-7px] ]" slot="icon" />
                     
-                    <Markdown
-                        markdown={t('doctrines.leading_text')}
-                        inline={true}
-                    />
-                    <FlexInline>
-                        <Button
-                            size='sm'
-                            href={translatePath('/ships/doctrines/list/')}
-                        >
-                            {t('view_doctrines')}
-                        </Button>
-                    </FlexInline>
+                    <Button
+                        size='sm'
+                        href={translatePath('/ships/doctrines/list/')}
+                    >
+                        {t('view_doctrines')}
+                    </Button>
                 </SwiperCard>
             </div>
         </LandingSwiper>
     </div>
 
-    <div class="[ swiper-button-prev hidden lg:block ]"></div>
-    <div class="[ swiper-button-next hidden lg:block ]"></div>
+    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
+    <div class="[ swiper-button-next hidden lg:block! ]"></div>
 </Wrapper>
 
 <style lang="scss">

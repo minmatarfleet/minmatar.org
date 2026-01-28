@@ -40,6 +40,7 @@ import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import TVEVEIcon from '@components/icons/TVEVEIcon.astro';
 
 let hour = new Date().getUTCHours()
 let minute = new Date().getUTCMinutes()
@@ -61,10 +62,10 @@ const page = Astro.url.pathname
                 >
                     <FleetLogo square={true} />
                 </NeocomButton>
-                <UserAuth active={page.startsWith(translatePath('/account/'))} />
+                <UserAuth active={page.startsWith(translatePath('/account'))} />
             </Flexblock>
             <NeocomButton
-                active={page.startsWith(translatePath('/alliance/'))}
+                active={page.startsWith(translatePath('/alliance'))}
                 title='neocom.alliance'
                 description={
                     user_is_director && user_is_officer ? 'alliance.description.directors_officers' :
@@ -77,7 +78,7 @@ const page = Astro.url.pathname
                 <AllianceEvEIcon />
             </NeocomButton>
             <NeocomButton
-                active={page.startsWith(translatePath('/ships/'))}
+                active={page.startsWith(translatePath('/ships'))}
                 title='neocom.ships'
                 description='ships.description'
                 href={translatePath('/ships/')}
@@ -85,7 +86,7 @@ const page = Astro.url.pathname
                 <ShipTreeEvEIcon />
             </NeocomButton>
             <NeocomButton
-                active={page.startsWith(translatePath('/fleets/'))}
+                active={page.startsWith(translatePath('/fleets'))}
                 title='neocom.fleets'
                 description='fleets.description'
                 href={translatePath('/fleets/upcoming/')}
@@ -93,7 +94,7 @@ const page = Astro.url.pathname
                 <FleetEvEIcon />
             </NeocomButton>
             <NeocomButton
-                active={page.startsWith(translatePath('/market/'))}
+                active={page.startsWith(translatePath('/market'))}
                 title='neocom.market'
                 description='market.description'
                 href={translatePath('/market/')}
@@ -101,14 +102,14 @@ const page = Astro.url.pathname
                 <MarketEvEIcon />
             </NeocomButton>
             <NeocomButton
-                active={page.startsWith(translatePath('/intel/'))}
+                active={page.startsWith(translatePath('/intel'))}
                 title='neocom.intel'
                 description='intel.description'
                 href={translatePath('/intel/')}
             >
                 <IntelEvEIcon />
             </NeocomButton>
-            {primary_character &&
+            {false && primary_character &&
                 <NeocomButton
                     active={page.startsWith(translatePath('/character/assets/user/'))}
                     title='neocom.assets'
@@ -128,7 +129,7 @@ const page = Astro.url.pathname
                     <NotepadEvEIcon />
                 </NeocomButton>
             }
-            {!is_prod_mode() &&
+            {false &&
                 <NeocomButton
                     title='neocom.zkillboard'
                     description='zkillboard_description'

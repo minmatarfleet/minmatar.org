@@ -1,0 +1,98 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import 'tailwind-animations';
+
+@plugin '@tailwindcss/typography';
+
+@utility prose {
+    --tw-prose-body: var(--foreground);
+    --tw-prose-headings: var(--highlight);
+    --tw-prose-lead: var(--tw-prose-body);
+    --tw-prose-links: var(--highlight);
+    --tw-prose-bold: inherit;
+    --tw-prose-bullets: var(--highlight);
+    --tw-prose-hr: var(--border-color);
+    --tw-prose-quotes: var(--highlight);
+    --tw-prose-quote-borders: var(--highlight);
+    --tw-prose-captions: var(--foreground);
+    --tw-prose-code: var(--highlight);
+    --tw-prose-pre-code: var(--highlight);
+    --tw-prose-pre-bg: var(--background);
+    --tw-prose-th-borders: var(--border-color);
+    --tw-prose-td-borders: var(--border-color);
+
+    h1 {
+        font-weight: 500;
+    }
+
+    h2 {
+        font-weight: 500;
+    }
+
+    h3 {
+        font-weight: 500;
+    }
+
+    h4 {
+        font-weight: 600;
+    }
+
+    h5 {
+        font-weight: 600;
+    }
+
+    h6 {
+        font-weight: 600;
+    }
+
+    ul {
+        list-style-type: square;
+    }
+
+    strong {
+        font-weight: 600;
+    }
+
+    b {
+        font-weight: 600;
+    }
+
+    pre {
+        border: solid 1px var(--border-color);
+        border-radius: 0;
+        padding-top: .8571429em;
+        padding-inline-end: 1.1428571em;
+        padding-bottom: .8571429em;
+        padding-inline-start: 1.1428571em;
+    }
+
+    pre code {
+        border: none;
+        font-size: var(--step-0);
+    }
+
+    code {
+        font-weight: 500;
+        border: solid 1px var(--border-color);
+        border-radius: 0;
+    }
+
+    code:before,
+    code:after {
+        content: none;
+    }
+
+    blockquote {
+        border-inline-start-style: solid;
+        border-inline-start-color: var(--highlight);
+        padding-top: 1px;
+        padding-bottom: 1px;
+    }
+
+    th {
+        color: var(--highlight);
+    }
+}

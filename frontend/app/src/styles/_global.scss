@@ -18,6 +18,10 @@ body,
     p {
         font-size: var(--step-0);
     }
+    
+    .excerpt {
+        font-size: var(--step-1);
+    }
 
 	> main {
 		position: relative;
@@ -39,7 +43,9 @@ body,
 }
 
 .component {
-    // background-color: var(--component-background);
+    h2 {
+        font-size: var(--step-1);
+    }
 
     h4, p, li {
         font-size: var(--step--1);
@@ -235,7 +241,7 @@ ul {
         
         img {
             transform: scale(1);
-            transition: var(--fast-transition);
+            transition: var(--slowest-transition) !important;
         }
     }
 
@@ -269,4 +275,13 @@ ul {
     z-index: var(--tooltips-z-index);
     cursor: pointer;
     max-width: 60ch;
+}
+
+.collapse-borders > .border + .border {
+    border-top: none;
+}
+
+lite-youtube {
+    /* No Shadow */
+    --lite-youtube-frame-shadow-visible: no;
 }

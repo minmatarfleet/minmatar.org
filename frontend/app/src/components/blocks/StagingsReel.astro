@@ -19,18 +19,22 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
     max_width='100%'
 >
     <div class="[ swiper ][ w-full ]">
-        <LandingSwiper pagination={false} gap={gap}>
+        <LandingSwiper pagination={false} gap={gap} align='center'>
             <slot />
         </LandingSwiper>
     </div>
 
-    <div class="[ swiper-button-prev hidden lg:block ]"></div>
-    <div class="[ swiper-button-next hidden lg:block ]"></div>
+    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
+    <div class="[ swiper-button-next hidden lg:block! ]"></div>
 </Wrapper>
 
 <style lang="scss">
     .staging-reel {
         position: relative;
+    }
+
+    :global(h2) {
+        font-size: var(--step-0);
     }
 
     .swiper-button-prev,

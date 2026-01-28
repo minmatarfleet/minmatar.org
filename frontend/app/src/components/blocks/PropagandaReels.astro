@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    posts:  Record<string, PostListUI[]>;
+}
+
+const {
+    posts,
+} = Astro.props
+
+const metropolis_posts:PostListUI[] = posts['Metropolis'] ?? []
+const frontlines_posts:PostListUI[] = posts['Frontlines'] ?? []
+const propaganda_posts:PostListUI[] = posts['Propaganda'] ?? []
+const mdn_posts_posts:PostListUI[] = posts['Metro Daily News'] ?? []
+const the_cope_posts:PostListUI[] = posts['The Cope'] ?? []
+const videos_posts:PostListUI[] = posts['Videos'] ?? []
+const rust_and_blood_posts:PostListUI[] = posts['Rust and Blood'] ?? []
+const waifu_wars_posts:PostListUI[] = posts['Waifu Wars'] ?? []
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import PropagandaSection from '@components/blocks/PropagandaSection.astro';
+import MarkeeDragonBanner from '@components/blocks/MarkeeDragonBanner.astro';
+import StoreBanner from '@components/blocks/StoreBanner.astro';
+---
+
+<Flexblock gap='var(--space-xl)'>
+    {metropolis_posts.length > 0 &&
+        <PropagandaSection
+            title="Metropolis Daily News"
+            description={t('metropolis_description')}
+            posts={metropolis_posts}
+            cover="/images/mdn-cover.png"
+        />
+    }
+    {frontlines_posts.length > 0 &&
+        <PropagandaSection
+            title="Frontlines"
+            description={t('frontlines_description')}
+            posts={frontlines_posts}
+            cover="/images/frontlines-cover.png"
+        />
+    }
+    {propaganda_posts.length > 0 &&
+        <PropagandaSection
+            title="The odd bunch"
+            description={t('odd_bunch_description')}
+            posts={propaganda_posts}
+        />
+    }
+    {mdn_posts_posts.length > 0 &&
+        <PropagandaSection
+            title="Metro Daily News"
+            description={t('metro_dn_description')}
+            posts={mdn_posts_posts}
+            cover="/images/metrodn-cover.png"
+            is_video={true}
+        />
+    }
+    {the_cope_posts.length > 0 &&
+        <PropagandaSection
+            title="The COPE"
+            description={t('the_cope_description')}
+            posts={the_cope_posts}
+            cover="/images/cope-cover.png"
+            is_video={true}
+        />
+    }
+    {videos_posts.length > 0 &&
+        <PropagandaSection
+            title="Videos"
+            description={t('videos_description')}
+            posts={videos_posts}
+            is_video={true}
+        />
+    }
+    <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
+        <MarkeeDragonBanner thin={true} />
+    </Wrapper>
+    {rust_and_blood_posts.length > 0 &&
+        <PropagandaSection
+            title="Rust and Blood"
+            description={t('rust_description')}
+            posts={rust_and_blood_posts}
+            cover="/images/rust-cover.png"
+        />
+    }
+    {waifu_wars_posts.length > 0 &&
+        <PropagandaSection
+            title="Waifu Wars"
+            description={t('waifus_description')}
+            posts={waifu_wars_posts}
+            cover="/images/waifu-wars-cover.png"
+        />
+    }
+    <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
+        <StoreBanner thin={true} />
+    </Wrapper>
+</Flexblock>

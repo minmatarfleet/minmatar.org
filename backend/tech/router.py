@@ -21,23 +21,35 @@ from discord.tasks import sync_discord_user, sync_discord_nickname
 from discord.helpers import remove_all_roles_from_guild_member
 from groups.helpers import TECH_TEAM, user_in_team
 from groups.tasks import update_affiliation
-from eveonline.client import esi_for
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.client import esi_for, EsiClient
+from eveonline.models import EveCharacter, EvePlayer, EveCharacterAsset
 from eveonline.tasks import update_character_assets, update_character_skills
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
 from fittings.models import EveFitting
-from tech.docker import (
-    get_containers,
-    container_names,
-    sort_chronologically,
-    DockerContainer,
-    DockerLogQuery,
-    DockerLogEntry,
-)
-from tech.dbviews import create_all_views
 
+try:
+    from tech.docker import (
+        get_containers,
+        container_names,
+        sort_chronologically,
+        DockerContainer,
+        DockerLogQuery,
+        DockerLogEntry,
+    )
+
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+    get_containers = None
+    container_names = None
+    sort_chronologically = None
+    DockerContainer = None
+    DockerLogQuery = None
+    DockerLogEntry = None
+from tech.dbviews import create_all_views
+from reddit.service import RedditService
 
 router = Router(tags=["Tech"])
 logger = logging.getLogger(__name__)
@@ -163,11 +175,14 @@ def make_test_fleet(request, data: TestFleetCreationRequest):
     "/containers",
     summary="List all Docker containers",
     auth=AuthBearer(),
-    response={200: List[str], 403: ErrorResponse},
+    response={200: List[str], 403: ErrorResponse, 503: ErrorResponse},
 )
 def list_containers(request):
     if not permitted(request.user):
         return 403, "Not authorised"
+
+    if not DOCKER_AVAILABLE:
+        return 503, ErrorResponse(detail="Docker module not available")
 
     return container_names()
 
@@ -179,7 +194,7 @@ def list_containers(request):
     "and duration (how long to include logs for from that point) in minutes, "
     "as well as the name of the container. ",
     auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
+    response={200: str, 403: ErrorResponse, 503: ErrorResponse},
 )
 def get_logs(
     request,
@@ -190,6 +205,9 @@ def get_logs(
 ):
     if not permitted(request.user):
         return 403, "Not authorised"
+
+    if not DOCKER_AVAILABLE:
+        return 503, ErrorResponse(detail="Docker module not available")
 
     now = timezone.now()
     start_time = now - timedelta(minutes=start_delta_mins)
@@ -423,6 +441,45 @@ class AssetSummary(BaseModel):
     elapsed_time: float
 
 
+def _fetch_character_assets(
+    character: EveCharacter, refresh_char: bool
+) -> tuple[list, Optional[ErrorResponse]]:
+    """Fetch assets for a character from ESI"""
+    if refresh_char:
+        update_character_assets.apply_async(args=[character.character_id])
+
+    response = EsiClient(character).get_character_assets()
+    if not response.success():
+        return [], ErrorResponse(detail="Failed to fetch assets from ESI")
+
+    return response.results(), None
+
+
+def _get_fitting_ship_ids() -> set[int]:
+    """Get set of ship IDs for fleet fittings"""
+    return {fitting.ship_id for fitting in EveFitting.objects.all()}
+
+
+def _filter_asset(
+    asset: dict,
+    type_id: Optional[int],
+    location_id: Optional[int],
+    location_flag: Optional[str],
+    fitting_ids: set[int],
+    fl33t_fittings: bool,
+) -> bool:
+    """Check if asset matches all filter criteria"""
+    if type_id and type_id != asset["type_id"]:
+        return False
+    if location_id and location_id != asset["location_id"]:
+        return False
+    if location_flag and location_flag != asset["location_flag"]:
+        return False
+    if fl33t_fittings and asset["type_id"] not in fitting_ids:
+        return False
+    return True
+
+
 @router.get(
     "/assets",
     summary="Character asset summary",
@@ -444,33 +501,34 @@ def asset_summary(
     char = EveCharacter.objects.filter(character_id=character_id).first()
     if not char:
         return 404, ErrorResponse(detail="Character not found")
-    if not char.assets_json:
-        return 404, ErrorResponse(detail="Character has no assets")
 
-    if refresh_char:
-        update_character_assets.apply_async(args=[character_id])
+    # Check if character has any processed assets
+    has_assets = EveCharacterAsset.objects.filter(character=char).exists()
+    if not has_assets and not refresh_char:
+        return 404, ErrorResponse(
+            detail="Character has no assets. Use refresh_char=true to fetch assets."
+        )
+
+    assets, error = _fetch_character_assets(char, refresh_char)
+    if error:
+        return 404, error
 
     start = time.perf_counter()
-
-    fitting_ids = []
-    if fl33t_fittings:
-        for fitting in EveFitting.objects.all():
-            fitting_ids.append(fitting.ship_id)
+    fitting_ids = _get_fitting_ship_ids() if fl33t_fittings else set()
 
     found = 0
     quantity = 0
-    assets = json.loads(char.assets_json)
     for asset in assets:
-        if type_id and type_id != asset["type_id"]:
-            continue
-        if location_id and location_id != asset["location_id"]:
-            continue
-        if location_flag and location_flag != asset["location_flag"]:
-            continue
-        if fl33t_fittings and asset["type_id"] not in fitting_ids:
-            continue
-        found += 1
-        quantity += asset["quantity"]
+        if _filter_asset(
+            asset,
+            type_id,
+            location_id,
+            location_flag,
+            fitting_ids,
+            fl33t_fittings,
+        ):
+            found += 1
+            quantity += asset["quantity"]
 
     data = AssetSummary(
         elapsed_time=time.perf_counter() - start,
@@ -592,3 +650,25 @@ def remove_discord_roles(request, user_id: int):
     except ValueError as e:
         return 409, ErrorResponse(detail=str(e))
     return 200, None
+
+
+@router.get(
+    "/reddit_test",
+    summary="Test calling the Reddit API",
+    auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse, 500: ErrorResponse},
+)
+def reddit_test(request, subreddit: str):
+    """
+    Test of the Reddit API
+    """
+
+    if not permitted(request.user):
+        return 403, ErrorResponse.log("Not authorised for tech endpoints")
+
+    result = RedditService().post_test(subreddit)
+
+    if result is None:
+        return 500, ErrorResponse.log("Unable to fetch reddit user details")
+
+    return 200, result

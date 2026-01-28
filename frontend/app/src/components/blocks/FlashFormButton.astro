@@ -2,40 +2,44 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Location } from '@dtypes/api.minmatar.org'
+import type { Audience } from '@dtypes/api.minmatar.org'
 import type { ButtonColors, ButtonSizes, SelectOptions } from '@dtypes/layout_components';
 
 import { get_app_url } from '@helpers/env'
 
-interface Porps {
+interface Props {
     size?:              ButtonSizes;
     color?:             ButtonColors;
-    locations:          Location[];
+    audiences:          Audience[];
     hidden?:            boolean;
 }
 
 const {
     size = 'lg',
     color = 'green',
-    locations,
+    audiences,
     hidden = false,
 } = Astro.props
 
-const DEFAULT_LOCATION = 1049037316814
+const no_audience_option = {
+    label: t('select_audience'),
+    value: ''
+} as SelectOptions
 
-let FLEET_LOCATIONS = {}
-const locations_select_options = locations.map( (i):SelectOptions => {
-    FLEET_LOCATIONS[i.location_id] = i.location_name
-    return {value: i.location_id, label: i.location_name} 
-} )
+let AUDIENCES = {}
+const audiences_select_options = [  no_audience_option  ].concat(
+    audiences.map( (i):SelectOptions => {
+        AUDIENCES[i.id] = i.display_name
+        return { label: i.display_name, value: i.id }
+    } )
+)
 
-const default_location = DEFAULT_LOCATION ?? '-1'
+const default_audience = audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Dialog from '@components/blocks/Dialog.astro';
 import Textarea from '@components/blocks/Textarea.astro';
@@ -43,6 +47,10 @@ import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import Select from '@components/blocks/Select.astro';
 import Markdown from '@components/blocks/Markdown.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 
 import FlashIcon from '@components/icons/buttons/FlashIcon.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -53,10 +61,10 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     x-data={`{
         flash_form_dialog_open: false,
         description: '',
-        location: ${default_location},
+        audience: '${default_audience}',
         open_dialog() {
             this.description = ''
-            this.location = ${default_location}
+            this.audience = '${default_audience}'
 
             $nextTick(() => {
                 this.flash_form_dialog_open = true
@@ -104,16 +112,45 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
 
                     <BlockList class="[ w-full ]">
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="location">{t('location')}</label>
-                            <Select id="location" x-model="location" name="location" required>
-                                {locations_select_options.map((option) => 
-                                    <option value={option.value} selected={option.value === default_location ? 'true' : undefined}>{option.label}</option>
+                            <label>{t('select_audience')}</label>
+                            <FlexInline class="[ audiences ]">
+                                {audiences.map((option) =>
+                                    <StylessButton
+                                        x-on:click={`audience = ${option.id}`}
+                                        type="button"
+                                        data-tippy-content={option.display_name}
+                                    >
+                                        <img
+                                            class:list={{ selected: option.id === default_audience}}
+                                            x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                            src={option.image_url ?? '/images/fleet-logo.svg'}
+                                            height="96"
+                                            width="96"
+                                            alt={option.display_name}
+                                        />
+                                    </StylessButton>
                                 )}
-                            </Select>
+                                <div class="[ visually-hidden ]">
+                                    <Select
+                                        class="[ pointer-events-none ]"
+                                        id="audience"
+                                        name="audience_id"
+                                        x-model="audience"
+                                        tabindex="-1"
+                                        required
+                                    >
+                                        {audiences_select_options.map((option) => 
+                                            <option value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </div>
+                            </FlexInline>
                         </Flexblock>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                             <label for="description">{t('description')}</label>
-                            <Textarea id="description" name="description" x-model="description" rows="5" required></Textarea>
+                            <Textarea id="description" name="description" x-model="description" rows="4" required></Textarea>
                         </Flexblock>
                         <SwitchSquare
                             class="[ w-full ]"
@@ -121,32 +158,38 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             label={t('disable_motd')}
                             description={t('disable_motd_description')}
                         />
-                        <Wrapper padding_block='var(--space-2xs)' padding_inline='0'>
-                            <FixedFluid
-                                width='48'
-                                breakpoint='70%'
-                                class="[ w-full items-center ]"
-                            >
-                                <picture class="[ hidden sm:block ]">
-                                    <TutorialIcon />
-                                </picture>
-                                <Flexblock gap='var(--space-3xs)'>
-                                    <p><a href={translatePath('/fleets/flash_form/')}>{t('flash_form_hint_title')}</a></p>
-                                    <Markdown
-                                        markdown={t('flash_form_hint').replaceAll('APP_URL', get_app_url())}
-                                        inline={true}
-                                        inline_element='small'
-                                    />
-                                </Flexblock>
-                            </FixedFluid>
-                        </Wrapper>
-                        <input type="hidden" name="audience_id" value="1" />
                         <input type="hidden" name="doctrine_id" value="-1" />
                         <input type="hidden" name="fleet_type" value="non_strategic" />
                         <input type="hidden" name="flash_form" value="1" />
                         <input type="hidden" name="start_tracking" value="on" />
                     </BlockList>
                 </Flexblock>
+
+                <CollapsibleBlock>
+                    <FixedFluid
+                        width='48'
+                        breakpoint='70%'
+                        slot="head"
+                        class="[ w-full items-center ]"
+                    >
+                        <picture class="[ hidden sm:block! ]">
+                            <TutorialIcon />
+                        </picture>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h4>{t('flash_form_express')}</h4>
+                            <small>{t('flash_form_hint')}</small>
+                        </Flexblock>
+                    </FixedFluid>
+
+                    <Flexblock class="[ mt-5 ]">
+                        {audiences.map((option) =>
+                            <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
+                                <p class="basis-[250px]"><a href={translatePath(`/fleets/flash_form?audience=${option.id}`)}>{option.display_name}</a></p>
+                                <ClipboardButton id={`copy-form-express-${option.id}`} class="[ hidden md:flex relative ]">{translatePath(`/fleets/flash_form?audience=${option.id}`)}</ClipboardButton>
+                            </FlexInline>
+                        )}
+                    </Flexblock>
+                </CollapsibleBlock>
 
                 <FlexInline justification='flex-end'>
                     <Button
@@ -173,5 +216,33 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     .flash-form-dialog {
         max-width: 40rem;
         max-height: min(750px, 88vh);
+    }
+</style>
+
+<style lang="scss">
+    .audiences{
+        button:focus-visible {
+            outline: none;
+            img {
+                transform: scale(0.8);
+                filter: saturate(0.5);
+            }
+        }
+
+        img {
+            filter: saturate(0);
+            transform: scale(0.6);
+            transition: var(--fast-transition);
+
+            &:hover {
+                transform: scale(0.8);
+                filter: saturate(0.5);
+            }
+
+            &.selected {
+                filter: saturate(1) !important;
+                transform: scale(1) !important;
+            }
+        }
     }
 </style>

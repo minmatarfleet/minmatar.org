@@ -10,6 +10,11 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const user_id = !user ? false : user.user_id
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { is_director } from '@helpers/fetching/groups'
+
+const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
 
 import type { GroupItemUI } from '@dtypes/layout_components'
 import { get_groups_auth, get_groups } from '@helpers/fetching/groups'
@@ -29,7 +34,7 @@ const GROUPS_LIST_PARTIAL_URL = translatePath('/partials/groups_list_component')
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageDefault from '@components/page/PageDefault.astro';
+import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -39,6 +44,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import GroupsList from '@components/blocks/GroupsList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
 
 const page_title = t('teams.list.page_title');
 const leading_text = t('teams.list.leading_text');
@@ -52,7 +59,7 @@ const leading_text = t('teams.list.leading_text');
         confirm_dialog: true,
     }}
 >
-    <PageDefault
+    <PageWide
         cover={{
             image: "/images/teams-cover.jpg",
             image_990: "/images/teams-cover.jpg",
@@ -73,9 +80,25 @@ const leading_text = t('teams.list.leading_text');
             </Flexblock>
         </FlexInline>
 
+        {(user_is_director || is_superuser) &&
+            <FlexInline slot="subheader">
+                <Button size='sm' href={translatePath('/alliance/teams/requests/')}>
+                    {t('team_requests')}
+                </Button>
+                
+                <Button size='sm' href={translatePath('/alliance/teams/members/')}>
+                    {t('view_members')}
+                </Button>
+            </FlexInline>
+        }
+
+        {user_is_director === null &&
+            <Tag text={t('page_reload_error')} />
+        }
+
         <Flexblock gap="var(--space-xl)">
             <TextBox>
-                <p>{leading_text}</p>
+                <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
 
             {get_groups_error ?
@@ -93,7 +116,7 @@ const leading_text = t('teams.list.leading_text');
                 />
             }
         </Flexblock>
-	</PageDefault>
+	</PageWide>
 </Viewport>
 
 <style lang="scss">

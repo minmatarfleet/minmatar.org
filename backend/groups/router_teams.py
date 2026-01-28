@@ -22,6 +22,7 @@ class TeamSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
+    content: Optional[str] = None
     image_url: Optional[str]
     directors: List[int] = []
     members: List[int] = []
@@ -41,6 +42,7 @@ def get_teams(request):
                 id=team.id,
                 name=team.name,
                 description=team.description,
+                content=team.content,
                 image_url=team.image_url,
                 directors=[officer.id for officer in team.directors.all()],
                 members=[member.id for member in team.members.all()],
@@ -67,6 +69,7 @@ def get_current_teams(request, director: bool = False):
                 id=team.id,
                 name=team.name,
                 description=team.description,
+                content=team.content,
                 image_url=team.image_url,
                 directors=[officer.id for officer in team.directors.all()],
                 members=[member.id for member in team.members.all()],
@@ -88,6 +91,7 @@ def get_team_by_id(request, team_id: int):
         id=team.id,
         name=team.name,
         description=team.description,
+        content=team.content,
         image_url=team.image_url,
         directors=[officer.id for officer in team.directors.all()],
         members=[member.id for member in team.members.all()],
@@ -269,6 +273,7 @@ def remove_team_member(request, team_id: int, user_id: int):
         id=team.id,
         name=team.name,
         description=team.description,
+        content=team.content,
         image_url=team.image_url,
         directors=[officer.id for officer in team.directors.all()],
         members=[member.id for member in team.members.all()],

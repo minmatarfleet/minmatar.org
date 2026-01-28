@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from groups.models import Sig
+from eveonline.models import EveLocation
 
 from .models import EveDoctrine, EveDoctrineFitting, EveFitting
 
@@ -36,6 +37,11 @@ class EveDoctrineForm(forms.ModelForm):
         widget=FilteredSelectMultiple("Sigs", is_stacked=False),
         required=False,
     )
+    locations = forms.ModelMultipleChoiceField(
+        queryset=EveLocation.objects.all(),
+        widget=FilteredSelectMultiple("Locations", is_stacked=False),
+        required=False,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,6 +70,8 @@ class EveDoctrineForm(forms.ModelForm):
                 secondary_doctrine_fittings
             )
             self.fields["support_fittings"].initial = support_doctrine_fittings
+            self.fields["sigs"].initial = self.instance.sigs.all()
+            self.fields["locations"].initial = self.instance.locations.all()
 
     class Meta:
         model = EveDoctrine

@@ -34,7 +34,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
         {posts.map(post =>
             <ComponentBlock x-show="show_item($el)" width='narrow'>
                 <Flexblock gap='var(--space-m)'>
-                    <FluidFixed class="[ !items-center ]" width={post.state === 'draft' ? '100px' : '155px'} gap='var(--space-l)'>
+                    <FluidFixed class="[ !items-center ]" width={post.state === 'draft' ? '110px' : '164px'} gap='var(--space-l)'>
                         <h3>{post.title}</h3>
                         {(post.state !== 'trash' && post.state === 'draft') ?
                             <div class="[ text-right ]">
@@ -129,7 +129,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
                                     {t('trash')}
                                 </Button>
                                 <Button
-                                    href={translatePath(`/alliance/posts/${post.slug}-${post.post_id}`)}
+                                    href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}
                                     type="button"
                                     size='sm'
                                 >

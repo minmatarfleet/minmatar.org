@@ -1,0 +1,141 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { MarketLocationUI, SelectOptions } from '@dtypes/layout_components';
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
+import { get_contracts_data } from '@helpers/pages/contracts'
+import type { ContractsData } from '@helpers/pages/contracts'
+import type { LocationMarketData } from '@helpers/fetching/market'
+import { get_ship_info } from '@helpers/sde/ships'
+
+let contracts_data:ContractsData = {}
+let data_fetching_error = ''
+
+try {
+    contracts_data = await get_contracts_data(lang)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const {
+    market_locations = [],
+} = contracts_data
+
+let doctrines:string[] = []
+
+const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
+    let completion = 0
+    let total_expectations = 0
+
+    const fittings = location.doctrines.map(doctrine => {
+        doctrines.push(doctrine.doctrine_name)
+
+        return doctrine.fittings.map(fitting => {
+            const expected_quantity = fitting.expectation_quantity ?? 0
+            const current_quantity = fitting.current_quantity ?? 0
+            completion += current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 0
+            total_expectations += expected_quantity > 0 ? 1 : 0
+            
+
+            return {
+                ...fitting,
+                doctrine_name: doctrine.doctrine_name,
+            }
+        })
+    }).flat()
+
+    const ship_ids = fittings.map((fitting) => fitting.ship_id)
+    const unique_ship_ids = Array.from(new Set(ship_ids))
+    
+    let ship_info_map: Record<number, string> = {}
+    await Promise.all(unique_ship_ids.map(async (ship_id) => {
+        const ship_info = await get_ship_info(ship_id)
+        ship_info_map[ship_id] = ship_info ? ship_info.type : 'Unclassified'
+    }))
+
+    const sorted_location_fittings = fittings.sort((a, b) => {
+        return SHIP_TYPES_SORTED.indexOf(ship_info_map[a.ship_id.toString()] as string) - SHIP_TYPES_SORTED.indexOf(ship_info_map[b.ship_id.toString()] as string)
+    })
+
+    return {
+        name: location.location_name,
+        doctrine_count: location.doctrines.length,
+        completion: total_expectations > 0 ? (completion / total_expectations) : 100,
+        fittings: sorted_location_fittings,
+    } as MarketLocationUI
+}))
+
+const unique_doctrines = Array.from(new Set(doctrines))
+
+const doctrines_select_options = unique_doctrines.map( (doctrine_name):SelectOptions => {
+    return { label: doctrine_name, value: doctrine_name }
+})
+
+// Calculate total contracts count from market locations
+const contracts_count = market_locations_ui.reduce((c, location) => c + location.fittings.length, 0)
+
+const CONTRACTS_PARTIAL_URL = translatePath('/partials/contracts_component_card')
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+---
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: CONTRACTS_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    market_locations.length > 0 &&
+        <Flexblock role="list" gap='var(--space-xl)'>
+            {market_locations_ui.map((location) =>
+                location.fittings.length > 0 &&
+                    <Flexblock role="list" gap='var(--space-m)'>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h2>{location.name}</h2>
+                            <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+                        </Flexblock>
+
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='350px'
+                            row_gap='var(--space-3xs)'
+                            column_gap='var(--space-3xs)'
+                        >
+                            {location.fittings.map((fitting) =>
+                                <div x-show="show_item($el)">
+                                    <MarketFittingCard fitting={fitting} init_tooltips={true} />
+                                </div>
+                            )}
+                            {<p class="[ no-result-text ]">{t('no_results')}</p>}
+                        </Grid>
+                    </Flexblock>
+            )}
+        </Flexblock>
+    
+        <div
+            x-data={`{
+                init() {
+                    contracts_count = ${contracts_count}
+                    doctrines_select_options = ${JSON.stringify(doctrines_select_options)}
+                    $el.remove()
+                }
+            }`}
+        />
+}
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+</style>

@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MarketLocationUI } from '@dtypes/layout_components';
+
+interface Props {
+    active_market_locations_ui:         MarketLocationUI;
+    non_active_market_locations_ui:     MarketLocationUI[];
+}
+
+const {
+    active_market_locations_ui,
+    non_active_market_locations_ui,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
+import Progress from '@components/blocks/Progress.astro';
+---
+
+<Flexblock gap='var(--space-xl)'>
+    <FlexInline gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>{active_market_locations_ui.name}</h2>
+            <small>{`${active_market_locations_ui.fittings.length} ${active_market_locations_ui.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+            <Progress
+                class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
+                max="100"
+                value={active_market_locations_ui.completion}
+                data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
+            >
+                {active_market_locations_ui.completion.toFixed(2)}%
+            </Progress>
+        </Flexblock>
+
+        {non_active_market_locations_ui.map(location =>
+            <Flexblock gap='var(--space-3xs)'>
+                <h3>
+                    <a href={translatePath(`/market/contracts?${query_string({
+                            location_name: location.name
+                        })}`)}
+                    >
+                        {location.name}
+                    </a>
+                </h3>
+                <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+                <Progress
+                    class:list={[ 'w-full', { danger: location.completion < 30 } ]}
+                    max="100"
+                    value={location.completion}
+                    data-tippy-content={`${location.completion.toFixed(0)}%`}
+                >
+                    {location.completion.toFixed(2)}%
+                </Progress>
+            </Flexblock>
+        )}
+    </FlexInline>
+
+    <BlockList gap='var(--space-3xs)' role="list">
+        {active_market_locations_ui.fittings.map((fitting) =>
+            <div x-show="show_item($el)">
+                <MarketFittingCard fitting={fitting} no_expectation_progress={false} />
+            </div>
+        )}
+        {<p class="[ no-result-text ]">{t('no_results')}</p>}
+    </BlockList>
+</Flexblock>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+</style>

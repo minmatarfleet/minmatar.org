@@ -204,6 +204,12 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
         )
 
+    def get_messages(self, channel_id, limit=100):
+        """Get messages from a discord channel"""
+        return self.get(
+            f"{BASE_URL}/channels/{channel_id}/messages?limit={limit}",
+        )
+
     def create_message(self, channel_id, message=None, payload=None):
         """Create a message in a discord channel
         Must have payload or message specified
@@ -252,6 +258,12 @@ class DiscordClient(DiscordBaseClient):
         """Get all roles from a discord server"""
         return self.get(
             f"{BASE_URL}/guilds/{self.guild_id}/roles",
+        )
+
+    def get_emojis(self):
+        """Get all emojis from a discord server"""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/emojis",
         )
 
     def get_members(self):

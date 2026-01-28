@@ -7,7 +7,6 @@ from django.db.models import signals
 
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacterChangeLog,
     EveCorporation,
 )
 from eveonline.helpers.characters import set_primary_character
@@ -128,10 +127,6 @@ class DiscordTests(TestCase):
             dispatch_uid="populate_eve_character_private_data",
         )
         signals.post_save.disconnect(
-            sender=EvePrimaryCharacterChangeLog,
-            dispatch_uid="notify_people_team_of_primary_character_change",
-        )
-        signals.post_save.disconnect(
             sender=Group,
             dispatch_uid="group_post_save",
         )
@@ -226,8 +221,9 @@ class DiscordTests(TestCase):
         sync_discord_user(user.id)
 
     def test_fake_login(self):
+        User.objects.create(id=1234)
         mock_request = MagicMock()
-        response = fake_login(mock_request)
+        response = fake_login(mock_request, 1234)
         self.assertEqual(302, response.status_code)
 
     @patch("discord.helpers.discord")

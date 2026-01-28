@@ -84,7 +84,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:!block ]" href={translatePath(`/market/freight/standard/`)}>
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/standard/`)}>
                     <HistoryIcon slot="icon" />
                     {t('recalculate')}
                 </Button>
@@ -119,7 +119,7 @@ const page_title = t('freight.contract.page_title');
                                     <h4>{t('name')}</h4>
                                     <p>Minmatar Fleet Logistics</p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-name" class="[ hidden md:flex relative mt-5 ]">Minmatar Fleet Logistics</ClipboardButton>
+                                <ClipboardButton id="copy-contract-name" class="[ hidden md:!flex relative mt-5 ]">Minmatar Fleet Logistics</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
                     </Flexblock>
@@ -142,7 +142,7 @@ const page_title = t('freight.contract.page_title');
                                     <h4>{t('ship_to')}</h4>
                                     <p>{destination}</p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:flex relative mt-5 ]">{destination}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-ship-to" class="[ hidden md:!flex relative mt-5 ]">{destination}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 
@@ -152,7 +152,7 @@ const page_title = t('freight.contract.page_title');
                                     <h4>{t('reward')}</h4>
                                     <p><span data-tippy-content={number_name(cost, lang)}>{cost.toLocaleString()}</span></p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:flex relative mt-5 ]">{cost}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-reward" class="[ hidden md:!flex relative mt-5 ]">{cost}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 
@@ -162,7 +162,7 @@ const page_title = t('freight.contract.page_title');
                                     <h4>{t('collateral')}</h4>
                                     <p><span data-tippy-content={number_name(collateral, lang)}>{collateral.toLocaleString()}</span></p>
                                 </Flexblock>
-                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:flex relative mt-5 ]">{collateral}</ClipboardButton>
+                                <ClipboardButton id="copy-contract-collateral" class="[ hidden md:!flex relative mt-5 ]">{collateral}</ClipboardButton>
                             </FlexInline>
                         </VerticalCenter>
 

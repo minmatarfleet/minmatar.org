@@ -38,7 +38,7 @@ home_system_name = Astro.cookies.has('moon_tracking_home_system_name') ? (Astro.
 
 const distance = Astro.url.searchParams.get('distance') ?? '10'
 const region = Astro.url.searchParams.get('region') ?? '1'
-const security = Astro.url.searchParams.get('security') ?? 'low'
+const security = Astro.url.searchParams.get('security') ?? 'any'
 
 try {
     systems = await get_moon_systems(home_system_name, parseInt(distance), region === '1')
@@ -140,7 +140,7 @@ const page_title = t('intel.moon_tracking.page_title');
             </FlexInline>
             <FlexInline>
                 <FindSystemButton id="moon_select_system" list_partial={MOON_SYSTEMS_LIST_PARTIAL_URL} />
-                <div class="[ hidden xl:block ]">
+                <div class="[ hidden xl:!block ]">
                     <AddMoonButton />
                 </div>
             </FlexInline>

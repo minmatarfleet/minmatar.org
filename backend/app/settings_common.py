@@ -16,6 +16,7 @@ CELERY_IMPORTS = (
     "freight.tasks",
     "market.tasks",
     "mumble.tasks",
+    "reddit.tasks",
 )
 
 
@@ -78,6 +79,8 @@ INSTALLED_APPS = [
     "subscriptions",
     # Audit history
     "audit",
+    # Reddit integration
+    "reddit",
 ]
 
 # Discord Login

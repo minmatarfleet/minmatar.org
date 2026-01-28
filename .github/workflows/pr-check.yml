@@ -34,7 +34,7 @@ jobs:
           pip install pipenv
           pipenv install --dev
           pipenv install coverage
-          pipenv run coverage run manage.py test --testrunner="testrunner.Runner" 
+          pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner" 
           pipenv run coverage json
       - name: Display test results
         run: cat testresults.txt

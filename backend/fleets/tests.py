@@ -23,7 +23,6 @@ from fleets.models import (
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
-    EveStandingFleet,
 )
 from fleets.router import (
     fixup_fleet_status,
@@ -62,23 +61,24 @@ def disconnect_fleet_signals():
 
 def setup_fleet_reference_data():
     """Create reference data needed for fleets"""
-    EveFleetAudience.objects.create(
-        name="Test Audience",
-        discord_channel_name="TestChannel",
-    )
-    EveFleetAudience.objects.create(
-        name="Hidden",
-        hidden=True,
-        add_to_schedule=False,
-    )
-
-    EveLocation.objects.create(
+    location = EveLocation.objects.create(
         location_id=123,
         location_name="Test Location",
         solar_system_id=234,
         solar_system_name="Somewhere",
         short_name="Somewhere",
         staging_active=True,
+    )
+
+    EveFleetAudience.objects.create(
+        name="Test Audience",
+        discord_channel_name="TestChannel",
+        staging_location=location,
+    )
+    EveFleetAudience.objects.create(
+        name="Hidden",
+        hidden=True,
+        add_to_schedule=False,
     )
 
 
@@ -152,21 +152,29 @@ class FleetSignalsTestCase(TestCase):
 
         update_fleet_schedule_on_save(None, instance, False)
 
+        # Should not be called when add_to_schedule is False
+        discord_mock.get_messages.assert_not_called()
+
         instance.audience.add_to_schedule = True
+        discord_mock.get_messages.return_value = []
 
         update_fleet_schedule_on_save(None, instance, False)
 
-        discord_mock.update_message.assert_called_once()
+        # Should be called when add_to_schedule is True
+        discord_mock.get_messages.assert_called_once()
+        discord_mock.create_message.assert_called_once()
 
     @patch("fleets.tasks.discord_client")
     def test_update_fleet_schedule_on_delete(self, discord_mock):
         instance = MagicMock(spec=EveFleet)
 
         instance.audience.add_to_schedule = True
+        discord_mock.get_messages.return_value = []
 
         update_fleet_schedule_on_delete(None, instance)
 
-        discord_mock.update_message.assert_called_once()
+        discord_mock.get_messages.assert_called_once()
+        discord_mock.create_message.assert_called_once()
 
 
 class FleetRouterTestCase(TestCase):
@@ -293,13 +301,14 @@ class FleetRouterTestCase(TestCase):
         setup_fc(self.user)
 
         location = EveLocation.objects.filter(staging_active=True).first()
-        print("zzz", location.location_id)
+        audience = EveFleetAudience.objects.first()
 
+        # Test creating fleet with location_id (backward compatibility)
         data = {
             "type": "training",
             "description": "Test fleet",
             "start_time": timezone.now(),
-            "audience_id": EveFleetAudience.objects.first().id,
+            "audience_id": audience.id,
             "location_id": location.location_id,
         }
 
@@ -312,9 +321,45 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         fleet_response = response.json()
         self.assertTrue(fleet_response["id"])
+        self.assertEqual("Test Location", fleet_response["location"])
 
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
+
+    def test_create_fleet_without_location_id_uses_audience_staging(self):
+        setup_fc(self.user)
+
+        audience = EveFleetAudience.objects.first()
+        # Ensure audience has staging_location
+        self.assertIsNotNone(audience.staging_location)
+
+        # Test creating fleet without location_id - should use audience.staging_location
+        data = {
+            "type": "training",
+            "description": "Test fleet without location_id",
+            "start_time": timezone.now(),
+            "audience_id": audience.id,
+        }
+
+        response = self.client.post(
+            f"{BASE_URL}",
+            data,
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        fleet_response = response.json()
+        self.assertTrue(fleet_response["id"])
+        # Should use audience staging location
+        self.assertEqual("Test Location", fleet_response["location"])
+
+        db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
+        self.assertIsNotNone(db_fleet)
+        # Verify the fleet uses the audience staging location
+        self.assertEqual(
+            db_fleet.formup_location.location_name,
+            audience.staging_location.location_name,
+        )
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
@@ -560,20 +605,6 @@ class FleetRouterTestCase(TestCase):
         self.assertTrue(can_see_fleet(fleet, somebody))
         self.assertFalse(can_see_fleet(fleet, nobody))
 
-    def test_get_standing_fleets(self):
-        EveStandingFleet.objects.create(
-            external_fleet_id=1001,
-            active_fleet_commander_character_id=2001,
-            active_fleet_commander_character_name="Buck Rogers",
-        )
-        response = self.client.get(
-            f"{BASE_URL}/standingfleets",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertEqual(1, len(data))
-
     def test_time_region(self):
         def hour_time(hour: int) -> datetime:
             return datetime(2025, 1, 1, hour, 30)
@@ -604,9 +635,12 @@ class FleetTaskTests(TestCase):
     """Tests of the Fleet background tasks."""
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_update_fleet_schedule_task(self):
+    @patch("fleets.tasks.settings")
+    def test_update_fleet_schedule_task(self, settings_mock):
         setup_fleet_reference_data()
-        make_test_fleet("Test fleet 1", self.user)
+        make_test_fleet(
+            "Test fleet 1", self.user
+        )  # pylint: disable=unused-variable
 
         fc = EveCharacter.objects.create(
             character_id=1234,
@@ -621,12 +655,47 @@ class FleetTaskTests(TestCase):
             user=self.user,
         )
 
-        with patch("fleets.tasks.discord_client") as discord_mock:
-            update_fleet_schedule()
+        # Mock settings
+        settings_mock.DISCORD_FLEET_SCHEDULE_CHANNEL_ID = 12345
+        settings_mock.DISCORD_FLEET_EMOJIS = {
+            "training": {"name": "training", "id": 999999},
+        }
 
-            discord_mock.update_message.assert_called()
-            discord_mock.create_message.assert_called()
-            discord_mock.delete_message.assert_called()
+        # Patch the module-level constant that was set at import time
+        with patch("fleets.tasks.FLEET_SCHEDULE_CHANNEL_ID", 12345):
+            with patch("fleets.tasks.discord_client") as discord_mock:
+                # Mock get_messages to return some messages
+                discord_mock.get_messages.return_value = [
+                    {"id": "123"},
+                    {"id": "456"},
+                ]
+
+                update_fleet_schedule()
+
+                # Verify Discord API calls
+                discord_mock.get_messages.assert_called_once_with(12345)
+                discord_mock.create_message.assert_called_once()
+                # delete_message should be called for each message
+                self.assertEqual(discord_mock.delete_message.call_count, 2)
+
+                # Verify the message payload
+                call_args = discord_mock.create_message.call_args
+                self.assertEqual(call_args[0][0], 12345)  # channel_id
+                payload = call_args[1]["payload"]
+
+                # Verify message structure
+                self.assertIn("content", payload)
+                self.assertIn("components", payload)
+                content = payload["content"]
+
+                # Verify message starts with header
+                self.assertTrue(content.startswith("## Fleet Schedule"))
+                # Verify location grouping
+                self.assertIn("**Test Location**", content)
+                # Verify FC character name is included
+                self.assertIn("Mr FC", content)
+                # Verify emoji is included (if set)
+                self.assertIn("<:training:999999>", content)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")

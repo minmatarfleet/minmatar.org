@@ -11,6 +11,7 @@ interface Props {
     size?:          ImageSize;
     icon_quality?:  EvEImageServiceSize;
     inert?:         boolean;
+    heading?:       boolean;
     [propName: string]: any;
 }
 
@@ -21,6 +22,7 @@ const {
     size = 64,
     icon_quality = 64,
     inert = false,
+    heading = false,
     ...attributes
 } = Astro.props
 
@@ -31,6 +33,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+
+const TitleElement = heading ? 'h3' : 'span'
 
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
@@ -51,8 +55,8 @@ delete attributes.class
         icon_quality={icon_quality}
     />
     <VerticalCenter>
-        <Flexblock gap='0' class="[ w-full ]">
-            <span
+        <Flexblock gap={heading ? 'var(--space-3xs)' : '0'} class="[ w-full ]">
+            <TitleElement
                 class="truncate text-[var(--highlight)] cursor-pointer max-w-fit"
                 set:text={character_id > 0 ? character_name : `[ ${t('unknown_character')} ]`}
                 x-data={`{

@@ -30,7 +30,10 @@ import CorporationPicture from '@components/blocks/CorporationPicture.astro';
 import Square from '@components/blocks/Square.astro';
 ---
 
-<ComponentBlock padding_inline='0' padding_block='0'>
+<ComponentBlock padding_inline='0' padding_block='0' class="[ contract-badge ]">
+    <div class="[ quantity ]">
+        <span class:list={{ 'text-red': low_amount }}>{contract.current_quantity}</span>/{contract.desired_quantity}
+    </div>
     <Flexblock gap='0'>
         <Wrapper padding_block='var(--space-2xs)' padding_inline='var(--space-2xs)'>
             <FlexInline justification='space-between'>
@@ -40,9 +43,6 @@ import Square from '@components/blocks/Square.astro';
                     </picture>
                     <h4 class="[ title ]">{contract.title}</h4>
                 </FixedFluid>
-                <div class="[ quantity ]">
-                    <span class:list={{ 'text-red': low_amount }}>{contract.current_quantity}</span>/{contract.desired_quantity}
-                </div>
             </FlexInline>
         </Wrapper>
         <div class="h-[64px] mb-[-7px]">
@@ -193,11 +193,29 @@ import Square from '@components/blocks/Square.astro';
 </ComponentBlock>
 
 <style lang="scss">
+    .contract-badge {
+        position: relative;
+    }
+
     .quantity {
+        position: absolute;
+        top: var(--space-3xs);
+        left: var(--space-3xs);
+        z-index: 3;
+        background: var(--highlight);
+        color: var(--background-primary);
+        padding: var(--space-2xs) var(--space-xs);
+        border-radius: var(--border-radius);
         font-family: var(--heading-font);
         text-transform: uppercase;
         font-size: var(--step-0);
-        font-weight: 400;
-        color: var(--highlight);
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        min-width: 2.5rem;
+        text-align: center;
+        line-height: 1.2;
+        letter-spacing: 0.02em;
     }
 </style>

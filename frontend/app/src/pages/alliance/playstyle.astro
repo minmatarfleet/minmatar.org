@@ -1,0 +1,155 @@
+---
+import * as page_fw from './playstyle-faction-warfare.md';
+import * as page_abroad from './playstyle-abroad.md';
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+import { strip_markdown } from '@helpers/string';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+const page_title = 'Our Playstyle'
+const page_description = 'Minmatar Fleet is a content-driven community that pulls fights from everywhere. Faction warfare is where many of our explosions happen, but we’re never confined to it.'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Wrapper
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap='var(--space-xl)'>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]" set:html={marked.parseInline(page_description as string, { renderer })} />
+                </Flexblock>
+            </Wrapper>
+
+            <TextBox>
+                <Flexblock gap='var(--space-xl)'>
+                    <div
+                        x-data={`{
+                            activeTab: 'faction-warfare',
+                            init_zoom() {
+                                mediumZoom('img[data-zoomable]', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                        class="[ tabs-container ]"
+                    >
+                        <div class="[ tabs-header ]">
+                            <button
+                                @click="activeTab = 'faction-warfare'"
+                                :class="{ 'active': activeTab === 'faction-warfare' }"
+                                class="[ tab-button ]"
+                            >
+                                Faction Warfare
+                            </button>
+                            <button
+                                @click="activeTab = 'abroad'"
+                                :class="{ 'active': activeTab === 'abroad' }"
+                                class="[ tab-button ]"
+                            >
+                                Abroad
+                            </button>
+                        </div>
+
+                        <div
+                            x-show="activeTab === 'faction-warfare'"
+                            x-transition
+                            class="[ prose ]"
+                            set:html={marked.parse(page_fw.rawContent(), { renderer })}
+                        />
+
+                        <div
+                            x-show="activeTab === 'abroad'"
+                            x-transition
+                            class="[ prose ]"
+                            set:html={marked.parse(page_abroad.rawContent(), { renderer })}
+                        />
+                    </div>
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+    }
+
+    picture {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        aspect-ratio: 1/1;
+
+        &.bordered {
+            border: solid 1px var(--border-color)
+        }
+    }
+
+    .tabs-container {
+        width: 100%;
+    }
+
+    .tabs-header {
+        display: flex;
+        gap: var(--space-s);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--space-xl);
+    }
+
+    .tab-button {
+        padding: var(--space-s) var(--space-m);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        font-size: var(--step-0);
+        color: var(--text-color-secondary);
+        transition: all 0.2s ease;
+        margin-bottom: -1px;
+
+        &:hover {
+            color: var(--text-color);
+        }
+
+        &.active {
+            color: var(--text-color);
+            border-bottom-color: var(--accent-color);
+        }
+    }
+</style>

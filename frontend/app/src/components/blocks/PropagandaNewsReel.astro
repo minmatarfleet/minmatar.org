@@ -13,10 +13,12 @@ const {
     current_page = 1,
 } = Astro.props
 
-
+import Flexblock from '@components/compositions/Flexblock.astro';
 import PostsList from '@components/blocks/PostsList.astro';
 import PostersReel from '@components/blocks/PostersReel.astro';
 ---
 
-<PostersReel posts={posts} />
-<PostsList posts={posts} total_pages={total_pages} current_page={current_page} />
+<Flexblock id="posts-feeds" gap='var(--space-xl)'>
+    <PostersReel posts={posts} />
+    <PostsList posts={posts} total_pages={total_pages} current_page={current_page} />
+</Flexblock>

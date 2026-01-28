@@ -16,12 +16,10 @@ let {
 
 const CORPORATIONS_WITH_SLIDE = [
     'Rattini Tribe',
-    'Black Omega Security',
     'Minmatar Fleet Academy',
-    'Rapid Unscheduled Disassembly.',
     'Soltech Armada',
-    'Criterion.',
     'Straylight Systems',
+    'The Dark Tribe',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -32,10 +30,12 @@ import { get_alliance_logo } from '@helpers/eve_image_server';
 
 const MINMATAR_FLEET_HOLDINGS_ID = 98735318
 const BLACK_RIFTER_COFFIN_COMPANY_ID  = 98726032
-const VINDICTA_EXPEDITIONARY_ID  = 98760041
-const EXIT_STRATEGY_ID  = 98380820
-const PROTEAN_CONCEPT_ID = 98633005
-const CORPORATIONS_FILTER = [ MINMATAR_FLEET_HOLDINGS_ID, BLACK_RIFTER_COFFIN_COMPANY_ID, VINDICTA_EXPEDITIONARY_ID, PROTEAN_CONCEPT_ID, EXIT_STRATEGY_ID ]
+const TEMPORARY_SOLUTIONS_UNLIMITED_ID = 98821223
+const CORPORATIONS_FILTER = [
+    MINMATAR_FLEET_HOLDINGS_ID,
+    BLACK_RIFTER_COFFIN_COMPANY_ID,
+    TEMPORARY_SOLUTIONS_UNLIMITED_ID,
+]
 corporations = corporations.filter( (i) => !CORPORATIONS_FILTER.includes(i.corporation_id) )
 
 const pagination_icons:string[] = []
@@ -71,14 +71,10 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import CorporationsSwiper from '@components/blocks/CorporationsSwiper.astro';
 import RattiniSlide from '@components/blocks/RattiniSlide.astro';
-import BlackOmegaSlide from '@components/blocks/BlackOmegaSlide.astro';
-import BallsDeepSlide from '@components/blocks/BallsDeepSlide.astro';
-import RapidUnscheduledDisassemblySlide from '@components/blocks/RapidUnscheduledDisassemblySlide.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
-import Jump2BeaconSlide from '@components/blocks/Jump2BeaconSlide.astro';
-import CriterionSlide from '@components/blocks/CriterionSlide.astro';
-import StraylightSystems from '@components/blocks/StraylightSystems.astro';
+import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
+import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -101,29 +97,8 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
-                    {corporation.corporation_name == 'Black Omega Security' &&
-                        <BlackOmegaSlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
-                    {corporation.corporation_name == 'Balls Deep Inc.' &&
-                        <BallsDeepSlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
                     {corporation.corporation_name == 'Minmatar Fleet Academy' &&
                         <L34RnSlide
-                            corporation={corporation}
-                            is_user_corporation={corporation.corporation_id === user_corporation_id}
-                            picture_placement={index%2 == 0 ? 'left' : 'right'}
-                        />
-                    }
-                    {corporation.corporation_name == 'Rapid Unscheduled Disassembly.' &&
-                        <RapidUnscheduledDisassemblySlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
@@ -136,15 +111,15 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
-                    {corporation.corporation_name == 'Criterion.' &&
-                        <CriterionSlide
+                    {corporation.corporation_name == 'Straylight Systems' &&
+                        <StraylightSystemsSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
-                    {corporation.corporation_name == 'Straylight Systems' &&
-                        <StraylightSystems
+                    {corporation.corporation_name == 'The Dark Tribe' &&
+                        <TheDarkTribeSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}

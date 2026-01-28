@@ -69,8 +69,8 @@ const page_description = post?.excerpt ?? page_title
     <PageLanding
         wide={true}
         cover={{
-            image: "/images/editor-cover.jpg",
-            image_990: "/images/editor-cover.jpg",
+            image: "/images/propaganda-cover.jpg",
+            image_990: "/images/propaganda-cover.jpg",
             scrollable: true,
             overlay: true
         }}
@@ -102,7 +102,11 @@ const page_description = post?.excerpt ?? page_title
             </FlexInline>
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
-                    <PilotBadge character_id={post?.author?.character_id as number} character_name={post?.author?.character_name as string}>
+                    <PilotBadge
+                        character_id={post?.author?.character_id as number}
+                        character_name={post?.author?.character_name as string}
+                        heading={true}
+                    >
                         <small>{format_date(lang, post?.date_posted)}</small>
                     </PilotBadge>
 
@@ -118,7 +122,21 @@ const page_description = post?.excerpt ?? page_title
                         </FlexInline>
                     }
 
-                    <Flexblock class="[ prose ]" gap='var(--space-m)' set:html={marked.parse(post?.content as string, { renderer })}>
+                    <div
+                        class="[ prose ]"
+                        set:html={marked.parse(post?.content as string, { renderer })}
+                        x-data={`{
+                            init_zoom() {
+                                mediumZoom('img[data-zoomable]', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                    />
                 </Flexblock>
             </TextBox>
         </Flexblock>
@@ -126,7 +144,8 @@ const page_description = post?.excerpt ?? page_title
 </Viewport>
 
 <style lang="scss">
-    .excerpt {
+    .excerpt,
+    :global(.excerpt p) {
         font-size: var(--step-1);
     }
 </style>

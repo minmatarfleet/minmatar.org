@@ -3,6 +3,7 @@ interface Props {
     src:        string;
     alt?:       string;
     narrow?:    boolean;
+    zoomable?:  boolean;
     [propName: string]: any;
 }
 
@@ -10,6 +11,7 @@ const {
     src,
     alt,
     narrow = false,
+    zoomable = false,
     ...attributes
 } = Astro.props
 
@@ -25,6 +27,7 @@ import Card from "@components/blocks/Card.astro";
         size={256}
         narrow={narrow}
         mask={true}
+        zoomable={zoomable}
     />
 
     <slot name="header" slot="header" />

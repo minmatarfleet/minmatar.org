@@ -35,10 +35,9 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import Countdown from '@components/blocks/Countdown.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 ---
 
-<ComponentBlock
+<div
     id="fleet-status"
     x-data={`{
         is_fleet_time: ${JSON.stringify(is_fleet_time)},

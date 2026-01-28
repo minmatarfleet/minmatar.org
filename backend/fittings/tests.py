@@ -16,7 +16,7 @@ class FittingsRouterTestCase(TestCase):
     def test_get_doctrines(self):
         EveDoctrine.objects.create(
             name="Test Doctrine",
-            type="skirmish",
+            type="non_strategic",
             description="A test doctrine",
         )
 
@@ -27,6 +27,30 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         doctrines = response.json()
         self.assertEqual(1, len(doctrines))
+        self.assertEqual("non_strategic", doctrines[0]["type"])
+
+    def test_get_doctrine_by_id(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine",
+            type="strategic",
+            description="A test doctrine",
+        )
+
+        response = self.client.get(
+            f"/api/doctrines/{doctrine.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        doctrine_data = response.json()
+        self.assertEqual("Test Doctrine", doctrine_data["name"])
+        self.assertEqual("strategic", doctrine_data["type"])
+
+    def test_get_doctrine_not_found(self):
+        response = self.client.get(
+            "/api/doctrines/99999",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(404, response.status_code)
 
     def test_get_fittings(self):
         response = self.client.get(

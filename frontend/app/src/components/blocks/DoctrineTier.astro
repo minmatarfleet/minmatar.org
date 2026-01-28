@@ -2,16 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { FittingItem, IdealComposition } from '@dtypes/layout_components';
+import type { FittingItem } from '@dtypes/layout_components';
 
 interface Props {
     fittings:           FittingItem[];
-    ideal_composition?: IdealComposition;
 }
 
 const {
     fittings,
-    ideal_composition = {},
 } = Astro.props
 
 import Grid from '@components/compositions/Grid.astro';
@@ -35,7 +33,8 @@ import FittingLink from '@components/blocks/FittingLink.astro'
         >
             <FittingCard
                 fitting={fitting}
-                subtitle={fitting.id.toString() in ideal_composition ? `${ideal_composition[fitting.id.toString()]} ${ideal_composition[fitting.id.toString()] === 1 ? t('ship') : t('ships')}` : ''}
+                title={fitting.ship_name}
+                subtitle={fitting.fitting_type}
             />
         </FittingLink>
     )}

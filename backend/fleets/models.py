@@ -1,6 +1,5 @@
 import logging
 
-import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
@@ -48,6 +47,7 @@ class EveFleet(models.Model):
         null=True,
         blank=True,
         default=None,
+        help_text="DEPRECATED: Use audience.staging_location instead. Kept for data migration purposes.",
     )
     disable_motd = models.BooleanField(null=True, default=False)
 
@@ -79,6 +79,16 @@ class EveFleet(models.Model):
     @property
     def fleet_commander(self):
         return user_primary_character(self.created_by)
+
+    @property
+    def formup_location(self):
+        """
+        Get the formup location for the fleet.
+        Prefers audience.staging_location over the deprecated location field.
+        """
+        if self.audience and self.audience.staging_location:
+            return self.audience.staging_location
+        return self.location
 
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
@@ -139,39 +149,28 @@ class EveFleet(models.Model):
                 payload=get_fleet_discord_notification(
                     fleet_id=self.id,
                     fleet_type=self.get_type_display(),
-                    fleet_location=self.location.location_name,
+                    fleet_location=(
+                        self.formup_location.location_name
+                        if self.formup_location
+                        else "Ask FC"
+                    ),
                     fleet_audience=self.audience.name,
                     fleet_commander_name=self.fleet_commander.character_name,
                     fleet_commander_id=self.fleet_commander.character_id,
                     fleet_description=self.description,
-                    fleet_voice_channel=self.audience.discord_voice_channel_name,
-                    fleet_voice_channel_link=self.audience.discord_voice_channel,
+                    fleet_voice_channel=None,
+                    fleet_voice_channel_link=None,
                     fleet_doctrine=doctrine,
                 ),
             )
 
-        if len(self.audience.evefleetaudiencewebhook_set.all()) > 0:
-            for (
-                audience_webhook
-            ) in self.audience.evefleetaudiencewebhook_set.all():
-                requests.post(
-                    audience_webhook.webhook_url,
-                    json=get_fleet_discord_notification(
-                        fleet_id=self.id,
-                        fleet_type=self.get_type_display(),
-                        fleet_location=self.location.location_name,
-                        fleet_audience=self.audience.name,
-                        fleet_commander_name=self.fleet_commander.character_name,
-                        fleet_commander_id=self.fleet_commander.character_id,
-                        fleet_description=self.description,
-                        fleet_voice_channel=self.audience.discord_voice_channel_name,
-                        fleet_voice_channel_link=self.audience.discord_voice_channel,
-                        fleet_doctrine=doctrine,
-                    ),
-                    timeout=2,
-                )
         self.status = "active"
         self.save()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["start_time"]),
+        ]
 
 
 class EveFleetInstance(models.Model):
@@ -202,11 +201,12 @@ class EveFleetInstance(models.Model):
         }
 
         if not disable_motd:
+            formup_location = self.eve_fleet.formup_location
             self.motd = get_motd(
                 self.eve_fleet.fleet_commander.character_id,
                 self.eve_fleet.fleet_commander.character_name,
-                self.eve_fleet.location.location_id,
-                self.eve_fleet.location.location_name,
+                formup_location.location_id if formup_location else None,
+                formup_location.location_name if formup_location else "Ask FC",
                 "https://discord.gg/minmatar",
                 "Minmatar Fleet Discord",
                 (
@@ -235,11 +235,12 @@ class EveFleetInstance(models.Model):
         Update the motd for the fleet
         """
 
+        formup_location = self.eve_fleet.formup_location
         motd = get_motd(
             self.eve_fleet.fleet_commander.character_id,
             self.eve_fleet.fleet_commander.character_name,
-            self.eve_fleet.location.location_id,
-            self.eve_fleet.location.location_name,
+            formup_location.location_id if formup_location else None,
+            formup_location.location_name if formup_location else "Ask FC",
             "https://discord.gg/minmatar",
             "Minmatar Fleet Discord",
             (
@@ -495,17 +496,10 @@ class EveFleetInstanceMember(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
-
-class EveFleetLocation(models.Model):
-    location_id = models.BigIntegerField(primary_key=True)
-    location_name = models.CharField(max_length=255)
-    solar_system_id = models.BigIntegerField()
-    solar_system_name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-    def __str__(self):
-        return str(f"{self.location_name}")
+    class Meta:
+        indexes = [
+            models.Index(fields=["character_id"]),
+        ]
 
 
 class EveFleetAudience(models.Model):
@@ -519,11 +513,18 @@ class EveFleetAudience(models.Model):
     discord_channel_name = models.CharField(
         max_length=255, null=True, blank=True
     )
-    discord_voice_channel_name = models.CharField(
-        max_length=255, null=True, blank=True
+    staging_location = models.ForeignKey(
+        EveLocation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
     )
-    discord_voice_channel = models.CharField(
-        max_length=255, null=True, blank=True
+    image_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL to the image to display for this fleet audience",
     )
     add_to_schedule = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
@@ -532,212 +533,3 @@ class EveFleetAudience(models.Model):
 
     def __str__(self):
         return str(self.name)
-
-
-class EveFleetAudienceWebhook(models.Model):
-    webhook_url = models.CharField(max_length=255)
-    audience = models.ForeignKey(EveFleetAudience, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-    def __str__(self):
-        return str(self.webhook_url)
-
-
-class EveStandingFleet(models.Model):
-    """
-    Representation of a standing fleet, a type of fleet that
-    should always be available
-    """
-
-    start_time = models.DateTimeField(auto_now=True)
-    end_time = models.DateTimeField(null=True, blank=True)
-    last_commander_change = models.DateTimeField(auto_now=True)
-    external_fleet_id = models.BigIntegerField()
-
-    active_fleet_commander_character_id = models.BigIntegerField()
-    active_fleet_commander_character_name = models.CharField(max_length=255)
-
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-    @property
-    def fleet_commander(self):
-        return EveCharacter.objects.get(
-            character_id=self.active_fleet_commander_character_id
-        )
-
-    @staticmethod
-    def start(fleet_commander_character_id: int):
-        """
-        Start a standing fleet
-        """
-        eve_character = EveCharacter.objects.get(
-            character_id=fleet_commander_character_id
-        )
-        # token = eve_character.token.valid_access_token()
-
-        response = (
-            EsiClient(eve_character.character_id).get_active_fleet().results()
-        )
-
-        # response = esi.client.Fleets.get_characters_character_id_fleet(
-        #     character_id=eve_character.character_id,
-        #     token=token,
-        # ).results()
-
-        if EveStandingFleet.objects.filter(
-            external_fleet_id=response["fleet_id"]
-        ).exists():
-            existing_fleet = EveStandingFleet.objects.get(
-                external_fleet_id=response["fleet_id"]
-            )
-            existing_fleet.active_fleet_commander_character_id = (
-                fleet_commander_character_id
-            )
-            existing_fleet.active_fleet_commander_character_name = (
-                eve_character.character_name
-            )
-            existing_fleet.end_time = None
-            existing_fleet.save()
-        else:
-            return EveStandingFleet.objects.create(
-                external_fleet_id=response["fleet_id"],
-                active_fleet_commander_character_id=fleet_commander_character_id,
-                active_fleet_commander_character_name=eve_character.character_name,
-            )
-
-    def claim(self, character_id):
-        """
-        Claim the standing fleet
-        """
-        # attempt to get fleet members
-        # if fails, they are not valid to claim
-        # token = EveCharacter.objects.get(
-        #     character_id=character_id
-        # ).token.valid_access_token()
-        new_fleet_commander = EveCharacter.objects.get(
-            character_id=character_id
-        )
-        old_fleet_commander = self.fleet_commander
-        try:
-            # esi.client.Fleets.get_fleets_fleet_id_members(
-            #     fleet_id=self.external_fleet_id,
-            #     token=token,
-            # ).results()
-            EsiClient(character_id).get_fleet_members(
-                self.external_fleet_id
-            ).results()
-
-            EveStandingFleetCommanderLog.objects.create(
-                eve_standing_fleet=self,
-                character_id=old_fleet_commander.character_id,
-                character_name=old_fleet_commander.character_name,
-                start_time=self.last_commander_change,
-                leave_time=timezone.now(),
-            )
-            self.active_fleet_commander_character_id = (
-                new_fleet_commander.character_id
-            )
-            self.active_fleet_commander_character_name = (
-                new_fleet_commander.character_name
-            )
-            self.end_time = None
-            self.last_commander_change = timezone.now()
-            self.save()
-            return True
-        except Exception:
-            return False
-
-    def update_members(self):
-        """
-        Update the members of the standing fleet
-        - Add new standing fleet members
-        - Delete old standing fleet members and create a log record
-        """
-        # token = self.fleet_commander.token.valid_access_token()
-        # response = esi.client.Fleets.get_fleets_fleet_id_members(
-        #     fleet_id=self.external_fleet_id,
-        #     token=token,
-        # ).results()
-
-        response = (
-            EsiClient(self.fleet_commander)
-            .get_fleet_members(self.external_fleet_id)
-            .results()
-        )
-
-        ids_to_resolve = set()
-        for esi_fleet_member in response:
-            ids_to_resolve.add(esi_fleet_member["character_id"])
-        ids_to_resolve = list(ids_to_resolve)
-        # resolved_ids = esi.client.Universe.post_universe_names(
-        #     ids=ids_to_resolve
-        # ).results()
-        resolved_ids = (
-            EsiClient(None).resolve_universe_names(ids_to_resolve).results()
-        )
-        resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
-
-        for esi_fleet_member in response:
-            if not EveStandingFleetMember.objects.filter(
-                eve_standing_fleet=self,
-                character_id=esi_fleet_member["character_id"],
-            ).exists():
-                EveStandingFleetMember.objects.create(
-                    eve_standing_fleet=self,
-                    character_id=esi_fleet_member["character_id"],
-                    character_name=resolved_ids[
-                        esi_fleet_member["character_id"]
-                    ],
-                )
-
-        for fleet_member in EveStandingFleetMember.objects.filter(
-            eve_standing_fleet=self
-        ):
-            if not any(
-                x["character_id"] == fleet_member.character_id
-                for x in response
-            ):
-                EveStandingFleetMemberLog.objects.create(
-                    eve_standing_fleet=self,
-                    character_id=fleet_member.character_id,
-                    character_name=fleet_member.character_name,
-                    leave_time=timezone.now(),
-                )
-                fleet_member.delete()
-
-
-class EveStandingFleetCommanderLog(models.Model):
-    character_id = models.BigIntegerField()
-    character_name = models.CharField(max_length=255)
-    join_time = models.DateTimeField(auto_now_add=True)
-    leave_time = models.DateTimeField(null=True, blank=True)
-    eve_standing_fleet = models.ForeignKey(
-        EveStandingFleet, on_delete=models.CASCADE
-    )
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-
-class EveStandingFleetMember(models.Model):
-
-    character_id = models.BigIntegerField()
-    character_name = models.CharField(max_length=255)
-    eve_standing_fleet = models.ForeignKey(
-        EveStandingFleet, on_delete=models.CASCADE
-    )
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-
-class EveStandingFleetMemberLog(models.Model):
-    character_id = models.BigIntegerField()
-    character_name = models.CharField(max_length=255)
-    join_time = models.DateTimeField(auto_now_add=True)
-    leave_time = models.DateTimeField(null=True, blank=True)
-    eve_standing_fleet = models.ForeignKey(
-        EveStandingFleet, on_delete=models.CASCADE
-    )
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)

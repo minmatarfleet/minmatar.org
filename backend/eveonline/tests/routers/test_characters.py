@@ -10,7 +10,6 @@ from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import (
     EveCharacter,
-    EvePrimaryCharacterChangeLog,
     EveCharacterLog,
     EveCharacterSkillset,
     EveSkillset,
@@ -38,10 +37,6 @@ def disconnect_character_signals():
     signals.post_save.disconnect(
         sender=EveCharacter,
         dispatch_uid="populate_eve_character_private_data",
-    )
-    signals.post_save.disconnect(
-        sender=EvePrimaryCharacterChangeLog,
-        dispatch_uid="notify_people_team_of_primary_character_change",
     )
 
 
@@ -77,7 +72,6 @@ class CharacterRouterTestCase(TestCase):
             character_name=name,
             user=user,
             token=token,
-            is_primary=is_primary,
         )
         if is_primary:
             set_primary_character(user=user, character=character)

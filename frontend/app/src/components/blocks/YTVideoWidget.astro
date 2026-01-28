@@ -40,15 +40,9 @@ import Wrapper from "@components/compositions/Wrapper.astro";
             videoid={videoid}
             videotitle={videotitle}
             posterquality="maxresdefault"
-            x-data={`{
-                init() {
-                    $nextTick(() => {
-                        const frame = document.getElementById(this.id).shadowRoot.getElementById('frame')
-                        frame.innerHTML += '<style>#frame:before { display: none }</style>'
-                    })
-                }
-            }`}
-        />
+        >
+            <slot name="image" slot="image" />
+        </lite-youtube>
     </div>
     {credits !== false &&
         <p>{t('credits')}:
@@ -72,10 +66,6 @@ import Wrapper from "@components/compositions/Wrapper.astro";
         </p>
     }
 </Wrapper>
-
-<script>
-    import '@justinribeiro/lite-youtube';
-</script>
 
 <style lang="scss">
     .video-frame {

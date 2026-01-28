@@ -149,8 +149,8 @@ const page_title = post?.title ?? t('new_post')
             fullscreen={true}
             wide={true}
             cover={{
-                image: "/images/editor-cover.jpg",
-                image_990: "/images/editor-cover.jpg",
+                image: "/images/propaganda-cover.jpg",
+                image_990: "/images/propaganda-cover.jpg",
                 scrollable: true,
                 overlay: true
             }}
@@ -265,7 +265,8 @@ const page_title = post?.title ?? t('new_post')
 </Viewport>
 
 <style lang="scss">
-    .excerpt {
+    .excerpt,
+    :global(.excerpt p) {
         font-size: var(--step-1);
     }
 </style>

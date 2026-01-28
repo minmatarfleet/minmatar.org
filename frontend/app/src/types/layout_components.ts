@@ -417,6 +417,7 @@ export interface GroupItemUI {
     name:           string;
     description:    string | null;
     image_url:      string | null;
+    content?:       string | null;
     status?:        GroupStatus;
     last_update?:    Date;
 }
@@ -639,12 +640,7 @@ export interface DoctrineType {
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
     sigs:                   GroupBasic[];
-    ideal_composition?:     IdealComposition;
-}
-
-export interface IdealComposition {
-    ideal_fleet_size:   number;
-    [propName: string]: number;
+    location_ids:           number[];
 }
 
 export interface FittingGroup {
@@ -652,7 +648,7 @@ export interface FittingGroup {
     modules:    CargoItem[];
 }
 
-export const stagings = ['auga', 'watermellon',  'vard', 'evati', 'amarr'] as const
+export const stagings = ['watermellon', 'amamake', 'r6', 'amarr'] as const
 export type StagingType = typeof stagings[number]
 
 import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
@@ -759,11 +755,10 @@ export interface RouteStations {
 export type DoctrineTypes = typeof doctrine_types[number]
 
 export const doctrine_types = [
-    'casual',
-    'skirmish',
+    'non_strategic',
+    'training',
     'strategic',
-    'specialized',
-]
+] as const
 
 export interface SystemCardInfo {
     system_name:            string;
@@ -998,4 +993,20 @@ import type { SummaryCharacter, CharacterErrors } from '@dtypes/api.minmatar.org
 export interface CharacterErrorUI {
     character?:         SummaryCharacter,
     error:              CharacterErrors;
+}
+
+export interface DoctrineLocationUI {
+    id:                 number;
+    name:               string;
+    doctrine_count:     number;
+    doctrines:          DoctrineType[];
+}
+
+import type { FittingMarketData } from '../helpers/fetching/market';
+
+export interface MarketLocationUI {
+    name:               string;
+    doctrine_count:     number;
+    completion:         number;
+    fittings:           FittingMarketData[];
 }

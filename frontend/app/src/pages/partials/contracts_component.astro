@@ -2,59 +2,101 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-const is_supplier = user_is_superadmin || user_permissions.includes('market.add_evemarketcontractresponsibility')
-
+import type { MarketLocationUI, SelectOptions } from '@dtypes/layout_components';
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_contracts_data } from '@helpers/pages/contracts'
 import type { ContractsData } from '@helpers/pages/contracts'
+import type { LocationMarketData } from '@helpers/fetching/market'
+import { get_ship_info } from '@helpers/sde/ships'
 
 let contracts_data:ContractsData = {}
-let data_fetching_error
+let data_fetching_error = ''
 
 try {
-    contracts_data = await get_contracts_data(auth_token as string, lang)
+    contracts_data = await get_contracts_data(lang)
 } catch (error) {
     data_fetching_error = error.message
 }
 
 const {
-    contracts_trade_hubs = [],
-    characters_options = [],
-    corporations_options = [],
+    market_locations = [],
 } = contracts_data
+
+let doctrines:string[] = []
+
+let active_location_name = Astro.url.searchParams.get('location_name') ?? (market_locations[0]?.location_name ?? '')
+
+if (market_locations.length > 0) {
+    if (active_location_name === '' || !market_locations.find(location => location.location_name === active_location_name) )
+        active_location_name = market_locations[0].location_name
+}
+
+const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
+    let completion = 0
+    let total_expectations = 0
+
+    const fittings = location.doctrines.map(doctrine => {
+        if (location.location_name === active_location_name)
+            doctrines.push(doctrine.doctrine_name)
+
+        return doctrine.fittings.map(fitting => {
+            const expected_quantity = fitting.expectation_quantity ?? 0
+            const current_quantity = fitting.current_quantity ?? 0
+            completion += current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 0
+            total_expectations += expected_quantity > 0 ? 1 : 0
+            
+
+            return {
+                ...fitting,
+                doctrine_name: doctrine.doctrine_name,
+            }
+        })
+    }).flat()
+
+    const ship_ids = fittings.map((fitting) => fitting.ship_id)
+    const unique_ship_ids = Array.from(new Set(ship_ids))
+    
+    let ship_info_map: Record<number, string> = {}
+    await Promise.all(unique_ship_ids.map(async (ship_id) => {
+        const ship_info = await get_ship_info(ship_id)
+        ship_info_map[ship_id] = ship_info ? ship_info.type : 'Unclassified'
+    }))
+
+    const sorted_location_fittings = fittings.sort((a, b) => {
+        return SHIP_TYPES_SORTED.indexOf(ship_info_map[a.ship_id.toString()] as string) - SHIP_TYPES_SORTED.indexOf(ship_info_map[b.ship_id.toString()] as string)
+    })
+
+    return {
+        name: location.location_name,
+        doctrine_count: location.doctrines.length,
+        completion: total_expectations > 0 ? (completion / total_expectations) : 100,
+        fittings: sorted_location_fittings,
+    } as MarketLocationUI
+}))
+
+const unique_doctrines = Array.from(new Set(doctrines))
+
+const doctrines_select_options = unique_doctrines.map( doctrine_name => {
+    return { label: doctrine_name, value: doctrine_name } as SelectOptions
+})
 
 import { query_string } from '@helpers/string';
 
-let staging = Astro.url.searchParams.get('staging')
+const CONTRACTS_PARTIAL_URL = translatePath(`/partials/contracts_component?${query_string({
+    location_name: active_location_name
+})}`)
 
-const contracts_view_mode = Astro.cookies.has('contracts_view_mode') ? (Astro.cookies.get('contracts_view_mode')?.value as string) : 'cards'
+const active_market_locations_ui = market_locations_ui.find(location => location.name === active_location_name)
+const contracts_count = active_market_locations_ui?.fittings.length ?? 0
 
-const CONTRACTS_PARTIAL_URL = `${translatePath(`/partials/contracts_component`)}?staging=${query_string(staging)}`
-
-const contracts_count = contracts_trade_hubs?.reduce((c, hub) => c + hub.contract_groups.reduce((c, group) => c + group.contracts.length, 0), 0)
-
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import ContractsList from '@components/blocks/ContractsList.astro'
+import ContractsTable from '@components/blocks/ContractsTable.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 ---
-        
+
 {data_fetching_error ?
     <ErrorRefetch
         args={{
@@ -64,22 +106,19 @@ import ContractsList from '@components/blocks/ContractsList.astro'
         }}
     />
     :
-    <ContractsList
-        trade_hubs={contracts_trade_hubs}
-        characters_options={characters_options}
-        corporations_options={corporations_options}
-        is_supplier={is_supplier}
-        active_hub={staging}
-        tabular={contracts_view_mode === 'tabular'}
-    />
-    <p x-show="contracts_count === 0" class="[ text-center ]">{t('no_results')}</p>
-    
-    <div
-        x-data={`{
-            init() {
-                contracts_count = ${contracts_count}
-                $el.remove()
-            }
-        }`}
-    />
+    active_market_locations_ui !== undefined ?
+        <div
+            x-data={`{
+                init() {
+                    contracts_count = ${contracts_count}
+                    doctrines_select_options = ${JSON.stringify(doctrines_select_options)}
+                    $el.remove()
+                }
+            }`}
+        />  
+        <ContractsTable
+            active_market_locations_ui={active_market_locations_ui}
+            non_active_market_locations_ui={non_active_market_locations_ui}
+        /> :
+        <p>{t('no_market_locations')}</p>
 }

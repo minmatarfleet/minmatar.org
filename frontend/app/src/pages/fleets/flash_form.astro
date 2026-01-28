@@ -27,15 +27,14 @@ import { create_fleet, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import type { FleetRequest } from '@dtypes/api.minmatar.org'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
-const RICKETY_ROOST = 1049037316814
+const audience_id = parseInt(Astro.url.searchParams.get('audience_id') ?? '0')
 
 const fleet_data = {
     doctrine_id: null,
     description: 'FLASH FORM - More details in-game and voice chat',
-    location_id: RICKETY_ROOST,
     start_time: new Date(),
     type: 'non_strategic',
-    audience_id: 1,
+    audience_id: audience_id,
     disable_motd: false,
 } as FleetRequest
 

@@ -1,4 +1,4 @@
-import type { Contract, Character, MarketCorporation, MarketExpectation, MarketLocation } from '@dtypes/api.minmatar.org'
+import type { Contract, Character, MarketCorporation, MarketExpectation, MarketLocation, DoctrineFitting } from '@dtypes/api.minmatar.org'
 import { get_error_message, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/market`
@@ -32,34 +32,6 @@ export async function get_market_contracts() {
     }
 }
 
-export async function get_market_locations() {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/locations`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ))
-        }
-
-        return await response.json() as MarketLocation[];
-    } catch (error) {
-        throw new Error(`Error fetching market locations: ${error.message}`);
-    }
-}
 
 export async function get_market_contract_by_id(expectation_id:number) {
     const headers = {
@@ -216,5 +188,74 @@ export async function get_market_expectation(access_token:string) {
         return await response.json() as MarketExpectation[];
     } catch (error) {
         throw new Error(`Error fetching market expectations: ${error.message}`);
+    }
+}
+
+export async function get_market_locations_with_doctrines() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${import.meta.env.API_URL}/api/doctrines/market/locations`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as DoctrineFitting[];
+    } catch (error) {
+        throw new Error(`Error fetching market locations with doctrines: ${error.message}`);
+    }
+}
+
+export interface LocationFittingExpectation {
+    fitting_id: number
+    fitting_name: string
+    expectation_id: number
+    quantity: number
+}
+
+export interface LocationExpectations {
+    location_id: number
+    location_name: string
+    solar_system_name: string
+    short_name: string
+    expectations: LocationFittingExpectation[]
+}
+
+export async function get_market_expectations_by_location() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/expectations/by-location`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as LocationExpectations[];
+    } catch (error) {
+        throw new Error(`Error fetching market expectations by location: ${error.message}`);
     }
 }

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { GroupItemUI, GroupItemType } from '@dtypes/layout_components'
 
@@ -16,27 +16,18 @@ const {
 
 import Grid from '@components/compositions/Grid.astro';
 
-import GroupItem from '@components/blocks/GroupItem.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import GroupCard from '@components/blocks/GroupCard.astro';
 ---
+
 <Grid
-    id="groups-list"
-    min_item_width='400px'
-    row_gap='var(--space-2xs)'
-    column_gap='var(--space-2xs)'
-    class="grid-fill"
+    role="list"
+    class="[ w-full grid-fill max-w-245.5 ]"
+    min_item_width='240px'
+    row_gap='var(--space-3xs)'
+    column_gap='var(--space-3xs)'
 >
     {groups.map((group) =>
-        <ComponentBlock
-            class="[ w-full ]"
-            padding_inline='var(--space-s)'
-            padding_block='var(--space-s)'
-        >
-            <GroupItem
-                group={group}
-                type={groups_type}
-            />
-        </ComponentBlock>
+        <GroupCard group={group} groups_type={groups_type} />
     )}
     {groups.length == 0 &&
         <slot>

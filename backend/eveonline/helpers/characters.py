@@ -8,12 +8,9 @@ from pydantic import BaseModel
 from audit.models import AuditEntry
 from eveonline.models import (
     EvePlayer,
-    EvePrimaryCharacter,
     EveCharacter,
-    EvePrimaryCharacterChangeLog,
 )
 from eveonline.scopes import TokenType, scopes_for
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +33,10 @@ class CorporationCharacterResponse(BaseModel):
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
 
-    # New method using the EvePlayer entity
+    # Use the EvePlayer entity
     player = user_player(user)
     if player and player.primary_character:
         return player.primary_character
-
-    # Fall-back to old EvePrimaryCharacter
-    pc = EvePrimaryCharacter.objects.filter(user=user).first()
-    if pc:
-        logger.error(
-            "Found primary using outdated method 1: %s",
-            pc.character.character_name,
-        )
-        return pc.character
 
     return None
 
@@ -73,11 +61,6 @@ def set_primary_character(user: User, character: EveCharacter):
 
     current_primary = user_primary_character(user)
     if current_primary and (current_primary != character):
-        EvePrimaryCharacterChangeLog.objects.create(
-            username=user.username,
-            previous_character_name=current_primary.character_name,
-            new_character_name=character.character_name,
-        )
         AuditEntry.objects.create(
             user=user,
             character=character,
@@ -85,12 +68,13 @@ def set_primary_character(user: User, character: EveCharacter):
             category="primary_char",
             summary=f"User {user.username} set primary character to {character.character_name}",
         )
-        current_primary.is_primary = False
-        current_primary.save()
-        EvePrimaryCharacter.objects.filter(user=user).delete()
+        # Update the old primary character's is_primary status via EvePlayer
+        old_player = user_player(user)
+        if old_player and old_player.primary_character == current_primary:
+            old_player.primary_character = None
+            old_player.save()
 
     character.user = user
-    character.is_primary = True
     character.save()
 
     player = user_player(user)

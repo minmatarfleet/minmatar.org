@@ -1,63 +1,19 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
-
-import { prod_error_messages } from '@helpers/env'
-
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
-import { is_officer, is_director } from '@helpers/fetching/groups'
-import type { PostListUI } from '@dtypes/layout_components'
-import { fetch_posts } from '@helpers/fetching/posts'
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-const can_view_applications = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
-const can_view_corp_members = is_superuser || user_permissions.includes('eveonline.view_evecorporation')
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
-
-let posts:PostListUI[] = []
-let total_posts:number = 0
-const PAGE_LENGTH = 9
-let total_pages:number = 0
-let post_fetching_error:string | false = false
-
-try {
-    const paginated_posts = await fetch_posts({
-        page_num: 1,
-        page_size: PAGE_LENGTH,
-        status: 'published',
-    })
-
-    posts = paginated_posts.chunk
-    total_posts = paginated_posts.total
-    total_pages = Math.ceil(total_posts/PAGE_LENGTH)
-} catch (error) {
-    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
-}
-
-const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component')}?page=1`
+const { t, translatePath } = i18n(Astro.url)
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
-import TextBox from '@components/layout/TextBox.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import AllianceReel from '@components/blocks/AllianceReel.astro';
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import PropagandaNewsReel from '@components/blocks/PropagandaNewsReel.astro'
+import TutorialBadge from '@components/blocks/TutorialBadge.astro';
+import Button from '@components/blocks/Button.astro';
+import FlexInline from '@components/compositions/FlexInline.astro'
 
 const page_title = t('alliance.page_title');
 const leading_text = t('alliance.leading_text');
@@ -81,48 +37,17 @@ const leading_text = t('alliance.leading_text');
     >
         <Flexblock gap='var(--space-2xl)'>
             <Wrapper
-                max_width="var(--max-landing-width)"
+                max_width="var(--max-text-width)"
                 padding_inline="0"
                 padding_block="0"
             >
                 <Flexblock gap='var(--space-xl)'>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p>{leading_text}</p>
+                    <p class="[ excerpt ]">{leading_text}</p>
                 </Flexblock>
             </Wrapper>
             
-            <AllianceReel
-                can_view_applications={can_view_applications}
-                user_is_officer={user_is_officer}
-                user_is_director={user_is_director}
-                can_view_corp_members={can_view_corp_members}
-                is_superuser={is_superuser}
-            />
-            
-            <Flexblock gap='var(--space-l)'>
-                <h2>{t('newsreel')}</h2>
-                <TextBox>
-                    <p>{t('news_timeline_description')}</p>
-                </TextBox>
-            </Flexblock>
-
-            {post_fetching_error ?
-                <ErrorRefetch
-                    args={{
-                        partial: POSTS_LIST_PARTIAL_URL,
-                        message: post_fetching_error,
-                        delay: 0,
-                    }}
-                />
-                :
-                posts.length > 0 ?
-                    <PropagandaNewsReel posts={posts} total_pages={total_pages} current_page={1} /> :
-                    t('no_posts')
-            }
-
-            <!--<Wrapper class="[ w-full ]" max_width="656px" padding_inline="0" padding_block="0" centered={true}>
-                <RatsWithGatsBanner thin={true} />
-            </Wrapper>-->
+            <AllianceReel />
         </Flexblock>
     </PageLanding>
 </Viewport>

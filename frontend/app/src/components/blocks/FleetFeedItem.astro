@@ -19,17 +19,15 @@ import StylessButton from './StylessButton.astro';
 ---
 
 <StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
-    <FlexInline
-        justification='space-between'
-        gap='0'
-    >
+    <FlexInline class="[ flex-nowrap ]" justification='flex-end'>
         <PilotBadge
-            class="[ basis-[220px] ]"
             character_id={fleet.fleet_commander_id}
             character_name={fleet.fleet_commander_name}
-        />
-        <small>{t(fleet.type as any)} {t('fleet')}</small>
-        <div class="[ text-center basis-[340px] ]">
+            heading={true}
+        >
+            <small>{t(fleet.type as any)} {t('fleet')}</small>
+        </PilotBadge>
+        <div class="[ fleet-status-text-wrapper ]">
             {fleet?.status === 'cancelled' &&
                 <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
             }
@@ -71,6 +69,12 @@ import StylessButton from './StylessButton.astro';
         outline-color: var(--highlight);
         outline-style: double;
         outline-offset: -1px;
+    }
+
+    .fleet-status-text-wrapper {
+        text-align: center;
+        flex-basis: 310px;
+        padding-right: var(--space-m);
     }
     
     .fleet-status-text {

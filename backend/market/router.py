@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from eveonline.models import EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,
@@ -41,6 +41,25 @@ class MarketExpectationResponse(BaseModel):
     location_id: int
     location_name: str
     quantity: int
+
+
+class LocationFittingExpectationResponse(BaseModel):
+    """Expectation for a fitting at a location"""
+
+    fitting_id: int
+    fitting_name: str
+    expectation_id: int
+    quantity: int
+
+
+class LocationExpectationsResponse(BaseModel):
+    """Location with its fitting expectations"""
+
+    location_id: int
+    location_name: str
+    solar_system_name: str
+    short_name: str
+    expectations: List[LocationFittingExpectationResponse]
 
 
 class MarketCharacterResponse(BaseModel):
@@ -443,31 +462,60 @@ def fetch_eve_market_contract(request, expectation_id: int):
 
 
 @router.get(
-    "/locations",
-    description="Fetch summaries of all market locations",
-    response={200: List[MarketLocationSummary]},
+    "/expectations/by-location",
+    description="Get all market contract expectations grouped by location and fitting",
+    response=List[LocationExpectationsResponse],
 )
-def get_market_locations(request) -> List[MarketLocationSummary]:
-    locations = []
-    for location in EveLocation.objects.filter(market_active=True):
-        contract_count = EveMarketContract.objects.filter(
-            location=location,
-            status="outstanding",
-        ).count()
-        expectation_count = EveMarketContractExpectation.objects.filter(
-            location=location
-        ).count()
-        locations.append(
-            MarketLocationSummary(
-                id=location.location_id,
-                name=location.location_name,
-                system_name=location.solar_system_name,
-                structure_id=location.structure_id,
-                contracts=contract_count,
-                expectations=expectation_count,
+def get_expectations_by_location(
+    request,
+) -> List[LocationExpectationsResponse]:
+    """
+    Returns all market contract expectations grouped by location.
+    Each location contains a list of fitting expectations.
+    """
+    # Get all expectations with their locations
+    expectations = EveMarketContractExpectation.objects.select_related(
+        "location", "fitting"
+    ).order_by("location__location_name", "fitting__name")
+
+    # Group by location
+    location_map = {}
+    for expectation in expectations:
+        location_id = expectation.location.location_id
+        if location_id not in location_map:
+            location_map[location_id] = {
+                "location": expectation.location,
+                "expectations": [],
+            }
+        location_map[location_id]["expectations"].append(expectation)
+
+    response = []
+    for location_id, data in location_map.items():
+        location = data["location"]
+        expectations_list = data["expectations"]
+
+        fitting_expectations = []
+        for expectation in expectations_list:
+            fitting_expectations.append(
+                LocationFittingExpectationResponse(
+                    fitting_id=expectation.fitting.id,
+                    fitting_name=expectation.fitting.name,
+                    expectation_id=expectation.id,
+                    quantity=expectation.quantity,
+                )
+            )
+
+        response.append(
+            LocationExpectationsResponse(
+                location_id=location.location_id,
+                location_name=location.location_name,
+                solar_system_name=location.solar_system_name,
+                short_name=location.short_name,
+                expectations=fitting_expectations,
             )
         )
-    return locations
+
+    return response
 
 
 @router.get(

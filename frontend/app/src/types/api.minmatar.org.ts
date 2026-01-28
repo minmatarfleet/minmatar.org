@@ -21,6 +21,7 @@ export interface Group {
     officers?:      number[];
     directors?:     number[];
     members:        number[];
+    content?:       string;
 }
 
 export interface SigRequest {
@@ -170,6 +171,7 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
     sig_ids:            number[];
+    location_ids:       number[];
 }
 
 export const fleet_status = ['active', 'upcoming', 'recent'] as const
@@ -210,7 +212,7 @@ export interface FleetRequest {
     description:        string;
     start_time:         Date;
     doctrine_id:        number | null;
-    location_id:        number;
+    location_id?:       number | null;
     audience_id:        number;
     disable_motd:       boolean;
     immediate_ping?:    boolean;
@@ -243,6 +245,7 @@ export interface Audience {
     id:                     number;
     display_name:           string;
     display_channel_name:   string;
+    image_url:              string | null;
 }
 
 export interface FleetMember {
@@ -259,6 +262,11 @@ export interface Location {
     location_name:      string;
     solar_system_id:    number;
     solar_system_name:  string;
+    short_name:         string;
+    region_id:          number | null;
+    market_active:      boolean;
+    freight_active:     boolean;
+    staging_active:     boolean;
 }
 
 export interface FleetUsers {
@@ -369,15 +377,6 @@ export interface RouteCost {
     cost:       number;
 }
 
-export interface DoctrineComposition {
-    ideal_fleet_size:   number;
-    composition:        Ships[];
-}
-
-export interface Ships {
-    fitting:            Fitting;
-    ideal_ship_count:   number;
-}
 
 export interface SystemMoon {
     id:         number;
@@ -528,8 +527,30 @@ export interface MarketExpectation {
 export interface MarketLocation {
     id:             number;
     name:           string;
+    system_name:    string;
     contracts:      number;
+    expectations:   number;
     structure_id:   number;
+}
+
+export interface DoctrineFitting {
+    fitting_id:         number;
+    fitting_name:       string;
+    role:               string;
+}
+
+export interface MarketDoctrine {
+    doctrine_id:        number;
+    doctrine_name:      string;
+    fittings:           DoctrineFitting[];
+}
+
+export interface MarketLocationDoctrine {
+    location_id:        number;
+    location_name:      string;
+    solar_system_name:  string;
+    short_name:         string;
+    doctrines:          MarketDoctrine[];
 }
 
 export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const

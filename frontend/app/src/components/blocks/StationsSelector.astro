@@ -19,25 +19,20 @@ const staging_to_filter = current_staging !== undefined ? current_staging : 'ran
 import { get_item_icon } from '@helpers/eve_image_server'
 
 const STAGINGS = [{
-        title: 'Vard - Rickety Roost',
-        subtitle: t('minmatar_fleet_hq'),
+        title: 'Amamake - 5 times nearly AT winners',
+        subtitle: t('fw_hq_description'),
+        type_id: 35834,
+        slug: 'amamake',
+    }, {
+        title: 'R-6KYM - Here be Rats',
+        subtitle: t('slyce_hq_description'),
         type_id: 35833,
-        slug: 'vard',
+        slug: 'r6',
     }, {
         title: 'Sosala - WATERMELLON',
-        subtitle: t('former_hq_description'),
+        subtitle: t('watermellon_description'),
         type_id: 35833,
         slug: 'watermellon',
-    }, { 
-        title: 'Auga - Minmatar Militia HQ',
-        subtitle: t('former_hq_description'),
-        type_id: 35833,
-        slug: 'auga',
-    }, {
-        title: 'Evati - Scurry Tzu\'s House of Wisdom',
-        subtitle: t('evati_hq_description'),
-        type_id: 35832,
-        slug: 'evati',
     }, {
         title: 'Random',
         subtitle: t('random_staging'),

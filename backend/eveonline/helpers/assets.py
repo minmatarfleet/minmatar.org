@@ -1,12 +1,10 @@
-import json
 import logging
 from typing import List, Optional
 
 import pydantic
 
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacter, EveCharacterAsset
-from structures.models import EveStructure
+from eveonline.models import EveCharacter, EveCharacterAsset, EveLocation
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +52,8 @@ def non_ship_location(location_flag: str) -> bool:
     return False
 
 
-def create_character_assets(character: EveCharacter):
-    """Create assets for a character"""
+def create_character_assets(character: EveCharacter, assets_data: List[dict]):
+    """Create assets for a character from ESI assets data"""
     updated = 0
     created = 0
     deleted = 0
@@ -69,23 +67,28 @@ def create_character_assets(character: EveCharacter):
     type_names = {}
 
     esi = EsiClient(None)
-    assets: List[EveAssetResponse] = json.loads(character.assets_json)
+    assets: List[EveAssetResponse] = [
+        EveAssetResponse(**asset) for asset in assets_data
+    ]
     for asset in assets:
         logger.debug("Processing asset %s", asset)
-        asset = EveAssetResponse(**asset)
 
         if non_ship_location(asset.location_flag):
             continue
 
         # Check location type first as it can rule out a lot of items quickly
-        location = None
+        location_name = None
         if asset.location_type == "station":
-            location = esi.get_station(asset.location_id)
+            location_name = esi.get_station(asset.location_id).name
         elif asset.location_type == "item":
-            if EveStructure.objects.filter(id=asset.location_id).exists():
-                location = EveStructure.objects.get(id=asset.location_id)
+            if EveLocation.objects.filter(
+                location_id=asset.location_id
+            ).exists():
+                location_name = EveLocation.objects.get(
+                    location_id=asset.location_id
+                ).location_name
             else:
-                continue
+                location_name = "Unknown Location - " + str(asset.location_id)
         else:
             continue
 
@@ -120,7 +123,7 @@ def create_character_assets(character: EveCharacter):
             type_id=eve_type.id,
             type_name=type_name,
             location_id=asset.location_id,
-            location_name=location.name,
+            location_name=location_name,
             character=character,
             item_id=asset.item_id,
         )

@@ -6,6 +6,8 @@ import { prod_error_messages } from '@helpers/env'
 
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
+import { get_ship_type_icon } from '@helpers/eve'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
@@ -25,26 +27,23 @@ fittings.forEach((fitting) => {
         console.log(fitting.ship_type)
 })
 
-const fitting_ship_types = Object.keys(ship_type)
+let fitting_ship_types = Object.keys(ship_type)
+fitting_ship_types = fitting_ship_types.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a) - SHIP_TYPES_SORTED.indexOf(b))
 
 let fittings_grouped_by_ship_type:FittingItem[][] = []
 fitting_ship_types.forEach((fitting_ship_type) => {
-    fittings_grouped_by_ship_type.push(fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)))
-     // = [ ...fittings_grouped_by_ship_type, ...fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name)) ]
+    fittings_grouped_by_ship_type.push(
+        fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
+    )
 })
 
 let fitting_type_filter:string[] = [];
-let ship_type_filter:string[] = [];
 
 for (let i in fitting_type)
     fitting_type_filter.push(fitting_type[i])
 fitting_type_filter.sort( (a, b) => a.localeCompare(b))
 
 const search_type = Astro.url.searchParams.get('type')
-
-for (let i in ship_type)
-    ship_type_filter.push(ship_type[i])
-ship_type_filter.sort( (a, b) => a.localeCompare(b))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -119,33 +118,35 @@ const page_title = t('fitting.list.page_title');
                 </Flexblock>
             </FlexInline>
             <FlexInline class="[ !items-start ]">
-                <Input type="text"
+                <Input
+                    type="text"
                     placeholder={t('filter')}
                     x-model="fitting_name_filter"
                     x-on:keyup="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') })"
+                    x-init="$el.focus()"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:block ]">
+                <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="fitting_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
-                        <option selected value="-1">{t('fitting_type')}</option>
+                        <option selected value="-1">{t('all_fitting_types')}</option>
                         {fitting_type_filter.map((option) => 
                             <option value={option}>{option}</option>
                         )}
                     </Select>
                 </div>
 
-                <div class="[ hidden xl:block ]">
+                <div class="[ hidden xl:!block ]">
                     <Select
                         x-model="ship_type_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
-                        <option selected value="-1">{t('ship_type')}</option>
-                        {ship_type_filter.map((option) => 
+                        <option selected value="-1">{t('all_ship_type')}</option>
+                        {fitting_ship_types.map((option) => 
                             <option value={option}>{option}</option>
                         )}
                     </Select>
@@ -160,7 +161,16 @@ const page_title = t('fitting.list.page_title');
                         class="[ fitting-groups ]"
                         gap='var(--space-m)'
                     >
-                        <h2>{group_fittings[0].ship_type}</h2>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <img
+                                class="[ mt-[2px] ]"
+                                src={`/images/icons/ships/${get_ship_type_icon(group_fittings[0].ship_type)}`}
+                                height="32"
+                                width="32"
+                                alt={`${group_fittings[0].ship_type} icon`}
+                            />
+                            <h2>{group_fittings[0].ship_type}</h2>
+                        </FlexInline>
                         <Grid
                             role="list"
                             class="[ w-full grid-fill ]"

@@ -76,15 +76,17 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 >
     <Flexblock gap="var(--space-3xs)">
         <ComponentBlock>
-            <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
                 <FlexInline class="[ grow !items-start ]" justification='space-between'>
-                    <Flexblock class="[ basis-[250px] ]" gap='var(--space-3xs)'>
-                        <h4>{t('fleet_commander')}</h4>
+                    <Flexblock gap='var(--space-3xs)'>
                         <PilotBadge
                             character_id={fleet.fleet_commander_id}
                             character_name={fleet.fleet_commander_name}
-                            size={32}
-                        />
+                            size={64}
+                            heading={true}
+                        >
+                            <small>{t('fleet_commander')}</small>
+                        </PilotBadge>
                     </Flexblock>
                     {can_remove_fleet &&
                         <FlexInline>
@@ -139,6 +141,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </TextBox>
                 </Flexblock>
 
+                <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} fleet_tracking_texts={fleet_tracking_texts} />
+
                 {history &&
                     <AARLinkButton
                         aarlink={fleet.aar_link ? fleet.aar_link : undefined}
@@ -154,8 +158,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 </VerticalCenter> -->
             </Flexblock>
         </ComponentBlock>
-
-        <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} fleet_tracking_texts={fleet_tracking_texts} />
 
         {is_fleet_commander &&
             <div

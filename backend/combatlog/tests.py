@@ -147,7 +147,7 @@ class DamageParseTest(SimpleTestCase):
 
         self.assertEqual(4, len(dmg_events))
 
-        (dmg_done, dmg_taken) = total_damage(dmg_events)
+        dmg_done, dmg_taken = total_damage(dmg_events)
 
         self.assertEqual(260, dmg_done)
         self.assertEqual(280, dmg_taken)

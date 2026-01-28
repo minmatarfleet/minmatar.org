@@ -1,28 +1,42 @@
 ---
 interface Props {
+    title:              string;
+    description:        string;
     cover:              string;
     [propName: string]: any;
 }
 
 const {
+    title,
+    description,
     cover,
     ...attributes
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 ---
 
-<ComponentBlock class:list={['relative ', Astro.props.class ]}>
+<ComponentBlock
+    class:list={['relative swiper-card', Astro.props.class ]}
+    padding_inline='var(--component-padding-block)'
+>
     <img class="[ z-0 ]" src={cover} />
     
-    <BlockList class="[ relative z-10 !justify-between min-h-[340px] ]">
-        <slot name="header" />
+    <BlockList class="[ relative z-10 !justify-end min-h-[420px] ]">
+        <Flexblock gap='var(--space-3xs)'>
+            <slot name="icon" />
+            <h2>{title}</h2>
+        </Flexblock>
         
         <Flexblock gap='var(--space-m)'>
-            <slot />
+            <Markdown class="[ max-w-[380px] ]" markdown={description} inline={true} />
+
+            <FlexInline><slot /></FlexInline>
         </Flexblock>
     </BlockList>
 </ComponentBlock>
@@ -35,6 +49,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         left: 0;
         height: 100%;
         width: 100%;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 50%, transparent 90%);
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 65%, transparent 90%);
+    }
+
+    h2 {
+        font-size: var(--step-3);
     }
 </style>
