@@ -1598,5 +1598,6 @@ export const ui = {
         'all_doctrines': 'All doctrines',
         'no_market_locations': 'There are currently no market locations.',
         'all_locations': 'All locations',
+        'models_credits': '3D ship models credits to [EstamelGG/EVE_Model_Gallery](https://github.com/EstamelGG/EVE_Model_Gallery) ❤️',
     },
 } as const;

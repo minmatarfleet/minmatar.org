@@ -18,7 +18,6 @@ const show_controls = Astro.url.searchParams.get('controls') ?? null
 import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
-import { get_fitting_combatlogs } from '@helpers/fetching/combatlog'
 
 let fitting:Fitting | null = null
 let get_fitting_error:string | false = false
@@ -87,7 +86,6 @@ import Grid from '@components/compositions/Grid.astro';
 import FittingCustom from '@components/blocks/FittingCustom.astro';
 import Button from '@components/blocks/Button.astro';
 import Cargohold from '@components/blocks/CargoHold.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import Input from '@components/blocks/Input.astro';
@@ -114,7 +112,13 @@ const page_description = await strip_markdown(fitting?.description ?? '')
         window.location.href = normal_view
 </script>
 
-<Viewport title={page_title} meta_description={page_description}>
+<Viewport
+    title={page_title}
+    meta_description={page_description}
+    components={{
+        alert_dialog: true,
+    }}
+>
     <PageLanding
         cover={{
             image: "/images/fitting-cover.jpg",
