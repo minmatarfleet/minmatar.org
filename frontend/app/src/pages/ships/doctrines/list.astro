@@ -1,21 +1,22 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
 
-import type { DoctrineType } from '@dtypes/layout_components'
+import type { DoctrineType, DoctrineLocationUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 import type { Location } from '@dtypes/api.minmatar.org'
-import type { DoctrineLocationUI } from '@dtypes/layout_components'
 
 let doctrines:DoctrineType[] = []
 let fetch_doctrines_error:string | null = null
 let all_locations:Location[] = []
 let location_doctrine_counts_map: Map<number, number> = new Map()
 let all_locations_ui: DoctrineLocationUI[] = []
+
+const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
 
 try {
     doctrines = await fetch_doctrines()
@@ -58,20 +59,31 @@ try {
         )
 
         return {
-            name: locaction.location_name,
+            id: locaction.location_id,
+            name: locaction.short_name,
             doctrine_count: location_doctrine_counts_map.get(locaction.location_id) || 0,
             doctrines: sorted_location_doctrines
         } as DoctrineLocationUI
+    })
+
+    all_locations_ui.push({
+        id: 0,
+        doctrine_count: doctrines.length,
+        doctrines: doctrines,
+        name: t('all_locations'),
     })
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const are_sigs_doctrines = doctrines.find((doctrine) => doctrine.sigs.length > 0)
+const active_doctrine_locations_ui = all_locations_ui.find(location => location.id === active_location_id)
+const doctrines_count = active_doctrine_locations_ui?.doctrine_count ?? 0
+
+const non_active_doctrine_locations_ui = all_locations_ui.filter(location => location.id !== active_location_id)
+
+const are_sigs_doctrines = active_doctrine_locations_ui?.doctrines.find((doctrine) => doctrine.sigs.length > 0)
 
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component`)
-
-import { semantic_list } from '@helpers/array';
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -80,10 +92,9 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import DoctrineCard from '@components/blocks/DoctrineCard.astro';
+import DoctrinesList from '@components/blocks/DoctrinesList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 const page_title = t('doctrines.page_title');
@@ -103,7 +114,7 @@ const page_title = t('doctrines.page_title');
         }}
         x-data={`{
             show_all: $persist(false),
-            doctrines_count: ${doctrines.length},
+            doctrines_count: ${doctrines_count},
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -113,7 +124,7 @@ const page_title = t('doctrines.page_title');
                         {page_title}
                     </PageTitle>
                     <small x-text={`\`\${doctrines_count} \${doctrines_count != 1 ? '${t('doctrines').toLowerCase()}' : '${t('doctrine').toLowerCase()}'}\``}>
-                        {doctrines.length} {doctrines.length != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}
+                        {doctrines_count} {doctrines_count != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -141,63 +152,11 @@ const page_title = t('doctrines.page_title');
                 }}
             />
             :
-            <Flexblock role="list" gap='var(--space-xl)'>
-                {all_locations_ui.map(location =>
-                    <Flexblock gap='var(--space-m)'>
-                        <Flexblock gap='var(--space-3xs)'>
-                            <h2>{location.name}</h2>
-                            <small>{`${location.doctrine_count} ${location.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}`}</small>
-                        </Flexblock>
-
-                        <Grid
-                            role="list"
-                            class="[ w-full grid-fill ]"
-                            min_item_width='240px'
-                            row_gap='var(--space-3xs)'
-                            column_gap='var(--space-3xs)'
-                        >
-                            {location.doctrines.map((doctrine) =>
-                                <a
-                                    class="[ doctrine-card-container ]"
-                                    x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
-                                    href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
-                                >
-                                    <DoctrineCard
-                                        doctrine={doctrine}
-                                        subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
-                                    />
-                                </a>
-                            )}
-                        </Grid>
-                    </Flexblock>
-                )}
-            </Flexblock>
+            active_doctrine_locations_ui !== undefined &&
+                <DoctrinesList
+                    active_doctrine_locations_ui={active_doctrine_locations_ui}
+                    non_active_doctrine_locations_ui={non_active_doctrine_locations_ui}
+                />
         }
     </PageWide>
 </Viewport>
-
-<style lang="scss">
-    .doctrine-groups:not(:has(.doctrine-card-container:not([style="display: none;"]))) {
-        border: 0;
-        clip: rect(0 0 0 0);
-        height: auto;
-        margin: 0;
-        overflow: hidden;
-        padding: 0;
-        position: absolute;
-        width: 1px;
-        white-space: nowrap;
-        left: 0;
-        top: 0;
-    }
-
-    .staging-selector {
-        h2 {
-            color: var(--faded);
-        }
-
-        small {
-            color: var(--fleet-yellow);
-        }
-    }
-</style>

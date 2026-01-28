@@ -11,11 +11,12 @@ import external_referrals from '@json/external-referrals.json'
 
 export function is_referral_url(pathname:string, lang:'en') {
     const translatePath = useTranslatedPath(lang)
+    const fixed_pathname = pathname.endsWith('/') ? pathname : pathname+'/'
 
     try {
         const referrable_pages = get_referrable_pages()
         
-        const referral = referrable_pages.find( page => translatePath(page.link ?? '') === pathname)
+        const referral = referrable_pages.find( page => translatePath(page.link ?? '') === fixed_pathname)
 
         return referral !== undefined
     } catch (error) {

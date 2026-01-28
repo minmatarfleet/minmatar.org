@@ -80,6 +80,8 @@ const doctrines_select_options = unique_doctrines.map( doctrine_name => {
     return { label: doctrine_name, value: doctrine_name } as SelectOptions
 })
 
+import { query_string } from '@helpers/string';
+
 const CONTRACTS_PARTIAL_URL = translatePath(`/partials/contracts_component?${query_string({
     location_name: active_location_name
 })}`)
@@ -88,8 +90,6 @@ const active_market_locations_ui = market_locations_ui.find(location => location
 const contracts_count = active_market_locations_ui?.fittings.length ?? 0
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
-
-import { query_string } from '@helpers/string';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ContractsTable from '@components/blocks/ContractsTable.astro';

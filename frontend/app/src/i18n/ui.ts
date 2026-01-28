@@ -1597,5 +1597,6 @@ export const ui = {
         'no_expectation': 'This fitting has no expectations.',
         'all_doctrines': 'All doctrines',
         'no_market_locations': 'There are currently no market locations.',
+        'all_locations': 'All locations',
     },
 } as const;

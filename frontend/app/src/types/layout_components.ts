@@ -996,6 +996,7 @@ export interface CharacterErrorUI {
 }
 
 export interface DoctrineLocationUI {
+    id:                 number;
     name:               string;
     doctrine_count:     number;
     doctrines:          DoctrineType[];
