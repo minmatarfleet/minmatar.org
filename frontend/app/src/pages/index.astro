@@ -218,7 +218,7 @@ const page_description = t('index.leading_text');
 						<a
 							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 							data-tippy-content={t('view_station_market_contracts')}
-							href={translatePath(`/market/contracts/?${query_string({staging: STAGINGS_STATIONS[staging]})}`)}
+							href={translatePath(`/market/contracts/?${query_string({location_name: STAGINGS_STATIONS[staging]})}`)}
 						>
 							<ContractsServiceEvEIcon />
 						</a>
