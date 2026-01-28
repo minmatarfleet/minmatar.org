@@ -5,55 +5,96 @@ const { t } = i18n(Astro.url)
 import type { FittingMarketData } from '@helpers/fetching/market'
 
 interface Props {
-    fitting: FittingMarketData;
-    [propName: string]: any;
+    fitting:                    FittingMarketData;
+    init_tooltips?:             boolean;
+    no_expectation_progress?:   boolean;
+    [propName: string]:         any;
 }
 
 const {
     fitting,
+    init_tooltips = false,
+    no_expectation_progress = true,
     ...attributes
 } = Astro.props
 
 const expected_quantity = fitting.expectation_quantity ?? 0
 const current_quantity = fitting.current_quantity ?? 0
 const low_amount = expected_quantity > 0 && (current_quantity <= (20 * expected_quantity) / 100)
+const completion = current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 100
 
-import FlexInline from "@components/compositions/FlexInline.astro";
+import { get_item_icon } from '@helpers/eve_image_server';
+
 import FixedFluid from "@components/compositions/FixedFluid.astro";
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import { get_item_icon } from '@helpers/eve_image_server';
+import Progress from '@components/blocks/Progress.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 ---
-<ComponentBlock padding_block='var(--space-2xs)' padding_inline='var(--space-2xs)' class="[ market-fitting-card ]" {...attributes}>
-    <FlexInline justification='space-between' class="[ !flex-nowrap ]">
-        <FixedFluid width='32px' class="[ items-center basis-[350px] ]">
-            <picture>
-                <img loading="lazy" src={get_item_icon(fitting.ship_id, 32)} width={32} height={32} />
-            </picture>
-            <h3 
-                x-on:click.stop.prevent={`copyFitToClipboard('fitting-name-${fitting.fitting_id}')`}
-                class="[ cursor-pointer title ]"
-                x-data={`{
-                    original_text: '${fitting.fitting_name}',
-                }`}
-                x-on:click.throttle.750ms={`$el.textContent = '${t('copied')}'; setTimeout(() => $el.textContent = original_text, 2000)`}
+
+<ComponentBlock
+    class="[ market-fitting-card ]"
+    padding_block='0'
+    padding_inline='0'
+    width='thin'
+    {...attributes}
+>
+    <Flexblock gap='1px'>
+        <FluidFixed width='230px' class="[ items-center! ]">
+            <FixedFluid width='64px' class="[ items-center! ]">
+                <picture>
+                    <img loading="lazy" src={get_item_icon(fitting.ship_id, 64)} width={64} height={64} />
+                </picture>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h4 class="[ title ]">{fitting.fitting_name}</h4>
+                    <small class="[ subtitle ]">{fitting.doctrine_name}</small>
+                </Flexblock>
+            </FixedFluid>
+
+            <FlexInline justification='space-between'>
+                <ClipboardButton
+                    class="[ action-button ]"
+                    text={t('copy_eft')}
+                    narrow={true}
+                    id={`${fitting.fitting_id.toString()}-row-copy`}
+                >
+                    {fitting.eft}
+                </ClipboardButton>
+                <span class="[ quantity ]"><b class:list={{ 'text-red': low_amount }}>{current_quantity}</b>{expected_quantity > 0 && `/${expected_quantity}`}</span>
+            </FlexInline>
+        </FluidFixed>
+        {(no_expectation_progress || expected_quantity > 0) &&
+            <Progress
+                class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
+                max="100"
+                value={completion}
+                data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
-                {fitting.fitting_name}
-            </h3>
-        </FixedFluid>
-
-        <FlexInline class="[ quantity basis-[150px] ]">
-            <span><b class:list={{ 'text-red': low_amount }}>{current_quantity}</b>/{expected_quantity}</span>
-        </FlexInline>
-
-        <slot name="actions" />
-    </FlexInline>
+                {completion.toFixed(2)}%
+            </Progress>
+        }
+    </Flexblock>
 </ComponentBlock>
-<textarea class="[ hidden ]" id={`fitting-name-${fitting.fitting_id}`} readonly>{fitting.fitting_name}</textarea>
 
 <style lang="scss">
     .market-fitting-card {
-        width: 100%;
+        @media (hover: hover) {
+            .action-button {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .action-button {
+                    opacity: 1;
+                }
+            }
+        }
     }
 
     .quantity {
@@ -62,12 +103,11 @@ import { get_item_icon } from '@helpers/eve_image_server';
         font-size: var(--step-0);
         font-weight: 400;
         color: var(--highlight);
+        text-align: right;
+        padding-right: var(--space-s);
     }
 
     .title {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         min-width: 0;
         flex: 1;
     }

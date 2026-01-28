@@ -182,7 +182,8 @@ export const SHIP_TYPES_SORTED = [
     'Transport Ship',
     'Freighter',
     'Jump Freighters',
-    'Industrialcommand'
+    'Industrialcommand',
+    'Unclassified',
 ]
 
 const METERS_IN_A_YEAR_LIGHT = 9460528400000000

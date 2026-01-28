@@ -3,8 +3,20 @@
 <style lang="scss">
     progress {
         --progress-height: var(--space-3xs);
+        --progress-color: var(--highlight);
+        --progress-glow-color: var(--highlight);
 
         display: block;
+
+        &.danger {
+            --progress-color: var(--fleet-red);
+            --progress-glow-color: var(--fleet-red);
+        }
+
+        &.disabled {
+            --progress-color: rgba(255, 255, 255, 0.2);
+            --progress-glow-color: transparent;
+        }
 
         &[value] {
             -webkit-appearance: none;
@@ -22,8 +34,8 @@
 
         &[value]::-webkit-progress-value {
             border-radius: 0; 
-            background-color: var(--highlight);
-            box-shadow: 0 0 10px 0px var(--highlight);
+            background-color: var(--progress-color);
+            box-shadow: 0 0 10px 0px var(--progress-glow-color);
         }
     }
 

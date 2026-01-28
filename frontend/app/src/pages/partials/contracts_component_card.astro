@@ -24,20 +24,12 @@ const {
 
 let doctrines:string[] = []
 
-let active_location_name = Astro.url.searchParams.get('location_name') ?? (market_locations[0]?.location_name ?? '')
-
-if (market_locations.length > 0) {
-    if (active_location_name === '' || !market_locations.find(location => location.location_name === active_location_name) )
-        active_location_name = market_locations[0].location_name
-}
-
 const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
     let completion = 0
     let total_expectations = 0
 
     const fittings = location.doctrines.map(doctrine => {
-        if (location.location_name === active_location_name)
-            doctrines.push(doctrine.doctrine_name)
+        doctrines.push(doctrine.doctrine_name)
 
         return doctrine.fittings.map(fitting => {
             const expected_quantity = fitting.expectation_quantity ?? 0
@@ -76,23 +68,20 @@ const market_locations_ui:MarketLocationUI[] = await Promise.all(market_location
 
 const unique_doctrines = Array.from(new Set(doctrines))
 
-const doctrines_select_options = unique_doctrines.map( doctrine_name => {
-    return { label: doctrine_name, value: doctrine_name } as SelectOptions
+const doctrines_select_options = unique_doctrines.map( (doctrine_name):SelectOptions => {
+    return { label: doctrine_name, value: doctrine_name }
 })
 
-const CONTRACTS_PARTIAL_URL = translatePath(`/partials/contracts_component?${query_string({
-    location_name: active_location_name
-})}`)
+// Calculate total contracts count from market locations
+const contracts_count = market_locations_ui.reduce((c, location) => c + location.fittings.length, 0)
 
-const active_market_locations_ui = market_locations_ui.find(location => location.name === active_location_name)
-const contracts_count = active_market_locations_ui?.fittings.length ?? 0
+const CONTRACTS_PARTIAL_URL = translatePath('/partials/contracts_component_card')
 
-const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
-
-import { query_string } from '@helpers/string';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import ContractsTable from '@components/blocks/ContractsTable.astro';
+import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 ---
@@ -106,7 +95,34 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
         }}
     />
     :
-    active_market_locations_ui !== undefined ?
+    market_locations.length > 0 &&
+        <Flexblock role="list" gap='var(--space-xl)'>
+            {market_locations_ui.map((location) =>
+                location.fittings.length > 0 &&
+                    <Flexblock role="list" gap='var(--space-m)'>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h2>{location.name}</h2>
+                            <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+                        </Flexblock>
+
+                        <Grid
+                            role="list"
+                            class="[ w-full grid-fill ]"
+                            min_item_width='350px'
+                            row_gap='var(--space-3xs)'
+                            column_gap='var(--space-3xs)'
+                        >
+                            {location.fittings.map((fitting) =>
+                                <div x-show="show_item($el)">
+                                    <MarketFittingCard fitting={fitting} init_tooltips={true} />
+                                </div>
+                            )}
+                            {<p class="[ no-result-text ]">{t('no_results')}</p>}
+                        </Grid>
+                    </Flexblock>
+            )}
+        </Flexblock>
+    
         <div
             x-data={`{
                 init() {
@@ -115,10 +131,11 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
                     $el.remove()
                 }
             }`}
-        />  
-        <ContractsTable
-            active_market_locations_ui={active_market_locations_ui}
-            non_active_market_locations_ui={non_active_market_locations_ui}
-        /> :
-        <p>{t('no_market_locations')}</p>
+        />
 }
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+</style>

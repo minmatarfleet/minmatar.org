@@ -52,6 +52,7 @@ try {
         const location_doctrines = doctrines.filter(doctrine => 
             doctrine.location_ids && doctrine.location_ids.includes(locaction.location_id)
         )
+        
         const sorted_location_doctrines = location_doctrines.sort((a, b) => 
             SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
         )
