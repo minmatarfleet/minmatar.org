@@ -173,7 +173,7 @@ const page_description = t('contracts.leading_text')
 
                 <Select
                     x-model="item_doctine_filter"
-                    x-on:change="setTimeout(function () { contracts_count = countVisibleElements('.title') })"
+                    x-on:change="setTimeout(function () { contracts_count = countVisibleElements('.title') }, 100)"
                 >
                     <option selected value="">{t('all_doctrines')}</option>
                     <template x-for="option in doctrines_select_options">
