@@ -125,6 +125,7 @@ import Markdown from '@components/blocks/Markdown.astro';
                 camera-controls
                 interaction-prompt="none"
                 disable-zoom
+                disable-pan
                 interpolation-decay={interpolation_decay}
                 x-data={`{
                     CAMERA_ROTATION_TIMER_MS: 15000,
@@ -152,16 +153,54 @@ import Markdown from '@components/blocks/Markdown.astro';
                         }
 
                         document.addEventListener('astro:after-swap', clearTimer)
+                        modelViewer.addEventListener('pointerdown', () => { clearInterval(timer) })
+                        modelViewer.addEventListener('pointerup', () => { timer = setInterval(cameraRotate, this.CAMERA_ROTATION_TIMER_MS, modelViewer, orbitCycle) })
                     }
                 }`}
             ></model-viewer> :
-            <small
+            <model-viewer
+                id="bear-model"
+                src={`/models/bearcube.glb`}
+                shadow-intensity="0"
+                interaction-prompt="none"
+                auto-rotate
+                interpolation-decay="50"
+                rotation-per-second="180deg"
+                camera-orbit="45deg 60deg 6m"
+                x-data={`{
+                    CAMERA_ROTATION_TIMER_MS: 200,
+                    init() {
+                        function cameraBounce(modelViewer, orbitCycle) {
+                            console.log('Tick')
+                            const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit)
+                            modelViewer.cameraOrbit = orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length]
+                        }
+
+                        const modelViewer = document.querySelector('#bear-model')
+                        const orbitCycle = [
+                            'auto auto 6m',
+                            'auto auto 10m',
+                        ]
+
+                        let timer = setInterval(cameraBounce, this.CAMERA_ROTATION_TIMER_MS, modelViewer, orbitCycle)
+
+                        function clearTimer(event) {
+                            console.log('clearing timer')
+                            clearInterval(timer)
+                            event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                        }
+
+                        document.addEventListener('astro:after-swap', clearTimer)
+                    }
+                }`}
+            ></model-viewer>
+            /*<small
                 class="[ animate-fade-in-up animate-delay-1000 ]"
                 x-show={!DISABLED_CCPWGL ? 'scene_loaded && !ship_loaded' : 'true' }
                 style={!DISABLED_CCPWGL ? "display: none" : undefined}
             >
                 {!DISABLED_CCPWGL ? t('ship_preview_not_available_for_ship') : t('ship_preview_not_available')}
-            </small>
+            </small>*/
         }
     </div>
 
@@ -251,6 +290,11 @@ import Markdown from '@components/blocks/Markdown.astro';
         position: absolute;
         width: 100%;
         height: 100%;
+    }
+
+    #bear-model {
+        width: 50%;
+        height: 50%;
     }
 
     svg {
