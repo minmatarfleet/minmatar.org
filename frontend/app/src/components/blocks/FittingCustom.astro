@@ -110,15 +110,35 @@ import Markdown from '@components/blocks/Markdown.astro';
     </div>
 
     <div class="[ empty ]">
-
         {ship_model_supported ?
             <model-viewer
+                id="ship-model"
                 src={`https://estamelgg.github.io/EVE_Model_Gallery/models/${ship_id}_lite.glb`}
-                ar
                 shadow-intensity="0"
                 camera-controls
-                touch-action="pan-y"
-            ></model-viewer> :
+                interaction-prompt="none"
+                disable-zoom
+                interpolation-decay="400"
+            ></model-viewer>
+            <script is:inline>
+                (() => {
+                    const modelViewer = document.querySelector('#ship-model');
+                    const orbitCycle = [
+                        '45deg 55deg 4m',
+                        '-60deg 110deg 4m',
+                        modelViewer.cameraOrbit
+                    ];
+
+                    let interval = setInterval(() => {
+                        const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit);
+                        modelViewer.cameraOrbit =
+                            orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length];
+
+                        if (!document.querySelector('#ship-model'))
+                            clearInterval(interval)
+                    }, 15000);
+                })();
+            </script> :
             <small
                 class="[ animate-fade-in-up animate-delay-1000 ]"
                 x-show={!DISABLED_CCPWGL ? 'scene_loaded && !ship_loaded' : 'true' }
@@ -155,7 +175,7 @@ import Markdown from '@components/blocks/Markdown.astro';
         </FlexInline>
     </div>
 
-    <div class="[ credits ]">
+    <div class="[ credits ][ absolute ]">
         <Markdown inline={true} inline_element='small' markdown={t('models_credits')} />
     </div>
 </div>
@@ -186,7 +206,6 @@ import Markdown from '@components/blocks/Markdown.astro';
     }
 
     .credits {
-        position: absolute;
         bottom: var(--space-xs);
         left: 50%;
         transform: translateX(-50%);
