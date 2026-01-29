@@ -128,20 +128,22 @@ import Markdown from '@components/blocks/Markdown.astro';
                 interpolation-decay={interpolation_decay}
                 x-data={`{
                     CAMERA_ROTATION_TIMER_MS: 15000,
-                    cameraRotate() {
-                        console.log('Ticking ${`ship-model-${ship_id}`}')
+                    init() {
+                        function cameraRotate(modelViewer, orbitCycle) {
+                            console.log('Ticking ${`ship-model-${ship_id}`}')
+
+                            const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit)
+                            modelViewer.cameraOrbit = orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length]
+                        }
+
                         const modelViewer = document.querySelector('#${`ship-model-${ship_id}`}')
                         const orbitCycle = [
                             '45deg 55deg 100%',
                             '-60deg 110deg 100%',
                             modelViewer.cameraOrbit
-                        ];
+                        ]
 
-                        const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit)
-                        modelViewer.cameraOrbit = orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length]
-                    },
-                    init() {
-                        let timer = setInterval(this.cameraRotate, this.CAMERA_ROTATION_TIMER_MS)
+                        let timer = setInterval(cameraRotate, this.CAMERA_ROTATION_TIMER_MS, modelViewer, orbitCycle)
 
                         function clearTimer(event) {
                             console.log('clearing timer')
