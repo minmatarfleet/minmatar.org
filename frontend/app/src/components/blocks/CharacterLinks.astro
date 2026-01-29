@@ -8,12 +8,14 @@ interface Props {
     character_id:       number,
     user?:              User | false,
     user_permissions?:  string[]
+    is_alliance?:       boolean;
 }
 
 const {
     character_id,
     user = null,
     user_permissions = [],
+    is_alliance = true,
 } = Astro.props
 
 import { get_zkillboard_character_link } from '@helpers/eve'
@@ -28,7 +30,7 @@ import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
 ---
 
 <FlexInline gap='var(--space-3xs)'>
-    {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
+    {is_alliance && user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
         <a
             class="[ w-[32px] neocom-button neocom-button-focus ]"
             data-tippy-content={t('skillsets')}
@@ -38,7 +40,7 @@ import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
             <SkillsEvEIcon />
         </a>
     }
-    {user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
+    {is_alliance && user && (user.is_superuser || user_permissions.includes('eveonline.view_evecharacter')) &&
         <a
             class="[ w-[32px] neocom-button neocom-button-focus ]"
             data-tippy-content={t('assets')}

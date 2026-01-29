@@ -32,16 +32,16 @@ const page_description = t('404.leading_text');
                 <p>{page_description}</p>
             </Flexblock>
 
-            <ButtonStack>
+            <div>
                 <Button color={'fleet-red'} href={translatePath('/')}>
                     {t('back_to_safe')}
                 </Button>
-            </ButtonStack>
+            </div>
         </Flexblock>
     </PageLanding>
 </Viewport>
 
-<style lang="scss">
+<style lang="scss" is:global>
     #content {
         min-height: 100vh;
         display: flex;
