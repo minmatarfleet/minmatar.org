@@ -18,14 +18,18 @@ const show_controls = Astro.url.searchParams.get('controls') ?? null
 import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
+import { get_ship_info } from '@helpers/sde/ships'
 
 let fitting:Fitting | null = null
 let get_fitting_error:string | false = false
 let fetch_fleets_error:string | false = false
 let saved_logs:FleetCombatLog[] = []
+let ship_type:string | undefined = ''
 
 try {
     fitting = await get_fitting_by_id(parseInt(fitting_id ?? '0'))
+    const ship_info = await get_ship_info(fitting.ship_id)
+    ship_type = ship_info?.type
 } catch (error) {
     get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
 }
@@ -62,16 +66,15 @@ await Promise.all((fitting_parsed?.high_slots ?? []).map(async (module, index) =
 const minimum_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
 const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
 
+import { is_disabled_ccpwgl } from '@helpers/env';
+const DISABLED_CCPWGL = is_disabled_ccpwgl()
+
 const DEFAULT_ZOOM = 3
 const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
-const ship_dna = await get_ship_dna(ship_id ?? 0, fitting_parsed?.subsystem_slots ?? [])
+const ship_dna = DISABLED_CCPWGL ? null : await get_ship_dna(ship_id ?? 0, fitting_parsed?.subsystem_slots ?? [])
 
 const CAMERA_ZOOM = (fitting_parsed?.subsystem_slots?.length ?? 0) > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
-
-import { is_disabled_ccpwgl } from '@helpers/env';
-
-const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -430,6 +433,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
 
         <FittingCustom
             ship_id={ship_id ?? 0}
+            ship_type={ship_type}
             fitting={fitting_parsed}
             text={!ship_dna ? t('ship_preview_not_available') : undefined}
         />
