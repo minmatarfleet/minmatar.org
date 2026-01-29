@@ -1600,5 +1600,6 @@ export const ui = {
         'all_locations': 'All locations',
         'models_credits': '3D ship models credits to [EstamelGG/EVE_Model_Gallery](https://github.com/EstamelGG/EVE_Model_Gallery) ❤️',
         'back_to_fittings': 'Back to fittings',
+        'in_eve_online': 'in EVE Online',
     },
 } as const;
