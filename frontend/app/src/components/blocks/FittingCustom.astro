@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { ShipFitting, Module } from '@dtypes/layout_components';
 
@@ -19,6 +19,8 @@ const {
     fitting,
     text,
 } = Astro.props
+
+import { query_string } from '@helpers/string';
 
 // Update from https://estamelgg.github.io/EVE_Model_Gallery/statics/resources_index_en.json
 import resources_index_en from '@json/estamelgg_model_ref.json'
@@ -124,8 +126,8 @@ import Markdown from '@components/blocks/Markdown.astro';
                 (() => {
                     const modelViewer = document.querySelector('#ship-model');
                     const orbitCycle = [
-                        '45deg 55deg 4m',
-                        '-60deg 110deg 4m',
+                        '45deg 55deg 100%',
+                        '-60deg 110deg 100%',
                         modelViewer.cameraOrbit
                     ];
 
@@ -175,9 +177,25 @@ import Markdown from '@components/blocks/Markdown.astro';
         </FlexInline>
     </div>
 
-    <div class="[ credits ][ absolute ]">
+    <FlexInline gap='var(--space-3xs)' class="[ credits ][ absolute w-full ]" justification='center'>
         <Markdown inline={true} inline_element='small' markdown={t('models_credits')} />
-    </div>
+        <small>
+            <span
+                class="[ text-[var(--highlight)] cursor-pointer ]"
+                x-data={`{
+                    show_character_modal() {
+                        show_modal({
+                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                character_id: '2113974546',
+                            })}',
+                        })
+                    }
+                }`}
+                x-on:click="show_character_modal()"
+            >iDea SP1</span>
+            {t('in_eve_online')}
+        </small>
+    </FlexInline>
 </div>
 
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
