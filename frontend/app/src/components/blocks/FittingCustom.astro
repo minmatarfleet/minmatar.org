@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { ShipFitting, Module } from '@dtypes/layout_components';
+import { SHIP_WEIGHT } from '@helpers/eve'
 
 import { is_disabled_ccpwgl } from '@helpers/env';
 
@@ -10,15 +11,19 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 interface Props {
     ship_id:    number;
+    ship_type:  string | undefined;
     fitting:    ShipFitting;
     text?:      string;
 }
 
 const {
     ship_id,
+    ship_type,
     fitting,
     text,
 } = Astro.props
+
+const interpolation_decay = ship_type ? SHIP_WEIGHT[ship_type] : 50
 
 import { query_string } from '@helpers/string';
 
@@ -114,33 +119,40 @@ import Markdown from '@components/blocks/Markdown.astro';
     <div class="[ empty ]">
         {ship_model_supported ?
             <model-viewer
-                id="ship-model"
+                id={`ship-model-${ship_id}`}
                 src={`https://estamelgg.github.io/EVE_Model_Gallery/models/${ship_id}_lite.glb`}
                 shadow-intensity="0"
                 camera-controls
                 interaction-prompt="none"
                 disable-zoom
-                interpolation-decay="400"
-            ></model-viewer>
-            <script is:inline>
-                (() => {
-                    const modelViewer = document.querySelector('#ship-model');
-                    const orbitCycle = [
-                        '45deg 55deg 100%',
-                        '-60deg 110deg 100%',
-                        modelViewer.cameraOrbit
-                    ];
+                interpolation-decay={interpolation_decay}
+                x-data={`{
+                    CAMERA_ROTATION_TIMER_MS: 15000,
+                    cameraRotate() {
+                        console.log('Ticking ${`ship-model-${ship_id}`}')
+                        const modelViewer = document.querySelector('#${`ship-model-${ship_id}`}')
+                        const orbitCycle = [
+                            '45deg 55deg 100%',
+                            '-60deg 110deg 100%',
+                            modelViewer.cameraOrbit
+                        ];
 
-                    let interval = setInterval(() => {
-                        const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit);
-                        modelViewer.cameraOrbit =
-                            orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length];
+                        const currentOrbitIndex = orbitCycle.indexOf(modelViewer.cameraOrbit)
+                        modelViewer.cameraOrbit = orbitCycle[(currentOrbitIndex + 1) % orbitCycle.length]
+                    },
+                    init() {
+                        let timer = setInterval(this.cameraRotate, this.CAMERA_ROTATION_TIMER_MS)
 
-                        if (!document.querySelector('#ship-model'))
-                            clearInterval(interval)
-                    }, 15000);
-                })();
-            </script> :
+                        function clearTimer(event) {
+                            console.log('clearing timer')
+                            clearInterval(timer)
+                            event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                        }
+
+                        document.addEventListener('astro:after-swap', clearTimer)
+                    }
+                }`}
+            ></model-viewer> :
             <small
                 class="[ animate-fade-in-up animate-delay-1000 ]"
                 x-show={!DISABLED_CCPWGL ? 'scene_loaded && !ship_loaded' : 'true' }
