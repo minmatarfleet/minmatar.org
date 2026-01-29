@@ -48,6 +48,11 @@ const birthday = is_birthday(character?.birthday as Date)
 const CHARACTER_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+const MINMATAR_FLEET_ALLIANCE_ID = 99011978
+const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
+
+const is_alliance = character?.alliance_id === MINMATAR_FLEET_ALLIANCE_ID || character?.alliance_id === MINMATAR_FLEET_ASSOCIATES_ID
+
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
@@ -178,6 +183,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
                                     character_id={character_id}
                                     user={user}
                                     user_permissions={user_permissions}
+                                    is_alliance={is_alliance}
                                 />
                             </Flexblock>
                         </Flexblock>
