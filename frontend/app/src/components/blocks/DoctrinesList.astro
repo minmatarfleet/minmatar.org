@@ -24,46 +24,44 @@ import Grid from '@components/compositions/Grid.astro';
 import DoctrineCard from '@components/blocks/DoctrineCard.astro';
 ---
 
-<Flexblock role="list" gap='var(--space-xl)'>
-    <FlexInline gap='var(--space-2xl)'>
+<FlexInline gap='var(--space-2xl)'>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>{active_doctrine_locations_ui.name}</h2>
+        <small>{`${active_doctrine_locations_ui.doctrine_count} ${active_doctrine_locations_ui.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
+    </Flexblock>
+
+    {non_active_doctrine_locations_ui.map(location =>
         <Flexblock gap='var(--space-3xs)'>
-            <h2>{active_doctrine_locations_ui.name}</h2>
-            <small>{`${active_doctrine_locations_ui.doctrine_count} ${active_doctrine_locations_ui.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
+            <h3>
+                <a href={translatePath(location.id > 0 ? `/ships/doctrines/list?${query_string({
+                        location_id: location.id
+                    })}` : '/ships/doctrines/list/')}
+                >
+                    {location.name}
+                </a>
+            </h3>
+            <small>{`${location.doctrine_count} ${location.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
         </Flexblock>
+    )}
+</FlexInline>
 
-        {non_active_doctrine_locations_ui.map(location =>
-            <Flexblock gap='var(--space-3xs)'>
-                <h3>
-                    <a href={translatePath(location.id > 0 ? `/ships/doctrines/list?${query_string({
-                            location_id: location.id
-                        })}` : '/ships/doctrines/list/')}
-                    >
-                        {location.name}
-                    </a>
-                </h3>
-                <small>{`${location.doctrine_count} ${location.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
-            </Flexblock>
-        )}
-    </FlexInline>
-
-    <Grid
-        role="list"
-        class="[ w-full grid-fill ]"
-        min_item_width='240px'
-        row_gap='var(--space-3xs)'
-        column_gap='var(--space-3xs)'
-    >
-        {active_doctrine_locations_ui.doctrines.map((doctrine) =>
-            <a
-                class="[ doctrine-card-container ]"
-                x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
-                href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
-            >
-                <DoctrineCard
-                    doctrine={doctrine}
-                    subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
-                />
-            </a>
-        )}
-    </Grid>
-</Flexblock>
+<Grid
+    role="list"
+    class="[ w-full grid-fill ]"
+    min_item_width='240px'
+    row_gap='var(--space-3xs)'
+    column_gap='var(--space-3xs)'
+>
+    {active_doctrine_locations_ui.doctrines.map((doctrine) =>
+        <a
+            class="[ doctrine-card-container ]"
+            x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
+            href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
+        >
+            <DoctrineCard
+                doctrine={doctrine}
+                subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
+            />
+        </a>
+    )}
+</Grid>
