@@ -22,6 +22,11 @@ try {
     get_fittings_error = prod_error_messages() ? t('get_fittings_error') : error.message
 }
 
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
+const sorted_location_fittings = fittings.sort((a, b) => {
+    return SHIP_TYPES_SORTED.indexOf(a.ship_type) - SHIP_TYPES_SORTED.indexOf(b.ship_type)
+})
+fittings[0].ship_type
 interface Props {
     [propName: string]: any;
 
@@ -126,7 +131,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                         >
                             <span>{t('no_fittings')}</span>
                         </div>
-                        {fittings.map((fitting) =>
+                        {sorted_location_fittings.map((fitting) =>
                             <FittingLink
                                 fitting_id={fitting.id}
                                 fitting-finder-action="accept"
