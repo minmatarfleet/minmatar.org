@@ -11,7 +11,7 @@ const linkRenderer = renderer.link
 renderer.link = (href, title, text) => {
 	let replace = ''
 
-	const localLink = href.startsWith(`${get_app_url()}`)
+	const localLink = href.startsWith(`${get_app_url()}`) || href.startsWith('/')
 
 	if (!localLink) {
 		const lang = 'en'
