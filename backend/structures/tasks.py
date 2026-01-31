@@ -23,13 +23,20 @@ discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 
+ALLIED_ALLIANCE_NAMES = [
+    "Minmatar Fleet Alliance",
+    "Minmatar Fleet Associates",
+]
+
+
 @app.task
 def update_structures():
+    EveStructure.objects.exclude(
+        corporation__alliance__name__in=ALLIED_ALLIANCE_NAMES,
+    ).delete()
+
     for corporation in EveCorporation.objects.filter(
-        alliance__name__in=[
-            "Minmatar Fleet Alliance",
-            "Minmatar Fleet Associates",
-        ]
+        alliance__name__in=ALLIED_ALLIANCE_NAMES,
     ):
         update_corporation_structures.delay(corporation.corporation_id)
 
