@@ -35,7 +35,9 @@ class RedditScheduledPostAdminForm(forms.ModelForm):
             self.fields["flair_id"].widget = forms.Select(choices=choices)
             self.fields["flair_id"].required = False
         else:
-            self.fields["flair_id"].help_text = "Save with a subreddit first; on next edit the flair dropdown will be set from that subreddit."
+            self.fields["flair_id"].help_text = (
+                "Save with a subreddit first; on next edit the flair dropdown will be set from that subreddit."
+            )
 
 
 class RedditPostAdmin(admin.ModelAdmin):
@@ -52,7 +54,10 @@ class RedditPostAdmin(admin.ModelAdmin):
         "last_reddit_post_url",
     ]
     list_filter = ["posting_day", "subreddit"]
-    actions = ["action_manually_submit_post", "action_manually_link_to_discord"]
+    actions = [
+        "action_manually_submit_post",
+        "action_manually_link_to_discord",
+    ]
 
     @admin.action(description="Manually submit post")
     def action_manually_submit_post(self, request, queryset):

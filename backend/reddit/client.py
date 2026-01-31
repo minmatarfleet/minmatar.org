@@ -117,7 +117,9 @@ class RedditClient:
             data=data,
         )
         if response.status_code >= 400:
-            logger.warning("Submit post failed: %s (%d)", title, response.status_code)
+            logger.warning(
+                "Submit post failed: %s (%d)", title, response.status_code
+            )
             return None
         try:
             body = response.json()
@@ -130,13 +132,17 @@ class RedditClient:
                 url = data_obj.get("url")
                 if url and not url.startswith("http"):
                     url = "https://www.reddit.com" + url
-                logger.info("Submit post: %s -> %s", title, url or data_obj.get("id"))
+                logger.info(
+                    "Submit post: %s -> %s", title, url or data_obj.get("id")
+                )
                 return {"url": url, "id": data_obj.get("id")}
             # Fallback: legacy jQuery response {"success": true, "jquery": [[..., "redirect"], [..., "call", [url]]]}
             if body.get("success") and isinstance(body.get("jquery"), list):
                 url = self._parse_redirect_from_jquery(body["jquery"])
                 if url:
-                    post_id = url.rstrip("/").split("/comments/")[-1].split("/")[0]
+                    post_id = (
+                        url.rstrip("/").split("/comments/")[-1].split("/")[0]
+                    )
                     logger.info("Submit post: %s -> %s", title, url)
                     return {"url": url, "id": post_id}
         except (ValueError, KeyError, TypeError):
@@ -175,7 +181,15 @@ class RedditClient:
         if not token:
             return []
         # Normalize: strip /r/ prefix and use lowercase (Reddit API expects lowercase)
-        sr = (subreddit or "").strip().lstrip("/").lstrip("r").lstrip("/").strip().lower()
+        sr = (
+            (subreddit or "")
+            .strip()
+            .lstrip("/")
+            .lstrip("r")
+            .lstrip("/")
+            .strip()
+            .lower()
+        )
         if not sr:
             return []
         response = requests.get(
@@ -204,7 +218,9 @@ class RedditClient:
                 result.append(
                     {
                         "id": str(flair_id),
-                        "text": f.get("text") or f.get("name") or str(flair_id),
+                        "text": f.get("text")
+                        or f.get("name")
+                        or str(flair_id),
                     }
                 )
             return result
