@@ -69,7 +69,9 @@ try {
     all_locations_ui.push({
         id: 0,
         doctrine_count: doctrines.length,
-        doctrines: doctrines,
+        doctrines: doctrines.sort((a, b) => 
+            SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
+        ),
         name: t('all_locations'),
     })
 } catch (error) {
@@ -83,7 +85,7 @@ const non_active_doctrine_locations_ui = all_locations_ui.filter(location => loc
 
 const are_sigs_doctrines = active_doctrine_locations_ui?.doctrines.find((doctrine) => doctrine.sigs.length > 0)
 
-const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component`)
+const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
 import Viewport from '@layouts/Viewport.astro';
 

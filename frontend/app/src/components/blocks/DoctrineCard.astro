@@ -5,9 +5,9 @@ const { t } = i18n(Astro.url)
 import type { DoctrineType } from '@dtypes/layout_components';
 
 interface Props {
-    doctrine:       DoctrineType;
-    title?:         string;
-    subtitle?:      string;
+    doctrine:           DoctrineType;
+    title?:             string;
+    subtitle?:          string;
     [propName: string]: any;
 }
 
@@ -23,6 +23,7 @@ import Wrapper from "@components/compositions/Wrapper.astro";
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
+import NotificationBadge from "@components/blocks/NotificationBadge.astro";
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -45,6 +46,7 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
             <Flexblock gap='var(--space-xs)'>
                 {!doctrine?.sigs?.length &&
                     <picture
+                        class='[ w-fit ]'
                         data-tippy-content={t('alliance_doctrine_description')}
                         x-init={`tippy($el, {
                             delay: [ 100, 200 ],
@@ -61,7 +63,20 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 
                 <Flexblock gap='var(--space-3xs)'>
                     {subtitle && <small>{subtitle}</small>}
-                    <h3>{title ? title : doctrine.name}</h3>
+                    <h3>
+                        {title ? title : doctrine.name}
+                        {doctrine.location_ids.length > 1 &&
+                            <NotificationBadge
+                                class="[ inline-flex! relative bottom-[5px] ]"
+                                number={doctrine.location_ids.length}
+                                data-tippy-content={t('doctrine_multiple_locations')}
+                                x-init={`tippy($el, {
+                                    delay: [ 100, 200 ],
+                                    arrow: true,
+                                })`}
+                            />
+                        }
+                    </h3>
                 </Flexblock>
             </Flexblock>
         </Wrapper>
