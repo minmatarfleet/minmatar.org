@@ -6,11 +6,49 @@ from django.utils import timezone
 from datetime import date
 from app.errors import create_error_id
 
+from discord.client import DiscordClient
 from reddit.models import RedditScheduledPost
 from reddit.client import RedditClient
 
 logger = logging.getLogger(__name__)
 client = RedditClient()
+discord_client = DiscordClient()
+
+
+def link_reddit_post_to_discord(
+    scheduled_post: RedditScheduledPost,
+    reddit_post_url: str,
+    title: str,
+) -> bool:
+    """
+    Post a message to the Discord channel attached to the scheduled post,
+    linking to the Reddit post. Call this manually or it runs after creating a post.
+    Returns True if the message was sent, False otherwise.
+    """
+    channel_id = scheduled_post.discord_channel_id
+    if not channel_id:
+        logger.info(
+            "No Discord channel configured for scheduled post %s (discord_channel_id=%r)",
+            scheduled_post.title,
+            scheduled_post.discord_channel_id,
+        )
+        return False
+    message = f"**New Reddit post:** {title}\n{reddit_post_url}"
+    try:
+        discord_client.create_message(channel_id, message)
+        logger.info(
+            "Linked Reddit post to Discord channel %s: %s",
+            channel_id,
+            title,
+        )
+        return True
+    except Exception as e:
+        logger.exception(
+            "Failed to link Reddit post to Discord channel %s: %s",
+            channel_id,
+            e,
+        )
+        return False
 
 
 class RedditService:
@@ -50,13 +88,24 @@ class RedditService:
 
         logging.info(">  %s", scheduled_post.title)
 
-        client.submit_post(
+        result = client.submit_post(
             subreddit=scheduled_post.subreddit,
             title=title,
             content=scheduled_post.content,
+            flair_id=scheduled_post.flair_id or None,
         )
 
         scheduled_post.last_post_at = timezone.now()
+        if result and result.get("url"):
+            scheduled_post.last_reddit_post_url = result["url"]
+            scheduled_post.last_reddit_post_title = title
         scheduled_post.save()
+
+        if result and result.get("url") and scheduled_post.discord_channel_id:
+            link_reddit_post_to_discord(
+                scheduled_post,
+                reddit_post_url=result["url"],
+                title=title,
+            )
 
         return title
