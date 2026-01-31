@@ -58,7 +58,9 @@ class RedditClientTestCase(TestCase):
 
     @patch("reddit.client.requests.post")
     @patch.object(RedditClient, "get_access_token")
-    def test_submit_post_parses_legacy_jquery_response(self, get_token, requests_post):
+    def test_submit_post_parses_legacy_jquery_response(
+        self, get_token, requests_post
+    ):
         """submit_post returns url/id when Reddit returns legacy jQuery payload."""
         get_token.return_value = "fake-token"
         requests_post.return_value.status_code = 200
@@ -70,7 +72,9 @@ class RedditClientTestCase(TestCase):
                     10,
                     11,
                     "call",
-                    ["https://www.reddit.com/r/MinmatarFleet/comments/1qs4fx2/test/"],
+                    [
+                        "https://www.reddit.com/r/MinmatarFleet/comments/1qs4fx2/test/"
+                    ],
                 ],
             ],
         }
@@ -91,7 +95,9 @@ class RedditClientTestCase(TestCase):
 
     @patch("reddit.client.requests.post")
     @patch.object(RedditClient, "get_access_token")
-    def test_submit_post_returns_none_when_no_token(self, get_token, requests_post):
+    def test_submit_post_returns_none_when_no_token(
+        self, get_token, requests_post
+    ):
         get_token.return_value = None
         result = RedditClient().submit_post("foo", "title", "content")
         self.assertIsNone(result)
