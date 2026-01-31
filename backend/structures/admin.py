@@ -16,6 +16,7 @@ from .models import (
 @admin.register(EveStructure)
 class EveStructureAdmin(admin.ModelAdmin):
     """Admin page for EveStructure"""
+
     list_display = (
         "name",
         "system_name",
