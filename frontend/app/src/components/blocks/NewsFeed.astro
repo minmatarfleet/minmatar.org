@@ -17,7 +17,7 @@ import FluidFixed from '@components/compositions/FluidFixed.astro'
 
 import PostItem from '@components/blocks/PostItem.astro';
 import Button from '@components/blocks/Button.astro';
-import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <div class="[ swiper news-swiper ][ w-full ]">
@@ -51,9 +51,14 @@ import RatsWithGatsBanner from '@components/blocks/RatsWithGatsBanner.astro';
                     <Wrapper max_width="656px" padding_inline="var(--space-s)" padding_block="var(--component-padding-block)">
                         <FluidFixed width='135px' breakpoint='20%' class="[ !items-center ]">
                             <PostItem post={post} />
-                            <Button class="[ hidden sm:!flex ]" size='sm' href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
-                                {t('read_more')}
-                            </Button>
+                            <FlexInline justification='flex-end'>
+                                <Button class="[ hidden sm:!flex ]" size='sm' href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
+                                    {post.tags.find(tag => (tag === 'The Cope' || tag === 'Metro Daily News' || tag === 'Video' )) ?
+                                        t('watch_it') :
+                                        t('read_more')
+                                    }
+                                </Button>
+                            </FlexInline>
                         </FluidFixed>
                     </Wrapper>
                 </div>
