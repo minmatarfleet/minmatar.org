@@ -1602,5 +1602,6 @@ export const ui = {
         'back_to_fittings': 'Back to fittings',
         'in_eve_online': 'in EVE Online',
         'watch_it': 'Watch it',
+        'doctrine_multiple_locations': 'This doctrine is available in multiple market locations.',
     },
 } as const;

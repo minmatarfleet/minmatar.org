@@ -491,13 +491,6 @@ class EveLocation(models.Model):
     short_name = models.CharField(max_length=32)
     region_id = models.BigIntegerField(null=True)
 
-    structure = models.ForeignKey(
-        "structures.EveStructure",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-
     market_active = models.BooleanField(default=False)
     freight_active = models.BooleanField(default=False)
     staging_active = models.BooleanField(default=False)

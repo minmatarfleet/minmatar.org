@@ -16,12 +16,14 @@ const subheader_content = await Astro.slots.render('subheader');
 ---
 
 <div
-    class="[ post-header ]"
+    class="[ post-header ][ relative lg:sticky! ]"
     x-data={`{
         sticky: false,
         init() {
             const observer = new IntersectionObserver(
                 ([entry]) => {
+                    if (getComputedStyle($el).position !== 'sticky') return
+
                     if (entry.intersectionRatio < 1 && entry.boundingClientRect.top <= 0)
                         this.sticky = true
                     else
@@ -33,7 +35,7 @@ const subheader_content = await Astro.slots.render('subheader');
             observer.observe($el)
         }
     }`}
-    x-bind:class="{ sticky: sticky }"
+    x-bind:class="{ glass: sticky }"
 >
     <div class="[ relative z-10 pt-[3px] ]">
         <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
@@ -65,7 +67,7 @@ const subheader_content = await Astro.slots.render('subheader');
 </style>
 
 <style lang="scss">
-    .sticky {
+    .glass {
         background-color: var(--dark-transparency-background-mobile);
 
         @media screen and (min-width: 980px) {
@@ -86,12 +88,11 @@ const subheader_content = await Astro.slots.render('subheader');
     
     .post-header {
         transition: var(--fast-transition);
-        position: sticky;
         top: -1px;
         z-index: var(--header-z-index);
         padding-top: var(--space-xl);
 
-        &.sticky {
+        &.glass {
             padding-top: 0;
         }
 

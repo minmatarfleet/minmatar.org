@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -17,12 +16,12 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
     padding_inline='var(--space-s)'
 >
     <FixedFluid
-        width='299px'
+        width='305px'
         breakpoint='40%'
         class="[ items-center ]"
     >
         <picture class="[ flex justify-center ]">
-            <img src="/images/ceos.png" width="305" height="367" />
+            <img class="[ h-auto ]" src="/images/ceos.png" width="305" height="367" />
         </picture>
         <Wrapper
             padding_inline='0'

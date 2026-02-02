@@ -11,6 +11,10 @@ CELERYBEAT_SCHEDULE = {
         "task": "esi.tasks.cleanup_token",
         "schedule": crontab(minute=0, hour=0),
     },
+    "structures_notify_low_fuel": {
+        "task": "structures.tasks.notify_low_fuel_structures",
+        "schedule": crontab(minute=0, hour=12),
+    },
     # "eveonline_update_corporations": {
     #     "task": "eveonline.tasks.update_corporations",
     #     "schedule": crontab(hour="*/1"),
