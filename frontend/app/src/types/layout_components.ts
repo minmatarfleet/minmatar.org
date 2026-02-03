@@ -28,6 +28,7 @@ export interface FittingItem {
     ship_id:        number;
     id:             number;
     eft_format:     string;
+    ship_meta?:     string;
 }
 
 export interface DoctrineItemObj {

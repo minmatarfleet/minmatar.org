@@ -28,6 +28,7 @@ export async function get_fitting_item(fitting:Fitting) {
         ship_name: ship_info?.name ?? t('error_ship_parsing'),
         ship_type: ship_info?.type ?? t('unknown'),
         eft_format: fitting.eft_format,
+        ship_meta: ship_info?.meta,
     } as FittingItem
 }
 
