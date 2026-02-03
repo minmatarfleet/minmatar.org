@@ -10,7 +10,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 let doctrine:DoctrineType | null = null
 let fetch_doctrine_error:string | false = false
 let recently_fleets:FleetItem[] | null = null

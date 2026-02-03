@@ -8,12 +8,18 @@ import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_ship_type_icon } from '@helpers/eve'
+import { get_ship_info } from '@helpers/sde/ships'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
 
 try {
     fittings = await fetch_fittings()
+    fittings = await Promise.all(fittings.map(async (fitting) => {
+        const ship_info = await get_ship_info(fitting.ship_id)
+        fitting.ship_meta = ship_info ? ship_info.meta : 'Tech I'
+        return fitting
+    }))
 } catch (error) {
     get_fittings_error = prod_error_messages() ? t('get_fittings_error') : error.message
 }
