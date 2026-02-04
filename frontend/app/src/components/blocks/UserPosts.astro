@@ -103,7 +103,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
                                 <Button
                                     type="button"
                                     size='sm'
-                                    href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post.post_id}` })}`}
+                                    href={translatePath(`/posts/${post.post_id}`)}
                                 >
                                     {t('edit')}
                                 </Button>

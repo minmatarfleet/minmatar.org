@@ -475,6 +475,16 @@
         }
     },
     {
+        "slug": "posts_create",
+        "path": "/posts/new/",
+        "publish": true,
+        "keywords": [ "new" ],
+        "description": "page_finder.posts.create.description",
+        "permissions" : {
+            "user": [ "posts.add_evepost" ]
+        }
+    },
+    {
         "slug": "posts_trash",
         "path": "/posts/trash/",
         "publish": true,
