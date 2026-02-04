@@ -79,7 +79,6 @@ try {
 }
 
 const active_doctrine_locations_ui = all_locations_ui.find(location => location.id === active_location_id)
-const doctrines_count = active_doctrine_locations_ui?.doctrine_count ?? 0
 
 const non_active_doctrine_locations_ui = all_locations_ui.filter(location => location.id !== active_location_id)
 
@@ -120,7 +119,6 @@ const leading_text = t('doctrines.alliance.page_leading_text')
         }}
         x-data={`{
             show_all: $persist(false),
-            doctrines_count: ${doctrines_count},
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -129,9 +127,6 @@ const leading_text = t('doctrines.alliance.page_leading_text')
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${doctrines_count} \${doctrines_count != 1 ? '${t('doctrines').toLowerCase()}' : '${t('doctrine').toLowerCase()}'}\``}>
-                        {doctrines_count} {doctrines_count != 1 ? t('doctrines').toLowerCase() : t('doctrines').toLowerCase()}
-                    </small>
                 </Flexblock>
             </FlexInline>
         </FlexInline>
