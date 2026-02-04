@@ -151,7 +151,7 @@ const leading_text = t('doctrines.alliance.page_leading_text')
 
         <Flexblock gap='var(--space-xl)'>
             <TextBox>
-                <Markdown markdown={leading_text} />
+                <Markdown class="[ excerpt ]" markdown={leading_text} />
             </TextBox>
 
             {fetch_doctrines_error ?
