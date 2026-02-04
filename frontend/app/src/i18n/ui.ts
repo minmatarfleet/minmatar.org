@@ -195,6 +195,7 @@ export const ui = {
         'posts.cover_alt': 'Planet with a moon in the backgraound of an asteroid field',
         'posts.description': 'Create, update and manage your alliance news timeline posts.',
 
+        'posts_create.page_title': 'Create propaganda post',
         'posts_trash.page_title': 'Posts trash',
 
         'teams.page_title': 'Teams',
@@ -736,7 +737,8 @@ export const ui = {
         'page_finder.ships.fitting.list.description': 'List of fittings',
         'page_finder.ships.doctrines.description': 'List of doctrines',
         'page_finder.posts.description': 'List of your posts to manage',
-        'page_finder.posts.trash.description': 'Lost of yout trashed posts',
+        'page_finder.posts.create.description': 'Create propaganda post with WYSWYG editor',
+        'page_finder.posts.trash.description': 'List of your trashed posts',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
         'find_system_placeholder': 'Type star system name to find',
@@ -1150,7 +1152,7 @@ export const ui = {
         'news_timeline_description': 'Welcome to our news timeline, where we track key developments and important milestones. Stay updated with the latest events, announcements, and stories that shape our journey.',
         'posts': 'Posts',
         'post': 'Post',
-        'create_post': 'Create post',
+        'create_post': 'Create propaganda post',
         'no_post_found': 'No post found',
         'trash': 'Trash',
         'edit_post': 'Edit post',
