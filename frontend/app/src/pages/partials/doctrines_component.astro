@@ -79,7 +79,6 @@ try {
 }
 
 const active_doctrine_locations_ui = all_locations_ui.find(location => location.id === active_location_id)
-const doctrines_count = active_doctrine_locations_ui?.doctrine_count ?? 0
 
 const non_active_doctrine_locations_ui = all_locations_ui.filter(location => location.id !== active_location_id)
 
@@ -99,14 +98,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     />
     :
     active_doctrine_locations_ui !== undefined &&
-         <div
-            x-data={`{
-                init() {
-                    doctrines_count = ${doctrines_count}
-                    $el.remove()
-                }
-            }`}
-        />  
         <DoctrinesList
             active_doctrine_locations_ui={active_doctrine_locations_ui}
             non_active_doctrine_locations_ui={non_active_doctrine_locations_ui}
