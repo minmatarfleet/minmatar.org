@@ -36,6 +36,8 @@ const {
 
         const $editor = document.getElementById('editor')
         const content = $editor ? $editor.innerHTML : ''
+
+        if (!document.querySelector('#editor')) return
         
         var editor = new toastui.Editor({
             el: document.querySelector('#editor'),
@@ -150,7 +152,7 @@ const {
     }
 
     .toastui-editor-dark .toastui-editor-toolbar-icons {
-        background-image: url(../images/TUI-editor-sprite.png);
+        background-image: url(/images/TUI-editor-sprite.png);
         background-color: var(--fleet-red);
         transition: var(--fast-transition);
         border-color: var(--fleet-red);

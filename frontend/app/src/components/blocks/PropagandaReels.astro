@@ -5,11 +5,15 @@ const { t } = i18n(Astro.url)
 import type { PostListUI } from '@dtypes/layout_components'
 
 interface Props {
-    posts:  Record<string, PostListUI[]>;
+    posts:              Record<string, PostListUI[]>;
+    editor_id?:         number;
+    is_editing:         boolean;
 }
 
 const {
     posts,
+    editor_id,
+    is_editing,
 } = Astro.props
 
 const metropolis_posts:PostListUI[] = posts['Metropolis'] ?? []
@@ -20,6 +24,14 @@ const the_cope_posts:PostListUI[] = posts['The Cope'] ?? []
 const videos_posts:PostListUI[] = posts['Videos'] ?? []
 const rust_and_blood_posts:PostListUI[] = posts['Rust and Blood'] ?? []
 const waifu_wars_posts:PostListUI[] = posts['Waifu Wars'] ?? []
+
+let empty = true
+for (var i in posts) {
+    if (posts[i].length > 0) {
+        empty = false
+        break
+    }
+}
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -36,6 +48,8 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             description={t('metropolis_description')}
             posts={metropolis_posts}
             cover="/images/mdn-cover.png"
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {frontlines_posts.length > 0 &&
@@ -44,6 +58,8 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             description={t('frontlines_description')}
             posts={frontlines_posts}
             cover="/images/frontlines-cover.png"
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {propaganda_posts.length > 0 &&
@@ -51,6 +67,8 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             title="The odd bunch"
             description={t('odd_bunch_description')}
             posts={propaganda_posts}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {mdn_posts_posts.length > 0 &&
@@ -60,6 +78,8 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             posts={mdn_posts_posts}
             cover="/images/metrodn-cover.png"
             is_video={true}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {the_cope_posts.length > 0 &&
@@ -69,6 +89,8 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             posts={the_cope_posts}
             cover="/images/cope-cover.png"
             is_video={true}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {videos_posts.length > 0 &&
@@ -77,17 +99,23 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             description={t('videos_description')}
             posts={videos_posts}
             is_video={true}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
-    <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
-        <MarkeeDragonBanner thin={true} />
-    </Wrapper>
+    {!is_editing &&
+        <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
+            <MarkeeDragonBanner thin={true} />
+        </Wrapper>
+    }
     {rust_and_blood_posts.length > 0 &&
         <PropagandaSection
             title="Rust and Blood"
             description={t('rust_description')}
             posts={rust_and_blood_posts}
             cover="/images/rust-cover.png"
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
     {waifu_wars_posts.length > 0 &&
@@ -96,9 +124,14 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             description={t('waifus_description')}
             posts={waifu_wars_posts}
             cover="/images/waifu-wars-cover.png"
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
         />
     }
-    <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
-        <StoreBanner thin={true} />
-    </Wrapper>
+    {!is_editing &&
+        <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
+            <StoreBanner thin={true} />
+        </Wrapper>
+    }
+    {empty && <p>{t('no_post_to_display')}</p>}
 </Flexblock>

@@ -119,16 +119,6 @@ const page = Astro.url.pathname
                     <AssetsEvEIcon />
                 </NeocomButton>
             }
-            {can_view_posts &&
-                <NeocomButton
-                    active={page.startsWith(translatePath('/posts/'))}
-                    title='neocom.manage_posts'
-                    description='posts.description'
-                    href={translatePath('/posts/')}
-                >
-                    <NotepadEvEIcon />
-                </NeocomButton>
-            }
             {false &&
                 <NeocomButton
                     title='neocom.zkillboard'

@@ -2,21 +2,50 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+import { get_user_permissions } from '@helpers/permissions'
+
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const post_editor = can_manage_posts ? (user as User).user_id : false
+
 import { prod_error_messages } from '@helpers/env'
 
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_grouped_by_tags } from '@helpers/fetching/posts'
+import { post_states } from '@dtypes/api.minmatar.org'
+import type { PostStates } from '@dtypes/api.minmatar.org'
 
 let posts: Record<string, PostListUI[]> = {}
 let post_fetching_error:string | false = false
 
+const state = Astro.url.searchParams.get('state')
+let status:PostStates | null = null
+if (state && post_states.includes(state as PostStates))
+    status = state as PostStates
+
 try {
-    posts = await fetch_posts_grouped_by_tags()
+    if (status === 'published')
+        posts = await fetch_posts_grouped_by_tags({ status: 'published' })
+    else if (post_editor && status === 'trash')
+        posts = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
+    else if (post_editor) {
+        posts = await fetch_posts_grouped_by_tags({ user_id: post_editor })
+        for (var i in posts)
+            posts[i] = posts[i].filter(post => post.state !== 'trash')
+    } else
+        throw new Error(t('invalid_post_fetching_parameters'))
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}`
+const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}${status ? `state=${status}` : ''}`
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -33,5 +62,9 @@ import PropagandaReels from '@components/blocks/PropagandaReels.astro';
         }}
     />
     :
-    <PropagandaReels posts={posts} />
+    <PropagandaReels
+        posts={posts}
+        editor_id={post_editor ? post_editor : undefined}
+        is_editing={status !== 'published'}
+    />
 }

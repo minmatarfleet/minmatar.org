@@ -13,7 +13,11 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+
 const post_editor = can_manage_posts ? (user as User).user_id : false
+
+if (!post_editor)
+    return HTTP_403_Forbidden()
 
 import { prod_error_messages } from '@helpers/env'
 
@@ -24,12 +28,15 @@ let posts: Record<string, PostListUI[]> = {}
 let post_fetching_error:string | false = false
 
 try {
-    posts = await fetch_posts_grouped_by_tags({ status: 'published' })
+    posts = await fetch_posts_grouped_by_tags({ user_id: post_editor })
+
+    for (var i in posts)
+        posts[i] = posts[i].filter(post => post.state !== 'trash')
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}?state=published`
+const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}`
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -45,8 +52,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import PropagandaReels from '@components/blocks/PropagandaReels.astro';
 import Button from '@components/blocks/Button.astro';
 
-const page_title = t('propaganda.page_title');
-const leading_text = t('propaganda.leading_text');
+const page_title = t('propaganda.my_posts.page_title');
+const leading_text = t('propaganda.my_posts.leading_text');
 ---
 
 <Viewport
@@ -74,26 +81,21 @@ const leading_text = t('propaganda.leading_text');
                 </PageTitle>
             </Flexblock>
             <FlexInline>
-                <Button
-                    href={translatePath('/alliance/propaganda/new/editor')}
-                    color='green'
-                >
-                    {t('create_post')}
+                <Button href={translatePath('/alliance/propaganda/')}>
+                    {t('back_to_propaganda')}
                 </Button>
             </FlexInline>
         </FlexInline>
 
-        {post_editor &&
-            <FlexInline slot="subheader">
-                <Button size='sm' href={translatePath('/alliance/propaganda/my_posts/')}>
-                    {t('my_posts')}
-                </Button>
-                
-                <Button size='sm' href={translatePath('/alliance/propaganda/trash/')}>
-                    {t('trash')}
-                </Button>
-            </FlexInline>
-        }
+        <FlexInline slot="subheader">
+            <Button size='sm' href={translatePath('/alliance/propaganda/new/editor')} color='green'>
+                {t('create_post')}
+            </Button>
+            
+            <Button size='sm' href={translatePath('/alliance/propaganda/trash/')}>
+                {t('trash')}
+            </Button>
+        </FlexInline>
 
         <Flexblock gap='var(--space-2xl)'>
             <TextBox>
@@ -112,7 +114,7 @@ const leading_text = t('propaganda.leading_text');
                 <PropagandaReels
                     posts={posts}
                     editor_id={post_editor ? post_editor : undefined}
-                    is_editing={false}
+                    is_editing={true}
                 />
             }
         </Flexblock>

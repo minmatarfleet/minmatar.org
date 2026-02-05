@@ -464,31 +464,32 @@
         "description": "page_finder.intel.combatlog.description"
     },
     {
-        "slug": "posts",
-        "alt": "icon.notepad.alt",
-        "path": "/posts/",
-        "publish": true,
-        "icon": "/images/icons/48px-Notepad.png",
-        "description": "page_finder.posts.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
-    },
-    {
         "slug": "posts_create",
-        "path": "/posts/new/",
+        "alt": "icon.notepad.alt",
+        "path": "/alliance/propaganda/new/editor",
         "publish": true,
         "keywords": [ "new" ],
         "description": "page_finder.posts.create.description",
+        "icon": "/images/icons/48px-Notepad.png",
         "permissions" : {
             "user": [ "posts.add_evepost" ]
         }
     },
     {
-        "slug": "posts_trash",
-        "path": "/posts/trash/",
+        "slug": "propaganda.my_posts",
+        "path": "/alliance/propaganda/my_posts/",
         "publish": true,
-        "description": "page_finder.posts.trash.description",
+        "keywords": [ "my" ],
+        "description": "page_finder.propaganda.my_posts.description",
+        "permissions" : {
+            "user": [ "posts.add_evepost" ]
+        }
+    },
+    {
+        "slug": "propaganda.trash",
+        "path": "/alliance/propaganda/trash/",
+        "publish": true,
+        "description": "page_finder.propaganda.trash.description",
         "permissions" : {
             "user": [ "posts.add_evepost" ]
         }

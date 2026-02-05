@@ -1,0 +1,132 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    post:       PostListUI;
+}
+
+const {
+    post,
+} = Astro.props
+
+const hx_id = `post-actions-${post.post_id}`
+
+const POST_ACTIONS_PARTIAL_URL = `${translatePath('/partials/post_actions_component/')}`
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+---
+
+<FlexInline id={hx_id} gap='var(--space-2xs)' justification='flex-end'>
+    {(post.state === 'draft' || post.state === 'trash') &&
+        <Button
+            type="button"
+            size='sm'
+            color='green'
+            narrow={true}
+            x-data={`{
+                show_publish_post_confirm() {
+                    show_confirm_dialog({
+                        title: '${t('publish_post_dialog_title')}',
+                        content: '${t('publish_post_dialog_text')}',
+                        hx: {
+                            method: 'patch',
+                            url: '${POST_ACTIONS_PARTIAL_URL}?id=${post.post_id}&new_state=published',
+                            target: '#${hx_id}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    })
+                }
+            }`}
+            x-on:click="show_publish_post_confirm"
+        >
+            {t('publish')}
+        </Button>
+    }
+    {(post.state === 'published' || post.state === 'trash') &&
+        <Button
+            type="button"
+            size='sm'
+            narrow={true}
+            x-data={`{
+                show_unpublish_post_confirm() {
+                    show_confirm_dialog({
+                        title: '${t('unpublish_post_dialog_title')}',
+                        content: '${t('unpublish_post_dialog_text')}',
+                        hx: {
+                            method: 'patch',
+                            url: '${POST_ACTIONS_PARTIAL_URL}?id=${post.post_id}&new_state=draft',
+                            target: '#${hx_id}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    })
+                }
+            }`}
+            x-on:click="show_unpublish_post_confirm"
+        >
+            {t('draft')}
+        </Button>
+    }
+    {post.state !== 'trash' &&
+        <Button
+            type="button"
+            size='sm'
+            narrow={true}
+            href={translatePath(`/posts/${post.post_id}`)}
+        >
+            {t('edit')}
+        </Button>
+        <Button
+            type="button"
+            size='sm'
+            narrow={true}
+            x-data={`{
+                show_trash_post_confirm() {
+                    show_confirm_dialog({
+                        title: '${t('trash_post_dialog_title')}',
+                        content: '${t('trash_post_dialog_text')}',
+                        hx: {
+                            method: 'patch',
+                            url: '${POST_ACTIONS_PARTIAL_URL}?id=${post.post_id}&new_state=trash',
+                            target: '#${hx_id}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    })
+                }
+            }`}
+            x-on:click="show_trash_post_confirm"
+        >
+            <TrashIcon slot="icon" />
+        </Button>
+    }
+    {post.state === 'trash' &&
+        <Button
+            type="button"
+            size='sm'
+            narrow={true}
+            x-data={`{
+                show_remove_post_confirm() {
+                    show_confirm_dialog({
+                        title: '${t('remove_post_dialog_title')}',
+                        content: '${t('remove_post_dialog_text')}',
+                        hx: {
+                            method: 'delete',
+                            url: '${POST_ACTIONS_PARTIAL_URL}?id=${post.post_id}&state=trash',
+                            target: '#${hx_id}',
+                            swap: 'outerHTML transition:true'
+                        }
+                    })
+                }
+            }`}
+            x-on:click="show_remove_post_confirm"
+        >
+            <TrashIcon slot="icon" />
+        </Button>
+    }
+</FlexInline>
