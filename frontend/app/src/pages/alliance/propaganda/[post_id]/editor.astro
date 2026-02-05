@@ -140,7 +140,9 @@ const page_title = post?.title ?? t('new_post')
                 this.disabled_actions = this.title === ''
             },
         }`}
-        x-on:submit="disabled_actions =  true"
+        x-on:submit="$nextTick(() => {
+            disabled_actions =  true
+        })"
         x-init="update_disable()"
     >
         <PageWide
