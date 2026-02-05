@@ -56,7 +56,7 @@ import DoctrineCard from '@components/blocks/DoctrineCard.astro';
         <a
             class="[ doctrine-card-container ]"
             x-show={`(${doctrine.sigs.length > 0}) ? show_all : true`}
-            href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}
+            href={translatePath(`/ships/doctrines/list/${doctrine.id}${active_doctrine_locations_ui.id ? `?location_id=${active_doctrine_locations_ui.id}` : '' }`)}
         >
             <DoctrineCard
                 doctrine={doctrine}

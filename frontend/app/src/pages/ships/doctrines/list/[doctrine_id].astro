@@ -28,6 +28,8 @@ try {
 
 const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
 
+const location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -64,7 +66,7 @@ const page_description = doctrine?.description
                 </PageTitle>
             </Flexblock>
             <FlexInline>
-                <Button href={translatePath('/ships/doctrines/list/')} class="[ !hidden md:!flex ]">
+                <Button href={translatePath(`/ships/doctrines/list${location_id ? `?location_id=${location_id}` : ''}`)} class="[ !hidden md:!flex ]">
                     {t('keep_browsing')}
                 </Button>
             </FlexInline>
