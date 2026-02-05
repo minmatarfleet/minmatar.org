@@ -7,6 +7,8 @@ interface Props {
     posts:          PostListUI[];
     cover?:         string;
     is_video?:      boolean;
+    editor_id?:     number;
+    is_editing:     boolean;
 }
 
 const {
@@ -15,6 +17,8 @@ const {
     posts,
     cover,
     is_video = false,
+    editor_id,
+    is_editing,
 } = Astro.props
 
 import { slugify } from '@helpers/string'
@@ -34,7 +38,7 @@ import PostersReel from '@components/blocks/PostersReel.astro';
                 cover
                 timeline-view animate-blurred-fade-in animate-range-[entry_0%_contain_-30%]
                 hidden
-                2xl:!block
+                2xl:block!
             ]"
             src={cover}
         />
@@ -44,7 +48,7 @@ import PostersReel from '@components/blocks/PostersReel.astro';
         <TextBox>
             <Flexblock>
                 <h2>{title}</h2>
-                <p>{description}</p>
+                {!is_editing && <p>{description}</p>}
             </Flexblock>
         </TextBox>
         <Wrapper
@@ -57,6 +61,8 @@ import PostersReel from '@components/blocks/PostersReel.astro';
                 small={true}
                 swiper_id={slugify(title).toLowerCase()}
                 is_video={is_video}
+                editor_id={editor_id ? editor_id : undefined}
+                is_editing={is_editing}
             />
         </Wrapper>
     </Flexblock>

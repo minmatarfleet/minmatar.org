@@ -1,6 +1,6 @@
 import { useTranslations } from '@i18n/utils';
 import type { PostListUI, PostUI, Posts } from '@dtypes/layout_components'
-import type { PostRequest } from '@dtypes/api.minmatar.org'
+import type { PostRequest, PostStates } from '@dtypes/api.minmatar.org'
 import { get_posts, get_post, get_posts_tags } from '@helpers/api.minmatar.org/posts'
 import { get_users_character, get_user_character } from '@helpers/fetching/characters'
 import { unique_values } from '@helpers/array'
@@ -89,8 +89,26 @@ export async function fetch_user_posts(post_request:PostRequest) {
     })
 }
 
-export async function fetch_posts_grouped_by_tags() {
-    const { total, chunk } = await fetch_posts({ status: 'published' })
+export async function fetch_user_post(post_id:number) {
+    let api_post = await get_post(post_id)
+    
+    const posts_tags = await get_posts_tags()
+
+    const tags = api_post.tag_ids.map(tag_id => posts_tags.find(posts_tag => posts_tag.tag_id === tag_id)?.tag)
+
+    return {
+        post_id: api_post.post_id,
+        title: api_post.title,
+        date_posted: api_post.date_posted,
+        slug: api_post.slug,
+        state: api_post.state,
+        tags: tags,
+        user_id: api_post.user_id,
+    } as PostListUI
+}
+
+export async function fetch_posts_grouped_by_tags(post_request:PostRequest) {
+    const { total, chunk } = await fetch_posts(post_request)
 
     const posts_tags = await get_posts_tags()
     const tags_by_id: Record<string, string> = {}

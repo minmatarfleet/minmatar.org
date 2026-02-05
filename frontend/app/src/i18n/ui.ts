@@ -65,6 +65,12 @@ export const ui = {
         'propaganda.meta_description': 'All our propaganda in a single place.',
         'propaganda.description': 'All our propaganda in a single place.',
 
+        'propaganda.my_posts.page_title': 'All your propaganda posts',
+        'propaganda.my_posts.leading_text': 'All your published and draft propaganda posts.',
+
+        'propaganda.trash.page_title': 'Trash of propaganda posts',
+        'propaganda.trash.leading_text': 'All your propaganda posts sent to trash.',
+
         'ships.page_title': 'Ships',
         'ships.leading_text': 'Ships are ammo, and in Minmatar Fleet that statement holds true. Below, you can find a list of our latest and greatest ammo, when to use it, and how.',
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
@@ -738,7 +744,8 @@ export const ui = {
         'page_finder.ships.doctrines.description': 'List of doctrines',
         'page_finder.posts.description': 'List of your posts to manage',
         'page_finder.posts.create.description': 'Create propaganda post with WYSWYG editor',
-        'page_finder.posts.trash.description': 'List of your trashed posts',
+        'page_finder.propaganda.my_posts.description': 'List of your drafts and published posts',
+        'page_finder.propaganda.trash.description': 'List of your posts in trash',
         'hotkeys': 'Hotkeys',
         'find_character_placeholder': 'Type character name to find',
         'find_system_placeholder': 'Type star system name to find',
@@ -1152,7 +1159,7 @@ export const ui = {
         'news_timeline_description': 'Welcome to our news timeline, where we track key developments and important milestones. Stay updated with the latest events, announcements, and stories that shape our journey.',
         'posts': 'Posts',
         'post': 'Post',
-        'create_post': 'Create propaganda post',
+        'create_post': 'Create post',
         'no_post_found': 'No post found',
         'trash': 'Trash',
         'edit_post': 'Edit post',
@@ -1606,5 +1613,10 @@ export const ui = {
         'in_eve_online': 'in EVE Online',
         'watch_it': 'Watch it',
         'doctrine_multiple_locations': 'This doctrine is available in multiple market locations.',
+        'my_posts': 'My posts',
+        'back_to_propaganda': 'Back to propaganda',
+        'invalid_post_fetching_parameters': 'Invalid post fetching parameters',
+        'no_post_to_display': 'No posts to display',
+        'deleted': 'Deleted',
     },
 } as const;

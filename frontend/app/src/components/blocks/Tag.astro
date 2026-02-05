@@ -22,10 +22,10 @@ const optional_attributes = {
 }
 ---
 
-<span class="[ tag ]" {...optional_attributes} {...attributes}>{text}</span>
+<span class="[ tag ][ w-fit ]" {...optional_attributes} {...attributes}>{text}</span>
 
 <style lang="scss" define:vars={{ tag_color }}>
-    .tag {
+    span {
         display: flex;
         padding: var(--space-3xs) var(--space-2xs);
         font-size: var(--step--2);
