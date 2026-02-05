@@ -73,14 +73,16 @@ const leading_text = t('propaganda.leading_text');
                     {page_title}
                 </PageTitle>
             </Flexblock>
-            <FlexInline>
-                <Button
-                    href={translatePath('/alliance/propaganda/new/editor')}
-                    color='green'
-                >
-                    {t('create_post')}
-                </Button>
-            </FlexInline>
+            {post_editor &&
+                <FlexInline>
+                    <Button
+                        href={translatePath('/alliance/propaganda/new/editor')}
+                        color='green'
+                    >
+                        {t('create_post')}
+                    </Button>
+                </FlexInline>
+            }
         </FlexInline>
 
         {post_editor &&
