@@ -107,8 +107,19 @@ export async function fetch_user_post(post_id:number) {
     } as PostListUI
 }
 
-export async function fetch_posts_grouped_by_tags(post_request:PostRequest) {
-    const { total, chunk } = await fetch_posts(post_request)
+const VALID_TAGS = [
+    'Metropolis',
+    'Frontlines',
+    'Propaganda',
+    'Metro Daily News',
+    'The Cope',
+    'Videos',
+    'Rust and Blood',
+    'Waifu Wars',
+]
+
+export async function fetch_posts_grouped_by_tags(post_request:PostRequest, filter_trash:boolean = false) {
+    let { total, chunk } = await fetch_posts(post_request)
 
     const posts_tags = await get_posts_tags()
     const tags_by_id: Record<string, string> = {}
@@ -117,13 +128,21 @@ export async function fetch_posts_grouped_by_tags(post_request:PostRequest) {
         tags_by_id[post_tag.tag_id] = post_tag.tag
 
     const posts_by_tag: Record<string, PostListUI[]> = {}
+    let total_post_count = 0
+
+    if (filter_trash)
+        chunk = chunk.filter(post => post.state !== 'trash')
 
     for (const post of chunk) {
         const tag_id = post.tags[0]
-        if (!tag_id) continue
+        if (!tag_id || !VALID_TAGS.includes(tag_id)) continue
         
         (posts_by_tag[tag_id] ??= []).push(post)
+        total_post_count++
     }
 
-    return posts_by_tag
+    return {
+        posts_by_tag: posts_by_tag,
+        post_count: total_post_count,
+    }
 }
