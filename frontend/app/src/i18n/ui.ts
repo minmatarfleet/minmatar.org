@@ -1618,5 +1618,7 @@ export const ui = {
         'invalid_post_fetching_parameters': 'Invalid post fetching parameters',
         'no_post_to_display': 'No posts to display',
         'deleted': 'Deleted',
+        'propaganda_post_singular': 'COUNT propaganda post',
+        'propaganda_post_plural': 'COUNT propaganda posts',
     },
 } as const;

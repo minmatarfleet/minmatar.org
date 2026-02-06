@@ -24,6 +24,7 @@ import type { PostStates } from '@dtypes/api.minmatar.org'
 
 let posts: Record<string, PostListUI[]> = {}
 let post_fetching_error:string | false = false
+let post_count = 0
 
 const state = Astro.url.searchParams.get('state')
 let status:PostStates | null = null
@@ -31,19 +32,27 @@ if (state && post_states.includes(state as PostStates))
     status = state as PostStates
 
 try {
+    let posts_grouped:{
+        posts_by_tag: Record<string, PostListUI[]>;
+        post_count: number;
+    }
+    
     if (status === 'published')
-        posts = await fetch_posts_grouped_by_tags({ status: 'published' })
+        posts_grouped = await fetch_posts_grouped_by_tags({ status: 'published' })
     else if (post_editor && status === 'trash')
-        posts = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
-    else if (post_editor) {
-        posts = await fetch_posts_grouped_by_tags({ user_id: post_editor })
-        for (var i in posts)
-            posts[i] = posts[i].filter(post => post.state !== 'trash')
-    } else
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
+    else if (post_editor)
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor }, true)
+    else
         throw new Error(t('invalid_post_fetching_parameters'))
+
+    posts = posts_grouped.posts_by_tag
+    post_count = posts_grouped.post_count
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
+
+const count_text = t(post_count != 1 ? 'propaganda_post_plural' : 'propaganda_post_singular').replace('COUNT', String(post_count))
 
 const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}${status ? `state=${status}` : ''}`
 
@@ -66,5 +75,14 @@ import PropagandaReels from '@components/blocks/PropagandaReels.astro';
         posts={posts}
         editor_id={post_editor ? post_editor : undefined}
         is_editing={status !== 'published'}
+    />
+    <div
+        x-data={`{
+            init() {
+                count_text = '${count_text}'
+                $el.remove()
+            }
+        }`}
+        style="display: none"
     />
 }
