@@ -34,6 +34,7 @@ class EveCorporationAdmin(admin.ModelAdmin):
     list_display = ("name", "ticker", "alliance")
     search_fields = ("name", "ticker")
     list_filter = ("alliance",)
+    filter_horizontal = ("directors", "recruiters", "stewards")
 
 
 @admin.register(EveCharacter)
