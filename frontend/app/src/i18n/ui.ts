@@ -113,6 +113,12 @@ export const ui = {
         'fleets.add.page_leading_text': 'Enter fleets details and confirm with the preview before submitting.',
         'page_finder.fleets.add.description': 'Schedule a new fleet',
 
+        'fleets.start.page_title': 'Start a fleet',
+        'fleets.start.leading_text': 'Create and start tracking a fleet now. You must already be in a fleet in-game. No Discord ping or schedule.',
+        'fleets.start.choose_character': 'Choose the character that is in the fleet',
+        'fleets.start.choose_character_hint': 'The fleet must already be created in game.',
+        'fleets.start.button': 'Start a fleet',
+
         'fleets.description': 'Schedule fleets and check those yet to come.',
 
         'fleets.upcoming.page_title': 'Upcoming fleets',

@@ -93,11 +93,14 @@ class EveFleet(models.Model):
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
 
-    def start(self, character_id: int | None = None):
+    def generate_esi_fleet(
+        self, character_id: int | None = None
+    ) -> "EveFleetInstance":
         """
-        Start the fleet
+        Resolve the FC's active fleet from ESI, create or update EveFleetInstance,
+        and update in-game fleet (freemove, MOTD). Returns the fleet instance.
         """
-        logger.info("Starting fleet %s", self.id)
+        logger.info("Generating ESI fleet for fleet %s", self.id)
 
         user = self.created_by
         if character_id:
@@ -132,40 +135,54 @@ class EveFleet(models.Model):
             )
 
         fleet_instance.update_eve_fleet(self.disable_motd)
+        return fleet_instance
 
-        if self.type != "strategic":
-            doctrine = self.doctrine
-        else:
-            doctrine = None
+    def notify_discord(self) -> None:
+        """
+        Send the fleet notification to the audience's Discord channel, if configured.
+        """
+        if not self.audience.discord_channel_id:
+            return
 
-        if self.audience.discord_channel_id:
-            logger.info(
-                "Sending fleet notification for fleet %s to discord channel %s",
-                self.id,
-                self.audience.discord_channel_id,
-            )
-            discord.create_message(
-                self.audience.discord_channel_id,
-                payload=get_fleet_discord_notification(
-                    fleet_id=self.id,
-                    fleet_type=self.get_type_display(),
-                    fleet_location=(
-                        self.formup_location.location_name
-                        if self.formup_location
-                        else "Ask FC"
-                    ),
-                    fleet_audience=self.audience.name,
-                    fleet_commander_name=self.fleet_commander.character_name,
-                    fleet_commander_id=self.fleet_commander.character_id,
-                    fleet_description=self.description,
-                    fleet_voice_channel=None,
-                    fleet_voice_channel_link=None,
-                    fleet_doctrine=doctrine,
+        doctrine = None if self.type == "strategic" else self.doctrine
+        logger.info(
+            "Sending fleet notification for fleet %s to discord channel %s",
+            self.id,
+            self.audience.discord_channel_id,
+        )
+        discord.create_message(
+            self.audience.discord_channel_id,
+            payload=get_fleet_discord_notification(
+                fleet_id=self.id,
+                fleet_type=self.get_type_display(),
+                fleet_location=(
+                    self.formup_location.location_name
+                    if self.formup_location
+                    else "Ask FC"
                 ),
-            )
+                fleet_audience=self.audience.name,
+                fleet_commander_name=self.fleet_commander.character_name,
+                fleet_commander_id=self.fleet_commander.character_id,
+                fleet_description=self.description,
+                fleet_voice_channel=None,
+                fleet_voice_channel_link=None,
+                fleet_doctrine=doctrine,
+            ),
+        )
 
+    def activate(self) -> None:
+        """Mark the fleet as active and persist."""
         self.status = "active"
         self.save()
+
+    def start(self, character_id: int | None = None) -> None:
+        """
+        Start the fleet: link to ESI fleet, optionally notify Discord, mark active.
+        """
+        logger.info("Starting fleet %s", self.id)
+        self.generate_esi_fleet(character_id)
+        self.notify_discord()
+        self.activate()
 
     class Meta:
         indexes = [
