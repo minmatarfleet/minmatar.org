@@ -2,6 +2,7 @@
 
 import logging
 
+import requests
 from django.contrib.auth.models import Group, User
 from django.db import models
 
@@ -48,7 +49,16 @@ class DiscordRole(models.Model):
         return str(self.name)
 
     def delete(self, *args, **kwargs):
-        discord.delete_role(self.role_id)
+        if self.role_id:
+            try:
+                discord.delete_role(self.role_id)
+            except requests.HTTPError as e:
+                logger.warning(
+                    "Could not delete Discord role %s (id=%s): %s",
+                    self.name,
+                    self.role_id,
+                    e,
+                )
         super().delete(*args, **kwargs)
 
     class Meta:

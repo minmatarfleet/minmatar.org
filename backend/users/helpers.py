@@ -1,9 +1,12 @@
 import logging
 from typing import List
+
+import requests
 from django.contrib.auth.models import Group, User, Permission
 from django.db.models import signals
 
-from discord.models import DiscordUser
+from discord.client import DiscordClient
+from discord.models import DiscordRole, DiscordUser
 from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EvePlayer
@@ -26,6 +29,22 @@ def offboard_group(group_id: int):
         sender=User.groups.through, dispatch_uid="user_group_changed"
     )
     group = Group.objects.get(id=group_id)
+    # Delete Discord role from server and remove DiscordRole row before deleting Group
+    try:
+        discord_role = group.discord_group
+        if discord_role.role_id:
+            try:
+                DiscordClient().delete_role(discord_role.role_id)
+            except requests.HTTPError as e:
+                logger.warning(
+                    "Could not delete Discord role %s (id=%s): %s",
+                    discord_role.name,
+                    discord_role.role_id,
+                    e,
+                )
+        discord_role.delete()
+    except DiscordRole.DoesNotExist:
+        pass
     group.delete()
 
 
