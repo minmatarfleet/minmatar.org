@@ -17,6 +17,14 @@ discord = DiscordClient()
 APPLICATION_CHANNEL_ID = settings.DISCORD_APPLICATION_CHANNEL_ID
 
 
+def _recruiter_corporation_group(corporation):
+    """Return the 'recruiter' EveCorporationGroup for this corporation, if any."""
+    return EveCorporationGroup.objects.filter(
+        corporation=corporation,
+        group_type=EveCorporationGroup.GROUP_TYPE_RECRUITER,
+    ).first()
+
+
 @receiver(
     signals.post_save,
     sender=EveCorporationApplication,
@@ -31,12 +39,8 @@ def eve_corporation_application_post_save(
         primary_character = user_primary_character(user)
         message = ""
         message += f"<@{user.discord_user.id}>"
-        if EveCorporationGroup.objects.filter(
-            corporation=instance.corporation,
-        ).exists():
-            group = EveCorporationGroup.objects.get(
-                corporation=instance.corporation
-            )
+        group = _recruiter_corporation_group(instance.corporation)
+        if group:
             discord_group = group.group.discord_group
             discord_group_id = discord_group.role_id
             message += f"<@&{discord_group_id}>"

@@ -138,66 +138,71 @@ def log_affiliation_update_error(user: User, e):
         logger.debug("Couldn't update affiliations for unlinked user %s", user)
 
 
+def _user_qualifies_for_corporation_group(user, corporation_group):
+    """
+    Return True if this user should be in the given corporation group
+    based on group_type and character ownership.
+    """
+    corp = corporation_group.corporation
+    group_type = (
+        corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
+    )
+
+    if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
+        primary = user_primary_character(user)
+        if not primary or not primary.corporation:
+            return False
+        return primary.corporation.id == corp.id
+
+    if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
+        return corp.recruiters.filter(user=user).exists()
+    if group_type == EveCorporationGroup.GROUP_TYPE_DIRECTOR:
+        return corp.directors.filter(user=user).exists()
+    # Gunner group = stewards / station managers
+    if group_type == EveCorporationGroup.GROUP_TYPE_GUNNER:
+        return corp.stewards.filter(user=user).exists()
+
+    return False
+
+
 @app.task
 def sync_eve_corporation_groups():
-    for corporation_group in EveCorporationGroup.objects.all():
+    """
+    Sync Django auth group membership for corporation groups based on
+    character ownership: member = primary in corp, recruiter/director/gunner
+    = character in corp's role set.
+    """
+    for corporation_group in EveCorporationGroup.objects.select_related(
+        "corporation", "group"
+    ):
         if not corporation_group.corporation:
             logger.error(
                 "Corporation group found with no corporation",
             )
+            continue
 
+        group = corporation_group.group
         for user in User.objects.all():
             try:
-                group = corporation_group.group
-                eve_primary_character = user_primary_character(user)
+                in_group = group in user.groups.all()
+                qualifies = _user_qualifies_for_corporation_group(
+                    user, corporation_group
+                )
 
-                if not eve_primary_character and group in user.groups.all():
+                if qualifies and not in_group:
                     logger.info(
-                        "User %s has no primary character, removing corporation group %s",
+                        "User %s qualifies for corporation group %s, adding",
                         user,
-                        group,
-                    )
-                    user.groups.remove(group)
-                    continue
-
-                if not eve_primary_character:
-                    continue
-
-                if (
-                    not eve_primary_character.corporation
-                    == corporation_group.corporation
-                    and group in user.groups.all()
-                ):
-                    logger.info(
-                        "User %s is not in corporation %s, removing corporation group %s",
-                        user,
-                        corporation_group.corporation,
-                        group,
-                    )
-                    user.groups.remove(group)
-                    continue
-
-                if not eve_primary_character.corporation:
-                    # Characters might have moved into an NPC corp, not recorded in database
-                    logger.info(
-                        "Character %s has no recorded corporation",
-                        eve_primary_character.character_name,
-                    )
-                    continue
-
-                if (
-                    eve_primary_character.corporation.id
-                    == corporation_group.corporation.id
-                    and group not in user.groups.all()
-                ):
-                    logger.info(
-                        "User %s is in corporation %s, adding corporation group %s",
-                        user,
-                        corporation_group.corporation,
-                        group,
+                        group.name,
                     )
                     user.groups.add(group)
-                    continue
+                elif not qualifies and in_group:
+                    logger.info(
+                        "User %s no longer qualifies for corporation group %s, removing",
+                        user,
+                        group.name,
+                    )
+                    user.groups.remove(group)
             except Exception as e:
                 logger.error(
                     "Error syncing corporation group %s for user %s: %s",

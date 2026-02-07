@@ -18,6 +18,10 @@ from .models import (
 )
 from .helpers.characters import user_primary_character
 from .tasks import update_corporation
+from groups.helpers import (
+    ensure_corporation_groups_for_corp,
+    offboard_corporation_groups,
+)
 
 # Register your models here.
 admin.site.register(EveSkillset)
@@ -50,9 +54,14 @@ class EveCorporationAdmin(admin.ModelAdmin):
     Custom admin to make editing corporations easier
     """
 
-    list_display = ("name", "ticker", "alliance")
+    list_display = (
+        "name",
+        "ticker",
+        "alliance",
+        "generate_corporation_groups",
+    )
     search_fields = ("name", "ticker")
-    list_filter = ("alliance",)
+    list_filter = ("alliance", "generate_corporation_groups")
     filter_horizontal = ("directors", "recruiters", "stewards")
     actions = [refresh_corporations_action]
     change_form_template = "admin/eveonline/evecorporation/change_form.html"
@@ -93,6 +102,18 @@ class EveCorporationAdmin(admin.ModelAdmin):
                 current_app=self.admin_site.name,
             )
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def save_model(self, request, obj, form, change):
+        if change and obj.pk:
+            old = EveCorporation.objects.get(pk=obj.pk)
+            if (
+                old.generate_corporation_groups
+                and not obj.generate_corporation_groups
+            ):
+                offboard_corporation_groups(old)
+        super().save_model(request, obj, form, change)
+        if obj.generate_corporation_groups and obj.ticker:
+            ensure_corporation_groups_for_corp(obj)
 
 
 @admin.register(EveCharacter)

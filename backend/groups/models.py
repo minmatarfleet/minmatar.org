@@ -117,12 +117,40 @@ class UserAffiliation(models.Model):
 
 
 class EveCorporationGroup(models.Model):
-    """Represents a Discord group corresponding to an EveCorporation"""
+    """Represents a Discord group corresponding to an EveCorporation."""
+
+    GROUP_TYPE_MEMBER = "member"
+    GROUP_TYPE_RECRUITER = "recruiter"
+    GROUP_TYPE_DIRECTOR = "director"
+    GROUP_TYPE_GUNNER = "gunner"
+    GROUP_TYPE_CHOICES = [
+        (GROUP_TYPE_MEMBER, "Member"),
+        (GROUP_TYPE_RECRUITER, "Recruiter"),
+        (GROUP_TYPE_DIRECTOR, "Director"),
+        (GROUP_TYPE_GUNNER, "Gunner"),
+    ]
 
     # group is the Django authorization group that corresponds to this entity
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
 
     corporation = models.ForeignKey(EveCorporation, on_delete=models.CASCADE)
+
+    # When set, this is one of the generated role groups (member/recruiter/director/gunner).
+    # Null for legacy single group per corporation (treated as member).
+    group_type = models.CharField(
+        max_length=20,
+        choices=GROUP_TYPE_CHOICES,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("corporation", "group_type"),
+                name="groups_evecorporationgroup_corporation_group_type_uniq",
+            )
+        ]
 
     def __str__(self):
         return str(self.group.name)

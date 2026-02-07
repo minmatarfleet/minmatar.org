@@ -368,6 +368,10 @@ class EveCorporation(models.Model):
     member_count = models.IntegerField(blank=True, null=True)
 
     recruitment_active = models.BooleanField(default=True)
+    generate_corporation_groups = models.BooleanField(
+        default=False,
+        help_text="When enabled, create and sync Corp <TICKER>, Recruiter, Director, and Gunner groups.",
+    )
 
     # relationships
     ceo = models.ForeignKey(
