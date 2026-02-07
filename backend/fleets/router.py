@@ -524,7 +524,9 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
         allowed_ids = [c.character_id for c in user_characters(request.user)]
         if fc_character_id not in allowed_ids:
             fleet.delete()
-            return 400, {"detail": "Character not found or not one of your characters"}
+            return 400, {
+                "detail": "Character not found or not one of your characters"
+            }
 
     try:
         fleet.generate_esi_fleet(fc_character_id)
@@ -533,10 +535,14 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
         fleet.delete()
         if "not in a fleet" in str(e):
             return 400, {"detail": "Not currently in a fleet"}
-        logger.exception("Quick start fleet failed for user %s", request.user.username)
+        logger.exception(
+            "Quick start fleet failed for user %s", request.user.username
+        )
         return 400, {"detail": str(e)}
 
-    logger.info("Fleet %d started (quick) by %s", fleet.id, request.user.username)
+    logger.info(
+        "Fleet %d started (quick) by %s", fleet.id, request.user.username
+    )
     return 200, make_fleet_response(fleet)
 
 

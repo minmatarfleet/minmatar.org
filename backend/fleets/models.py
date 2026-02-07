@@ -93,7 +93,9 @@ class EveFleet(models.Model):
     def __str__(self):
         return f"{self.created_by} - {self.type} - {self.start_time}"
 
-    def generate_esi_fleet(self, character_id: int | None = None) -> "EveFleetInstance":
+    def generate_esi_fleet(
+        self, character_id: int | None = None
+    ) -> "EveFleetInstance":
         """
         Resolve the FC's active fleet from ESI, create or update EveFleetInstance,
         and update in-game fleet (freemove, MOTD). Returns the fleet instance.
