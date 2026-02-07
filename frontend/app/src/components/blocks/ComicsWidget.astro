@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Wrapper from "@components/compositions/Wrapper.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+import Flexblock from "@components/compositions/Flexblock.astro";
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Button from "@components/blocks/Button.astro";
+import TippyBase from "@components/blocks/TippyBase.astro";
+---
+
+<FixedFluid
+    width='437px'
+    class="[ items-center! ]"
+    padding_block='0'
+    padding_inline='0'
+    gap='var(--space-xl)'
+    breakpoint='40%'
+>
+    <FlexInline gap='var(--space-3xs)' class="[ flex-nowrap! ]">
+        <div class="[ basis-[216px] ]">
+            <TippyBase
+                title='rust_and_blood'
+                description='rust_and_blood_tooltip'
+            >
+                <a href={translatePath('/alliance/propaganda/160')}>
+                    <img src="https://preview.redd.it/rust-and-blood-ch01-the-rats-of-amamake-comic-style-read-v0-3lpycj4h5ytf1.png?width=1080&crop=smart&auto=webp&s=9bbed70f78d14122366f7ba67101af054c7a087b" />
+                </a>
+            </TippyBase>
+        </div>
+        <div class="[ basis-[216px] ]">
+            <div class="[ rotate ]">
+                <TippyBase
+                    title='waifu_wars'
+                    description='waifu_wars_tooltip'
+                >
+                    <a href={translatePath('/alliance/propaganda/145')}>
+                        <img src="https://preview.redd.it/waifu-wars-e01-invasion-at-aldodan-read-from-r2l-v0-li5pd19372nf1.jpg?width=1080&crop=smart&auto=webp&s=16cc1c9f457225bd5cc94319bf2d9b323f190dea" />
+                    </a>
+                </TippyBase>
+            </div>
+        </div>
+    </FlexInline>
+    <Wrapper padding_block='0' padding_inline='0' class="[ grow ]">
+        <Flexblock>
+            <h2>{t('comics_title')}</h2>
+            <TextBox max_width='48rem'>
+                <p>{t('comic_widget_description')}</p>
+            </TextBox>
+            <Button
+                class="[ w-fit ]"
+                href={translatePath('/alliance/propaganda/')}
+                size='sm'
+            >
+                {t('find_in_propaganda')}
+            </Button>
+        </Flexblock>
+    </Wrapper>
+</FixedFluid>
+
+<style lang="scss">
+    .rotate {
+        transform: rotate(-45deg) translate(-53px, -43px);
+    }
+</style>
