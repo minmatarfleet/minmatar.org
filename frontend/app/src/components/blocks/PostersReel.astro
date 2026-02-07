@@ -60,10 +60,6 @@ import PropagandaVideoPost from '@components/blocks/PropagandaVideoPost.astro';
 </Wrapper>
 
 <style lang="scss">
-    h3 {
-        font-size: var(--step-0);
-    }
-
     :global([data-desature="full"] img) {
         filter: saturate(0%);
     }
@@ -72,46 +68,10 @@ import PropagandaVideoPost from '@components/blocks/PropagandaVideoPost.astro';
         filter: saturate(35%);
     }
 
-    .youtube-wrapper {
-        &:hover {
-            .youtube-actions {
-                opacity: 1;
-            }
-        }
-
-        .youtube-actions {
-            position: absolute;
-            right: var(--space-2xs);
-            top: var(--space-2xs);
-            z-index: 2;
-            opacity: 0;
-        }
-    }
-
-    .youtube {
-        position: relative;
-
-        &:before {
-            content: ' ';
-            position: absolute;
-            inset: 0;
-            background-color: var(--background);
-            opacity: 0.4;
-            z-index: 1;
-        }
-
-        :global(svg) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-        }
-    }
-
     :global(.medium-zoom-image--opened) {
         z-index: var(--dialog-z-index);
     }
+    
     :global(.medium-zoom-overlay) {
         z-index: var(--backdrop-z-index);
     }
