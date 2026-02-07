@@ -291,6 +291,19 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def get_corporation_roles(self, corporation_id: int) -> EsiResponse:
+        """Returns roles of all corporation members. Requires Personnel_Manager or grantable role."""
+        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Corporation.get_corporations_corporation_id_roles(
+            corporation_id=corporation_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
     def send_evemail(self, mail_details) -> EsiResponse:
         required_scopes = ["esi-mail.send_mail.v1"]
         token, status = self._valid_token(required_scopes)

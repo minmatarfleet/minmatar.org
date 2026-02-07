@@ -361,12 +361,20 @@ def update_corporations():
         update_corporation.apply_async(args=[corporation.corporation_id])
 
 
+def _all_roles_for_member(role_data):
+    """Collect all role names for a member from ESI role entry (base, hq, other)."""
+    all_roles = set(role_data.get("roles") or [])
+    for key in ("roles_at_base", "roles_at_hq", "roles_at_other"):
+        all_roles.update(role_data.get(key) or [])
+    return all_roles
+
+
 @app.task
 def update_corporation(corporation_id):
     logger.info("Updating corporation %s", corporation_id)
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     corporation.populate()
-    if not corporation:
+    if corporation.pk is None:
         return
     # fetch and set members if active
     if corporation.active and (corporation.type in ["alliance", "associate"]):
@@ -383,6 +391,39 @@ def update_corporation(corporation_id):
                     corporation.name,
                 )
                 EveCharacter.objects.create(character_id=member_id)
+
+        # Populate directors, recruiters, stewards from ESI corporation roles
+        esi_roles = EsiClient(corporation.ceo).get_corporation_roles(
+            corporation.corporation_id
+        )
+        if esi_roles.success():
+            roles_data = esi_roles.results() or []
+            director_ids = []
+            recruiter_ids = []
+            steward_ids = []
+            for entry in roles_data:
+                char_id = entry.get("character_id")
+                if char_id is None:
+                    continue
+                all_roles = _all_roles_for_member(entry)
+                char, _ = EveCharacter.objects.get_or_create(
+                    character_id=char_id, defaults={}
+                )
+                if "Director" in all_roles:
+                    director_ids.append(char.id)
+                if "Personnel_Manager" in all_roles:
+                    recruiter_ids.append(char.id)
+                if "Station_Manager" in all_roles:
+                    steward_ids.append(char.id)
+            corporation.directors.set(
+                EveCharacter.objects.filter(id__in=director_ids)
+            )
+            corporation.recruiters.set(
+                EveCharacter.objects.filter(id__in=recruiter_ids)
+            )
+            corporation.stewards.set(
+                EveCharacter.objects.filter(id__in=steward_ids)
+            )
 
 
 @app.task
