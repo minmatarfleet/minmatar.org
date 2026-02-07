@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components';
+
+interface Props {
+    post:      PostListUI;
+    editor_id?: number;
+    is_editing: boolean;
+}
+
+const {
+    post,
+    editor_id,
+    is_editing,
+} = Astro.props
+
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_date } from '@helpers/date'
+
+import BlockList from "@components/compositions/BlockList.astro"
+import Flexblock from "@components/compositions/Flexblock.astro"
+
+import PostActions from '@components/blocks/PostActions.astro';
+import Tag from '@components/blocks/Tag.astro';
+
+import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
+---
+
+<BlockList
+    class="[ youtube-wrapper ][ relative ]"
+    gap='var(--space-xs)'
+    data-desature={post.state === 'trash' ? 'mild' : undefined}
+>
+    {(post.user_id === editor_id && is_editing) &&
+        <div class="[ youtube-actions ]">
+            <PostActions
+                post={post}
+            />
+        </div>
+    }
+    <a class="[ youtube border ]" href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
+        <PlayIcon />
+        <img
+            src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
+            alt={post.title}
+        />
+    </a>
+    <Flexblock gap='var(--space-3xs)'>
+        {is_editing &&
+            <Tag
+                id={`post-tag-${post.post_id}`}
+                text={t(post.state as any)}
+                color={post.state === 'published' ? 'green' : undefined}
+            />
+        }
+        <small>{format_date(lang, post.date_posted)}</small>
+        <a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
+            <h3>{post.title}</h3>
+        </a>
+    </Flexblock>
+</BlockList>

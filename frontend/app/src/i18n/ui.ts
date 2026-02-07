@@ -1620,5 +1620,12 @@ export const ui = {
         'deleted': 'Deleted',
         'propaganda_post_singular': 'COUNT propaganda post',
         'propaganda_post_plural': 'COUNT propaganda posts',
+        'find_in_propaganda': 'Find more in propaganda',
+        'rust_and_blood': 'Rust and Blood',
+        'rust_and_blood_tooltip': 'Western style comic strip about the happenings on the Warzone.',
+        'waifu_wars': 'The Waifu Wars',
+        'waifu_wars_tooltip': 'Manga style comic about the adventures of the warzone alliance waifus.',
+        'comics_title': 'Comics',
+        'comic_widget_description': 'Follow the adventures of the warzone characters and waifus thru our serialized publications.',
     },
 } as const;
