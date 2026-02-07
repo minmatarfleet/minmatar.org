@@ -87,9 +87,7 @@ class EveFittingRefit(models.Model):
         return f"{self.base_fitting.name} — {self.name}"
 
     def save(self, *args, **kwargs):
-        base_ship = EveFitting.ship_name_from_eft(
-            self.base_fitting.eft_format
-        )
+        base_ship = EveFitting.ship_name_from_eft(self.base_fitting.eft_format)
         refit_ship = EveFitting.ship_name_from_eft(self.eft_format)
         if base_ship != refit_ship:
             raise ValidationError(
