@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`CorporationBadge defaults 1`] = `"<div class="fixed-fluid [ items-center ]" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-2xs);--fixed_fluid_width: 32px;--fixed_fluid_breakpoint: 50%;">  <picture> <img loading="lazy" src="https://images.evetech.net/corporations/12/logo?size=32" width="32" height="32"> </picture> <div class="flex-block [ w-full ] gap-0" data-mod style="--flex_block_gap: 0;"> <small class="[ max-w-fit ]"> <a class="[ text-[var(--highlight)] ]">chicken attack</a> </small> </div>   </div>  "`;

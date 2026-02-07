@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`ButtonStack defaults 1`] = `"<div class="flex-block [ button-stack ] gap---space-2xs" data-mod style="--flex_block_gap: var(--space-2xs);">  chickens  </div>  "`;

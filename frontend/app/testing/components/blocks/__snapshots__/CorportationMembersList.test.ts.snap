@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`CorporationMembersList defaults 1`] = `"<div id="corporations-members-list" class="[ corporations-members-list ]">  slotted chick </div>"`;

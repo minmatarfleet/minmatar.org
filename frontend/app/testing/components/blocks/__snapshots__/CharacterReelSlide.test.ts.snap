@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`CharacterReelSlide defaults 1`] = `"<div class="[ swiper-slide ]" style="margin-right: undefinedpx" data-astro-cid-pvvgnag4> slot mock </div> "`;
