@@ -320,6 +320,29 @@ export async function delete_fleet(access_token:string, id:number) {
     }
 }
 
+export async function start_fleet_now(access_token: string, fc_character_id?: number): Promise<Fleet> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/start-now`
+    const body = fc_character_id != null ? JSON.stringify({ fc_character_id }) : undefined
+
+    const response = await fetch(ENDPOINT, {
+        headers,
+        method: 'POST',
+        ...(body != null ? { body } : {})
+    })
+
+    if (!response.ok) {
+        const err = await parse_response_error(response, `POST ${ENDPOINT}`)
+        throw new Error(err)
+    }
+
+    return await response.json() as Fleet
+}
+
 export async function start_fleet(access_token:string, fleet_id:number) {
     const headers = {
         'Content-Type': 'application/json',
