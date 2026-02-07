@@ -41,6 +41,13 @@ class CorporationMemberResponse(Schema):
     exempt: bool = False
 
 
+class CorporationRoleCharacterResponse(Schema):
+    """Character reference for a corporation role (director, recruiter, steward)."""
+
+    character_id: int
+    character_name: str
+
+
 class CorporationResponse(Schema):
     """
     Response for a corporation
@@ -58,6 +65,9 @@ class CorporationResponse(Schema):
     timezones: Optional[List[str]] = None
     requirements: Optional[List[str]] = None
     members: List[CorporationMemberResponse] = []
+    directors: List[CorporationRoleCharacterResponse] = []
+    recruiters: List[CorporationRoleCharacterResponse] = []
+    stewards: List[CorporationRoleCharacterResponse] = []
     active: bool
 
 
@@ -197,6 +207,27 @@ def get_corporation_by_id(request, corporation_id: int):
         "type": corporation.type,
         "active": corporation.active,
         "members": [],
+        "directors": [
+            {
+                "character_id": c.character_id,
+                "character_name": c.character_name,
+            }
+            for c in corporation.directors.all()
+        ],
+        "recruiters": [
+            {
+                "character_id": c.character_id,
+                "character_name": c.character_name,
+            }
+            for c in corporation.recruiters.all()
+        ],
+        "stewards": [
+            {
+                "character_id": c.character_id,
+                "character_name": c.character_name,
+            }
+            for c in corporation.stewards.all()
+        ],
     }
     # populate alliance details
     if (

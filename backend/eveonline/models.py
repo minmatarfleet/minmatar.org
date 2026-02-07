@@ -380,6 +380,23 @@ class EveCorporation(models.Model):
         EveFaction, on_delete=models.SET_NULL, blank=True, null=True
     )
 
+    # Role-based character sets (populated from ESI corporation roles)
+    directors = models.ManyToManyField(
+        "EveCharacter",
+        related_name="corporation_director_of",
+        blank=True,
+    )
+    recruiters = models.ManyToManyField(
+        "EveCharacter",
+        related_name="corporation_recruiter_of",
+        blank=True,
+    )
+    stewards = models.ManyToManyField(
+        "EveCharacter",
+        related_name="corporation_steward_of",
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
