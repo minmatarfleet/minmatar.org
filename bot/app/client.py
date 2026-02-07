@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 import requests
 from discord import app_commands
@@ -45,12 +47,36 @@ class MyClient(discord.Client):
 client = MyClient()
 
 
+RAT_QUOTE_URL = f"{settings.API_URL}/reminders/rat-quote"
+
+
 @client.tree.command(guilds=GUILDS, description="Submit a timer")
 async def timer(interaction: discord.Interaction):
     # Send the modal with an instance of our `Feedback` class
     # Since modals require an interaction, they cannot be done as a response to a text command.
     # They can only be done as a response to either an application command or a button press.
     await interaction.response.send_modal(TimerForm())
+
+
+@client.tree.command(guilds=GUILDS, description="Fetch a random Rat Bible quote")
+async def bible(interaction: discord.Interaction):
+    await interaction.response.defer()
+    try:
+        response = await asyncio.to_thread(
+            requests.get,
+            RAT_QUOTE_URL,
+            headers={"Authorization": f"Bearer {settings.MINMATAR_API_TOKEN}"},
+            timeout=5,
+        )
+        response.raise_for_status()
+        data = response.json()
+        quote = data.get("quote", "")
+        if not quote:
+            await interaction.followup.send("No quote received from the Rat Bible.")
+            return
+        await interaction.followup.send(quote)
+    except requests.RequestException as e:
+        await interaction.followup.send(f"Could not fetch a Rat Bible quote: {e!s}")
 
 
 @tasks.loop(seconds=60)
