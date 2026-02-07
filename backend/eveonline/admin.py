@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.http import HttpResponseRedirect
+from django.urls import path, reverse
+from django.contrib import messages
 from esi.models import CallbackRedirect, Scope, Token
 
 from .models import (
@@ -14,6 +17,7 @@ from .models import (
     EveCharacterSkill,
 )
 from .helpers.characters import user_primary_character
+from .tasks import update_corporation
 
 # Register your models here.
 admin.site.register(EveSkillset)
@@ -23,6 +27,21 @@ admin.site.register(EveCharacterTag)
 admin.site.unregister(CallbackRedirect)
 admin.site.unregister(Token)
 admin.site.unregister(Scope)
+
+
+def refresh_corporations_action(modeladmin, request, queryset):
+    """Queue refresh (update) for selected corporations."""
+    for corp in queryset:
+        update_corporation.delay(corp.corporation_id)
+    n = queryset.count()
+    modeladmin.message_user(
+        request,
+        f"Refresh queued for {n} corporation(s).",
+        level=messages.SUCCESS,
+    )
+
+
+refresh_corporations_action.short_description = "Refresh selected corporations"
 
 
 @admin.register(EveCorporation)
@@ -35,6 +54,45 @@ class EveCorporationAdmin(admin.ModelAdmin):
     search_fields = ("name", "ticker")
     list_filter = ("alliance",)
     filter_horizontal = ("directors", "recruiters", "stewards")
+    actions = [refresh_corporations_action]
+    change_form_template = "admin/eveonline/evecorporation/change_form.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        extra = [
+            path(
+                "<path:object_id>/refresh/",
+                self.admin_site.admin_view(self.refresh_corporation_view),
+                name="eveonline_evecorporation_refresh",
+            ),
+        ]
+        return extra + urls
+
+    def refresh_corporation_view(self, request, object_id):
+        """Queue a refresh for this corporation and redirect back to change form."""
+        corp = EveCorporation.objects.get(pk=object_id)
+        update_corporation.delay(corp.corporation_id)
+        self.message_user(
+            request,
+            f"Refresh queued for corporation “{corp.name}”.",
+            level=messages.SUCCESS,
+        )
+        url = reverse(
+            "admin:eveonline_evecorporation_change",
+            args=[object_id],
+            current_app=self.admin_site.name,
+        )
+        return HttpResponseRedirect(url)
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        if object_id != "add":
+            extra_context["refresh_url"] = reverse(
+                "admin:eveonline_evecorporation_refresh",
+                args=[object_id],
+                current_app=self.admin_site.name,
+            )
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 @admin.register(EveCharacter)

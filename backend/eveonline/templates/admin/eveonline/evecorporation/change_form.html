@@ -1,0 +1,11 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row">
+  {% if refresh_url %}
+  <a href="{{ refresh_url }}" class="button">{% trans "Refresh corporation" %}</a>
+  {% endif %}
+</div>
+{{ block.super }}
+{% endblock %}

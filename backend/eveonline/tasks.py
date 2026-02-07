@@ -355,9 +355,17 @@ def update_character_killmails(eve_character_id):
                 )
 
 
+ALLIED_ALLIANCE_NAMES = [
+    "Minmatar Fleet Alliance",
+    "Minmatar Fleet Associates",
+]
+
+
 @app.task
 def update_corporations():
-    for corporation in EveCorporation.objects.all():
+    for corporation in EveCorporation.objects.filter(
+        alliance__name__in=ALLIED_ALLIANCE_NAMES
+    ):
         update_corporation.apply_async(args=[corporation.corporation_id])
 
 
