@@ -910,33 +910,6 @@ export interface Damage {
     max_to:         number;
 }
 
-export interface TradeHub {
-    name:               string;
-    contract_groups:    MarketShipGroup[];
-}
-
-export interface MarketShipGroup {
-    ship_type:      string;
-    contracts:      ContractUI[];
-}
-
-import type { Responsability } from '@dtypes/api.minmatar.org'
-
-export interface ContractUI {
-    expectation_id:         number;
-    title:                  string;
-    eve_type_id:            number;
-    ship_type:              string;
-    desired_quantity:       number;
-    current_quantity:       number;
-    fitting_id:             number;
-    eft_format:             string;
-    trend_x_axis:           string[];
-    trend_y_axis:           number[];
-    responsabilities:       Responsability[];
-    entities:               number;
-}
-
 import type { SRPStatus, SRPCategory } from '@dtypes/api.minmatar.org'
 
 export interface SRPUI {

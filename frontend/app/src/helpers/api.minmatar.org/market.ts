@@ -32,7 +32,7 @@ export async function get_market_contracts() {
     }
 }
 
-
+// Deprecated - Endpoint no longer used
 export async function get_market_contract_by_id(expectation_id:number) {
     const headers = {
         'Content-Type': 'application/json',
@@ -62,6 +62,7 @@ export async function get_market_contract_by_id(expectation_id:number) {
     }
 }
 
+// Deprecated - Endpoint no longer used
 export async function create_market_contract_responsability(access_token:string, expectation_id:number, entity_id:number) {
     const data = JSON.stringify({
         expectation_id: expectation_id,
@@ -99,6 +100,7 @@ export async function create_market_contract_responsability(access_token:string,
     }
 }
 
+// Deprecated - Endpoint no longer used
 export async function get_market_characters(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
@@ -130,6 +132,7 @@ export async function get_market_characters(access_token:string) {
     }
 }
 
+// Deprecated - Endpoint no longer used
 export async function get_market_corporations(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',
