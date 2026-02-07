@@ -1,7 +1,13 @@
 from django.contrib import admin
 
 from .forms import EveDoctrineForm
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting, EveFittingTag
+from .models import (
+    EveDoctrine,
+    EveDoctrineFitting,
+    EveFitting,
+    EveFittingRefit,
+    EveFittingTag,
+)
 
 
 @admin.register(EveFitting)
@@ -13,6 +19,17 @@ class EveFittingAdmin(admin.ModelAdmin):
     list_filter = ("ship_id",)
     list_per_page = 50
     ordering = ("name",)
+
+
+@admin.register(EveFittingRefit)
+class EveFittingRefitAdmin(admin.ModelAdmin):
+    """Admin screen for EveFittingRefit entity"""
+
+    list_display = ("name", "base_fitting", "updated_at")
+    list_filter = ("base_fitting",)
+    search_fields = ("name", "description", "base_fitting__name")
+    raw_id_fields = ("base_fitting",)
+    ordering = ("base_fitting", "name")
 
 
 admin.site.register(EveFittingTag)
