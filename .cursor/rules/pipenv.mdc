@@ -1,0 +1,21 @@
+---
+description: Always run Python and project commands via pipenv
+alwaysApply: true
+---
+
+# Use Pipenv for All Commands
+
+When running any Python-related or project command in this workspace, use `pipenv run` so the correct virtual environment and dependencies are used.
+
+## Examples
+
+- **Python**: `pipenv run python manage.py ...` (not `python manage.py ...`)
+- **Django**: `pipenv run python manage.py test ...`, `pipenv run python manage.py runserver`
+- **Pytest**: `pipenv run pytest ...` (not `pytest ...` or `python -m pytest ...`)
+- **Scripts**: `pipenv run python script.py`
+- **One-off**: `pipenv run python -c "..."`
+
+## Rule
+
+- Prefer `pipenv run <command>` over bare `python`, `pytest`, `django-admin`, etc.
+- For shell access in the venv: `pipenv shell` then run commands, or keep using `pipenv run` for one-off commands.

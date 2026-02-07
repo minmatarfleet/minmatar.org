@@ -364,11 +364,7 @@ def fetch_eve_market_contracts(request):
                 expectation_id=expectation.id,
                 title=expectation.fitting.name,
                 fitting_id=expectation.fitting.id,
-                structure_id=(
-                    expectation.location.structure.id
-                    if expectation.location.structure
-                    else None
-                ),
+                structure_id=None,
                 location_name=expectation.location.location_name,
                 desired_quantity=expectation.quantity,
                 current_quantity=EveMarketContract.objects.filter(
@@ -441,11 +437,7 @@ def fetch_eve_market_contract(request, expectation_id: int):
         expectation_id=expectation.id,
         title=expectation.fitting.name,
         fitting_id=expectation.fitting.id,
-        structure_id=(
-            expectation.location.structure.id
-            if expectation.location.structure
-            else None
-        ),
+        structure_id=None,
         location_name=expectation.location.location_name,
         desired_quantity=expectation.quantity,
         current_quantity=EveMarketContract.objects.filter(
