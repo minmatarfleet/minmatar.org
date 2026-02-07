@@ -56,6 +56,47 @@ class EveFitting(models.Model):
             )
         super().save(*args, **kwargs)
 
+    @staticmethod
+    def ship_name_from_eft(eft_format):
+        """Extract ship name from the first line of EFT format [ShipName, Fitting name]."""
+        first_line = eft_format.split("\n")[0]
+        return first_line.split(",")[0].strip().strip("[]")
+
+
+class EveFittingRefit(models.Model):
+    """
+    A refit of an EveFitting: the same ship with the same slot layout (same contents)
+    but different modules fitted. The refit's EFT must describe the same ship as the
+    base fitting.
+    """
+
+    base_fitting = models.ForeignKey(
+        EveFitting, on_delete=models.CASCADE, related_name="refits"
+    )
+    name = models.CharField(max_length=255)
+    eft_format = models.TextField()
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [["base_fitting", "name"]]
+        ordering = ["base_fitting", "name"]
+
+    def __str__(self):
+        return f"{self.base_fitting.name} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        base_ship = EveFitting.ship_name_from_eft(
+            self.base_fitting.eft_format
+        )
+        refit_ship = EveFitting.ship_name_from_eft(self.eft_format)
+        if base_ship != refit_ship:
+            raise ValidationError(
+                f"Refit ship '{refit_ship}' must match base fitting ship '{base_ship}'"
+            )
+        super().save(*args, **kwargs)
+
 
 class EveDoctrine(models.Model):
     """

@@ -9,10 +9,26 @@ from app.errors import ErrorResponse
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting
+from .models import (
+    EveDoctrine,
+    EveDoctrineFitting,
+    EveFitting,
+    EveFittingRefit,
+)
 
 doctrines_router = Router(tags=["Ships"])
 fittings_router = Router(tags=["Ships"])
+
+
+class RefitResponse(BaseModel):
+    """Refit API Response"""
+
+    id: int
+    name: str
+    eft_format: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class FittingResponse(BaseModel):
@@ -28,8 +44,8 @@ class FittingResponse(BaseModel):
     eft_format: str
     minimum_pod: str
     recommended_pod: str
-
     latest_version: str
+    refits: List[RefitResponse]
 
 
 class DoctrineResponse(BaseModel):
@@ -50,14 +66,16 @@ class DoctrineResponse(BaseModel):
 
 @doctrines_router.get("", response=List[DoctrineResponse])
 def get_doctrines(request):
-    doctrines = EveDoctrine.objects.all()
+    doctrines = EveDoctrine.objects.prefetch_related(
+        "evedoctrinefitting_set__fitting__tags",
+        "evedoctrinefitting_set__fitting__refits",
+    )
     response = []
     for doctrine in doctrines:
         primary_fittings = []
         secondary_fittings = []
         support_fittings = []
-        fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
-        for doctrine_fitting in fittings:
+        for doctrine_fitting in doctrine.evedoctrinefitting_set.all():
             fitting = doctrine_fitting.fitting
             fitting_response = make_fitting_response(fitting)
             if doctrine_fitting.role == "primary":
@@ -99,7 +117,11 @@ def get_doctrine(request, doctrine_id: int):
     primary_fittings = []
     secondary_fittings = []
     support_fittings = []
-    fittings = EveDoctrineFitting.objects.filter(doctrine=doctrine)
+    fittings = (
+        EveDoctrineFitting.objects.filter(doctrine=doctrine)
+        .select_related("fitting")
+        .prefetch_related("fitting__tags", "fitting__refits")
+    )
     for doctrine_fitting in fittings:
         fitting = doctrine_fitting.fitting
         fitting_response = make_fitting_response(fitting)
@@ -127,7 +149,19 @@ def get_doctrine(request, doctrine_id: int):
     return doctrine_response
 
 
+def make_refit_response(refit: EveFittingRefit) -> RefitResponse:
+    return RefitResponse(
+        id=refit.id,
+        name=refit.name,
+        eft_format=refit.eft_format,
+        description=refit.description or "",
+        created_at=refit.created_at,
+        updated_at=refit.updated_at,
+    )
+
+
 def make_fitting_response(fitting: EveFitting) -> FittingResponse:
+    refits = [make_refit_response(refit) for refit in fitting.refits.all()]
     return FittingResponse(
         id=fitting.id,
         name=fitting.name,
@@ -140,12 +174,13 @@ def make_fitting_response(fitting: EveFitting) -> FittingResponse:
         minimum_pod=fitting.minimum_pod,
         recommended_pod=fitting.recommended_pod,
         latest_version=fitting.latest_version,
+        refits=refits,
     )
 
 
 @fittings_router.get("", response=List[FittingResponse])
 def get_fittings(request):
-    fittings = EveFitting.objects.all()
+    fittings = EveFitting.objects.prefetch_related("tags", "refits")
     response = []
     for fitting in fittings:
         fitting_response = make_fitting_response(fitting)
@@ -162,7 +197,9 @@ def get_fitting(request, fitting_id: int):
             status=404,
             detail=f"Fitting not found: {fitting_id}",
         )
-    fitting = EveFitting.objects.get(id=fitting_id)
+    fitting = EveFitting.objects.prefetch_related("tags", "refits").get(
+        id=fitting_id
+    )
     fitting_response = make_fitting_response(fitting)
     return fitting_response
 

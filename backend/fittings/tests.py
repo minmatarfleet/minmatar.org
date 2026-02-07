@@ -2,7 +2,7 @@ from django.test import Client
 
 from app.test import TestCase
 
-from fittings.models import EveFitting, EveDoctrine
+from fittings.models import EveDoctrine, EveFitting, EveFittingRefit
 
 
 class FittingsRouterTestCase(TestCase):
@@ -82,3 +82,28 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         fitting = response.json()
         self.assertEqual("[ADV-5] Retribution", fitting["name"])
+        self.assertIn("refits", fitting)
+        self.assertEqual([], fitting["refits"])
+
+    def test_get_fitting_includes_refits(self):
+        fitting = EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scanning refit",
+            eft_format="[Retribution, Scanning refit]\n\n[empty high slot]",
+        )
+
+        response = self.client.get(
+            f"/api/fittings/{fitting.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data["refits"]))
+        self.assertEqual(refit.id, data["refits"][0]["id"])
+        self.assertEqual("Scanning refit", data["refits"][0]["name"])
+        self.assertEqual(refit.eft_format, data["refits"][0]["eft_format"])
