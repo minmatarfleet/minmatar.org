@@ -8,10 +8,7 @@ from django.contrib.auth.models import User
 from esi.models import Token
 
 from app.celery import app
-from eveonline.helpers.affiliations import (
-    create_or_update_affiliation_entities,
-    update_character_with_affiliations,
-)
+from eveonline.helpers.affiliations import update_character_with_affiliations
 from groups.tasks import update_affiliation
 
 from .client import EsiClient
@@ -73,11 +70,6 @@ def update_character_affilliations() -> int:
 
             character = EveCharacter.objects.get(character_id=character_id)
 
-            create_or_update_affiliation_entities(
-                corporation_id=corporation_id,
-                alliance_id=alliance_id,
-                faction_id=faction_id,
-            )
             updated = update_character_with_affiliations(
                 character_id=character_id,
                 corporation_id=corporation_id,
@@ -367,6 +359,57 @@ def update_corporations():
         alliance__name__in=ALLIED_ALLIANCE_NAMES
     ):
         update_corporation.apply_async(args=[corporation.corporation_id])
+
+
+@app.task
+def sync_alliance_corporations():
+    """
+    For each EveAlliance in the database, fetch corporation IDs from ESI
+    (get_alliance_corporations) and get_or_create EveCorporation for each,
+    then populate corporation details from ESI.
+    """
+    alliances = EveAlliance.objects.all().order_by("alliance_id")
+    logger.info(
+        "Syncing corporations for %d alliances",
+        alliances.count(),
+    )
+    total_created = 0
+    for alliance in alliances:
+        esi_response = EsiClient(None).get_alliance_corporations(
+            alliance.alliance_id
+        )
+        if not esi_response.success():
+            logger.warning(
+                "ESI error %d fetching corporations for alliance %s (%s)",
+                esi_response.response_code,
+                alliance.name or alliance.alliance_id,
+                alliance.alliance_id,
+            )
+            continue
+        corporation_ids = esi_response.results() or []
+        logger.info(
+            "Alliance %s (%s): %d corporations from ESI",
+            alliance.name or alliance.alliance_id,
+            alliance.alliance_id,
+            len(corporation_ids),
+        )
+        for corporation_id in corporation_ids:
+            corporation, created = EveCorporation.objects.get_or_create(
+                corporation_id=corporation_id
+            )
+            if created:
+                corporation.populate()
+                total_created += 1
+                logger.info(
+                    "Created corporation %s (%s)",
+                    corporation.name,
+                    corporation_id,
+                )
+    logger.info(
+        "sync_alliance_corporations complete: %d new corporations created",
+        total_created,
+    )
+    return total_created
 
 
 def _all_roles_for_member(role_data):

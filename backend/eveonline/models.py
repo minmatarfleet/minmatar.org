@@ -443,10 +443,9 @@ class EveCorporation(models.Model):
 
         esi_alliance_id = esi_corporation["alliance_id"]
         if esi_alliance_id:
-            self.alliance, _ = EveAlliance.objects.get_or_create(
-                # Details will be pulled from ESI via post_save signal
+            self.alliance = EveAlliance.objects.filter(
                 alliance_id=esi_alliance_id
-            )
+            ).first()
         else:
             self.alliance = None
 

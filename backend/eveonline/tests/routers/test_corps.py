@@ -10,10 +10,7 @@ from eveonline.models import (
     EveCorporation,
     EveAlliance,
 )
-from eveonline.helpers.affiliations import (
-    create_or_update_affiliation_entities,
-    update_character_with_affiliations,
-)
+from eveonline.helpers.affiliations import update_character_with_affiliations
 
 BASE_URL = "/api/eveonline/corporations/"
 
@@ -89,18 +86,17 @@ class CorporationRouterTestCase(TestCase):
         self.assertEqual("TestCorp", corp["corporation_name"])
 
     def test_update_affiliations(self):
-        create_or_update_affiliation_entities(
-            corporation_id=123,
-            alliance_id=234,
-            faction_id=None,
-        )
         EveCharacter.objects.create(
             character_id=100,
             character_name="Itsy Bitsy",
         )
-        update_character_with_affiliations(
+        updated = update_character_with_affiliations(
             character_id=100, corporation_id=123, alliance_id=234
         )
+        self.assertTrue(updated)
+        character = EveCharacter.objects.get(character_id=100)
+        self.assertEqual(character.corporation_id, 123)
+        self.assertEqual(character.alliance_id, 234)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_get_corp_members(self):
