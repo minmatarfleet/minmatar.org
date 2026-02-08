@@ -29,6 +29,7 @@ from eveonline.models import (
 from eveonline.scopes import (
     TokenType,
     scopes_for,
+    scopes_for_groups,
     scope_group,
     token_type_str,
     scope_names,
@@ -407,6 +408,20 @@ def _check_add_character_session_match(request, token):
     )
 
 
+def _ensure_scope_group_in_list(character, token_type):
+    """Add token_type to character.esi_scope_groups if not present."""
+    group_str = token_type_str(token_type)
+    if not group_str:
+        return
+    groups = list(character.esi_scope_groups) if character.esi_scope_groups else []
+    if group_str not in groups:
+        groups.append(group_str)
+        character.esi_scope_groups = groups
+    # Record first token level only (Basic/Public) when not yet set
+    if not character.esi_token_level:
+        character.esi_token_level = group_str
+
+
 def _apply_token_to_existing_character(character, token, token_type):
     """Update an existing character with a new token; handle replace/add/discard cases."""
     if (
@@ -417,9 +432,9 @@ def _apply_token_to_existing_character(character, token, token_type):
         logger.info("Replacing token for %s", token.character_id)
         old_token = character.token
         character.token = token
-        character.esi_token_level = token_type_str(token_type)
         character.user = token.user
         character.esi_suspended = False
+        _ensure_scope_group_in_list(character, token_type)
         character.save()
         old_token.delete()
     elif not character.token:
@@ -429,8 +444,8 @@ def _apply_token_to_existing_character(character, token, token_type):
         )
         character.token = token
         character.user = token.user
-        character.esi_token_level = token_type_str(token_type)
         character.esi_suspended = False
+        _ensure_scope_group_in_list(character, token_type)
         character.save()
     elif token != character.token:
         logger.warning(
@@ -508,10 +523,12 @@ def handle_add_character_esi_callback(request, token, token_type):
             token.character_id,
             token.character_name,
         )
+        group_str = token_type_str(token_type)
         character = EveCharacter.objects.create(
             character_id=token.character_id,
             character_name=token.character_name,
-            esi_token_level=token_type_str(token_type),
+            esi_token_level=group_str,
+            esi_scope_groups=[group_str] if group_str else [],
             token=token,
             user=token.user,
         )
@@ -551,7 +568,16 @@ def add_character(
     if not token_type:
         if character_id:
             char = EveCharacter.objects.get(character_id=character_id)
-            token_type = char.esi_token_level
+            if getattr(char, "esi_scope_groups", None):
+                try:
+                    token_type = TokenType(char.esi_scope_groups[0])
+                except (ValueError, TypeError, IndexError):
+                    token_type = TokenType.BASIC
+            else:
+                try:
+                    token_type = TokenType(char.esi_token_level or "")
+                except (ValueError, TypeError):
+                    token_type = TokenType.BASIC
         else:
             token_type = TokenType.BASIC
 
@@ -559,14 +585,20 @@ def add_character(
         # Upgrade public tokens to basic when refreshing
         token_type = TokenType.BASIC
 
+    # Upgrade/refresh: request current scopes union new group. New character: just that group.
+    if character_id:
+        char = EveCharacter.objects.get(character_id=character_id)
+        current = scope_names(char.token) if char.token else []
+        scopes = sorted(set(current) | set(scopes_for(token_type)))
+    else:
+        scopes = scopes_for(token_type)
+
     logger.info(
         "ESI token request for %s (%s), type = %s",
         request.user.username,
         str(character_id),
         token_type,
     )
-
-    scopes = scopes_for(token_type)
 
     @login_required()
     @token_required(scopes=scopes, new=True)
@@ -577,14 +609,15 @@ def add_character(
 
 
 def fixup_character_token_level(character, token_count):
-    if not character.esi_token_level:
-        if token_count == 1 and not character.token:
-            character.token = Token.objects.filter(
-                character_id=character.character_id
-            ).first()
-        if character.token:
-            character.esi_token_level = scope_group(character.token)
-            character.save()
+    if token_count == 1 and not character.token:
+        character.token = Token.objects.filter(
+            character_id=character.character_id
+        ).first()
+    if character.token and not character.esi_scope_groups:
+        group = scope_group(character.token)
+        if group:
+            character.esi_scope_groups = [group]
+            character.save(update_fields=["esi_scope_groups"])
 
 
 @router.get(
