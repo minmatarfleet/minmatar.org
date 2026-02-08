@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from authentication import AuthBearer
 
 from groups.helpers import user_in_team, TECH_TEAM
-from eveonline.models import EveCharacterAsset
+from eveonline.models import EveCharacterAsset, EveCorporation
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,11 @@ def get_(request, primary_character_id: int = None):
 
     summary = {}
 
+    fl33t_corp_ids = EveCorporation.objects.filter(
+        alliance__ticker="FL33T"
+    ).values_list("corporation_id", flat=True)
     assets = EveCharacterAsset.objects.filter(
-        character__corporation__alliance__ticker="FL33T"
+        character__corporation_id__in=fl33t_corp_ids
     )
     for asset in assets:
         if asset.type_id not in SHIP_ASSET_TYPE_ID_FILTER:

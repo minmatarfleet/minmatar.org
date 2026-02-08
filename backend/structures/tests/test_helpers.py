@@ -23,7 +23,7 @@ def make_character(char_id, corp, scopes) -> EveCharacter:
     char = EveCharacter.objects.create(
         character_id=char_id,
         character_name=f"Pilot {char_id}",
-        corporation_id=corp.corporation_id,
+        corporation_id=corp.corporation_id if corp else None,
         token=Token.objects.create(
             character_id=char_id,
         ),
@@ -94,7 +94,7 @@ class StructureHelperTest(unittest.TestCase):
         make_character(2004, corp, scopes)
         make_character(2005, None, scopes)
 
-        chars = get_notification_characters(corp.id)
+        chars = get_notification_characters(corp.corporation_id)
 
         self.assertEqual(3, chars.count())
 

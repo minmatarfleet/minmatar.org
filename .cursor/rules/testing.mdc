@@ -1,0 +1,19 @@
+---
+description: How to run Django tests in this project
+alwaysApply: true
+---
+
+# Running Tests
+
+Use Django's test runner with the test settings (SQLite, no external DB):
+
+```bash
+pipenv run python manage.py test --settings=app.settings_test
+```
+
+Run from the **backend** directory (`/root/minmatar.org/backend` or project's `backend/`).
+
+- To run a specific app: `pipenv run python manage.py test eveonline --settings=app.settings_test`
+- To run a specific test class or method: `pipenv run python manage.py test eveonline.tests.test_models.EveSkillsetTestCase --settings=app.settings_test`
+
+Do **not** use `python manage.py test` without `--settings=app.settings_test` unless the environment is configured for a test database (e.g. CI with DB create permissions).
