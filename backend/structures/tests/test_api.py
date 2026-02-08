@@ -86,16 +86,17 @@ class StructureTimertests(TestCase):
     def test_add_structure_manager(self):
         self.make_superuser()
 
+        corp = EveCorporation.objects.create(
+            corporation_id=200001,
+            name="Megacorp",
+        )
         char = EveCharacter.objects.create(
             character_id=100001,
             character_name="Test Pilot",
-            corporation=EveCorporation.objects.create(
-                corporation_id=200001,
-                name="Megacorp",
-            ),
+            corporation_id=corp.corporation_id,
         )
-        char.corporation.ceo = char
-        char.corporation.save()
+        corp.ceo = char
+        corp.save()
 
         payload = {
             "character_id": char.character_id,
@@ -118,7 +119,7 @@ class StructureTimertests(TestCase):
         )
 
         response = self.client.get(
-            f"/api/structures/managers?corp_id={char.corporation.corporation_id}",
+            f"/api/structures/managers?corp_id={char.corporation_id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)

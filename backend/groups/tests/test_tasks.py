@@ -99,42 +99,42 @@ class UserAffiliationTestCase(TestCase):
         assert user_affiliation is None
 
         # qualify by corporation
-        character.corporation = corporation
+        character.corporation_id = corporation.corporation_id
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type
-        character.corporation = None
+        character.corporation_id = None
         character.save()
         user_affiliation.delete()
 
         # qualify by alliance
-        character.alliance = alliance
+        character.alliance_id = alliance.alliance_id
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type
-        character.alliance = None
+        character.alliance_id = None
         character.save()
         user_affiliation.delete()
 
         # qualify by faction
-        character.faction = faction
+        character.faction_id = faction.id
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type
-        character.faction = None
+        character.faction_id = None
         character.save()
         user_affiliation.delete()
 
         # remove if not qualified
-        character.faction = faction
+        character.faction_id = faction.id
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type
-        character.faction = None
+        character.faction_id = None
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.filter(user=user).first()
@@ -178,7 +178,7 @@ class UserAffiliationTestCase(TestCase):
         affiliation_type_2.corporations.add(corporation)
 
         # qualify by corporation
-        character.corporation = corporation
+        character.corporation_id = corporation.corporation_id
         character.save()
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
@@ -243,7 +243,7 @@ class GroupTasksTestCase(TestCase):
         char = EveCharacter.objects.create(
             character_id=1001,
             character_name="Test Pilot",
-            corporation=corp,
+            corporation_id=corp.corporation_id,
         )
         DiscordUser.objects.create(
             id=1000000001,

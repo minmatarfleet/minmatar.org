@@ -175,13 +175,14 @@ def record_unmatched_contract(esi_contract, location):
     char = EveCharacter.objects.filter(
         character_id=esi_contract["issuer_id"]
     ).first()
-    if (
-        char
-        and char.corporation
-        and char.corporation.alliance
-        and char.corporation.alliance.ticker
-        and char.corporation.alliance.ticker in ["FL33T", "BUILD"]
-    ):
+    corp = (
+        EveCorporation.objects.filter(corporation_id=char.corporation_id)
+        .select_related("alliance")
+        .first()
+        if char and char.corporation_id
+        else None
+    )
+    if corp and corp.alliance and corp.alliance.ticker in ["FL33T", "BUILD"]:
         contract_error, created = EveMarketContractError.objects.get_or_create(
             location=location,
             issuer=char,

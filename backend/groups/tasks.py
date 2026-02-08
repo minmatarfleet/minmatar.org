@@ -48,28 +48,42 @@ def update_affiliation(user_id: int):
         is_qualifying = False
         if affiliation.default:
             is_qualifying = True
-        if primary_character.corporation in affiliation.corporations.all():
+        if (
+            primary_character.corporation_id
+            and affiliation.corporations.filter(
+                corporation_id=primary_character.corporation_id
+            ).exists()
+        ):
             logger.debug(
                 "User %s is in corporation %s",
                 user,
-                primary_character.corporation,
+                primary_character.corporation_id,
             )
-
             is_qualifying = True
 
-        if primary_character.alliance in affiliation.alliances.all():
+        if (
+            primary_character.alliance_id
+            and affiliation.alliances.filter(
+                alliance_id=primary_character.alliance_id
+            ).exists()
+        ):
             logger.debug(
                 "User %s is in alliance %s",
                 user,
-                primary_character.alliance,
+                primary_character.alliance_id,
             )
             is_qualifying = True
 
-        if primary_character.faction in affiliation.factions.all():
+        if (
+            primary_character.faction_id
+            and affiliation.factions.filter(
+                id=primary_character.faction_id
+            ).exists()
+        ):
             logger.debug(
                 "User %s is in faction %s",
                 user,
-                primary_character.faction,
+                primary_character.faction_id,
             )
             is_qualifying = True
 
@@ -150,9 +164,9 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
 
     if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
         primary = user_primary_character(user)
-        if not primary or not primary.corporation:
+        if not primary or primary.corporation_id is None:
             return False
-        return primary.corporation.id == corp.id
+        return primary.corporation_id == corp.corporation_id
 
     if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
         return corp.recruiters.filter(user=user).exists()

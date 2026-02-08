@@ -124,12 +124,12 @@ class EveCharacterAdmin(admin.ModelAdmin):
 
     list_display = (
         "character_name",
-        "corporation",
-        "alliance",
+        "corporation_id",
+        "alliance_id",
         "primary_eve_character",
     )
-    search_fields = ("character_name", "corporation__name")
-    list_filter = ("corporation", "alliance")
+    search_fields = ("character_name",)
+    list_filter = ("corporation_id", "alliance_id")
 
     def primary_eve_character(self, obj):
         if obj.user:

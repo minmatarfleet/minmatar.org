@@ -9,7 +9,7 @@ from discord.client import DiscordClient
 from discord.models import DiscordRole, DiscordUser
 from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EvePlayer
+from eveonline.models import EveCorporation, EvePlayer
 
 from .schemas import UserProfileSchema
 
@@ -82,14 +82,14 @@ def expand_user_profile(
         eve_character_profile = {
             "character_id": primary_character.character_id,
             "character_name": primary_character.character_name,
-            "corporation_id": (
-                primary_character.corporation.corporation_id
-                if hasattr(primary_character, "corporation")
-                else None
-            ),
+            "corporation_id": primary_character.corporation_id,
             "corporation_name": (
-                primary_character.corporation.name
-                if hasattr(primary_character, "corporation")
+                EveCorporation.objects.filter(
+                    corporation_id=primary_character.corporation_id
+                )
+                .values_list("name", flat=True)
+                .first()
+                if primary_character.corporation_id
                 else None
             ),
         }

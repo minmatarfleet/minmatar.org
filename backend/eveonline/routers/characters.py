@@ -17,11 +17,13 @@ from authentication import AuthBearer
 from audit.models import AuditEntry
 from applications.models import EveCorporationApplication
 from eveonline.models import (
+    EveAlliance,
     EveCharacter,
     EveCharacterAsset,
     EveCharacterLog,
     EveCharacterSkillset,
     EveCharacterTag,
+    EveCorporation,
     EveTag,
 )
 from eveonline.scopes import (
@@ -509,11 +511,16 @@ def handle_add_character_esi_callback(request, token, token_type):
 
     # populate corporation if CEO token
     if token_type in [TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT]:
-        logger.info(
-            "Populating CEO token corporation for character %s",
-            character.character_id,
-        )
-        character.corporation.populate()
+        if character.corporation_id:
+            logger.info(
+                "Populating CEO token corporation for character %s",
+                character.character_id,
+            )
+            corp = EveCorporation.objects.filter(
+                corporation_id=character.corporation_id
+            ).first()
+            if corp:
+                corp.populate()
 
     return redirect(request.session["redirect_url"])
 
@@ -660,12 +667,24 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         flags=[],
     )
     try:
-        if char.corporation:
-            item.corp_id = char.corporation.corporation_id
-            item.corp_name = char.corporation.name
-        if char.alliance:
-            item.alliance_id = char.alliance.alliance_id
-            item.alliance_name = char.alliance.name
+        if char.corporation_id is not None:
+            item.corp_id = char.corporation_id
+            item.corp_name = (
+                EveCorporation.objects.filter(
+                    corporation_id=char.corporation_id
+                )
+                .values_list("name", flat=True)
+                .first()
+                or ""
+            )
+        if char.alliance_id is not None:
+            item.alliance_id = char.alliance_id
+            item.alliance_name = (
+                EveAlliance.objects.filter(alliance_id=char.alliance_id)
+                .values_list("name", flat=True)
+                .first()
+                or ""
+            )
 
         if item.is_primary and item.alliance_id != 99011978:
             if not user_has_pending_or_rejected_application(char.user):

@@ -3,7 +3,6 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
-    EveFaction,
 )
 
 
@@ -38,35 +37,22 @@ def update_character_with_affiliations(
 ) -> bool:
     character = EveCharacter.objects.get(character_id=character_id)
     updated = False
-    if (corporation_id and not character.corporation) or (
-        corporation_id
-        and corporation_id != character.corporation.corporation_id
+    if (corporation_id and character.corporation_id != corporation_id) or (
+        not corporation_id and character.corporation_id is not None
     ):
-        character.corporation = EveCorporation.objects.get(
-            corporation_id=corporation_id
-        )
+        character.corporation_id = corporation_id
         updated = True
 
-    if (alliance_id and not character.alliance) or (
-        alliance_id and alliance_id != character.alliance.alliance_id
+    if (alliance_id and character.alliance_id != alliance_id) or (
+        not alliance_id and character.alliance_id is not None
     ):
-        character.alliance = EveAlliance.objects.get(alliance_id=alliance_id)
+        character.alliance_id = alliance_id
         updated = True
 
-    if not alliance_id and character.alliance:
-        character.alliance = None
-        updated = True
-
-    if (
-        (faction_id and not character.faction)
-        or faction_id
-        and (faction_id != character.faction.id)
+    if (faction_id and character.faction_id != faction_id) or (
+        not faction_id and character.faction_id is not None
     ):
-        character.faction = EveFaction.objects.get(id=faction_id)
-        updated = True
-
-    if not faction_id and character.faction:
-        character.faction = None
+        character.faction_id = faction_id
         updated = True
 
     if updated:

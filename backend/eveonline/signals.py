@@ -11,7 +11,6 @@ from eveonline.client import EsiClient, esi_public
 from .models import (
     EveAlliance,
     EveCharacter,
-    EveCorporation,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,12 +40,9 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
         logger.debug("Setting character name to %s", esi_character["name"])
         instance.character_name = esi_character["name"]
         logger.debug(
-            "Setting corporation to %s", esi_character["corporation_id"]
+            "Setting corporation_id to %s", esi_character["corporation_id"]
         )
-        corporation, _ = EveCorporation.objects.get_or_create(
-            corporation_id=esi_character["corporation_id"]
-        )
-        instance.corporation = corporation
+        instance.corporation_id = esi_character["corporation_id"]
         instance.save()
 
 

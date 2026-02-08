@@ -343,9 +343,19 @@ def add_structure_manager(request, payload: CreateStructureManagerRequest):
             detail="Character {payload.charater_id} not found"
         )
 
+    corp = (
+        EveCorporation.objects.filter(
+            corporation_id=char.corporation_id
+        ).first()
+        if char.corporation_id
+        else None
+    )
+    if not corp:
+        return 404, ErrorResponse(detail="Character corporation not found")
+
     esm = EveStructureManager.objects.create(
         character=char,
-        corporation=char.corporation,
+        corporation=corp,
         poll_time=payload.poll_time,
     )
 
