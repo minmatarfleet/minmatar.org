@@ -31,9 +31,13 @@ class DiscordSimpleTests(SimpleTestCase):
     """
 
     def test_basic_nickname(self):
-        character = Mock(character_name="Bob", corporation=Mock(ticker="ABC"))
+        character = Mock(character_name="Bob", corporation_id=999)
         discord = Mock(is_down_under=False, dress_wearer=False)
-        self.assertEqual("[ABC] Bob", make_nickname(character, discord))
+        with patch("discord.core.EveCorporation") as eve_corp_model:
+            eve_corp_model.objects.filter.return_value.first.return_value = (
+                Mock(ticker="ABC")
+            )
+            self.assertEqual("[ABC] Bob", make_nickname(character, discord))
 
 
 class DiscordSignalTests(TestCase):
@@ -184,7 +188,7 @@ class DiscordTests(TestCase):
         char = EveCharacter.objects.create(
             character_id=123,
             character_name="Test Char",
-            corporation=corp,
+            corporation_id=corp.corporation_id,
         )
         set_primary_character(self.user, char)
         group, _ = Group.objects.get_or_create(name="Alliance")

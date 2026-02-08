@@ -387,4 +387,4 @@ class EveCharacterTestCase(TestCase):
 
         saved_char = EveCharacter.objects.get(character_id=1001)
         self.assertEqual("Bob", saved_char.character_name)
-        self.assertEqual(2001, saved_char.corporation.corporation_id)
+        self.assertEqual(2001, saved_char.corporation_id)

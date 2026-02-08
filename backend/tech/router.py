@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.db.models import Count, F
+from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 from pydantic import BaseModel
@@ -22,7 +22,12 @@ from discord.helpers import remove_all_roles_from_guild_member
 from groups.helpers import TECH_TEAM, user_in_team
 from groups.tasks import update_affiliation
 from eveonline.client import esi_for, EsiClient
-from eveonline.models import EveCharacter, EvePlayer, EveCharacterAsset
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EvePlayer,
+    EveCharacterAsset,
+)
 from eveonline.tasks import update_character_assets, update_character_skills
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
@@ -391,9 +396,16 @@ def character_flags(request):
         token_count=Count("token", distinct=True),
         scope_count=Count("token__scopes", distinct=True),
         tag_count=Count("evecharactertag", distinct=True),
-        corp_name=F("corporation__name"),
-        alliiance_name=F("alliance__name"),
     )
+
+    corp_ids_to_name = {
+        c["corporation_id"]: c["name"]
+        for c in EveCorporation.objects.filter(
+            corporation_id__in=EveCharacter.objects.filter(
+                user=request.user
+            ).values_list("corporation_id", flat=True)
+        ).values("corporation_id", "name")
+    }
 
     response = []
     for char in chars:
@@ -407,11 +419,16 @@ def character_flags(request):
         if char.tag_count == 0:
             flags.append("NO_TAGS")
         flags.sort()
+        corp_name = (
+            corp_ids_to_name.get(char.corporation_id)
+            if char.corporation_id
+            else None
+        )
         response.append(
             CharacterFlagResponse(
                 character_id=char.character_id,
                 character_name=char.character_name,
-                corp_name=char.corp_name,
+                corp_name=corp_name,
                 token_count=char.token_count,
                 scope_count=char.scope_count,
                 tag_count=char.tag_count,

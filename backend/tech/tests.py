@@ -292,15 +292,16 @@ class TechRoutesTestCase(TestCase):
     def test_character_flags(self):
         self.make_superuser()
 
+        corp = EveCorporation.objects.create(
+            corporation_id=2001,
+            name="MegaCorp",
+        )
         char = EveCharacter.objects.create(
             character_id=1001,
             character_name="Test Pilot",
             user=self.user,
             esi_suspended=True,
-            corporation=EveCorporation.objects.create(
-                corporation_id=2001,
-                name="MegaCorp",
-            ),
+            corporation_id=corp.corporation_id,
         )
 
         response = self.client.get(
@@ -340,15 +341,16 @@ class TechRoutesTestCase(TestCase):
     def test_full_refresh(self):
         self.make_superuser()
 
+        corp = EveCorporation.objects.create(
+            corporation_id=2001,
+            name="MegaCorp",
+        )
         EveCharacter.objects.create(
             character_id=1001,
             character_name="Test Pilot",
             user=self.user,
             esi_suspended=True,
-            corporation=EveCorporation.objects.create(
-                corporation_id=2001,
-                name="MegaCorp",
-            ),
+            corporation_id=corp.corporation_id,
         )
 
         response = self.client.get(

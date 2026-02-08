@@ -123,8 +123,8 @@ def setup_orgs(user: User) -> EveCharacter:
 
 
 def setup_char(char: EveCharacter, corp: EveCorporation, user: User):
-    char.corporation = corp
-    char.alliance = corp.alliance
+    char.corporation_id = corp.corporation_id
+    char.alliance_id = corp.alliance.alliance_id if corp.alliance else None
     char.user = user
     char.esi_token_level = "Basic"
 

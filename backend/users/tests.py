@@ -53,7 +53,7 @@ class UserRouterTestCase(TestCase):
             corporation_id=98726134,
             name="Test Corporation",
         )
-        character.corporation = corporation
+        character.corporation_id = corporation.corporation_id
         character.save()
         discord_user = DiscordUser.objects.create(
             user=user,
@@ -80,8 +80,8 @@ class UserRouterTestCase(TestCase):
                 "eve_character_profile": {
                     "character_id": primary_character.character_id,
                     "character_name": primary_character.character_name,
-                    "corporation_id": primary_character.corporation.corporation_id,
-                    "corporation_name": primary_character.corporation.name,
+                    "corporation_id": primary_character.corporation_id,
+                    "corporation_name": corporation.name,
                     "scopes": [],
                 },
                 "discord_user_profile": {

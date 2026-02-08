@@ -360,15 +360,16 @@ class MarketTaskTestCase(TestCase):
             eft_format="[Thrasher, [FL33T] Thrasher]",
             ship_id=1001,
         )
+        corp = EveCorporation.objects.create(
+            corporation_id=1001,
+            alliance=EveAlliance.objects.create(
+                alliance_id=1002, ticker="BUILD"
+            ),
+        )
         seller = EveCharacter.objects.create(
             character_id=1,
             character_name="Seller",
-            corporation=EveCorporation.objects.create(
-                corporation_id=1001,
-                alliance=EveAlliance.objects.create(
-                    alliance_id=1002, ticker="BUILD"
-                ),
-            ),
+            corporation_id=corp.corporation_id,
         )
 
         esi = esi_mock.return_value

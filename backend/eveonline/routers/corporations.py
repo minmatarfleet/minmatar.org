@@ -251,9 +251,7 @@ def get_corporation_by_id(request, corporation_id: int):
         response["faction_id"] = faction.id
         response["faction_name"] = faction.name
 
-    characters = EveCharacter.objects.filter(
-        corporation__corporation_id=corporation_id
-    )
+    characters = EveCharacter.objects.filter(corporation_id=corporation_id)
     for character in characters:
         payload = {
             "character_id": character.character_id,
@@ -350,9 +348,9 @@ def get_corp_member_details(request, corporation_id: int):
 
     response = []
 
-    members = EveCharacter.objects.filter(corporation=corporation).annotate(
-        token_count=Count("token")
-    )
+    members = EveCharacter.objects.filter(
+        corporation_id=corporation.corporation_id
+    ).annotate(token_count=Count("token"))
     for character in members:
         char = CorporationMemberDetails(
             character_id=character.character_id,
@@ -406,4 +404,4 @@ def can_manage_corp_members(user: User, corporation: EveCorporation) -> bool:
 
 
 def corp_members(corp_id: int):
-    return EveCharacter.objects.filter(corporation__corporation_id=corp_id)
+    return EveCharacter.objects.filter(corporation_id=corp_id)

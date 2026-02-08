@@ -91,7 +91,7 @@ def setup_fc(user):
         character_id=character_id,
         character_name="Mr FC",
         user=user,
-        corporation=corp,
+        corporation_id=corp.corporation_id,
     )
     set_primary_character(user, character)
 

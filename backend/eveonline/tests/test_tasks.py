@@ -285,7 +285,7 @@ class EveOnlineTaskTests(TestCase):
         )
 
         self.assertIsNone(
-            EveCharacter.objects.get(character_id=10001).corporation
+            EveCharacter.objects.get(character_id=10001).corporation_id
         )
 
         esi_client.get_character_affiliations.return_value = EsiResponse(

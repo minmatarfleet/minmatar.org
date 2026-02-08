@@ -110,7 +110,7 @@ class CorporationRouterTestCase(TestCase):
         corp.ceo = EveCharacter.objects.create(
             character_id=10001,
             character_name="Boss Man",
-            corporation=corp,
+            corporation_id=corp.corporation_id,
             user=self.user,
             token=Token.objects.create(
                 character_id=10001,
