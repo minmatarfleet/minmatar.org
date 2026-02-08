@@ -491,7 +491,9 @@ def fixup_character_tokens():
             character.token = tokens.first()
             updated = True
 
-        if character.token and not getattr(character, "esi_scope_groups", None):
+        if character.token and not getattr(
+            character, "esi_scope_groups", None
+        ):
             group = scope_group(character.token)
             if group:
                 character.esi_scope_groups = [group]

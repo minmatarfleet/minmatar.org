@@ -29,7 +29,6 @@ from eveonline.models import (
 from eveonline.scopes import (
     TokenType,
     scopes_for,
-    scopes_for_groups,
     scope_group,
     token_type_str,
     scope_names,
@@ -413,7 +412,9 @@ def _ensure_scope_group_in_list(character, token_type):
     group_str = token_type_str(token_type)
     if not group_str:
         return
-    groups = list(character.esi_scope_groups) if character.esi_scope_groups else []
+    groups = (
+        list(character.esi_scope_groups) if character.esi_scope_groups else []
+    )
     if group_str not in groups:
         groups.append(group_str)
         character.esi_scope_groups = groups

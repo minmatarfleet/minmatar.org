@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 
-
 # (scope_name, group_name) – token must have scope to count as having that group
 # Advanced removed: blueprints/planets/industry map into Basic+Director etc.
 _SCOPE_GROUP_SIGNATURES = [
@@ -39,7 +38,9 @@ def backfill_scope_groups(apps, schema_editor):
         if getattr(char, "token_id", None):
             token = Token.objects.filter(pk=char.token_id).first()
         if token is None and getattr(char, "character_id", None):
-            token = Token.objects.filter(character_id=char.character_id).first()
+            token = Token.objects.filter(
+                character_id=char.character_id
+            ).first()
 
         if token:
             scope_names_list = list(
@@ -64,7 +65,10 @@ def noop(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("eveonline", "0074_evecharacter_corporation_id_alliance_id_faction_id"),
+        (
+            "eveonline",
+            "0074_evecharacter_corporation_id_alliance_id_faction_id",
+        ),
     ]
 
     operations = [
