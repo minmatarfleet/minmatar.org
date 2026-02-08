@@ -705,6 +705,58 @@ def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
     return bool(primary and char == primary)
 
 
+def _fill_corporation_alliance(
+    item: UserCharacter, char: EveCharacter
+) -> None:
+    """Set corporation and alliance names on item from character."""
+    if char.corporation_id is not None:
+        item.corp_id = char.corporation_id
+        item.corp_name = (
+            EveCorporation.objects.filter(corporation_id=char.corporation_id)
+            .values_list("name", flat=True)
+            .first()
+            or ""
+        )
+    if char.alliance_id is not None:
+        item.alliance_id = char.alliance_id
+        item.alliance_name = (
+            EveAlliance.objects.filter(alliance_id=char.alliance_id)
+            .values_list("name", flat=True)
+            .first()
+            or ""
+        )
+
+
+def _get_token_level(char: EveCharacter):
+    """Resolve ESI token level from character (esi_token_level or scope_group)."""
+    if char.esi_token_level:
+        return char.esi_token_level
+    if char.token:
+        return scope_group(char.token)
+    return None
+
+
+def _fill_token_and_scope_groups(
+    item: UserCharacter, char: EveCharacter, level
+) -> None:
+    """Set esi_token, token_status, and esi_scope_groups on item."""
+    if level:
+        item.esi_token = token_type_str(level)
+        if char.esi_suspended:
+            item.token_status = "SUSPENDED"
+            item.flags.append("ESI_SUSPENDED")
+        else:
+            item.token_status = "ACTIVE"
+    else:
+        item.flags.append("NO_TOKEN_LEVEL")
+
+    scope_groups = getattr(char, "esi_scope_groups", None)
+    if scope_groups:
+        item.esi_scope_groups = list(scope_groups)
+    elif level:
+        item.esi_scope_groups = [token_type_str(level)]
+
+
 def build_character_response(char: EveCharacter, primary: EveCharacter | None):
     item = UserCharacter(
         character_id=char.character_id,
@@ -713,24 +765,7 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         flags=[],
     )
     try:
-        if char.corporation_id is not None:
-            item.corp_id = char.corporation_id
-            item.corp_name = (
-                EveCorporation.objects.filter(
-                    corporation_id=char.corporation_id
-                )
-                .values_list("name", flat=True)
-                .first()
-                or ""
-            )
-        if char.alliance_id is not None:
-            item.alliance_id = char.alliance_id
-            item.alliance_name = (
-                EveAlliance.objects.filter(alliance_id=char.alliance_id)
-                .values_list("name", flat=True)
-                .first()
-                or ""
-            )
+        _fill_corporation_alliance(item, char)
 
         if item.is_primary and item.alliance_id != 99011978:
             if not user_has_pending_or_rejected_application(char.user):
@@ -739,27 +774,8 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
         if char.tag_count and char.tag_count == 0:
             item.flags.append("NO_TAGS")
 
-        if char.esi_token_level:
-            level = char.esi_token_level
-        elif char.token:
-            level = scope_group(char.token)
-        else:
-            level = None
-            item.flags.append("NO_TOKEN_LEVEL")
-
-        if level:
-            item.esi_token = token_type_str(level)
-            if char.esi_suspended:
-                item.token_status = "SUSPENDED"
-                item.flags.append("ESI_SUSPENDED")
-            else:
-                item.token_status = "ACTIVE"
-
-        scope_groups = getattr(char, "esi_scope_groups", None)
-        if scope_groups:
-            item.esi_scope_groups = list(scope_groups)
-        elif level:
-            item.esi_scope_groups = [token_type_str(level)]
+        level = _get_token_level(char)
+        _fill_token_and_scope_groups(item, char, level)
 
     except Exception as e:
         logger.error(
