@@ -9,7 +9,12 @@ from esi.models import Token
 from app.celery import app
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EveLocation,
+)
 from fittings.models import EveFitting
 from market.helpers import (
     create_character_market_contracts,
@@ -51,10 +56,7 @@ def fetch_eve_market_contracts():
             )
 
     corporations = EveCorporation.objects.filter(
-        alliance__name__in=[
-            "Minmatar Fleet Alliance",
-            "Minmatar Fleet Associates",
-        ],
+        alliance__in=EveAlliance.objects.all(),
     ).distinct()
 
     for corporation in corporations:

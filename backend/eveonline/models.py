@@ -255,7 +255,10 @@ class EveSkillset(models.Model):
 
         characters = EveCharacter.objects.all()
         if alliance_name:
-            characters = characters.filter(alliance__name=alliance_name)
+            alliance_ids = EveAlliance.objects.filter(
+                name=alliance_name
+            ).values_list("alliance_id", flat=True)
+            characters = characters.filter(alliance_id__in=alliance_ids)
         for character in characters:
             if EveCharacterSkill.objects.filter(q).filter(
                 character=character
