@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`AssetItem defaults 1`] = `"<div class="fixed-fluid [ asset-item ]" data-mod data-astro-cid-34go4nvk style="--fixed_fluid_gap: var(--space-s);--fixed_fluid_width: 64px;--fixed_fluid_breakpoint: 50%;">  <picture> <img loading="lazy" src="https://images.evetech.net/types/91/icon?size=64" width="64" height="64" alt="chicken feed icon"> </picture> <div class="flex-inline" data-astro-cid-ud5fqf5k style="--flex_inline_gap: var(--space-s);--flex_inline_justification: space-between;">  <div class="!flex !items-center">  <div class="flex-block [ w-full ] gap-0" data-mod style="--flex_block_gap: 0;">  <span>  x chicken feed </span>  </div>   </div>  </div>    </div>  "`;

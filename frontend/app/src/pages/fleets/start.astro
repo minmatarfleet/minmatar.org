@@ -1,0 +1,130 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token as string) as User) : false
+const is_superuser = user ? user?.is_superuser : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = user ? await get_user_permissions(user?.username) : []
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page) return HTTP_403_Forbidden()
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { start_fleet_now } from '@helpers/api.minmatar.org/fleets'
+
+let pilots: SummaryCharacter[] = []
+let fetch_error: string | false = false
+try {
+    const summary = await get_characters_summary_sorted(auth_token as string)
+    pilots = summary.characters ?? []
+} catch (e) {
+    fetch_error = prod_error_messages() ? t('get_characters_error') : (e as Error).message
+}
+
+let error: string | false = false
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    const fcId = data.get('fc_character_id')
+    const fc_character_id = fcId != null && fcId !== '' ? parseInt(fcId as string) : undefined
+    try {
+        const fleet = await start_fleet_now(auth_token as string, fc_character_id)
+        return Astro.redirect(translatePath(`/fleets/upcoming/${fleet.id}`))
+    } catch (e) {
+        error = prod_error_messages() ? t('start_fleet_error') : (e as Error).message
+    }
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Button from '@components/blocks/Button.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro'
+
+const page_title = t('fleets.start.page_title')
+---
+
+<Viewport title={page_title}>
+    <PageDefault
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <PageTitle>{page_title}</PageTitle>
+            <Button href={translatePath('/fleets/upcoming/')}>
+                <FleetIcon slot="icon" />
+                {t('upcoming_fleets')}
+            </Button>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p>{t('fleets.start.choose_character')}</p>
+                <p class="text-[var(--faded)] text-sm">{t('fleets.start.choose_character_hint')}</p>
+            </TextBox>
+
+            {error && (
+                <p class="text-red-600" role="alert">{error}</p>
+            )}
+
+            {fetch_error ? (
+                <p class="text-red-600" role="alert">{fetch_error}</p>
+            ) : pilots.length > 0 && (
+                <Flexblock gap="var(--space-2xs)">
+                    <Flexblock gap="0" role="list" class="[ w-full ]">
+                        {pilots.map((pilot) => (
+                            <form method="post" action={translatePath('/fleets/start')} class="block w-full">
+                                <input type="hidden" name="fc_character_id" value={pilot.character_id} />
+                                <button
+                                    type="submit"
+                                    class="w-full text-left rounded border-2 border-transparent bg-transparent transition-[border-color] hover:border-[var(--faded)] focus:border-[var(--highlight)] focus:outline-none"
+                                >
+                                    <FixedFluid
+                                        width="64px"
+                                        gap="var(--space-s)"
+                                        class="[ items-center w-full ]"
+                                        breakpoint="70%"
+                                    >
+                                        <CharacterPicture
+                                            character_id={pilot.character_id}
+                                            character_name={pilot.character_name}
+                                            size={64}
+                                            icon_quality={64}
+                                            inert={true}
+                                        />
+                                        <VerticalCenter>
+                                            <span class="truncate block text-[var(--highlight)]">{pilot.character_name}</span>
+                                        </VerticalCenter>
+                                    </FixedFluid>
+                                </button>
+                            </form>
+                        ))}
+                    </Flexblock>
+                </Flexblock>
+            )}
+        </Flexblock>
+    </PageDefault>
+</Viewport>

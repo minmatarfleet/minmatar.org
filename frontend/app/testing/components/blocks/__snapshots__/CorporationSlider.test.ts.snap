@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`CorporationsSlider defaults 1`] = `"<div class="[ swiper ][ w-full ] w-full" id="corporations-list">  <div class="wrapper" data-mod data-astro-cid-yv35cmqx style="--wrapper_padding_inline: 0;--wrapper_padding_inline_end: 0;--wrapper_padding_block: var(--space-2xl);--wrapper_max_width: 80rem;">  slotted chick  </div>   </div>"`;

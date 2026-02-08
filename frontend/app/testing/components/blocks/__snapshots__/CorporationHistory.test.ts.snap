@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`CorporationHistory defaults 1`] = `"<div class="flex-block gap---space-xs" id="corporation-history" data-mod style="--flex_block_gap: var(--space-xs);">  <h4>Corporation history</h4> <div class="flex-block [ w-full overflow-y-auto max-h-[380px] ] gap---space-3xs" data-mod style="--flex_block_gap: var(--space-3xs);"> CorporationBadge_component </div>   </div> "`;
