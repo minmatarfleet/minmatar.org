@@ -407,6 +407,69 @@ export async function get_fleet_users(fleet_id:number) {
     }
 }
 
+export interface FleetRoleVolunteer {
+    id: number
+    character_id: number
+    character_name: string
+    role: string
+    subtype: string | null
+    quantity: number | null
+}
+
+export async function get_fleet_role_volunteers(access_token: string, fleet_id: number): Promise<FleetRoleVolunteer[]> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as FleetRoleVolunteer[]
+}
+
+export async function create_fleet_role_volunteer(
+    access_token: string,
+    fleet_id: number,
+    payload: { character_id: number; role: string; subtype?: string | null; quantity?: number | null }
+): Promise<FleetRoleVolunteer> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers`
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+    })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
+    return await response.json() as FleetRoleVolunteer
+}
+
+export async function delete_fleet_role_volunteer(access_token: string, fleet_id: number, volunteer_id: number): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers/${volunteer_id}`
+    const response = await fetch(ENDPOINT, { method: 'DELETE', headers })
+    if (!response.ok && response.status !== 204)
+        throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
+}
+
+export async function refresh_fleet_motd(access_token: string, fleet_id: number): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/refresh-motd`
+    const response = await fetch(ENDPOINT, { headers, method: 'POST' })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
+}
+
 export async function preping(access_token:string, fleet_id:number) {
     const headers = {
         'Content-Type': 'application/json',

@@ -75,6 +75,10 @@ const fleet_tracking_error_text = fleet_tracking_error ? `${fleet_tracking_error
 if (Astro.cookies.has('fleet_tracking_error'))
     Astro.cookies.delete('fleet_tracking_error', { path: '/' })
 
+const motd_refreshed = Astro.url.searchParams.get('motd_refreshed') === '1'
+const motd_error = Astro.url.searchParams.get('motd_error') === '1'
+const motd_alert = motd_refreshed ? { title: t('refresh_motd'), content: t('refresh_motd_success') } : motd_error ? { title: t('refresh_motd'), content: t('refresh_motd_error') } : null
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -107,7 +111,11 @@ const page_title = `${t('fleet')} ${fleet_id}`;
             scrollable: true,
             overlay: true
         }}
-        x-init={fleet_tracking_error_text ? `show_alert_dialog( ${JSON.stringify({ title: t('start_fleet_tracking'), content: fleet_tracking_error_text })} )` : undefined}
+        x-init={[
+            fleet_tracking_error_text ? `show_alert_dialog(${JSON.stringify({ title: t('start_fleet_tracking'), content: fleet_tracking_error_text })})` : '',
+            motd_alert ? `show_alert_dialog(${JSON.stringify(motd_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
+        ].filter(Boolean).join('; ') || undefined}
+        data-clean-url={motd_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
