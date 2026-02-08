@@ -84,6 +84,7 @@ class UserCharacter(BaseModel):
     alliance_name: Optional[str] = None
     esi_token: Optional[str] = None
     token_status: Optional[str] = None
+    esi_scope_groups: List[str] = []
     flags: List[str] = []
 
 
@@ -753,6 +754,12 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
                 item.flags.append("ESI_SUSPENDED")
             else:
                 item.token_status = "ACTIVE"
+
+        scope_groups = getattr(char, "esi_scope_groups", None)
+        if scope_groups:
+            item.esi_scope_groups = list(scope_groups)
+        elif level:
+            item.esi_scope_groups = [token_type_str(level)]
 
     except Exception as e:
         logger.error(
