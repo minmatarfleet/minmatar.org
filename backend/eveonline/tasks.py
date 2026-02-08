@@ -500,22 +500,6 @@ def fixup_character_tokens():
 
 
 @app.task
-def deduplicate_alliances():
-    """Remove duplicate alliance instances"""
-
-    previous_id = -1
-    for alliance in EveAlliance.objects.all().order_by("alliance_id"):
-        if alliance.alliance_id == previous_id:
-            logger.warning(
-                "Removing duplicate alliance, %d %s",
-                alliance.alliance_id,
-                alliance.name,
-            )
-            alliance.delete()
-        previous_id = alliance.alliance_id
-
-
-@app.task
 def setup_players():
     """Setup EvePlayer entities based on primary character data"""
 
