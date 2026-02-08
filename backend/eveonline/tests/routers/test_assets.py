@@ -52,12 +52,12 @@ class AssetRouterTestCase(TestCase):
         char1 = EveCharacter.objects.create(
             character_id=1,
             character_name="Player 1",
-            corporation=corp,
+            corporation_id=corp.corporation_id,
         )
         char2 = EveCharacter.objects.create(
             character_id=2,
             character_name="Player 2",
-            corporation=corp,
+            corporation_id=corp.corporation_id,
         )
         return alliance, corp, char1, char2
 

@@ -23,7 +23,7 @@ def make_character(char_id, corp, scopes) -> EveCharacter:
     char = EveCharacter.objects.create(
         character_id=char_id,
         character_name=f"Pilot {char_id}",
-        corporation=corp,
+        corporation_id=corp.corporation_id,
         token=Token.objects.create(
             character_id=char_id,
         ),
