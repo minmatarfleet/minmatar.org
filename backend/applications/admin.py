@@ -11,11 +11,11 @@ class CorpApplicationAdmin(admin.ModelAdmin):
         "id",
         "created_at",
         "user__username",
-        "corporation__name",
+        "corporation_id",
         "status",
     ]
     list_filter = ["status"]
-    search_fields = ["user__username", "corporation__name"]
+    search_fields = ["user__username", "corporation_id"]
 
 
 admin.site.register(EveCorporationApplication, CorpApplicationAdmin)

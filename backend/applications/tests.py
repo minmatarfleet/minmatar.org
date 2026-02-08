@@ -43,7 +43,7 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,
-            corporation=corporation,
+            corporation_id=corporation.corporation_id,
             description="Test application",
         )
 
@@ -70,7 +70,7 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,
-            corporation=corporation,
+            corporation_id=corporation.corporation_id,
             description="Test application",
         )
 
@@ -92,7 +92,7 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,
-            corporation=corporation,
+            corporation_id=corporation.corporation_id,
             description="Test application",
         )
 
@@ -110,7 +110,7 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,
-            corporation=corporation,
+            corporation_id=corporation.corporation_id,
             description="Test application",
         )
 
@@ -132,7 +132,7 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,
-            corporation=corporation,
+            corporation_id=corporation.corporation_id,
             description="Test application",
         )
 
@@ -176,7 +176,7 @@ class EveCorporationApplicationSignalTest(TestCase):
         with patch("applications.signals.discord") as discord_mock:
             EveCorporationApplication.objects.create(
                 user=self.user,
-                corporation=corporation,
+                corporation_id=corporation.corporation_id,
                 description="Test application",
                 status="accepted",
             )
