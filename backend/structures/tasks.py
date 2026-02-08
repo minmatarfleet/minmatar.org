@@ -10,7 +10,7 @@ from app.celery import app
 
 from discord.client import DiscordClient
 from eveonline.client import EsiClient, esi_for
-from eveonline.models import EveCorporation
+from eveonline.models import EveAlliance, EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
 from structures.helpers import (
@@ -24,11 +24,6 @@ discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 
-ALLIED_ALLIANCE_NAMES = [
-    "Minmatar Fleet Alliance",
-    "Minmatar Fleet Associates",
-]
-
 LOW_FUEL_EXCLUDED_TYPES = [
     "Metenox Moon Drill",
     "Ansiblex Jump Gate",
@@ -38,12 +33,13 @@ LOW_FUEL_EXCLUDED_TYPES = [
 
 @app.task
 def update_structures():
+    allied_alliances = EveAlliance.objects.all()
     EveStructure.objects.exclude(
-        corporation__alliance__name__in=ALLIED_ALLIANCE_NAMES,
+        corporation__alliance__in=allied_alliances,
     ).delete()
 
     for corporation in EveCorporation.objects.filter(
-        alliance__name__in=ALLIED_ALLIANCE_NAMES,
+        alliance__in=allied_alliances,
     ):
         update_corporation_structures.delay(corporation.corporation_id)
 

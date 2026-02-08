@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
 
-from django.db.models import Count, F
+from django.db.models import Count, F, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
-from eveonline.models import EveLocation
+from eveonline.models import EveCorporation, EveLocation
 from eveonline.helpers.characters import (
     user_characters,
 )
@@ -469,8 +469,12 @@ def get_fleet_metrics(request):
             )
         )
         .annotate(
-            fc_corp_name=F(
-                "created_by__eveprimarycharacter__character__corporation__name"
+            fc_corp_name=Subquery(
+                EveCorporation.objects.filter(
+                    corporation_id=OuterRef(
+                        "created_by__eveplayer__primary_character__corporation_id"
+                    )
+                ).values("name")[:1]
             )
         )
         .annotate(audience_name=F("audience__name"))

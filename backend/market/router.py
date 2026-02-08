@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,
@@ -141,10 +141,7 @@ def _get_entity_ids(request):
         .filter(
             matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
             ceo__token__user=request.user,
-            alliance__name__in=[
-                "Minmatar Fleet Alliance",
-                "Minmatar Fleet Associates",
-            ],
+            alliance__in=EveAlliance.objects.all(),
         )
         .distinct()
     )
@@ -204,10 +201,7 @@ def get_market_corporations(request):
         .filter(
             matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
             ceo__token__user=request.user,
-            alliance__name__in=[
-                "Minmatar Fleet Alliance",
-                "Minmatar Fleet Associates",
-            ],
+            alliance__in=EveAlliance.objects.all(),
         )
         .distinct()
     )
