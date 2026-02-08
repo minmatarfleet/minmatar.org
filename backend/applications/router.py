@@ -51,7 +51,7 @@ class ErrorResponse(BaseModel):
 )
 def get_corporation_applications(request, corporation_id: int):
     applications = EveCorporationApplication.objects.filter(
-        corporation__corporation_id=corporation_id
+        corporation_id=corporation_id
     )
     response = []
     for application in applications:
@@ -82,7 +82,7 @@ def create_corporation_application(
         return 404, {"detail": "Corporation not found."}
 
     application = EveCorporationApplication.objects.create(
-        corporation=corporation,
+        corporation_id=corporation_id,
         user_id=request.user.id,
         description=payload.description,
     )
@@ -96,7 +96,7 @@ def create_corporation_application(
     return 200, {
         "status": application.status,
         "user_id": application.user.id,
-        "corporation_id": application.corporation.id,
+        "corporation_id": application.corporation_id,
         "application_id": application.id,
     }
 
@@ -111,7 +111,7 @@ def get_corporation_application_by_id(
     request, corporation_id: int, application_id: int
 ):
     application = EveCorporationApplication.objects.get(
-        corporation__corporation_id=corporation_id, id=application_id
+        corporation_id=corporation_id, id=application_id
     )
     characters = EveCharacter.objects.filter(token__user=application.user)
     character_list = []
@@ -126,7 +126,7 @@ def get_corporation_application_by_id(
         "status": application.status,
         "application_id": application.id,
         "user_id": application.user.id,
-        "corporation_id": application.corporation.corporation_id,
+        "corporation_id": application.corporation_id,
         "description": application.description,
         "created_at": application.created_at,
         "updated_at": application.updated_at,
@@ -154,7 +154,7 @@ def accept_corporation_application(
             "detail": "You do not have permission to accept applications."
         }
     application = EveCorporationApplication.objects.get(
-        corporation__corporation_id=corporation_id, id=application_id
+        corporation_id=corporation_id, id=application_id
     )
     application.status = "accepted"
     application.processed_by = request.user
@@ -169,7 +169,7 @@ def accept_corporation_application(
     return {
         "status": application.status,
         "user_id": application.user.id,
-        "corporation_id": application.corporation.id,
+        "corporation_id": application.corporation_id,
         "application_id": application.id,
     }
 
@@ -193,7 +193,7 @@ def reject_corporation_application(
             "detail": "You do not have permission to accept applications."
         }
     application = EveCorporationApplication.objects.get(
-        corporation__corporation_id=corporation_id, id=application_id
+        corporation_id=corporation_id, id=application_id
     )
     application.status = "rejected"
     application.processed_by = request.user
@@ -208,6 +208,6 @@ def reject_corporation_application(
     return {
         "status": application.status,
         "user_id": application.user.id,
-        "corporation_id": application.corporation.id,
+        "corporation_id": application.corporation_id,
         "application_id": application.id,
     }

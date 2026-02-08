@@ -5,6 +5,7 @@ from django.dispatch import receiver
 from django.conf import settings
 
 from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCorporation
 
 from discord.client import DiscordClient
 from groups.models import EveCorporationGroup
@@ -37,22 +38,29 @@ def eve_corporation_application_post_save(
     if instance.discord_thread_id is None:
         user = instance.user
         primary_character = user_primary_character(user)
+        corporation = EveCorporation.objects.filter(
+            corporation_id=instance.corporation_id
+        ).first()
+        corp_name = (
+            corporation.name if corporation else str(instance.corporation_id)
+        )
         message = ""
         message += f"<@{user.discord_user.id}>"
-        group = _recruiter_corporation_group(instance.corporation)
-        if group:
-            discord_group = group.group.discord_group
-            discord_group_id = discord_group.role_id
-            message += f"<@&{discord_group_id}>"
+        if corporation:
+            group = _recruiter_corporation_group(corporation)
+            if group:
+                discord_group = group.group.discord_group
+                discord_group_id = discord_group.role_id
+                message += f"<@&{discord_group_id}>"
         message += "\n\n"
         message += f"Main Character: {primary_character.character_name}\n"
-        message += f"Applying to: {instance.corporation.name}\n"
+        message += f"Applying to: {corp_name}\n"
         message += f"Description: {instance.description}\n"
-        application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation.corporation_id}/{instance.id}"
+        application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation_id}/{instance.id}"
         message += f"{application_url}\n"
         response = discord.create_forum_thread(
             channel_id=APPLICATION_CHANNEL_ID,
-            title=f"{primary_character.character_name} - {instance.corporation.name}",
+            title=f"{primary_character.character_name} - {corp_name}",
             message=message,
         )
         instance.discord_thread_id = int(response.json()["id"])
