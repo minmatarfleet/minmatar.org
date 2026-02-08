@@ -118,6 +118,10 @@ CELERYBEAT_SCHEDULE = {
         "task": "eveonline.tasks.update_corporations",
         "schedule": crontab(minute=0, hour="*/1"),
     },
+    "Sync Alliance Corporations": {
+        "task": "eveonline.tasks.sync_alliance_corporations",
+        "schedule": crontab(minute=0, hour="*/2"),
+    },
     "Update Courier Contracts": {
         "task": "freight.tasks.update_contracts",
         "schedule": crontab(minute="18,48", hour="*"),
