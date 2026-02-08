@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
@@ -219,23 +220,31 @@ class EveFleetInstance(models.Model):
 
         if not disable_motd:
             formup_location = self.eve_fleet.formup_location
+            role_volunteers = _motd_role_volunteers(self.eve_fleet)
+            missing_roles = _motd_missing_roles(self.eve_fleet)
+            volunteer_url = (
+                _motd_volunteer_url(self.eve_fleet) if missing_roles else None
+            )
             self.motd = get_motd(
                 self.eve_fleet.fleet_commander.character_id,
                 self.eve_fleet.fleet_commander.character_name,
                 formup_location.location_id if formup_location else None,
-                formup_location.location_name if formup_location else "Ask FC",
+                formup_location.short_name if formup_location else None,
                 "https://discord.gg/minmatar",
                 "Minmatar Fleet Discord",
                 (
                     self.eve_fleet.doctrine.doctrine_link
                     if self.eve_fleet.doctrine
-                    else "https://my.minmatar.org/ships/fitting/list/"
+                    else None
                 ),
                 (
                     self.eve_fleet.doctrine.name
                     if self.eve_fleet.doctrine
-                    else "Kitchen Sink"
+                    else None
                 ),
+                role_volunteers=role_volunteers,
+                missing_roles=missing_roles or None,
+                volunteer_url=volunteer_url,
             )
             update["motd"] = self.motd
 
@@ -247,29 +256,34 @@ class EveFleetInstance(models.Model):
         else:
             logger.warning("Error updating Eve fleet %d", self.id)
 
-    def _update_motd(self):
-        """
-        Update the motd for the fleet
-        """
+    def refresh_motd(self):
+        """Regenerate and push the fleet MOTD to ESI. Public API for callers."""
+        return self._update_motd()
 
+    def _update_motd(self):
+        """Update the motd for the fleet and push to ESI."""
         formup_location = self.eve_fleet.formup_location
+        role_volunteers = _motd_role_volunteers(self.eve_fleet)
+        missing_roles = _motd_missing_roles(self.eve_fleet)
+        volunteer_url = (
+            _motd_volunteer_url(self.eve_fleet) if missing_roles else None
+        )
         motd = get_motd(
             self.eve_fleet.fleet_commander.character_id,
             self.eve_fleet.fleet_commander.character_name,
             formup_location.location_id if formup_location else None,
-            formup_location.location_name if formup_location else "Ask FC",
+            formup_location.short_name if formup_location else None,
             "https://discord.gg/minmatar",
             "Minmatar Fleet Discord",
             (
                 self.eve_fleet.doctrine.doctrine_link
                 if self.eve_fleet.doctrine
-                else "https://my.minmatar.org/ships/fitting/list/"
+                else None
             ),
-            (
-                self.eve_fleet.doctrine.name
-                if self.eve_fleet.doctrine
-                else "Kitchen Sink"
-            ),
+            self.eve_fleet.doctrine.name if self.eve_fleet.doctrine else None,
+            role_volunteers=role_volunteers,
+            missing_roles=missing_roles or None,
+            volunteer_url=volunteer_url,
         )
         # token = self.eve_fleet.token
         update = {"motd": motd}
@@ -517,6 +531,249 @@ class EveFleetInstanceMember(models.Model):
         indexes = [
             models.Index(fields=["character_id"]),
         ]
+
+
+class EveFleetInstanceMemberRole(models.Model):
+    """
+    Optional role assigned to a fleet instance member for critical fleet positions.
+    Roles: Logi Anchor, DPS Anchor, Links, Cyno, Scout.
+    For roles that need extra coordination (e.g. Links), use the optional RoleDetail.
+    """
+
+    ROLE_LOGI_ANCHOR = "logi_anchor"
+    ROLE_DPS_ANCHOR = "dps_anchor"
+    ROLE_LINKS = "links"
+    ROLE_CYNO = "cyno"
+    ROLE_SCOUT = "scout"
+
+    ROLE_CHOICES = (
+        (ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (ROLE_DPS_ANCHOR, "DPS Anchor"),
+        (ROLE_LINKS, "Links"),
+        (ROLE_CYNO, "Cyno"),
+        (ROLE_SCOUT, "Scout"),
+    )
+
+    eve_fleet_instance_member = models.ForeignKey(
+        EveFleetInstanceMember,
+        on_delete=models.CASCADE,
+        related_name="filled_roles",
+    )
+    role = models.CharField(max_length=32, choices=ROLE_CHOICES)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet_instance_member", "role"],
+                name="fleets_member_role_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["eve_fleet_instance_member", "role"]),
+        ]
+
+    def __str__(self):
+        parts = [
+            self.eve_fleet_instance_member.character_name,
+            self.get_role_display(),
+        ]
+        try:
+            detail = self.detail
+            if detail.subtype:
+                parts.append(f"({detail.get_subtype_display()})")
+            if detail.quantity is not None:
+                parts.append(f"×{detail.quantity}")
+        except EveFleetInstanceMemberRoleDetail.DoesNotExist:
+            pass
+        return " — ".join(parts)
+
+
+class EveFleetInstanceMemberRoleDetail(models.Model):
+    """
+    Optional detail for a fleet member role when the role needs extra coordination
+    (e.g. Links: subtype shield/armor/info/skirmish; quantity for slot counts).
+    """
+
+    SUBTYPE_ARMOR = "armor"
+    SUBTYPE_SHIELD = "shield"
+    SUBTYPE_INFO = "info"
+    SUBTYPE_SKIRMISH = "skirmish"
+
+    SUBTYPE_CHOICES = (
+        (SUBTYPE_ARMOR, "Armor"),
+        (SUBTYPE_SHIELD, "Shield"),
+        (SUBTYPE_INFO, "Info"),
+        (SUBTYPE_SKIRMISH, "Skirmish"),
+    )
+
+    eve_fleet_instance_member_role = models.OneToOneField(
+        EveFleetInstanceMemberRole,
+        on_delete=models.CASCADE,
+        related_name="detail",
+    )
+    subtype = models.CharField(
+        max_length=16,
+        choices=SUBTYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Optional; e.g. armor, shield, info, skirmish for roles that need it.",
+    )
+    quantity = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Optional; for roles that need a count (e.g. link slots).",
+    )
+
+    def __str__(self):
+        parts = [str(self.eve_fleet_instance_member_role)]
+        if self.subtype:
+            parts.append(self.get_subtype_display())
+        if self.quantity is not None:
+            parts.append(f"×{self.quantity}")
+        return " — ".join(parts)
+
+
+class EveFleetRoleVolunteer(models.Model):
+    """
+    User volunteers a character for a fleet role (upcoming fleet).
+    Same role choices as EveFleetInstanceMemberRole; optional subtype/quantity for coordination.
+    """
+
+    ROLE_LOGI_ANCHOR = "logi_anchor"
+    ROLE_DPS_ANCHOR = "dps_anchor"
+    ROLE_LINKS = "links"
+    ROLE_CYNO = "cyno"
+    ROLE_SCOUT = "scout"
+
+    ROLE_CHOICES = (
+        (ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (ROLE_DPS_ANCHOR, "DPS Anchor"),
+        (ROLE_LINKS, "Links"),
+        (ROLE_CYNO, "Cyno"),
+        (ROLE_SCOUT, "Scout"),
+    )
+
+    SUBTYPE_ARMOR = "armor"
+    SUBTYPE_SHIELD = "shield"
+    SUBTYPE_INFO = "info"
+    SUBTYPE_SKIRMISH = "skirmish"
+
+    SUBTYPE_CHOICES = (
+        (SUBTYPE_ARMOR, "Armor"),
+        (SUBTYPE_SHIELD, "Shield"),
+        (SUBTYPE_INFO, "Info"),
+        (SUBTYPE_SKIRMISH, "Skirmish"),
+    )
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="role_volunteers"
+    )
+    character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
+    role = models.CharField(max_length=32, choices=ROLE_CHOICES)
+    subtype = models.CharField(
+        max_length=16,
+        choices=SUBTYPE_CHOICES,
+        null=True,
+        blank=True,
+    )
+    quantity = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        """Unique per fleet/character/role; default ordering for display."""
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "character_id", "role"],
+                name="fleets_role_volunteer_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["eve_fleet"]),
+        ]
+        ordering = ["eve_fleet", "role", "id"]
+
+    def __str__(self):
+        return f"{self.character_name} — {self.get_role_display()}"
+
+
+def _motd_role_volunteers(eve_fleet):
+    """Build role_volunteers list for get_motd: Logi Anchor, DPS Anchor, Cynos."""
+    critical_roles = [
+        (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (EveFleetRoleVolunteer.ROLE_DPS_ANCHOR, "DPS Anchor"),
+        (EveFleetRoleVolunteer.ROLE_CYNO, "Cynos"),
+    ]
+    result = []
+    for role_value, role_label in critical_roles:
+        volunteers = EveFleetRoleVolunteer.objects.filter(
+            eve_fleet=eve_fleet, role=role_value
+        ).order_by("id")
+        result.append(
+            (
+                role_label,
+                [(v.character_id, v.character_name) for v in volunteers],
+            )
+        )
+    return result
+
+
+def _motd_missing_roles(eve_fleet):
+    """
+    Required: all 4 link subtypes, 1 logi anchor, 1 dps anchor, at least 2 cynos.
+    Return list of short strings for MOTD, e.g. ["Logi Anchor", "Links (Armor)", "1 more Cyno"].
+    """
+    missing = []
+
+    # Links: need at least one volunteer per subtype (armor, shield, info, skirmish)
+    link_subtype_labels = {
+        EveFleetRoleVolunteer.SUBTYPE_ARMOR: "Armor",
+        EveFleetRoleVolunteer.SUBTYPE_SHIELD: "Shield",
+        EveFleetRoleVolunteer.SUBTYPE_INFO: "Info",
+        EveFleetRoleVolunteer.SUBTYPE_SKIRMISH: "Skirmish",
+    }
+    links_with_subtype = set(
+        EveFleetRoleVolunteer.objects.filter(
+            eve_fleet=eve_fleet,
+            role=EveFleetRoleVolunteer.ROLE_LINKS,
+            subtype__isnull=False,
+        )
+        .exclude(subtype="")
+        .values_list("subtype", flat=True)
+    )
+    for subtype_value, label in link_subtype_labels.items():
+        if subtype_value not in links_with_subtype:
+            missing.append(f"Links ({label})")
+
+    # Logi anchor: need at least 1
+    if not EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
+    ).exists():
+        missing.append("Logi Anchor")
+
+    # DPS anchor: need at least 1
+    if not EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_DPS_ANCHOR
+    ).exists():
+        missing.append("DPS Anchor")
+
+    # Cynos: need at least 2
+    cyno_count = EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_CYNO
+    ).count()
+    if cyno_count < 2:
+        if cyno_count == 0:
+            missing.append("2 Cynos")
+        else:
+            missing.append("1 more Cyno")
+
+    return missing
+
+
+def _motd_volunteer_url(eve_fleet):
+    """URL to the fleet volunteer page for MOTD."""
+    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
+    return f"{base.rstrip('/')}/fleets/upcoming/{eve_fleet.id}/volunteer"
 
 
 class EveFleetAudience(models.Model):

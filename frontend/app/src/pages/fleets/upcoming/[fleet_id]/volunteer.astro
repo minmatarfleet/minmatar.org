@@ -1,0 +1,345 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+const fleet_id = parseInt(Astro.params?.fleet_id ?? '')
+if (isNaN(fleet_id)) return HTTP_404_Not_Found()
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetUI } from '@dtypes/layout_components'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import {
+    get_fleet_role_volunteers,
+    create_fleet_role_volunteer,
+    delete_fleet_role_volunteer,
+    type FleetRoleVolunteer,
+} from '@helpers/api.minmatar.org/fleets'
+
+let fleet: FleetUI | null = null
+let pilots: SummaryCharacter[] = []
+let volunteers: FleetRoleVolunteer[] = []
+let fetch_error: string | false = false
+let form_error: string | false = false
+
+try {
+    fleet = await fetch_fleet_by_id(auth_token, fleet_id)
+} catch (e) {
+    if (e.message?.includes('403')) return HTTP_403_Forbidden()
+    if (e.message?.includes('404')) return HTTP_404_Not_Found()
+    fetch_error = prod_error_messages() ? 'Could not load fleet' : (e as Error).message
+}
+
+if (fleet) {
+    try {
+        const summary = await get_characters_summary_sorted(auth_token)
+        pilots = summary.characters ?? []
+    } catch (e) {
+        fetch_error = prod_error_messages() ? t('get_characters_error') : (e as Error).message
+    }
+    try {
+        volunteers = await get_fleet_role_volunteers(auth_token, fleet_id)
+    } catch (e) {
+        // optional: show volunteers failed
+    }
+}
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    const remove_id = data.get('remove_volunteer_id')
+    if (remove_id != null && remove_id !== '') {
+        try {
+            await delete_fleet_role_volunteer(auth_token, fleet_id, parseInt(remove_id as string))
+            return Astro.redirect(translatePath(`/fleets/upcoming/${fleet_id}/volunteer`))
+        } catch (e) {
+            form_error = prod_error_messages() ? 'Could not remove volunteer' : (e as Error).message
+        }
+    } else {
+        const character_id = data.get('character_id')
+        const role = data.get('role') as string
+        if (character_id != null && role) {
+            const subtype = (data.get('subtype') as string) || undefined
+            const qty = data.get('quantity')
+            const quantity = qty != null && qty !== '' ? parseInt(qty as string) : undefined
+            try {
+                await create_fleet_role_volunteer(auth_token, fleet_id, {
+                    character_id: parseInt(character_id as string),
+                    role,
+                    subtype: subtype || null,
+                    quantity: quantity ?? null,
+                })
+                return Astro.redirect(translatePath(`/fleets/upcoming/${fleet_id}/volunteer`))
+            } catch (e) {
+                form_error = prod_error_messages() ? 'Could not add volunteer' : (e as Error).message
+            }
+        }
+    }
+}
+
+const SECTION_ORDER: Array<{ value: string; label_key: string }> = [
+    { value: 'logi_anchor', label_key: 'fleets.volunteer.role.logi_anchor' },
+    { value: 'dps_anchor', label_key: 'fleets.volunteer.role.dps_anchor' },
+    { value: 'cyno', label_key: 'fleets.volunteer.role.cyno' },
+    { value: 'links', label_key: 'fleets.volunteer.role.links' },
+]
+
+const SUBTYPE_OPTIONS = [
+    { value: 'armor', label_key: 'fleets.volunteer.subtype.armor' },
+    { value: 'shield', label_key: 'fleets.volunteer.subtype.shield' },
+    { value: 'info', label_key: 'fleets.volunteer.subtype.info' },
+    { value: 'skirmish', label_key: 'fleets.volunteer.subtype.skirmish' },
+] as const
+
+/** EVE type ID and in-game name for Links role (Command Burst II modules). */
+const LINK_SUBTYPE_MODULES: Record<string, { type_id: number; name: string }> = {
+    armor: { type_id: 43552, name: 'Armor Command Burst II' },
+    shield: { type_id: 43555, name: 'Shield Command Burst II' },
+    info: { type_id: 43554, name: 'Information Command Burst II' },
+    skirmish: { type_id: 43556, name: 'Skirmish Command Burst II' },
+}
+
+function subtype_display(subtype: string | null): string {
+    if (!subtype) return ''
+    const mod = LINK_SUBTYPE_MODULES[subtype]
+    if (mod) return mod.name
+    const s = SUBTYPE_OPTIONS.find((o) => o.value === subtype)
+    return s ? t(s.label_key) : subtype
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Button from '@components/blocks/Button.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
+import FleetIcon from '@components/icons/buttons/FleetIcon.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+const page_title = t('fleets.volunteer.page_title')
+---
+
+<Viewport title={page_title}>
+    <PageDefault
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <PageTitle>{page_title}</PageTitle>
+            <FlexInline gap="var(--space-s)">
+                <Button href={translatePath(`/fleets/upcoming/${fleet_id}`)}>
+                    {t('fleet')} {fleet_id}
+                </Button>
+                <Button href={translatePath('/fleets/upcoming/')}>
+                    <FleetIcon slot="icon" />
+                    {t('upcoming_fleets')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)">
+            {fetch_error && (
+                <p class="text-red-600" role="alert">{fetch_error}</p>
+            )}
+
+            {form_error && (
+                <p class="text-red-600" role="alert">{form_error}</p>
+            )}
+
+            {fleet && !fetch_error && (
+                <Flexblock gap="var(--space-l)">
+                    {SECTION_ORDER.map((roleOpt) => {
+                        const sectionVolunteers = volunteers.filter((v) => v.role === roleOpt.value)
+                        const isLinks = roleOpt.value === 'links'
+                        const volunteeredCharacterIds = new Set(sectionVolunteers.map((v) => v.character_id))
+                        const pilotsToAdd = pilots.filter((p) => !volunteeredCharacterIds.has(p.character_id))
+                        return (
+                            <ComponentBlock>
+                                <Flexblock gap="var(--space-2xs)">
+                                    <h4 class="[ sentence-cap ]" style="margin: 0;">{t(roleOpt.label_key)}</h4>
+                                    <FlexInline gap="var(--space-2xs)" class="[ flex-wrap items-center ]">
+                                        {sectionVolunteers.length === 0 ? (
+                                            <span class="text-[var(--faded)]" style="font-size: var(--step--1);">{t('fleets.volunteer.no_volunteers_yet')}</span>
+                                        ) : (
+                                            sectionVolunteers.map((v) => (
+                                                <div
+                                                    key={v.id}
+                                                    class="[ card border component light-transparency rounded-full overflow-hidden ]"
+                                                    style="padding: var(--space-2xs) var(--space-s);"
+                                                    role="listitem"
+                                                >
+                                                    <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                                        <PilotBadge
+                                                            character_id={v.character_id}
+                                                            character_name={v.character_name}
+                                                            size={32}
+                                                            icon_quality={32}
+                                                            inert={true}
+                                                        />
+                                                        {(v.subtype || v.quantity != null) && (
+                                                            <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                                                {v.subtype && LINK_SUBTYPE_MODULES[v.subtype] && (
+                                                                    <ItemPicture
+                                                                        item_id={LINK_SUBTYPE_MODULES[v.subtype].type_id}
+                                                                        item_name={LINK_SUBTYPE_MODULES[v.subtype].name}
+                                                                        size={32}
+                                                                        icon_quality={64}
+                                                                    />
+                                                                )}
+                                                                {v.quantity != null && (
+                                                                    <span class="text-[var(--faded)]" style="font-size: var(--step--1);">×{v.quantity}</span>
+                                                                )}
+                                                                {v.subtype && !LINK_SUBTYPE_MODULES[v.subtype] && (
+                                                                    <span class="text-[var(--faded)] truncate" style="font-size: var(--step--1); max-width: 4rem;">{subtype_display(v.subtype)}</span>
+                                                                )}
+                                                            </FlexInline>
+                                                        )}
+                                                        {pilots.some((p) => p.character_id === v.character_id) && (
+                                                            <form method="post" action={translatePath(`/fleets/upcoming/${fleet_id}/volunteer`)} class="[ ml-auto ]">
+                                                                <input type="hidden" name="remove_volunteer_id" value={v.id} />
+                                                                <button
+                                                                    type="submit"
+                                                                    class="volunteer-remove-btn"
+                                                                    aria-label={t('fleets.volunteer.remove')}
+                                                                >
+                                                                    {t('fleets.volunteer.remove')}
+                                                                </button>
+                                                            </form>
+                                                        )}
+                                                    </FlexInline>
+                                                </div>
+                                            ))
+                                        )}
+                                    </FlexInline>
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <p class="text-[var(--faded)]" style="font-size: var(--step--1); margin: 0;">{t('fleets.volunteer.select_character_to_add')}</p>
+                                        <div style="padding-block: var(--space-2xs);">
+                                            {pilotsToAdd.length === 0 ? (
+                                                <p class="text-[var(--faded)]" style="font-size: var(--step--1); margin: 0;">{t('fleets.volunteer.choose_character')}</p>
+                                            ) : isLinks ? (
+                                                <Flexblock gap="var(--space-s)">
+                                                    {pilotsToAdd.map((pilot) => (
+                                                        <FlexInline key={pilot.character_id} gap="var(--space-2xs)" class="[ flex-wrap items-center ]">
+                                                            <div class="[ min-w-0 ]" style="flex: 1 1 10rem;">
+                                                                <FixedFluid
+                                                                    width="32px"
+                                                                    gap="var(--space-2xs)"
+                                                                    class="[ items-center w-full ]"
+                                                                    breakpoint="70%"
+                                                                >
+                                                                    <CharacterPicture
+                                                                        character_id={pilot.character_id}
+                                                                        character_name={pilot.character_name}
+                                                                        size={32}
+                                                                        icon_quality={32}
+                                                                        inert={true}
+                                                                    />
+                                                                    <VerticalCenter>
+                                                                        <span class="truncate block text-[var(--highlight)]">{pilot.character_name}</span>
+                                                                    </VerticalCenter>
+                                                                </FixedFluid>
+                                                            </div>
+                                                            {SUBTYPE_OPTIONS.map((subOpt) => {
+                                                                const mod = LINK_SUBTYPE_MODULES[subOpt.value]
+                                                                return (
+                                                                <form key={subOpt.value} method="post" action={translatePath(`/fleets/upcoming/${fleet_id}/volunteer`)} class="inline">
+                                                                    <input type="hidden" name="character_id" value={pilot.character_id} />
+                                                                    <input type="hidden" name="role" value="links" />
+                                                                    <input type="hidden" name="subtype" value={subOpt.value} />
+                                                                    <button
+                                                                        type="submit"
+                                                                        class="rounded border border-[var(--faded)] bg-transparent transition-[border-color] hover:border-[var(--highlight)] hover:text-[var(--highlight)] focus:border-[var(--highlight)] focus:outline-none inline-flex items-center"
+                                                                        style="padding: var(--space-2xs) var(--space-2xs); font-size: var(--step--1);"
+                                                                    >
+                                                                        {mod ? (
+                                                                            <ItemPicture item_id={mod.type_id} item_name={mod.name} size={32} icon_quality={64} />
+                                                                        ) : (
+                                                                            t(subOpt.label_key)
+                                                                        )}
+                                                                    </button>
+                                                                </form>
+                                                            ); })}
+                                                        </FlexInline>
+                                                    ))}
+                                                </Flexblock>
+                                            ) : (
+                                                <Flexblock gap="var(--space-2xs)" role="list" class="[ w-full ]">
+                                                    {pilotsToAdd.map((pilot) => (
+                                                        <form method="post" action={translatePath(`/fleets/upcoming/${fleet_id}/volunteer`)} class="block w-full">
+                                                            <input type="hidden" name="character_id" value={pilot.character_id} />
+                                                            <input type="hidden" name="role" value={roleOpt.value} />
+                                                            <button
+                                                                type="submit"
+                                                                class="w-full text-left rounded border border-transparent bg-transparent py-1 transition-[border-color] hover:border-[var(--faded)] focus:border-[var(--highlight)] focus:outline-none"
+                                                            >
+                                                                <FixedFluid
+                                                                    width="32px"
+                                                                    gap="var(--space-2xs)"
+                                                                    class="[ items-center w-full ]"
+                                                                    breakpoint="70%"
+                                                                >
+                                                                    <CharacterPicture
+                                                                        character_id={pilot.character_id}
+                                                                        character_name={pilot.character_name}
+                                                                        size={32}
+                                                                        icon_quality={32}
+                                                                        inert={true}
+                                                                    />
+                                                                    <VerticalCenter>
+                                                                        <span class="truncate block text-[var(--highlight)]">{pilot.character_name}</span>
+                                                                    </VerticalCenter>
+                                                                </FixedFluid>
+                                                            </button>
+                                                        </form>
+                                                    ))}
+                                                </Flexblock>
+                                            )}
+                                        </div>
+                                    </Flexblock>
+                                </Flexblock>
+                            </ComponentBlock>
+                        )
+                    })}
+                </Flexblock>
+            )}
+        </Flexblock>
+    </PageDefault>
+</Viewport>
+
+<style is:global>
+    .volunteer-remove-btn {
+        font-family: var(--button-font);
+        font-weight: 600;
+        font-size: var(--step--2);
+        padding: var(--space-3xs) var(--space-2xs);
+        border: solid 1px var(--fleet-red);
+        color: var(--fleet-yellow);
+        background-color: var(--fleet-red);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: var(--fast-transition);
+    }
+    .volunteer-remove-btn:hover { filter: brightness(1.1); }
+    .volunteer-remove-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--fleet-yellow); }
+</style>

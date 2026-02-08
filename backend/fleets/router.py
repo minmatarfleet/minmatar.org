@@ -26,6 +26,7 @@ from .models import (
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
+    EveFleetRoleVolunteer,
 )
 from .notifications import get_fleet_discord_notification
 
@@ -168,6 +169,25 @@ class StartFleetNowRequest(BaseModel):
     """Optional body for quick-start fleet (which character is in the fleet)."""
 
     fc_character_id: Optional[int] = None
+
+
+class EveFleetRoleVolunteerResponse(BaseModel):
+    id: int
+    character_id: int
+    character_name: str
+    role: str
+    subtype: Optional[str] = None
+    quantity: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CreateEveFleetRoleVolunteerRequest(BaseModel):
+    character_id: int
+    role: str
+    subtype: Optional[str] = None
+    quantity: Optional[int] = None
 
 
 @router.get(
@@ -659,6 +679,135 @@ def get_fleet_members(request, fleet_id: int):
     return response
 
 
+def _fleet_authorized(request, fleet: EveFleet) -> bool:
+    """True if user can view this fleet (and thus list/volunteer for roles)."""
+    if request.user.has_perm("fleets.view_evefleet"):
+        return True
+    if request.user == fleet.created_by:
+        return True
+    for group in fleet.audience.groups.all():
+        if group in request.user.groups.all():
+            return True
+    return False
+
+
+@router.get(
+    "/{fleet_id}/role-volunteers",
+    auth=AuthBearer(),
+    response={200: List[EveFleetRoleVolunteerResponse], 403: None, 404: None},
+    description="List role volunteers for a fleet. Same auth as get fleet.",
+)
+def get_fleet_role_volunteers(request, fleet_id: int):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, None
+    if not _fleet_authorized(request, fleet):
+        return 403, None
+    volunteers = EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=fleet
+    ).order_by("role", "id")
+    return [
+        EveFleetRoleVolunteerResponse(
+            id=v.id,
+            character_id=v.character_id,
+            character_name=v.character_name,
+            role=v.role,
+            subtype=v.subtype,
+            quantity=v.quantity,
+        )
+        for v in volunteers
+    ]
+
+
+@router.post(
+    "/{fleet_id}/role-volunteers",
+    auth=AuthBearer(),
+    response={
+        200: EveFleetRoleVolunteerResponse,
+        403: None,
+        404: None,
+        400: ErrorResponse,
+    },
+    description="Volunteer a character for a fleet role. Character must belong to the user.",
+)
+def create_fleet_role_volunteer(
+    request, fleet_id: int, payload: CreateEveFleetRoleVolunteerRequest
+):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, None
+    if not _fleet_authorized(request, fleet):
+        return 403, None
+    allowed_ids = {
+        c.character_id: c.character_name for c in user_characters(request.user)
+    }
+    if payload.character_id not in allowed_ids:
+        return 400, {
+            "detail": "Character not found or not one of your characters"
+        }
+    valid_roles = [c[0] for c in EveFleetRoleVolunteer.ROLE_CHOICES]
+    if payload.role not in valid_roles:
+        return 400, {"detail": f"Invalid role. Must be one of: {valid_roles}"}
+    if payload.subtype is not None and payload.subtype != "":
+        valid_subtypes = [c[0] for c in EveFleetRoleVolunteer.SUBTYPE_CHOICES]
+        if payload.subtype not in valid_subtypes:
+            return 400, {
+                "detail": f"Invalid subtype. Must be one of: {valid_subtypes}"
+            }
+    volunteer, _ = EveFleetRoleVolunteer.objects.update_or_create(
+        eve_fleet=fleet,
+        character_id=payload.character_id,
+        role=payload.role,
+        defaults={
+            "character_name": allowed_ids[payload.character_id],
+            "subtype": payload.subtype or None,
+            "quantity": payload.quantity,
+        },
+    )
+    instance = EveFleetInstance.objects.filter(
+        eve_fleet=fleet, end_time__isnull=True
+    ).first()
+    if instance:
+        try:
+            instance.refresh_motd()
+        except Exception as e:
+            logger.warning(
+                "Failed to refresh MOTD for fleet %s: %s", fleet_id, e
+            )
+    return 200, EveFleetRoleVolunteerResponse(
+        id=volunteer.id,
+        character_id=volunteer.character_id,
+        character_name=volunteer.character_name,
+        role=volunteer.role,
+        subtype=volunteer.subtype,
+        quantity=volunteer.quantity,
+    )
+
+
+@router.delete(
+    "/{fleet_id}/role-volunteers/{volunteer_id}",
+    auth=AuthBearer(),
+    response={204: None, 403: None, 404: None},
+    description="Remove a role volunteer. Volunteer must belong to the current user's character.",
+)
+def delete_fleet_role_volunteer(request, fleet_id: int, volunteer_id: int):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, None
+    if not _fleet_authorized(request, fleet):
+        return 403, None
+    volunteer = EveFleetRoleVolunteer.objects.filter(
+        id=volunteer_id, eve_fleet=fleet
+    ).first()
+    if not volunteer:
+        return 404, None
+    allowed_ids = [c.character_id for c in user_characters(request.user)]
+    if volunteer.character_id not in allowed_ids:
+        return 403, None
+    volunteer.delete()
+    return 204, None
+
+
 @router.post(
     "",
     auth=AuthBearer(),
@@ -898,6 +1047,41 @@ def delete_fleet(request, fleet_id: int):
         }
     fleet.delete()
     logger.info("Fleet %d deleted by %s", fleet.id, request.user.username)
+    return 200, None
+
+
+@router.post(
+    "/{fleet_id}/refresh-motd",
+    auth=AuthBearer(),
+    response={
+        200: None,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+        500: ErrorResponse,
+    },
+    description="Refresh the in-game fleet MOTD from current fleet/doctrine/location. Requires active fleet tracking; caller must be fleet owner.",
+)
+def refresh_fleet_motd(request, fleet_id: int):
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return 404, ErrorResponse(detail="Fleet not found")
+    if request.user != fleet.created_by:
+        return 403, ErrorResponse(
+            detail="User does not have permission to refresh MOTD for this fleet"
+        )
+    instance = EveFleetInstance.objects.filter(
+        eve_fleet=fleet, end_time__isnull=True
+    ).first()
+    if not instance:
+        return 400, ErrorResponse(
+            detail="No active fleet tracking; start the fleet first to refresh MOTD"
+        )
+    try:
+        instance.refresh_motd()
+    except Exception as e:
+        logger.exception("Error refreshing MOTD for fleet %d", fleet_id)
+        return 500, ErrorResponse.log("Error refreshing MOTD", e)
     return 200, None
 
 

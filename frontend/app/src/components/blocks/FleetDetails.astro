@@ -99,6 +99,23 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 </Button>
                             }
 
+                            {!history &&
+                                <Button
+                                    size='sm'
+                                    href={translatePath(`/fleets/upcoming/${fleet.id}/volunteer`)}
+                                >
+                                    {t('fleets.volunteer.page_title')}
+                                </Button>
+                            }
+
+                            {!history && fleet?.tracking && !fleet?.tracking?.end_time &&
+                                <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)} class="inline">
+                                    <Button type="submit" size="sm">
+                                        {t('refresh_motd')}
+                                    </Button>
+                                </form>
+                            }
+
                             {(!history && fleet.tracking === null) &&
                                 <CancelFleetButton fleet_id={fleet.id} />
                             }
