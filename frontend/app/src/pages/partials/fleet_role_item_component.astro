@@ -136,7 +136,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
     :
     <FleetRoleItem
         id={id}
-        title={subtype ? t(`${subtype}_links` as any) : t(role as any)}
+        title={subtype ? t(`${subtype}_links` as any) : t(`${role}_label` as any)}
         fleet_id={fleet_id}
         role={role as FleetRoles}
         subtype={subtype ? subtype as FleetRolesSubtypes : undefined}
