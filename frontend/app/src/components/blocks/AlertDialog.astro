@@ -34,11 +34,12 @@ interface Props {
         x-bind:class="(alert_dialog_open ? 'open' : '')"
         x-bind:aria-hidden="alert_dialog_open == false"
         breakout={true}
-        class="[ w-full max-w-[500px] max-h-[80vh] overflow-y-auto ]"
+        class="[ w-full max-h-[80vh] overflow-y-auto ]"
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
         x-trap="alert_dialog_open"
         x-bind:inert="!alert_dialog_open"
+        style='--dialog-max-width: 500px'
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">

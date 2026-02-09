@@ -27,25 +27,32 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             return this.pagination_icons[index]
         },
         init() {
-            this.swiper = new Swiper('${swiper_selector}', {
-                initialSlide: ${initial_slide},
-                slidesPerView: "auto",
-                watchSlidesVisibility: true,
-                spaceBetween: ${gap},
-                pagination: ${pagination ? JSON.stringify({
-                    clickable: true,
-                    dynamicBullets: true,
-                    el: ".swiper-pagination",
-                }) : JSON.stringify(false)},
-                loop: false,
-                fadeEffect: {
-                    crossFade: true
-                },
-                navigation: {
-                    nextEl: '${swiper_selector}-button-next',
-                    prevEl: '${swiper_selector}-button-prev',
-                },
-            });
+            const INIT_WORKAROUND_TIMER_MS = 100
+
+            setTimeout(() => {
+                this.swiper = new Swiper('${swiper_selector}', {
+                    init: false,
+                    initialSlide: ${initial_slide},
+                    slidesPerView: "auto",
+                    watchSlidesVisibility: true,
+                    spaceBetween: ${gap},
+                    pagination: ${pagination ? JSON.stringify({
+                        clickable: true,
+                        dynamicBullets: true,
+                        el: ".swiper-pagination",
+                    }) : JSON.stringify(false)},
+                    loop: false,
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                    navigation: {
+                        nextEl: '${swiper_selector}-button-next',
+                        prevEl: '${swiper_selector}-button-prev',
+                    },
+                });
+
+                this.swiper.init()
+            }, INIT_WORKAROUND_TIMER_MS)
         }
     }`}
 >
