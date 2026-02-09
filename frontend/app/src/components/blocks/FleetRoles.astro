@@ -1,0 +1,181 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    volunteers:     FleetRoleVolunteer[],
+    pilots:         SummaryCharacter[],
+    fleet_id:       number;
+    readonly?:      boolean;
+}
+
+const {
+    volunteers,
+    pilots,
+    fleet_id,
+    readonly,
+} = Astro.props
+
+const logi_anchors = volunteers.filter((v) => v.role === 'logi_anchor')
+const dps_anchors = volunteers.filter((v) => v.role === 'dps_anchor')
+const cynos = volunteers.filter((v) => v.role === 'cyno')
+const links = volunteers.filter((v) => v.role === 'links')
+const armor_links = links.filter((v) => v.subtype === 'armor')
+const shield_links = links.filter((v) => v.subtype === 'shield')
+const info_links = links.filter((v) => v.subtype === 'info')
+const skirmish_links = links.filter((v) => v.subtype === 'skirmish')
+
+import { query_string } from '@helpers/string';
+const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${query_string({
+    fleet_id: fleet_id,
+    readonly: readonly,
+})}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
+import Button from '@components/blocks/Button.astro'
+
+import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+---
+
+<ComponentBlock id="fleet-roles">
+    <Flexblock gap='var(--space-l)'>
+        <FlexInline justification='space-between'>
+            <h2>{t('fleet_roles')}</h2>
+
+            <Button
+                size='sm'
+                hx-get={translatePath(FLEET_ROLES_PARTIAL_URL)}
+                hx-target="#fleet-roles"
+                hx-swap="outerHTML transition:true"
+                hx-indicator=".loader"
+                x-on:click="start_dscan_animation()"
+                hx-on--before-request="this.setAttribute('disabled','');"
+                hx-on--after-request="this.removeAttribute('disabled')"
+            >
+                <RefreshIcon slot="icon" />
+                {t('reload')}
+            </Button>
+        </FlexInline>
+        
+        <p>{t('fleet_roles_description')}</p>
+
+        <Flexblock>
+            <h3>{t('anchor_and_cynos')}</h3>
+
+            <FlexInline class="[ items-start! ]" justification='space-between'>
+                <FleetRoleItem
+                    id='logi-anchor-role'
+                    title={t('logi_anchor')}
+                    fleet_id={fleet_id}
+                    role='logi_anchor'
+                    volunteers={logi_anchors}
+                    pilots={pilots}
+                    readonly={readonly}
+                />
+
+                <FleetRoleItem
+                    id='dps-anchor-role'
+                    title={t('dps_anchor')}
+                    fleet_id={fleet_id}
+                    role='dps_anchor'
+                    volunteers={dps_anchors}
+                    pilots={pilots}
+                    readonly={readonly}
+                />
+
+                <FleetRoleItem
+                    id='cynos-role'
+                    title={t('cynos')}
+                    fleet_id={fleet_id}
+                    role='cyno'
+                    volunteers={cynos}
+                    pilots={pilots}
+                    readonly={readonly}
+                />
+            </FlexInline>
+        </Flexblock>
+
+        <Flexblock>
+            <h3>{t('links')}</h3>
+
+            <FlexInline class="[ items-start! ]" justification='space-between'>
+                <FleetRoleItem
+                    id='armor-links-role'
+                    title={t('armor_links')}
+                    fleet_id={fleet_id}
+                    role='links'
+                    subtype='armor'
+                    volunteers={armor_links}
+                    pilots={pilots}
+                    readonly={readonly}
+                >
+                    <img
+                        slot="icon"
+                        src={get_item_icon(43552, 32)}
+                        width="32"
+                        height="32"
+                    />
+                </FleetRoleItem>
+                <FleetRoleItem
+                    id='shield-links-role'
+                    title={t('shield_links')}
+                    fleet_id={fleet_id}
+                    role='links'
+                    subtype='shield'
+                    volunteers={shield_links}
+                    pilots={pilots}
+                    readonly={readonly}
+                >
+                    <img
+                        slot="icon"
+                        src={get_item_icon(43555, 32)}
+                        width="32"
+                        height="32"
+                    />
+                </FleetRoleItem>
+                <FleetRoleItem
+                    id='info-links-role'
+                    title={t('info_links')}
+                    fleet_id={fleet_id}
+                    role='links'
+                    subtype='info'
+                    volunteers={info_links}
+                    pilots={pilots}
+                    readonly={readonly}
+                >
+                    <img
+                        slot="icon"
+                        src={get_item_icon(43554, 32)}
+                        width="32"
+                        height="32"
+                    />
+                </FleetRoleItem>
+                <FleetRoleItem
+                    id='skirmish-links-role'
+                    title={t('skirmish_links')}
+                    fleet_id={fleet_id}
+                    role='links'
+                    subtype='skirmish'
+                    volunteers={skirmish_links}
+                    pilots={pilots}
+                    readonly={readonly}
+                >
+                    <img
+                        slot="icon"
+                        src={get_item_icon(43556, 32)}
+                        width="32"
+                        height="32"
+                    />
+                </FleetRoleItem>
+            </FlexInline>
+        </Flexblock>
+    </Flexblock>
+</ComponentBlock>

@@ -42,6 +42,15 @@ let fleet_radar:FleetRadarUI[] = []
 let fleet_srps:SRPUI[] | null = []
 let is_fleet_commander = false
 
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import {
+    get_fleet_role_volunteers,
+    type FleetRoleVolunteer,
+} from '@helpers/api.minmatar.org/fleets'
+let pilots: SummaryCharacter[] = []
+let volunteers: FleetRoleVolunteer[] = []
+
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
@@ -56,6 +65,10 @@ try {
         fleet_composition = await group_members_by_ship(members)
         fleet_radar = await group_members_by_location(members, staging_solar_system_id as number)
     }
+
+    const summary = await get_characters_summary_sorted(auth_token as string)
+    volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+    pilots = summary.characters ?? []
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_403_Forbidden()
@@ -152,6 +165,8 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 fleet_radar={fleet_radar}
                 fleet_srps={fleet_srps}
                 can_add_srp={can_add_srp}
+                pilots={pilots}
+                volunteers={volunteers}
             />
         }
     </PageDefault>

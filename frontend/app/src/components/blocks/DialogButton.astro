@@ -5,6 +5,7 @@ interface Props {
     size?:              ButtonSizes;
     color?:             ButtonColors;
     hidden?:            boolean;
+    narrow?:            boolean;
     id?:                string;
     max_width?:         string;
     [propName: string]: any;
@@ -14,6 +15,7 @@ const {
     size = 'lg',
     color = 'green',
     hidden = false,
+    narrow = false,
     id,
     max_width = '700px',
     ...attributes
@@ -39,24 +41,27 @@ import Button from '@components/blocks/Button.astro';
         size={size}
         type="button"
         color={color}
+        narrow={narrow}
         x-on:click.stop.prevent="open_dialog()"
         type="button"
         id={id ? id : undefined}
         class={hidden ? '[ !hidden ]' : undefined}
     >
+        <slot name="icon" />
         <slot />
     </Button>
 
     <Dialog
         breakout={true}
         non_centered={true}
-        class:list={[ 'button-dialog w-full component overflow-y-auto', `max-w-[${max_width}]` ]}
+        class:list={[ 'button-dialog w-full component overflow-y-auto' ]}
         x-bind:class="(button_dialog_open ? 'open' : '')"
         x-bind:aria-hidden="button_dialog_open == false"
         x-trap="button_dialog_open"
         x-bind:inert="!button_dialog_open"
         @keyup.escape.window="close_dialog()"
         @mousedown.outside="open && close_dialog()"
+        style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
     >
         <slot name="dialog" />
     </Dialog>

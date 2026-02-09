@@ -984,3 +984,9 @@ export interface MarketLocationUI {
     completion:         number;
     fittings:           FittingMarketData[];
 }
+
+export const fleet_roles = ['logi_anchor', 'dps_anchor', 'cyno', 'links'] as const
+export type FleetRoles = typeof fleet_roles[number]
+
+export const fleet_roles_subtypes = ['armor', 'shield', 'info', 'skirmish'] as const
+export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
