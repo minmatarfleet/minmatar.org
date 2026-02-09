@@ -1,0 +1,106 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRoles, FleetRolesSubtypes } from '@dtypes/layout_components'
+
+interface Props {
+    id:             string;
+    title:          string;
+    role:           FleetRoles;
+    fleet_id:       number;
+    subtype?:       FleetRolesSubtypes;
+    volunteers:     FleetRoleVolunteer[],
+    pilots:         SummaryCharacter[],
+    readonly?:      boolean;
+}
+
+const {
+    id,
+    title,
+    role,
+    fleet_id,
+    subtype,
+    volunteers,
+    pilots,
+    readonly,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const FLEET_ROLE_ITEM_PARTIAL_URL = `${translatePath('/partials/fleet_role_item_component/')}`
+
+const volunteers_characters = volunteers.map((v) => v.character_id)
+const pilots_to_add = pilots.filter(user_pilot => !volunteers_characters.includes(user_pilot.character_id))
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+const ICONS_BY_SUBYPE = {
+    armor: get_item_icon(43552, 32),
+    shield: get_item_icon(43555, 32),
+    info: get_item_icon(43554, 32),
+    skirmish: get_item_icon(43556, 32),
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Button from '@components/blocks/Button.astro'
+import ButtonAddVolunteer from '@components/blocks/ButtonAddVolunteer.astro'
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+---
+
+<Flexblock id={id} class="[ basis-[250px] ]">
+    <FlexInline justification='space-between'>
+        <FlexInline gap='var(--space-3xs)'>
+            <slot name="icon" />
+            <Flexblock gap='var(--space-3xs)'>
+                <h4 class="[ sentence-cap ]" style="margin: 0;">{title}</h4>
+                <small class:list={{ 'text-red': volunteers.length === 0 }}>{volunteers.length !== 1 ? t('volunteer_plural').replace('{count}', volunteers.length.toString()) : t('volunteer_singular')}</small>
+            </Flexblock>
+        </FlexInline>
+        {!readonly && pilots_to_add.length > 0 &&
+            <ButtonAddVolunteer
+                title={title}
+                target={id}
+                fleet_id={fleet_id}
+                pilots={pilots_to_add}
+                role={role}
+                subtype={subtype ? subtype : undefined}
+            />
+        }
+    </FlexInline>
+    {volunteers.map(volunteer =>
+        <FlexInline justification='space-between'>
+            <PilotBadge
+                character_id={volunteer.character_id}
+                character_name={volunteer.character_name}
+                size={32}
+                icon_quality={32}
+            />
+            {!readonly && pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id) &&
+                <Button
+                    size='sm'
+                    type="button"
+                    narrow={true}
+                    hx-delete={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+                        id: id,
+                        fleet_id: fleet_id,
+                        remove_id: volunteer.id,
+                        role: role,
+                        ...(subtype && { subtype }),
+                        ...(subtype && { icon: ICONS_BY_SUBYPE[subtype] }),
+                    })}`}
+                    hx-target={`#${id}`}
+                    hx-indicator=".loader"
+                    hx-swap='outerHTML transition:true'
+                >
+                    <TrashIcon slot="icon" />
+                </Button>
+            }
+        </FlexInline>
+    )}
+</Flexblock>

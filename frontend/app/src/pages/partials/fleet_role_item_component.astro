@@ -1,0 +1,155 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+import { query_string } from '@helpers/string';
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+const id = Astro.url.searchParams.get('id') ?? ''
+const role = Astro.url.searchParams.get('role')
+const subtype = Astro.url.searchParams.get('subtype')
+
+import type { FleetRoles, FleetRolesSubtypes, Alert } from '@dtypes/layout_components'
+import { fleet_roles, fleet_roles_subtypes } from '@dtypes/layout_components'
+
+if (
+    isNaN(fleet_id) ||
+    isNaN(character_id) ||
+    !fleet_roles.includes(role as any) ||
+    (subtype && !fleet_roles_subtypes.includes(subtype as any))
+) {
+    throw new Error('Invalid parameters')
+}
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import {
+    get_fleet_role_volunteers,
+    create_fleet_role_volunteer,
+    delete_fleet_role_volunteer,
+    type FleetRoleVolunteer,
+} from '@helpers/api.minmatar.org/fleets'
+
+let fetch_error: string | false = false
+let pilots: SummaryCharacter[] = []
+let role_volunteers: FleetRoleVolunteer[] = []
+let alert:Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    /*const qty = data.get('quantity')
+    const quantity = qty != null && qty !== '' ? parseInt(qty as string) : undefined*/
+
+    try {
+        await create_fleet_role_volunteer(auth_token as string, fleet_id, {
+            character_id: character_id,
+            role: role as FleetRoles,
+            subtype: subtype || null,
+            quantity: /*quantity ?? */null,
+        })
+    } catch (error) {
+        const create_fleet_role_volunteer_error = prod_error_messages() ? t('create_fleet_role_volunteer_error') : error.message
+        
+        alert = {
+            title: subtype ? t(`${subtype}_links` as any) : t(role as any),
+            content: create_fleet_role_volunteer_error as string,
+        }
+    }
+}
+
+if (Astro.request.method === 'DELETE') {
+    /*const qty = data.get('quantity')
+    const quantity = qty != null && qty !== '' ? parseInt(qty as string) : undefined*/
+    const remove_id = Astro.url.searchParams.get('remove_id') ?? ''
+
+    try {
+        if (!remove_id)
+            throw new Error(t('invalid_remove_id'))
+
+        await delete_fleet_role_volunteer(auth_token as string, fleet_id, parseInt(remove_id as string))
+    } catch (error) {
+        const delete_fleet_role_volunteer_error = prod_error_messages() ? t('delete_fleet_role_volunteer_error') : error.message
+
+        alert = {
+            title: subtype ? t(`${subtype}_links` as any) : t(role as any),
+            content: delete_fleet_role_volunteer_error as string,
+        }
+    }
+}
+
+try {
+    const summary = await get_characters_summary_sorted(auth_token as string)
+    const volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+    pilots = summary.characters ?? []
+
+    role_volunteers = volunteers.filter((v) => v.role === role)
+    if (subtype)
+        role_volunteers = role_volunteers.filter((v) => v.subtype === subtype)
+} catch (error) {
+    fetch_error = prod_error_messages() ? t('get_characters_error') : error.message
+}
+
+const FLEET_ROLE_ITEM_PARTIAL_URL = translatePath(`/partials/fleet_role_item_component?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    character_id: character_id,
+    role: role,
+    ...(subtype && { subtype }),
+})}`)
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+const ICONS_BY_SUBYPE = {
+    armor: get_item_icon(43552, 32),
+    shield: get_item_icon(43555, 32),
+    info: get_item_icon(43554, 32),
+    skirmish: get_item_icon(43556, 32),
+}
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetRoleItem from '@components/blocks/FleetRoleItem.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_ROLE_ITEM_PARTIAL_URL,
+            message: fetch_error,
+            delay: delay,
+        }}
+    />
+    :
+    <FleetRoleItem
+        id={id}
+        title={subtype ? t(`${subtype}_links` as any) : t(role as any)}
+        fleet_id={fleet_id}
+        role={role as FleetRoles}
+        subtype={subtype ? subtype as FleetRolesSubtypes : undefined}
+        volunteers={role_volunteers}
+        pilots={pilots}
+    >
+        {subtype &&
+            <img
+                slot="icon"
+                src={ICONS_BY_SUBYPE[subtype]}
+                width="32"
+                height="32"
+            />
+        }
+    </FleetRoleItem>
+}

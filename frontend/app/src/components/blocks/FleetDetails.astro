@@ -4,6 +4,9 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
+
 interface Props {
     fleet:                  FleetUI;
     history?:               boolean;
@@ -14,6 +17,8 @@ interface Props {
     fleet_srps?:            SRPUI[];
     saved_logs?:            FleetCombatLog[];
     can_add_srp:            boolean;
+    volunteers:             FleetRoleVolunteer[],
+    pilots:                 SummaryCharacter[],
 }
 
 const {
@@ -26,6 +31,8 @@ const {
     fleet_srps,
     saved_logs = [],
     can_add_srp,
+    volunteers,
+    pilots,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -61,6 +68,7 @@ import SRPTable from '@components/blocks/SRPTable.astro';
 import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
+import FleetRoles from '@components/blocks/FleetRoles.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -99,15 +107,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 </Button>
                             }
 
-                            {!history &&
-                                <Button
-                                    size='sm'
-                                    href={translatePath(`/fleets/upcoming/${fleet.id}/volunteer`)}
-                                >
-                                    {t('fleets.volunteer.page_title')}
-                                </Button>
-                            }
-
                             {!history && fleet?.tracking && !fleet?.tracking?.end_time &&
                                 <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)} class="inline">
                                     <Button type="submit" size="sm">
@@ -124,16 +123,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 </FlexInline>
 
                 <FlexInline class="[ !items-start ]">
-                    <div class="[ basis-[250px] ]">
-                        <Flexblock class="[ basis-[250px] ]">
+                    <div class="[ basis-[220px] ]">
+                        <Flexblock>
                             <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
                                 {eve_time_text}
                             </TextGroup>
                             <LocalTimeGroup eve_time={eve_time} />
                         </Flexblock>
                     </div>
-                    <div class="[ basis-[150px] ]">
-                        <Flexblock class="[ basis-[150px] ]">
+                    <div class="[ basis-[200px] ]">
+                        <Flexblock>
                             <TextGroup title={t('audience')} class="[ sentence-cap ]">
                                 {fleet.audience}
                             </TextGroup>
@@ -143,7 +142,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         </Flexblock>
                     </div>
                     <div class="[ basis-[450px] ]">
-                        <Flexblock class="[ basis-[450px] ]">
+                        <Flexblock>
                             <TextGroup title={t('location')} class="[ sentence-cap ]">
                                 {fleet.location}
                             </TextGroup>
@@ -175,6 +174,21 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 </VerticalCenter> -->
             </Flexblock>
         </ComponentBlock>
+
+        {fleet.doctrine !== null &&
+            <ComponentBlock>
+                <DoctrineItem doctrine={fleet.doctrine} />
+            </ComponentBlock>
+        }
+
+        {!history &&
+            <FleetRoles
+                volunteers={volunteers}
+                pilots={pilots}
+                fleet_id={fleet.id}
+                readonly={false}
+            />
+        }
 
         {is_fleet_commander &&
             <div
@@ -212,12 +226,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </template>
                 }
             </div>
-        }
-
-        {fleet.doctrine !== null &&
-            <ComponentBlock>
-                <DoctrineItem doctrine={fleet.doctrine} />
-            </ComponentBlock>
         }
     </Flexblock>
 

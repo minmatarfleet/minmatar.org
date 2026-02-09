@@ -10,11 +10,13 @@ import { prod_error_messages } from '@helpers/env'
 interface Props {
     corporation:    CorporationBadgeProps;
     border?:        boolean;
+    highlight?:     boolean;
 }
 
 const {
     corporation,
     border = false,
+    highlight = true,
 } = Astro.props
 
 let corporation_eve:CorporationEvE | null = null
@@ -67,14 +69,14 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     <Flexblock gap='0' class="[ w-full ]">
         {size == 'lg' ?
             <span>
-                <span class="[ text-[var(--highlight)] max-w-fit ]">{corporation_name}</span>
+                <span class:list={[ { 'text-[var(--highlight)]': highlight }, 'max-w-fit' ]}>{corporation_name}</span>
             </span>
             <slot>
                 <small>{description}</small>
             </slot>
             :
             <small class="[ max-w-fit ]">
-                <a class="[ text-[var(--highlight)] ]">{corporation_name}</a>
+                <a class:list={{ 'text-[var(--highlight)]': highlight }}>{corporation_name}</a>
             </small>
         }
     </Flexblock>

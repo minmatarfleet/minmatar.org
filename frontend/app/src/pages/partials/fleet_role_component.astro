@@ -1,0 +1,83 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const readonly = JSON.parse(Astro.url.searchParams.get('readonly') ?? 'true') as boolean
+
+import type { FleetUI, Alert } from '@dtypes/layout_components'
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import {
+    get_fleet_role_volunteers,
+    type FleetRoleVolunteer,
+} from '@helpers/api.minmatar.org/fleets'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+
+let fetch_error: string | false = false
+let pilots: SummaryCharacter[] = []
+let volunteers: FleetRoleVolunteer[] = []
+let alert:Alert | false = false
+let history:boolean = false
+
+try {
+    if (isNaN(fleet_id))
+        throw new Error(t('invalid_fleet_id'))
+
+    const fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    history = Boolean(fleet?.tracking?.end_time)
+    const summary = await get_characters_summary_sorted(auth_token as string)
+    volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+    pilots = summary.characters ?? []
+} catch (error) {
+    fetch_error = prod_error_messages() ? t('get_characters_error') : error.message
+
+    alert = {
+        title: t('refresh_fleet_roles'),
+        content: fetch_error as string,
+    }
+}
+
+import { query_string } from '@helpers/string';
+const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${query_string({
+    fleet_id: fleet_id,
+    readonly: readonly,
+})}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetRoles from '@components/blocks/FleetRoles.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_ROLES_PARTIAL_URL,
+            message: fetch_error,
+            delay: delay,
+        }}
+    />
+    :
+    !history &&
+        <FleetRoles
+            volunteers={volunteers}
+            pilots={pilots}
+            fleet_id={fleet_id}
+            readonly={readonly}
+        />
+}
