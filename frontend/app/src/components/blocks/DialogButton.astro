@@ -45,7 +45,7 @@ import Button from '@components/blocks/Button.astro';
         x-on:click.stop.prevent="open_dialog()"
         type="button"
         id={id ? id : undefined}
-        class={hidden ? '[ !hidden ]' : undefined}
+        class={hidden ? '[ hidden! ]' : undefined}
     >
         <slot name="icon" />
         <slot />
