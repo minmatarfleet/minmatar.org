@@ -34,7 +34,7 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     const history = Boolean(fleet?.tracking?.end_time)
 
-    if (history) return HTTP_404_Not_Found()
+    if (history) return Astro.redirect(translatePath(`/fleets/upcoming/${fleet_id}`))
 } catch (e) {
     if (e.message?.includes('403')) return HTTP_403_Forbidden()
     if (e.message?.includes('404')) return HTTP_404_Not_Found()
@@ -62,7 +62,6 @@ import Viewport from '@layouts/Viewport.astro'
 import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
