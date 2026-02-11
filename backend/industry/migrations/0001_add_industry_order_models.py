@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("eveonline", "0076_migrate_advanced_token_to_basic"),
+        ("eveonline", "0074_evecharacter_corporation_id_alliance_id_faction_id"),
         (
             "eveuniverse",
             "0010_alter_eveindustryactivityduration_eve_type_and_more",
