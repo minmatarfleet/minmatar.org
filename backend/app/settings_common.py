@@ -62,7 +62,8 @@ INSTALLED_APPS = [
     "moons.apps.MoonsConfig",
     # Market
     "market.apps.MarketConfig",
-    # 'eve_auth',
+    # Industry (type breakdown, etc.)
+    "industry.apps.IndustryConfig",
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
@@ -183,3 +184,7 @@ EVEUNIVERSE_LOAD_DOGMAS = True
 
 # ESI token management settings
 ESI_ALWAYS_CREATE_TOKEN = True
+
+# Janice (https://janice.e-351.com) - optional; get key from kukki#3914 on Discord
+JANICE_API_KEY = ""
+JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"

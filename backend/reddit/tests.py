@@ -78,7 +78,6 @@ class RedditClientTestCase(TestCase):
                 ],
             ],
         }
-
         result = RedditClient().submit_post(
             subreddit="MinmatarFleet",
             title="test",
