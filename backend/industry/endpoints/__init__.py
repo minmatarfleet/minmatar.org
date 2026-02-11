@@ -1,0 +1,38 @@
+from ninja import Router
+
+from industry.endpoints.get_orders_breakdown_summary_flat import (
+    router as get_orders_breakdown_summary_flat_router,
+)
+from industry.endpoints.get_orders_breakdown_summary_janice import (
+    router as get_orders_breakdown_summary_janice_router,
+)
+from industry.endpoints.get_orders_breakdown_summary_nested import (
+    router as get_orders_breakdown_summary_nested_router,
+)
+from industry.endpoints.get_orders_breakdown_summary_tsv import (
+    router as get_orders_breakdown_summary_tsv_router,
+)
+from industry.endpoints.get_types_type_id_breakdown import (
+    router as get_types_type_id_breakdown_router,
+)
+
+router = Router(tags=["Industry"])
+router.add_router("", get_types_type_id_breakdown_router)
+router.add_router(
+    "summary",
+    get_orders_breakdown_summary_nested_router,
+)
+router.add_router(
+    "summary",
+    get_orders_breakdown_summary_flat_router,
+)
+router.add_router(
+    "summary",
+    get_orders_breakdown_summary_janice_router,
+)
+router.add_router(
+    "summary",
+    get_orders_breakdown_summary_tsv_router,
+)
+
+__all__ = ["router"]
