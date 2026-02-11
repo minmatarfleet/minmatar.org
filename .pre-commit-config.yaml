@@ -1,0 +1,25 @@
+# See https://pre-commit.com for more information
+# Run from repo root: pre-commit run --all-files
+# Install hooks: pre-commit install
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        name: black (backend)
+        files: ^backend/.*\.py$
+        args: [--config, backend/pyproject.toml]
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        name: flake8 (backend)
+        files: ^backend/.*\.py$
+        args: [--config, backend/.flake8]
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.2
+    hooks:
+      - id: pylint
+        name: pylint (backend)
+        files: ^backend/.*\.py$
+        args: [--rcfile=backend/.pylintrc]

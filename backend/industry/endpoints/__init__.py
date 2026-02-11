@@ -15,9 +15,13 @@ from industry.endpoints.get_orders_breakdown_summary_tsv import (
 from industry.endpoints.get_types_type_id_breakdown import (
     router as get_types_type_id_breakdown_router,
 )
+from industry.endpoints.delete_order import router as delete_order_router
+from industry.endpoints.post_order import router as post_order_router
 
 router = Router(tags=["Industry"])
 router.add_router("", get_types_type_id_breakdown_router)
+router.add_router("orders", post_order_router)
+router.add_router("orders", delete_order_router)
 router.add_router(
     "summary",
     get_orders_breakdown_summary_nested_router,
