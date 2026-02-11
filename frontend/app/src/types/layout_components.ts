@@ -605,6 +605,11 @@ export interface ShipType {
     type:       string;
 }
 
+export interface ShipMeta {
+    ship_id:    number;
+    meta:       string;
+}
+
 export interface ShipDNA {
     model:  string;
     skin:   string;
