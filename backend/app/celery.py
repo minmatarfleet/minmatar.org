@@ -25,6 +25,12 @@ app.conf.broker_transport_options = {
 app.conf.task_default_priority = 5
 app.conf.worker_prefetch_multiplier = 1
 
+# celery_once: required for eveuniverse_load_data (and other tasks using Once)
+app.conf.ONCE = {
+    "backend": "eveuniverse.backends.DjangoBackend",
+    "settings": {},
+}
+
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
