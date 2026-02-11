@@ -66,9 +66,13 @@ try {
         fleet_radar = await group_members_by_location(members, staging_solar_system_id as number)
     }
 
-    const summary = await get_characters_summary_sorted(auth_token as string)
-    volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
-    pilots = summary.characters ?? []
+    const history = Boolean(fleet?.tracking?.end_time)
+
+    if (!history) {
+        const summary = await get_characters_summary_sorted(auth_token as string)
+        volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+        pilots = summary.characters ?? []
+    }
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_403_Forbidden()
