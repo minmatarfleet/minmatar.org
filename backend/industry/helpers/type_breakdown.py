@@ -34,8 +34,8 @@ def _ensure_industry_data_loaded_for_product(
         return
     try:
         data_all = (
-            EveIndustryActivityProduct.objects._fetch_sde_data_cached()
-        )  # pylint: disable=protected-access
+            EveIndustryActivityProduct.objects._fetch_sde_data_cached()  # pylint: disable=protected-access
+        )
     except Exception:
         return
     product_id = product_eve_type.id
