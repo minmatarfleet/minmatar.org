@@ -37,9 +37,12 @@ try {
 
     const fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     history = Boolean(fleet?.tracking?.end_time)
-    const summary = await get_characters_summary_sorted(auth_token as string)
-    volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
-    pilots = summary.characters ?? []
+    
+    if (!history) {
+        const summary = await get_characters_summary_sorted(auth_token as string)
+        volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+        pilots = summary.characters ?? []
+    }
 } catch (error) {
     fetch_error = prod_error_messages() ? t('get_characters_error') : error.message
 
