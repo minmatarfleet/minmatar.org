@@ -10,7 +10,7 @@ from eveonline.models import (
     EvePlayer,
     EveCharacter,
 )
-from eveonline.scopes import TokenType, scopes_for
+from eveonline.scopes import TokenType, scopes_for, scopes_for_groups
 
 logger = logging.getLogger(__name__)
 
@@ -99,11 +99,15 @@ def player_characters(player: EvePlayer) -> List[EveCharacter]:
 
 
 def character_desired_scopes(character: EveCharacter) -> List[str]:
+    """Union of scopes for all of the character's scope groups."""
+    groups = getattr(character, "esi_scope_groups", None)
+    if groups:
+        return scopes_for_groups(groups)
     if not character.esi_token_level:
         return []
-
-    token_type = TokenType(character.esi_token_level)
-    if not token_type:
+    try:
+        token_type = TokenType(character.esi_token_level)
+    except ValueError:
         return []
-
-    return scopes_for(token_type)
+    scopes = scopes_for(token_type)
+    return list(scopes) if scopes else []

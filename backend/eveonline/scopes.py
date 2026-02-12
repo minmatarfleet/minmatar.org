@@ -70,7 +70,6 @@ class TokenType(Enum):
     CEO = "CEO"
     PUBLIC = "Public"
     BASIC = "Basic"
-    ADVANCED = "Advanced"
     DIRECTOR = "Director"
     MARKET = "Market"
     FREIGHT = "Freight"
@@ -83,8 +82,6 @@ def scopes_for(token_type: TokenType):
     match token_type:
         case TokenType.BASIC:
             scopes = BASIC_SCOPES
-        case TokenType.ADVANCED:
-            scopes = ADVANCED_SCOPES
         case TokenType.DIRECTOR:
             scopes = DIRECTOR_SCOPES
         case TokenType.PUBLIC:
@@ -98,6 +95,22 @@ def scopes_for(token_type: TokenType):
         case TokenType.EXECUTOR:
             scopes = EXECUTOR_CHARACTER_SCOPES
     return scopes
+
+
+def scopes_for_groups(groups: List[str]) -> List[str]:
+    """Returns the union of scopes for all given scope groups (no order)."""
+    if not groups:
+        return []
+    result = set()
+    for name in groups:
+        try:
+            token_type = TokenType(name)
+        except ValueError:
+            continue
+        scopes = scopes_for(token_type)
+        if scopes:
+            result.update(scopes)
+    return sorted(result)
 
 
 def scope_group(token: Token) -> str | None:
@@ -117,8 +130,6 @@ def scope_group(token: Token) -> str | None:
         return TokenType.CEO.value
     if "esi-characters.read_notifications.v1" in token_scopes:
         return TokenType.DIRECTOR.value
-    if "esi-characters.read_blueprints.v1" in token_scopes:
-        return TokenType.ADVANCED.value
     if "esi-fleets.read_fleet.v1" in token_scopes:
         return TokenType.BASIC.value
 

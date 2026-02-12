@@ -73,6 +73,10 @@ class EveCharacter(models.Model):
     # The level of access to Eve Swagger Interface APIs granted by this character
     esi_token_level = models.CharField(max_length=40, null=True, blank=True)
 
+    # Scope groups granted for this character's token (e.g. ["Basic", "Director"]).
+    # Union of scopes for these groups is requested/expected. No order.
+    esi_scope_groups = models.JSONField(default=list, blank=True)
+
     # The my.minmatar.org user that owns this Eve character
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
