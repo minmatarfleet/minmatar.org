@@ -123,7 +123,9 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                             update_validity() {
                                 if (!external_killmail_link) return
 
-                                if (!external_killmail_link.trim().startsWith('https://esi.evetech.net/v1/killmails/'))
+                                const regex = /^https:\\/\\/esi\\.evetech\\.net(?:\\/v[0-9]+)?\\/killmails\\/([0-9]+)\\/([a-zA-Z0-9]+)$/
+
+                                if (!regex.test(external_killmail_link.trim()))
                                     $el.setCustomValidity('${t('invalid_killmail_link')}')
                                 else
                                     $el.setCustomValidity('')
