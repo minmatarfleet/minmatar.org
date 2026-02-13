@@ -123,17 +123,13 @@ def redirect_url_from_session(request):
 @router.get(
     "/{user_id}/profile",
     summary="Get user by ID",
-    description="Returns your profile. You can only request your own profile (user_id must match the authenticated user).",
-    auth=AuthBearer(),
+    description="This will return the user's information based on the ID of the user.",
     response={
         200: UserProfileSchema,
-        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
 def get_user_by_id(request, user_id: int):
-    if request.user.id != user_id:
-        return 403, ErrorResponse(detail="You can only view your own profile.")
     if not User.objects.filter(id=user_id).exists():
         return 404, ErrorResponse(detail="User not found.")
     return get_user_profile(user_id)
@@ -142,17 +138,13 @@ def get_user_by_id(request, user_id: int):
 @router.get(
     "",
     summary="Search for user profiles",
-    description="Returns your profile when querying by your own username. You can only view your own profile.",
-    auth=AuthBearer(),
+    description="This will search for users based on the query provided.",
     response={
         200: UserProfileSchema,
-        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
 def query_users(request, username: str):
-    if request.user.username != username:
-        return 403, ErrorResponse(detail="You can only view your own profile.")
     if not User.objects.filter(username=username).exists():
         return 404, ErrorResponse(detail="User not found.")
     user = User.objects.get(username=username)
@@ -162,11 +154,9 @@ def query_users(request, username: str):
 @router.get(
     "/profiles",
     summary="Search for user profiles",
-    description="Returns profiles only for the authenticated user. You can only request your own profile (ids must include only your user id, or username must be your username).",
-    auth=AuthBearer(),
+    description="This will search for users based on the query provided.",
     response={
         200: List[UserProfileSchema],
-        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
@@ -174,22 +164,14 @@ def query_multiple_users(
     request, username: str = "", ids: str = ""
 ) -> List[UserProfileSchema]:
     if username:
-        if request.user.username != username:
-            return 403, ErrorResponse(
-                detail="You can only view your own profile."
-            )
         if not User.objects.filter(username=username).exists():
             return 404, ErrorResponse(detail="User not found.")
         user = User.objects.get(username=username)
         return [get_user_profile(user.id)]
 
     if ids:
-        requested_ids = [int(x) for x in ids.split(",") if x.strip()]
-        if not requested_ids or set(requested_ids) != {request.user.id}:
-            return 403, ErrorResponse(
-                detail="You can only request your own profile."
-            )
-        return get_user_profiles(requested_ids)
+        user_ids = [int(x) for x in ids.split(",") if x.strip()]
+        return get_user_profiles(user_ids)
 
     return []
 
