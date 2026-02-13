@@ -57,7 +57,9 @@ if (Astro.request.method === "POST") {
         if (!srp_categories.includes(category))
             throw new Error(t('invalid_srp_category'))
 
-        if (!external_killmail_link.trim().startsWith('https://esi.evetech.net/v1/killmails/'))
+        const regex = /^https:\/\/esi\.evetech\.net(?:\/v[0-9]+)?\/killmails\/([0-9]+)\/([a-zA-Z0-9]+)$/
+
+        if (!regex.test(external_killmail_link.trim()))
             throw new Error(t('invalid_killmail_link'))
 
         let combat_log_analysis:CombatLogAnalysis | null = null
