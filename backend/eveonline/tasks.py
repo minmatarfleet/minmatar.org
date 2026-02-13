@@ -31,6 +31,9 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
+# 504 Gateway Timeout is transient; we warn and skip. Other ESI failures are logged as errors.
+ESI_GATEWAY_TIMEOUT = 504
+
 task_config = {
     "async_apply_affiliations": True,
 }
@@ -269,11 +272,18 @@ def update_character_killmails(eve_character_id):
 
     response = esi.get_recent_killmails()
     if not response.success():
-        logger.warning(
-            "Skipping killmail update for character %s, %s",
-            eve_character_id,
-            response.response_code,
-        )
+        if response.response_code == ESI_GATEWAY_TIMEOUT:
+            logger.warning(
+                "Skipping killmail update for character %s, %s (gateway timeout)",
+                eve_character_id,
+                response.response_code,
+            )
+        else:
+            logger.error(
+                "Skipping killmail update for character %s, %s",
+                eve_character_id,
+                response.response_code,
+            )
         return
 
     for killmail in response.results():
@@ -376,12 +386,20 @@ def sync_alliance_corporations():
             alliance.alliance_id
         )
         if not esi_response.success():
-            logger.warning(
-                "ESI error %d fetching corporations for alliance %s (%s)",
-                esi_response.response_code,
-                alliance.name or alliance.alliance_id,
-                alliance.alliance_id,
-            )
+            if esi_response.response_code == ESI_GATEWAY_TIMEOUT:
+                logger.warning(
+                    "ESI gateway timeout (%d) fetching corporations for alliance %s (%s)",
+                    esi_response.response_code,
+                    alliance.name or alliance.alliance_id,
+                    alliance.alliance_id,
+                )
+            else:
+                logger.error(
+                    "ESI error %d fetching corporations for alliance %s (%s)",
+                    esi_response.response_code,
+                    alliance.name or alliance.alliance_id,
+                    alliance.alliance_id,
+                )
             continue
         corporation_ids = esi_response.results() or []
         logger.info(
@@ -429,16 +447,31 @@ def update_corporation(corporation_id):
         esi_members = EsiClient(corporation.ceo).get_corporation_members(
             corporation.corporation_id
         )
-        for member_id in esi_members.results():
-            if not EveCharacter.objects.filter(
-                character_id=member_id
-            ).exists():
-                logger.info(
-                    "Creating character %s for corporation %s",
-                    member_id,
-                    corporation.name,
+        if esi_members.success():
+            for member_id in esi_members.results():
+                if not EveCharacter.objects.filter(
+                    character_id=member_id
+                ).exists():
+                    logger.info(
+                        "Creating character %s for corporation %s",
+                        member_id,
+                        corporation.name,
+                    )
+                    EveCharacter.objects.create(character_id=member_id)
+        else:
+            if esi_members.response_code == ESI_GATEWAY_TIMEOUT:
+                logger.warning(
+                    "ESI gateway timeout (%d) for corporation members (corp %s)",
+                    esi_members.response_code,
+                    corporation_id,
                 )
-                EveCharacter.objects.create(character_id=member_id)
+            else:
+                logger.error(
+                    "ESI call failed for corporation members (corp %s): %s (code %d)",
+                    corporation_id,
+                    esi_members.error_text(),
+                    esi_members.response_code,
+                )
 
         # Populate directors, recruiters, stewards from ESI corporation roles
         esi_roles = EsiClient(corporation.ceo).get_corporation_roles(

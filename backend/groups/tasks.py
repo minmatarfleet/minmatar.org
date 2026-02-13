@@ -7,6 +7,7 @@ from discord.client import DiscordClient
 from eveonline.helpers.characters import (
     user_primary_character,
 )
+from eveonline.models import EvePlayer
 
 from .models import (
     AffiliationType,
@@ -179,13 +180,53 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
     return False
 
 
+def _user_qualifies_cached(
+    user_id,
+    corporation_group,
+    user_primary_corp,
+    recruiter_user_ids,
+    director_user_ids,
+    steward_user_ids,
+):
+    """
+    Same logic as _user_qualifies_for_corporation_group but using
+    pre-fetched data (no DB queries).
+    """
+    corp = corporation_group.corporation
+    group_type = (
+        corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
+    )
+
+    if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
+        primary_corp_id = user_primary_corp.get(user_id)
+        if primary_corp_id is None:
+            return False
+        return primary_corp_id == corp.corporation_id
+
+    if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
+        return user_id in recruiter_user_ids
+    if group_type == EveCorporationGroup.GROUP_TYPE_DIRECTOR:
+        return user_id in director_user_ids
+    if group_type == EveCorporationGroup.GROUP_TYPE_GUNNER:
+        return user_id in steward_user_ids
+
+    return False
+
+
 @app.task
 def sync_eve_corporation_groups():
     """
     Sync Django auth group membership for corporation groups based on
     character ownership: member = primary in corp, recruiter/director/gunner
     = character in corp's role set.
+    Uses bulk lookups to avoid N+1 queries.
     """
+    user_primary_corp = dict(
+        EvePlayer.objects.filter(primary_character__isnull=False).values_list(
+            "user_id", "primary_character__corporation_id"
+        )
+    )
+
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
     ):
@@ -195,12 +236,28 @@ def sync_eve_corporation_groups():
             )
             continue
 
+        corp = corporation_group.corporation
         group = corporation_group.group
+
+        in_group_user_ids = set(group.user_set.values_list("id", flat=True))
+        recruiter_user_ids = set(
+            corp.recruiters.values_list("user_id", flat=True)
+        )
+        director_user_ids = set(
+            corp.directors.values_list("user_id", flat=True)
+        )
+        steward_user_ids = set(corp.stewards.values_list("user_id", flat=True))
+
         for user in User.objects.all():
             try:
-                in_group = group in user.groups.all()
-                qualifies = _user_qualifies_for_corporation_group(
-                    user, corporation_group
+                in_group = user.id in in_group_user_ids
+                qualifies = _user_qualifies_cached(
+                    user.id,
+                    corporation_group,
+                    user_primary_corp,
+                    recruiter_user_ids,
+                    director_user_ids,
+                    steward_user_ids,
                 )
 
                 if qualifies and not in_group:

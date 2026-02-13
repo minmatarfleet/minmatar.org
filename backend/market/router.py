@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from typing import List, Optional
 
 from django.db.models import Count, Q, Max
@@ -295,6 +296,29 @@ def delete_eve_market_contract_responsibility(request, responsibility_id: int):
     return 204, None
 
 
+def _entity_name_by_id(entity_ids):
+    """Resolve entity_id to (entity_type, entity_name). Returns dict entity_id -> (type, name)."""
+    if not entity_ids:
+        return {}
+    character_names = dict(
+        EveCharacter.objects.filter(character_id__in=entity_ids).values_list(
+            "character_id", "character_name"
+        )
+    )
+    corporation_names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=entity_ids
+        ).values_list("corporation_id", "name")
+    )
+    result = {}
+    for eid in entity_ids:
+        if eid in character_names:
+            result[eid] = ("character", character_names[eid])
+        elif eid in corporation_names:
+            result[eid] = ("corporation", corporation_names[eid])
+    return result
+
+
 @router.get(
     "/contracts",
     description="Fetch all market contracts for all characters and corporations",
@@ -302,57 +326,53 @@ def delete_eve_market_contract_responsibility(request, responsibility_id: int):
 )
 def fetch_eve_market_contracts(request):
     """
-    - Fetch all expectations
-    - Fetch current quantity for all expectations
-    - Fetch all responsibilities
-    - Populate data
+    - Fetch all expectations with related fitting/location
+    - Fetch all responsibilities and resolve entity names in bulk
+    - Fetch outstanding contract counts and latest timestamp per fitting in one query
+    - Populate response
     """
-    expectations = EveMarketContractExpectation.objects.all()
+    expectations = EveMarketContractExpectation.objects.select_related(
+        "fitting", "location"
+    ).all()
+
+    all_responsibilities = list(
+        EveMarketContractResponsibility.objects.filter(
+            expectation__in=expectations
+        )
+    )
+    entity_ids = {r.entity_id for r in all_responsibilities}
+    entity_info = _entity_name_by_id(entity_ids)
+    resp_by_expectation = defaultdict(list)
+    for r in all_responsibilities:
+        if r.entity_id in entity_info:
+            resp_by_expectation[r.expectation_id].append(r)
+
+    outstanding_stats = {
+        row["fitting_id"]: (row["count"], row["latest"])
+        for row in EveMarketContract.objects.filter(status="outstanding")
+        .values("fitting_id")
+        .annotate(
+            count=Count("id"),
+            latest=Max("created_at"),
+        )
+    }
+
     response = []
     for expectation in expectations:
-        responsibilities = []
-        for responsibility in EveMarketContractResponsibility.objects.filter(
-            expectation=expectation
-        ):
-            entity_type = None
-            entity_name = None
-            if EveCharacter.objects.filter(
-                character_id=responsibility.entity_id
-            ).exists():
-                entity_type = "character"
-                entity_name = EveCharacter.objects.get(
-                    character_id=responsibility.entity_id
-                ).character_name
-            elif EveCorporation.objects.filter(
-                corporation_id=responsibility.entity_id
-            ).exists():
-                entity_type = "corporation"
-                entity_name = EveCorporation.objects.get(
-                    corporation_id=responsibility.entity_id
-                ).name
-            else:
-                continue
-            assert entity_type is not None
-            assert entity_name is not None
-            responsibilities.append(
-                MarketContractResponsibilityResponse(
-                    entity_type=entity_type,
-                    entity_id=responsibility.entity_id,
-                    entity_name=entity_name,
-                )
+        responsibilities = [
+            MarketContractResponsibilityResponse(
+                entity_type=entity_info[r.entity_id][0],
+                entity_id=r.entity_id,
+                entity_name=entity_info[r.entity_id][1],
             )
+            for r in resp_by_expectation[expectation.id]
+        ]
         historical_quantity: List[MarketContractHistoricalQuantity] = (
             get_historical_quantity(expectation)
         )
-
-        try:
-            latest = EveMarketContract.objects.filter(
-                fitting=expectation.fitting, status="outstanding"
-            ).aggregate(Max("created_at", default=None))["created_at__max"]
-        except Exception as e:
-            logger.error("Error fetching last timestamp, %s", e)
-            latest = None
-
+        count, latest = outstanding_stats.get(
+            expectation.fitting_id, (0, None)
+        )
         response.append(
             MarketContractResponse(
                 expectation_id=expectation.id,
@@ -361,9 +381,7 @@ def fetch_eve_market_contracts(request):
                 structure_id=None,
                 location_name=expectation.location.location_name,
                 desired_quantity=expectation.quantity,
-                current_quantity=EveMarketContract.objects.filter(
-                    fitting=expectation.fitting, status="outstanding"
-                ).count(),
+                current_quantity=count,
                 latest_contract_timestamp=str(latest) if latest else None,
                 historical_quantity=[
                     MarketContractHistoricalQuantityResponse(
@@ -385,48 +403,38 @@ def fetch_eve_market_contracts(request):
 )
 def fetch_eve_market_contract(request, expectation_id: int):
     """
-    - Fetch all expectations
-    - Fetch current quantity for all expectations
-    - Fetch all responsibilities
+    - Fetch expectation with related fitting/location
+    - Fetch responsibilities and resolve entity names in bulk
     - Populate data
     """
-    if not EveMarketContractExpectation.objects.filter(
-        id=expectation_id
-    ).exists():
+    expectation = (
+        EveMarketContractExpectation.objects.filter(id=expectation_id)
+        .select_related("fitting", "location")
+        .first()
+    )
+    if expectation is None:
         return 404, {"detail": "Contract expectation not found"}
-    expectation = EveMarketContractExpectation.objects.get(id=expectation_id)
-    responsibilities = []
-    for responsibility in EveMarketContractResponsibility.objects.filter(
-        expectation=expectation
-    ):
-        entity_type = None
-        entity_name = None
-        if EveCharacter.objects.filter(
-            character_id=responsibility.entity_id
-        ).exists():
-            entity_type = "character"
-            entity_name = EveCharacter.objects.get(
-                character_id=responsibility.entity_id
-            ).character_name
-        elif EveCorporation.objects.filter(
-            corporation_id=responsibility.entity_id
-        ).exists():
-            entity_type = "corporation"
-            entity_name = EveCorporation.objects.get(
-                corporation_id=responsibility.entity_id
-            ).name
-        else:
-            continue
-        assert entity_type is not None
-        assert entity_name is not None
-        responsibilities.append(
-            MarketContractResponsibilityResponse(
-                entity_type=entity_type,
-                entity_id=responsibility.entity_id,
-                entity_name=entity_name,
-            )
+    responsibilities_list = list(
+        EveMarketContractResponsibility.objects.filter(expectation=expectation)
+    )
+    entity_ids = [r.entity_id for r in responsibilities_list]
+    entity_info = _entity_name_by_id(entity_ids)
+    responsibilities = [
+        MarketContractResponsibilityResponse(
+            entity_type=entity_info[r.entity_id][0],
+            entity_id=r.entity_id,
+            entity_name=entity_info[r.entity_id][1],
         )
+        for r in responsibilities_list
+        if r.entity_id in entity_info
+    ]
     historical_quantity = get_historical_quantity(expectation)
+    outstanding = EveMarketContract.objects.filter(
+        fitting=expectation.fitting, status="outstanding"
+    )
+    current_quantity = outstanding.count()
+    latest_agg = outstanding.aggregate(Max("created_at"))
+    latest = latest_agg.get("created_at__max")
     return MarketContractResponse(
         expectation_id=expectation.id,
         title=expectation.fitting.name,
@@ -434,9 +442,8 @@ def fetch_eve_market_contract(request, expectation_id: int):
         structure_id=None,
         location_name=expectation.location.location_name,
         desired_quantity=expectation.quantity,
-        current_quantity=EveMarketContract.objects.filter(
-            fitting=expectation.fitting, status="outstanding"
-        ).count(),
+        current_quantity=current_quantity,
+        latest_contract_timestamp=str(latest) if latest else None,
         historical_quantity=[
             MarketContractHistoricalQuantityResponse(
                 date=entry.date, quantity=entry.quantity
