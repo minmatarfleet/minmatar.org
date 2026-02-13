@@ -33,15 +33,21 @@ def map_sub(sub: UserSubscription) -> Subscription:
     "/",
     response={200: List[Subscription], 403: ErrorResponse, 404: ErrorResponse},
     auth=AuthBearer(),
-    description="Returns subscriptions details.",
+    description="Returns subscriptions for the authenticated user. Pass user_id only if you are a superuser.",
 )
 def get_subscriptions(request, user_id: int = None):
-    query = UserSubscription.objects.all()
-    if user_id:
-        query = query.filter(user__id=user_id)
-    response = []
-    for sub in query:
-        response.append(map_sub(sub))
+    if user_id is not None and user_id != request.user.id:
+        if not request.user.is_superuser:
+            return 403, ErrorResponse(
+                detail="You can only view your own subscriptions."
+            )
+    target_id = (
+        user_id
+        if (user_id is not None and request.user.is_superuser)
+        else request.user.id
+    )
+    query = UserSubscription.objects.filter(user__id=target_id)
+    response = [map_sub(sub) for sub in query]
     return response
 
 

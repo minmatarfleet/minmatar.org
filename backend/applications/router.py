@@ -47,9 +47,15 @@ class ErrorResponse(BaseModel):
     "/corporations/{corporation_id}/applications",
     summary="Get corporation applications",
     auth=AuthBearer(),
-    response=List[CorporationApplicationResponse],
+    response={200: List[CorporationApplicationResponse], 403: ErrorResponse},
 )
 def get_corporation_applications(request, corporation_id: int):
+    if not request.user.has_perm(
+        "applications.view_evecorporationapplication"
+    ):
+        return 403, ErrorResponse(
+            detail="You do not have permission to view applications for this corporation."
+        )
     applications = EveCorporationApplication.objects.filter(
         corporation_id=corporation_id
     )
@@ -105,23 +111,36 @@ def create_corporation_application(
     "/corporations/{corporation_id}/applications/{application_id}",
     summary="Get a corporation application by ID",
     auth=AuthBearer(),
-    response=CorporationApplicationDetailResponse,
+    response={
+        200: CorporationApplicationDetailResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
 )
 def get_corporation_application_by_id(
     request, corporation_id: int, application_id: int
 ):
-    application = EveCorporationApplication.objects.get(
+    application = EveCorporationApplication.objects.filter(
         corporation_id=corporation_id, id=application_id
+    ).first()
+    if not application:
+        return 404, ErrorResponse(detail="Application not found.")
+    is_applicant = application.user_id == request.user.id
+    has_view_perm = request.user.has_perm(
+        "applications.view_evecorporationapplication"
     )
-    characters = EveCharacter.objects.filter(token__user=application.user)
-    character_list = []
-    for character in characters:
-        character_list.append(
-            {
-                "character_id": character.character_id,
-                "character_name": character.character_name,
-            }
+    if not is_applicant and not has_view_perm:
+        return 403, ErrorResponse(
+            detail="You do not have permission to view this application."
         )
+    characters = EveCharacter.objects.filter(token__user=application.user)
+    character_list = [
+        {
+            "character_id": c.character_id,
+            "character_name": c.character_name,
+        }
+        for c in characters
+    ]
     return {
         "status": application.status,
         "application_id": application.id,

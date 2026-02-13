@@ -193,14 +193,23 @@ def create_post(request, payload: CreateEvePostRequest):
 
 @router.patch(
     "/posts/{post_id}",
-    response={403: ErrorResponse, 400: ErrorResponse, 200: EvePostResponse},
+    response={
+        403: ErrorResponse,
+        400: ErrorResponse,
+        200: EvePostResponse,
+        404: ErrorResponse,
+    },
     auth=AuthBearer(),
 )
 def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     if not request.user.has_perm("posts.change_evepost"):
         return 403, {"detail": "You do not have permission to update a post."}
 
-    post = EvePost.objects.get(id=post_id)
+    post = EvePost.objects.filter(id=post_id).first()
+    if not post:
+        return 404, {"detail": "Post not found."}
+    if post.user_id != request.user.id:
+        return 403, {"detail": "You can only update your own posts."}
 
     if payload.title:
         post.title = payload.title
@@ -235,16 +244,20 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
 
 @router.delete(
     "/posts/{post_id}",
-    response={403: ErrorResponse, 204: None},
+    response={403: ErrorResponse, 404: ErrorResponse, 204: None},
     auth=AuthBearer(),
 )
 def delete_post(request, post_id: int):
     if not request.user.has_perm("posts.delete_evepost"):
         return 403, {"detail": "You do not have permission to delete a post."}
 
-    post = EvePost.objects.get(id=post_id)
-    post.delete()
+    post = EvePost.objects.filter(id=post_id).first()
+    if not post:
+        return 404, {"detail": "Post not found."}
+    if post.user_id != request.user.id:
+        return 403, {"detail": "You can only delete your own posts."}
 
+    post.delete()
     return 204, None
 
 

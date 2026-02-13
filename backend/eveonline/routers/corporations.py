@@ -394,7 +394,7 @@ def get_managed_corp_ids(request) -> List[int]:
 
 
 def can_manage_corp_members(user: User, corporation: EveCorporation) -> bool:
-    if corporation.ceo.user == user:
+    if corporation.ceo and corporation.ceo.user_id == user.id:
         return True
     if user_in_team(user, PEOPLE_TEAM):
         return True

@@ -623,14 +623,16 @@ def get_fleet(request, fleet_id: int):
 
 @router.get(
     "/{fleet_id}/users",
+    auth=AuthBearer(),
     response={200: List[EveFleetUsersResponse], 403: None, 404: None},
-    description="Get users for a given fleet, no permissions required",
+    description="Get user IDs in the fleet audience. Must be fleet owner, in the audience, or have fleets.view_evefleet permission.",
 )
 def get_fleet_users(request, fleet_id: int):
-    logger.warning("Endpoint get_fleet_users called by user %s", request.user)
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
         return 404, None
+    if not _fleet_authorized(request, fleet):
+        return 403, None
 
     audience = fleet.audience
     groups = audience.groups.all()
