@@ -31,9 +31,6 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-# 504 Gateway Timeout is transient; we warn and skip. Other ESI failures are logged as errors.
-ESI_GATEWAY_TIMEOUT = 504
-
 task_config = {
     "async_apply_affiliations": True,
 }
@@ -104,10 +101,9 @@ def update_character_affilliations() -> int:
 
 @app.task
 def update_alliance_character_assets():
-    # Get all characters in tracked alliances (EveCharacter has alliance_id, not alliance FK)
-    alliance_ids = EveAlliance.objects.values_list("alliance_id", flat=True)
+    # Get all characters in the alliance
     alliance_characters = EveCharacter.objects.filter(
-        alliance_id__in=alliance_ids
+        alliance__name="Minmatar Fleet Alliance"
     )
 
     # Get all users who have at least one character in the alliance
@@ -133,10 +129,9 @@ def update_alliance_character_assets():
 
 @app.task
 def update_alliance_character_skills():
-    alliance_ids = EveAlliance.objects.values_list("alliance_id", flat=True)
     counter = 0
     for character in EveCharacter.objects.filter(
-        alliance_id__in=alliance_ids
+        alliance__name="Minmatar Fleet Alliance"
     ).exclude(token=None):
         logger.info("Updating skills for character %s", character.character_id)
         update_character_skills.apply_async(
@@ -147,10 +142,9 @@ def update_alliance_character_skills():
 
 @app.task
 def update_alliance_character_killmails():
-    alliance_ids = EveAlliance.objects.values_list("alliance_id", flat=True)
     counter = 0
     for character in EveCharacter.objects.filter(
-        alliance_id__in=alliance_ids
+        alliance__name="Minmatar Fleet Alliance"
     ).exclude(token=None):
         logger.info(
             "Updating killmails for character %s", character.character_id
@@ -272,18 +266,11 @@ def update_character_killmails(eve_character_id):
 
     response = esi.get_recent_killmails()
     if not response.success():
-        if response.response_code == ESI_GATEWAY_TIMEOUT:
-            logger.warning(
-                "Skipping killmail update for character %s, %s (gateway timeout)",
-                eve_character_id,
-                response.response_code,
-            )
-        else:
-            logger.error(
-                "Skipping killmail update for character %s, %s",
-                eve_character_id,
-                response.response_code,
-            )
+        logger.warning(
+            "Skipping killmail update for character %s, %s",
+            eve_character_id,
+            response.response_code,
+        )
         return
 
     for killmail in response.results():
@@ -360,10 +347,16 @@ def update_character_killmails(eve_character_id):
                 )
 
 
+ALLIED_ALLIANCE_NAMES = [
+    "Minmatar Fleet Alliance",
+    "Minmatar Fleet Associates",
+]
+
+
 @app.task
 def update_corporations():
     for corporation in EveCorporation.objects.filter(
-        alliance__in=EveAlliance.objects.all()
+        alliance__name__in=ALLIED_ALLIANCE_NAMES
     ):
         update_corporation.apply_async(args=[corporation.corporation_id])
 
@@ -386,20 +379,12 @@ def sync_alliance_corporations():
             alliance.alliance_id
         )
         if not esi_response.success():
-            if esi_response.response_code == ESI_GATEWAY_TIMEOUT:
-                logger.warning(
-                    "ESI gateway timeout (%d) fetching corporations for alliance %s (%s)",
-                    esi_response.response_code,
-                    alliance.name or alliance.alliance_id,
-                    alliance.alliance_id,
-                )
-            else:
-                logger.error(
-                    "ESI error %d fetching corporations for alliance %s (%s)",
-                    esi_response.response_code,
-                    alliance.name or alliance.alliance_id,
-                    alliance.alliance_id,
-                )
+            logger.warning(
+                "ESI error %d fetching corporations for alliance %s (%s)",
+                esi_response.response_code,
+                alliance.name or alliance.alliance_id,
+                alliance.alliance_id,
+            )
             continue
         corporation_ids = esi_response.results() or []
         logger.info(
@@ -442,69 +427,67 @@ def update_corporation(corporation_id):
     corporation.populate()
     if corporation.pk is None:
         return
-    # fetch and set members if active
+    # fetch and set members if active (requires CEO token with membership scope)
     if corporation.active and (corporation.type in ["alliance", "associate"]):
-        esi_members = EsiClient(corporation.ceo).get_corporation_members(
-            corporation.corporation_id
-        )
-        if esi_members.success():
-            for member_id in esi_members.results():
-                if not EveCharacter.objects.filter(
-                    character_id=member_id
-                ).exists():
-                    logger.info(
-                        "Creating character %s for corporation %s",
-                        member_id,
-                        corporation.name,
-                    )
-                    EveCharacter.objects.create(character_id=member_id)
+        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
+        if not corporation.ceo or not Token.get_token(
+            corporation.ceo.character_id, required_scopes
+        ):
+            logger.debug(
+                "Skipping member/roles sync for corporation %s (id %s): "
+                "no CEO or no token with %s",
+                corporation.name,
+                corporation_id,
+                required_scopes[0],
+            )
         else:
-            if esi_members.response_code == ESI_GATEWAY_TIMEOUT:
-                logger.warning(
-                    "ESI gateway timeout (%d) for corporation members (corp %s)",
-                    esi_members.response_code,
-                    corporation_id,
-                )
-            else:
-                logger.error(
-                    "ESI call failed for corporation members (corp %s): %s (code %d)",
-                    corporation_id,
-                    esi_members.error_text(),
-                    esi_members.response_code,
-                )
+            esi_members = EsiClient(corporation.ceo).get_corporation_members(
+                corporation.corporation_id
+            )
+            if esi_members.success():
+                for member_id in esi_members.results():
+                    if not EveCharacter.objects.filter(
+                        character_id=member_id
+                    ).exists():
+                        logger.info(
+                            "Creating character %s for corporation %s",
+                            member_id,
+                            corporation.name,
+                        )
+                        EveCharacter.objects.create(character_id=member_id)
 
-        # Populate directors, recruiters, stewards from ESI corporation roles
-        esi_roles = EsiClient(corporation.ceo).get_corporation_roles(
-            corporation.corporation_id
-        )
-        if esi_roles.success():
-            roles_data = esi_roles.results() or []
-            director_ids = []
-            recruiter_ids = []
-            steward_ids = []
-            for entry in roles_data:
-                char_id = entry.get("character_id")
-                if char_id is None:
-                    continue
-                all_roles = _all_roles_for_member(entry)
-                char, _ = EveCharacter.objects.get_or_create(
-                    character_id=char_id, defaults={}
+            # Populate directors, recruiters, stewards from ESI corporation roles
+            esi_roles = EsiClient(corporation.ceo).get_corporation_roles(
+                corporation.corporation_id
+            )
+            if esi_roles.success():
+                roles_data = esi_roles.results() or []
+                director_ids = []
+                recruiter_ids = []
+                steward_ids = []
+                for entry in roles_data:
+                    char_id = entry.get("character_id")
+                    if char_id is None:
+                        continue
+                    all_roles = _all_roles_for_member(entry)
+                    char, _ = EveCharacter.objects.get_or_create(
+                        character_id=char_id, defaults={}
+                    )
+                    if "Director" in all_roles:
+                        director_ids.append(char.id)
+                    if "Personnel_Manager" in all_roles:
+                        recruiter_ids.append(char.id)
+                    if "Station_Manager" in all_roles:
+                        steward_ids.append(char.id)
+                corporation.directors.set(
+                    EveCharacter.objects.filter(id__in=director_ids)
                 )
-                if "Director" in all_roles:
-                    director_ids.append(char.id)
-                if "Personnel_Manager" in all_roles:
-                    recruiter_ids.append(char.id)
-                if "Station_Manager" in all_roles:
-                    steward_ids.append(char.id)
-            corporation.directors.set(
-                EveCharacter.objects.filter(id__in=director_ids)
-            )
-            corporation.recruiters.set(
-                EveCharacter.objects.filter(id__in=recruiter_ids)
-            )
-            corporation.stewards.set(
-                EveCharacter.objects.filter(id__in=steward_ids)
-            )
+                corporation.recruiters.set(
+                    EveCharacter.objects.filter(id__in=recruiter_ids)
+                )
+                corporation.stewards.set(
+                    EveCharacter.objects.filter(id__in=steward_ids)
+                )
 
 
 @app.task
@@ -527,6 +510,22 @@ def fixup_character_tokens():
 
         if updated:
             character.save()
+
+
+@app.task
+def deduplicate_alliances():
+    """Remove duplicate alliance instances"""
+
+    previous_id = -1
+    for alliance in EveAlliance.objects.all().order_by("alliance_id"):
+        if alliance.alliance_id == previous_id:
+            logger.warning(
+                "Removing duplicate alliance, %d %s",
+                alliance.alliance_id,
+                alliance.name,
+            )
+            alliance.delete()
+        previous_id = alliance.alliance_id
 
 
 @app.task
