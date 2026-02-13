@@ -24,18 +24,10 @@ def update_contracts():
     #     return
 
     try:
-        # contracts_data = (
-        #     esi.client.Contracts.get_corporations_corporation_id_contracts(
-        #         corporation_id=EveFreightContract.supported_corporation_id,
-        #         token=token.valid_access_token(),
-        #     ).results()
-        # )
-        contracts_data = (
-            EsiClient(EveFreightContract.supported_ceo_id)
-            .get_corporation_contracts(
-                EveFreightContract.supported_corporation_id
-            )
-            .results()
+        esi_response = EsiClient(
+            EveFreightContract.supported_ceo_id
+        ).get_corporation_contracts(
+            EveFreightContract.supported_corporation_id
         )
     except HTTPNotModified:
         logger.debug(
@@ -43,6 +35,17 @@ def update_contracts():
             EveFreightContract.supported_corporation_id,
         )
         return
+
+    if not esi_response.success():
+        logger.warning(
+            "ESI call failed for corporation contracts (corp %d): %s (code %d)",
+            EveFreightContract.supported_corporation_id,
+            esi_response.error_text(),
+            esi_response.response_code,
+        )
+        return
+
+    contracts_data = esi_response.results()
 
     contract_ids = set()
     for contract in contracts_data:

@@ -12,7 +12,7 @@ from eveonline.models import (
 from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
-from discord.core import make_nickname
+from discord.core import DISCORD_NICKNAME_MAX_LENGTH, make_nickname
 from discord.models import DiscordUser, DiscordRole
 from discord.views import discord_login_redirect, fake_login
 
@@ -38,6 +38,24 @@ class DiscordSimpleTests(SimpleTestCase):
                 Mock(ticker="ABC")
             )
             self.assertEqual("[ABC] Bob", make_nickname(character, discord))
+
+    def test_nickname_truncated_to_discord_limit(self):
+        """Long character names are truncated to Discord's 32-char nickname limit."""
+        long_name = "A" * 40
+        character = Mock(character_name=long_name, corporation_id=999)
+        discord = Mock(is_down_under=False, dress_wearer=False)
+        with patch("discord.core.EveCorporation") as eve_corp_model:
+            eve_corp_model.objects.filter.return_value.first.return_value = (
+                Mock(ticker="L3ARN")
+            )
+            nickname = make_nickname(character, discord)
+        self.assertLessEqual(
+            len(nickname),
+            DISCORD_NICKNAME_MAX_LENGTH,
+            f"nickname length {len(nickname)} > {DISCORD_NICKNAME_MAX_LENGTH}",
+        )
+        self.assertTrue(nickname.startswith("[L3ARN] "))
+        self.assertTrue(nickname.endswith("…"))
 
 
 class DiscordSignalTests(TestCase):

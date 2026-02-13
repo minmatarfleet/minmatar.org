@@ -22,6 +22,9 @@ from eveuniverse.models import (
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
 
+# Cap recursion depth to avoid stack overflow and long-running requests (e.g. gunicorn worker exit).
+MAX_BREAKDOWN_DEPTH_DEFAULT = 30
+
 
 def _ensure_industry_data_loaded_for_product(
     product_eve_type: EveType,
@@ -208,24 +211,27 @@ def break_down_type(
 
 
 def flatten_components(node: ComponentNode) -> Dict[int, int]:
-    """Aggregate tree to type_id -> total quantity (leaves only)."""
+    """Aggregate tree to type_id -> total quantity (leaves only). Iterative to avoid recursion overflow."""
     out: Dict[int, int] = {}
-
-    def walk(n: ComponentNode) -> None:
+    stack: List[ComponentNode] = [node]
+    while stack:
+        n = stack.pop()
         if not n.children:
             out[n.eve_type.id] = out.get(n.eve_type.id, 0) + n.quantity
         for c in n.children:
-            walk(c)
-
-    walk(node)
+            stack.append(c)
     return out
 
 
 def get_flat_breakdown(
-    eve_type: EveType, quantity: int = 1
+    eve_type: EveType,
+    quantity: int = 1,
+    max_depth: Optional[int] = None,
 ) -> List[Tuple[EveType, int]]:
     """Flat list of (EveType, quantity) for all base components."""
-    tree = break_down_type(eve_type, quantity=quantity)
+    if max_depth is None:
+        max_depth = MAX_BREAKDOWN_DEPTH_DEFAULT
+    tree = break_down_type(eve_type, quantity=quantity, max_depth=max_depth)
     agg = flatten_components(tree)
     type_ids = list(agg.keys())
     types = {t.id: t for t in EveType.objects.filter(id__in=type_ids)}
@@ -233,19 +239,44 @@ def get_flat_breakdown(
 
 
 def tree_to_nested(node: ComponentNode) -> Dict[str, Any]:
-    """Convert tree to a nested dict: name, type_id, quantity, source, depth, children."""
-    return {
-        "name": node.eve_type.name,
-        "type_id": node.eve_type.id,
-        "quantity": node.quantity,
-        "source": node.source,
-        "depth": node.depth,
-        "children": [tree_to_nested(child) for child in node.children],
-    }
+    """Convert tree to a nested dict (iterative to avoid recursion overflow)."""
+    if not node.children:
+        return {
+            "name": node.eve_type.name,
+            "type_id": node.eve_type.id,
+            "quantity": node.quantity,
+            "source": node.source,
+            "depth": node.depth,
+            "children": [],
+        }
+    stack: List[Tuple[ComponentNode, Optional[List[Any]]]] = [(node, None)]
+    result: Optional[Dict[str, Any]] = None
+    while stack:
+        n, parent_children = stack.pop()
+        d: Dict[str, Any] = {
+            "name": n.eve_type.name,
+            "type_id": n.eve_type.id,
+            "quantity": n.quantity,
+            "source": n.source,
+            "depth": n.depth,
+            "children": [],
+        }
+        for child in reversed(n.children):
+            stack.append((child, d["children"]))
+        if parent_children is not None:
+            parent_children.append(d)
+        else:
+            result = d
+    return result or {}
 
 
 def get_nested_breakdown(
-    eve_type: EveType, quantity: int = 1
+    eve_type: EveType,
+    quantity: int = 1,
+    max_depth: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Full breakdown as a single nested dict (JSON-serializable, for tree UIs)."""
-    return tree_to_nested(break_down_type(eve_type, quantity=quantity))
+    if max_depth is None:
+        max_depth = MAX_BREAKDOWN_DEPTH_DEFAULT
+    tree = break_down_type(eve_type, quantity=quantity, max_depth=max_depth)
+    return tree_to_nested(tree)

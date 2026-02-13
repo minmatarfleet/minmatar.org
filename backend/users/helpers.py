@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
@@ -11,7 +11,7 @@ from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation, EvePlayer
 
-from .schemas import UserProfileSchema
+from .schemas import EveCharacterSchema, UserProfileSchema
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,34 @@ def add_user_permission(user: User, permission: str):
     user.user_permissions.add(permission)
 
 
+def _user_profile_from_prefetched(
+    user: User,
+    *,
+    primary_character=None,
+    corporation_name: Optional[str] = None,
+) -> UserProfileSchema:
+    """Build UserProfileSchema from prefetched user/character/corp (no extra queries)."""
+    if primary_character is None:
+        eve_character_profile = None
+    else:
+        eve_character_profile = EveCharacterSchema(
+            character_id=primary_character.character_id,
+            character_name=primary_character.character_name,
+            corporation_id=primary_character.corporation_id or 0,
+            corporation_name=corporation_name or "",
+            scopes=[],
+        )
+
+    return UserProfileSchema(
+        user_id=user.id,
+        username=user.username,
+        is_superuser=user.is_superuser,
+        eve_character_profile=eve_character_profile,
+        permissions=[],
+        discord_user_profile=None,
+    )
+
+
 def expand_user_profile(
     user: User, include_permissions: bool, include_discord: bool
 ) -> UserProfileSchema:
@@ -79,19 +107,20 @@ def expand_user_profile(
 
     primary_character = user_primary_character(user)
     if primary_character:
-        eve_character_profile = {
-            "character_id": primary_character.character_id,
-            "character_name": primary_character.character_name,
-            "corporation_id": primary_character.corporation_id,
-            "corporation_name": (
+        corporation_name = None
+        if primary_character.corporation_id:
+            corporation_name = (
                 EveCorporation.objects.filter(
                     corporation_id=primary_character.corporation_id
                 )
                 .values_list("name", flat=True)
                 .first()
-                if primary_character.corporation_id
-                else None
-            ),
+            )
+        eve_character_profile = {
+            "character_id": primary_character.character_id,
+            "character_name": primary_character.character_name,
+            "corporation_id": primary_character.corporation_id or 0,
+            "corporation_name": (corporation_name or ""),
         }
         if include_permissions and primary_character.token:
             scopes = [
@@ -116,7 +145,7 @@ def expand_user_profile(
         payload["permissions"] = []
 
     if discord_user:
-        payload["avatar"] = (discord_user.avatar,)
+        payload["avatar"] = discord_user.avatar
         payload["discord_user_profile"] = {
             "id": discord_user.id,
             "discord_tag": discord_user.discord_tag,
@@ -130,13 +159,48 @@ def expand_user_profile(
 
 
 def get_user_profiles(user_ids: List[int]) -> List[UserProfileSchema]:
-    results = []
-    users = User.objects.filter(id__in=user_ids)
+    """Fetch multiple user profiles with minimal queries (no N+1)."""
+    if not user_ids:
+        return []
+
+    users = User.objects.filter(id__in=user_ids).select_related(
+        "eveplayer", "eveplayer__primary_character"
+    )
+    primary_characters = []
     for user in users:
+        player = getattr(user, "eveplayer", None)
+        primary_characters.append(player.primary_character if player else None)
+
+    corporation_ids = {
+        pc.corporation_id
+        for pc in primary_characters
+        if pc is not None and pc.corporation_id is not None
+    }
+    corp_name_by_id = {}
+    if corporation_ids:
+        corp_name_by_id = dict(
+            EveCorporation.objects.filter(
+                corporation_id__in=corporation_ids
+            ).values_list("corporation_id", "name")
+        )
+
+    results = []
+    for user, primary_character in zip(users, primary_characters):
         try:
-            results.append(expand_user_profile(user, False, False))
+            results.append(
+                _user_profile_from_prefetched(
+                    user,
+                    primary_character=primary_character,
+                    corporation_name=(
+                        corp_name_by_id.get(primary_character.corporation_id)
+                        if primary_character
+                        and primary_character.corporation_id
+                        else None
+                    ),
+                )
+            )
         except Exception:
-            logger.error("Error expanding profile for user %d", user.id)
+            logger.exception("Error expanding profile for user %d", user.id)
     return results
 
 

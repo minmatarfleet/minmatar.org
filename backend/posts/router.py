@@ -87,7 +87,12 @@ def get_posts(
     page_size: int = 20,
     page_num: int = None,
 ):
-    posts = EvePost.objects.all().order_by("-date_posted")
+    posts = (
+        EvePost.objects.all()
+        .order_by("-date_posted")
+        .select_related("user")
+        .prefetch_related("tags")
+    )
 
     if user_id:
         posts = posts.filter(user_id=user_id)
@@ -124,9 +129,19 @@ def get_posts(
     return response
 
 
-@router.get("/posts/{post_id}", response=EvePostResponse)
+@router.get(
+    "/posts/{post_id}",
+    response={200: EvePostResponse, 404: ErrorResponse},
+)
 def get_post(request, post_id: int):
-    post = EvePost.objects.get(id=post_id)
+    post = (
+        EvePost.objects.filter(id=post_id)
+        .select_related("user")
+        .prefetch_related("tags")
+        .first()
+    )
+    if post is None:
+        return 404, {"detail": "Post not found"}
 
     return EvePostResponse(
         post_id=post.id,

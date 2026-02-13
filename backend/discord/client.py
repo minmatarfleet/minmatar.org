@@ -11,6 +11,8 @@ from urllib3.util import Retry
 
 from app.errors import create_error_id
 
+from .core import DISCORD_NICKNAME_MAX_LENGTH
+
 logger = logging.getLogger(__name__)
 
 GUILD_ID = settings.DISCORD_GUILD_ID
@@ -317,9 +319,10 @@ class DiscordClient(DiscordBaseClient):
         )
 
     def update_user(self, user_id, nickname: str):
-        """Update a user on a discord server"""
+        """Update a user on a discord server. Nickname is truncated to Discord's 32-char limit."""
+        nick = (nickname or "")[:DISCORD_NICKNAME_MAX_LENGTH]
         data = {
-            "nick": nickname,
+            "nick": nick,
         }
         return self.patch(
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
