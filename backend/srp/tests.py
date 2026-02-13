@@ -22,7 +22,7 @@ BASE_URL = "/api/srp"
 KM_CHAR = 634915984
 KM_ID = 126008813
 KM_HASH = "9c92aa157f138da9b5a64abbd8225893f1b8b5f0"
-KM_LINK = f"https://esi.evetech.net/latest/killmails/{KM_ID}/{KM_HASH}/"
+KM_LINK = f"https://esi.evetech.net/killmails/{KM_ID}/{KM_HASH}/"
 
 
 class SrpRouterTestCase(TestCase):
