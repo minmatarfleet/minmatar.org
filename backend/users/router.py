@@ -123,30 +123,38 @@ def redirect_url_from_session(request):
 @router.get(
     "/{user_id}/profile",
     summary="Get user by ID",
-    description="This will return the user's information based on the ID of the user.",
+    description="Returns your profile. You can only request your own profile (user_id must match the authenticated user).",
+    auth=AuthBearer(),
     response={
         200: UserProfileSchema,
+        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
 def get_user_by_id(request, user_id: int):
+    if request.user.id != user_id:
+        return 403, ErrorResponse(detail="You can only view your own profile.")
     if not User.objects.filter(id=user_id).exists():
-        return 404, {"detail": "User not found."}
+        return 404, ErrorResponse(detail="User not found.")
     return get_user_profile(user_id)
 
 
 @router.get(
     "",
     summary="Search for user profiles",
-    description="This will search for users based on the query provided.",
+    description="Returns your profile when querying by your own username. You can only view your own profile.",
+    auth=AuthBearer(),
     response={
         200: UserProfileSchema,
+        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
 def query_users(request, username: str):
+    if request.user.username != username:
+        return 403, ErrorResponse(detail="You can only view your own profile.")
     if not User.objects.filter(username=username).exists():
-        return 404, {"detail": "User not found."}
+        return 404, ErrorResponse(detail="User not found.")
     user = User.objects.get(username=username)
     return get_user_profile(user.id)
 
@@ -154,9 +162,11 @@ def query_users(request, username: str):
 @router.get(
     "/profiles",
     summary="Search for user profiles",
-    description="This will search for users based on the query provided.",
+    description="Returns profiles only for the authenticated user. You can only request your own profile (ids must include only your user id, or username must be your username).",
+    auth=AuthBearer(),
     response={
         200: List[UserProfileSchema],
+        403: ErrorResponse,
         404: ErrorResponse,
     },
 )
@@ -164,18 +174,22 @@ def query_multiple_users(
     request, username: str = "", ids: str = ""
 ) -> List[UserProfileSchema]:
     if username:
-        # Backwards compatibility with original `query_users()`
+        if request.user.username != username:
+            return 403, ErrorResponse(
+                detail="You can only view your own profile."
+            )
         if not User.objects.filter(username=username).exists():
-            return 404, {"detail": "User not found."}
+            return 404, ErrorResponse(detail="User not found.")
         user = User.objects.get(username=username)
         return [get_user_profile(user.id)]
 
     if ids:
-        user_ids = []
-        ids = ids.split(",")
-        for user_id in ids:
-            user_ids.append(int(user_id))
-        return get_user_profiles(user_ids)
+        requested_ids = [int(x) for x in ids.split(",") if x.strip()]
+        if not requested_ids or set(requested_ids) != {request.user.id}:
+            return 403, ErrorResponse(
+                detail="You can only request your own profile."
+            )
+        return get_user_profiles(requested_ids)
 
     return []
 
@@ -199,10 +213,13 @@ def delete_account(request):
 @router.post(
     "/{user_id}/sync",
     summary="Sync user with Discord",
-    description="This will sync the user with Discord.",
+    description="This will sync the user with Discord. You can only sync your own account.",
     auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
 )
 def sync_user(request, user_id: int):
+    if request.user.id != user_id:
+        return 403, ErrorResponse(detail="You can only sync your own account.")
     update_affiliation(user_id)
     sync_discord_user(user_id)
     sync_discord_nickname(user_id, True)
