@@ -46,6 +46,8 @@ const ICONS_BY_SUBYPE = {
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import Button from '@components/blocks/Button.astro'
 import ButtonAddVolunteer from '@components/blocks/ButtonAddVolunteer.astro'
@@ -54,7 +56,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
 <Flexblock id={id} class="[ basis-[300px] ]">
-    <FlexInline justification='space-between'>
+    <FluidFixed width='46px' class="[ items-center! ]">
         <FlexInline gap='var(--space-3xs)'>
             <slot name="icon" />
             <Flexblock gap='var(--space-3xs)'>
@@ -72,9 +74,9 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 subtype={subtype ? subtype : undefined}
             />
         }
-    </FlexInline>
+    </FluidFixed>
     {volunteers.map(volunteer =>
-        <FlexInline justification='space-between'>
+        <FluidFixed width='46px' class="[ items-center! ]">
             <PilotBadge
                 character_id={volunteer.character_id}
                 character_name={volunteer.character_name}
@@ -101,6 +103,6 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                     <TrashIcon slot="icon" />
                 </Button>
             }
-        </FlexInline>
+        </FluidFixed>
     )}
 </Flexblock>
