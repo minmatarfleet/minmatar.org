@@ -42,13 +42,14 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         breakout={true}
         non_centered={true}
         thin={true}
-        class="[ w-full max-w-[500px] ]"
+        class="[ w-full ]"
         x-bind:class="(characters_finder_open ? 'open' : '')"
         x-bind:aria-hidden="characters_finder_open == false"
         x-trap="characters_finder_open"
         x-bind:inert="!characters_finder_open"
         @keyup.escape.window="close_dialog()"
         @mousedown.outside="open && close_dialog()"
+        style="--dialog-max-width: 500px"
     >
         <Flexblock gap="0">
             <Input

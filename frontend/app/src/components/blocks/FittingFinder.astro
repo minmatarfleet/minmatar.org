@@ -83,7 +83,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
     <Dialog
         breakout={true}
         non_centered={true}
-        class="[ w-full max-w-[500px] ]"
+        class="[ w-full ]"
         x-data={`{
             close_dialog() {
                 if (!fittings_finder_open)
@@ -107,6 +107,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         thin={true}
         x-trap="fittings_finder_open"
         x-bind:inert="!fittings_finder_open"
+        style="--dialog-max-width: 500px"
     >
         <Flexblock gap="0">
             <Input
