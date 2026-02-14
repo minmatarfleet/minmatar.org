@@ -47,8 +47,8 @@ export async function get_user_character(user_id:number, lang:'en' = 'en') {
     return character_profile
 }
 
-export async function get_users_character(user_id:number[]) {
-    const users_profile = await get_users_by_id(user_id)
+export async function get_users_character(user_ids:number[]) {
+    const users_profile = await get_users_by_id(user_ids)
     return users_profile.map(profile => {
         const character_profile = profile.eve_character_profile
 

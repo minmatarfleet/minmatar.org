@@ -1,0 +1,44 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { BaseIndustryOrder, NestedIndustryOrder } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    orders:            NestedIndustryOrder[];
+    materials_required:     BaseIndustryOrder[];
+}
+
+const {
+    orders,
+    materials_required,
+} = Astro.props
+
+let copy_materials = ''
+materials_required.map(material => {
+    copy_materials = copy_materials.concat(`${material.name}\t${material.quantity}\r\n`)
+})
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import MaterialReels from '@components/blocks/MaterialReels.astro'
+import IndustryTreeNode from '@components/blocks/IndustryTreeNode.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+<Flexblock gap='var(--space-2xl)'>
+    <Flexblock>
+        <FlexInline justification='space-between'>
+            <h2>{t('all_material_requirements')}</h2>
+            <ClipboardButton id="materials">{copy_materials}</ClipboardButton>
+        </FlexInline>
+        <MaterialReels materials_required={materials_required} />
+    </Flexblock>
+
+    <Flexblock gap='var(--space-3xl)'>
+        {orders.map(order =>
+            <IndustryTreeNode order={order} />
+        )}
+    </Flexblock>
+</Flexblock>

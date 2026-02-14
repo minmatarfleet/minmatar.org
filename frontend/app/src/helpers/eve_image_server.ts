@@ -5,6 +5,10 @@ export const get_item_icon = (id:number, size:EvEImageServiceSize = 64):string =
     return `https://images.evetech.net/types/${id}/${size <= 64 ? 'icon' : 'render'}?size=${size}`;
 }
 
+export const get_bpc_icon = (id:number, is_copy:boolean = false, size:EvEImageServiceSize = 64):string => {
+    return `https://images.evetech.net/types/${id}/${is_copy ? 'bpc' : 'bp'}?size=${size}`;
+}
+
 export const get_item_icon_by_name = (name:string, size:EvEImageServiceSize = 64):string => {
     return `https://images.evetech.net/types/${modules_icon_lookup[name] ?? 0}/${size == 64 ? 'icon' : 'render'}?size=${size}`;
 }

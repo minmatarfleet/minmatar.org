@@ -34,13 +34,12 @@ import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
-import NotepadEvEIcon from '@components/icons/NotepadEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
+import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
-import TVEVEIcon from '@components/icons/TVEVEIcon.astro';
 
 let hour = new Date().getUTCHours()
 let minute = new Date().getUTCMinutes()
@@ -100,6 +99,14 @@ const page = Astro.url.pathname
                 href={translatePath('/market/')}
             >
                 <MarketEvEIcon />
+            </NeocomButton>
+            <NeocomButton
+                active={page.startsWith(translatePath('/industry'))}
+                title='neocom.industry'
+                description='industry.description'
+                href={translatePath('/industry/')}
+            >
+                <IndustryEVEIcon />
             </NeocomButton>
             <NeocomButton
                 active={page.startsWith(translatePath('/intel'))}

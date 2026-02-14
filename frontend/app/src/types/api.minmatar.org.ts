@@ -687,3 +687,15 @@ export interface SRPRequest {
     category:                   SRPCategory;
     comments:                   string;
 }
+
+export interface BaseIndustryOrder {
+    name:       string;
+    type_id:    number;
+    quantity:   number;
+}
+
+export interface NestedIndustryOrder extends BaseIndustryOrder {
+    source:     string;
+    depth:      number;
+    children:   NestedIndustryOrder[];
+}

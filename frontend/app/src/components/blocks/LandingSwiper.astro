@@ -5,6 +5,7 @@ interface Props {
     gap?:               number;
     initial_slide?:     number;
     align?:             'start' | 'center' | 'end';
+    delay?:             number;
 }
 
 const {
@@ -13,6 +14,7 @@ const {
     gap = 5,
     initial_slide = 0,
     align = 'start',
+    delay = 0,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -31,7 +33,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
             setTimeout(() => {
                 this.swiper = new Swiper('${swiper_selector}', {
-                    init: false,
                     initialSlide: ${initial_slide},
                     slidesPerView: "auto",
                     watchSlidesVisibility: true,
@@ -42,6 +43,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         el: ".swiper-pagination",
                     }) : JSON.stringify(false)},
                     loop: false,
+                    ${delay > 0 && `
+                    autoplay: {
+                        delay: ${delay},
+                    },`}
                     fadeEffect: {
                         crossFade: true
                     },
@@ -50,8 +55,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         prevEl: '${swiper_selector}-button-prev',
                     },
                 });
-
-                this.swiper.init()
             }, INIT_WORKAROUND_TIMER_MS)
         }
     }`}
