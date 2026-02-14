@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { BaseIndustryOrder } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    materials_required:     BaseIndustryOrder[];
+}
+
+const {
+    materials_required,
+} = Astro.props
+
+const AUTOPLAY_DELAY = 5000
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+---
+
+<Wrapper
+    class="[ materials-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <div
+        class="[ swiper ][ w-full ]"
+        id="materials-list"
+    >
+        <LandingSwiper pagination={false} delay={AUTOPLAY_DELAY} gap={10}>
+            {materials_required.map(material =>
+                <div class="[ swiper-slide ]" style="margin-right: 10px">
+                    <ComponentBlock padding_block='var(--space-3xs)' padding_inline='var(--space-2xs)'>
+                        <ItemBadge
+                            item_name={material.name}
+                            type_id={material.type_id}
+                            size={32}
+                            gap='var(--space-2xs)'
+                        >
+                            <small>{number_thousand_separator(material.quantity)}</small>
+                        </ItemBadge>
+                    </ComponentBlock>
+                </div>
+            )}
+        </LandingSwiper>
+    </div>
+
+    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
+    <div class="[ swiper-button-next hidden lg:block! ]"></div>
+</Wrapper>
+
+<style lang="scss">
+    .materials-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -32px;
+        --swiper-navigation-size: 22px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-slide {
+        width: fit-content;
+        min-width: 200px;
+    }
+</style>

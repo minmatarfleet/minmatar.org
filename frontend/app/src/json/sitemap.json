@@ -398,6 +398,14 @@
         "description": "page_finder.contracts.description"
     },
     {
+        "slug": "industry",
+        "alt": "icon.industry.alt",
+        "path": "/industry/",
+        "publish": true,
+        "icon": "/images/icons/48px-Industry.png",
+        "description": "page_finder.industry.description"
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

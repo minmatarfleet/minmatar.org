@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { EvEImageServiceSize } from '@dtypes/layout_components'
+
+interface Props {
+    item_name:  string;
+    type_id:    number;
+    size?:      EvEImageServiceSize;
+    border?:    boolean;
+    highlight?: boolean;
+    gap?:       string;
+    title_el?:  string;
+    quantity?:  number;
+    [propName: string]: any;
+}
+
+const {
+    item_name,
+    type_id,
+    size = 64,
+    border = false,
+    highlight = true,
+    gap = 'var(--space-s)',
+    title_el = 'span',
+    quantity,
+    ...attributes
+} = Astro.props
+
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import Badge from '@components/blocks/Badge.astro';
+---
+
+<Badge
+    title={item_name}
+    image={get_item_icon(type_id, size)}
+    size={size}
+    border={border}
+    highlight={highlight}
+    gap={gap}
+    title_el={title_el}
+    {...attributes}
+>
+    <slot>
+        {quantity &&
+            <small>{number_thousand_separator(quantity)}</small>
+        }
+    </slot>
+</Badge>

@@ -1,0 +1,221 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { NestedIndustryOrder } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order:  NestedIndustryOrder;
+}
+
+const {
+    order,
+} = Astro.props;
+
+const SOURCE_ICONS_TYPE = {
+    reaction: 57490,
+}
+
+const childrenless_nodes = order.children.filter(items => items.children.length === 0)
+
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_bpc_icon } from '@helpers/eve_image_server';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import Picture from '@components/blocks/Picture.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import IndustryTreeNodeRecursive from '@components/blocks/IndustryTreeNode.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+---
+
+{order.children?.length > 0 && (
+    <BlockList class="[ industry-node-wrapper ]" gap='var(--space-2xs)'>
+        {order.depth === 0 &&
+            <div class="[ sticky-icon ][ top-0 lg:top-[85px] ]">
+                <ItemPicture
+                    item_id={order.type_id}
+                />
+            </div>
+        }
+        <div class={order.depth !== 0 ? 'parent-node' : 'top-node' }>
+            {order.depth > 0 ?
+                <div class="[ w-fit ]">
+                    <ComponentBlock
+                        padding_block='var(--space-3xs)'
+                        padding_inline='var(--space-2xs)'
+                    >
+                        <ItemBadge
+                            item_name={order.name}
+                            type_id={order.type_id}
+                            quantity={order.quantity}
+                            gap='var(--space-2xs)'
+                            size={32}
+                        >
+                            <FixedFluid gap='var(--space-2xs)' width='16px'>
+                                <Picture
+                                    src={get_bpc_icon(
+                                        order.children[0].source === 'blueprint' ? order.type_id + 1 : SOURCE_ICONS_TYPE[order.children[0].source],
+                                        order.children[0].source === 'reaction',
+                                        32,
+                                    )}
+                                    alt={t(order.children[0].source as any)}
+                                    size={16}
+                                    placeholder={get_bpc_icon(1075, false, 32)}
+                                />
+                                <small>{number_thousand_separator(order.quantity)}</small>
+                            </FixedFluid>
+                        </ItemBadge>
+                    </ComponentBlock>
+                </div>
+                :
+                <ItemBadge
+                    item_name={order.name}
+                    type_id={order.type_id}
+                    quantity={order.quantity}
+                    title_el='h2'
+                >
+                    <FixedFluid gap='var(--space-2xs)' width='16px'>
+                        <Picture
+                            src={get_bpc_icon(
+                                order.children[0].source === 'blueprint' ? order.type_id + 1 : SOURCE_ICONS_TYPE[order.children[0].source],
+                                order.children[0].source === 'reaction',
+                                32,
+                            )}
+                            alt={t(order.children[0].source as any)}
+                            size={16}
+                        />
+                        <small>{t(order.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(order.quantity))}</small>
+                    </FixedFluid>
+                </ItemBadge>
+            }
+        </div>
+
+        <div class="[ industry-node ]">
+            <Flexblock
+                gap='var(--space-2xs)'
+                class="[ nested-item ]"
+            >
+                {childrenless_nodes.length > 0 &&
+                    <FlexInline
+                        class:list={[ 'line relative', {  'first-level': order.depth === 0 } ]}
+                        gap='var(--space-2xs)'
+                    >
+                        {childrenless_nodes.map(items =>
+                            <ComponentBlock
+                                padding_block='var(--space-3xs)'
+                                padding_inline='var(--space-2xs)'
+                            >
+                                <ItemBadge
+                                    item_name={items.name}
+                                    type_id={items.type_id}
+                                    quantity={items.quantity}
+                                    size={32}
+                                    gap='var(--space-2xs)'
+                                />
+                            </ComponentBlock>
+                        )}
+                    </FlexInline>
+                }
+
+                {order.children.map(items =>
+                    <IndustryTreeNodeRecursive order={items} />
+                )}
+            </Flexblock>
+        </div>
+    </BlockList>
+)}
+
+<style lang="scss">
+    .industry-node-wrapper {
+        --guides-color: var(--highlight);
+    }
+
+    .industry-node {
+        padding-left: 32px;
+        position: relative;
+    }
+
+    .sticky-icon {
+        position: sticky;
+        display: flex;
+        width: fit-content;
+        z-index: 1;
+    }
+
+    .top-node {
+        position: absolute;
+        width: fit-content;
+    }
+
+    .top-node + .industry-node {
+        margin-top: var(--space-m) !important;
+
+        &:before {
+            content: ' ';
+            position: absolute;
+            top: -11px;
+            left: 30px;
+            width: 5px;
+            height: 5px;
+            background-color: var(--guides-color);
+        }
+    }
+
+    .parent-node {
+        position: relative;
+
+        &:before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            left: -31px;
+            top: -10px;
+            width: 31px;
+            height: calc(50% + 10px);
+            border: solid var(--guides-color);
+            border-width: 0 0 1px 1px;
+        }
+    }
+
+    .nested-item {
+        > div {
+            border-left: solid 1px var(--guides-color);
+            padding-left: 30px;
+
+            &:not(.industry-node-wrapper):first-child:after {
+                content: ' ';
+                display: block;
+                position: absolute;
+                left: -1px;
+                top: -10px;
+                height: 10px;
+                border-left: solid 1px var(--guides-color);
+
+            }
+        }
+
+        > div:last-child {
+            border-color: transparent;
+        }
+    }
+
+    .line {
+        &:before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            left: -1px;
+            top: -5px;
+            width: 31px;
+            height: calc(50% + 5px);
+            border: solid var(--guides-color);
+            border-width: 0 0 1px 1px;
+        }
+    }
+</style>

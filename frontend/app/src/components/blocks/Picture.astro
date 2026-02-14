@@ -2,12 +2,13 @@
 import type { ImageSize } from '@dtypes/layout_components'
 
 interface Props {
-    src:        string;
-    alt?:       string;
-    size?:      ImageSize;
-    narrow?:    boolean;
-    mask?:      boolean;
-    zoomable?:  boolean;
+    src:            string;
+    alt?:           string;
+    size?:          ImageSize;
+    narrow?:        boolean;
+    mask?:          boolean;
+    zoomable?:      boolean;
+    placeholder?:   string;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
     narrow = false,
     mask = false,
     zoomable = false,
+    placeholder,
 } = Astro.props
 
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
@@ -37,6 +39,12 @@ import ZoomableImage from "@components/blocks/ZoomableImage.astro";
             width={size}
             src={src}
             alt={alt ? alt : undefined}
+            onerror={placeholder ? `
+                this.onerror=null;
+                this.src='${placeholder}';
+                this.height = ${size}
+                this.width = ${size}
+            ` : undefined}
         />
     }
 </picture>
