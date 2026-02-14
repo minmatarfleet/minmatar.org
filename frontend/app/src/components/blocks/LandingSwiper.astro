@@ -43,10 +43,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         el: ".swiper-pagination",
                     }) : JSON.stringify(false)},
                     loop: false,
-                    ${delay > 0 && `
+                    ${delay > 0 ? `
                     autoplay: {
                         delay: ${delay},
-                    },`}
+                    },` : ''}
                     fadeEffect: {
                         crossFade: true
                     },
