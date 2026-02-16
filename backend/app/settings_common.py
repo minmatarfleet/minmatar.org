@@ -15,6 +15,7 @@ CELERY_IMPORTS = (
     "moons.tasks",
     "freight.tasks",
     "market.tasks",
+    "industry.tasks",
     "mumble.tasks",
     "reddit.tasks",
 )
