@@ -484,23 +484,6 @@ def _apply_token_to_existing_character(character, token, token_type):
     fixup_character_token_level(character, token_count)
 
 
-def _maybe_populate_ceo_corporation(character, token_type):
-    """Populate corporation from ESI when token is Director/Market."""
-    if token_type not in (TokenType.DIRECTOR, TokenType.MARKET):
-        return
-    if not character.corporation_id:
-        return
-    logger.info(
-        "Populating CEO token corporation for character %s",
-        character.character_id,
-    )
-    corp = EveCorporation.objects.filter(
-        corporation_id=character.corporation_id
-    ).first()
-    if corp:
-        corp.populate()
-
-
 def handle_add_character_esi_callback(request, token, token_type):
     logger.info(
         "ESI token callback for user %s, %s scopes (%s)",
@@ -551,7 +534,6 @@ def handle_add_character_esi_callback(request, token, token_type):
             request.user.username,
         )
         set_primary_character(request.user, character)
-    _maybe_populate_ceo_corporation(character, token_type)
     return redirect(request.session["redirect_url"])
 
 
