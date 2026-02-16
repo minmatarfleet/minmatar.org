@@ -103,7 +103,9 @@ def update_character_affilliations() -> int:
 def update_alliance_character_assets():
     # Get all characters in the alliance
     alliance_characters = EveCharacter.objects.filter(
-        alliance__name="Minmatar Fleet Alliance"
+        alliance_id__in=EveAlliance.objects.all().values_list(
+            "alliance_id", flat=True
+        )
     )
 
     # Get all users who have at least one character in the alliance
@@ -129,10 +131,13 @@ def update_alliance_character_assets():
 
 @app.task
 def update_alliance_character_skills():
+    alliance_characters = EveCharacter.objects.filter(
+        alliance_id__in=EveAlliance.objects.all().values_list(
+            "alliance_id", flat=True
+        )
+    )
     counter = 0
-    for character in EveCharacter.objects.filter(
-        alliance__name="Minmatar Fleet Alliance"
-    ).exclude(token=None):
+    for character in alliance_characters.exclude(token=None):
         logger.info("Updating skills for character %s", character.character_id)
         update_character_skills.apply_async(
             args=[character.character_id], countdown=counter % 3600
@@ -142,10 +147,13 @@ def update_alliance_character_skills():
 
 @app.task
 def update_alliance_character_killmails():
+    alliance_characters = EveCharacter.objects.filter(
+        alliance_id__in=EveAlliance.objects.all().values_list(
+            "alliance_id", flat=True
+        )
+    )
     counter = 0
-    for character in EveCharacter.objects.filter(
-        alliance__name="Minmatar Fleet Alliance"
-    ).exclude(token=None):
+    for character in alliance_characters.exclude(token=None):
         logger.info(
             "Updating killmails for character %s", character.character_id
         )
