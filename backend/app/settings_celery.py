@@ -28,13 +28,6 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
-        "[Market] Update LP Store Items",
-        {
-            "task": "lpconversion.tasks.update_lpstore_items",
-            "schedule": crontab(minute=0, hour=12),
-        },
-    ),
-    (
         "[Market] Update Moon Revenue",
         {
             "task": "moons.tasks.update_moon_revenues",
