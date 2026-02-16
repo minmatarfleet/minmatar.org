@@ -6,6 +6,7 @@ from django.db.models import signals
 
 from esi.models import Token, Scope
 from eveonline.models import EveCorporation, EveCharacter
+from eveonline.scopes import DIRECTOR_SCOPES
 from structures.models import EveStructure, EveStructurePing
 from structures.helpers import (
     get_skyhook_details,
@@ -80,19 +81,16 @@ class StructureHelperTest(unittest.TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_get_notification_characters(self):
-        scopes = [
-            "esi-characters.read_notifications.v1",
-            "esi-fleets.read_fleet.v1",
-        ]
         corp = EveCorporation.objects.create(
             corporation_id=1001,
             name="MegaCorp",
         )
-        make_character(2001, corp, scopes)
-        make_character(2002, corp, [])
-        make_character(2003, corp, scopes)
-        make_character(2004, corp, scopes)
-        make_character(2005, None, scopes)
+        # Helper returns characters that have all DIRECTOR_SCOPES and this corp
+        make_character(2001, corp, list(DIRECTOR_SCOPES))
+        make_character(2002, corp, [])  # no scopes
+        make_character(2003, corp, list(DIRECTOR_SCOPES))
+        make_character(2004, corp, list(DIRECTOR_SCOPES))
+        make_character(2005, None, list(DIRECTOR_SCOPES))  # wrong corp
 
         chars = get_notification_characters(corp.corporation_id)
 
