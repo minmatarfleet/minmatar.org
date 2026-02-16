@@ -25,6 +25,8 @@ from eveonline.helpers.characters.skills import (
 )
 from eveonline.helpers.characters.update import (
     update_character_assets,
+    update_character_contracts,
+    update_character_industry_jobs,
     update_character_killmails,
     update_character_skills,
 )
@@ -39,6 +41,8 @@ __all__ = [
     "related_characters",
     "set_primary_character",
     "update_character_assets",
+    "update_character_contracts",
+    "update_character_industry_jobs",
     "update_character_killmails",
     "update_character_skills",
     "update_character_with_affiliations",

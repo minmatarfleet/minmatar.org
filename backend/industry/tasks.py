@@ -4,9 +4,9 @@ import logging
 
 from app.celery import app
 from eveonline.helpers.characters import related_characters
+from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
-from industry.helpers.jobs import sync_character_industry_jobs
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 @app.task()
 def sync_industry_jobs_for_character(character_id: int) -> None:
-    """Fetch and store industry jobs for a single character from ESI."""
+    """Fetch and store industry jobs for a single character from ESI (EveCharacterIndustryJob)."""
     try:
-        sync_character_industry_jobs(character_id)
+        update_character_industry_jobs(character_id)
     except Exception as e:
         logger.exception(
             "Failed to sync industry jobs for character %s: %s",

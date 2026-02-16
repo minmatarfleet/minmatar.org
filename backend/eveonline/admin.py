@@ -8,7 +8,11 @@ from .models import (
     EvePlayer,
     EveAlliance,
     EveCharacter,
+    EveCharacterContract,
+    EveCharacterIndustryJob,
     EveCorporation,
+    EveCorporationContract,
+    EveCorporationIndustryJob,
     EveSkillset,
     EveTag,
     EveCharacterTag,
@@ -206,3 +210,81 @@ class EveCharacterSkillAdmin(admin.ModelAdmin):
     )
 
     search_fields = ("character__character_name", "skill_name")
+
+
+@admin.register(EveCharacterContract)
+class EveCharacterContractAdmin(admin.ModelAdmin):
+    list_display = (
+        "contract_id",
+        "character",
+        "type",
+        "status",
+        "price",
+        "date_issued",
+        "date_expired",
+    )
+    list_filter = ("type", "status")
+    search_fields = ("contract_id", "character__character_name")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("character",)
+    date_hierarchy = "date_issued"
+
+
+@admin.register(EveCharacterIndustryJob)
+class EveCharacterIndustryJobAdmin(admin.ModelAdmin):
+    list_display = (
+        "job_id",
+        "character",
+        "activity_id",
+        "blueprint_type_id",
+        "status",
+        "runs",
+        "start_date",
+        "end_date",
+        "updated_at",
+    )
+    list_filter = ("status", "activity_id", "character")
+    search_fields = ("job_id", "character__character_name")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("character",)
+    date_hierarchy = "end_date"
+    ordering = ("-end_date",)
+
+
+@admin.register(EveCorporationContract)
+class EveCorporationContractAdmin(admin.ModelAdmin):
+    list_display = (
+        "contract_id",
+        "corporation",
+        "type",
+        "status",
+        "price",
+        "date_issued",
+        "date_expired",
+    )
+    list_filter = ("type", "status")
+    search_fields = ("contract_id", "corporation__name")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("corporation",)
+    date_hierarchy = "date_issued"
+
+
+@admin.register(EveCorporationIndustryJob)
+class EveCorporationIndustryJobAdmin(admin.ModelAdmin):
+    list_display = (
+        "job_id",
+        "corporation",
+        "activity_id",
+        "blueprint_type_id",
+        "status",
+        "runs",
+        "start_date",
+        "end_date",
+        "updated_at",
+    )
+    list_filter = ("status", "activity_id", "corporation")
+    search_fields = ("job_id", "corporation__name")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("corporation",)
+    date_hierarchy = "end_date"
+    ordering = ("-end_date",)

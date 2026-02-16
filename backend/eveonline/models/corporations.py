@@ -89,3 +89,93 @@ class EveCorporation(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+class EveCorporationContract(models.Model):
+    """Corporation contract from ESI (esi-contracts.read_corporation_contracts.v1)."""
+
+    contract_id = models.BigIntegerField(unique=True, primary_key=True)
+    corporation = models.ForeignKey(
+        EveCorporation, on_delete=models.CASCADE, related_name="contracts"
+    )
+    type = models.CharField(max_length=32, db_index=True)
+    status = models.CharField(max_length=32, db_index=True)
+    availability = models.CharField(max_length=32, blank=True)
+    issuer_id = models.BigIntegerField()
+    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
+    assignee_id = models.BigIntegerField(null=True, blank=True)
+    acceptor_id = models.BigIntegerField(null=True, blank=True)
+    for_corporation = models.BooleanField(default=False)
+    date_issued = models.DateTimeField(null=True, blank=True)
+    date_expired = models.DateTimeField(null=True, blank=True)
+    date_accepted = models.DateTimeField(null=True, blank=True)
+    date_completed = models.DateTimeField(null=True, blank=True)
+    days_to_complete = models.IntegerField(null=True, blank=True)
+    price = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    reward = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    collateral = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    buyout = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    volume = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    start_location_id = models.BigIntegerField(null=True, blank=True)
+    end_location_id = models.BigIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["corporation", "status"])]
+
+
+class EveCorporationIndustryJob(models.Model):
+    """
+    Corporation industry job (manufacturing, research, etc.) from ESI.
+    Synced from ESI; job_id is the ESI job identifier.
+    """
+
+    job_id = models.BigIntegerField(unique=True, db_index=True)
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+        related_name="industry_jobs",
+    )
+    activity_id = models.IntegerField(
+        help_text="Activity: 1=Manufacturing, 2=Researching TE, 3=Researching ME, etc."
+    )
+    blueprint_id = models.BigIntegerField()
+    blueprint_type_id = models.IntegerField(db_index=True)
+    blueprint_location_id = models.BigIntegerField()
+    facility_id = models.BigIntegerField()
+    location_id = models.BigIntegerField(db_index=True)
+    output_location_id = models.BigIntegerField()
+    status = models.CharField(max_length=32, db_index=True)
+    installer_id = models.BigIntegerField(
+        help_text="Character ID that installed the job."
+    )
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    duration = models.PositiveIntegerField(help_text="Duration in seconds.")
+    completed_date = models.DateTimeField(null=True, blank=True)
+    completed_character_id = models.BigIntegerField(null=True, blank=True)
+    runs = models.PositiveIntegerField()
+    licensed_runs = models.PositiveIntegerField(default=0)
+    cost = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-end_date"]
+        indexes = [
+            models.Index(fields=["corporation", "status"]),
+        ]
+
+    def __str__(self):
+        return f"Job {self.job_id} ({self.corporation.name}, {self.status})"

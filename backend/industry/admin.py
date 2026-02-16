@@ -7,7 +7,6 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from industry.models import (
-    IndustryJob,
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
@@ -232,30 +231,9 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         return super().response_change(request, obj)
 
 
-@admin.register(IndustryJob)
-class IndustryJobAdmin(admin.ModelAdmin):
-    list_display = (
-        "job_id",
-        "character",
-        "activity_id",
-        "blueprint_type_id",
-        "status",
-        "runs",
-        "start_date",
-        "end_date",
-        "updated_at",
-    )
-    list_filter = ("status", "activity_id", "character")
-    search_fields = ("job_id", "character__character_name")
-    readonly_fields = ("updated_at",)
-    autocomplete_fields = ("character",)
-    date_hierarchy = "end_date"
-    ordering = ("-end_date",)
-
-
 # ----- Industry admin index: only Orders -----
 
-INDUSTRY_INDEX_MODELS = {"industryorder": "Orders", "industryjob": "Jobs"}
+INDUSTRY_INDEX_MODELS = {"industryorder": "Orders"}
 
 
 def _industry_get_app_list(request):
