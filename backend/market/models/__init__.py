@@ -10,6 +10,7 @@ from market.models.item import (
     EveMarketItemOrder,
     EveMarketItemResponsibility,
     EveMarketItemTransaction,
+    EveTypeWithSellOrders,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "EveMarketItemOrder",
     "EveMarketItemResponsibility",
     "EveMarketItemTransaction",
+    "EveTypeWithSellOrders",
 ]

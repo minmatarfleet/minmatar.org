@@ -1,0 +1,102 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block content %}
+  {% if fetch_history_url %}
+  <div class="module" style="margin-bottom: 15px;">
+    <a href="{{ fetch_history_url }}" class="button">{% trans "Fetch market history for this item" %}</a>
+    <span class="help" style="margin-left: 8px;">{% trans "Queues a task to update EveMarketItemHistory for this type across all regions." %}</span>
+  </div>
+  {% endif %}
+
+  {% if expectations_for_item %}
+  <div class="module" style="margin-bottom: 20px;">
+    <h2>{% trans "Stock & expectations per location" %}</h2>
+    <p class="help">{% trans "Target quantity and current stock from sell orders for locations with expectations." %}</p>
+    <div style="overflow-x: auto;">
+      <table class="table" style="min-width: 500px;">
+        <thead>
+          <tr>
+            <th>{% trans "Location" %}</th>
+            <th>{% trans "Expected" %}</th>
+            <th>{% trans "Current" %}</th>
+            <th>{% trans "Fulfilled" %}</th>
+            <th>{% trans "Understocked" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expectations_for_item %}
+          <tr>
+            <td>{{ exp.location.location_name }}</td>
+            <td>{{ exp.desired_quantity }}</td>
+            <td>{{ exp.current_quantity }}</td>
+            <td>{% if exp.is_fulfilled %}✓{% else %}–{% endif %}</td>
+            <td>{% if exp.is_understocked %}⚠{% else %}–{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if other_locations_with_orders %}
+  <div class="module" style="margin-bottom: 20px;">
+    <h2>{% trans "Other locations with sell orders (no expectation)" %}</h2>
+    <div style="overflow-x: auto;">
+      <table class="table" style="min-width: 300px;">
+        <thead>
+          <tr>
+            <th>{% trans "Location" %}</th>
+            <th>{% trans "Current quantity" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in other_locations_with_orders %}
+          <tr>
+            <td>{{ row.location_name }}</td>
+            <td>{{ row.total }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if market_item_trends %}
+  <div class="module" style="margin-bottom: 20px;">
+    <h2>{% trans "Market history trends" %} – {{ market_item_name }}</h2>
+    <p class="help">{% trans "Average price and volume by date across all market locations (region history)." %}</p>
+    <div style="overflow-x: auto;">
+      <table class="table" style="min-width: 400px;">
+        <thead>
+          <tr>
+            <th>{% trans "Date" %}</th>
+            {% for loc in market_item_trends.locations %}
+            <th>{{ loc.location_name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in market_item_trends.rows %}
+          <tr>
+            <td>{{ row.date|date:"Y-m-d" }}</td>
+            {% for cell in row.cells %}
+            <td>
+              {% if cell %}
+              {{ cell.average|floatformat:2 }} <small>(vol. {{ cell.volume }})</small>
+              {% else %}
+              –
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

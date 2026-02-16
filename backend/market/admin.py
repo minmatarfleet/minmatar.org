@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib import messages
+from django.db.models import Count, Sum
 from django.http import HttpResponseRedirect
-from django.urls import path
+from django.urls import path, reverse
+from django.utils.html import format_html
+from django.utils.http import urlencode
 
 from eveonline.models import EveLocation
 
@@ -15,22 +18,14 @@ from market.models import (
     EveMarketItemOrder,
     EveMarketItemResponsibility,
     EveMarketItemTransaction,
+    EveTypeWithSellOrders,
 )
 from market.tasks import fetch_market_item_history_for_type
 
-# Model names for splitting admin index into Contracts vs Items
-MARKET_CONTRACT_MODELS = {
-    "evemarketcontract",
-    "evemarketcontracterror",
-    "evemarketcontractexpectation",
-    "evemarketcontractresponsibility",
-}
-MARKET_ITEM_MODELS = {
-    "evemarketitemexpectation",
-    "evemarketitemorder",
-    "evemarketitemresponsibility",
-    "evemarketitemtransaction",
-    "evemarketitemhistory",
+# Only these two appear in the Market admin index
+MARKET_INDEX_MODELS = {
+    "evemarketcontractexpectation": "Market contracts",
+    "evetypewithsellorders": "Market sell orders",
 }
 
 
@@ -49,7 +44,7 @@ def get_market_item_trends(item_id):
             item_id=item_id, region_id__in=region_ids
         )
         .values("date", "region_id", "average", "volume")
-        .order_by("-date")[: 90 * len(region_ids)]
+        .order_by("-date")[: 30 * len(region_ids)]
     )
     by_date_region = {}
     for row in qs:
@@ -60,7 +55,7 @@ def get_market_item_trends(item_id):
     dates = sorted(
         {d for (d, _) in by_date_region},
         reverse=True,
-    )[:90]
+    )[:30]
     rows = []
     for date in dates:
         cells = []
@@ -88,7 +83,7 @@ class EveMarketContractResponsibilityInline(admin.TabularInline):
 
 @admin.register(EveMarketContractExpectation)
 class EveMarketContractExpectationAdmin(admin.ModelAdmin):
-    """Contract seeding: fitting + quantity per location, tracked by outstanding contracts."""
+    """Contract expectations: fitting + quantity per location; stock levels from outstanding contracts."""
 
     list_display = (
         "fitting",
@@ -112,6 +107,7 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
         "desired_quantity",
         "is_fulfilled",
         "is_understocked",
+        "view_outstanding_contracts_link",
     )
     autocomplete_fields = ("fitting", "location")
     ordering = ("fitting__name", "location__location_name")
@@ -126,11 +122,28 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
                     "desired_quantity",
                     "is_fulfilled",
                     "is_understocked",
+                    "view_outstanding_contracts_link",
                 ),
                 "classes": ("collapse",),
             },
         ),
     )
+
+    @admin.display(description="Outstanding contracts")
+    def view_outstanding_contracts_link(self, obj):
+        if not obj.pk or not obj.fitting_id or not obj.location_id:
+            return "–"
+        query = {
+            "fitting__id": obj.fitting_id,
+            "location__id": obj.location_id,
+            "status__exact": "outstanding",
+        }
+        url = (
+            reverse("admin:market_evemarketcontract_changelist")
+            + "?"
+            + urlencode(query)
+        )
+        return format_html('<a href="{}">View outstanding contracts</a>', url)
 
 
 @admin.register(EveMarketContractResponsibility)
@@ -241,7 +254,126 @@ class EveMarketContractErrorAdmin(admin.ModelAdmin):
     autocomplete_fields = ("issuer", "location")
 
 
-# ----- Items (sell-order seeding) -----
+# ----- Market sell orders (unique EVE types with sell orders) -----
+
+
+class SellOrderLocationFilter(admin.SimpleListFilter):
+    """Filter EVE types by location (only types that have a sell order at the selected location)."""
+
+    title = "location"
+    parameter_name = "location"
+
+    def lookups(self, request, model_admin):
+        location_ids = EveMarketItemOrder.objects.values_list(
+            "location_id", flat=True
+        ).distinct()
+        locations = EveLocation.objects.filter(pk__in=location_ids).order_by(
+            "location_name"
+        )
+        return [(loc.pk, loc.location_name) for loc in locations]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(
+                evemarketitemorder__location_id=self.value()
+            ).distinct()
+        return queryset
+
+
+@admin.register(EveTypeWithSellOrders)
+class EveTypeWithSellOrdersAdmin(admin.ModelAdmin):
+    """Unique EVE types we have sell orders for; drill in to see history and stock per location."""
+
+    list_display = ("name", "get_order_count", "get_location_count")
+    list_display_links = ("name",)
+    list_filter = (SellOrderLocationFilter,)
+    search_fields = ("name",)
+    list_per_page = 50
+    ordering = ("name",)
+    change_form_template = (
+        "admin/market/evetypewithsellorders/change_form.html"
+    )
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _order_count=Count("evemarketitemorder"),
+                _location_count=Count(
+                    "evemarketitemorder__location", distinct=True
+                ),
+            )
+        )
+
+    @admin.display(description="Orders", ordering="_order_count")
+    def get_order_count(self, obj):
+        return getattr(obj, "_order_count", "–")
+
+    @admin.display(description="Locations", ordering="_location_count")
+    def get_location_count(self, obj):
+        return getattr(obj, "_location_count", "–")
+
+    def get_urls(self):
+        urls = super().get_urls()
+        return [
+            path(
+                "<path:object_id>/fetch-history/",
+                self.admin_site.admin_view(self.fetch_history_view),
+                name="market_evetypewithsellorders_fetch_history",
+            ),
+        ] + urls
+
+    def fetch_history_view(self, request, object_id):
+        if not self.has_change_permission(request):
+            messages.error(request, "Permission denied.")
+            return HttpResponseRedirect("../")
+        obj = self.get_object(request, object_id)
+        if not obj:
+            messages.error(request, "Item not found.")
+            return HttpResponseRedirect("../")
+        fetch_market_item_history_for_type.delay(obj.pk)
+        messages.success(
+            request,
+            f"Market history fetch queued for {obj.name} (type_id={obj.pk}). "
+            "It will run across all regions.",
+        )
+        return HttpResponseRedirect("../")
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        obj = self.get_object(request, object_id)
+        if obj:
+            extra_context["market_item_name"] = str(obj)
+            extra_context["market_item_trends"] = get_market_item_trends(
+                obj.pk
+            )
+            extra_context["fetch_history_url"] = "../fetch-history/"
+            expectations = list(
+                EveMarketItemExpectation.objects.filter(item_id=obj.pk)
+                .select_related("location")
+                .order_by("location__location_name")
+            )
+            extra_context["expectations_for_item"] = expectations
+            expectation_location_ids = {e.location_id for e in expectations}
+            other = (
+                EveMarketItemOrder.objects.filter(item_id=obj.pk)
+                .exclude(location_id__in=expectation_location_ids)
+                .values("location__location_name")
+                .annotate(total=Sum("quantity"))
+                .order_by("location__location_name")
+            )
+            extra_context["other_locations_with_orders"] = [
+                {
+                    "location_name": r["location__location_name"],
+                    "total": r["total"],
+                }
+                for r in other
+            ]
+        return super().change_view(request, object_id, form_url, extra_context)
+
+
+# ----- Items (sell-order seeding; hidden from index) -----
 
 
 class EveMarketItemResponsibilityInline(admin.TabularInline):
@@ -458,41 +590,23 @@ class EveMarketItemHistoryAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related("item")
 
 
-# ----- Split Market admin index into "Contracts" and "Items" -----
+# ----- Market admin index: only Contracts + Sell orders -----
 
 
 def _market_get_app_list(request):
-    """Split market app into Market » Contracts and Market » Items in the admin index."""
+    """Show a single Market section with only Market contracts and Market sell orders."""
     app_list = admin.site.get_app_list_original(request)
     for app in app_list:
         if app["app_label"] != "market":
             continue
-        contract_models = [
-            m
-            for m in app["models"]
-            if m["object_name"].lower() in MARKET_CONTRACT_MODELS
-        ]
-        item_models = [
-            m
-            for m in app["models"]
-            if m["object_name"].lower() in MARKET_ITEM_MODELS
-        ]
-        if not contract_models and not item_models:
-            continue
-        # Replace this app with two entries; copy all keys from original so nothing is missing
-        new_apps = []
-        if contract_models:
-            entry = dict(app)
-            entry["name"] = "Market » Contracts"
-            entry["models"] = contract_models
-            new_apps.append(entry)
-        if item_models:
-            entry = dict(app)
-            entry["name"] = "Market » Items"
-            entry["models"] = item_models
-            new_apps.append(entry)
-        idx = app_list.index(app)
-        app_list = app_list[:idx] + new_apps + app_list[idx + 1 :]
+        models = []
+        for m in app["models"]:
+            key = m["object_name"].lower()
+            if key in MARKET_INDEX_MODELS:
+                display_name = MARKET_INDEX_MODELS[key]
+                models.append({**m, "name": display_name})
+        if models:
+            app["models"] = models
         break
     return app_list
 

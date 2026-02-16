@@ -1,9 +1,38 @@
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Exists, OuterRef, Sum
 from django.utils import timezone
 
 from eveuniverse.models import EveType
 from eveonline.models import EveLocation
+
+
+class EveTypeWithSellOrdersManager(models.Manager):
+    """Return only EveTypes that have at least one EveMarketItemOrder."""
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                Exists(
+                    EveMarketItemOrder.objects.filter(item_id=OuterRef("pk"))
+                )
+            )
+        )
+
+
+class EveTypeWithSellOrders(EveType):
+    """
+    Proxy for EveType limited to types we have sell orders for.
+    Used in admin as the "Market sell orders" entry point.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = "EVE type (with sell orders)"
+        verbose_name_plural = "EVE types (with sell orders)"
+
+    objects = EveTypeWithSellOrdersManager()
 
 
 class EveMarketItemExpectation(models.Model):
