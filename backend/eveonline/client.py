@@ -75,7 +75,7 @@ class EsiResponse:
         if self.response_code < 600:
             return f"HTTP server error ({self.response_code})"
 
-        return f"Unexpected ESI status ({self.response.code})"
+        return f"Unexpected ESI status ({self.response_code})"
 
 
 class EsiClient:
@@ -231,6 +231,133 @@ class EsiClient:
         )
 
         return self._operation_results(operation)
+
+    def get_region_market_history(
+        self, region_id: int, type_id: int
+    ) -> EsiResponse:
+        """
+        Fetch daily market history for a type in a region (public endpoint).
+        Returns list of dicts with date, average, highest, lowest, order_count, volume.
+        """
+        url = f"{ESI_BASE_URL}/markets/{region_id}/history/"
+        try:
+            resp = requests.get(
+                url,
+                params={"type_id": type_id},
+                timeout=30,
+            )
+        except Exception as e:
+            logger.exception(
+                "ESI request failed for region %s type %s: %s",
+                region_id,
+                type_id,
+                e,
+            )
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+        data = resp.json() if resp.content else []
+        return EsiResponse(response_code=SUCCESS, data=data)
+
+    def get_structure_market_orders(self, structure_id: int) -> EsiResponse:
+        """
+        Returns all market orders in a structure (requires character with
+        esi-markets.structure_markets.v1 and docking access to the structure).
+        Paginates automatically and returns the full list.
+        Prefer get_structure_market_orders_pages() for large structures to avoid OOM.
+        """
+        all_orders = []
+        for page_data in self.get_structure_market_orders_pages(structure_id):
+            if page_data is None:
+                return EsiResponse(response_code=NO_VALID_ESI_TOKEN)
+            all_orders.extend(page_data)
+        return EsiResponse(response_code=SUCCESS, data=all_orders)
+
+    def get_structure_market_orders_first_page_and_total(
+        self, structure_id: int
+    ) -> tuple[list | None, int]:
+        """
+        Fetch page 1 of structure market orders and return (data, total_pages).
+        Uses a single request so we can read the X-Pages header. Returns
+        (None, 0) if token invalid or request fails.
+        """
+        token, status = self._valid_token(["esi-markets.structure_markets.v1"])
+        if status > 0:
+            return None, 0
+
+        url = f"{ESI_BASE_URL}/markets/structures/{structure_id}/"
+        try:
+            resp = requests.get(
+                url,
+                params={"page": 1},
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=30,
+            )
+        except Exception as e:
+            logger.exception(
+                "ESI request failed for structure %s: %s", structure_id, e
+            )
+            return None, 0
+
+        if resp.status_code >= 400:
+            return None, 0
+
+        total_pages = int(resp.headers.get("X-Pages", 1))
+        data = resp.json() if resp.content else []
+        return data, total_pages
+
+    def get_structure_market_orders_page(
+        self, structure_id: int, page: int
+    ) -> EsiResponse:
+        """
+        Fetch a single page of structure market orders (1-based page number).
+        """
+        token, status = self._valid_token(["esi-markets.structure_markets.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = (
+            esi_provider.client.Market.get_markets_structures_structure_id(
+                structure_id=structure_id,
+                page=page,
+                token=token,
+            )
+        )
+        try:
+            page_data = operation.results()
+            return EsiResponse(response_code=SUCCESS, data=page_data)
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
+    def get_structure_market_orders_pages(self, structure_id: int):
+        """
+        Yields one page of market orders at a time (requires character with
+        esi-markets.structure_markets.v1 and docking access). Use this for
+        large structures to avoid loading all orders into memory. Yields None
+        once if token is invalid.
+        """
+        token, status = self._valid_token(["esi-markets.structure_markets.v1"])
+        if status > 0:
+            yield None
+            return
+
+        page = 1
+        page_size = 1000
+        while True:
+            operation = (
+                esi_provider.client.Market.get_markets_structures_structure_id(
+                    structure_id=structure_id,
+                    page=page,
+                    token=token,
+                )
+            )
+            page_data = operation.results()
+            if not page_data:
+                break
+            yield page_data
+            if len(page_data) < page_size:
+                break
+            page += 1
 
     def get_active_fleet(self) -> EsiResponse:
         token, status = self._valid_token(["esi-fleets.read_fleet.v1"])

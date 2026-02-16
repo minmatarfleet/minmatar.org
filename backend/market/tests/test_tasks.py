@@ -13,13 +13,13 @@ from eveonline.models import (
 )
 from eveonline.client import EsiResponse
 from fittings.models import EveFitting
-from market.models import EveMarketContract, EveMarketContractError
-from market.tasks import (
-    fetch_eve_public_contracts,
+from market.helpers import (
     get_fitting_for_contract,
     update_completed_contracts,
     update_expired_contracts,
 )
+from market.models import EveMarketContract, EveMarketContractError
+from market.tasks import fetch_eve_public_contracts
 
 
 class MarketTaskTestCase(TestCase):

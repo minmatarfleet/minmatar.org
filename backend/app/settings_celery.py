@@ -14,6 +14,20 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
+        "[Market] Fetch Structure Sell Orders",
+        {
+            "task": "market.tasks.fetch_structure_sell_orders",
+            "schedule": crontab(minute=33, hour="*/4"),
+        },
+    ),
+    (
+        "[Market] Fetch Market Item History",
+        {
+            "task": "market.tasks.fetch_market_item_history",
+            "schedule": crontab(minute=15, hour=12),
+        },
+    ),
+    (
         "[Market] Low Stock Warnings",
         {
             "task": "market.tasks.notify_eve_market_contract_warnings",
