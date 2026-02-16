@@ -3,6 +3,8 @@ from datetime import datetime as dt_datetime, time as dt_time
 from django.db import models
 from django.utils import timezone
 
+from industry.models.job import IndustryJob
+
 
 class IndustryOrder(models.Model):
     """An industry order: a list of Eve types and quantities to build."""
@@ -49,8 +51,6 @@ class IndustryOrder(models.Model):
         overlap the order period: created_at through needed_by (or fulfilled_at).
         Includes in-progress and completed jobs in that window.
         """
-        from industry.models.job import IndustryJob
-
         character_ids = {self.character_id}
         for item in self.items.prefetch_related("assignments").all():
             for assignment in item.assignments.all():

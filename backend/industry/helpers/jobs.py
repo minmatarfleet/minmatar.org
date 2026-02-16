@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import pytz
 from django.utils import timezone
+from esi.models import Token
 
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
@@ -48,8 +49,6 @@ def sync_character_industry_jobs(character_id: int) -> None:
             character_id,
         )
         return
-
-    from esi.models import Token
 
     if not Token.get_token(character_id, [INDUSTRY_JOBS_SCOPE]):
         logger.debug(
