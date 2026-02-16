@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel
 from django.db.models import Count, Q
 
-from eveonline.scopes import DIRECTOR_ADDITIONAL_SCOPES
+from eveonline.scopes import DIRECTOR_SCOPES
 from eveonline.models import EveCharacter
 
 from structures.models import EveStructure, EveStructurePing
@@ -96,11 +96,11 @@ def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
         EveCharacter.objects.annotate(
             matching_scopes=Count(
                 "token__scopes",
-                filter=Q(token__scopes__name__in=DIRECTOR_ADDITIONAL_SCOPES),
+                filter=Q(token__scopes__name__in=DIRECTOR_SCOPES),
             )
         )
         .filter(
-            matching_scopes=len(DIRECTOR_ADDITIONAL_SCOPES),
+            matching_scopes=len(DIRECTOR_SCOPES),
         )
         .distinct()
         .filter(

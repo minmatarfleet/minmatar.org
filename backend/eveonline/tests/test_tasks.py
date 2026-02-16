@@ -9,7 +9,7 @@ from app.test import TestCase
 from esi.models import Token, Scope
 
 from eveonline.client import EsiResponse, EsiClient
-from eveonline.scopes import CEO_SCOPES
+from eveonline.scopes import scopes_for, TokenType
 
 from eveonline.tasks import (
     update_character_assets,
@@ -205,7 +205,7 @@ class EveOnlineTaskTests(TestCase):
             alliance=alliance,
         )
         token = Token.objects.create(character_id=90000001)
-        self.add_token_scopes(token, CEO_SCOPES)
+        self.add_token_scopes(token, scopes_for(TokenType.DIRECTOR))
         EveCharacter.objects.create(
             character_id=token.character_id,
             token=token,

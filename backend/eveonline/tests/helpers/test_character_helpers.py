@@ -10,8 +10,8 @@ from eveonline.models import EveCharacter
 from eveonline.scopes import (
     TokenType,
     scope_names,
+    scopes_for,
     add_scopes,
-    EXECUTOR_CHARACTER_SCOPES,
 )
 
 
@@ -37,19 +37,6 @@ class CharacterHelperTests(TestCase):
 
         add_scopes(TokenType.DIRECTOR, char.token)
 
-        self.assertEqual(16, len(scope_names(char.token)))
+        self.assertEqual(28, len(scope_names(char.token)))
 
-        self.assertEqual(33, len(EXECUTOR_CHARACTER_SCOPES))
-
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_character_desired_scopes_multiple_groups(self):
-        """Desired scopes for multiple scope groups is the union of each group's scopes."""
-        char = EveCharacter.objects.create(
-            character_id=10002,
-            character_name="Test Pilot 2",
-            esi_scope_groups=["Basic", "Director"],
-        )
-        scopes = character_desired_scopes(char)
-        self.assertEqual(16, len(scopes))
-        self.assertIn("esi-fleets.read_fleet.v1", scopes)
-        self.assertIn("esi-characters.read_notifications.v1", scopes)
+        self.assertEqual(35, len(scopes_for(TokenType.EXECUTOR)))

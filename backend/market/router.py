@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
-from eveonline.scopes import MARKET_ADDITIONAL_SCOPES
+from eveonline.scopes import MARKET_SCOPES
 from market.helpers import (
     MarketContractHistoricalQuantity,
     get_historical_quantity,
@@ -121,11 +121,11 @@ def _get_entity_ids(request):
         EveCharacter.objects.annotate(
             matching_scopes=Count(
                 "token__scopes",
-                filter=Q(token__scopes__name__in=MARKET_ADDITIONAL_SCOPES),
+                filter=Q(token__scopes__name__in=MARKET_SCOPES),
             )
         )
         .filter(
-            matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
+            matching_scopes=len(MARKET_SCOPES),
             token__user=request.user,
         )
         .distinct()
@@ -134,13 +134,11 @@ def _get_entity_ids(request):
         EveCorporation.objects.annotate(
             matching_scopes=Count(
                 "ceo__token__scopes",
-                filter=Q(
-                    ceo__token__scopes__name__in=MARKET_ADDITIONAL_SCOPES
-                ),
+                filter=Q(ceo__token__scopes__name__in=MARKET_SCOPES),
             )
         )
         .filter(
-            matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
+            matching_scopes=len(MARKET_SCOPES),
             ceo__token__user=request.user,
             alliance__in=EveAlliance.objects.all(),
         )
@@ -162,11 +160,11 @@ def get_market_characters(request):
         EveCharacter.objects.annotate(
             matching_scopes=Count(
                 "token__scopes",
-                filter=Q(token__scopes__name__in=MARKET_ADDITIONAL_SCOPES),
+                filter=Q(token__scopes__name__in=MARKET_SCOPES),
             )
         )
         .filter(
-            matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
+            matching_scopes=len(MARKET_SCOPES),
             token__user=request.user,
         )
         .distinct()
@@ -194,13 +192,11 @@ def get_market_corporations(request):
         EveCorporation.objects.annotate(
             matching_scopes=Count(
                 "ceo__token__scopes",
-                filter=Q(
-                    ceo__token__scopes__name__in=MARKET_ADDITIONAL_SCOPES
-                ),
+                filter=Q(ceo__token__scopes__name__in=MARKET_SCOPES),
             )
         )
         .filter(
-            matching_scopes=len(MARKET_ADDITIONAL_SCOPES),
+            matching_scopes=len(MARKET_SCOPES),
             ceo__token__user=request.user,
             alliance__in=EveAlliance.objects.all(),
         )

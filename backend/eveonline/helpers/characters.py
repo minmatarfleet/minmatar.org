@@ -98,6 +98,12 @@ def player_characters(player: EvePlayer) -> List[EveCharacter]:
     return user_characters(player.user)
 
 
+def _normalize_token_level(level: str) -> str:
+    """Map legacy token level names to current TokenType values."""
+    legacy = {"CEO": "Director", "Freight": "Market", "Advanced": "Industry"}
+    return legacy.get(level, level)
+
+
 def character_desired_scopes(character: EveCharacter) -> List[str]:
     """Union of scopes for all of the character's scope groups."""
     groups = getattr(character, "esi_scope_groups", None)
@@ -105,8 +111,10 @@ def character_desired_scopes(character: EveCharacter) -> List[str]:
         return scopes_for_groups(groups)
     if not character.esi_token_level:
         return []
+
+    normalized = _normalize_token_level(character.esi_token_level)
     try:
-        token_type = TokenType(character.esi_token_level)
+        token_type = TokenType(normalized)
     except ValueError:
         return []
     scopes = scopes_for(token_type)

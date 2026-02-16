@@ -17,20 +17,8 @@ BASIC_SCOPES = [
     "esi-clones.read_implants.v1",
 ]
 
-ADVANCED_ADDITIONAL_SCOPES = [
-    "esi-characters.read_blueprints.v1",
-    "esi-planets.manage_planets.v1",
-    "esi-industry.read_character_jobs.v1",
-    "esi-industry.read_character_mining.v1",
-]
-ADVANCED_SCOPES = BASIC_SCOPES + ADVANCED_ADDITIONAL_SCOPES
-
-DIRECTOR_ADDITIONAL_SCOPES = [
+DIRECTOR_SCOPES = [
     "esi-characters.read_notifications.v1",
-]
-DIRECTOR_SCOPES = ADVANCED_SCOPES + DIRECTOR_ADDITIONAL_SCOPES
-
-CEO_ADDITIONAL_SCOPES = [
     "esi-corporations.read_corporation_membership.v1",
     "esi-corporations.read_blueprints.v1",
     "esi-corporations.read_contacts.v1",
@@ -39,62 +27,72 @@ CEO_ADDITIONAL_SCOPES = [
     "esi-corporations.read_facilities.v1",
     "esi-corporations.read_fw_stats.v1",
     "esi-corporations.read_medals.v1",
+    "esi-corporations.read_standings.v1",
     "esi-corporations.read_starbases.v1",
     "esi-corporations.read_titles.v1",
+    "esi-corporations.track_members.v1",
+    "esi-assets.read_corporation_assets.v1",
+    "esi-killmails.read_corporation_killmails.v1",
+    "esi-planets.read_customs_offices.v1",
     "esi-wallet.read_corporation_wallets.v1",
 ]
-CEO_SCOPES = DIRECTOR_SCOPES + CEO_ADDITIONAL_SCOPES
 
-# Used for the freight CEO (Minmatar Fleet Logistics)
-FREIGHT_ADDITIONAL_SCOPES = ["esi-contracts.read_corporation_contracts.v1"]
-FREIGHT_CHARACTER_SCOPES = CEO_SCOPES + FREIGHT_ADDITIONAL_SCOPES
-
-# Used for supply team seeders (characters, build corporations)
-MARKET_ADDITIONAL_SCOPES = [
-    "esi-wallet.read_character_wallet.v1",
-    "esi-markets.read_corporation_orders.v1",
-    "esi-markets.read_character_orders.v1",
-    "esi-contracts.read_character_contracts.v1",
+INDUSTRY_SCOPES = [
+    "esi-characters.read_blueprints.v1",
+    "esi-characters.read_agents_research.v1",
+    "esi-planets.manage_planets.v1",
+    "esi-planets.read_customs_offices.v1",
+    "esi-industry.read_character_jobs.v1",
+    "esi-industry.read_character_mining.v1",
+    "esi-industry.read_corporation_jobs.v1",
+    "esi-industry.read_corporation_mining.v1",
 ]
-MARKET_CHARACTER_SCOPES = FREIGHT_CHARACTER_SCOPES + MARKET_ADDITIONAL_SCOPES
 
-EXECUTOR_ADDITIONAL_SCOPES = [
+MARKET_SCOPES = [
+    "esi-wallet.read_character_wallet.v1",
+    "esi-wallet.read_corporation_wallets.v1",
+    "esi-contracts.read_character_contracts.v1",
+    "esi-contracts.read_corporation_contracts.v1",
+    "esi-markets.read_character_orders.v1",
+    "esi-markets.read_corporation_orders.v1",
+]
+
+EXECUTOR_SCOPES = [
     "esi-mail.send_mail.v1",
 ]
-EXECUTOR_CHARACTER_SCOPES = (
-    MARKET_CHARACTER_SCOPES + EXECUTOR_ADDITIONAL_SCOPES
-)
 
 
 class TokenType(Enum):
-    CEO = "CEO"
+    DIRECTOR = "Director"
     PUBLIC = "Public"
     BASIC = "Basic"
-    DIRECTOR = "Director"
+    INDUSTRY = "Industry"
     MARKET = "Market"
-    FREIGHT = "Freight"
     EXECUTOR = "Executor"
 
 
 def scopes_for(token_type: TokenType):
-    """Returns the list of scopes for the specified token type"""
-    scopes = None
+    """Returns the full list of scopes for the specified token type (Basic + added groups)."""
     match token_type:
         case TokenType.BASIC:
-            scopes = BASIC_SCOPES
+            return list(BASIC_SCOPES)
         case TokenType.DIRECTOR:
-            scopes = DIRECTOR_SCOPES
+            return BASIC_SCOPES + DIRECTOR_SCOPES
+        case TokenType.INDUSTRY:
+            return BASIC_SCOPES + INDUSTRY_SCOPES
         case TokenType.PUBLIC:
-            scopes = ["publicData"]
-        case TokenType.CEO:
-            scopes = CEO_SCOPES
-        case TokenType.FREIGHT:
-            scopes = FREIGHT_CHARACTER_SCOPES
+            return ["publicData"]
         case TokenType.MARKET:
-            scopes = MARKET_CHARACTER_SCOPES
+            return BASIC_SCOPES + DIRECTOR_SCOPES + MARKET_SCOPES
         case TokenType.EXECUTOR:
-            scopes = EXECUTOR_CHARACTER_SCOPES
-    return scopes
+            return (
+                BASIC_SCOPES
+                + DIRECTOR_SCOPES
+                + MARKET_SCOPES
+                + EXECUTOR_SCOPES
+            )
+        case _:
+            return []
 
 
 def scopes_for_groups(groups: List[str]) -> List[str]:
@@ -115,7 +113,7 @@ def scopes_for_groups(groups: List[str]) -> List[str]:
 
 def scope_group(token: Token) -> str | None:
     """Returns the widest scope group that the token matches"""
-    if not Token:
+    if not token:
         return None
 
     token_scopes = scope_names(token)
@@ -125,11 +123,13 @@ def scope_group(token: Token) -> str | None:
     if "esi-contracts.read_character_contracts.v1" in token_scopes:
         return TokenType.MARKET.value
     if "esi-contracts.read_corporation_contracts.v1" in token_scopes:
-        return TokenType.FREIGHT.value
+        return TokenType.MARKET.value
     if "esi-corporations.read_corporation_membership.v1" in token_scopes:
-        return TokenType.CEO.value
+        return TokenType.DIRECTOR.value
     if "esi-characters.read_notifications.v1" in token_scopes:
         return TokenType.DIRECTOR.value
+    if "esi-characters.read_blueprints.v1" in token_scopes:
+        return TokenType.INDUSTRY.value
     if "esi-fleets.read_fleet.v1" in token_scopes:
         return TokenType.BASIC.value
 

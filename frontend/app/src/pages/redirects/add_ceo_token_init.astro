@@ -2,7 +2,7 @@
 import { get_api_url } from '@helpers/env'
 
 const redirect_url = Astro.url.searchParams.get('redirect')
-const redirect = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=CEO`
+const redirect = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=Director`
 
 return Astro.redirect(redirect)
 ---
