@@ -60,6 +60,11 @@ def update_corporation(corporation_id):
         corporation_id,
     )
     refresh_corporation_populate(corporation_id)
+    corporation = EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).first()
+    if not corporation:
+        return
     if (
         corporation.active
         and corporation.type in ["alliance", "associate"]
