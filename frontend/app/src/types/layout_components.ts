@@ -623,7 +623,6 @@ export interface Fitting {
     description:    string;
     created_at:     Date;
     updated_at:     Date;
-    tags:           string[];
     eft_format:     string;
     latest_version: string;
 }

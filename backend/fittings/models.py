@@ -9,18 +9,6 @@ from groups.models import Sig
 # Create your models here.
 
 
-class EveFittingTag(models.Model):
-    """
-    Model for storing tags for fittings
-    """
-
-    name = models.CharField(max_length=255, unique=True)
-    description = models.TextField()
-
-    def __str__(self):
-        return str(self.name)
-
-
 class EveFitting(models.Model):
     """
     Model for storing fittings
@@ -31,7 +19,6 @@ class EveFitting(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
-    tags = models.ManyToManyField(EveFittingTag, blank=True)
     # comma separated list of aliases
     # e.g [FL33T] Tornado, [NVY-30] Tornado
     aliases = models.TextField(blank=True, null=True)

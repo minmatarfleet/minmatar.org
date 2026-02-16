@@ -4,7 +4,7 @@ from datetime import date
 from typing import List
 
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveType
 from ninja import Router
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ class CreateOrderRequest(BaseModel):
 
     needed_by: date
     character_id: int | None = None
+    location_id: int | None = None
     items: List[OrderItemInput]
 
 
@@ -70,6 +71,15 @@ def post_order(request, payload: CreateOrderRequest):
             detail="At least one order item is required."
         )
 
+    location = None
+    if payload.location_id is not None:
+        try:
+            location = EveLocation.objects.get(pk=payload.location_id)
+        except EveLocation.DoesNotExist:
+            return 404, ErrorResponse(
+                detail=f"Location {payload.location_id} not found."
+            )
+
     # Resolve eve types and validate
     type_ids = [item.eve_type_id for item in payload.items]
     if len(type_ids) != len(set(type_ids)):
@@ -89,6 +99,7 @@ def post_order(request, payload: CreateOrderRequest):
     order = IndustryOrder.objects.create(
         needed_by=payload.needed_by,
         character=character,
+        location=location,
     )
     for item in payload.items:
         IndustryOrderItem.objects.create(

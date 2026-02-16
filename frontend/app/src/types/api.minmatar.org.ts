@@ -151,7 +151,6 @@ export interface Fitting {
     description:        string;
     created_at:         Date;
     updated_at:         Date;
-    tags:               string[];
     eft_format:         string;
     minimum_pod:        string;
     recommended_pod:    string,

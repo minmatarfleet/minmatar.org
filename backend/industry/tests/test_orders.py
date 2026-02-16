@@ -6,7 +6,7 @@ from django.test import Client
 from django.utils import timezone
 
 from eveonline.helpers.characters import set_primary_character, user_player
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
@@ -44,6 +44,13 @@ class OrdersEndpointTestCase(AppTestCase):
             name="Test Mineral",
             published=True,
             eve_group=self.eve_group,
+        )
+        self.location = EveLocation.objects.create(
+            location_id=1999001,
+            location_name="Test Station",
+            solar_system_id=300001,
+            solar_system_name="Test System",
+            short_name="TST",
         )
 
     def _auth_headers(self):
@@ -89,6 +96,38 @@ class OrdersEndpointTestCase(AppTestCase):
         data = response.json()
         order = IndustryOrder.objects.get(pk=data["order_id"])
         self.assertEqual(order.character, self.character)
+
+    def test_post_orders_with_location_id(self):
+        needed_by = (timezone.now() + timedelta(days=7)).date().isoformat()
+        payload = {
+            "needed_by": needed_by,
+            "location_id": self.location.location_id,
+            "items": [{"eve_type_id": self.eve_type.id, "quantity": 2}],
+        }
+        response = self.client.post(
+            "/api/industry/orders",
+            payload,
+            content_type="application/json",
+            **self._auth_headers(),
+        )
+        self.assertEqual(response.status_code, 201)
+        order = IndustryOrder.objects.get(pk=response.json()["order_id"])
+        self.assertEqual(order.location_id, self.location.location_id)
+
+    def test_post_orders_invalid_location_id_returns_404(self):
+        needed_by = (timezone.now() + timedelta(days=7)).date().isoformat()
+        payload = {
+            "needed_by": needed_by,
+            "location_id": 999999999,
+            "items": [{"eve_type_id": self.eve_type.id, "quantity": 1}],
+        }
+        response = self.client.post(
+            "/api/industry/orders",
+            payload,
+            content_type="application/json",
+            **self._auth_headers(),
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_post_orders_unauthorized_without_token(self):
         payload = {

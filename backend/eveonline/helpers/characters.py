@@ -46,6 +46,17 @@ def user_characters(user: User) -> List[EveCharacter]:
     return EveCharacter.objects.filter(user=user).all()
 
 
+def related_characters(character: EveCharacter) -> List[EveCharacter]:
+    """Returns all EveCharacters belonging to the same user as the given character."""
+    if not character or not character.user_id:
+        return []
+    return list(
+        EveCharacter.objects.filter(user_id=character.user_id).order_by(
+            "character_name"
+        )
+    )
+
+
 def character_primary(character: EveCharacter) -> EveCharacter | None:
     """Returns the primary character for a character"""
     if not character:

@@ -137,6 +137,17 @@ CELERYBEAT_CORPORATIONS = [
     ),
 ]
 
+# Industry (order assignees' jobs from ESI)
+CELERYBEAT_INDUSTRY = [
+    (
+        "[Industry] Sync Jobs for Order Assignees",
+        {
+            "task": "industry.tasks.sync_industry_jobs_for_order_assignees",
+            "schedule": crontab(minute=5, hour="*/4"),
+        },
+    ),
+]
+
 # Groups
 CELERYBEAT_GROUPS = [
     (
@@ -262,6 +273,7 @@ CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
     + CELERYBEAT_CORPORATIONS
+    + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
     + CELERYBEAT_OTHER
 )
