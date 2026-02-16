@@ -6,6 +6,11 @@ class IndustryOrder(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     needed_by = models.DateField()
+    fulfilled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this order was marked as fulfilled.",
+    )
     character = models.ForeignKey(
         "eveonline.EveCharacter",
         on_delete=models.CASCADE,
