@@ -6,7 +6,6 @@ from .models import (
     EveDoctrineFitting,
     EveFitting,
     EveFittingRefit,
-    EveFittingTag,
 )
 
 
@@ -30,9 +29,6 @@ class EveFittingRefitAdmin(admin.ModelAdmin):
     search_fields = ("name", "description", "base_fitting__name")
     raw_id_fields = ("base_fitting",)
     ordering = ("base_fitting", "name")
-
-
-admin.site.register(EveFittingTag)
 
 
 @admin.register(EveDoctrine)

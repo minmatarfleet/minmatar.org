@@ -4,8 +4,10 @@ from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from industry.models import (
+    IndustryJob,
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
@@ -39,21 +41,40 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         "needed_by",
         "fulfilled_at",
         "character",
+        "location",
         "items_summary",
     )
     list_filter = ("character", "needed_by")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
-    autocomplete_fields = ("character",)
+    autocomplete_fields = ("character", "location")
     inlines = [IndustryOrderItemInline]
-    readonly_fields = ("created_at", "fulfilled_at", "mark_fulfilled_button")
+    readonly_fields = (
+        "created_at",
+        "fulfilled_at",
+        "mark_fulfilled_button",
+        "relevant_jobs_display",
+    )
     search_fields = ("id", "character__character_name")
     fieldsets = (
-        (None, {"fields": ("character", "needed_by", "created_at")}),
+        (
+            None,
+            {
+                "fields": ("character", "location", "needed_by", "created_at"),
+            },
+        ),
         (
             "Fulfilment",
             {
                 "fields": ("fulfilled_at", "mark_fulfilled_button"),
+            },
+        ),
+        (
+            "Relevant industry jobs",
+            {
+                "fields": ("relevant_jobs_display",),
+                "description": "Jobs from this order's character and assignees "
+                "that overlap the order period (in progress or completed).",
             },
         ),
     )
@@ -99,6 +120,54 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         count = obj.items.count()
         return format_html("{} line(s)", count)
 
+    @admin.display(description="Jobs")
+    def relevant_jobs_display(self, obj):
+        if not obj.pk:
+            return "—"
+        jobs = obj.relevant_industry_jobs()
+        if not jobs:
+            return format_html(
+                "<p>No industry jobs in this order's period for its character or assignees.</p>"
+            )
+        rows = []
+        for job in jobs:
+            rows.append(
+                format_html(
+                    "<tr>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "<td>{}</td>"
+                    "</tr>",
+                    job.job_id,
+                    job.character.character_name,
+                    job.activity_id,
+                    job.status,
+                    job.runs,
+                    (
+                        job.start_date.strftime("%Y-%m-%d %H:%M")
+                        if job.start_date
+                        else "—"
+                    ),
+                    (
+                        job.end_date.strftime("%Y-%m-%d %H:%M")
+                        if job.end_date
+                        else "—"
+                    ),
+                )
+            )
+        table = (
+            "<table style='width:100%'>"
+            "<thead><tr>"
+            "<th>Job ID</th><th>Character</th><th>Activity</th>"
+            "<th>Status</th><th>Runs</th><th>Start</th><th>End</th>"
+            "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
+        )
+        return mark_safe(table)
+
 
 class IndustryOrderItemAssignmentInline(admin.TabularInline):
     model = IndustryOrderItemAssignment
@@ -117,6 +186,26 @@ class IndustryOrderItemAdmin(admin.ModelAdmin):
     inlines = [IndustryOrderItemAssignmentInline]
     search_fields = ("order__id", "eve_type__name")
 
+    def response_add(self, request, obj, post_url_continue=None):
+        """After adding an order item, redirect back to the order if we have one."""
+        if obj.order_id:
+            return HttpResponseRedirect(
+                reverse(
+                    "admin:industry_industryorder_change", args=[obj.order_id]
+                )
+            )
+        return super().response_add(request, obj, post_url_continue)
+
+    def response_change(self, request, obj):
+        """After changing an order item (e.g. editing assignments), redirect back to the order."""
+        if obj.order_id:
+            return HttpResponseRedirect(
+                reverse(
+                    "admin:industry_industryorder_change", args=[obj.order_id]
+                )
+            )
+        return super().response_change(request, obj)
+
 
 @admin.register(IndustryOrderItemAssignment)
 class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
@@ -124,10 +213,49 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
     list_filter = ("character",)
     autocomplete_fields = ("order_item", "character")
 
+    def response_add(self, request, obj, post_url_continue=None):
+        """After adding an assignment, redirect back to the order."""
+        if obj.order_item_id:
+            order_id = obj.order_item.order_id
+            return HttpResponseRedirect(
+                reverse("admin:industry_industryorder_change", args=[order_id])
+            )
+        return super().response_add(request, obj, post_url_continue)
+
+    def response_change(self, request, obj):
+        """After changing an assignment, redirect back to the order."""
+        if obj.order_item_id:
+            order_id = obj.order_item.order_id
+            return HttpResponseRedirect(
+                reverse("admin:industry_industryorder_change", args=[order_id])
+            )
+        return super().response_change(request, obj)
+
+
+@admin.register(IndustryJob)
+class IndustryJobAdmin(admin.ModelAdmin):
+    list_display = (
+        "job_id",
+        "character",
+        "activity_id",
+        "blueprint_type_id",
+        "status",
+        "runs",
+        "start_date",
+        "end_date",
+        "updated_at",
+    )
+    list_filter = ("status", "activity_id", "character")
+    search_fields = ("job_id", "character__character_name")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("character",)
+    date_hierarchy = "end_date"
+    ordering = ("-end_date",)
+
 
 # ----- Industry admin index: only Orders -----
 
-INDUSTRY_INDEX_MODELS = {"industryorder": "Orders"}
+INDUSTRY_INDEX_MODELS = {"industryorder": "Orders", "industryjob": "Jobs"}
 
 
 def _industry_get_app_list(request):
