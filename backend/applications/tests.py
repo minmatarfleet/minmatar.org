@@ -38,8 +38,16 @@ class EveCorporationApplicationTestCase(TestCase):
         super().setUp()
 
     def test_get_eve_corporation_applications_success(self):
+        # User must have view permission to list applications
+        view_perm = Permission.objects.get(
+            content_type__app_label="applications",
+            codename="view_evecorporationapplication",
+        )
+        self.user.user_permissions.add(view_perm)
+
         corporation = EveCorporation.objects.create(
-            corporation_id=123, name="Test Corporation"
+            corporation_id=123,
+            name="Test Corporation",
         )
         application = EveCorporationApplication.objects.create(
             user=self.user,

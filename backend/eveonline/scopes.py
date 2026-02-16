@@ -95,6 +95,22 @@ def scopes_for(token_type: TokenType):
             return []
 
 
+def scopes_for_groups(groups: List[str]) -> List[str]:
+    """Returns the union of scopes for all given scope groups (no order)."""
+    if not groups:
+        return []
+    result = set()
+    for name in groups:
+        try:
+            token_type = TokenType(name)
+        except ValueError:
+            continue
+        scopes = scopes_for(token_type)
+        if scopes:
+            result.update(scopes)
+    return sorted(result)
+
+
 def scope_group(token: Token) -> str | None:
     """Returns the widest scope group that the token matches"""
     if not token:

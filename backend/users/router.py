@@ -131,7 +131,7 @@ def redirect_url_from_session(request):
 )
 def get_user_by_id(request, user_id: int):
     if not User.objects.filter(id=user_id).exists():
-        return 404, {"detail": "User not found."}
+        return 404, ErrorResponse(detail="User not found.")
     return get_user_profile(user_id)
 
 
@@ -146,7 +146,7 @@ def get_user_by_id(request, user_id: int):
 )
 def query_users(request, username: str):
     if not User.objects.filter(username=username).exists():
-        return 404, {"detail": "User not found."}
+        return 404, ErrorResponse(detail="User not found.")
     user = User.objects.get(username=username)
     return get_user_profile(user.id)
 
@@ -164,17 +164,13 @@ def query_multiple_users(
     request, username: str = "", ids: str = ""
 ) -> List[UserProfileSchema]:
     if username:
-        # Backwards compatibility with original `query_users()`
         if not User.objects.filter(username=username).exists():
-            return 404, {"detail": "User not found."}
+            return 404, ErrorResponse(detail="User not found.")
         user = User.objects.get(username=username)
         return [get_user_profile(user.id)]
 
     if ids:
-        user_ids = []
-        ids = ids.split(",")
-        for user_id in ids:
-            user_ids.append(int(user_id))
+        user_ids = [int(x) for x in ids.split(",") if x.strip()]
         return get_user_profiles(user_ids)
 
     return []
@@ -199,10 +195,13 @@ def delete_account(request):
 @router.post(
     "/{user_id}/sync",
     summary="Sync user with Discord",
-    description="This will sync the user with Discord.",
+    description="This will sync the user with Discord. You can only sync your own account.",
     auth=AuthBearer(),
+    response={200: str, 403: ErrorResponse},
 )
 def sync_user(request, user_id: int):
+    if request.user.id != user_id:
+        return 403, ErrorResponse(detail="You can only sync your own account.")
     update_affiliation(user_id)
     sync_discord_user(user_id)
     sync_discord_nickname(user_id, True)

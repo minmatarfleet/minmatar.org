@@ -62,6 +62,7 @@ temp.md
 local_settings.py
 settings.py
 **/settings.py
+backend/test_db.sqlite3
 db.sqlite3
 db.sqlite3-journal
 
