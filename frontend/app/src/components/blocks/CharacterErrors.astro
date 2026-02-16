@@ -47,8 +47,8 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                     <Flexblock gap="var(--space-3xs)">
                         <h4>
                             {character_error?.character?.character_name ?
-                                t(`${character_error.error}_title` as any).replace('CHARACTER_NAME', character_error.character.character_name as string) :
-                                t(`${character_error.error}_title` as any)
+                                (t(`${character_error.error}_title` as any) ?? '').replace('CHARACTER_NAME', character_error.character.character_name as string) :
+                                (t(`${character_error.error}_title` as any) ?? '')
                             }
                         </h4>
                         <Markdown
