@@ -10,8 +10,8 @@ from eveonline.models import EveCharacter
 from eveonline.scopes import (
     TokenType,
     scope_names,
+    scopes_for,
     add_scopes,
-    EXECUTOR_CHARACTER_SCOPES,
 )
 
 
@@ -37,6 +37,6 @@ class CharacterHelperTests(TestCase):
 
         add_scopes(TokenType.DIRECTOR, char.token)
 
-        self.assertEqual(16, len(scope_names(char.token)))
+        self.assertEqual(28, len(scope_names(char.token)))
 
-        self.assertEqual(33, len(EXECUTOR_CHARACTER_SCOPES))
+        self.assertEqual(35, len(scopes_for(TokenType.EXECUTOR)))

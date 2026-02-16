@@ -468,8 +468,8 @@ def _apply_token_to_existing_character(character, token, token_type):
 
 
 def _maybe_populate_ceo_corporation(character, token_type):
-    """Populate corporation from ESI when token is CEO/MARKET/FREIGHT."""
-    if token_type not in (TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT):
+    """Populate corporation from ESI when token is Director/Market."""
+    if token_type not in (TokenType.DIRECTOR, TokenType.MARKET):
         return
     if not character.corporation_id:
         return
