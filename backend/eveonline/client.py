@@ -198,7 +198,8 @@ class EsiClient:
         self, include_completed: bool = True
     ) -> EsiResponse:
         """
-        Returns industry jobs for the character (all pages).
+        Returns industry jobs for the character.
+        ESI does not support pagination for this endpoint; all jobs are returned in one response.
         Requires esi-industry.read_character_jobs.v1.
         """
         token, status = self._valid_token(
@@ -207,26 +208,16 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        all_jobs = []
-        page = 1
-        while True:
-            operation = esi_provider.client.Industry.get_characters_character_id_industry_jobs(
-                character_id=self.character_id,
-                token=token,
-                include_completed=include_completed,
-                page=page,
-            )
-            try:
-                page_data = operation.results()
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if not page_data:
-                break
-            all_jobs.extend(page_data)
-            if len(page_data) < 1000:
-                break
-            page += 1
-        return EsiResponse(response_code=SUCCESS, data=all_jobs)
+        operation = esi_provider.client.Industry.get_characters_character_id_industry_jobs(
+            character_id=self.character_id,
+            token=token,
+            include_completed=include_completed,
+        )
+        try:
+            jobs = operation.results()
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        return EsiResponse(response_code=SUCCESS, data=jobs or [])
 
     def get_character_contracts(self) -> EsiResponse:
         """Returns the contracts for the character this ESI client was created for"""
