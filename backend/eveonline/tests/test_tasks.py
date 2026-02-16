@@ -361,6 +361,8 @@ class EveOnlineTaskTests(TestCase):
             character_name="Test Pilot",
             user=self.user,
         )
+        token = Token.objects.create(character_id=char.character_id)
+        self.add_token_scopes(token, ["esi-killmails.read_killmails.v1"])
 
         self.assertEqual(0, EveCharacterKillmail.objects.count())
 
