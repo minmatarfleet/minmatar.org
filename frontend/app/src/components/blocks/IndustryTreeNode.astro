@@ -29,22 +29,18 @@ import BlockList from '@components/compositions/BlockList.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import Picture from '@components/blocks/Picture.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import IndustryTreeNodeRecursive from '@components/blocks/IndustryTreeNode.astro'
-import ItemPicture from '@components/blocks/ItemPicture.astro';
 ---
 
 {order.children?.length > 0 && (
-    <BlockList class="[ industry-node-wrapper ]" gap='var(--space-2xs)'>
-        {order.depth === 0 &&
-            <div class="[ sticky-icon ][ top-0 lg:top-[85px] ]">
-                <ItemPicture
-                    item_id={order.type_id}
-                />
-            </div>
-        }
-        <div class={order.depth !== 0 ? 'parent-node' : 'top-node' }>
-            {order.depth > 0 ?
+    <BlockList
+        class="[ industry-node-wrapper ]"
+        gap='var(--space-2xs)'
+        x-show="expanded"
+        style="display: none"
+    >
+        {order.depth > 0 &&
+            <div class="parent-node">
                 <div class="[ w-fit ]">
                     <ComponentBlock
                         padding_block='var(--space-3xs)'
@@ -73,28 +69,8 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
                         </ItemBadge>
                     </ComponentBlock>
                 </div>
-                :
-                <ItemBadge
-                    item_name={order.name}
-                    type_id={order.type_id}
-                    quantity={order.quantity}
-                    title_el='h2'
-                >
-                    <FixedFluid gap='var(--space-2xs)' width='16px'>
-                        <Picture
-                            src={get_bpc_icon(
-                                order.children[0].source === 'blueprint' ? order.type_id + 1 : SOURCE_ICONS_TYPE[order.children[0].source],
-                                order.children[0].source === 'reaction',
-                                32,
-                            )}
-                            alt={t(order.children[0].source as any)}
-                            size={16}
-                        />
-                        <small>{t(order.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(order.quantity))}</small>
-                    </FixedFluid>
-                </ItemBadge>
-            }
-        </div>
+            </div>
+        }
 
         <div class="[ industry-node ]">
             <Flexblock
@@ -141,19 +117,12 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
         position: relative;
     }
 
-    .sticky-icon {
-        position: sticky;
-        display: flex;
-        width: fit-content;
-        z-index: 1;
-    }
-
     .top-node {
         position: absolute;
         width: fit-content;
     }
 
-    .top-node + .industry-node {
+    .top-node + .industry-node-wrapper > .industry-node {
         margin-top: var(--space-m) !important;
 
         &:before {
