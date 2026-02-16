@@ -1,55 +1,32 @@
-"""POST /orders - create a new industry order."""
-
-from datetime import date
-from typing import List
+"""POST "" - create a new industry order."""
 
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveType
-from ninja import Router
-from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from industry.endpoints.orders.schemas import (
+    CreateOrderRequest,
+    CreateOrderResponse,
+)
 from industry.models import IndustryOrder, IndustryOrderItem
 
-router = Router(tags=["Industry - Orders"])
-
-
-class OrderItemInput(BaseModel):
-    """One line item: eve type and quantity."""
-
-    eve_type_id: int
-    quantity: int
-
-
-class CreateOrderRequest(BaseModel):
-    """Request body for creating an industry order."""
-
-    needed_by: date
-    character_id: int | None = None
-    location_id: int | None = None
-    items: List[OrderItemInput]
-
-
-class CreateOrderResponse(BaseModel):
-    """Response after creating an order."""
-
-    order_id: int
-
-
-@router.post(
-    "",
-    response={
+PATH = ""
+METHOD = "post"
+ROUTE_SPEC = {
+    "summary": "Create a new industry order for the authenticated user's character",
+    "auth": AuthBearer(),
+    "response": {
         201: CreateOrderResponse,
         400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
     },
-    auth=AuthBearer(),
-)
+}
+
+
 def post_order(request, payload: CreateOrderRequest):
-    """Create a new industry order for the authenticated user's character."""
     character = None
     if payload.character_id is not None:
         character = EveCharacter.objects.filter(
@@ -80,7 +57,6 @@ def post_order(request, payload: CreateOrderRequest):
                 detail=f"Location {payload.location_id} not found."
             )
 
-    # Resolve eve types and validate
     type_ids = [item.eve_type_id for item in payload.items]
     if len(type_ids) != len(set(type_ids)):
         return 400, ErrorResponse(detail="Duplicate eve_type_id in items.")

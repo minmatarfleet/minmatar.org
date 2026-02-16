@@ -1,20 +1,19 @@
-"""DELETE /orders/{order_id} - delete an industry order."""
+"""DELETE /{order_id} - delete an industry order."""
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from industry.models import IndustryOrder
-from ninja import Router
 
-router = Router(tags=["Industry - Orders"])
+PATH = "{int:order_id}"
+METHOD = "delete"
+ROUTE_SPEC = {
+    "summary": "Delete an industry order. Only the order's character owner may delete it.",
+    "auth": AuthBearer(),
+    "response": {204: None, 403: ErrorResponse, 404: ErrorResponse},
+}
 
 
-@router.delete(
-    "/{order_id}",
-    response={204: None, 403: ErrorResponse, 404: ErrorResponse},
-    auth=AuthBearer(),
-)
 def delete_order(request, order_id: int):
-    """Delete an industry order. Only the order's character owner may delete it."""
     try:
         order = IndustryOrder.objects.get(pk=order_id)
     except IndustryOrder.DoesNotExist:
