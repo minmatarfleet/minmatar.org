@@ -1,11 +1,18 @@
 import logging
 
-from esi.models import Token
-
 from app.celery import app
-
-from eveonline.client import EsiClient
-from eveonline.models import EveCharacter, EveCorporation, EveAlliance
+from eveonline.helpers.corporations import (
+    SCOPE_CORPORATION_CONTRACTS,
+    SCOPE_CORPORATION_INDUSTRY_JOBS,
+    SCOPE_CORPORATION_MEMBERSHIP,
+    get_director_with_scope,
+    sync_alliance_corporations_from_esi,
+    update_corporation_contracts as refresh_corporation_contracts,
+    update_corporation_industry_jobs as refresh_corporation_industry_jobs,
+    update_corporation_members_and_roles as refresh_corporation_members_and_roles,
+    update_corporation_populate as refresh_corporation_populate,
+)
+from eveonline.models import EveCorporation
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +24,7 @@ ALLIED_ALLIANCE_NAMES = [
 
 @app.task
 def update_corporations():
+    """Queue update_corporation for each allied corporation."""
     for corporation in EveCorporation.objects.filter(
         alliance__name__in=ALLIED_ALLIANCE_NAMES
     ):
@@ -26,47 +34,10 @@ def update_corporations():
 @app.task
 def sync_alliance_corporations():
     """
-    For each EveAlliance in the database, fetch corporation IDs from ESI
-    (get_alliance_corporations) and get_or_create EveCorporation for each,
-    then populate corporation details from ESI.
+    For each EveAlliance, fetch corporation IDs from ESI, get_or_create
+    EveCorporation for each, and populate new ones. Returns number created.
     """
-    alliances = EveAlliance.objects.all().order_by("alliance_id")
-    logger.info(
-        "Syncing corporations for %d alliances",
-        alliances.count(),
-    )
-    total_created = 0
-    for alliance in alliances:
-        esi_response = EsiClient(None).get_alliance_corporations(
-            alliance.alliance_id
-        )
-        if not esi_response.success():
-            logger.warning(
-                "ESI error %d fetching corporations for alliance %s (%s)",
-                esi_response.response_code,
-                alliance.name or alliance.alliance_id,
-                alliance.alliance_id,
-            )
-            continue
-        corporation_ids = esi_response.results() or []
-        logger.info(
-            "Alliance %s (%s): %d corporations from ESI",
-            alliance.name or alliance.alliance_id,
-            alliance.alliance_id,
-            len(corporation_ids),
-        )
-        for corporation_id in corporation_ids:
-            corporation, created = EveCorporation.objects.get_or_create(
-                corporation_id=corporation_id
-            )
-            if created:
-                corporation.populate()
-                total_created += 1
-                logger.info(
-                    "Created corporation %s (%s)",
-                    corporation.name,
-                    corporation_id,
-                )
+    total_created = sync_alliance_corporations_from_esi()
     logger.info(
         "sync_alliance_corporations complete: %d new corporations created",
         total_created,
@@ -74,79 +45,28 @@ def sync_alliance_corporations():
     return total_created
 
 
-def _all_roles_for_member(role_data):
-    """Collect all role names for a member from ESI role entry (base, hq, other)."""
-    all_roles = set(role_data.get("roles") or [])
-    for key in ("roles_at_base", "roles_at_hq", "roles_at_other"):
-        all_roles.update(role_data.get(key) or [])
-    return all_roles
-
-
-@app.task
+@app.task(rate_limit="1/m")
 def update_corporation(corporation_id):
-    logger.info("Updating corporation %s", corporation_id)
-    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
-    corporation.populate()
-    if corporation.pk is None:
+    """Update a corporation's public info and, when a director has scope, members/roles, contracts, industry jobs."""
+    corporation = EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).first()
+    if not corporation:
+        logger.warning("Corporation %s not found", corporation_id)
         return
-    # fetch and set members if active (requires CEO token with membership scope)
-    if corporation.active and (corporation.type in ["alliance", "associate"]):
-        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        if not corporation.ceo or not Token.get_token(
-            corporation.ceo.character_id, required_scopes
-        ):
-            logger.debug(
-                "Skipping member/roles sync for corporation %s (id %s): "
-                "no CEO or no token with %s",
-                corporation.name,
-                corporation_id,
-                required_scopes[0],
-            )
-        else:
-            esi_members = EsiClient(corporation.ceo).get_corporation_members(
-                corporation.corporation_id
-            )
-            if esi_members.success():
-                for member_id in esi_members.results():
-                    if not EveCharacter.objects.filter(
-                        character_id=member_id
-                    ).exists():
-                        logger.info(
-                            "Creating character %s for corporation %s",
-                            member_id,
-                            corporation.name,
-                        )
-                        EveCharacter.objects.create(character_id=member_id)
-
-            # Populate directors, recruiters, stewards from ESI corporation roles
-            esi_roles = EsiClient(corporation.ceo).get_corporation_roles(
-                corporation.corporation_id
-            )
-            if esi_roles.success():
-                roles_data = esi_roles.results() or []
-                director_ids = []
-                recruiter_ids = []
-                steward_ids = []
-                for entry in roles_data:
-                    char_id = entry.get("character_id")
-                    if char_id is None:
-                        continue
-                    all_roles = _all_roles_for_member(entry)
-                    char, _ = EveCharacter.objects.get_or_create(
-                        character_id=char_id, defaults={}
-                    )
-                    if "Director" in all_roles:
-                        director_ids.append(char.id)
-                    if "Personnel_Manager" in all_roles:
-                        recruiter_ids.append(char.id)
-                    if "Station_Manager" in all_roles:
-                        steward_ids.append(char.id)
-                corporation.directors.set(
-                    EveCharacter.objects.filter(id__in=director_ids)
-                )
-                corporation.recruiters.set(
-                    EveCharacter.objects.filter(id__in=recruiter_ids)
-                )
-                corporation.stewards.set(
-                    EveCharacter.objects.filter(id__in=steward_ids)
-                )
+    logger.info(
+        "Updating corporation %s (%s)",
+        corporation.name or corporation_id,
+        corporation_id,
+    )
+    refresh_corporation_populate(corporation_id)
+    if (
+        corporation.active
+        and corporation.type in ["alliance", "associate"]
+        and get_director_with_scope(corporation, SCOPE_CORPORATION_MEMBERSHIP)
+    ):
+        refresh_corporation_members_and_roles(corporation_id)
+    if get_director_with_scope(corporation, SCOPE_CORPORATION_CONTRACTS):
+        refresh_corporation_contracts(corporation_id)
+    if get_director_with_scope(corporation, SCOPE_CORPORATION_INDUSTRY_JOBS):
+        refresh_corporation_industry_jobs(corporation_id)

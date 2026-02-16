@@ -237,14 +237,19 @@ class EveOnlineTaskTests(TestCase):
             data=[1],
         )
 
+        mock_esi_client.get_corporation_roles.return_value = EsiResponse(
+            response_code=200,
+            data=[],
+        )
+
         with patch(
             "eveonline.models.corporations.EsiClient"
         ) as esi_mock_model:
             with patch(
-                "eveonline.tasks.corporations.EsiClient"
-            ) as esi_mock_task:
+                "eveonline.helpers.corporations.update.EsiClient"
+            ) as esi_mock_helper:
                 esi_mock_model.return_value = mock_esi_client
-                esi_mock_task.return_value = mock_esi_client
+                esi_mock_helper.return_value = mock_esi_client
 
                 update_corporation(corp.corporation_id)
 

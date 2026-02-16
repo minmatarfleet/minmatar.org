@@ -248,6 +248,39 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def get_corporation_industry_jobs(
+        self, corporation_id: int, include_completed: bool = True
+    ) -> EsiResponse:
+        """
+        Returns industry jobs for the corporation. Paginated; fetches all pages.
+        Requires esi-industry.read_corporation_jobs.v1 (e.g. Factory_Manager).
+        """
+        token, status = self._valid_token(
+            ["esi-industry.read_corporation_jobs.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+        all_jobs = []
+        page = 1
+        while True:
+            operation = esi_provider.client.Industry.get_corporations_corporation_id_industry_jobs(
+                corporation_id=corporation_id,
+                token=token,
+                include_completed=include_completed,
+                page=page,
+            )
+            try:
+                jobs = operation.results()
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if not jobs:
+                break
+            all_jobs.extend(jobs)
+            if len(jobs) < 1000:
+                break
+            page += 1
+        return EsiResponse(response_code=SUCCESS, data=all_jobs)
+
     def get_public_contracts(self, region_id) -> EsiResponse:
         operation = (
             esi_provider.client.Contracts.get_contracts_public_region_id(

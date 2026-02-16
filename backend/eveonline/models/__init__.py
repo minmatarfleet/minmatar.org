@@ -3,6 +3,8 @@ from eveonline.models.alliances import EveAlliance, EveLocation
 from eveonline.models.characters import (
     EveCharacter,
     EveCharacterAsset,
+    EveCharacterContract,
+    EveCharacterIndustryJob,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
     EveCharacterLog,
@@ -13,12 +15,18 @@ from eveonline.models.characters import (
     EveSkillset,
     EveTag,
 )
-from eveonline.models.corporations import EveCorporation
+from eveonline.models.corporations import (
+    EveCorporation,
+    EveCorporationContract,
+    EveCorporationIndustryJob,
+)
 
 __all__ = [
     "EveAlliance",
     "EveCharacter",
     "EveCharacterAsset",
+    "EveCharacterContract",
+    "EveCharacterIndustryJob",
     "EveCharacterKillmail",
     "EveCharacterKillmailAttacker",
     "EveCharacterLog",
@@ -26,6 +34,8 @@ __all__ = [
     "EveCharacterSkillset",
     "EveCharacterTag",
     "EveCorporation",
+    "EveCorporationContract",
+    "EveCorporationIndustryJob",
     "EveLocation",
     "EvePlayer",
     "EveSkillset",

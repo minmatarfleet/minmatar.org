@@ -3,7 +3,7 @@ from datetime import datetime as dt_datetime, time as dt_time
 from django.db import models
 from django.utils import timezone
 
-from industry.models.job import IndustryJob
+from eveonline.models import EveCharacterIndustryJob
 
 
 class IndustryOrder(models.Model):
@@ -56,11 +56,11 @@ class IndustryOrder(models.Model):
             for assignment in item.assignments.all():
                 character_ids.add(assignment.character_id)
         if not character_ids:
-            return IndustryJob.objects.none()
+            return EveCharacterIndustryJob.objects.none()
         period_start = self.created_at
         period_end = self._order_period_end()
         return (
-            IndustryJob.objects.filter(
+            EveCharacterIndustryJob.objects.filter(
                 character_id__in=character_ids,
                 end_date__gte=period_start,
                 start_date__lte=period_end,
