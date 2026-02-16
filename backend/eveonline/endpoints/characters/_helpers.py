@@ -181,7 +181,11 @@ def apply_token_to_existing_character(character, token, token_type):
 
 
 def maybe_populate_ceo_corporation(character, token_type):
-    if token_type not in (TokenType.CEO, TokenType.MARKET, TokenType.FREIGHT):
+    if token_type not in (
+        TokenType.DIRECTOR,
+        TokenType.MARKET,
+        TokenType.EXECUTOR,
+    ):
         return
     if not character.corporation_id:
         return
