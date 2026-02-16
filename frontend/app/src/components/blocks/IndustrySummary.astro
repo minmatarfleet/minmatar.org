@@ -23,7 +23,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import MaterialReels from '@components/blocks/MaterialReels.astro'
-import IndustryTreeNode from '@components/blocks/IndustryTreeNode.astro';
+import IndustryOrders from '@components/blocks/IndustryOrders.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 ---
 
@@ -36,9 +36,9 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
         <MaterialReels materials_required={materials_required} />
     </Flexblock>
 
-    <Flexblock gap='var(--space-3xl)'>
+    <Flexblock gap='var(--space-xl)'>
         {orders.map(order =>
-            <IndustryTreeNode order={order} />
+            <IndustryOrders order={order} />
         )}
     </Flexblock>
 </Flexblock>

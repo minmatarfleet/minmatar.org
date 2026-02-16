@@ -1,0 +1,111 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { NestedIndustryOrder } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order:  NestedIndustryOrder;
+}
+
+const {
+    order,
+} = Astro.props;
+
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_bpc_icon } from '@helpers/eve_image_server';
+
+const SOURCE_ICONS_TYPE = {
+    reaction: 57490,
+}
+
+import BlockList from '@components/compositions/BlockList.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Picture from '@components/blocks/Picture.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import IndustryTreeNode from '@components/blocks/IndustryTreeNode.astro'
+import CollapsableButton from '@components/blocks/CollapsableButton.astro'
+---
+
+<BlockList
+    class="[ industry-order ]"
+    gap='var(--space-2xs)'
+    x-data={`{
+        expanded: false,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+>
+    <div class="[ sticky-icon ][ top-0 lg:top-[85px] ]">
+        <ItemPicture
+            item_id={order.type_id}
+        />
+    </div>
+
+    <div class="[ top-node ]">
+        <CollapsableButton class="[ w-full! ]" x-on:click="toggle_collapse()">
+            <FlexInline gap="var(--space-xs)">
+                <ItemBadge
+                    item_name={order.name}
+                    type_id={order.type_id}
+                    quantity={order.quantity}
+                    title_el='h2'
+                >
+                    <FixedFluid gap='var(--space-2xs)' width='16px'>
+                        <Picture
+                            src={get_bpc_icon(
+                                order.children[0].source === 'blueprint' ? order.type_id + 1 : SOURCE_ICONS_TYPE[order.children[0].source],
+                                order.children[0].source === 'reaction',
+                                32,
+                            )}
+                            alt={t(order.children[0].source as any)}
+                            size={16}
+                        />
+                        <small>{t(order.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(order.quantity))}</small>
+                    </FixedFluid>
+                </ItemBadge>
+            </FlexInline>
+        </CollapsableButton>
+    </div>
+
+    <IndustryTreeNode order={order} />
+</BlockList>
+
+<style lang="scss">
+    .industry-order {
+        position: relative;
+        --guides-color: var(--highlight);
+    }
+
+    .sticky-icon {
+        position: sticky;
+        display: flex;
+        width: fit-content;
+        z-index: 1;
+    }
+
+    .top-node {
+        position: absolute;
+        width: 100%;
+        left: 0%;
+        right: 0%;
+    }
+
+    :global(.top-node + .industry-node-wrapper > .industry-node) {
+        margin-top: var(--space-m) !important;
+
+        &:before {
+            content: ' ';
+            position: absolute;
+            top: -11px;
+            left: 30px;
+            width: 5px;
+            height: 5px;
+            background-color: var(--guides-color);
+        }
+    }
+</style>
