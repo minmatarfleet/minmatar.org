@@ -3,6 +3,8 @@ from datetime import timedelta
 from celery.schedules import crontab, schedule
 
 CELERYD_HIJACK_ROOT_LOGGER = False
+# Retain broker connection retries on worker startup (Celery 6+)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Market
 CELERYBEAT_MARKET = [
