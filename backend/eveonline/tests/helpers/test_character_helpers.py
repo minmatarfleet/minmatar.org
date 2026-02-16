@@ -39,4 +39,4 @@ class CharacterHelperTests(TestCase):
 
         self.assertEqual(28, len(scope_names(char.token)))
 
-        self.assertEqual(35, len(scopes_for(TokenType.EXECUTOR)))
+        self.assertEqual(36, len(scopes_for(TokenType.EXECUTOR)))

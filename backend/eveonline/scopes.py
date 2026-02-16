@@ -55,6 +55,7 @@ MARKET_SCOPES = [
     "esi-contracts.read_corporation_contracts.v1",
     "esi-markets.read_character_orders.v1",
     "esi-markets.read_corporation_orders.v1",
+    "esi-markets.structure_markets.v1",
 ]
 
 EXECUTOR_SCOPES = [
@@ -123,6 +124,8 @@ def scope_group(token: Token) -> str | None:
     if "esi-contracts.read_character_contracts.v1" in token_scopes:
         return TokenType.MARKET.value
     if "esi-contracts.read_corporation_contracts.v1" in token_scopes:
+        return TokenType.MARKET.value
+    if "esi-markets.structure_markets.v1" in token_scopes:
         return TokenType.MARKET.value
     if "esi-corporations.read_corporation_membership.v1" in token_scopes:
         return TokenType.DIRECTOR.value
