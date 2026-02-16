@@ -5,7 +5,7 @@ from eveonline.models import (
     EveCharacterSkill,
     EveSkillset,
 )
-from eveonline.helpers.skills import compare_skills_to_skillset
+from eveonline.helpers.characters import compare_skills_to_skillset
 
 
 class EveSkillsHelperTestCase(TestCase):

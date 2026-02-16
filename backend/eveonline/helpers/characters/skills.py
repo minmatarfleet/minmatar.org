@@ -23,15 +23,10 @@ class EveCharacterSkillResponse(pydantic.BaseModel):
 
 
 def upsert_character_skills(character_id: int):
-    """
-    populate skills from eve and save them to the character
-
-    """
+    """Populate skills from eve and save them to the character."""
     logger.debug("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
-
     response = EsiClient(character).get_character_skills()
-
     if not response.success():
         logger.error(
             "Error %s getting skills for %s",
@@ -39,20 +34,16 @@ def upsert_character_skills(character_id: int):
             character.summary(),
         )
         return
-
     for skill in response.results():
         upsert_character_skill(character, skill)
 
 
 def upsert_character_skill(character: EveCharacter, esi_skill):
     skill_type = EsiClient(None).get_eve_type(esi_skill["skill_id"])
-
     qry = EveCharacterSkill.objects.filter(
         character=character, skill_id=esi_skill["skill_id"]
     ).order_by("-skill_points")
-
     logger.debug("Query count %d", qry.count())
-
     if qry.count() == 0:
         skill = EveCharacterSkill(
             character=character,
@@ -65,16 +56,13 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
         skill = qry.first()
         skill.skill_points = esi_skill["skillpoints_in_skill"]
         skill.skill_level = esi_skill["trained_skill_level"]
-
     skill.save()
-
     if qry.count() > 1:
         logger.error(
             "Duplicate skill %d for character %d, deleting one",
             esi_skill["skill_id"],
             character.character_id,
         )
-        # If more than 2, eventually all but 1 will be removed
         qry.last().delete()
 
 
@@ -92,28 +80,20 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
                 trained_skill_level=skill.skill_level,
             )
         )
-
-    # create a lookup hashmap from skillset
     skillset_lookup = {}
     for skill in skillset.skills.split("\n"):
         skill = skill.strip()
         skillset_lookup[skill] = True
-
-    # populate skills from eve universe data
     hydrated_skills = {}
     for skill in skills:
         hydrated_skills[skill.skill_name] = skill.model_dump()
-
-    # build progress of skillset
     missing_skills = []
     player_skill_count = 0
     total_skill_count = 0
     for skill in skillset_lookup:
         logger.debug("Checking skill %s", skill)
-        # skill level is the last digit in string, remove it
         skill_name = skill[:-1].strip()
         skill_level = int(skill[-1])
-
         if skill_name not in hydrated_skills:
             missing_skills.append(skill)
             total_skill_count += skill_level * 12
@@ -130,7 +110,6 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
                 missing_skills.append(skill)
                 total_skill_count += skill_level * 12
             player_skill_count += skill_level * 12
-
     if missing_skills:
         progress = player_skill_count / total_skill_count
     else:
@@ -140,7 +119,6 @@ def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):
 
 def create_eve_character_skillset(character_id: int, skillset: EveSkillset):
     """Create a skillset for a character"""
-    # delete existing
     logger.debug(
         "Creating skillset for character %s and skillset %s",
         character_id,

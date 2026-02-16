@@ -10,7 +10,7 @@ from eveonline.models import (
     EveCorporation,
     EveAlliance,
 )
-from eveonline.helpers.affiliations import update_character_with_affiliations
+from eveonline.helpers.characters import update_character_with_affiliations
 
 BASE_URL = "/api/eveonline/corporations/"
 

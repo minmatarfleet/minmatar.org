@@ -22,7 +22,7 @@ from eveonline.helpers.characters import (
     user_characters,
     set_primary_character,
 )
-from eveonline.routers.characters import (
+from eveonline.endpoints.characters._helpers import (
     handle_add_character_esi_callback,
 )
 
