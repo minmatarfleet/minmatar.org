@@ -14,6 +14,7 @@ __all__ = [
     "task_config",
     "update_character_affilliations",
     "update_character",
+    "update_character_urgent",
     "update_alliance_characters",
     "fixup_character_tokens",
     "update_corporations",
@@ -25,6 +26,7 @@ __all__ = [
 
 update_character_affilliations = affiliations.update_character_affilliations
 update_character = characters.update_character
+update_character_urgent = characters.update_character_urgent
 update_alliance_characters = characters.update_alliance_characters
 fixup_character_tokens = players.fixup_character_tokens
 
