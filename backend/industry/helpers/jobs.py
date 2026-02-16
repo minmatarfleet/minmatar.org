@@ -88,7 +88,7 @@ def sync_character_industry_jobs(character_id: int) -> None:
                 "blueprint_type_id": raw["blueprint_type_id"],
                 "blueprint_location_id": raw["blueprint_location_id"],
                 "facility_id": raw["facility_id"],
-                "location_id": raw["location_id"],
+                "location_id": raw["station_id"],
                 "output_location_id": raw["output_location_id"],
                 "status": raw["status"],
                 "installer_id": raw["installer_id"],
