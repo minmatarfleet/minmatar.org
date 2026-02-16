@@ -29,10 +29,6 @@ class MarketContractHistoricalQuantity:
 
 
 def create_market_contract(contract: dict, issuer_id: int) -> None:
-    """
-    Creates a market contract from ESI data while trusting
-    the issuer_id from upstream filtering
-    """
     # Need to add comma for ships that contain same name
     # e.g Exequror and Exequror Navy Issue
     alias_title_lookup = f"{contract['title']},"
@@ -157,22 +153,6 @@ def create_corporation_market_contracts(corporation_id: int):
         logger.error(f"Corporation {corporation_id} does not have a CEO.")
         return
 
-    # if corporation.ceo.esi_suspended:
-    #     logger.warning(f"Corporation {corporation_id} CEO has ESI suspended.")
-    #     return
-
-    # token = Token.get_token(
-    #     corporation.ceo.character_id, MARKET_CHARACTER_SCOPES
-    # )
-    # required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
-    # token = Token.get_token(corporation.ceo.character_id, required_scopes)
-
-    # if not token:
-    #     logger.error(
-    #         f"Corporation {corporation_id} does not have required scopes to fetch market contracts."
-    #     )
-    #     return
-
     response = EsiClient(corporation.ceo).get_corporation_contracts(
         corporation_id
     )
@@ -182,10 +162,6 @@ def create_corporation_market_contracts(corporation_id: int):
             f"Error fetching contracts for corporation {corporation_id} ({response.response_code})"
         )
         return
-
-    # contracts = esi.client.Contracts.get_corporations_corporation_id_contracts(
-    #     corporation_id=corporation_id, token=token.valid_access_token()
-    # ).results()
 
     known_contract_ids = []
     for contract in response.results():
@@ -207,9 +183,6 @@ def create_corporation_market_contracts(corporation_id: int):
 def get_historical_quantity(
     expectation: EveMarketContractExpectation,
 ) -> List[MarketContractHistoricalQuantity]:
-    """
-    Returns the historical quantity for an expectation
-    """
     historical_quantity = []
     today = datetime.today()
     utc = pytz.UTC

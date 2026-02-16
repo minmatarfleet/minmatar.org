@@ -1,13 +1,10 @@
 from django.db import models
-from eveuniverse.models import EveType
-from eveonline.models import EveLocation, EveCharacter
 
 from fittings.models import EveFitting
+from eveonline.models import EveLocation
 
 
 class EveMarketContractExpectation(models.Model):
-    """Model for seeding a quantity of fittings"""
-
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
     location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
     quantity = models.IntegerField(default=1)
@@ -41,8 +38,6 @@ class EveMarketContractExpectation(models.Model):
 
 
 class EveMarketContractResponsibility(models.Model):
-    """Model for tracking who is responsible for a fitting"""
-
     expectation = models.ForeignKey(
         EveMarketContractExpectation, on_delete=models.CASCADE
     )
@@ -56,10 +51,6 @@ class EveMarketContractResponsibility(models.Model):
 
 
 class EveMarketContract(models.Model):
-    """
-    Model for tracking market contracts
-    """
-
     esi_contract_type = "item_exchange"
     tracked_statuses = ["outstanding", "finished"]
     status_choices = (
@@ -96,63 +87,12 @@ class EveMarketContract(models.Model):
         return str(f"{self.title} - {self.location}")
 
 
-class EveMarketItemExpectation(models.Model):
-    """Model for seeding a quantity of items"""
-
-    item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
-    quantity = models.IntegerField(default=1)
-
-    def __str__(self):
-        return str(f"{self.item.name} - {self.location.name}")
-
-
-class EveMarketItemResponsibility(models.Model):
-    """Model for tracking who is responsible for an item"""
-
-    expectation = models.ForeignKey(
-        EveMarketItemExpectation, on_delete=models.CASCADE
-    )
-    # character or corporation
-    entity_id = models.BigIntegerField()
-
-    def __str__(self):
-        return str(f"{self.character.character_name} - {self.item.name}")
-
-
-class EveMarketItemOrder(models.Model):
-    """Model for tracking an order for an item"""
-
-    item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveLocation, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=32, decimal_places=2)
-    quantity = models.IntegerField()
-    issuer_external_id = models.BigIntegerField()
-
-    def __str__(self):
-        return str(f"{self.item.name} - {self.location.name}")
-
-
-class EveMarketItemTransaction(models.Model):
-    """Model for tracking a transaction for an item"""
-
-    item = models.ForeignKey(EveType, on_delete=models.CASCADE)
-    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
-    price = models.DecimalField(max_digits=32, decimal_places=2)
-    quantity = models.IntegerField()
-    issuer_external_id = models.BigIntegerField()
-    sell_date = models.DateTimeField()
-
-    def __str__(self):
-        return str(f"{self.item.name} - {self.location.name}")
-
-
 class EveMarketContractError(models.Model):
-    """Contracts not matched to fittings"""
-
     title = models.CharField(max_length=255, db_index=True)
     quantity = models.IntegerField(default=1)
-    issuer = models.ForeignKey(EveCharacter, on_delete=models.CASCADE)
+    issuer = models.ForeignKey(
+        "eveonline.EveCharacter", on_delete=models.CASCADE
+    )
     location = models.ForeignKey(
         EveLocation,
         on_delete=models.CASCADE,

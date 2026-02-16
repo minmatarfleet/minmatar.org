@@ -67,11 +67,8 @@ INSTALLED_APPS = [
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
-    "lpconversion",
     # Combat log analysis
     "combatlog",
-    # Standing fleet
-    "standingfleet",
     # SRP
     "srp",
     # Referral links,
