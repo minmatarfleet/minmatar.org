@@ -1,7 +1,13 @@
-"""Products router: list products, GET product breakdown by ID."""
+"""Products router: list products, GET product by ID, GET product breakdown by ID."""
 
 from ninja import Router
 
+from industry.endpoints.products.get_product import (
+    PATH as get_product_path,
+    ROUTE_SPEC as get_product_spec,
+    get_product,
+    METHOD as get_product_method,
+)
 from industry.endpoints.products.get_product_breakdown import (
     PATH as get_product_breakdown_path,
     ROUTE_SPEC as get_product_breakdown_spec,
@@ -25,6 +31,7 @@ _ROUTES = (
         get_product_breakdown_spec,
         get_product_breakdown,
     ),
+    (get_product_method, get_product_path, get_product_spec, get_product),
 )
 for method, path, spec, view in _ROUTES:
     getattr(router, method)(path, **spec)(view)

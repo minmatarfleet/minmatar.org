@@ -219,12 +219,29 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
 class IndustryProductAdmin(admin.ModelAdmin):
     """Add industry products by selecting an Eve type; breakdown is computed and stored on save."""
 
-    list_display = ("eve_type", "strategy")
+    list_display = ("eve_type", "strategy", "volume_display")
     list_filter = ("strategy",)
     raw_id_fields = ("eve_type",)
     search_fields = ("eve_type__name",)
     fieldsets = (
-        (None, {"fields": ("eve_type", "strategy")}),
+        (
+            None,
+            {
+                "fields": (
+                    "eve_type",
+                    "strategy",
+                    "blueprint_or_reaction_display",
+                ),
+            },
+        ),
+        (
+            "Relations (updated on save when produced)",
+            {
+                "fields": ("supplied_for_display", "supplies_display"),
+                "description": "Supplied for = products that use this as a direct component. "
+                "Supplies = this product’s direct components. Set strategy=Produced and save to refresh.",
+            },
+        ),
         (
             "Breakdown",
             {
@@ -234,6 +251,47 @@ class IndustryProductAdmin(admin.ModelAdmin):
             },
         ),
     )
+    readonly_fields = (
+        "blueprint_or_reaction_display",
+        "supplied_for_display",
+        "supplies_display",
+    )
+
+    @admin.display(description="Blueprint / reaction type ID")
+    def blueprint_or_reaction_display(self, obj):
+        if not obj.pk:
+            return "—"
+        tid = obj.blueprint_or_reaction_type_id
+        return tid if tid is not None else "—"
+
+    @admin.display(description="Volume (m³)")
+    def volume_display(self, obj):
+        if not obj.pk:
+            return "—"
+        v = obj.volume
+        return f"{v:.2f}" if v is not None else "—"
+
+    @admin.display(description="Supplied for")
+    def supplied_for_display(self, obj):
+        if not obj.pk:
+            return "—"
+        products = obj.supplied_for.select_related("eve_type").all()[:20]
+        if not products:
+            return "—"
+        return ", ".join(p.eve_type.name for p in products) + (
+            " …" if obj.supplied_for.count() > 20 else ""
+        )
+
+    @admin.display(description="Direct components (supplies)")
+    def supplies_display(self, obj):
+        if not obj.pk:
+            return "—"
+        products = obj.supplies.select_related("eve_type").all()[:20]
+        if not products:
+            return "—"
+        return ", ".join(p.eve_type.name for p in products) + (
+            " …" if obj.supplies.count() > 20 else ""
+        )
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

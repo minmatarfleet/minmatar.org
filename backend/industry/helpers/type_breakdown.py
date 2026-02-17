@@ -12,6 +12,12 @@ IndustryProduct.breakdown stores the full tree (all the way to leaves) so
 callers can traverse to any depth; use get_breakdown_for_industry_product()
 to fetch or compute (and store) that full tree, and optionally truncate to
 a max_depth when returning.
+
+Industry product flow (import vs build): ordered products can be marked Import
+(we source by importing) or Build (we build; direct components are import
+unless they are also Build, then we recurse). Use get_direct_components() for
+one level, resolve_product_to_imports() / resolve_order_to_imports() for the
+full resolved import list.
 """
 
 import copy
@@ -25,10 +31,12 @@ from eveuniverse.models import (
     EveTypeMaterial,
 )
 
-from industry.models import IndustryProduct, IndustryProductStrategy
+from industry.models import IndustryOrder, IndustryProduct, Strategy
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
+
+# Strategy.PRODUCED = we build it; expand to direct components (all import unless they are also produced).
 
 # Cap recursion depth to avoid stack overflow and long-running requests (e.g. gunicorn worker exit).
 MAX_BREAKDOWN_DEPTH_DEFAULT = 30
@@ -109,6 +117,15 @@ def _get_blueprint_or_reaction_materials(
     return None
 
 
+def get_blueprint_or_reaction_type_id(eve_type: EveType) -> Optional[int]:
+    """
+    Return the Eve type ID of the blueprint or reaction that produces this type,
+    or None if this type has no manufacturing/reaction recipe (e.g. ore, mineral).
+    """
+    result = _get_blueprint_or_reaction_materials(eve_type)
+    return result[0].id if result else None
+
+
 def _get_direct_components(
     eve_type: EveType,
 ) -> List[Tuple[EveType, int, str, int]]:
@@ -137,6 +154,33 @@ def _get_direct_components(
     ).select_related("material_eve_type"):
         result.append((m.material_eve_type, m.quantity, "type_material", 1))
     return result
+
+
+def get_direct_components(
+    eve_type: EveType,
+    quantity: int = 1,
+) -> List[Tuple[EveType, int]]:
+    """
+    Direct components needed to build `quantity` of this type.
+    Returns [(EveType, quantity), ...]. Quantities are scaled (e.g. for
+    manufacturing runs). Use this for the industry product flow: when a
+    product is marked Build, these are the direct industry products (all
+    treated as import unless they are themselves marked Build).
+    """
+    raw = _get_direct_components(eve_type)
+    if not raw:
+        return []
+    out: List[Tuple[EveType, int]] = []
+    for item in raw:
+        material_type, q_per_run, product_qty = item[0], item[1], item[3]
+        runs = (
+            ((quantity + product_qty - 1) // product_qty)
+            if product_qty
+            else quantity
+        )
+        total_q = q_per_run * runs
+        out.append((material_type, total_q))
+    return out
 
 
 def break_down_type(
@@ -370,7 +414,7 @@ def get_breakdown_for_industry_product(
             else:
                 IndustryProduct.objects.create(
                     eve_type=eve_type,
-                    strategy=IndustryProductStrategy.INTEGRATED,
+                    strategy=Strategy.IMPORTED,
                     breakdown=base,
                 )
 
@@ -444,3 +488,72 @@ def enrich_breakdown_with_industry_product_ids(
     )
     _enrich_node_with_industry_product_id(data, product_map)
     return data
+
+
+def _resolve_product_to_imports_impl(
+    eve_type: EveType,
+    quantity: int,
+    agg: Dict[int, int],
+    visited: Set[int],
+) -> None:
+    """
+    Resolve one product (eve_type, quantity) into a flat type_id -> quantity
+    map of imports. Mutates agg. BUILD/INTEGRATED: expand to direct components
+    (each import unless its strategy is also BUILD/INTEGRATED). IMPORT/EXPORT
+    or no product: add (eve_type.id, quantity) to agg. Uses visited to break
+    cycles.
+    """
+    if eve_type.id in visited:
+        agg[eve_type.id] = agg.get(eve_type.id, 0) + quantity
+        return
+    product = IndustryProduct.objects.filter(eve_type=eve_type).first()
+    if not product or product.strategy != Strategy.PRODUCED:
+        agg[eve_type.id] = agg.get(eve_type.id, 0) + quantity
+        return
+    visited.add(eve_type.id)
+    try:
+        for comp_type, comp_qty in get_direct_components(eve_type, quantity):
+            comp_product = IndustryProduct.objects.filter(
+                eve_type=comp_type
+            ).first()
+            if (
+                comp_product
+                and comp_product.strategy == Strategy.PRODUCED
+                and comp_type.id not in visited
+            ):
+                _resolve_product_to_imports_impl(
+                    comp_type, comp_qty, agg, visited
+                )
+            else:
+                agg[comp_type.id] = agg.get(comp_type.id, 0) + comp_qty
+    finally:
+        visited.discard(eve_type.id)
+
+
+def resolve_product_to_imports(
+    eve_type: EveType,
+    quantity: int = 1,
+) -> Dict[int, int]:
+    """
+    Resolve a single product (e.g. one order line) to a flat map of type_id ->
+    total quantity that must be imported. Respects industry product flow:
+    Import → leaf; Build → expand to direct components (import unless they are
+    Build, then recurse).
+    """
+    agg: Dict[int, int] = {}
+    _resolve_product_to_imports_impl(eve_type, quantity, agg, set())
+    return agg
+
+
+def resolve_order_to_imports(order: IndustryOrder) -> Dict[int, int]:
+    """
+    Resolve a full order to a flat map of type_id -> total quantity that must
+    be imported. Aggregates over all order items using the industry product
+    flow (Import = leaf, Build = expand to direct components, then recurse).
+    """
+    agg: Dict[int, int] = {}
+    for item in order.items.select_related("eve_type"):
+        _resolve_product_to_imports_impl(
+            item.eve_type, item.quantity, agg, set()
+        )
+    return agg

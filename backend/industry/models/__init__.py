@@ -9,7 +9,7 @@ from industry.models.order import (
 )
 from industry.models.product import (
     IndustryProduct,
-    IndustryProductStrategy,
+    Strategy,
 )
 
 __all__ = [
@@ -17,5 +17,5 @@ __all__ = [
     "IndustryOrderItem",
     "IndustryOrderItemAssignment",
     "IndustryProduct",
-    "IndustryProductStrategy",
+    "Strategy",
 ]
