@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
+from eveuniverse.models import EveGroup
+
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryOrder,
@@ -13,6 +15,30 @@ from industry.models import (
     IndustryOrderItemAssignment,
     IndustryProduct,
 )
+
+
+class IndustryProductEveGroupListFilter(admin.SimpleListFilter):
+    """Show only Eve groups that have at least one industry product."""
+
+    title = "type group"
+    parameter_name = "eve_group"
+
+    def lookups(self, request, model_admin):
+        group_ids = (
+            IndustryProduct.objects.filter(
+                eve_type__eve_group_id__isnull=False
+            )
+            .values_list("eve_type__eve_group_id", flat=True)
+            .distinct()
+            .order_by("eve_type__eve_group_id")
+        )
+        groups = EveGroup.objects.filter(id__in=group_ids).order_by("name")
+        return [(g.id, g.name) for g in groups]
+
+    def queryset(self, request, queryset):
+        if self.value() is None:
+            return queryset
+        return queryset.filter(eve_type__eve_group_id=self.value())
 
 
 class IndustryOrderItemInline(admin.TabularInline):
@@ -220,7 +246,7 @@ class IndustryProductAdmin(admin.ModelAdmin):
     """Add industry products by selecting an Eve type; breakdown is computed and stored on save."""
 
     list_display = ("eve_type", "strategy", "volume_display")
-    list_filter = ("strategy",)
+    list_filter = ("strategy", IndustryProductEveGroupListFilter)
     raw_id_fields = ("eve_type",)
     search_fields = ("eve_type__name",)
     fieldsets = (
