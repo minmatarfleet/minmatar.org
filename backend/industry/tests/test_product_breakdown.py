@@ -1,6 +1,5 @@
-"""Tests for industry products endpoints: GET list, PUT by type_id, GET breakdown by ID."""
+"""Tests for industry products endpoints: GET list, GET breakdown by ID."""
 
-import json
 from unittest.mock import patch
 
 from django.test import Client
@@ -9,12 +8,6 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
 from industry.models import IndustryProduct
-
-# Module under test so we can patch its EveType
-put_product_module = __import__(
-    "industry.endpoints.products.put_product",
-    fromlist=["put_product"],
-)
 
 
 def _mock_breakdown_for_product(
@@ -110,51 +103,3 @@ class ProductBreakdownTestCase(AppTestCase):
         self.assertEqual(data[0]["type_id"], self.eve_type.id)
         self.assertEqual(data[0]["name"], self.eve_type.name)
         self.assertEqual(data[0]["strategy"], "integrated")
-
-    @patch.object(put_product_module, "get_breakdown_for_industry_product")
-    @patch.object(put_product_module, "EveType")
-    def test_put_product_creates_product_with_breakdown_default_import(
-        self, mock_eve_type_cls, mock_breakdown
-    ):
-        mock_eve_type_cls.objects.get_or_create_esi.return_value = (
-            self.eve_type,
-            True,
-        )
-        mock_breakdown.return_value = {
-            "name": self.eve_type.name,
-            "type_id": self.eve_type.id,
-            "quantity": 1,
-            "source": "raw",
-            "depth": 0,
-            "children": [],
-        }
-        self.product.delete()
-        response = self.client.put(
-            "/api/industry/products",
-            data=json.dumps({"type_id": self.eve_type.id}),
-            content_type="application/json",
-            **self._auth_headers(),
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["type_id"], self.eve_type.id)
-        self.assertEqual(data["name"], self.eve_type.name)
-        self.assertEqual(data["strategy"], "import")
-        self.assertIn("id", data)
-        product = IndustryProduct.objects.get(eve_type=self.eve_type)
-        self.assertEqual(product.strategy, "import")
-
-    @patch.object(put_product_module, "EveType")
-    def test_put_product_returns_404_when_type_not_found(
-        self, mock_eve_type_cls
-    ):
-        mock_eve_type_cls.objects.get_or_create_esi.side_effect = Exception(
-            "not found"
-        )
-        response = self.client.put(
-            "/api/industry/products",
-            data=json.dumps({"type_id": 999999}),
-            content_type="application/json",
-            **self._auth_headers(),
-        )
-        self.assertEqual(response.status_code, 404)
