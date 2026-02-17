@@ -21,6 +21,7 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
+import Button from '@components/blocks/Button.astro';
 import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
 ---
 
@@ -59,8 +60,8 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                     </Flexblock>
                 </FixedFluid>
                     
-                <div class="[ flex justify-end items-center ]">
-                    {character_error.error === 'MAIN_NOT_IN_FL33T' ?
+                <div class="[ flex justify-end items-center ]">{
+                    character_error.error === 'MAIN_NOT_IN_FL33T' ?
                         <ButtonAddPrimary
                             color='green'
                             size='sm'
@@ -89,10 +90,15 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                             {t('add_primary_pilot')}
                         </ButtonAddPrimary> :
                     character_error.error === 'NO_TAGS' ?
-                        <a href={translatePath('/account/tags/')} class="button button_sm button_green">{t('account.tags.page_title')}</a> :
-                    null
-                    }
-                </div>
+                        <Button
+                            href={translatePath(`/account/tags/${character_error.character?.character_id ?? ''}`)}
+                            size='sm'
+                            color='green'
+                        >
+                            {t('set_character_roles')}
+                        </Button>  :
+                        null
+                }</div>
             </FluidFixed>
         )}
     </Flexblock>
