@@ -7,7 +7,7 @@ from eveuniverse.models import EveType
 from ninja import Router
 from pydantic import BaseModel
 
-from industry.helpers.type_breakdown import get_nested_breakdown
+from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import IndustryOrder
 
 router = Router(tags=["Industry - Orders Summary"])
@@ -42,12 +42,25 @@ def get_orders_breakdown_summary_nested(request):
             by_type[item.eve_type_id] += item.quantity
     if not by_type:
         return SummaryNestedResponse(roots=[])
+
+    def tree_to_node(data: dict) -> NestedBreakdownNode:
+        return NestedBreakdownNode(
+            name=data["name"],
+            type_id=data["type_id"],
+            quantity=data["quantity"],
+            source=data["source"],
+            depth=data["depth"],
+            children=[tree_to_node(c) for c in data.get("children", [])],
+        )
+
     roots: List[NestedBreakdownNode] = []
     for type_id in sorted(by_type.keys()):
         try:
             eve_type = EveType.objects.get(id=type_id)
         except EveType.DoesNotExist:
             continue
-        tree = get_nested_breakdown(eve_type, quantity=by_type[type_id])
-        roots.append(NestedBreakdownNode(**tree))
+        tree = get_breakdown_for_industry_product(
+            eve_type, quantity=by_type[type_id]
+        )
+        roots.append(tree_to_node(tree))
     return SummaryNestedResponse(roots=roots)

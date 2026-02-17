@@ -22,7 +22,7 @@ from eveonline.helpers.characters import (
     user_characters,
     set_primary_character,
 )
-from eveonline.routers.characters import (
+from eveonline.endpoints.characters._helpers import (
     handle_add_character_esi_callback,
 )
 
@@ -122,8 +122,8 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual("", token_type_str(""))
         self.assertEqual("Basic", token_type_str("Basic"))
         self.assertEqual("Basic", token_type_str(TokenType.BASIC))
-        self.assertEqual("CEO", token_type_str(TokenType.CEO))
-        self.assertEqual("CEO", token_type_str("TokenType.CEO"))
+        self.assertEqual("Director", token_type_str(TokenType.DIRECTOR))
+        self.assertEqual("DIRECTOR", token_type_str("TokenType.DIRECTOR"))
 
     def test_get_primary_character(self):
         primary = user_primary_character(self.user)

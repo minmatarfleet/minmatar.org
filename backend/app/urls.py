@@ -36,7 +36,6 @@ from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
 from industry.router import router as industry_router
-from lpconversion.router import router as conversion_router
 from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
 from mumble.router import router as mumble_router
@@ -44,7 +43,6 @@ from posts.router import router as posts_router
 from referrals.router import router as referrals_router
 from reminders.router import router as reminders_router
 from srp.router import router as srp_router
-from standingfleet.router import router as standingfleet_router
 from structures.router import router as structures_router
 from users.router import router as users_router
 from subscriptions.router import router as subscription_router
@@ -62,13 +60,11 @@ api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)
 api.add_router("blog", posts_router)
-api.add_router("conversion", conversion_router)
 api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
 api.add_router("moon_paste", moons_paste_router)
 api.add_router("market", market_router)
 api.add_router("industry", industry_router)
-api.add_router("standingfleet", standingfleet_router)
 api.add_router("referrals", referrals_router)
 api.add_router("reminders", reminders_router)
 api.add_router("srp", srp_router)

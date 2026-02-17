@@ -9,14 +9,15 @@ from app.test import TestCase
 from esi.models import Token, Scope
 
 from eveonline.client import EsiResponse, EsiClient
-from eveonline.scopes import CEO_SCOPES
+from eveonline.scopes import scopes_for, TokenType
 
+from eveonline.helpers.characters import (
+    update_character_assets as helper_update_character_assets,
+)
 from eveonline.tasks import (
-    update_character_assets,
-    update_character_skills,
+    update_character,
     update_corporation,
     update_character_affilliations,
-    update_character_killmails,
     setup_players,
     task_config,
 )
@@ -37,16 +38,16 @@ class EveOnlineTaskTests(TestCase):
     """
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.helpers.assets.EsiClient")
-    @patch("eveonline.tasks.EsiClient")
-    def test_update_character_asset_task(self, task_mock, helper_mock):
+    @patch("eveonline.helpers.characters.assets.EsiClient")
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_update_character_asset_task(self, update_mock, helper_mock):
         char = EveCharacter.objects.create(
             character_id=1,
             character_name="Test Char",
         )
 
         esi_mock = MagicMock(spec=EsiClient)
-        task_mock.return_value = esi_mock
+        update_mock.return_value = esi_mock
         helper_mock.return_value = esi_mock
 
         esi_mock.get_character_assets.return_value = EsiResponse(
@@ -69,17 +70,17 @@ class EveOnlineTaskTests(TestCase):
         esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
         esi_mock.get_station.return_value.name = "Home Base"
 
-        created, updated, deleted = update_character_assets(char.id)
+        created, updated, deleted = helper_update_character_assets(char.id)
 
         self.assertEqual(1, created)
         self.assertEqual(0, updated)
         self.assertEqual(0, deleted)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.helpers.assets.EsiClient")
-    @patch("eveonline.tasks.EsiClient")
+    @patch("eveonline.helpers.characters.assets.EsiClient")
+    @patch("eveonline.helpers.characters.update.EsiClient")
     def test_update_character_asset_task_with_evelocation(
-        self, task_mock, helper_mock
+        self, update_mock, helper_mock
     ):
         char = EveCharacter.objects.create(
             character_id=1,
@@ -96,7 +97,7 @@ class EveOnlineTaskTests(TestCase):
         )
 
         esi_mock = MagicMock(spec=EsiClient)
-        task_mock.return_value = esi_mock
+        update_mock.return_value = esi_mock
         helper_mock.return_value = esi_mock
 
         esi_mock.get_character_assets.return_value = EsiResponse(
@@ -118,7 +119,7 @@ class EveOnlineTaskTests(TestCase):
         esi_mock.get_eve_type.return_value.name = "Thrasher"
         esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
 
-        created, updated, deleted = update_character_assets(char.id)
+        created, updated, deleted = helper_update_character_assets(char.id)
 
         self.assertEqual(1, created)
         self.assertEqual(0, updated)
@@ -130,10 +131,10 @@ class EveOnlineTaskTests(TestCase):
         self.assertEqual(asset.location_id, 123456789)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.helpers.assets.EsiClient")
-    @patch("eveonline.tasks.EsiClient")
+    @patch("eveonline.helpers.characters.assets.EsiClient")
+    @patch("eveonline.helpers.characters.update.EsiClient")
     def test_update_character_asset_task_with_missing_evelocation(
-        self, task_mock, helper_mock
+        self, update_mock, helper_mock
     ):
         char = EveCharacter.objects.create(
             character_id=1,
@@ -141,7 +142,7 @@ class EveOnlineTaskTests(TestCase):
         )
 
         esi_mock = MagicMock(spec=EsiClient)
-        task_mock.return_value = esi_mock
+        update_mock.return_value = esi_mock
         helper_mock.return_value = esi_mock
 
         esi_mock.get_character_assets.return_value = EsiResponse(
@@ -163,7 +164,7 @@ class EveOnlineTaskTests(TestCase):
         esi_mock.get_eve_type.return_value.name = "Thrasher"
         esi_mock.get_eve_group.return_value.eve_category.name = "Ship"
 
-        created, updated, deleted = update_character_assets(char.id)
+        created, updated, deleted = helper_update_character_assets(char.id)
 
         self.assertEqual(1, created)
         self.assertEqual(0, updated)
@@ -175,20 +176,26 @@ class EveOnlineTaskTests(TestCase):
         self.assertEqual(asset.location_id, 999999999)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_update_character_skills(self):
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_update_character_skills(self, update_esi_mock):
         char = EveCharacter.objects.create(
             character_id=1,
             character_name="Test Char",
         )
+        update_esi_mock.return_value.get_character_assets.return_value = (
+            EsiResponse(response_code=200, data=[])
+        )
+        update_esi_mock.return_value.get_recent_killmails.return_value = (
+            EsiResponse(response_code=200, data=[])
+        )
 
-        with patch("eveonline.helpers.skills.EsiClient") as esi_mock:
-            instance = esi_mock.return_value
-            instance.get_character_skills.return_value = EsiResponse(
-                response_code=200,
-                data=[],
+        with patch(
+            "eveonline.helpers.characters.skills.EsiClient"
+        ) as skills_mock:
+            skills_mock.return_value.get_character_skills.return_value = (
+                EsiResponse(response_code=200, data=[])
             )
-
-            update_character_skills(char.id)
+            update_character(char.id)
 
     def add_token_scopes(self, token: Token, scopes: List[str]):
         for required_scope in scopes:
@@ -205,7 +212,7 @@ class EveOnlineTaskTests(TestCase):
             alliance=alliance,
         )
         token = Token.objects.create(character_id=90000001)
-        self.add_token_scopes(token, CEO_SCOPES)
+        self.add_token_scopes(token, scopes_for(TokenType.DIRECTOR))
         EveCharacter.objects.create(
             character_id=token.character_id,
             token=token,
@@ -230,10 +237,19 @@ class EveOnlineTaskTests(TestCase):
             data=[1],
         )
 
-        with patch("eveonline.tasks.EsiClient") as esi_mock_1:
-            with patch("eveonline.models.EsiClient") as esi_mock_2:
-                esi_mock_1.return_value = mock_esi_client
-                esi_mock_2.return_value = mock_esi_client
+        mock_esi_client.get_corporation_roles.return_value = EsiResponse(
+            response_code=200,
+            data=[],
+        )
+
+        with patch(
+            "eveonline.models.corporations.EsiClient"
+        ) as esi_mock_model:
+            with patch(
+                "eveonline.helpers.corporations.update.EsiClient"
+            ) as esi_mock_helper:
+                esi_mock_model.return_value = mock_esi_client
+                esi_mock_helper.return_value = mock_esi_client
 
                 update_corporation(corp.corporation_id)
 
@@ -268,7 +284,7 @@ class EveOnlineTaskTests(TestCase):
         self.assertEqual(player.primary_character, primary_char)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.tasks.EsiClient")
+    @patch("eveonline.tasks.affiliations.EsiClient")
     def test_update_character_affilliations(self, esi_mock):
         esi_client = esi_mock.return_value
 
@@ -309,16 +325,15 @@ class EveOnlineTaskTests(TestCase):
         )
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.tasks.EsiClient")
-    def test_update_character_killmails(self, esi_mock):
-        esi = esi_mock.return_value
-
-        char = EveCharacter.objects.create(
-            character_id=1001,
-            character_name="Test Pilot",
-            user=self.user,
+    @patch("eveonline.helpers.characters.skills.EsiClient")
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_update_character_killmails(
+        self, update_esi_mock, skills_esi_mock
+    ):
+        esi = update_esi_mock.return_value
+        esi.get_character_assets.return_value = EsiResponse(
+            response_code=200, data=[]
         )
-
         esi.get_recent_killmails.return_value = EsiResponse(
             response_code=200,
             data=[
@@ -337,9 +352,20 @@ class EveOnlineTaskTests(TestCase):
                 "attackers": "list of attackers",
             },
         )
+        skills_esi_mock.return_value.get_character_skills.return_value = (
+            EsiResponse(response_code=200, data=[])
+        )
+
+        char = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Test Pilot",
+            user=self.user,
+        )
+        token = Token.objects.create(character_id=char.character_id)
+        self.add_token_scopes(token, ["esi-killmails.read_killmails.v1"])
 
         self.assertEqual(0, EveCharacterKillmail.objects.count())
 
-        update_character_killmails(char.character_id)
+        update_character(char.character_id)
 
         self.assertEqual(1, EveCharacterKillmail.objects.count())

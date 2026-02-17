@@ -40,7 +40,6 @@ class FittingResponse(BaseModel):
     description: str
     created_at: datetime
     updated_at: datetime
-    tags: List[str]
     eft_format: str
     minimum_pod: str
     recommended_pod: str
@@ -67,7 +66,6 @@ class DoctrineResponse(BaseModel):
 @doctrines_router.get("", response=List[DoctrineResponse])
 def get_doctrines(request):
     doctrines = EveDoctrine.objects.prefetch_related(
-        "evedoctrinefitting_set__fitting__tags",
         "evedoctrinefitting_set__fitting__refits",
     )
     response = []
@@ -120,7 +118,7 @@ def get_doctrine(request, doctrine_id: int):
     fittings = (
         EveDoctrineFitting.objects.filter(doctrine=doctrine)
         .select_related("fitting")
-        .prefetch_related("fitting__tags", "fitting__refits")
+        .prefetch_related("fitting__refits")
     )
     for doctrine_fitting in fittings:
         fitting = doctrine_fitting.fitting
@@ -169,7 +167,6 @@ def make_fitting_response(fitting: EveFitting) -> FittingResponse:
         description=fitting.description,
         created_at=fitting.created_at,
         updated_at=fitting.updated_at,
-        tags=[tag.name for tag in fitting.tags.all()],
         eft_format=fitting.eft_format,
         minimum_pod=fitting.minimum_pod,
         recommended_pod=fitting.recommended_pod,
@@ -180,7 +177,7 @@ def make_fitting_response(fitting: EveFitting) -> FittingResponse:
 
 @fittings_router.get("", response=List[FittingResponse])
 def get_fittings(request):
-    fittings = EveFitting.objects.prefetch_related("tags", "refits")
+    fittings = EveFitting.objects.prefetch_related("refits")
     response = []
     for fitting in fittings:
         fitting_response = make_fitting_response(fitting)
@@ -197,9 +194,7 @@ def get_fitting(request, fitting_id: int):
             status=404,
             detail=f"Fitting not found: {fitting_id}",
         )
-    fitting = EveFitting.objects.prefetch_related("tags", "refits").get(
-        id=fitting_id
-    )
+    fitting = EveFitting.objects.prefetch_related("refits").get(id=fitting_id)
     fitting_response = make_fitting_response(fitting)
     return fitting_response
 

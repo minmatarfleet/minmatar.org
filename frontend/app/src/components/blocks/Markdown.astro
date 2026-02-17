@@ -20,11 +20,12 @@ import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
 const InlineElement = inline_element
+const content = markdown ?? ''
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
 {inline ?
-    <InlineElement {...attributes} set:html={marked.parseInline(markdown, { renderer })} /> :
-    <Flexblock {...attributes} set:html={marked.parse(markdown, { renderer })} />
+    <InlineElement {...attributes} set:html={content ? marked.parseInline(content, { renderer }) : ''} /> :
+    <Flexblock {...attributes} set:html={content ? marked.parse(content, { renderer }) : ''} />
 }

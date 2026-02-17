@@ -7,20 +7,20 @@ from django.utils import timezone
 
 from authentication import make_test_user
 
+from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
     EveAlliance,
-    EveCorporation,
     EveCharacter,
-    EveFaction,
+    EveCorporation,
+    EveLocation,
 )
-from eveonline.helpers.characters import set_primary_character
+from eveuniverse.models import EveFaction
 from fittings.models import EveFitting
 from fleets.models import (
     EveFleet,
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetAudience,
-    EveLocation,
 )
 
 logger = logging.getLogger("authentication")

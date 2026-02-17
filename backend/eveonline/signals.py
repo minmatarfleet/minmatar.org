@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from esi.models import Token
 
 from discord.client import DiscordClient
-from eveonline.tasks import update_character_assets, update_character_skills
+from eveonline.tasks import update_character_urgent
 from eveonline.client import EsiClient, esi_public
 from .models import (
     EveAlliance,
@@ -57,15 +57,9 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
         if not instance.token:
             return
 
-        # populate skills
-        logger.debug("Fetching skills for %s", instance.character_name)
-        update_character_skills.apply_async(
-            args=[instance.character_id], countdown=30
-        )
-
-        # populate assets
-        logger.debug("Fetching assets for %s", instance.character_name)
-        update_character_assets.apply_async(
+        # populate character data (assets, skills, killmails)
+        logger.debug("Fetching data for %s", instance.character_name)
+        update_character_urgent.apply_async(
             args=[instance.character_id], countdown=30
         )
 

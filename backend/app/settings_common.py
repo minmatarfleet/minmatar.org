@@ -15,6 +15,7 @@ CELERY_IMPORTS = (
     "moons.tasks",
     "freight.tasks",
     "market.tasks",
+    "industry.tasks",
     "mumble.tasks",
     "reddit.tasks",
 )
@@ -67,11 +68,8 @@ INSTALLED_APPS = [
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
-    "lpconversion",
     # Combat log analysis
     "combatlog",
-    # Standing fleet
-    "standingfleet",
     # SRP
     "srp",
     # Referral links,

@@ -28,7 +28,7 @@ from eveonline.models import (
     EvePlayer,
     EveCharacterAsset,
 )
-from eveonline.tasks import update_character_assets, update_character_skills
+from eveonline.tasks import update_character
 from fleets.models import EveFleetAudience, EveFleet
 from structures.tasks import send_discord_structure_notification
 from structures.models import EveStructurePing
@@ -463,7 +463,7 @@ def _fetch_character_assets(
 ) -> tuple[list, Optional[ErrorResponse]]:
     """Fetch assets for a character from ESI"""
     if refresh_char:
-        update_character_assets.apply_async(args=[character.character_id])
+        update_character.apply_async(args=[character.character_id])
 
     response = EsiClient(character).get_character_assets()
     if not response.success():
@@ -631,14 +631,9 @@ def force_refresh(request, username: str):
             f"Found character {char.character_name} ({char.character_id})"
         )
 
-        update_character_assets(char.character_id)
+        update_character(char.character_id)
         response.append(
-            f"  Updated assets for character {char.character_name}"
-        )
-
-        update_character_skills(char.character_id)
-        response.append(
-            f"  Updated skills for character {char.character_name}"
+            f"  Updated character {char.character_name} (assets, skills, killmails)"
         )
 
     response.append("Complete.")

@@ -3,6 +3,8 @@ from datetime import timedelta
 from celery.schedules import crontab, schedule
 
 CELERYD_HIJACK_ROOT_LOGGER = False
+# Retain broker connection retries on worker startup (Celery 6+)
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Market
 CELERYBEAT_MARKET = [
@@ -11,6 +13,20 @@ CELERYBEAT_MARKET = [
         {
             "task": "market.tasks.fetch_eve_public_contracts",
             "schedule": crontab(minute=21, hour="*/4"),
+        },
+    ),
+    (
+        "[Market] Fetch Structure Sell Orders",
+        {
+            "task": "market.tasks.fetch_structure_sell_orders",
+            "schedule": crontab(minute=33, hour="*/4"),
+        },
+    ),
+    (
+        "[Market] Fetch Market Item History",
+        {
+            "task": "market.tasks.fetch_market_item_history",
+            "schedule": crontab(minute=15, hour=12),
         },
     ),
     (
@@ -28,13 +44,6 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
-        "[Market] Update LP Store Items",
-        {
-            "task": "lpconversion.tasks.update_lpstore_items",
-            "schedule": crontab(minute=0, hour=12),
-        },
-    ),
-    (
         "[Market] Update Moon Revenue",
         {
             "task": "moons.tasks.update_moon_revenues",
@@ -46,44 +55,23 @@ CELERYBEAT_MARKET = [
 # Characters
 CELERYBEAT_CHARACTERS = [
     (
-        "[Characters] Delete Orphan Assets",
-        {
-            "task": "eveonline.tasks.delete_orphan_assets",
-            "schedule": crontab(minute=0, hour=13),
-        },
-    ),
-    (
         "[Characters] Update Affiliations",
         {
-            "task": "eveonline.tasks.update_character_affilliations",
+            "task": "eveonline.tasks.affiliations.update_character_affilliations",
             "schedule": crontab(minute="18,48", hour="*"),
         },
     ),
     (
-        "[Characters] Update Assets",
+        "[Characters] Update Characters (assets, skills, killmails)",
         {
-            "task": "eveonline.tasks.update_alliance_character_assets",
+            "task": "eveonline.tasks.characters.update_alliance_characters",
             "schedule": crontab(minute=37, hour="*/4"),
-        },
-    ),
-    (
-        "[Characters] Update Killmails",
-        {
-            "task": "eveonline.tasks.update_alliance_character_killmails",
-            "schedule": crontab(minute=51, hour="*/4"),
-        },
-    ),
-    (
-        "[Characters] Update Skills",
-        {
-            "task": "eveonline.tasks.update_alliance_character_skills",
-            "schedule": crontab(minute=21, hour="*/4"),
         },
     ),
     (
         "[Characters] Update Players",
         {
-            "task": "eveonline.tasks.update_players",
+            "task": "eveonline.tasks.players.update_players",
             "schedule": schedule(timedelta(hours=8)),
         },
     ),
@@ -94,14 +82,14 @@ CELERYBEAT_CORPORATIONS = [
     (
         "[Corporations] Import Corporations",
         {
-            "task": "eveonline.tasks.sync_alliance_corporations",
+            "task": "eveonline.tasks.corporations.sync_alliance_corporations",
             "schedule": crontab(minute=0, hour="*/2"),
         },
     ),
     (
         "[Corporations] Update Corporations",
         {
-            "task": "eveonline.tasks.update_corporations",
+            "task": "eveonline.tasks.corporations.update_corporations",
             "schedule": crontab(minute=0, hour="*/1"),
         },
     ),
@@ -124,6 +112,17 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "structures.tasks.update_structures",
             "schedule": crontab(minute="19,49", hour="*"),
+        },
+    ),
+]
+
+# Industry (order assignees' jobs from ESI)
+CELERYBEAT_INDUSTRY = [
+    (
+        "[Industry] Sync Jobs for Order Assignees",
+        {
+            "task": "industry.tasks.sync_industry_jobs_for_order_assignees",
+            "schedule": crontab(minute=5, hour="*/4"),
         },
     ),
 ]
@@ -253,6 +252,7 @@ CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
     + CELERYBEAT_CORPORATIONS
+    + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
     + CELERYBEAT_OTHER
 )

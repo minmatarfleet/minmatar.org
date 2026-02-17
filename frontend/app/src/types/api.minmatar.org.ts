@@ -151,7 +151,6 @@ export interface Fitting {
     description:        string;
     created_at:         Date;
     updated_at:         Date;
-    tags:               string[];
     eft_format:         string;
     minimum_pod:        string;
     recommended_pod:    string,
@@ -661,7 +660,7 @@ export interface CharacterTag {
     image_name:     string;
 }
 
-export const esi_token_roles = [ 'Public', 'Basic', 'Advanced', 'Director', 'CEO', 'Freight', 'Market', 'Executor' ] as const
+export const esi_token_roles = [ 'Public', 'Basic', 'Director', 'Industry', 'Market', 'Executor' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
 
 export const prime_times = [ 'US', 'AP', 'EU' ] as const

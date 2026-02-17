@@ -27,7 +27,7 @@ const DEFAULT_REDIRECT = `${FIX_CHARACTER_URL}&token_type=${CURRENT_ESI_TOKEN}&c
 
 import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
-const user_selectable_esi_tokens_roles = esi_token_roles.filter(token => esi_token_roles.indexOf(CURRENT_ESI_TOKEN) <= esi_token_roles.indexOf(token))
+const user_selectable_esi_tokens_roles = [...esi_token_roles]
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';

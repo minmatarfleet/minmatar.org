@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { CharacterErrorUI } from '@dtypes/layout_components'
@@ -47,12 +47,12 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                     <Flexblock gap="var(--space-3xs)">
                         <h4>
                             {character_error?.character?.character_name ?
-                                t(`${character_error.error}_title` as any).replace('CHARACTER_NAME', character_error.character.character_name as string) :
-                                t(`${character_error.error}_title` as any)
+                                ((t(`${character_error.error}_title` as any) ?? t('DATA_ERROR_title')).replace('CHARACTER_NAME', character_error.character.character_name as string)) :
+                                (t(`${character_error.error}_title` as any) ?? t('DATA_ERROR_title'))
                             }
                         </h4>
                         <Markdown
-                            markdown={t(`${character_error.error}_description` as any)}
+                            markdown={t(`${character_error.error}_description` as any) ?? t('DATA_ERROR_description')}
                             inline={true}
                             inline_element='small'
                         />
@@ -87,7 +87,10 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                             dialog_title={t('add_primary_pilot_dialog_title')}
                         >
                             {t('add_primary_pilot')}
-                        </ButtonAddPrimary> : 'Hola'
+                        </ButtonAddPrimary> :
+                    character_error.error === 'NO_TAGS' ?
+                        <a href={translatePath('/account/tags/')} class="button button_sm button_green">{t('account.tags.page_title')}</a> :
+                    null
                     }
                 </div>
             </FluidFixed>

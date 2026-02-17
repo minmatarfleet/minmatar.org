@@ -12,7 +12,7 @@ ignore=third_party,.venv,venv,migrations,settings_testsuite.py
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths.
-ignore-patterns=settings.py,manage.py
+ignore-patterns=settings.py,manage.py,^\d{4}_.*\.py$
 
 # Pickle collected data for later comparisons.
 persistent=no
@@ -90,6 +90,7 @@ disable=abstract-method,
         map-builtin-not-iterating,
         misplaced-comparison-constant,
         missing-function-docstring,
+        missing-class-docstring,
         missing-module-docstring,
         metaclass-assignment,
         next-method-called,
