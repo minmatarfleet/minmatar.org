@@ -10,9 +10,3 @@ class IndustryProductListItem(BaseModel):
     type_id: int
     name: str
     strategy: str
-
-
-class PutProductRequest(BaseModel):
-    """Request body for creating an industry product by type_id."""
-
-    type_id: int

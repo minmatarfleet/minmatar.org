@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
+from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
@@ -216,6 +217,8 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(IndustryProduct)
 class IndustryProductAdmin(admin.ModelAdmin):
+    """Add industry products by selecting an Eve type; breakdown is computed and stored on save."""
+
     list_display = ("eve_type", "strategy")
     list_filter = ("strategy",)
     raw_id_fields = ("eve_type",)
@@ -226,10 +229,22 @@ class IndustryProductAdmin(admin.ModelAdmin):
             "Breakdown",
             {
                 "fields": ("breakdown",),
-                "description": "Cached nested component tree (root quantity=1). Optional.",
+                "description": "Cached nested component tree (root quantity=1). "
+                "Computed automatically on save from the Eve type.",
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.eve_type_id:
+            try:
+                get_breakdown_for_industry_product(
+                    obj.eve_type, quantity=1, store=True
+                )
+                obj.refresh_from_db()
+            except Exception:
+                pass
 
 
 # ----- Industry admin index: only Orders -----
