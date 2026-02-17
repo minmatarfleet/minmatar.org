@@ -4,12 +4,13 @@ from django.db import models
 
 class Strategy(models.TextChoices):
     """
-    How we source this type. Default is imported; no blueprint → harvested;
+    How we source this type. Default is imported; no blueprint → harvested/supplied;
     has blueprint → can be produced.
     """
 
     IMPORTED = "imported", "Imported"
     HARVESTED = "harvested", "Harvested"
+    SUPPLIED = "supplied", "Supplied"
     PRODUCED = "produced", "Produced"
 
 
@@ -18,11 +19,13 @@ class IndustryProduct(models.Model):
     An Eve type we track as an industry product.
 
     - **Strategy**: How we source it. Default **imported**. Types without a
-      blueprint (ore, ice, etc.) can be **harvested**. Types with a blueprint
-      can be **produced** (we build them).
+      blueprint (ore, ice, etc.) can be **harvested** or **supplied**. Types with
+      a blueprint can be **produced** (we build them).
 
     Industry product flow (for ordered / top-level products):
-    - **Imported** or **harvested**: we source by importing or harvesting; no expansion.
+    - **Imported**, **harvested**, or **supplied**: we source by importing,
+      harvesting, or supply; no expansion (supplied is like harvested but treated
+      slightly differently where relevant).
     - **Produced**: we build it. Expand to the direct industry products (components)
       that make it up; those are treated as import at this step. Any of those
       components can themselves be produced, and we repeat. Use resolve_order_to_imports()
@@ -85,7 +88,7 @@ class IndustryProduct(models.Model):
                 raise ValidationError(
                     {
                         "strategy": "Cannot mark as produced: this type has no "
-                        "blueprint or reaction (e.g. ore, ice). Use imported or harvested."
+                        "blueprint or reaction (e.g. ore, ice). Use imported, harvested, or supplied."
                     }
                 )
 
@@ -103,7 +106,7 @@ class IndustryProduct(models.Model):
     def blueprint_or_reaction_type_id(self):
         """
         Eve type ID of the blueprint or reaction that produces this product's type,
-        or None if it has no recipe (imported/harvested).
+        or None if it has no recipe (imported/harvested/supplied).
         """
         if not self.eve_type_id:
             return None
