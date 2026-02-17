@@ -10,6 +10,7 @@ from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
+    IndustryProduct,
 )
 
 
@@ -212,28 +213,31 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
     list_filter = ("character",)
     autocomplete_fields = ("order_item", "character")
 
-    def response_add(self, request, obj, post_url_continue=None):
-        """After adding an assignment, redirect back to the order."""
-        if obj.order_item_id:
-            order_id = obj.order_item.order_id
-            return HttpResponseRedirect(
-                reverse("admin:industry_industryorder_change", args=[order_id])
-            )
-        return super().response_add(request, obj, post_url_continue)
 
-    def response_change(self, request, obj):
-        """After changing an assignment, redirect back to the order."""
-        if obj.order_item_id:
-            order_id = obj.order_item.order_id
-            return HttpResponseRedirect(
-                reverse("admin:industry_industryorder_change", args=[order_id])
-            )
-        return super().response_change(request, obj)
+@admin.register(IndustryProduct)
+class IndustryProductAdmin(admin.ModelAdmin):
+    list_display = ("eve_type", "strategy")
+    list_filter = ("strategy",)
+    raw_id_fields = ("eve_type",)
+    search_fields = ("eve_type__name",)
+    fieldsets = (
+        (None, {"fields": ("eve_type", "strategy")}),
+        (
+            "Breakdown",
+            {
+                "fields": ("breakdown",),
+                "description": "Cached nested component tree (root quantity=1). Optional.",
+            },
+        ),
+    )
 
 
 # ----- Industry admin index: only Orders -----
 
-INDUSTRY_INDEX_MODELS = {"industryorder": "Orders"}
+INDUSTRY_INDEX_MODELS = {
+    "industryorder": "Orders",
+    "industryproduct": "Products",
+}
 
 
 def _industry_get_app_list(request):

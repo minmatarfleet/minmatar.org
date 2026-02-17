@@ -7,9 +7,15 @@ from industry.models.order import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from industry.models.product import (
+    IndustryProduct,
+    IndustryProductStrategy,
+)
 
 __all__ = [
     "IndustryOrder",
     "IndustryOrderItem",
     "IndustryOrderItemAssignment",
+    "IndustryProduct",
+    "IndustryProductStrategy",
 ]

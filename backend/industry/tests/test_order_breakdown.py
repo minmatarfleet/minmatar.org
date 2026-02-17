@@ -15,7 +15,9 @@ from app.test import TestCase as AppTestCase
 from industry.models import IndustryOrder, IndustryOrderItem
 
 
-def _mock_nested_breakdown(eve_type, quantity=1, max_depth=None):
+def _mock_breakdown_for_product(
+    eve_type, quantity=1, max_depth=None, store=True
+):
     """Return a minimal nested breakdown tree (no SDE/ESI)."""
     return {
         "name": eve_type.name,
@@ -80,9 +82,11 @@ class OrderBreakdownTestCase(AppTestCase):
     def _auth_headers(self):
         return {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
 
-    @patch("industry.helpers.type_breakdown.get_nested_breakdown")
+    @patch(
+        "industry.helpers.type_breakdown.get_breakdown_for_industry_product"
+    )
     def test_get_order_breakdown_returns_200_with_roots(self, mock_breakdown):
-        mock_breakdown.side_effect = _mock_nested_breakdown
+        mock_breakdown.side_effect = _mock_breakdown_for_product
         response = self.client.get(
             f"/api/industry/orders/{self.order.pk}/breakdown",
             **self._auth_headers(),
@@ -94,8 +98,11 @@ class OrderBreakdownTestCase(AppTestCase):
         self.assertEqual(data["roots"][0]["name"], self.eve_type.name)
         self.assertEqual(data["roots"][0]["type_id"], self.eve_type.id)
         self.assertEqual(data["roots"][0]["quantity"], 5)
+        self.assertIn("industry_product_id", data["roots"][0])
 
-    @patch("industry.helpers.type_breakdown.get_nested_breakdown")
+    @patch(
+        "industry.helpers.type_breakdown.get_breakdown_for_industry_product"
+    )
     def test_get_order_breakdown_returns_403_when_not_owner(
         self, mock_breakdown
     ):
@@ -124,11 +131,13 @@ class OrderBreakdownTestCase(AppTestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    @patch("industry.helpers.type_breakdown.get_nested_breakdown")
+    @patch(
+        "industry.helpers.type_breakdown.get_breakdown_for_industry_product"
+    )
     def test_get_order_item_breakdown_returns_200_with_tree(
         self, mock_breakdown
     ):
-        mock_breakdown.side_effect = _mock_nested_breakdown
+        mock_breakdown.side_effect = _mock_breakdown_for_product
         response = self.client.get(
             f"/api/industry/orders/{self.order.pk}/items/{self.order_item.pk}/breakdown",
             **self._auth_headers(),
@@ -139,6 +148,7 @@ class OrderBreakdownTestCase(AppTestCase):
         self.assertEqual(data["type_id"], self.eve_type.id)
         self.assertEqual(data["quantity"], 5)
         self.assertIn("children", data)
+        self.assertIn("industry_product_id", data)
 
     def test_get_order_item_breakdown_returns_404_when_item_not_found(self):
         response = self.client.get(

@@ -11,7 +11,10 @@ from industry.endpoints.breakdown.schemas import (
     NestedBreakdownNode,
     OrderBreakdownResponse,
 )
-from industry.helpers.type_breakdown import get_nested_breakdown
+from industry.helpers.type_breakdown import (
+    enrich_breakdown_with_industry_product_ids,
+    get_breakdown_for_industry_product,
+)
 from industry.models import IndustryOrder
 
 PATH = "{int:order_id}/breakdown"
@@ -52,6 +55,9 @@ def get_order_breakdown(request, order_id: int):
             eve_type = EveType.objects.get(id=type_id)
         except EveType.DoesNotExist:
             continue
-        tree = get_nested_breakdown(eve_type, quantity=by_type[type_id])
-        roots.append(NestedBreakdownNode(**tree))
+        tree = get_breakdown_for_industry_product(
+            eve_type, quantity=by_type[type_id]
+        )
+        enrich_breakdown_with_industry_product_ids(tree)
+        roots.append(NestedBreakdownNode.from_breakdown_dict(tree))
     return 200, OrderBreakdownResponse(roots=roots)

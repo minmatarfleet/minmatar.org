@@ -17,11 +17,13 @@ from industry.endpoints.get_types_type_id_breakdown import (
     router as get_types_type_id_breakdown_router,
 )
 from industry.endpoints.orders import router as orders_router
+from industry.endpoints.products import router as products_router
 
 router = Router(tags=["Industry"])
 router.add_router("", get_types_type_id_breakdown_router)
 router.add_router("orders", orders_router)
 router.add_router("orders", breakdown_router)
+router.add_router("products", products_router)
 router.add_router(
     "summary",
     get_orders_breakdown_summary_nested_router,

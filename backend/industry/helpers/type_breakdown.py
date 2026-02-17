@@ -7,8 +7,14 @@ that are themselves built from blueprints/reactions are expanded recursively.
 
 Blueprint/reaction data is loaded from the SDE on demand when breaking down
 a product type (e.g. a ship).
+
+IndustryProduct.breakdown stores the full tree (all the way to leaves) so
+callers can traverse to any depth; use get_breakdown_for_industry_product()
+to fetch or compute (and store) that full tree, and optionally truncate to
+a max_depth when returning.
 """
 
+import copy
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -18,6 +24,8 @@ from eveuniverse.models import (
     EveType,
     EveTypeMaterial,
 )
+
+from industry.models import IndustryProduct, IndustryProductStrategy
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
@@ -280,3 +288,159 @@ def get_nested_breakdown(
         max_depth = MAX_BREAKDOWN_DEPTH_DEFAULT
     tree = break_down_type(eve_type, quantity=quantity, max_depth=max_depth)
     return tree_to_nested(tree)
+
+
+def _scale_nested_quantity(node: Dict[str, Any], factor: int) -> None:
+    """Multiply quantity in node and all descendants by factor (in place)."""
+    node["quantity"] = node.get("quantity", 1) * factor
+    for child in node.get("children", []):
+        _scale_nested_quantity(child, factor)
+
+
+def scale_nested_breakdown(
+    data: Dict[str, Any],
+    quantity: int,
+) -> Dict[str, Any]:
+    """Return a deep copy of the nested breakdown with all quantities scaled by quantity."""
+    result = copy.deepcopy(data)
+    _scale_nested_quantity(result, quantity)
+    return result
+
+
+def truncate_breakdown_to_depth(
+    data: Dict[str, Any],
+    max_depth: int,
+) -> Dict[str, Any]:
+    """
+    Return a deep copy of the nested breakdown with nodes below max_depth removed.
+    Nodes at depth == max_depth get children=[] so you can traverse to any depth.
+    """
+    result = copy.deepcopy(data)
+    depth = result.get("depth", 0)
+    if depth >= max_depth:
+        result["children"] = []
+        return result
+    result["children"] = [
+        truncate_breakdown_to_depth(c, max_depth)
+        for c in result.get("children", [])
+    ]
+    return result
+
+
+def get_full_nested_breakdown(eve_type: EveType) -> Dict[str, Any]:
+    """
+    Compute the full breakdown tree (no depth limit) as a nested dict.
+    Used when storing on IndustryProduct so the stored tree goes all the way down.
+    """
+    tree = break_down_type(
+        eve_type,
+        quantity=1,
+        max_depth=None,
+    )
+    return tree_to_nested(tree)
+
+
+def get_breakdown_for_industry_product(
+    eve_type: EveType,
+    quantity: int = 1,
+    max_depth: Optional[int] = None,
+    store: bool = True,
+) -> Dict[str, Any]:
+    """
+    Get nested breakdown for this type from IndustryProduct if stored, else compute
+    (and optionally store) the full tree. Every IndustryProduct stores the full
+    traverse all the way down; you can pass max_depth to truncate the returned
+    tree to a given depth.
+
+    If store=True and the product has no breakdown, it will be computed with
+    full depth and saved. When returning, quantities are scaled by quantity and
+    the tree is truncated to max_depth if set.
+    """
+    product = IndustryProduct.objects.filter(eve_type=eve_type).first()
+    base: Optional[Dict[str, Any]] = None
+
+    if product is not None and product.breakdown:
+        base = product.breakdown
+    else:
+        base = get_full_nested_breakdown(eve_type)
+        if store:
+            if product is not None:
+                product.breakdown = base
+                product.save(update_fields=["breakdown"])
+            else:
+                IndustryProduct.objects.create(
+                    eve_type=eve_type,
+                    strategy=IndustryProductStrategy.INTEGRATED,
+                    breakdown=base,
+                )
+
+    out = scale_nested_breakdown(base, quantity)
+    if max_depth is not None:
+        out = truncate_breakdown_to_depth(out, max_depth)
+    return out
+
+
+def flatten_nested_breakdown_to_quantities(
+    data: Dict[str, Any],
+) -> Dict[int, int]:
+    """
+    Aggregate a nested breakdown dict to type_id -> total quantity (leaves only).
+    Use after get_breakdown_for_industry_product when you need a flat list of base materials.
+    """
+    out: Dict[int, int] = {}
+    stack: List[Dict[str, Any]] = [data]
+    while stack:
+        node = stack.pop()
+        children = node.get("children", [])
+        if not children:
+            tid = node.get("type_id")
+            if tid is not None:
+                out[tid] = out.get(tid, 0) + node.get("quantity", 0)
+        for c in children:
+            stack.append(c)
+    return out
+
+
+def _collect_type_ids_from_breakdown(
+    node: Dict[str, Any], out: Set[int]
+) -> None:
+    """Collect all type_id values from a nested breakdown tree."""
+    tid = node.get("type_id")
+    if tid is not None:
+        out.add(tid)
+    for child in node.get("children", []):
+        _collect_type_ids_from_breakdown(child, out)
+
+
+def _enrich_node_with_industry_product_id(
+    node: Dict[str, Any],
+    type_id_to_product_id: Dict[int, int],
+) -> None:
+    """Add industry_product_id to node and all descendants (in place)."""
+    tid = node.get("type_id")
+    node["industry_product_id"] = (
+        type_id_to_product_id.get(tid) if tid else None
+    )
+    for child in node.get("children", []):
+        _enrich_node_with_industry_product_id(child, type_id_to_product_id)
+
+
+def enrich_breakdown_with_industry_product_ids(
+    data: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Add industry_product_id to each node in the nested breakdown (in place).
+    Nodes whose type has an IndustryProduct get its id; others get None.
+    Enables fetching a node's breakdown by GET /products/{industry_product_id}/breakdown.
+    """
+    type_ids: Set[int] = set()
+    _collect_type_ids_from_breakdown(data, type_ids)
+    if not type_ids:
+        return data
+    product_map = dict(
+        IndustryProduct.objects.filter(eve_type_id__in=type_ids).values_list(
+            "eve_type_id", "id"
+        )
+    )
+    _enrich_node_with_industry_product_id(data, product_map)
+    return data
