@@ -64,6 +64,7 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro'
                             )}
                             alt={t(order.children[0].source as any)}
                             size={16}
+                            placeholder={get_bpc_icon(1075, false, 32)}
                         />
                         <small>{t(order.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(order.quantity))}</small>
                     </FixedFluid>
