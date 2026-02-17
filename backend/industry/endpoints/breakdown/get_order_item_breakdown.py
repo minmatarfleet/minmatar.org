@@ -3,7 +3,10 @@
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from industry.endpoints.breakdown.schemas import NestedBreakdownNode
-from industry.helpers.type_breakdown import get_nested_breakdown
+from industry.helpers.type_breakdown import (
+    enrich_breakdown_with_industry_product_ids,
+    get_breakdown_for_industry_product,
+)
 from industry.models import IndustryOrder
 
 PATH = "{int:order_id}/items/{int:item_id}/breakdown"
@@ -36,5 +39,8 @@ def get_order_item_breakdown(request, order_id: int, item_id: int):
     item = order.items.filter(pk=item_id).select_related("eve_type").first()
     if not item:
         return 404, ErrorResponse(detail=f"Order item {item_id} not found.")
-    tree = get_nested_breakdown(item.eve_type, quantity=item.quantity)
-    return 200, NestedBreakdownNode(**tree)
+    tree = get_breakdown_for_industry_product(
+        item.eve_type, quantity=item.quantity
+    )
+    enrich_breakdown_with_industry_product_ids(tree)
+    return 200, NestedBreakdownNode.from_breakdown_dict(tree)

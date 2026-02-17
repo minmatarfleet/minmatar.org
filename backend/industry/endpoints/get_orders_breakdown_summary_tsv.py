@@ -8,7 +8,10 @@ from django.utils import timezone
 from eveuniverse.models import EveType
 from ninja import Router
 
-from industry.helpers.type_breakdown import get_flat_breakdown
+from industry.helpers.type_breakdown import (
+    flatten_nested_breakdown_to_quantities,
+    get_breakdown_for_industry_product,
+)
 from industry.models import IndustryOrder
 
 router = Router(tags=["Industry - Orders Summary"])
@@ -24,10 +27,13 @@ def get_orders_breakdown_summary_tsv(request):
     agg = defaultdict(int)
     for order in orders:
         for item in order.items.all():
-            for eve_type, qty in get_flat_breakdown(
+            tree = get_breakdown_for_industry_product(
                 item.eve_type, quantity=item.quantity
-            ):
-                agg[eve_type.id] += qty
+            )
+            for type_id, qty in flatten_nested_breakdown_to_quantities(
+                tree
+            ).items():
+                agg[type_id] += qty
     if not agg:
         rows = []
     else:
