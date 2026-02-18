@@ -16,53 +16,60 @@ const {
 
 import { query_string } from '@helpers/string';
 
+const REEL_GAP = 80
+
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
 import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
 import Progress from '@components/blocks/Progress.astro';
+import LocationsReel from '@components/blocks/LocationsReel.astro';
+import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
-    <FlexInline gap='var(--space-2xl)'>
-        <Flexblock gap='var(--space-3xs)'>
-            <h2>{active_market_locations_ui.name}</h2>
-            <small>{`${active_market_locations_ui.fittings.length} ${active_market_locations_ui.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
-            <Progress
-                class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
-                max="100"
-                value={active_market_locations_ui.completion}
-                data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
-            >
-                {active_market_locations_ui.completion.toFixed(2)}%
-            </Progress>
-        </Flexblock>
+    <LocationsReel gap={REEL_GAP}>
+        <LocationsReelSlide gap={REEL_GAP}>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>{active_market_locations_ui.name}</h2>
+                <Progress
+                    class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
+                    max="100"
+                    value={active_market_locations_ui.completion}
+                    data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
+                >
+                    {active_market_locations_ui.completion.toFixed(2)}%
+                </Progress>
+                <small>{`${active_market_locations_ui.fittings.length} ${active_market_locations_ui.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+            </Flexblock>
+        </LocationsReelSlide>
 
         {non_active_market_locations_ui.map(location =>
-            <Flexblock gap='var(--space-3xs)'>
-                <h3>
-                    <a href={translatePath(`/market/contracts?${query_string({
-                            location_name: location.name
-                        })}`)}
+            <LocationsReelSlide gap={REEL_GAP}>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h3>
+                        <a href={translatePath(`/market/contracts?${query_string({
+                                location_name: location.name
+                            })}`)}
+                        >
+                            {location.name}
+                        </a>
+                    </h3>
+                    <Progress
+                        class:list={[ 'w-full', { danger: location.completion < 30 } ]}
+                        max="100"
+                        value={location.completion}
+                        data-tippy-content={`${location.completion.toFixed(0)}%`}
                     >
-                        {location.name}
-                    </a>
-                </h3>
-                <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
-                <Progress
-                    class:list={[ 'w-full', { danger: location.completion < 30 } ]}
-                    max="100"
-                    value={location.completion}
-                    data-tippy-content={`${location.completion.toFixed(0)}%`}
-                >
-                    {location.completion.toFixed(2)}%
-                </Progress>
-            </Flexblock>
+                        {location.completion.toFixed(2)}%
+                    </Progress>
+                    <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
+                </Flexblock>
+            </LocationsReelSlide>
         )}
-    </FlexInline>
+    </LocationsReel>
 
-    <BlockList gap='var(--space-3xs)' role="list">
+    <BlockList role="list">
         {active_market_locations_ui.fittings.map((fitting) =>
             <div x-show="show_item($el)">
                 <MarketFittingCard fitting={fitting} no_expectation_progress={false} />

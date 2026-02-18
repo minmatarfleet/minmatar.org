@@ -1573,7 +1573,7 @@ export const ui = {
         'DATA_ERROR_title': 'Character data could not be loaded',
         'DATA_ERROR_description': 'We had trouble loading this character. Please try **clearing your account cache** below; if the issue persists, contact support.',
         'NO_TAGS_title': 'CHARACTER_NAME has no character roles',
-        'NO_TAGS_description': 'Assign at least one character role (e.g. Member) so some website features work correctly.',
+        'NO_TAGS_description': 'Assign at least one character role so some website features work correctly.',
         'character_troubleshooting': 'Characters troubleshooting',
         'character_troubleshooting_description': 'We’ve detected issues with your characters that are preventing some website features from working correctly. Please take a moment to fix them.',
         'issues_to_fix': 'Issues that requires your attention',
@@ -1722,5 +1722,6 @@ export const ui = {
         'producers': 'Producers',
         'all_strategies': 'All strategies',
         'no_products_to_display': 'No products to display.',
+        'set_character_roles': 'Set character roles',
     },
 } as const;
