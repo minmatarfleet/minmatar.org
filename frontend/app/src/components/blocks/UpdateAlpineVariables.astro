@@ -1,0 +1,34 @@
+---
+interface Props {
+    variables:   Record<string, any>;
+}
+
+const {
+    variables
+} = Astro.props
+
+let asignations = ''
+
+for (let label in variables) {
+    let value = variables[label]
+
+    if (typeof value === 'string')
+        value = `'${value}'`
+
+    if (typeof value === 'boolean')
+        value = `${JSON.stringify(value)}`
+
+    asignations = asignations.concat(`${label} = ${value};`)
+}
+---
+
+<div
+    x-data={`{
+        init() {
+            ${asignations}
+            $el.remove()
+        }
+    }`}
+    style="display: none"
+/>
+

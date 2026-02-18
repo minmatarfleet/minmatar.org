@@ -406,6 +406,20 @@
         "description": "page_finder.industry.description"
     },
     {
+        "slug": "industry.orders",
+        "alt": "icon.orders.alt",
+        "path": "/industry/orders/",
+        "publish": true,
+        "description": "page_finder.orders.description"
+    },
+    {
+        "slug": "industry.products",
+        "alt": "icon.products.alt",
+        "path": "/industry/products/",
+        "publish": true,
+        "description": "page_finder.products.description"
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

@@ -1,0 +1,196 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { Product } from '@dtypes/api.minmatar.org'
+import { get_products } from '@helpers/api.minmatar.org/industry'
+
+const strategy = Astro.url.searchParams.get('strategy')
+
+let all_strategies_count = 0
+const strategy_count = {
+    produced: 0,
+    harvested: 0,
+    imported: 0,
+}
+
+let products:Product[] = []
+let fetching_error:string | false = false
+
+try {
+    products = await get_products(auth_token as string)
+    all_strategies_count = products.length
+
+    products.map(product => {
+        if (strategy_count[product.strategy] !== undefined)
+            strategy_count[product.strategy] = strategy_count[product.strategy] + 1
+    })
+
+    if (strategy)
+        products = products.filter(product => product.strategy === strategy)
+
+    products = products.sort((a, b) => a.supplied_for.length - b.supplied_for.length)
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_products_error') : error.message)
+}
+
+const PRODUCTS_PARTIAL_URL = translatePath(`/partials/products_component${strategy ? `?strategy=${strategy}` : ''}`)
+
+const count_text = t(products.length != 1 ? 'products_plural' : 'products_singular').replace('{count}', String(products.length))
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Button from '@components/blocks/Button.astro'
+import NotificationBadge from '@components/blocks/NotificationBadge.astro'
+import ProductsList from '@components/blocks/ProductsList.astro'
+import Input from '@components/blocks/Input.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('industry.products.page_title');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.products.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        x-data={`{
+            products_count: ${products.length},
+            count_text: '${count_text}',
+            products_plural: '${t('products_plural')}',
+            products_singular: '${t('products_singular')}',
+            all_strategies_count: ${all_strategies_count},
+            produced_count: ${strategy_count['produced']},
+            harvested_count: ${strategy_count['harvested']},
+            imported_count: ${strategy_count['imported']},
+            item_name_filter: '',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_item(el) {
+                const show_item = this.item_name_filter === '' || el.textContent.toLowerCase().includes(this.item_name_filter.toLowerCase())
+
+                return show_item
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small x-text="(products_count != 1 ? products_plural : products_singular).replace('{count}', String(products_count))">{count_text}</small>
+            </Flexblock>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="item_name_filter"
+                    x-on:keyup="setTimeout(function () { products_count = countVisibleElements('.product-item') })"
+                    x-init="$el.focus()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader">
+            <Button
+                color={!strategy ? 'transparent' : undefined}
+                href={translatePath('/industry/products/')}
+                size='sm'
+            >
+                {t('all_strategies')}
+                <NotificationBadge
+                    color={strategy ? 'fleet-yellow' : undefined}
+                    x-text="all_strategies_count"
+                    number={all_strategies_count}
+                />
+            </Button>
+
+            <Button
+                color={strategy === 'produced' ? 'transparent' : undefined}
+                href={translatePath('/industry/products?strategy=produced')}
+                size='sm'
+            >
+                {t('produced')}
+                <NotificationBadge
+                    color={strategy !== 'produced' ? 'fleet-yellow' : undefined}
+                    x-text="produced_count"
+                    number={strategy_count['produced'] ?? 0}
+                />
+            </Button>
+
+            <Button
+                color={strategy === 'harvested' ? 'transparent' : undefined}
+                href={translatePath('/industry/products?strategy=harvested')}
+                size='sm'
+            >
+                {t('harvested')}
+                <NotificationBadge
+                    color={strategy !== 'harvested' ? 'fleet-yellow' : undefined}
+                    x-text="harvested_count"
+                    number={strategy_count['harvested'] ?? 0}
+                />
+            </Button>
+            
+            <Button
+                color={strategy === 'imported' ? 'transparent' : undefined}
+                href={translatePath('/industry/products?strategy=imported')}
+                size='sm'
+            >
+                {t('imported')}
+                <NotificationBadge
+                    color={strategy !== 'imported' ? 'fleet-yellow' : undefined}
+                    x-text="imported_count"
+                    number={strategy_count['imported'] ?? 0}
+                />
+            </Button>
+        </FlexInline>
+
+        {fetching_error !== false ?
+            <ErrorRefetch
+                args={{
+                    partial: PRODUCTS_PARTIAL_URL,
+                    message: fetching_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <ProductsList
+                products={products}
+                init_tooltips={false}
+            />
+        }
+    </PageWide>
+</Viewport>

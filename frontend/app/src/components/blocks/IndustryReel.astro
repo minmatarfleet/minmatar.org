@@ -1,0 +1,119 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    is_superuser?:              boolean;
+}
+
+const {
+    is_superuser = false,
+} = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import Button from '@components/blocks/Button.astro';
+import SwiperCard from '@components/blocks/SwiperCard.astro';
+---
+
+<Wrapper
+    class="[ ships-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <div
+        class="[ swiper ][ w-full pb-10! ]"
+        id="industry-reel"
+    >
+        <LandingSwiper>
+            <div class="[ swiper-slide ]" style="margin-right: 5px">
+                <SwiperCard
+                    class="[ animate-delay-0 ]"
+                    title={t('industry.orders.page_title')}
+                    description={t('industry.orders.leading_text')}
+                    cover='/images/orders-tile-background.jpg'
+                >
+                    <Button size='sm' href={translatePath('/industry/orders/')}>
+                        {t('browse')}
+                    </Button>
+
+                    <!--<Button size='sm' href={translatePath('/industry/my_orders/')}>
+                        {t('industry.my_orders.page_title')}
+                    </Button>-->
+                </SwiperCard>
+            </div>
+
+            <div class="[ swiper-slide ]" style="margin-right: 5px">
+                <SwiperCard
+                    class="[ animate-delay-0 ]"
+                    title={t('industry.products.page_title')}
+                    description={t('industry.products.leading_text')}
+                    cover='/images/products-tile-background.jpg'
+                >
+                    <Button size='sm' href={translatePath('/industry/products/')}>
+                        {t('browse')}
+                    </Button>
+                    
+                    <Button size='sm' href={translatePath('/industry/products?strategy=produced')}>
+                        {t('produced')}
+                    </Button>
+
+                    <Button size='sm' href={translatePath('/industry/products?strategy=harvested')}>
+                        {t('harvested')}
+                    </Button>
+
+                    <Button size='sm' href={translatePath('/industry/products?strategy=imported')}>
+                        {t('imported')}
+                    </Button>
+                </SwiperCard>
+            </div>
+        </LandingSwiper>
+    </div>
+
+    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
+    <div class="[ swiper-button-next hidden lg:block! ]"></div>
+</Wrapper>
+
+<style lang="scss">
+    .ships-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 700px);
+    }
+</style>

@@ -1,0 +1,26 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { Product } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    products:           Product[];
+    init_tooltips:      boolean;
+}
+
+const {
+    products,
+    init_tooltips,
+} = Astro.props
+
+import ProductItem from '@components/blocks/ProductItem.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+---
+
+<BlockList>
+    {products.map(product =>
+        <ProductItem product={product} init_tooltips={init_tooltips} />
+    )}
+    <p x-show="products_count === 0">{t('no_products_to_display')}</p>
+</BlockList>

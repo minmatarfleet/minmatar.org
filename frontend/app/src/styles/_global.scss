@@ -236,6 +236,10 @@ ul {
     color: var(--security-status-null)    
 }
 
+.text-highlight {
+    color: var(--highlight)
+}
+
 .card-animated {
     picture.animated {
         overflow: hidden;
