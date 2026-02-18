@@ -41,11 +41,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             }
         </picture>
     </slot>
-    <Flexblock gap='0'>
+    <Flexblock gap={title_el !== 'span' ? 'var(--space-3xs)' : '0'}>
         <TitleElement
             class:list={[
                 'min-w-[100px]',
-                { 'text-[var(--highlight)]': highlight }
+                { 'text-highlight': highlight }
             ]}
         >
             {title} <slot name="title"></slot>

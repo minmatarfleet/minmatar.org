@@ -1,9 +1,3 @@
-export interface Character {
-    character_id:   number;
-    character_name: string;
-    skills:         Skill[];
-}
-
 export interface Skill {
     active_skill_level:   number;
     skill_id:             number;
@@ -697,4 +691,25 @@ export interface NestedIndustryOrder extends BaseIndustryOrder {
     source:     string;
     depth:      number;
     children:   NestedIndustryOrder[];
+}
+
+export interface Producer {
+    id:     number;
+    name:   string;
+}
+
+export interface ProductBase {
+    id:         number;
+    type_id:    number;
+    name:       string;
+}
+
+export interface Product extends ProductBase {
+    strategy:                       string;
+    volume:                         number;
+    blueprint_or_reaction_type_id:  number;
+    supplied_for:                   ProductBase[];
+    supplies:                       ProductBase[];
+    character_producers:            Producer[];
+    corporation_producers:          Producer[]
 }

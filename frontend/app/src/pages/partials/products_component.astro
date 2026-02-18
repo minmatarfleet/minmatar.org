@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { Product } from '@dtypes/api.minmatar.org'
+import { get_products } from '@helpers/api.minmatar.org/industry'
+
+const strategy = Astro.url.searchParams.get('strategy')
+
+let all_strategies_count = 0
+const strategy_count = {
+    produced: 0,
+    harvested: 0,
+    imported: 0,
+}
+
+let products:Product[] = []
+let fetching_error:string | false = false
+
+try {
+    products = await get_products(auth_token as string)
+    all_strategies_count = products.length
+
+    products.map(product => {
+        if (strategy_count[product.strategy] !== undefined)
+            strategy_count[product.strategy] = strategy_count[product.strategy] + 1
+    })
+
+    if (strategy)
+        products = products.filter(product => product.strategy === strategy)
+
+    products = products.sort((a, b) => a.supplied_for.length - b.supplied_for.length)
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_products_error') : error.message)
+}
+
+const PRODUCTS_PARTIAL_URL = translatePath(`/partials/products_component${strategy ? `?strategy=${strategy}` : ''}`)
+
+const count_text = t(products.length != 1 ? 'products_plural' : 'products_singular').replace('{count}', String(products.length))
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ProductsList from '@components/blocks/ProductsList.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: PRODUCTS_PARTIAL_URL,
+            message: fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <ProductsList
+        products={products}
+        init_tooltips={true}
+    />
+
+    <UpdateAlpineVariables
+        variables={{
+            count_text: count_text,
+            produced_count: strategy_count['produced'],
+            harvested_count: strategy_count['harvested'],
+            imported_count: strategy_count['imported'],
+        }}
+    />
+}
