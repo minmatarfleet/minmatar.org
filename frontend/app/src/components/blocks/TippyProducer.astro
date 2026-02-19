@@ -1,0 +1,45 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    producer_name:  string;
+    money:          number;
+    init_tooltip?:  boolean;
+    placement?:     string;
+    htmltag?:       string;
+    width?:         string;
+    height?:        string;
+    [propName: string]: any;
+}
+
+const {
+    producer_name,
+    money,
+    init_tooltip = false,
+    htmltag = 'div',
+    placement = 'top',
+    width = '340px',
+    height = '70px',
+} = Astro.props;
+
+import { query_string } from '@helpers/string';
+
+const query = query_string({
+    producer_name: producer_name,
+    money: money,
+})
+
+import Tippy from '@components/blocks/Tippy.astro';
+---
+
+<Tippy
+    data-tippy-placement={placement}
+    partial={`${translatePath('/partials/producer_tooltip')}?${query}`}
+    height={width}
+    width={height}
+    element={htmltag}
+    init_tooltip={init_tooltip}
+>
+    <slot />
+</Tippy>

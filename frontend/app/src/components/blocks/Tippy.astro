@@ -9,6 +9,7 @@ interface Props {
     width?:             string;
     show_delay?:        number;
     hide_delay?:        number;
+    init_tooltip?:      boolean;
     [propName: string]: any;
 }
 
@@ -19,9 +20,9 @@ const {
     width = 'auto',
     show_delay = '1000',
     hide_delay = '200',
+    init_tooltip = false,
     ...attributes
 } = Astro.props
-
 const Element = element
 ---
 
@@ -50,6 +51,16 @@ const Element = element
         `}
         data-tippy-delay={`[${show_delay}, ${hide_delay}]`}
         data-tippy-allowhtml='true'
+        x-data={`{
+            tippy_options: {
+                delay: [ ${show_delay}, ${hide_delay} ],
+                arrow: true,
+                onShow(instance) {
+                    htmx.process(instance.popper)
+                }
+            }
+        }`}
+        x-init={init_tooltip ? 'tippy($el, tippy_options)' : undefined}
         {...attributes}
     >
         <slot />

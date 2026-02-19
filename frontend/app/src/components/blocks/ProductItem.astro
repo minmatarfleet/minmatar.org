@@ -25,6 +25,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Picture from '@components/blocks/Picture.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import CorporationPicture from '@components/blocks/CorporationPicture.astro';
+import TippyProducer from '@components/blocks/TippyProducer.astro';
 import Tag from '@components/blocks/Tag.astro';
 
 import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
@@ -94,9 +95,10 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 
                 <FlexInline gap='var(--space-3xs)'>
                     {product.character_producers.map(producer =>
-                        <div 
-                            data-tippy-content={producer.name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        <TippyProducer
+                            producer_name={producer.name}
+                            money={producer.total_value_isk}
+                            init_tooltip={init_tooltips}
                         >
                             <CharacterPicture
                                 character_id={producer.id}
@@ -104,12 +106,13 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                                 size={24}
                             />
                             <div class="[ sr-only ]">{producer.name}</div>
-                        </div>
+                        </TippyProducer>
                     )}
                     {product.corporation_producers.map(producer =>
-                        <div 
-                            data-tippy-content={producer.name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        <TippyProducer
+                            producer_name={producer.name}
+                            money={producer.total_value_isk}
+                            init_tooltip={init_tooltips}
                         >
                             <CorporationPicture
                                 corporation_id={producer.id}
@@ -117,7 +120,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                                 size={24}
                             />
                             <div class="[ sr-only ]">{producer.name}</div>
-                        </div>
+                        </TippyProducer>
                     )}
                     {product.character_producers.length === 0 && product.corporation_producers.length === 0 &&
                         <Tag text={t('no_producers')} />
