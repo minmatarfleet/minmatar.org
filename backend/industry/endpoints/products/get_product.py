@@ -7,10 +7,12 @@ from industry.endpoints.products.schemas import (
     CorporationProducerRef,
     IndustryProductDetail,
     IndustryProductRef,
+    PlanetaryProducerRef,
 )
 from industry.helpers.producers import (
     get_character_producers_for_type,
     get_corporation_producers_for_type,
+    get_planetary_producers_for_type,
 )
 from industry.models import IndustryProduct
 
@@ -49,6 +51,7 @@ def get_product(request, product_id: int):
         )
     char_producers = get_character_producers_for_type(product.eve_type_id)
     corp_producers = get_corporation_producers_for_type(product.eve_type_id)
+    planet_producers = get_planetary_producers_for_type(product.eve_type_id)
     return 200, IndustryProductDetail(
         id=product.pk,
         type_id=product.eve_type_id,
@@ -65,5 +68,8 @@ def get_product(request, product_id: int):
         corporation_producers=[
             CorporationProducerRef(id=c["id"], name=c["name"])
             for c in corp_producers
+        ],
+        planetary_producers=[
+            PlanetaryProducerRef(**p) for p in planet_producers
         ],
     )

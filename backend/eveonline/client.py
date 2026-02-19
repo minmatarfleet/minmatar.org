@@ -536,6 +536,36 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def get_character_planets(self) -> EsiResponse:
+        """Returns the list of planetary colonies for the character."""
+        token, status = self._valid_token(["esi-planets.manage_planets.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/",
+            timeout=30,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if response.status_code == 200:
+            return EsiResponse(response_code=SUCCESS, data=response.json())
+        return EsiResponse(response_code=response.status_code)
+
+    def get_character_planet_details(self, planet_id: int) -> EsiResponse:
+        """Returns the full layout (pins, routes, links) for a character's planet colony."""
+        token, status = self._valid_token(["esi-planets.manage_planets.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/{planet_id}/",
+            timeout=30,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if response.status_code == 200:
+            return EsiResponse(response_code=SUCCESS, data=response.json())
+        return EsiResponse(response_code=response.status_code)
+
     def get_character_notifications(self) -> EsiResponse:
         """Returns recent notifications for the character"""
 

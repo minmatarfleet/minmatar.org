@@ -250,6 +250,74 @@ class EveCharacterIndustryJob(models.Model):
         return f"Job {self.job_id} ({self.character.character_name}, {self.status})"
 
 
+class EveCharacterPlanet(models.Model):
+    """A character's planetary interaction colony on a specific planet."""
+
+    character = models.ForeignKey(
+        "EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="planets",
+    )
+    planet_id = models.IntegerField()
+    planet_type = models.CharField(max_length=32)
+    solar_system_id = models.IntegerField()
+    upgrade_level = models.IntegerField(default=0)
+    num_pins = models.IntegerField(default=0)
+    last_update = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time the colony was updated in-game (from ESI).",
+    )
+
+    class Meta:
+        unique_together = ("character", "planet_id")
+        indexes = [
+            models.Index(fields=["planet_id"]),
+            models.Index(fields=["solar_system_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.character.character_name} - Planet {self.planet_id} ({self.planet_type})"
+
+
+class EveCharacterPlanetOutput(models.Model):
+    """
+    One output of a character's planetary colony.
+
+    Each row represents a resource that a planet either harvests (extractor)
+    or produces (factory).  The industry package queries these rows to find
+    characters whose planets supply a given type.
+    """
+
+    class OutputType(models.TextChoices):
+        HARVESTED = "harvested", "Harvested"
+        PRODUCED = "produced", "Produced"
+
+    planet = models.ForeignKey(
+        EveCharacterPlanet,
+        on_delete=models.CASCADE,
+        related_name="outputs",
+    )
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.CASCADE,
+    )
+    output_type = models.CharField(
+        max_length=16,
+        choices=OutputType.choices,
+    )
+
+    class Meta:
+        unique_together = ("planet", "eve_type", "output_type")
+        indexes = [
+            models.Index(fields=["eve_type"]),
+            models.Index(fields=["output_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.planet} -> {self.eve_type.name} ({self.output_type})"
+
+
 class EveCharacterSkillset(models.Model):
     progress = models.FloatField()
     missing_skills = models.TextField(blank=True)
