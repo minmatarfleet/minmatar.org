@@ -90,6 +90,8 @@ const contracts_count = active_market_locations_ui?.fittings.length ?? 0
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
+const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -120,14 +122,20 @@ const page_description = t('contracts.leading_text')
     <PageDefault
         cover={{
 			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
-					'/videos/amamake-loop.webm',
-			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover.jpg' :
-					'/images/home-amamake-cover.jpg',
-            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover-eve.jpg' :
-					'/images/home-amamake-cover-eve.jpg' ,
-            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover-eve.jpg' :
-					   '/images/home-amamake-cover-eve.jpg',
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
+                    undefined,
+			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
+                    undefined,
+            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+                    '/images/contracts-cover.jpg',
+            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+                       '/images/contracts-cover.jpg',
             animated: false,
+            scrollable: !is_video_cover,
+            overlay: !is_video_cover,
         }}
         x-data={`{
             contracts_count: ${contracts_count},
