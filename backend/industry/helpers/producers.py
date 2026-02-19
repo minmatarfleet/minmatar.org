@@ -1,18 +1,23 @@
 """
 Characters and corporations dealing with a product type.
 
-character_producers: primary character per user (industry jobs and/or planetary output).
+character_producers: primary character per user (industry jobs, planetary output, and/or mining).
 corporation_producers: corporations with industry jobs.
 planetary_producers: per-planet PI details (character, planet, output_type).
+mining_producers: characters who mine ores relevant to the product (last 30 days).
 """
 
-from django.db.models import Q
+from datetime import timedelta
 
-from eveuniverse.models import EveIndustryActivityProduct
+from django.db.models import Q, Sum
+from django.utils import timezone
+
+from eveuniverse.models import EveIndustryActivityProduct, EveTypeMaterial
 
 from eveonline.models import (
     EveCharacter,
     EveCharacterIndustryJob,
+    EveCharacterMiningEntry,
     EveCharacterPlanetOutput,
     EveCorporationIndustryJob,
 )
@@ -254,7 +259,7 @@ def _fill_planetary_producers(result, type_ids):
 def get_producers_for_types(product_type_ids):
     """
     Batch: for each product type_id, return character_producers,
-    corporation_producers, and planetary_producers.
+    corporation_producers, planetary_producers, and mining_producers.
     """
     if not product_type_ids:
         return {}
@@ -264,6 +269,7 @@ def get_producers_for_types(product_type_ids):
             "character_producers": [],
             "corporation_producers": [],
             "planetary_producers": [],
+            "mining_producers": [],
         }
         for tid in type_ids
     }
@@ -271,6 +277,7 @@ def get_producers_for_types(product_type_ids):
     if blueprint_activity_to_types:
         _fill_job_producers(result, type_ids, blueprint_activity_to_types)
     _fill_planetary_producers(result, type_ids)
+    _fill_mining_producers(result, type_ids)
     for tid in type_ids:
         result[tid]["character_producers"] = _resolve_to_primary_producers(
             result[tid]["character_producers"]
@@ -315,3 +322,159 @@ def get_planetary_producers_for_type(product_type_id: int):
                 }
             )
     return out
+
+
+# ---------------------------------------------------------------------------
+# Mining producers
+# ---------------------------------------------------------------------------
+
+MINING_WINDOW_DAYS = 30
+
+
+def _ore_type_ids_for_material(material_type_id: int) -> set[int]:
+    """Return type_ids of ores/items whose reprocessing yields this material."""
+    return set(
+        EveTypeMaterial.objects.filter(
+            material_eve_type_id=material_type_id,
+        ).values_list("eve_type_id", flat=True)
+    )
+
+
+def get_mining_producers_for_type(product_type_id: int):
+    """
+    Characters who mined ores relevant to this product type in the last 30 days.
+
+    Two lookup paths:
+      1. Direct: the product type IS an ore that was mined.
+      2. Reprocessing: the product type is a mineral; find ores whose
+         EveTypeMaterial rows list it as an output, then find miners of
+         those ores.
+
+    Returns list of dicts sorted by total_quantity descending:
+        {"character_id", "character_name", "total_quantity"}
+    Characters are resolved to their user's primary character.
+    """
+    ore_type_ids = _ore_type_ids_for_material(product_type_id)
+    ore_type_ids.add(product_type_id)
+
+    cutoff = timezone.now().date() - timedelta(days=MINING_WINDOW_DAYS)
+
+    rows = (
+        EveCharacterMiningEntry.objects.filter(
+            eve_type_id__in=ore_type_ids,
+            date__gte=cutoff,
+        )
+        .values(
+            "character__character_id",
+            "character__character_name",
+        )
+        .annotate(total_quantity=Sum("quantity"))
+        .order_by("-total_quantity")
+    )
+
+    original_cids = [r["character__character_id"] for r in rows]
+    characters = {
+        c.character_id: c
+        for c in EveCharacter.objects.filter(character_id__in=original_cids)
+    }
+
+    primary_qty: dict[int, int] = {}
+    primary_name: dict[int, str] = {}
+    for r in rows:
+        cid = r["character__character_id"]
+        qty = r["total_quantity"]
+        char = characters.get(cid)
+        primary = None
+        if char:
+            try:
+                primary = character_primary(char)
+            except (AttributeError, TypeError):
+                pass
+        if primary:
+            pid, pname = primary.character_id, primary.character_name or ""
+        else:
+            pid = cid
+            pname = r["character__character_name"] or ""
+        primary_qty[pid] = primary_qty.get(pid, 0) + qty
+        primary_name.setdefault(pid, pname)
+
+    out = [
+        {
+            "character_id": pid,
+            "character_name": primary_name[pid],
+            "total_quantity": qty,
+        }
+        for pid, qty in primary_qty.items()
+    ]
+    out.sort(key=lambda x: x["total_quantity"], reverse=True)
+    return out
+
+
+def _fill_mining_producers(result, type_ids):
+    """Populate mining_producers and add mining characters to character_producers."""
+    all_ore_type_ids: set[int] = set(type_ids)
+    material_to_products: dict[int, list[int]] = {}
+
+    ore_source_rows = EveTypeMaterial.objects.filter(
+        material_eve_type_id__in=type_ids,
+    ).values_list("eve_type_id", "material_eve_type_id")
+    for ore_tid, mat_tid in ore_source_rows:
+        all_ore_type_ids.add(ore_tid)
+        material_to_products.setdefault(ore_tid, []).append(mat_tid)
+
+    for tid in type_ids:
+        material_to_products.setdefault(tid, []).append(tid)
+
+    cutoff = timezone.now().date() - timedelta(days=MINING_WINDOW_DAYS)
+
+    mining_rows = (
+        EveCharacterMiningEntry.objects.filter(
+            eve_type_id__in=all_ore_type_ids,
+            date__gte=cutoff,
+        )
+        .values(
+            "eve_type_id",
+            "character__character_id",
+            "character__character_name",
+        )
+        .annotate(total_quantity=Sum("quantity"))
+    )
+
+    char_seen = {
+        tid: {c["id"] for c in result[tid]["character_producers"]}
+        for tid in type_ids
+    }
+    # {product_type_id: {character_id: total_quantity}}
+    miner_qty: dict[int, dict[int, int]] = {tid: {} for tid in type_ids}
+    miner_name: dict[int, str] = {}
+
+    for row in mining_rows:
+        ore_tid = row["eve_type_id"]
+        cid = row["character__character_id"]
+        cname = row["character__character_name"] or ""
+        qty = row["total_quantity"]
+        miner_name[cid] = cname
+
+        for product_tid in material_to_products.get(ore_tid, []):
+            if product_tid not in result:
+                continue
+            miner_qty[product_tid][cid] = (
+                miner_qty[product_tid].get(cid, 0) + qty
+            )
+            if cid not in char_seen[product_tid]:
+                char_seen[product_tid].add(cid)
+                result[product_tid]["character_producers"].append(
+                    {"id": cid, "name": cname}
+                )
+
+    for tid in type_ids:
+        miners = [
+            {
+                "character_id": cid,
+                "character_name": miner_name.get(cid, ""),
+                "total_quantity": qty,
+            }
+            for cid, qty in miner_qty[tid].items()
+        ]
+        miners.sort(key=lambda x: x["total_quantity"], reverse=True)
+        result[tid]["mining_producers"] = miners

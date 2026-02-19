@@ -9,6 +9,7 @@ from eveonline.helpers.characters import (
     update_character_contracts as refresh_character_contracts,
     update_character_industry_jobs as refresh_character_industry_jobs,
     update_character_killmails as refresh_character_killmails,
+    update_character_mining as refresh_character_mining,
     update_character_planets as refresh_character_planets,
     update_character_skills as refresh_character_skills,
 )
@@ -21,6 +22,7 @@ SCOPE_SKILLS = ["esi-skills.read_skills.v1"]
 SCOPE_KILLMAILS = ["esi-killmails.read_killmails.v1"]
 SCOPE_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
 SCOPE_INDUSTRY_JOBS = ["esi-industry.read_character_jobs.v1"]
+SCOPE_MINING = ["esi-industry.read_character_mining.v1"]
 SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
 
 
@@ -49,6 +51,8 @@ def update_character(eve_character_id):
         refresh_character_contracts(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_INDUSTRY_JOBS):
         refresh_character_industry_jobs(eve_character_id)
+    if Token.get_token(eve_character_id, SCOPE_MINING):
+        refresh_character_mining(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_PLANETS):
         refresh_character_planets(eve_character_id)
 

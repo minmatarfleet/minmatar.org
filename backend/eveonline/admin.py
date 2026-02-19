@@ -10,6 +10,7 @@ from .models import (
     EveCharacter,
     EveCharacterContract,
     EveCharacterIndustryJob,
+    EveCharacterMiningEntry,
     EveCharacterPlanet,
     EveCharacterPlanetOutput,
     EveCorporation,
@@ -140,6 +141,25 @@ class EveCharacterIndustryJobAdmin(admin.ModelAdmin):
     autocomplete_fields = ("character",)
     date_hierarchy = "end_date"
     ordering = ("-end_date",)
+
+
+@admin.register(EveCharacterMiningEntry)
+class EveCharacterMiningEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "character",
+        "eve_type",
+        "quantity",
+        "date",
+        "solar_system_id",
+    )
+    list_filter = ("date",)
+    search_fields = (
+        "character__character_name",
+        "eve_type__name",
+    )
+    autocomplete_fields = ("character",)
+    date_hierarchy = "date"
+    ordering = ("-date",)
 
 
 class EveCharacterPlanetOutputInline(admin.TabularInline):
@@ -350,6 +370,7 @@ _CHARACTER_MODELS = {
     "evecharacterskill",
     "evecharactercontract",
     "evecharacterindustryjob",
+    "evecharacterminingentry",
     "evecharacterplanet",
     "evecharacterplanetoutput",
     "evetag",

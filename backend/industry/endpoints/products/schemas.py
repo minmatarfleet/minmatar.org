@@ -38,6 +38,14 @@ class PlanetaryProducerRef(BaseModel):
     output_type: str
 
 
+class MiningProducerRef(BaseModel):
+    """Character who mined ores relevant to this product type in the last 30 days."""
+
+    character_id: int
+    character_name: str
+    total_quantity: int
+
+
 class IndustryProductListItem(BaseModel):
     """One industry product in list: type, strategy, volume, blueprint/reaction, relations, producers."""
 
@@ -52,6 +60,7 @@ class IndustryProductListItem(BaseModel):
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
     planetary_producers: List[PlanetaryProducerRef] = []
+    mining_producers: List[MiningProducerRef] = []
 
 
 class IndustryProductDetail(BaseModel):
@@ -68,3 +77,4 @@ class IndustryProductDetail(BaseModel):
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
     planetary_producers: List[PlanetaryProducerRef] = []
+    mining_producers: List[MiningProducerRef] = []
