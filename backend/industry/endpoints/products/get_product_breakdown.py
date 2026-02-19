@@ -3,7 +3,6 @@
 from typing import Optional
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
 from industry.endpoints.breakdown.schemas import NestedBreakdownNode
 from industry.helpers.type_breakdown import (
     enrich_breakdown_with_industry_product_ids,
@@ -15,7 +14,6 @@ PATH = "{int:product_id}/breakdown"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "Nested material breakdown for an industry product by ID (for collapsing/expanding)",
-    "auth": AuthBearer(),
     "response": {
         200: NestedBreakdownNode,
         403: ErrorResponse,
