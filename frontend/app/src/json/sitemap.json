@@ -337,19 +337,13 @@
         "path": "/fleets/upcoming/",
         "publish": true,
         "icon": "/images/icons/48px-Fleet.png",
-        "description": "page_finder.fleets.upcoming.description",
-        "permissions" : {
-            "auth": true
-        }
+        "description": "page_finder.fleets.upcoming.description"
     },
     {
         "slug": "fleets.history",
         "path": "/fleets/history/",
         "publish": true,
-        "description": "page_finder.fleets.history.description",
-        "permissions" : {
-            "auth": true
-        }
+        "description": "page_finder.fleets.history.description"
     },
     {
         "slug": "fleets.add",
