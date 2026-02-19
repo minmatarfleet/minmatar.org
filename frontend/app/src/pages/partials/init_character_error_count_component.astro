@@ -5,17 +5,28 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
+import { get_user_permissions } from '@helpers/permissions'
+
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
 
 let pilots:SummaryCharacter[] = []
 let character_errors_count:number = 0
+let readiness_character_id:number = 0
 
 try {
     if (user) {
+        const user_permissions = await get_user_permissions(user?.username)
         const character_summary = await get_characters_summary_sorted(auth_token as string)
         pilots = character_summary.characters ?? []
-        const character_errors = get_character_error_ui(pilots)
+        let character_errors = get_character_error_ui(pilots)
+        
+        if (user_permissions.includes('eveonline.add_evecharactertag'))
+            readiness_character_id = pilots[0]?.character_id ?? 0
+
+        if (readiness_character_id === 0)
+            character_errors = character_errors.filter(character_error => character_error.error !== 'NO_TAGS')
+
         character_errors_count = character_errors?.length ?? 0
     }
 } catch (error) {
