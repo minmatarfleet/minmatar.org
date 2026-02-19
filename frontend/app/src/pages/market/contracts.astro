@@ -119,11 +119,15 @@ const page_description = t('contracts.leading_text')
 >
     <PageDefault
         cover={{
-            image: "/images/contracts-cover.jpg",
-            image_990: "/images/contracts-cover.jpg",
+			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
+					'/videos/amamake-loop.webm',
+			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover.jpg' :
+					'/images/home-amamake-cover.jpg',
+            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover-eve.jpg' :
+					'/images/home-amamake-cover-eve.jpg' ,
+            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images//home-r6-cover-eve.jpg' :
+					   '/images/home-amamake-cover-eve.jpg',
             animated: false,
-            scrollable: true,
-            overlay: true
         }}
         x-data={`{
             contracts_count: ${contracts_count},
