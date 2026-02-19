@@ -30,7 +30,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 <Flexblock gap='var(--space-xl)'>
     <LocationsReel gap={REEL_GAP}>
         <LocationsReelSlide gap={REEL_GAP}>
-            <Flexblock gap='var(--space-3xs)'>
+            <Flexblock gap='var(--space-2xs)'>
                 <h2>{active_market_locations_ui.name}</h2>
                 <Progress
                     class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
@@ -46,7 +46,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 
         {non_active_market_locations_ui.map(location =>
             <LocationsReelSlide gap={REEL_GAP}>
-                <Flexblock gap='var(--space-3xs)'>
+                <Flexblock gap='var(--space-2xs)'>
                     <h3>
                         <a href={translatePath(`/market/contracts?${query_string({
                                 location_name: location.name
