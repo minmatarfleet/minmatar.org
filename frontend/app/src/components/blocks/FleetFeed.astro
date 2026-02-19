@@ -35,37 +35,58 @@ try {
 const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`
 const REFRESH_RATE_SECONDS = 300
 
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
 import FeedSwiper from '@components/blocks/FeedSwiper.astro';
+import Button from '@components/blocks/Button.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
 <div x-show="show_fleet_feeds">
-    <div
-        class="[ fleet-feed swiper ][ animate-fade-in-up !hidden 2xl:!block ]"
+    <Flexblock
+        class="[ fleet-feed-wrapper ][ animate-fade-in-up !hidden 2xl:!block ]"
+        gap='var(--space-xs)'
         hx-get={FLEET_FEED_PARTIAL_URL}
         hx-trigger={`load delay:${REFRESH_RATE_SECONDS}s`}
         hx-swap="outerHTML transition:true"
         @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
         @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
     >
-        <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
-            {fleets.map( (fleet) =>
-                <div class="swiper-slide">
-                    <FleetFeedItem fleet={fleet} />
-                </div>
-            )}
-        </FeedSwiper>
-    </div>
+        {fleets.length > 0 &&
+            <FlexInline justification='flex-end'>
+                <Button
+                    href={translatePath('/fleets/upcoming/')}
+                    size='sm'
+                >
+                    {t('full_schedule')}
+                </Button>
+            </FlexInline>
+        }
+
+        <div class="[ fleet-feed swiper ]">
+            <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
+                {fleets.map( (fleet) =>
+                    <div class="swiper-slide">
+                        <FleetFeedItem fleet={fleet} />
+                    </div>
+                )}
+            </FeedSwiper>
+        </div>
+    </Flexblock>
 </div>
 
 <style lang="scss">
-    .fleet-feed {
+    .fleet-feed-wrapper {
         width: min(100%, 630px);
         position: fixed;
-        max-height: calc(2 * 64px);
         bottom: var(--space-l);
         right: var(--space-xl);
         display: none;
+    }
+
+    .fleet-feed {
+        max-height: calc(2 * 64px);
     }
 
     .swiper-slider {

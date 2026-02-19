@@ -1723,5 +1723,6 @@ export const ui = {
         'all_strategies': 'All strategies',
         'no_products_to_display': 'No products to display.',
         'set_character_roles': 'Set character roles',
+        'full_schedule': 'See full schedule',
     },
 } as const;
