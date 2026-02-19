@@ -403,21 +403,24 @@
         "path": "/industry/",
         "publish": true,
         "icon": "/images/icons/48px-Industry.png",
-        "description": "page_finder.industry.description"
+        "description": "page_finder.industry.description",
+        "keywords": [ "industry", "supply chain", "manufacturing" ]
     },
     {
         "slug": "industry.orders",
         "alt": "icon.orders.alt",
         "path": "/industry/orders/",
         "publish": true,
-        "description": "page_finder.orders.description"
+        "description": "page_finder.orders.description",
+        "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
     },
     {
         "slug": "industry.products",
         "alt": "icon.products.alt",
         "path": "/industry/products/",
         "publish": true,
-        "description": "page_finder.products.description"
+        "description": "page_finder.products.description",
+        "keywords": [ "products", "mining", "harvesting", "production", "imports" ]
     },
     {
         "slug": "intel",

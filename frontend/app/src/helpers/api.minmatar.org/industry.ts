@@ -61,10 +61,9 @@ export async function get_orders_summary_flat() {
     }
 }
 
-export async function get_products(access_token:string) {
+export async function get_products() {
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
     }
 
     const ENDPOINT = `${API_ENDPOINT}/products`
@@ -91,10 +90,9 @@ export async function get_products(access_token:string) {
     }
 }
 
-export async function get_product_by_id(access_token:string, id:number) {
+export async function get_product_by_id(id:number) {
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
     }
 
     const ENDPOINT = `${API_ENDPOINT}/products/${id}`
@@ -121,10 +119,9 @@ export async function get_product_by_id(access_token:string, id:number) {
     }
 }
 
-export async function get_product_breakdown(access_token:string, product_id:number, quantity:number, max_depth?:number) {
+export async function get_product_breakdown(product_id:number, quantity:number, max_depth?:number) {
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
     }
 
     const query_params = {

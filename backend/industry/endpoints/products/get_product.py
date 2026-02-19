@@ -1,7 +1,6 @@
 """GET /products/{product_id} - full detail for one industry product."""
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
 from industry.endpoints.products.schemas import (
     CharacterProducerRef,
     CorporationProducerRef,
@@ -22,7 +21,6 @@ PATH = "{int:product_id}"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "Full industry product detail with strategy, volume, relations, character/corp producers",
-    "auth": AuthBearer(),
     "response": {
         200: IndustryProductDetail,
         404: ErrorResponse,

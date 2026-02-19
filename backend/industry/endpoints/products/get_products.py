@@ -2,8 +2,6 @@
 
 from typing import List
 
-from authentication import AuthBearer
-
 from industry.endpoints.products.schemas import (
     CharacterProducerRef,
     CorporationProducerRef,
@@ -19,7 +17,6 @@ PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "List all industry products with strategy, volume, relations, character/corp producers",
-    "auth": AuthBearer(),
     "response": {200: List[IndustryProductListItem]},
 }
 
