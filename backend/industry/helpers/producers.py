@@ -1,9 +1,9 @@
 """
-Relevant character and corporation industry jobs for a product type.
+Characters and corporations dealing with a product type.
 
-Jobs are matched by blueprint/reaction type and activity (manufacturing=1, reaction=11)
-that produce the given product type_id.  Planetary interaction producers are also
-included when a character's planet outputs match the requested type.
+character_producers: characters with industry jobs (manufacturing/reactions) and/or
+planetary output for the type. corporation_producers: corporations with industry jobs.
+planetary_producers: per-planet PI details (character, planet, output_type).
 """
 
 from django.db.models import Q
@@ -33,24 +33,44 @@ def _blueprint_activity_pairs_for_product_type(product_type_id: int):
 
 def get_character_producers_for_type(product_type_id: int):
     """
-    Characters who have industry jobs producing this product type.
-    Returns list of {"id": character_id, "name": character_name}, distinct.
+    All characters dealing with this product type: industry jobs (manufacturing/
+    reactions) and planetary output. Returns list of {"id": character_id, "name": character_name}, distinct.
     """
-    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
-    if not pairs:
-        return []
-    q = Q()
-    for blueprint_type_id, activity_id in pairs:
-        q |= Q(blueprint_type_id=blueprint_type_id, activity_id=activity_id)
-    jobs = (
-        EveCharacterIndustryJob.objects.filter(q)
-        .select_related("character")
-        .values_list("character__character_id", "character__character_name")
-        .distinct()
-    )
     seen = set()
     out = []
-    for cid, cname in jobs:
+
+    # Industry jobs (manufacturing, reactions)
+    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
+    if pairs:
+        q = Q()
+        for blueprint_type_id, activity_id in pairs:
+            q |= Q(
+                blueprint_type_id=blueprint_type_id, activity_id=activity_id
+            )
+        jobs = (
+            EveCharacterIndustryJob.objects.filter(q)
+            .select_related("character")
+            .values_list(
+                "character__character_id", "character__character_name"
+            )
+            .distinct()
+        )
+        for cid, cname in jobs:
+            if cid not in seen:
+                seen.add(cid)
+                out.append({"id": cid, "name": cname or ""})
+
+    # Planetary output
+    planet_outputs = (
+        EveCharacterPlanetOutput.objects.filter(eve_type_id=product_type_id)
+        .select_related("planet__character")
+        .values_list(
+            "planet__character__character_id",
+            "planet__character__character_name",
+        )
+        .distinct()
+    )
+    for cid, cname in planet_outputs:
         if cid not in seen:
             seen.add(cid)
             out.append({"id": cid, "name": cname or ""})
@@ -142,7 +162,7 @@ def _fill_job_producers(result, type_ids, blueprint_activity_to_types):
 
 
 def _fill_planetary_producers(result, type_ids):
-    """Populate planetary_producers from EveCharacterPlanetOutput."""
+    """Populate planetary_producers from EveCharacterPlanetOutput and add those characters to character_producers."""
     planet_outputs = (
         EveCharacterPlanetOutput.objects.filter(eve_type_id__in=type_ids)
         .select_related("planet__character")
@@ -156,6 +176,11 @@ def _fill_planetary_producers(result, type_ids):
             "planet__planet_type",
         )
     )
+    # Characters already in character_producers (from industry jobs)
+    char_seen = {
+        tid: {c["id"] for c in result[tid]["character_producers"]}
+        for tid in type_ids
+    }
     planet_seen = {tid: set() for tid in type_ids}
     for (
         eve_type_id,
@@ -178,6 +203,11 @@ def _fill_planetary_producers(result, type_ids):
                     "planet_type": ptype or "",
                     "output_type": output_type,
                 }
+            )
+        if cid not in char_seen[eve_type_id]:
+            char_seen[eve_type_id].add(cid)
+            result[eve_type_id]["character_producers"].append(
+                {"id": cid, "name": cname or ""}
             )
 
 
