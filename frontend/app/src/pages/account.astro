@@ -222,7 +222,7 @@ const page_title = t('account.page_title');
                     <PilotReadinessBanner main_character_id={readiness_character_id} />
                 }
 
-                {current_player &&
+                {readiness_character_id > 0 && current_player &&
                     <ComponentBlock width='narrow'>
                         <PrimeTimezone
                             prime_time={current_player.prime_time}
