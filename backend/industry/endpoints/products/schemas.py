@@ -27,6 +27,17 @@ class CorporationProducerRef(BaseModel):
     name: str
 
 
+class PlanetaryProducerRef(BaseModel):
+    """Character whose planetary colony produces or harvests this product type."""
+
+    character_id: int
+    character_name: str
+    planet_id: int
+    solar_system_id: int
+    planet_type: str
+    output_type: str
+
+
 class IndustryProductListItem(BaseModel):
     """One industry product in list: type, strategy, volume, blueprint/reaction, relations, producers."""
 
@@ -40,6 +51,7 @@ class IndustryProductListItem(BaseModel):
     supplies: List[IndustryProductRef] = []
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
+    planetary_producers: List[PlanetaryProducerRef] = []
 
 
 class IndustryProductDetail(BaseModel):
@@ -55,3 +67,4 @@ class IndustryProductDetail(BaseModel):
     supplies: List[IndustryProductRef] = []
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
+    planetary_producers: List[PlanetaryProducerRef] = []
