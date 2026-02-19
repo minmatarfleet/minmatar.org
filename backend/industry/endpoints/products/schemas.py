@@ -36,6 +36,8 @@ class PlanetaryProducerRef(BaseModel):
     solar_system_id: int
     planet_type: str
     output_type: str
+    planet_count: int
+    total_value_isk: float
 
 
 class MiningProducerRef(BaseModel):
@@ -44,6 +46,7 @@ class MiningProducerRef(BaseModel):
     character_id: int
     character_name: str
     total_quantity: int
+    total_value_isk: float
 
 
 class IndustryProductListItem(BaseModel):
