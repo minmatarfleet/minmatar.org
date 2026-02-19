@@ -24,7 +24,7 @@ let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
 
 try {
-    fleets = auth_token ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
+    fleets = can_view_srp ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
