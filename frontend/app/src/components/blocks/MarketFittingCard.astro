@@ -48,7 +48,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';import FluidFixed fro
                     type_id={fitting.ship_id}
                     title_el='h3'
                 >
-                    <Flexblock gap='var(--space-3xs)'></Flexblock>            
+                    <Flexblock gap='var(--space-3xs)'>
                         {(no_expectation_progress || expected_quantity > 0) &&
                             <Progress
                                 class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
