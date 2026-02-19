@@ -24,7 +24,7 @@ let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
 
 try {
-    fleets = auth_token ? await fetch_fleets_auth(auth_token as string) : await fetch_fleets()
+    fleets = can_view_srp ? await fetch_fleets_auth(auth_token as string) : await fetch_fleets()
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
