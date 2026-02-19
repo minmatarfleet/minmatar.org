@@ -694,8 +694,9 @@ export interface NestedIndustryOrder extends BaseIndustryOrder {
 }
 
 export interface Producer {
-    id:     number;
-    name:   string;
+    id:                 number;
+    name:               string;
+    total_value_isk:    number;
 }
 
 export interface ProductBase {
