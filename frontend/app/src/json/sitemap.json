@@ -370,7 +370,7 @@
         "description": "page_finder.fleets.srp.description",
         "keywords": [ "srp", "ship", "replacement", "program" ],
         "permissions" : {
-            "auth": true
+             "user": [ "srp.view_evefleetshipreimbursement" ]
         }
     },
     {
@@ -457,16 +457,6 @@
         "description": "page_finder.intel.timers.add.description",
         "permissions" : {
             "user": [ "structures.add_evestructuretimer" ]
-        }
-    },
-    {
-        "slug": "intel.tutrial",
-        "path": "/intel/tutorial/",
-        "publish": false,
-        "keywords": [ "tutorial" ],
-        "description": "page_finder.intel.tutorial.description",
-        "permissions" : {
-            "auth": true
         }
     },
     {
