@@ -39,7 +39,7 @@ def update_affiliation(user_id: int):
 
     primary_character = user_primary_character(user)
     if not primary_character:
-        logger.warning("No primary character found for user %s", user)
+        logger.info("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
         return
 
