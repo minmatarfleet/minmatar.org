@@ -42,10 +42,12 @@ try {
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
     current_player = await get_current_player(auth_token as string)
-    console.log(current_player)
 
     if (user_permissions.includes('eveonline.add_evecharactertag'))
         readiness_character_id = pilots[0]?.character_id ?? 0
+
+    if (readiness_character_id === 0)
+        character_errors = character_errors.filter(character_error => character_error.error !== 'NO_TAGS')
 } catch (error) {
     get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
     readonly = true
@@ -151,18 +153,16 @@ const page_title = t('account.page_title');
         <Flexblock>            
             <ComponentBlock width='narrow'>
                 <FlexInline justification='space-between'>
-                    <FlexInline class="[ grow ]">
-                        <VerticalCenter class="[ basis-48 ]">
-                            <TextGroup title={t('account_name')}>
-                                <FlexInline slot="outside" gap='var(--space-2xs)'>{user.username} <CopyToken /></FlexInline>
-                            </TextGroup>
-                        </VerticalCenter>
-                        <VerticalCenter class="[ basis-48 ]">
-                            <TextGroup title={t('status')}>
-                                {roles_semantic_list}
-                            </TextGroup>
-                        </VerticalCenter>
-                    </FlexInline>
+                    <VerticalCenter>
+                        <TextGroup title={t('account_name')}>
+                            <FlexInline slot="outside" gap='var(--space-2xs)'>{user.username} <CopyToken /></FlexInline>
+                        </TextGroup>
+                    </VerticalCenter>
+                    <VerticalCenter>
+                        <TextGroup title={t('status')}>
+                            {roles_semantic_list}
+                        </TextGroup>
+                    </VerticalCenter>
                     <FlexInline class="[ items-center ]">
                         <Button
                             size='sm'
