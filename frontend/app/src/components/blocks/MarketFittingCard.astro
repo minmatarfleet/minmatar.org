@@ -65,7 +65,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';import FluidFixed fro
                     </Flexblock>
                 </ItemBadge>
             </div>
-            <span class="[ quantity ]"><b class:list={{ 'text-red': low_amount }}>{current_quantity}</b>{expected_quantity > 0 && `/${expected_quantity}`}</span>
+            <span class="[ quantity ]">{current_quantity}{expected_quantity > 0 && `/${expected_quantity}`}</span>
         </FixedFluid>
             
         <ClipboardButton
