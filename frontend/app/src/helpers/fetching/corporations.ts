@@ -9,13 +9,13 @@ import type { CorporationObject, CorporationStatusType, CorporationMembers, Char
 import { get_all_corporations, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications, get_corporation_applications_by_id } from '@helpers/api.minmatar.org/applications'
 
-export async function get_corporations_list_auth(access_token:string, user_id: number, corporation_type:CorporationType) {
+export async function get_corporations_list_auth(access_token:string, user_id:number, corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
     let corporations:CorporationObject[] = []
 
     api_corporations = await get_all_corporations(corporation_type)
 
-    corporations = await Promise.all(api_corporations.map(async (i) => add_status_to_corporation(access_token, i, user_id) ));
+    corporations = await Promise.all(api_corporations.map(async (api_corp) => add_status_to_corporation(access_token, api_corp, user_id) ));
     
     return corporations
 }
