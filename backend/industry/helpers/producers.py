@@ -12,7 +12,11 @@ from datetime import timedelta
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from eveuniverse.models import EveIndustryActivityProduct, EveTypeMaterial
+from eveuniverse.models import (
+    EveIndustryActivityProduct,
+    EveMarketPrice,
+    EveTypeMaterial,
+)
 
 from eveonline.models import (
     EveCharacter,
@@ -26,6 +30,19 @@ from eveonline.helpers.characters import character_primary
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
 PRODUCTION_ACTIVITIES = (ACTIVITY_MANUFACTURING, ACTIVITY_REACTION)
+
+ORE_MINERAL_SHARE_THRESHOLD = 0.25
+
+
+def _get_material_prices(type_ids: list[int]) -> dict[int, float]:
+    """Return average_price for each type_id from EveMarketPrice; missing types are omitted."""
+    if not type_ids:
+        return {}
+    return dict(
+        EveMarketPrice.objects.filter(eve_type_id__in=type_ids).values_list(
+            "eve_type_id", "average_price"
+        )
+    )
 
 
 def _resolve_to_primary_producers(character_refs):
@@ -221,7 +238,6 @@ def _fill_planetary_producers(result, type_ids):
             "planet__planet_type",
         )
     )
-    # Characters already in character_producers (from industry jobs)
     char_seen = {
         tid: {c["id"] for c in result[tid]["character_producers"]}
         for tid in type_ids
@@ -254,6 +270,10 @@ def _fill_planetary_producers(result, type_ids):
             result[eve_type_id]["character_producers"].append(
                 {"id": cid, "name": cname or ""}
             )
+    for tid in type_ids:
+        result[tid]["planetary_producers"] = _sort_planetary_by_value(
+            result[tid]["planetary_producers"], tid
+        )
 
 
 def get_producers_for_types(product_type_ids):
@@ -285,11 +305,32 @@ def get_producers_for_types(product_type_ids):
     return result
 
 
+def _sort_planetary_by_value(entries, product_type_id: int):
+    """Sort PI producers by total ISK value (planet_count * price) descending."""
+    if not entries:
+        return entries
+    char_planet_count: dict[int, int] = {}
+    for e in entries:
+        cid = e["character_id"]
+        char_planet_count[cid] = char_planet_count.get(cid, 0) + 1
+    price = float(
+        _get_material_prices([product_type_id]).get(product_type_id) or 0
+    )
+    for e in entries:
+        cid = e["character_id"]
+        count = char_planet_count[cid]
+        e["planet_count"] = count
+        e["total_value_isk"] = count * price
+    entries.sort(key=lambda x: x["total_value_isk"], reverse=True)
+    return entries
+
+
 def get_planetary_producers_for_type(product_type_id: int):
     """
     Characters whose planetary colonies produce or harvest this type.
     Returns list of dicts with character_id, character_name, planet_id,
-    solar_system_id, planet_type, output_type.
+    solar_system_id, planet_type, output_type, planet_count.
+    Sorted by planet_count descending.
     """
     outputs = (
         EveCharacterPlanetOutput.objects.filter(
@@ -321,7 +362,7 @@ def get_planetary_producers_for_type(product_type_id: int):
                     "output_type": output_type,
                 }
             )
-    return out
+    return _sort_planetary_by_value(out, product_type_id)
 
 
 # ---------------------------------------------------------------------------
@@ -332,12 +373,61 @@ MINING_WINDOW_DAYS = 30
 
 
 def _ore_type_ids_for_material(material_type_id: int) -> set[int]:
-    """Return type_ids of ores/items whose reprocessing yields this material."""
-    return set(
+    """
+    Return type_ids of ores whose reprocessing yields this material and where
+    the material makes up at least ORE_MINERAL_SHARE_THRESHOLD (25%) of the ore.
+
+    When EveMarketPrice data exists, share is by value (quantity * price); otherwise
+    by volume (quantity). Value weighting makes e.g. Kylixium count as a Mexallon ore.
+    """
+    rows = list(
         EveTypeMaterial.objects.filter(
             material_eve_type_id=material_type_id,
-        ).values_list("eve_type_id", flat=True)
+        ).values_list("eve_type_id", "quantity")
     )
+    if not rows:
+        return set()
+    ore_ids = list({r[0] for r in rows})
+    # Volume-based totals (fallback)
+    vol_totals = dict(
+        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids)
+        .values("eve_type_id")
+        .annotate(total=Sum("quantity"))
+        .values_list("eve_type_id", "total")
+    )
+    # Value-based: need all materials per ore and their prices
+    ore_materials = list(
+        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids).values_list(
+            "eve_type_id", "material_eve_type_id", "quantity"
+        )
+    )
+    mat_ids = list({m[1] for m in ore_materials})
+    prices = _get_material_prices(mat_ids)
+    use_value = len(prices) == len(mat_ids) and all(
+        prices.get(mid) for mid in mat_ids
+    )
+    if use_value:
+        # total value per ore
+        ore_total_value: dict[int, float] = {}
+        for ore_id, mat_id, qty in ore_materials:
+            ore_total_value[ore_id] = ore_total_value.get(ore_id, 0) + (
+                qty * (prices.get(mat_id) or 0)
+            )
+        return {
+            ore_id
+            for ore_id, qty in rows
+            if (ore_total_value.get(ore_id) or 0) > 0
+            and (qty * (prices.get(material_type_id) or 0))
+            / ore_total_value[ore_id]
+            >= ORE_MINERAL_SHARE_THRESHOLD
+        }
+    # Volume-based
+    return {
+        ore_id
+        for ore_id, qty in rows
+        if (vol_totals.get(ore_id) or 0) > 0
+        and qty / (vol_totals[ore_id] or 1) >= ORE_MINERAL_SHARE_THRESHOLD
+    }
 
 
 def get_mining_producers_for_type(product_type_id: int):
@@ -350,8 +440,8 @@ def get_mining_producers_for_type(product_type_id: int):
          EveTypeMaterial rows list it as an output, then find miners of
          those ores.
 
-    Returns list of dicts sorted by total_quantity descending:
-        {"character_id", "character_name", "total_quantity"}
+    Returns list of dicts sorted by total_value_isk descending:
+        {"character_id", "character_name", "total_quantity", "total_value_isk"}
     Characters are resolved to their user's primary character.
     """
     ore_type_ids = _ore_type_ids_for_material(product_type_id)
@@ -359,30 +449,46 @@ def get_mining_producers_for_type(product_type_id: int):
 
     cutoff = timezone.now().date() - timedelta(days=MINING_WINDOW_DAYS)
 
+    # Rows per (character, eve_type_id) so we can apply yield and price
     rows = (
         EveCharacterMiningEntry.objects.filter(
             eve_type_id__in=ore_type_ids,
             date__gte=cutoff,
         )
         .values(
+            "eve_type_id",
             "character__character_id",
             "character__character_name",
         )
         .annotate(total_quantity=Sum("quantity"))
-        .order_by("-total_quantity")
     )
 
-    original_cids = [r["character__character_id"] for r in rows]
+    material_to_products = _build_ore_to_materials_above_threshold(
+        [product_type_id]
+    )
+    material_to_products.setdefault(product_type_id, []).append(
+        product_type_id
+    )
+    yield_frac = _get_ore_yield_fractions(material_to_products)
+    price = float(
+        _get_material_prices([product_type_id]).get(product_type_id) or 0
+    )
+
+    original_cids = list({r["character__character_id"] for r in rows})
     characters = {
         c.character_id: c
         for c in EveCharacter.objects.filter(character_id__in=original_cids)
     }
 
+    primary_value: dict[int, float] = {}
     primary_qty: dict[int, int] = {}
     primary_name: dict[int, str] = {}
     for r in rows:
         cid = r["character__character_id"]
+        ore_tid = r["eve_type_id"]
         qty = r["total_quantity"]
+        y = yield_frac.get((ore_tid, product_type_id), 0.0)
+        value = qty * y * price
         char = characters.get(cid)
         primary = None
         if char:
@@ -390,11 +496,13 @@ def get_mining_producers_for_type(product_type_id: int):
                 primary = character_primary(char)
             except (AttributeError, TypeError):
                 pass
-        if primary:
-            pid, pname = primary.character_id, primary.character_name or ""
-        else:
-            pid = cid
-            pname = r["character__character_name"] or ""
+        pid = primary.character_id if primary else cid
+        pname = (
+            (primary.character_name or "")
+            if primary
+            else (r["character__character_name"] or "")
+        )
+        primary_value[pid] = primary_value.get(pid, 0) + value
         primary_qty[pid] = primary_qty.get(pid, 0) + qty
         primary_name.setdefault(pid, pname)
 
@@ -403,27 +511,116 @@ def get_mining_producers_for_type(product_type_id: int):
             "character_id": pid,
             "character_name": primary_name[pid],
             "total_quantity": qty,
+            "total_value_isk": primary_value[pid],
         }
         for pid, qty in primary_qty.items()
     ]
-    out.sort(key=lambda x: x["total_quantity"], reverse=True)
+    out.sort(
+        key=lambda x: (x["total_value_isk"], x["total_quantity"]),
+        reverse=True,
+    )
     return out
+
+
+def _get_ore_yield_fractions(
+    material_to_products: dict[int, list[int]],
+) -> dict[tuple[int, int], float]:
+    """Return (ore_tid, product_tid) -> yield fraction (mineral per unit ore). Direct ore = 1.0."""
+    if not material_to_products:
+        return {}
+    ore_ids = list(material_to_products.keys())
+    vol_totals = dict(
+        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids)
+        .values("eve_type_id")
+        .annotate(total=Sum("quantity"))
+        .values_list("eve_type_id", "total")
+    )
+    out: dict[tuple[int, int], float] = {}
+    for ore_tid, product_tids in material_to_products.items():
+        total = vol_totals.get(ore_tid) or 0
+        for product_tid in product_tids:
+            if ore_tid == product_tid:
+                out[(ore_tid, product_tid)] = 1.0
+            elif total > 0:
+                qty = (
+                    EveTypeMaterial.objects.filter(
+                        eve_type_id=ore_tid,
+                        material_eve_type_id=product_tid,
+                    )
+                    .values_list("quantity", flat=True)
+                    .first()
+                    or 0
+                )
+                out[(ore_tid, product_tid)] = qty / total
+            else:
+                out[(ore_tid, product_tid)] = 0.0
+    return out
+
+
+def _build_ore_to_materials_above_threshold(type_ids):
+    """
+    Build ore_tid -> [material_tid] only for materials that make up at least
+    ORE_MINERAL_SHARE_THRESHOLD of that ore's total output. Uses value share
+    (quantity * price) when EveMarketPrice exists, else volume share.
+    """
+    ore_source_rows = list(
+        EveTypeMaterial.objects.filter(
+            material_eve_type_id__in=type_ids,
+        ).values_list("eve_type_id", "material_eve_type_id", "quantity")
+    )
+    if not ore_source_rows:
+        return {}
+    ore_ids = list({r[0] for r in ore_source_rows})
+    # Volume totals (fallback)
+    vol_totals = dict(
+        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids)
+        .values("eve_type_id")
+        .annotate(total=Sum("quantity"))
+        .values_list("eve_type_id", "total")
+    )
+    # All materials per ore for value calc
+    all_ore_mats = list(
+        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids).values_list(
+            "eve_type_id", "material_eve_type_id", "quantity"
+        )
+    )
+    mat_ids = list({m[1] for m in all_ore_mats})
+    prices = _get_material_prices(mat_ids)
+    use_value = len(prices) == len(mat_ids) and all(
+        prices.get(m) for m in mat_ids
+    )
+    if use_value:
+        ore_total_value = {}
+        for ore_id, mat_id, qty in all_ore_mats:
+            ore_total_value[ore_id] = ore_total_value.get(ore_id, 0) + (
+                qty * (prices.get(mat_id) or 0)
+            )
+    material_to_products: dict[int, list[int]] = {}
+    for ore_tid, mat_tid, qty in ore_source_rows:
+        if mat_tid not in type_ids:
+            continue
+        if use_value and (ore_total_value.get(ore_tid) or 0) > 0:
+            share = (qty * (prices.get(mat_tid) or 0)) / ore_total_value[
+                ore_tid
+            ]
+        else:
+            total = vol_totals.get(ore_tid) or 0
+            share = (qty / total) if total > 0 else 0
+        if share >= ORE_MINERAL_SHARE_THRESHOLD:
+            material_to_products.setdefault(ore_tid, []).append(mat_tid)
+    return material_to_products
 
 
 def _fill_mining_producers(result, type_ids):
     """Populate mining_producers and add mining characters to character_producers."""
-    all_ore_type_ids: set[int] = set(type_ids)
-    material_to_products: dict[int, list[int]] = {}
-
-    ore_source_rows = EveTypeMaterial.objects.filter(
-        material_eve_type_id__in=type_ids,
-    ).values_list("eve_type_id", "material_eve_type_id")
-    for ore_tid, mat_tid in ore_source_rows:
-        all_ore_type_ids.add(ore_tid)
-        material_to_products.setdefault(ore_tid, []).append(mat_tid)
-
+    material_to_products = _build_ore_to_materials_above_threshold(type_ids)
+    all_ore_type_ids: set[int] = set(material_to_products.keys())
     for tid in type_ids:
         material_to_products.setdefault(tid, []).append(tid)
+    all_ore_type_ids.update(type_ids)
+
+    yield_frac = _get_ore_yield_fractions(material_to_products)
+    prices = _get_material_prices(type_ids)
 
     cutoff = timezone.now().date() - timedelta(days=MINING_WINDOW_DAYS)
 
@@ -444,8 +641,8 @@ def _fill_mining_producers(result, type_ids):
         tid: {c["id"] for c in result[tid]["character_producers"]}
         for tid in type_ids
     }
-    # {product_type_id: {character_id: total_quantity}}
     miner_qty: dict[int, dict[int, int]] = {tid: {} for tid in type_ids}
+    miner_value: dict[int, dict[int, float]] = {tid: {} for tid in type_ids}
     miner_name: dict[int, str] = {}
 
     for row in mining_rows:
@@ -458,8 +655,14 @@ def _fill_mining_producers(result, type_ids):
         for product_tid in material_to_products.get(ore_tid, []):
             if product_tid not in result:
                 continue
+            y = yield_frac.get((ore_tid, product_tid), 0.0)
+            price = float(prices.get(product_tid) or 0)
+            value = qty * y * price
             miner_qty[product_tid][cid] = (
                 miner_qty[product_tid].get(cid, 0) + qty
+            )
+            miner_value[product_tid][cid] = (
+                miner_value[product_tid].get(cid, 0) + value
             )
             if cid not in char_seen[product_tid]:
                 char_seen[product_tid].add(cid)
@@ -472,9 +675,13 @@ def _fill_mining_producers(result, type_ids):
             {
                 "character_id": cid,
                 "character_name": miner_name.get(cid, ""),
-                "total_quantity": qty,
+                "total_quantity": miner_qty[tid][cid],
+                "total_value_isk": miner_value[tid].get(cid, 0),
             }
-            for cid, qty in miner_qty[tid].items()
+            for cid in miner_qty[tid]
         ]
-        miners.sort(key=lambda x: x["total_quantity"], reverse=True)
+        miners.sort(
+            key=lambda x: (x["total_value_isk"], x["total_quantity"]),
+            reverse=True,
+        )
         result[tid]["mining_producers"] = miners

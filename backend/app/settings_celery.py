@@ -9,6 +9,13 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Market
 CELERYBEAT_MARKET = [
     (
+        "[Market] Update Eve Universe Market Prices",
+        {
+            "task": "eveuniverse.tasks.update_market_prices",
+            "schedule": crontab(minute=10, hour="*/2"),
+        },
+    ),
+    (
         "[Market] Fetch Public Contracts",
         {
             "task": "market.tasks.fetch_eve_public_contracts",
