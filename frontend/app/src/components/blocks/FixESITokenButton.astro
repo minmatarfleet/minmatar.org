@@ -10,6 +10,7 @@ interface Props {
     fix?:       boolean;
     color?:     ButtonColors;
     size?:      ButtonSizes;
+    narrow?:    boolean;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
     fix = false,
     color = 'fleet-red',
     size = 'sm',
+    narrow = false,
 } = Astro.props
 
 import { get_api_url, get_app_url } from '@helpers/env'
@@ -55,6 +57,7 @@ import TutorialBadge from '@components/blocks/TutorialBadge.astro';
         class:list={[ { 'action-button': !fix } ]}
         color={color}
         size={size}
+        narrow={narrow}
         type="button"
     >
         {fix ? t('fix_esi_token') : t('refresh_esi_token')}

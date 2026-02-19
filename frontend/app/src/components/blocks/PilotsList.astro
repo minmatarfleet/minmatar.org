@@ -166,7 +166,7 @@ delete attributes.class
                                     t('alt_character')
                                 }
                             </small>
-                            <FlexInline x-show="show_details" gap='var(--space-2xs)' class="[ w-full grow ]" style="display: none">
+                            <Flexblock x-show="show_details" gap='var(--space-3xs)' style="display: none">
                                 <CorporationBadge
                                     corporation={{
                                         id: pilot.corp_id,
@@ -183,7 +183,7 @@ delete attributes.class
                                         }}
                                     />
                                 }
-                            </FlexInline>
+                            </Flexblock>
                         </Flexblock>
                         <FlexInline>
                             {!readonly && !pilot.is_primary &&
