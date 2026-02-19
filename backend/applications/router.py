@@ -50,12 +50,6 @@ class ErrorResponse(BaseModel):
     response={200: List[CorporationApplicationResponse], 403: ErrorResponse},
 )
 def get_corporation_applications(request, corporation_id: int):
-    if not request.user.has_perm(
-        "applications.view_evecorporationapplication"
-    ):
-        return 403, ErrorResponse(
-            detail="You do not have permission to view applications for this corporation."
-        )
     applications = EveCorporationApplication.objects.filter(
         corporation_id=corporation_id
     )
