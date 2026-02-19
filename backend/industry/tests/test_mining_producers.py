@@ -1,0 +1,165 @@
+"""Tests for mining producers in industry.helpers.producers."""
+
+import factory
+from datetime import timedelta
+
+from django.db.models import signals
+from django.utils import timezone
+
+from app.test import TestCase
+from eveuniverse.models import EveCategory, EveGroup, EveType, EveTypeMaterial
+from eveonline.models import EveCharacter
+from eveonline.models.characters import EveCharacterMiningEntry
+from industry.helpers.producers import (
+    get_mining_producers_for_type,
+    get_producers_for_types,
+)
+
+
+def _ensure_eve_types(type_ids):
+    now = timezone.now()
+    category, _ = EveCategory.objects.get_or_create(
+        id=9999,
+        defaults={"name": "Test", "last_updated": now, "published": True},
+    )
+    group, _ = EveGroup.objects.get_or_create(
+        id=9999,
+        defaults={
+            "name": "Test",
+            "last_updated": now,
+            "published": True,
+            "eve_category": category,
+        },
+    )
+    created = {}
+    for tid, name in type_ids.items():
+        et, _ = EveType.objects.get_or_create(
+            id=tid,
+            defaults={
+                "name": name,
+                "last_updated": now,
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        created[tid] = et
+    return created
+
+
+class MiningProducersTest(TestCase):
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def setUp(self):
+        super().setUp()
+        self.types = _ensure_eve_types(
+            {
+                34: "Tritanium",
+                35: "Pyerite",
+                1228: "Scordite",
+                22: "Arkonor",
+            }
+        )
+        # Scordite reprocesses into Tritanium + Pyerite
+        EveTypeMaterial.objects.create(
+            eve_type=self.types[1228],
+            material_eve_type=self.types[34],
+            quantity=150,
+        )
+        EveTypeMaterial.objects.create(
+            eve_type=self.types[1228],
+            material_eve_type=self.types[35],
+            quantity=99,
+        )
+        # Arkonor reprocesses into Pyerite
+        EveTypeMaterial.objects.create(
+            eve_type=self.types[22],
+            material_eve_type=self.types[35],
+            quantity=3200,
+        )
+
+        self.miner = EveCharacter.objects.create(
+            character_id=7001,
+            character_name="Test Miner",
+        )
+        today = timezone.now().date()
+        EveCharacterMiningEntry.objects.create(
+            character=self.miner,
+            eve_type=self.types[1228],
+            date=today - timedelta(days=5),
+            quantity=10000,
+            solar_system_id=30001,
+        )
+        EveCharacterMiningEntry.objects.create(
+            character=self.miner,
+            eve_type=self.types[22],
+            date=today - timedelta(days=3),
+            quantity=2000,
+            solar_system_id=30001,
+        )
+
+    def test_mining_producers_for_mineral(self):
+        """Tritanium: Scordite reprocesses into it, so our miner shows up."""
+        results = get_mining_producers_for_type(34)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["character_id"], 7001)
+        self.assertEqual(results[0]["character_name"], "Test Miner")
+        self.assertEqual(results[0]["total_quantity"], 10000)
+
+    def test_mining_producers_aggregates_multiple_ores(self):
+        """Pyerite: both Scordite and Arkonor produce it, quantities sum."""
+        results = get_mining_producers_for_type(35)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["total_quantity"], 12000)
+
+    def test_mining_producers_direct_ore(self):
+        """Direct lookup for the ore type itself."""
+        results = get_mining_producers_for_type(1228)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["total_quantity"], 10000)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_mining_producers_excludes_old_entries(self):
+        """Entries older than 30 days are excluded."""
+        old_date = timezone.now().date() - timedelta(days=45)
+        old_miner = EveCharacter.objects.create(
+            character_id=7002,
+            character_name="Old Miner",
+        )
+        EveCharacterMiningEntry.objects.create(
+            character=old_miner,
+            eve_type=self.types[1228],
+            date=old_date,
+            quantity=99999,
+            solar_system_id=30001,
+        )
+        results = get_mining_producers_for_type(34)
+        cids = {r["character_id"] for r in results}
+        self.assertNotIn(7002, cids)
+
+    def test_batch_includes_mining_producers(self):
+        """get_producers_for_types includes mining_producers key."""
+        result = get_producers_for_types([34])
+        self.assertIn("mining_producers", result[34])
+        self.assertEqual(len(result[34]["mining_producers"]), 1)
+        self.assertEqual(
+            result[34]["mining_producers"][0]["character_id"], 7001
+        )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_ordered_by_quantity(self):
+        """Miners are returned ordered by total_quantity descending."""
+        big_miner = EveCharacter.objects.create(
+            character_id=7003,
+            character_name="Big Miner",
+        )
+        EveCharacterMiningEntry.objects.create(
+            character=big_miner,
+            eve_type=self.types[1228],
+            date=timezone.now().date(),
+            quantity=999999,
+            solar_system_id=30001,
+        )
+        results = get_mining_producers_for_type(34)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]["character_id"], 7003)
+        self.assertEqual(results[1]["character_id"], 7001)

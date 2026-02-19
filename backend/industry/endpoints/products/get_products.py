@@ -9,6 +9,7 @@ from industry.endpoints.products.schemas import (
     CorporationProducerRef,
     IndustryProductListItem,
     IndustryProductRef,
+    MiningProducerRef,
     PlanetaryProducerRef,
 )
 from industry.helpers.producers import get_producers_for_types
@@ -66,6 +67,12 @@ def get_products(request):
                 PlanetaryProducerRef(**pp)
                 for pp in producers_by_type.get(p.eve_type_id, {}).get(
                     "planetary_producers", []
+                )
+            ],
+            mining_producers=[
+                MiningProducerRef(**mp)
+                for mp in producers_by_type.get(p.eve_type_id, {}).get(
+                    "mining_producers", []
                 )
             ],
         )

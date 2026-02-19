@@ -318,6 +318,42 @@ class EveCharacterPlanetOutput(models.Model):
         return f"{self.planet} -> {self.eve_type.name} ({self.output_type})"
 
 
+class EveCharacterMiningEntry(models.Model):
+    """
+    A single row from a character's personal mining ledger (ESI).
+
+    Each row is one (character, ore-type, day, solar-system) tuple with the
+    total units mined.  The industry package queries these rows to find
+    characters who mine ores that reprocess into a given mineral.
+    """
+
+    character = models.ForeignKey(
+        "EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="mining_entries",
+    )
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.CASCADE,
+    )
+    date = models.DateField()
+    quantity = models.BigIntegerField()
+    solar_system_id = models.IntegerField()
+
+    class Meta:
+        unique_together = ("character", "eve_type", "date", "solar_system_id")
+        indexes = [
+            models.Index(fields=["eve_type"]),
+            models.Index(fields=["date"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.character.character_name} - {self.eve_type.name} "
+            f"x{self.quantity} ({self.date})"
+        )
+
+
 class EveCharacterSkillset(models.Model):
     progress = models.FloatField()
     missing_skills = models.TextField(blank=True)
