@@ -53,7 +53,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';import FluidFixed fro
                             <Progress
                                 class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
                                 max="100"
-                                value={completion}
+                                value={completion > 0 ? completion : 0.1}
                                 data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
                                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                             >

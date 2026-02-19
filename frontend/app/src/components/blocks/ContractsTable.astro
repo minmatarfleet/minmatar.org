@@ -35,7 +35,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
                 <Progress
                     class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
                     max="100"
-                    value={active_market_locations_ui.completion}
+                    value={active_market_locations_ui.completion > 0 ? active_market_locations_ui.completion : 0.1}
                     data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
                 >
                     {active_market_locations_ui.completion.toFixed(2)}%
@@ -58,7 +58,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
                     <Progress
                         class:list={[ 'w-full', { danger: location.completion < 30 } ]}
                         max="100"
-                        value={location.completion}
+                        value={location.completion > 0 ? location.completion : 1}
                         data-tippy-content={`${location.completion.toFixed(0)}%`}
                     >
                         {location.completion.toFixed(2)}%
