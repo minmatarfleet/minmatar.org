@@ -103,6 +103,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                                 character_name={producer.name}
                                 size={24}
                             />
+                            <div class="[ sr-only ]">{producer.name}</div>
                         </div>
                     )}
                     {product.corporation_producers.map(producer =>
@@ -115,6 +116,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                                 corporation_name={producer.name}
                                 size={24}
                             />
+                            <div class="[ sr-only ]">{producer.name}</div>
                         </div>
                     )}
                     {product.character_producers.length === 0 && product.corporation_producers.length === 0 &&
