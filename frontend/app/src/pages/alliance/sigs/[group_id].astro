@@ -93,10 +93,7 @@ const page_description = group?.description ?? ''
         <Flexblock gap='var(--space-2xl)'>
             <FlexInline class="[ !items-start ]" justification='space-between'>
                 <FlexInline gap='var(--space-m)'>
-                    {!group?.image_url ?
-                        <picture class="bordered">
-                            <GroupsEvEIcon />
-                        </picture> :
+                    {group?.image_url &&
                         <img
                             loading="lazy"
                             src={group.image_url}
