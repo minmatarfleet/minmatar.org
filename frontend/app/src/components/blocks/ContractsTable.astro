@@ -31,7 +31,14 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
     <LocationsReel gap={REEL_GAP}>
         <LocationsReelSlide gap={REEL_GAP}>
             <Flexblock gap='var(--space-3xs)'>
-                <h2>{active_market_locations_ui.name}</h2>
+                <h2>
+                    <a href={translatePath(`/market/contracts?${query_string({
+                            location_name: active_market_locations_ui.name
+                        })}`)}
+                    >
+                        {active_market_locations_ui.name}
+                    </a>
+                </h2>
                 <Progress
                     class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
                     max="100"
