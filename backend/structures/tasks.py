@@ -10,6 +10,7 @@ from app.celery import app
 
 from discord.client import DiscordClient
 from eveonline.client import EsiClient, esi_for
+from eveonline.helpers.corporations import get_director_with_scope
 from eveonline.models import EveAlliance, EveCorporation
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
@@ -30,6 +31,8 @@ LOW_FUEL_EXCLUDED_TYPES = [
     "Ansiblex Jump Bridge",
 ]
 
+SCOPE_STRUCTURES = ["esi-corporations.read_structures.v1"]
+
 
 @app.task
 def update_structures():
@@ -48,25 +51,16 @@ def update_structures():
 def update_corporation_structures(corporation_id: int):
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     logger.info("Updating structures for corporation %s", corporation)
-    if not corporation.ceo:
+
+    character = get_director_with_scope(corporation, SCOPE_STRUCTURES)
+    if not character:
         logger.debug(
-            "Corporation %s has no CEO",
+            "Corporation %s has no director/CEO with structures scope, skipping",
             corporation.name,
         )
         return
 
-    # required_scopes = ["esi-corporations.read_structures.v1"]
-
-    # token = Token.get_token(corporation.ceo.character_id, required_scopes)
-    # if token:
-    #     logger.debug("Fetching structures for corporation %s", corporation)
-    #     response = esi.client.Corporation.get_corporations_corporation_id_structures(
-    #         corporation_id=corporation.corporation_id,
-    #         token=token.valid_access_token(),
-    #     ).results()
-
-    esi = esi_for(corporation.ceo)
-
+    esi = esi_for(character)
     response = esi.get_corp_structures(corporation.corporation_id)
     if response.success():
         known_structure_ids = []
@@ -136,11 +130,6 @@ def update_corporation_structures(corporation_id: int):
             response.response_code,
             corporation.name,
         )
-    # else:
-    #     logger.info(
-    #         "Corporation %s does not have valid CEO token",
-    #         corporation,
-    #     )
 
 
 @app.task

@@ -119,16 +119,19 @@ class StructureTaskTests(TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("structures.tasks.esi_for")
-    def test_update_corporation_structures(self, esi_mock):
+    @patch("structures.tasks.get_director_with_scope")
+    def test_update_corporation_structures(self, get_director_mock, esi_mock):
+        ceo = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Mr CEO",
+            esi_token_level="ceo",
+        )
         corp = EveCorporation.objects.create(
             corporation_id=2001,
             name="MegaCorp",
-            ceo=EveCharacter.objects.create(
-                character_id=1001,
-                character_name="Mr CEO",
-                esi_token_level="ceo",
-            ),
+            ceo=ceo,
         )
+        get_director_mock.return_value = ceo
 
         esi = esi_mock.return_value
         esi.get_corp_structures.return_value = EsiResponse(
