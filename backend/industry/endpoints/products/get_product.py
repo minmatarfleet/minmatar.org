@@ -6,15 +6,8 @@ from industry.endpoints.products.schemas import (
     CorporationProducerRef,
     IndustryProductDetail,
     IndustryProductRef,
-    MiningProducerRef,
-    PlanetaryProducerRef,
 )
-from industry.helpers.producers import (
-    get_character_producers_for_type,
-    get_corporation_producers_for_type,
-    get_mining_producers_for_type,
-    get_planetary_producers_for_type,
-)
+from industry.helpers.producers import get_producers_for_types
 from industry.models import IndustryProduct
 
 PATH = "{int:product_id}"
@@ -49,10 +42,8 @@ def get_product(request, product_id: int):
         return 404, ErrorResponse(
             detail=f"Industry product {product_id} not found."
         )
-    char_producers = get_character_producers_for_type(product.eve_type_id)
-    corp_producers = get_corporation_producers_for_type(product.eve_type_id)
-    planet_producers = get_planetary_producers_for_type(product.eve_type_id)
-    mining_producers = get_mining_producers_for_type(product.eve_type_id)
+    producers = get_producers_for_types([product.eve_type_id])
+    by_type = producers.get(product.eve_type_id, {})
     return 200, IndustryProductDetail(
         id=product.pk,
         type_id=product.eve_type_id,
@@ -63,15 +54,19 @@ def get_product(request, product_id: int):
         supplied_for=_refs(product.supplied_for.all()),
         supplies=_refs(product.supplies.all()),
         character_producers=[
-            CharacterProducerRef(id=c["id"], name=c["name"])
-            for c in char_producers
+            CharacterProducerRef(
+                id=c["id"],
+                name=c["name"],
+                total_value_isk=c.get("total_value_isk", 0.0),
+            )
+            for c in by_type.get("character_producers", [])
         ],
         corporation_producers=[
-            CorporationProducerRef(id=c["id"], name=c["name"])
-            for c in corp_producers
+            CorporationProducerRef(
+                id=c["id"],
+                name=c["name"],
+                total_value_isk=c.get("total_value_isk", 0.0),
+            )
+            for c in by_type.get("corporation_producers", [])
         ],
-        planetary_producers=[
-            PlanetaryProducerRef(**p) for p in planet_producers
-        ],
-        mining_producers=[MiningProducerRef(**m) for m in mining_producers],
     )
