@@ -13,7 +13,6 @@ from eveonline.models import EveCharacter
 from eveonline.models.characters import EveCharacterPlanet
 from eveonline.helpers.characters.planets import update_character_planets
 
-
 PLANETS_LIST = [
     {
         "last_update": "2026-02-16T02:59:23Z",
