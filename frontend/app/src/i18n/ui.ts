@@ -1724,5 +1724,6 @@ export const ui = {
         'no_products_to_display': 'No products to display.',
         'set_character_roles': 'Set character roles',
         'full_schedule': 'See full schedule',
+        'open_fitting': 'Open fitting',
     },
 } as const;

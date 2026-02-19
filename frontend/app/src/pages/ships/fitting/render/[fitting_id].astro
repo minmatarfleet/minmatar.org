@@ -112,7 +112,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
     if (window.innerWidth < 1820 || render_enabled === false)
-        window.location.href = normal_view
+        navigate(normal_view)
 </script>
 
 <Viewport

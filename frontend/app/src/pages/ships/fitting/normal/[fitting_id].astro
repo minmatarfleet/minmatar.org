@@ -148,7 +148,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
     if (window.innerWidth > 1820 && render_enabled === true)
-        window.location.href = render_view
+        navigate(render_view)
 </script>
 
 <Viewport title={page_title} meta_description={page_description}>
@@ -215,7 +215,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
                 href={translatePath('/ships/fitting/list')}
                 size='sm'
             >
-                {t('fittings')}
+                {t('back_to_fittings')}
             </Button>
         </FlexInline>
 
