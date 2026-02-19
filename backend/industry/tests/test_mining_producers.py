@@ -136,14 +136,14 @@ class MiningProducersTest(TestCase):
         cids = {r["character_id"] for r in results}
         self.assertNotIn(7002, cids)
 
-    def test_batch_includes_mining_producers(self):
-        """get_producers_for_types includes mining_producers key."""
+    def test_batch_includes_mining_in_character_producers(self):
+        """get_producers_for_types merges miners into character_producers."""
         result = get_producers_for_types([34])
-        self.assertIn("mining_producers", result[34])
-        self.assertEqual(len(result[34]["mining_producers"]), 1)
-        self.assertEqual(
-            result[34]["mining_producers"][0]["character_id"], 7001
-        )
+        self.assertIn("character_producers", result[34])
+        char_producers = result[34]["character_producers"]
+        self.assertEqual(len(char_producers), 1)
+        self.assertEqual(char_producers[0]["id"], 7001)
+        self.assertIn("total_value_isk", char_producers[0])
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_ore_ignores_mineral_below_25_percent(self):

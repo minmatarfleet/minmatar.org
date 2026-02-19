@@ -14,10 +14,11 @@ class IndustryProductRef(BaseModel):
 
 
 class CharacterProducerRef(BaseModel):
-    """Character with industry jobs producing this product type (Eve character_id, name)."""
+    """Character producing this product type (industry jobs, planetary, and/or mining; total_value_isk aggregated)."""
 
     id: int
     name: str
+    total_value_isk: float = 0.0
 
 
 class CorporationProducerRef(BaseModel):
@@ -25,28 +26,7 @@ class CorporationProducerRef(BaseModel):
 
     id: int
     name: str
-
-
-class PlanetaryProducerRef(BaseModel):
-    """Character whose planetary colony produces or harvests this product type."""
-
-    character_id: int
-    character_name: str
-    planet_id: int
-    solar_system_id: int
-    planet_type: str
-    output_type: str
-    planet_count: int
-    total_value_isk: float
-
-
-class MiningProducerRef(BaseModel):
-    """Character who mined ores relevant to this product type in the last 30 days."""
-
-    character_id: int
-    character_name: str
-    total_quantity: int
-    total_value_isk: float
+    total_value_isk: float = 0.0
 
 
 class IndustryProductListItem(BaseModel):
@@ -62,8 +42,6 @@ class IndustryProductListItem(BaseModel):
     supplies: List[IndustryProductRef] = []
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
-    planetary_producers: List[PlanetaryProducerRef] = []
-    mining_producers: List[MiningProducerRef] = []
 
 
 class IndustryProductDetail(BaseModel):
@@ -79,5 +57,3 @@ class IndustryProductDetail(BaseModel):
     supplies: List[IndustryProductRef] = []
     character_producers: List[CharacterProducerRef] = []
     corporation_producers: List[CorporationProducerRef] = []
-    planetary_producers: List[PlanetaryProducerRef] = []
-    mining_producers: List[MiningProducerRef] = []

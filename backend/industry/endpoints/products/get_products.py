@@ -7,8 +7,6 @@ from industry.endpoints.products.schemas import (
     CorporationProducerRef,
     IndustryProductListItem,
     IndustryProductRef,
-    MiningProducerRef,
-    PlanetaryProducerRef,
 )
 from industry.helpers.producers import get_producers_for_types
 from industry.models import IndustryProduct
@@ -49,27 +47,23 @@ def get_products(request):
             supplied_for=_refs(p.supplied_for.all()),
             supplies=_refs(p.supplies.all()),
             character_producers=[
-                CharacterProducerRef(id=c["id"], name=c["name"])
+                CharacterProducerRef(
+                    id=c["id"],
+                    name=c["name"],
+                    total_value_isk=c.get("total_value_isk", 0.0),
+                )
                 for c in producers_by_type.get(p.eve_type_id, {}).get(
                     "character_producers", []
                 )
             ],
             corporation_producers=[
-                CorporationProducerRef(id=c["id"], name=c["name"])
+                CorporationProducerRef(
+                    id=c["id"],
+                    name=c["name"],
+                    total_value_isk=c.get("total_value_isk", 0.0),
+                )
                 for c in producers_by_type.get(p.eve_type_id, {}).get(
                     "corporation_producers", []
-                )
-            ],
-            planetary_producers=[
-                PlanetaryProducerRef(**pp)
-                for pp in producers_by_type.get(p.eve_type_id, {}).get(
-                    "planetary_producers", []
-                )
-            ],
-            mining_producers=[
-                MiningProducerRef(**mp)
-                for mp in producers_by_type.get(p.eve_type_id, {}).get(
-                    "mining_producers", []
                 )
             ],
         )

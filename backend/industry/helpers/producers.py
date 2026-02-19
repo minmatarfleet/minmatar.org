@@ -1,10 +1,9 @@
 """
 Characters and corporations dealing with a product type.
 
-character_producers: primary character per user (industry jobs, planetary output, and/or mining).
-corporation_producers: corporations with industry jobs.
-planetary_producers: per-planet PI details (character, planet, output_type).
-mining_producers: characters who mine ores relevant to the product (last 30 days).
+character_producers: primary character per user with total_value_isk (industry jobs,
+    planetary output, and mining merged into one list per product type).
+corporation_producers: corporations with industry jobs (total_value_isk).
 """
 
 from datetime import timedelta
@@ -48,7 +47,8 @@ def _get_material_prices(type_ids: list[int]) -> dict[int, float]:
 def _resolve_to_primary_producers(character_refs):
     """
     Map each producing character to their user's primary character; dedupe by primary.
-    Returns list of {"id": character_id, "name": character_name}. Characters without
+    Returns list of {"id": character_id, "name": character_name, "total_value_isk": float}.
+    total_value_isk is summed when merging to the same primary. Characters without
     a linked user/primary are left as-is.
     """
     if not character_refs:
@@ -58,11 +58,12 @@ def _resolve_to_primary_producers(character_refs):
         c.character_id: c
         for c in EveCharacter.objects.filter(character_id__in=ids)
     }
-    seen = set()
-    out = []
+    # primary_id -> (name, total_value_isk)
+    merged: dict[int, tuple[str, float]] = {}
     for ref in character_refs:
         cid = ref["id"]
         cname = ref["name"] or ""
+        value = ref.get("total_value_isk") or 0.0
         char = characters.get(cid)
         primary = None
         if char:
@@ -72,14 +73,21 @@ def _resolve_to_primary_producers(character_refs):
                 pass
         if primary:
             pid, pname = primary.character_id, primary.character_name or ""
-            if pid not in seen:
-                seen.add(pid)
-                out.append({"id": pid, "name": pname})
+            if pid not in merged:
+                merged[pid] = (pname, value)
+            else:
+                old_name, old_val = merged[pid]
+                merged[pid] = (old_name, old_val + value)
         else:
-            if cid not in seen:
-                seen.add(cid)
-                out.append({"id": cid, "name": cname})
-    return out
+            if cid not in merged:
+                merged[cid] = (cname, value)
+            else:
+                old_name, old_val = merged[cid]
+                merged[cid] = (old_name, old_val + value)
+    return [
+        {"id": pid, "name": name, "total_value_isk": round(val, 2)}
+        for pid, (name, val) in merged.items()
+    ]
 
 
 def _blueprint_activity_pairs_for_product_type(product_type_id: int):
@@ -180,17 +188,38 @@ def _build_blueprint_activity_to_types(type_ids):
     return out
 
 
+def _build_blueprint_activity_quantity(type_ids):
+    """Map (blueprint_type_id, activity_id) -> { product_eve_type_id: quantity_per_run }."""
+    rows = EveIndustryActivityProduct.objects.filter(
+        product_eve_type_id__in=type_ids,
+        activity_id__in=PRODUCTION_ACTIVITIES,
+    ).values_list(
+        "eve_type_id", "activity_id", "product_eve_type_id", "quantity"
+    )
+    out = {}
+    for bid, aid, tid, qty in rows:
+        key = (bid, aid)
+        if key not in out:
+            out[key] = {}
+        out[key][tid] = qty if qty is not None else 1
+    return out
+
+
 def _fill_job_producers(result, type_ids, blueprint_activity_to_types):
-    """Populate character_producers and corporation_producers from industry jobs."""
+    """Populate character_producers and corporation_producers from industry jobs with total_value_isk."""
     q = Q()
     for (bid, aid), _ in blueprint_activity_to_types.items():
         q |= Q(blueprint_type_id=bid, activity_id=aid)
+    prices = _get_material_prices(type_ids)
+    activity_quantity = _build_blueprint_activity_quantity(type_ids)
+
     char_jobs = (
         EveCharacterIndustryJob.objects.filter(q)
         .select_related("character")
         .values_list(
             "blueprint_type_id",
             "activity_id",
+            "runs",
             "character__character_id",
             "character__character_name",
         )
@@ -201,85 +230,100 @@ def _fill_job_producers(result, type_ids, blueprint_activity_to_types):
         .values_list(
             "blueprint_type_id",
             "activity_id",
+            "runs",
             "corporation__corporation_id",
             "corporation__name",
         )
     )
-    char_seen = {tid: set() for tid in type_ids}
-    for bid, aid, cid, cname in char_jobs:
+
+    # (tid, cid) -> (name, total_value_isk)
+    char_value: dict[tuple[int, int], tuple[str, float]] = {}
+    for bid, aid, runs, cid, cname in char_jobs:
+        qty_per_tid = activity_quantity.get((bid, aid), {})
         for tid in blueprint_activity_to_types.get((bid, aid), []):
-            if cid not in char_seen[tid]:
-                char_seen[tid].add(cid)
-                result[tid]["character_producers"].append(
-                    {"id": cid, "name": cname or ""}
-                )
-    corp_seen = {tid: set() for tid in type_ids}
-    for bid, aid, cid, cname in corp_jobs:
+            qty_per_run = qty_per_tid.get(tid, 1)
+            price = float(prices.get(tid) or 0)
+            value = runs * qty_per_run * price
+            key = (tid, cid)
+            if key not in char_value:
+                char_value[key] = (cname or "", value)
+            else:
+                old_name, old_val = char_value[key]
+                char_value[key] = (old_name, old_val + value)
+
+    corp_value: dict[tuple[int, int], tuple[str, float]] = {}
+    for bid, aid, runs, cid, cname in corp_jobs:
+        qty_per_tid = activity_quantity.get((bid, aid), {})
         for tid in blueprint_activity_to_types.get((bid, aid), []):
-            if cid not in corp_seen[tid]:
-                corp_seen[tid].add(cid)
-                result[tid]["corporation_producers"].append(
-                    {"id": cid, "name": cname or ""}
-                )
+            qty_per_run = qty_per_tid.get(tid, 1)
+            price = float(prices.get(tid) or 0)
+            value = runs * qty_per_run * price
+            key = (tid, cid)
+            if key not in corp_value:
+                corp_value[key] = (cname or "", value)
+            else:
+                old_name, old_val = corp_value[key]
+                corp_value[key] = (old_name, old_val + value)
+
+    for tid in type_ids:
+        result[tid]["character_producers"] = [
+            {"id": cid, "name": name, "total_value_isk": round(val, 2)}
+            for (t, cid), (name, val) in char_value.items()
+            if t == tid
+        ]
+        result[tid]["corporation_producers"] = [
+            {"id": cid, "name": name, "total_value_isk": round(val, 2)}
+            for (t, cid), (name, val) in corp_value.items()
+            if t == tid
+        ]
 
 
 def _fill_planetary_producers(result, type_ids):
-    """Populate planetary_producers from EveCharacterPlanetOutput and add those characters to character_producers."""
+    """Add planetary output value to character_producers (PI contribution per character)."""
     planet_outputs = (
         EveCharacterPlanetOutput.objects.filter(eve_type_id__in=type_ids)
         .select_related("planet__character")
         .values_list(
             "eve_type_id",
-            "output_type",
             "planet__character__character_id",
             "planet__character__character_name",
-            "planet__planet_id",
-            "planet__solar_system_id",
-            "planet__planet_type",
         )
     )
-    char_seen = {
-        tid: {c["id"] for c in result[tid]["character_producers"]}
-        for tid in type_ids
+    # (tid, cid) -> (name, planet_count)
+    char_pi: dict[int, dict[int, tuple[str, int]]] = {
+        tid: {} for tid in type_ids
     }
-    planet_seen = {tid: set() for tid in type_ids}
-    for (
-        eve_type_id,
-        output_type,
-        cid,
-        cname,
-        planet_id,
-        system_id,
-        ptype,
-    ) in planet_outputs:
-        key = (cid, planet_id)
-        if key not in planet_seen[eve_type_id]:
-            planet_seen[eve_type_id].add(key)
-            result[eve_type_id]["planetary_producers"].append(
-                {
-                    "character_id": cid,
-                    "character_name": cname or "",
-                    "planet_id": planet_id,
-                    "solar_system_id": system_id,
-                    "planet_type": ptype or "",
-                    "output_type": output_type,
-                }
-            )
-        if cid not in char_seen[eve_type_id]:
-            char_seen[eve_type_id].add(cid)
-            result[eve_type_id]["character_producers"].append(
-                {"id": cid, "name": cname or ""}
-            )
+    for eve_type_id, cid, cname in planet_outputs:
+        if eve_type_id not in char_pi:
+            continue
+        if cid not in char_pi[eve_type_id]:
+            char_pi[eve_type_id][cid] = (cname or "", 1)
+        else:
+            name, count = char_pi[eve_type_id][cid]
+            char_pi[eve_type_id][cid] = (name, count + 1)
+    prices = _get_material_prices(type_ids)
     for tid in type_ids:
-        result[tid]["planetary_producers"] = _sort_planetary_by_value(
-            result[tid]["planetary_producers"], tid
-        )
+        price = float(prices.get(tid) or 0)
+        existing_ids = {c["id"] for c in result[tid]["character_producers"]}
+        for cid, (cname, count) in char_pi.get(tid, {}).items():
+            value = round(count * price, 2)
+            if cid in existing_ids:
+                for entry in result[tid]["character_producers"]:
+                    if entry["id"] == cid:
+                        entry["total_value_isk"] += value
+                        break
+            else:
+                existing_ids.add(cid)
+                result[tid]["character_producers"].append(
+                    {"id": cid, "name": cname, "total_value_isk": value}
+                )
 
 
 def get_producers_for_types(product_type_ids):
     """
-    Batch: for each product type_id, return character_producers,
-    corporation_producers, planetary_producers, and mining_producers.
+    Batch: for each product type_id, return character_producers and
+    corporation_producers. Character producers aggregate industry jobs,
+    planetary output, and mining (one list per type, total_value_isk summed).
     """
     if not product_type_ids:
         return {}
@@ -288,8 +332,6 @@ def get_producers_for_types(product_type_ids):
         tid: {
             "character_producers": [],
             "corporation_producers": [],
-            "planetary_producers": [],
-            "mining_producers": [],
         }
         for tid in type_ids
     }
@@ -299,8 +341,14 @@ def get_producers_for_types(product_type_ids):
     _fill_planetary_producers(result, type_ids)
     _fill_mining_producers(result, type_ids)
     for tid in type_ids:
+        result[tid]["character_producers"].sort(
+            key=lambda c: c["total_value_isk"], reverse=True
+        )
         result[tid]["character_producers"] = _resolve_to_primary_producers(
             result[tid]["character_producers"]
+        )
+        result[tid]["character_producers"].sort(
+            key=lambda c: c["total_value_isk"], reverse=True
         )
     return result
 
@@ -612,7 +660,7 @@ def _build_ore_to_materials_above_threshold(type_ids):
 
 
 def _fill_mining_producers(result, type_ids):
-    """Populate mining_producers and add mining characters to character_producers."""
+    """Add mining output value to character_producers (ore/mineral contribution per character)."""
     material_to_products = _build_ore_to_materials_above_threshold(type_ids)
     all_ore_type_ids: set[int] = set(material_to_products.keys())
     for tid in type_ids:
@@ -637,11 +685,6 @@ def _fill_mining_producers(result, type_ids):
         .annotate(total_quantity=Sum("quantity"))
     )
 
-    char_seen = {
-        tid: {c["id"] for c in result[tid]["character_producers"]}
-        for tid in type_ids
-    }
-    miner_qty: dict[int, dict[int, int]] = {tid: {} for tid in type_ids}
     miner_value: dict[int, dict[int, float]] = {tid: {} for tid in type_ids}
     miner_name: dict[int, str] = {}
 
@@ -658,30 +701,25 @@ def _fill_mining_producers(result, type_ids):
             y = yield_frac.get((ore_tid, product_tid), 0.0)
             price = float(prices.get(product_tid) or 0)
             value = qty * y * price
-            miner_qty[product_tid][cid] = (
-                miner_qty[product_tid].get(cid, 0) + qty
-            )
             miner_value[product_tid][cid] = (
                 miner_value[product_tid].get(cid, 0) + value
             )
-            if cid not in char_seen[product_tid]:
-                char_seen[product_tid].add(cid)
-                result[product_tid]["character_producers"].append(
-                    {"id": cid, "name": cname}
-                )
 
     for tid in type_ids:
-        miners = [
-            {
-                "character_id": cid,
-                "character_name": miner_name.get(cid, ""),
-                "total_quantity": miner_qty[tid][cid],
-                "total_value_isk": miner_value[tid].get(cid, 0),
-            }
-            for cid in miner_qty[tid]
-        ]
-        miners.sort(
-            key=lambda x: (x["total_value_isk"], x["total_quantity"]),
-            reverse=True,
-        )
-        result[tid]["mining_producers"] = miners
+        existing_ids = {c["id"] for c in result[tid]["character_producers"]}
+        for cid, value in miner_value[tid].items():
+            value = round(value, 2)
+            if cid in existing_ids:
+                for entry in result[tid]["character_producers"]:
+                    if entry["id"] == cid:
+                        entry["total_value_isk"] += value
+                        break
+            else:
+                existing_ids.add(cid)
+                result[tid]["character_producers"].append(
+                    {
+                        "id": cid,
+                        "name": miner_name.get(cid, ""),
+                        "total_value_isk": value,
+                    }
+                )
