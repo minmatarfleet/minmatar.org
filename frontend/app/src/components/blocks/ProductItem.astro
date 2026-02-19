@@ -94,18 +94,28 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 
                 <FlexInline gap='var(--space-3xs)'>
                     {product.character_producers.map(producer =>
-                        <CharacterPicture
-                            character_id={producer.id}
-                            character_name={producer.name}
-                            size={24}
-                        />
+                        <div 
+                            data-tippy-content={producer.name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <CharacterPicture
+                                character_id={producer.id}
+                                character_name={producer.name}
+                                size={24}
+                            />
+                        </div>
                     )}
                     {product.corporation_producers.map(producer =>
-                        <CorporationPicture
-                            corporation_id={producer.id}
-                            corporation_name={producer.name}
-                            size={24}
-                        />
+                        <div 
+                            data-tippy-content={producer.name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <CorporationPicture
+                                corporation_id={producer.id}
+                                corporation_name={producer.name}
+                                size={24}
+                            />
+                        </div>
                     )}
                     {product.character_producers.length === 0 && product.corporation_producers.length === 0 &&
                         <Tag text={t('no_producers')} />
