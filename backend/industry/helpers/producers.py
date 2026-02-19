@@ -1,8 +1,8 @@
 """
 Characters and corporations dealing with a product type.
 
-character_producers: characters with industry jobs (manufacturing/reactions) and/or
-planetary output for the type. corporation_producers: corporations with industry jobs.
+character_producers: primary character per user (industry jobs and/or planetary output).
+corporation_producers: corporations with industry jobs.
 planetary_producers: per-planet PI details (character, planet, output_type).
 """
 
@@ -11,14 +11,53 @@ from django.db.models import Q
 from eveuniverse.models import EveIndustryActivityProduct
 
 from eveonline.models import (
+    EveCharacter,
     EveCharacterIndustryJob,
     EveCharacterPlanetOutput,
     EveCorporationIndustryJob,
 )
+from eveonline.helpers.characters import character_primary
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
 PRODUCTION_ACTIVITIES = (ACTIVITY_MANUFACTURING, ACTIVITY_REACTION)
+
+
+def _resolve_to_primary_producers(character_refs):
+    """
+    Map each producing character to their user's primary character; dedupe by primary.
+    Returns list of {"id": character_id, "name": character_name}. Characters without
+    a linked user/primary are left as-is.
+    """
+    if not character_refs:
+        return []
+    ids = [c["id"] for c in character_refs]
+    characters = {
+        c.character_id: c
+        for c in EveCharacter.objects.filter(character_id__in=ids)
+    }
+    seen = set()
+    out = []
+    for ref in character_refs:
+        cid = ref["id"]
+        cname = ref["name"] or ""
+        char = characters.get(cid)
+        primary = None
+        if char:
+            try:
+                primary = character_primary(char)
+            except (AttributeError, TypeError):
+                pass
+        if primary:
+            pid, pname = primary.character_id, primary.character_name or ""
+            if pid not in seen:
+                seen.add(pid)
+                out.append({"id": pid, "name": pname})
+        else:
+            if cid not in seen:
+                seen.add(cid)
+                out.append({"id": cid, "name": cname})
+    return out
 
 
 def _blueprint_activity_pairs_for_product_type(product_type_id: int):
@@ -33,8 +72,9 @@ def _blueprint_activity_pairs_for_product_type(product_type_id: int):
 
 def get_character_producers_for_type(product_type_id: int):
     """
-    All characters dealing with this product type: industry jobs (manufacturing/
-    reactions) and planetary output. Returns list of {"id": character_id, "name": character_name}, distinct.
+    All characters dealing with this product type (industry jobs and/or planetary
+    output), resolved to each user's primary character. Returns list of
+    {"id": character_id, "name": character_name}, one per user, distinct.
     """
     seen = set()
     out = []
@@ -74,7 +114,7 @@ def get_character_producers_for_type(product_type_id: int):
         if cid not in seen:
             seen.add(cid)
             out.append({"id": cid, "name": cname or ""})
-    return out
+    return _resolve_to_primary_producers(out)
 
 
 def get_corporation_producers_for_type(product_type_id: int):
@@ -231,6 +271,10 @@ def get_producers_for_types(product_type_ids):
     if blueprint_activity_to_types:
         _fill_job_producers(result, type_ids, blueprint_activity_to_types)
     _fill_planetary_producers(result, type_ids)
+    for tid in type_ids:
+        result[tid]["character_producers"] = _resolve_to_primary_producers(
+            result[tid]["character_producers"]
+        )
     return result
 
 
