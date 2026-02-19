@@ -2,15 +2,27 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
 interface Props {
     fitting_id: number;
+    is_button?: boolean;
+    size?:      ButtonSizes;
+    color?:     ButtonColors;
+    narrow?:    boolean;
     [propName: string]: any;
 }
 
 const {
     fitting_id,
+    is_button = false,
+    size = 'sm',
+    color = 'fleet-red',
+    narrow = true,
     ...attributes
 } = Astro.props
+
+const DOM_ELEMENT = is_button ? Button : 'a'
 
 const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
 const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
@@ -18,10 +30,15 @@ const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
 import { is_disabled_ccpwgl } from '@helpers/env';
 
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
+
+import Button from '@components/blocks/Button.astro';
 ---
 
-<a
+<DOM_ELEMENT
     href={translatePath(`/ships/fitting/${fitting_id}`)}
+    size={is_button ? size : undefined}
+    color={is_button ? color : undefined}
+    narrow={is_button ? narrow : undefined}
     x-bind:href={DISABLED_CCPWGL ? 'link' : undefined}
     x-data={DISABLED_CCPWGL ? `{
         render_enabled: $persist(true),
@@ -36,4 +53,4 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
     {...attributes}
 >
     <slot />
-</a>
+</DOM_ELEMENT>

@@ -9,10 +9,12 @@ const normal_view = translatePath(`/ships/fitting/normal/${id}`)
 ---
 
 <script define:vars={{ render_view, normal_view }}>
+import { navigate } from "astro:transitions/client";
+
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
     if (window.innerWidth > 1820 && render_enabled === true)
-        window.location.href = render_view
+        navigate(render_view)
     else
-        window.location.href = normal_view
+        navigate(normal_view)
 </script>

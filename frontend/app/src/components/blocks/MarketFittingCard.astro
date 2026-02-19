@@ -26,17 +26,19 @@ const completion = current_quantity > expected_quantity ? 100 : expected_quantit
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 import Progress from '@components/blocks/Progress.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
-import ItemBadge from '@components/blocks/ItemBadge.astro';import FluidFixed from '@components/compositions/FluidFixed.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import FittingLink from '@components/blocks/FittingLink.astro';
 ---
 
 <Wrapper
     class="[ market-fitting-card ]"
     padding_block='0'
     padding_inline='0'
-    max_width='50rem'
+    max_width='60rem'
     {...attributes}
 >
     <FlexInline justification='space-between' gap='var(--space-3xs)'>
@@ -67,15 +69,24 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';import FluidFixed fro
             </div>
             <span class="[ quantity ]">{current_quantity}{expected_quantity > 0 && `/${expected_quantity}`}</span>
         </FixedFluid>
-            
-        <ClipboardButton
-            class="[ action-button ]"
-            text={t('copy_eft')}
-            narrow={true}
-            id={`${fitting.fitting_id.toString()}-row-copy`}
-        >
-            {fitting.eft}
-        </ClipboardButton>
+        
+        <FlexInline class="[ hidden! lg:flex! ]">
+            <FittingLink
+                class="[ action-button ]"
+                fitting_id={fitting.fitting_id}
+                is_button={true}
+            >
+                {t('open_fitting')}
+            </FittingLink>
+            <ClipboardButton
+                class="[ action-button ]"
+                text={t('copy_eft')}
+                narrow={true}
+                id={`${fitting.fitting_id.toString()}-row-copy`}
+            >
+                {fitting.eft}
+            </ClipboardButton>
+        </FlexInline>
     </FlexInline>
 </Wrapper>
 
