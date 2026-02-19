@@ -39,10 +39,23 @@ services:
             dockerfile: Dockerfile
         restart: always
         env_file: .env
-        command: celery -A app worker -l info
+        command: celery -A app worker -l info -Q celery
         deploy:
             mode: replicated
-            replicas: 6
+            replicas: 4
+        depends_on:
+            - app
+
+    celery-eveonline:
+        build:
+            context: ./backend/.
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app worker -l info -Q eveonline
+        deploy:
+            mode: replicated
+            replicas: 4
         depends_on:
             - app
 
