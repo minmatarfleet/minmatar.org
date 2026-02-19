@@ -1,8 +1,16 @@
+import re
 from datetime import timedelta
 
 from celery.schedules import crontab, schedule
 
 CELERYD_HIJACK_ROOT_LOGGER = False
+
+# Route eveonline tasks to a dedicated queue so they don't block the default queue
+CELERY_TASK_ROUTES = (
+    [
+        (re.compile(r"^eveonline\."), {"queue": "eveonline"}),
+    ],
+)
 # Retain broker connection retries on worker startup (Celery 6+)
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
