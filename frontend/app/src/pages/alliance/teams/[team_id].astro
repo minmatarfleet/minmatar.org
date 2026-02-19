@@ -7,6 +7,12 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_join_teams = is_superuser || user_permissions.includes('groups.add_teamrequest')
 
 import { prod_error_messages } from '@helpers/env'
 import type { GroupItemUI } from '@dtypes/layout_components'
@@ -128,7 +134,7 @@ const page_description = group?.description ?? ''
                         <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(group?.description as string, { renderer })}></Flexblock>
                     }
 
-                    {user &&
+                    {can_join_teams &&
                         <FlexInline class="[ !items-start ]">
                             <GroupStatus
                                 group={group}
