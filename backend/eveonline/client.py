@@ -260,25 +260,41 @@ class EsiClient:
         )
         if status > 0:
             return EsiResponse(status)
-        all_jobs = []
-        page = 1
-        while True:
-            operation = esi_provider.client.Industry.get_corporations_corporation_id_industry_jobs(
-                corporation_id=corporation_id,
-                token=token,
-                include_completed=include_completed,
-                page=page,
+
+        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/industry/jobs/"
+        params = {"include_completed": include_completed}
+        headers = {"Authorization": f"Bearer {token}"}
+
+        try:
+            resp = requests.get(
+                url,
+                params={**params, "page": 1},
+                headers=headers,
+                timeout=30,
             )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        all_jobs = resp.json() if resp.content else []
+        total_pages = int(resp.headers.get("X-Pages", 1))
+
+        for page in range(2, total_pages + 1):
             try:
-                jobs = operation.results()
+                page_resp = requests.get(
+                    url,
+                    params={**params, "page": page},
+                    headers=headers,
+                    timeout=30,
+                )
             except Exception as e:
                 return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if not jobs:
-                break
-            all_jobs.extend(jobs)
-            if len(jobs) < 1000:
-                break
-            page += 1
+            if page_resp.status_code >= 400:
+                return EsiResponse(response_code=page_resp.status_code)
+            page_jobs = page_resp.json() if page_resp.content else []
+            all_jobs.extend(page_jobs)
+
         return EsiResponse(response_code=SUCCESS, data=all_jobs)
 
     def get_public_contracts(self, region_id) -> EsiResponse:
