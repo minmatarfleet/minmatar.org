@@ -296,3 +296,8 @@ lite-youtube {
     /* No Shadow */
     --lite-youtube-frame-shadow-visible: no;
 }
+
+/* Hack to fix the "Loading" duplicated tooltip */
+[data-tippy-root] + [data-tippy-root] {
+    z-index: calc(var(--tooltips-z-index) - 1);
+}
