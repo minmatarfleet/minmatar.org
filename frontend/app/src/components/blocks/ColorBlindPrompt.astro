@@ -1,0 +1,53 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import TextBackgroundContrast from '@components/blocks/TextBackgroundContrast.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+<div x-show="show_color_blind_prompt">
+    <Wrapper
+        padding_block='var(--space-m)'
+        padding_inline='var(--space-m)'
+        class="[ color-blind-prompt ][ card border component light-transparency hidden! 2xl:block! ]"
+        max_width='30rem'
+    >
+        <Flexblock class="[  animate-fade-in-left ]" gap='var(--space-m)'>
+            <h3>{t('color_blind_greetings')}</h3>
+            <p>{t('color_blind_prompt_text')}</p>
+            
+            <SwitchSquare
+                class="[ w-full ]"
+                x-model="color_blind_mode"
+                label={t('color_blind_mode')}
+            />
+
+            <FlexInline class="[ w-full ]" gap='0'>
+                <TextBackgroundContrast color='var(--button-color)' background_color='var(--fleet-red)' />
+                <TextBackgroundContrast color='var(--button-color)' background_color='var(--green)' />
+            </FlexInline>
+
+            <FlexInline justification='flex-end'>
+                <Button x-on:click="show_color_blind_prompt = false" size='sm'>
+                    {t('apply_my_choice')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    .color-blind-prompt {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        right: var(--space-xl);
+        z-index: var(--dialog-z-index);
+    }
+</style>

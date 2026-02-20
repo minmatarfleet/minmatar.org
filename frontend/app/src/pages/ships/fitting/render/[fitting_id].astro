@@ -408,7 +408,7 @@ const page_description = await strip_markdown(fitting?.description ?? '')
 
                 <Flexblock
                     class="[ animate-fade-in-up ]"
-                    x-show={!DISABLED_CCPWGL ? 'show_rendering_options' : false }
+                    x-show={'show_rendering_options'}
                     style="display: none"
                 >
                     <small>{t('rendering_issues_message')}</small>

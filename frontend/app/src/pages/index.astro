@@ -65,6 +65,7 @@ import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
 import R6Info from '@components/blocks/R6Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
+import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
 import ComicsWidget from '@components/blocks/ComicsWidget.astro';
 import RatBibbleWidget from '@components/blocks/RatBibbleWidget.astro';
@@ -251,7 +252,7 @@ const page_description = t('index.leading_text');
 
 		<VerticalCenter
 			class="[ content-section ][ min-h-[100vh] max-w-[48rem] ]"
-			x-intersect:enter.margin.-230px="show_stagging_info = true"
+			x-intersect:enter.margin.-230px="show_stagging_info = true;"
 			x-intersect:leave.margin.-230px="show_stagging_info = false"
 		>
 			<Wrapper
@@ -384,6 +385,8 @@ const page_description = t('index.leading_text');
 		{(WINTER_NEXUS_DECORATION || NEY_YEAR_EVE_DECORATION || CRIMSON_HARVEST_DECORATION) &&
 			<canvas id="decoration_overlay" />
 		}
+
+		<ColorBlindPrompt />
 
 		{user &&
 			<FleetFeed />
