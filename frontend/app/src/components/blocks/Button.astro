@@ -34,7 +34,7 @@ const x_data_elements = x_data ? x_data.slice(1, -1) : ''
 const x_on = attributes['x-on:click.prevent'] ?? undefined
 
 const button_background_color = `var(--${color})`;
-const button_color = (color !== 'transparent' ? 'var(--fleet-yellow)' : 'var(--highlight)');
+const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--highlight)');
 
 const Element = href ? 'a' : 'button';
 ---
@@ -44,7 +44,7 @@ const Element = href ? 'a' : 'button';
     class:list={['[ button ]', { narrow: narrow }, Astro.props.class]}
     {...attributes}
     data-size={size}
-    style={`--button_background_color: ${button_background_color}; --button_color: ${button_color}`}
+    style={`--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}`}
     disabled={Element === 'button' ? 'disabled' : undefined}
     x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
 
@@ -79,7 +79,7 @@ const Element = href ? 'a' : 'button';
     button,
     a[href].button {
         --background-color: var(--button_background_color);
-        --button-color: var(--button_color);
+        --inner-button-color: var(--inner_button_color);
         --font-size: var(--step--0);
 
         display: inline-block;
@@ -90,7 +90,7 @@ const Element = href ? 'a' : 'button';
         text-align: left;
         padding: var(--space-s) var(--space-l-xl);
         border: solid 1px var(--background-color);
-        color: var(--button-color);
+        color: var(--inner-button-color);
         background-color: var(--background-color);
         align-items: center;
         transition: var(--fast-transition);

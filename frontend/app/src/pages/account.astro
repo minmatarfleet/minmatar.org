@@ -86,6 +86,7 @@ import PilotsList from '@components/blocks/PilotsList.astro';
 import Mumble from '@components/blocks/Mumble.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PushNotifications from '@components/blocks/PushNotifications.astro';
+import AccessibilityOptions from '@components/blocks/AccessibilityOptions.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
@@ -280,6 +281,10 @@ const page_title = t('account.page_title');
                     </Flexblock>
                 </ComponentBlock>
             </Context>
+
+            <ComponentBlock width='narrow'>
+                <AccessibilityOptions color_blind={false} />
+            </ComponentBlock>
 
             {user_permissions.includes('subscriptions.add_usersubscription') &&
                 <ComponentBlock width='narrow'>

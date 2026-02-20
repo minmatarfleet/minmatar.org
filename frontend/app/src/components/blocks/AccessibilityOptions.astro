@@ -1,0 +1,28 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    color_blind:    boolean;
+}
+
+const {
+    color_blind,
+} = Astro.props
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+---
+
+<Flexblock gap='var(--space-l)'>
+    <h2>{t('accessibility_options')}</h2>
+
+    <SwitchSquare
+        class="[ w-full ]"
+        checked={color_blind}
+        x-model="color_blind_mode"
+        label={t('color_blind_mode')}
+        description={t('color_blind_description')}
+    />
+</Flexblock>
