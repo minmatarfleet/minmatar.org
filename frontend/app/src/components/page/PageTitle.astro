@@ -16,6 +16,7 @@ const {
     is_landing = false,
 } = Astro.props
 
+console.log(Astro.url.href)
 import { is_referral_url_debug } from '@helpers/fetching/referrals'
 const debug = is_referral_url_debug(Astro.url.pathname, lang)
 
@@ -32,7 +33,7 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         <ReferralLink user_id={user.user_id} />
     }
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
-        <slot />
+        <a href={Astro.url.href}><slot /></a>
     </h1>
 </FlexInline>
 
