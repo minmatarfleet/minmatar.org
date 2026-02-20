@@ -6,6 +6,7 @@ character_producers: primary character per user with total_value_isk (industry j
 corporation_producers: corporations with industry jobs (total_value_isk).
 """
 
+from decimal import Decimal
 from datetime import timedelta
 
 from django.db.models import Q, Sum
@@ -31,6 +32,13 @@ ACTIVITY_REACTION = 11
 PRODUCTION_ACTIVITIES = (ACTIVITY_MANUFACTURING, ACTIVITY_REACTION)
 
 ORE_MINERAL_SHARE_THRESHOLD = 0.25
+
+# Rolling window and minimum value for PI and mining producers on industry products
+PI_ROLLING_DAYS = 30
+MINING_WINDOW_DAYS = 30
+MIN_PI_MINING_VALUE_ISK = 50_000_000
+# Only include PI from planets synced within the last N days
+PI_PLANET_MAX_AGE_DAYS = 30
 
 
 def _get_material_prices(type_ids: list[int]) -> dict[int, float]:
@@ -279,40 +287,58 @@ def _fill_job_producers(result, type_ids, blueprint_activity_to_types):
 
 
 def _fill_planetary_producers(result, type_ids):
-    """Add planetary output value to character_producers (PI contribution per character)."""
+    """
+    Add planetary output value to character_producers.
+
+    Uses rolling 30-day value: sum(daily_quantity) * PI_ROLLING_DAYS * price per
+    character. Only includes outputs from planets synced in the last
+    PI_PLANET_MAX_AGE_DAYS (30). Only adds a character from PI if their PI value
+    is at least MIN_PI_MINING_VALUE_ISK (50M); when merging into existing (e.g.
+    from jobs) the value is added regardless.
+    """
+    planet_cutoff = timezone.now() - timedelta(days=PI_PLANET_MAX_AGE_DAYS)
     planet_outputs = (
-        EveCharacterPlanetOutput.objects.filter(eve_type_id__in=type_ids)
-        .select_related("planet__character")
-        .values_list(
+        EveCharacterPlanetOutput.objects.filter(
+            eve_type_id__in=type_ids,
+            planet__last_update__isnull=False,
+            planet__last_update__gte=planet_cutoff,
+        )
+        .values(
             "eve_type_id",
             "planet__character__character_id",
             "planet__character__character_name",
         )
+        .annotate(total_daily=Sum("daily_quantity"))
     )
-    # (tid, cid) -> (name, planet_count)
-    char_pi: dict[int, dict[int, tuple[str, int]]] = {
+    # (tid, cid) -> (name, total_daily_quantity)
+    char_pi: dict[int, dict[int, tuple[str, Decimal]]] = {
         tid: {} for tid in type_ids
     }
-    for eve_type_id, cid, cname in planet_outputs:
-        if eve_type_id not in char_pi:
+    for row in planet_outputs:
+        tid = row["eve_type_id"]
+        cid = row["planet__character__character_id"]
+        cname = row["planet__character__character_name"] or ""
+        total_daily = row["total_daily"] or Decimal(0)
+        if tid not in char_pi:
             continue
-        if cid not in char_pi[eve_type_id]:
-            char_pi[eve_type_id][cid] = (cname or "", 1)
+        if cid not in char_pi[tid]:
+            char_pi[tid][cid] = (cname, total_daily)
         else:
-            name, count = char_pi[eve_type_id][cid]
-            char_pi[eve_type_id][cid] = (name, count + 1)
+            name, daily = char_pi[tid][cid]
+            char_pi[tid][cid] = (name, daily + total_daily)
     prices = _get_material_prices(type_ids)
     for tid in type_ids:
         price = float(prices.get(tid) or 0)
         existing_ids = {c["id"] for c in result[tid]["character_producers"]}
-        for cid, (cname, count) in char_pi.get(tid, {}).items():
-            value = round(count * price, 2)
+        for cid, (cname, total_daily) in char_pi.get(tid, {}).items():
+            quantity_30d = float(total_daily) * PI_ROLLING_DAYS
+            value = round(quantity_30d * price, 2)
             if cid in existing_ids:
                 for entry in result[tid]["character_producers"]:
                     if entry["id"] == cid:
                         entry["total_value_isk"] += value
                         break
-            else:
+            elif value >= MIN_PI_MINING_VALUE_ISK:
                 existing_ids.add(cid)
                 result[tid]["character_producers"].append(
                     {"id": cid, "name": cname, "total_value_isk": value}
@@ -416,8 +442,6 @@ def get_planetary_producers_for_type(product_type_id: int):
 # ---------------------------------------------------------------------------
 # Mining producers
 # ---------------------------------------------------------------------------
-
-MINING_WINDOW_DAYS = 30
 
 
 def _ore_type_ids_for_material(material_type_id: int) -> set[int]:
@@ -714,7 +738,7 @@ def _fill_mining_producers(result, type_ids):
                     if entry["id"] == cid:
                         entry["total_value_isk"] += value
                         break
-            else:
+            elif value >= MIN_PI_MINING_VALUE_ISK:
                 existing_ids.add(cid)
                 result[tid]["character_producers"].append(
                     {

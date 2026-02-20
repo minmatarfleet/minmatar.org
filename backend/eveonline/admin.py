@@ -22,6 +22,7 @@ from .models import (
     EveLocation,
     EveCharacterAsset,
     EveCharacterSkill,
+    EveUniverseSchematic,
 )
 from .helpers.characters import user_primary_character
 from .tasks import update_corporation
@@ -165,7 +166,7 @@ class EveCharacterMiningEntryAdmin(admin.ModelAdmin):
 class EveCharacterPlanetOutputInline(admin.TabularInline):
     model = EveCharacterPlanetOutput
     extra = 0
-    readonly_fields = ("eve_type", "output_type")
+    readonly_fields = ("eve_type", "output_type", "daily_quantity")
     can_delete = False
 
     def has_add_permission(self, request, obj=None):
@@ -200,12 +201,20 @@ class EveCharacterPlanetOutputAdmin(admin.ModelAdmin):
         "planet",
         "eve_type",
         "output_type",
+        "daily_quantity",
     )
     list_filter = ("output_type",)
     search_fields = (
         "planet__character__character_name",
         "eve_type__name",
     )
+
+
+@admin.register(EveUniverseSchematic)
+class EveUniverseSchematicAdmin(admin.ModelAdmin):
+    list_display = ("schematic_id", "schematic_name", "cycle_time")
+    search_fields = ("schematic_name",)
+    ordering = ("schematic_id",)
 
 
 # ---------------------------------------------------------------------------
