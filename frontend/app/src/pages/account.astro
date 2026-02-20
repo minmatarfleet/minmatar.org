@@ -312,6 +312,24 @@ const page_title = t('account.page_title');
                             class="[ w-full ]"
                         >
                             <div 
+                                x-show="!show_color_blind_prompt"
+                            >
+                                <FlexInline>
+                                    <div class="basis-[450px]">
+                                        <TextGroup title={t('disable_color_blind_prompt')}>
+                                            <small>{t('disable_color_blind_prompt_description')}</small>
+                                        </TextGroup>
+                                    </div>
+                                    
+                                    <Button
+                                        size='sm'
+                                        x-on:click=`show_color_blind_prompt = true`
+                                    >
+                                        {t('reset')}
+                                    </Button>
+                                </FlexInline>
+                            </div>
+                            <div 
                                 x-data={`{
                                     show_rendering_options: $persist(true),
                                 }`}

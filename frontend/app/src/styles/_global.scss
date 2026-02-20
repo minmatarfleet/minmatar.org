@@ -10,9 +10,9 @@ body,
 }
 
 body.color-blind-mode {
-    --fleet-red:        #e8590c;
-    --green:            #0d6efd;
-    --button-color:     white;
+    --fleet-red:        var(--fleet-red-blind);
+    --green:            var(--green-blind);
+    --button-color:     var(--button-color-blind);
 }
 
 .viewport-layout {

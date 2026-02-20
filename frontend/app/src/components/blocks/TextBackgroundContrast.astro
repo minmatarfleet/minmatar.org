@@ -1,0 +1,36 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    color:              string;
+    background_color:   string;
+    text?:              string;
+    [propName: string]: any;
+}
+
+const {
+    color,
+    background_color,
+    text = t('disabled'),
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div class="[ text-background-contrast grow ]"  {...attributes}>
+    <b x-text={`color_blind_mode ? '${t('enabled')}' : '${t('disabled')}'`}>{text}</b>
+</div>
+
+<style lang="scss" define:vars={{
+    text_color: color,
+    background_color: background_color,
+}}>
+    .text-background-contrast {
+        text-align: center;
+        color: var(--text_color);
+        background-color: var(--background_color);
+        padding: var(--space-m) var(--space-l);
+    }
+</style>

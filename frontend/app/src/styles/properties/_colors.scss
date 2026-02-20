@@ -1,9 +1,11 @@
 :root {
     --fleet-yellow:     #f1d9a0;
     --fleet-red:        #b53620;
+    --fleet-red-blind:  #e8590c;
     --alliance-blue:    #2051B5;
     --militia-purple:   #7342B2;
     --green:            #198754;
+    --green-blind:      #0d6efd;
     --black:            #121212;
 
     --tech-i:           #bbb;
@@ -35,6 +37,7 @@
 
     --form-color:           var(--fleet-yellow);
     --button-color:         var(--fleet-yellow);
+    --button-color-blind:   white;
     --border-color:         rgb(255, 255, 255, 0.05);
     --border-color-hover:   rgb(255, 255, 255, 0.1);
 }
