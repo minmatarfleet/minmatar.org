@@ -57,7 +57,7 @@ delete attributes.class
     <VerticalCenter>
         <Flexblock gap={heading ? 'var(--space-3xs)' : '0'} class="[ w-full ]">
             <TitleElement
-                class="truncate text-[var(--highlight)] cursor-pointer max-w-fit"
+                class="[ text-highlight cursor-pointer ]"
                 set:text={character_id > 0 ? character_name : `[ ${t('unknown_character')} ]`}
                 x-data={`{
                     show_character_modal() {
