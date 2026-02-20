@@ -14,7 +14,7 @@ from eveonline.models.characters import (
     EveCharacterPlanet,
     EveCharacterPlanetOutput,
 )
-from eveonline.models.planetary_schematic import EveUniverseSchematic
+from eveonline.models.universe import EveUniverseSchematic
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +219,11 @@ def update_character_planets(eve_character_id: int) -> int:
         )
 
         _sync_planet_outputs(planet_obj, harvested, produced)
+
+        # Record that we successfully synced this planet (used to exclude stale
+        # planets from industry producer lists).
+        planet_obj.last_update = timezone.now()
+        planet_obj.save(update_fields=["last_update"])
 
     ensure_schematics_cached(seen_schematic_ids)
 

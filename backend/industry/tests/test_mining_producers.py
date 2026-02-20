@@ -7,7 +7,13 @@ from django.db.models import signals
 from django.utils import timezone
 
 from app.test import TestCase
-from eveuniverse.models import EveCategory, EveGroup, EveType, EveTypeMaterial
+from eveuniverse.models import (
+    EveCategory,
+    EveGroup,
+    EveType,
+    EveTypeMaterial,
+    EveMarketPrice,
+)
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EveCharacterMiningEntry
 from industry.helpers.producers import (
@@ -137,13 +143,21 @@ class MiningProducersTest(TestCase):
         self.assertNotIn(7002, cids)
 
     def test_batch_includes_mining_in_character_producers(self):
-        """get_producers_for_types merges miners into character_producers."""
+        """get_producers_for_types merges miners into character_producers (when value >= 50M)."""
+        # Miner has 100k Scordite -> ~60k Tritanium (150/249). Price 1000 -> ~60M ISK
+        EveMarketPrice.objects.update_or_create(
+            eve_type=self.types[34],
+            defaults={"adjusted_price": 1000.0, "average_price": 1000.0},
+        )
         result = get_producers_for_types([34])
         self.assertIn("character_producers", result[34])
         char_producers = result[34]["character_producers"]
         self.assertEqual(len(char_producers), 1)
         self.assertEqual(char_producers[0]["id"], 7001)
         self.assertIn("total_value_isk", char_producers[0])
+        self.assertGreaterEqual(
+            char_producers[0]["total_value_isk"], 50_000_000
+        )
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_ore_ignores_mineral_below_25_percent(self):
