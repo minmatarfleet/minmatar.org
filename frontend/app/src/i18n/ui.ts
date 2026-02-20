@@ -1727,6 +1727,7 @@ export const ui = {
         'open_fitting': 'Open fitting',
         'accessibility_options': 'Accessibility options',
         'color_blind_mode': 'Color blind mode',
+        'view_station_doctrines': 'Browse doctrines supplied and actively flown on this staging',
         'color_blind_description': 'Enable a high-contrast palette to make actions easier to distinguish',
     },
 } as const;

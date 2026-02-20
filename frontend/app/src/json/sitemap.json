@@ -328,7 +328,7 @@
         "alt": "icon.doctrines.alt",
         "path": "/ships/doctrines/list/",
         "publish": true,
-        "icon": "/images/icons/48px-Shiphangar.png",
+        "icon": "/images/icons/48px-Doctrines.png",
         "description": "page_finder.ships.doctrines.description"
     },
     {
