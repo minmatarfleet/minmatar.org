@@ -135,7 +135,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 	<body
 		class="[ viewport-layout ]"
+		x-bind:class="(color_blind_mode ? 'color-blind-mode' : '')"
 		x-data={`{
+        	color_blind_mode: $persist(false),
 			post_header_height: null,
 			character_errors_count: $persist(0),
 			set_character_errors_count(value) {
@@ -228,10 +230,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 </html>
 
 <style is:global lang="scss">
-	/* The integration's default injected base.css file */
-	@tailwind components;
-	@tailwind utilities;
-
 	#confetti-canvas {
 		position:fixed;
 		inset: 0;

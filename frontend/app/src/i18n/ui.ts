@@ -1725,5 +1725,8 @@ export const ui = {
         'set_character_roles': 'Set character roles',
         'full_schedule': 'See full schedule',
         'open_fitting': 'Open fitting',
+        'accessibility_options': 'Accessibility options',
+        'color_blind_mode': 'Color blind mode',
+        'color_blind_description': 'Enable a high-contrast palette to make actions easier to distinguish for users with color vision deficiencies',
     },
 } as const;
