@@ -1728,5 +1728,6 @@ export const ui = {
         'accessibility_options': 'Accessibility options',
         'color_blind_mode': 'Color blind mode',
         'color_blind_description': 'Enable a high-contrast palette to make actions easier to distinguish for users with color vision deficiencies',
+        'view_station_doctrines': 'Browse doctrines supplied and actively flown on this staging',
     },
 } as const;

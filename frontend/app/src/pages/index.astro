@@ -82,6 +82,7 @@ import ExternalLink from '@components/blocks/ExternalLink.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
 import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
+import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 
 type StagingTranslation = {
 	[key in StagingType]: string;
@@ -123,6 +124,11 @@ const STAGING_CORPORATIONS = {
 		id: BLACK_OMEGA_SECUTIRY_ID,
 		name: 'Black Omega Security'
 	}
+}
+
+const STAGING_DOCTRINES = {
+	amamake: 1022167642188,
+	r6: 1051465618860,
 }
 
 const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
@@ -213,6 +219,15 @@ const page_description = t('index.leading_text');
 							}
 							station={STAGINGS_STATIONS[staging]}
 						/>
+					}
+					{STAGING_DOCTRINES[staging] &&
+						<a
+							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
+							data-tippy-content={t('view_station_doctrines')}
+							href={translatePath(`/ships/doctrines/list?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
+						>
+							<DoctrinesEvEIcon />
+						</a>
 					}
 					{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
 						<a
