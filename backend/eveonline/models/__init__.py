@@ -23,6 +23,7 @@ from eveonline.models.corporations import (
     EveCorporationContract,
     EveCorporationIndustryJob,
 )
+from eveonline.models.planetary_schematic import EveUniverseSchematic
 
 __all__ = [
     "EveAlliance",
@@ -46,4 +47,5 @@ __all__ = [
     "EvePlayer",
     "EveSkillset",
     "EveTag",
+    "EveUniverseSchematic",
 ]

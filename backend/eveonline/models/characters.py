@@ -287,6 +287,9 @@ class EveCharacterPlanetOutput(models.Model):
     Each row represents a resource that a planet either harvests (extractor)
     or produces (factory).  The industry package queries these rows to find
     characters whose planets supply a given type.
+
+    daily_quantity: estimated units produced or harvested per day, from
+    extractor cycle_time/qty_per_cycle and factory schematic cycle + route quantity.
     """
 
     class OutputType(models.TextChoices):
@@ -305,6 +308,12 @@ class EveCharacterPlanetOutput(models.Model):
     output_type = models.CharField(
         max_length=16,
         choices=OutputType.choices,
+    )
+    daily_quantity = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        default=0,
+        help_text="Estimated units produced or harvested per day.",
     )
 
     class Meta:
