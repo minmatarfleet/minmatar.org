@@ -47,8 +47,9 @@ export default defineConfig({
     integrations: integrations,
     vite: {
         server: {
+            hmr: false,
             watch: {
-                usePolling: true
+                usePolling: true,
             }
         },
         plugins: [tailwindcss()],
