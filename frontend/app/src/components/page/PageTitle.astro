@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang } = i18n(Astro.url)
+const { lang, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -23,6 +23,8 @@ const debug = is_referral_url_debug(Astro.url.pathname, lang)
 import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
+const current_page = `${Astro.url.pathname}${Astro.url.search}${Astro.url.hash}`
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ReferralLink from '@components/blocks/ReferralLink.astro';
@@ -33,7 +35,7 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         <ReferralLink user_id={user.user_id} />
     }
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
-        <a href={Astro.url.href}><slot /></a>
+        <a href={translatePath(current_page)}><slot /></a>
     </h1>
 </FlexInline>
 
