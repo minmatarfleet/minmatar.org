@@ -98,7 +98,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </Flexblock>
                     {can_remove_fleet &&
                         <FlexInline>
-                            {!history &&
+                            {!history && fleet.status !== 'cancelled' &&
                                 <Button
                                     size='sm'
                                     href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
@@ -115,7 +115,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 </form>
                             }
 
-                            {(!history && fleet.tracking === null) &&
+                            {(!history && fleet.tracking === null && fleet.status !== 'cancelled') &&
                                 <CancelFleetButton fleet_id={fleet.id} />
                             }
                         </FlexInline>
@@ -186,7 +186,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 volunteers={volunteers}
                 pilots={pilots}
                 fleet_id={fleet.id}
-                readonly={false}
+                readonly={fleet.status === 'cancelled'}
             />
         }
 
@@ -235,12 +235,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 fleet_id={fleet.id}
                 fleet_srps={fleet_srps as SRPUI[]}
                 readonly={!can_remove_fleet}
-                can_add_srp={can_add_srp}
+                can_add_srp={can_add_srp && fleet.status !== 'cancelled'}
             />
         </Wrapper>
     }
 
     <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
-        <FleetCombatLogTable saved_logs={saved_logs} fleet_id={fleet.id} />
+        <FleetCombatLogTable
+            saved_logs={saved_logs}
+            fleet_id={fleet.id}
+            disabled={fleet.status === 'cancelled'}
+        />
     </Wrapper>
 </Flexblock>
