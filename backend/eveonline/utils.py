@@ -6,7 +6,6 @@ from datetime import time
 
 from django.utils import timezone
 
-
 # Daily ESI downtime window (UTC)
 ESI_DOWNTIME_START = time(11, 0)  # 11:00 UTC
 ESI_DOWNTIME_END = time(11, 15)  # 11:15 UTC
