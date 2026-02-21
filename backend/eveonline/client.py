@@ -5,6 +5,7 @@ from typing import List
 from django.conf import settings
 from esi.clients import EsiClientProvider
 from esi.models import Token
+from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 from eveuniverse.models import (
     EveType,
     EveGroup,
@@ -111,6 +112,20 @@ class EsiClient:
 
         try:
             return token.valid_access_token(), SUCCESS
+        except InvalidGrantError:
+            # Import here to avoid circular import (eveonline.models loads client)
+            from eveonline.models import (  # pylint: disable=import-outside-toplevel
+                EveCharacter,
+            )
+
+            EveCharacter.objects.filter(character_id=self.character_id).update(
+                esi_suspended=True
+            )
+            logger.info(
+                "Set esi_suspended=True for character %s (invalid/expired refresh token)",
+                self.character_id,
+            )
+            return None, NO_VALID_ACCESS_TOKEN
         except Exception:
             return None, NO_VALID_ACCESS_TOKEN
 
