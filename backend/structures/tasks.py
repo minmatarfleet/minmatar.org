@@ -12,6 +12,7 @@ from discord.client import DiscordClient
 from eveonline.client import EsiClient, esi_for
 from eveonline.helpers.corporations import get_director_with_scope
 from eveonline.models import EveAlliance, EveCorporation
+from eveonline.utils import get_esi_downtime_countdown
 
 from .models import EveStructure, EveStructureManager, EveStructurePing
 from structures.helpers import (
@@ -49,6 +50,19 @@ def update_structures():
 
 @app.task
 def update_corporation_structures(corporation_id: int):
+    countdown = get_esi_downtime_countdown()
+    if countdown > 0:
+        update_corporation_structures.apply_async(
+            args=[corporation_id],
+            countdown=countdown,
+        )
+        logger.info(
+            "Deferring structure update for corp %s by %s s (ESI downtime 11:00–11:15 UTC)",
+            corporation_id,
+            countdown,
+        )
+        return
+
     corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     logger.info("Updating structures for corporation %s", corporation)
 
@@ -136,30 +150,53 @@ def update_corporation_structures(corporation_id: int):
 def process_structure_notifications(
     current_minute: datetime | None = None,
 ):
+    """Schedule notification fetch for each structure-manager character with spread countdown (rate-limited like character updates)."""
+    countdown = get_esi_downtime_countdown()
+    if countdown > 0:
+        process_structure_notifications.apply_async(countdown=countdown)
+        logger.info(
+            "Deferring structure notification run by %s s (ESI downtime 11:00–11:15 UTC)",
+            countdown,
+        )
+        return 0, 0
+
     if current_minute is None:
         current_minute = timezone.now().minute
 
-    total_found = 0
-    total_new = 0
-
-    for esm in structure_managers_for_minute(current_minute):
-        logger.info(
-            "Fetching notifications for %s in %s",
-            esm.character.character_name,
-            esm.corporation.name,
+    # Queue one task per character (with ESM for this minute bucket), spread over 10 minutes
+    esms = list(structure_managers_for_minute(current_minute))
+    for i, esm in enumerate(esms):
+        delay = i % 600  # spread over 10 min
+        fetch_structure_notifications_for_character.apply_async(
+            args=[esm.character_id],
+            countdown=delay,
         )
-        found, new = fetch_structure_notifications(esm)
-        total_found += found
-        total_new += new
-
-    if total_found > 0:
+    if esms:
         logger.info(
-            "Found a total of %d structure notifications (%d new)",
-            total_found,
-            total_new,
+            "Scheduled notification fetch for %d structure manager(s)",
+            len(esms),
         )
+    return len(esms), 0
 
-    return total_found, total_new
+
+@app.task(rate_limit="1/m")
+def fetch_structure_notifications_for_character(character_id: int):
+    """Fetch notifications for one structure-manager character (rate-limited)."""
+    countdown = get_esi_downtime_countdown()
+    if countdown > 0:
+        fetch_structure_notifications_for_character.apply_async(
+            args=[character_id],
+            countdown=countdown,
+        )
+        return 0, 0
+
+    try:
+        esm = EveStructureManager.objects.get(character_id=character_id)
+    except EveStructureManager.DoesNotExist:
+        logger.warning("No structure manager for character %s", character_id)
+        return 0, 0
+
+    return fetch_structure_notifications(esm)
 
 
 def fetch_structure_notifications(manager: EveStructureManager):

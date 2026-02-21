@@ -14,6 +14,7 @@ from eveonline.helpers.characters import (
     update_character_skills as refresh_character_skills,
 )
 from eveonline.models import EveCharacter, EveAlliance
+from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,19 @@ SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
 @app.task(rate_limit="1/m")
 def update_character(eve_character_id):
     """Update a character's assets, skills, killmails, contracts, and industry jobs."""
+    countdown = get_esi_downtime_countdown()
+    if countdown > 0:
+        update_character.apply_async(
+            args=[eve_character_id],
+            countdown=countdown,
+        )
+        logger.info(
+            "Deferring character update for %s by %s s (ESI downtime 11:00–11:15 UTC)",
+            eve_character_id,
+            countdown,
+        )
+        return
+
     character = EveCharacter.objects.get(character_id=eve_character_id)
     logger.info(
         "Updating character %s (%s)",

@@ -12,6 +12,7 @@ from structures.tasks import (
     setup_structure_managers,
     structure_managers_for_minute,
     process_structure_notifications,
+    fetch_structure_notifications_for_character,
     update_corporation_structures,
 )
 from structures.models import (
@@ -60,9 +61,21 @@ class StructureTaskTests(TestCase):
         self.assertEqual(1, minute_3.count())
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
     @patch("structures.tasks.discord")
     @patch("structures.tasks.EsiClient")
-    def test_process_structure_notifications(self, esi_mock, discord_mock):
+    @patch(
+        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
+    )
+    def test_process_structure_notifications(
+        self, apply_async_mock, esi_mock, discord_mock, get_downtime_mock
+    ):
+        def run_task_inline(args, countdown=0, **kwargs):
+            if countdown == 0:
+                fetch_structure_notifications_for_character(args[0])
+
+        apply_async_mock.side_effect = run_task_inline
+
         esi = esi_mock.return_value
         esi.get_character_notifications.return_value = EsiResponse(
             response_code=200,
@@ -99,16 +112,16 @@ class StructureTaskTests(TestCase):
             poll_time=5,
         )
 
-        total_found, total_new = process_structure_notifications(5)
+        total_scheduled, _ = process_structure_notifications(5)
 
-        self.assertEqual(1, total_found)
-        self.assertEqual(0, total_new)
+        self.assertEqual(1, total_scheduled)
+        apply_async_mock.assert_called_once()
 
-        self.assertIsNotNone(
-            EveStructureManager.objects.get(
-                character__character_id=2002
-            ).last_polled
+        esm_2002 = EveStructureManager.objects.get(
+            character__character_id=2002
         )
+        esm_2002.refresh_from_db()
+        self.assertIsNotNone(esm_2002.last_polled)
 
         self.assertEqual(1, EveStructurePing.objects.count())
         ping = EveStructurePing.objects.first()
@@ -118,9 +131,12 @@ class StructureTaskTests(TestCase):
         self.assertEqual(16, ping.event_time.minute)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
     @patch("structures.tasks.esi_for")
     @patch("structures.tasks.get_director_with_scope")
-    def test_update_corporation_structures(self, get_director_mock, esi_mock):
+    def test_update_corporation_structures(
+        self, get_director_mock, esi_mock, get_downtime_mock
+    ):
         ceo = EveCharacter.objects.create(
             character_id=1001,
             character_name="Mr CEO",
