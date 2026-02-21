@@ -1,3 +1,5 @@
+"""Deprecated: use GET /api/industry/orders and per-order breakdown endpoints instead."""
+
 import csv
 import io
 from collections import defaultdict
@@ -17,9 +19,9 @@ from industry.models import IndustryOrder
 router = Router(tags=["Industry - Orders Summary"])
 
 
-@router.get("/tsv")
+@router.get("/tsv", deprecated=True)
 def get_orders_breakdown_summary_tsv(request):
-    """TSV of aggregated flat materials (last 30 days) for copy-paste into Janice."""
+    """TSV of aggregated flat materials (last 30 days) for copy-paste into Janice. Deprecated."""
     since = timezone.now() - timedelta(days=30)
     orders = IndustryOrder.objects.filter(
         created_at__gte=since

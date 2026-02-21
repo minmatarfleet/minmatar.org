@@ -1,3 +1,5 @@
+"""Deprecated: use GET /api/industry/orders and per-order breakdown endpoints instead."""
+
 from collections import defaultdict
 from datetime import timedelta
 from typing import List
@@ -29,9 +31,9 @@ class SummaryNestedResponse(BaseModel):
     roots: List[NestedBreakdownNode]
 
 
-@router.get("/nested", response=SummaryNestedResponse)
+@router.get("/nested", response=SummaryNestedResponse, deprecated=True)
 def get_orders_breakdown_summary_nested(request):
-    """Aggregated material breakdown for all order items in the last 30 days (nested per product type)."""
+    """Aggregated material breakdown for all order items in the last 30 days (nested per product type). Deprecated."""
     since = timezone.now() - timedelta(days=30)
     orders = IndustryOrder.objects.filter(
         created_at__gte=since
