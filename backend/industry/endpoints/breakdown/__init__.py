@@ -1,4 +1,4 @@
-"""Breakdown router: GET order breakdown and GET order item breakdown (mounted under orders)."""
+"""Breakdown router: GET order breakdown, order item breakdown, assignments breakdown (mounted under orders)."""
 
 from ninja import Router
 
@@ -13,6 +13,12 @@ from industry.endpoints.breakdown.get_order_item_breakdown import (
     ROUTE_SPEC as get_order_item_breakdown_spec,
     get_order_item_breakdown,
     METHOD as get_order_item_breakdown_method,
+)
+from industry.endpoints.breakdown.get_order_item_assignments_breakdown import (
+    PATH as get_order_item_assignments_breakdown_path,
+    ROUTE_SPEC as get_order_item_assignments_breakdown_spec,
+    get_order_item_assignments_breakdown,
+    METHOD as get_order_item_assignments_breakdown_method,
 )
 
 router = Router(tags=["Industry - Breakdown"])
@@ -29,6 +35,12 @@ _ROUTES = (
         get_order_item_breakdown_path,
         get_order_item_breakdown_spec,
         get_order_item_breakdown,
+    ),
+    (
+        get_order_item_assignments_breakdown_method,
+        get_order_item_assignments_breakdown_path,
+        get_order_item_assignments_breakdown_spec,
+        get_order_item_assignments_breakdown,
     ),
 )
 for method, path, spec, view in _ROUTES:

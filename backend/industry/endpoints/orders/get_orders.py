@@ -1,8 +1,6 @@
-"""GET "" - list industry orders and their location."""
+"""GET "" - list industry orders and their location (public)."""
 
 from typing import List
-
-from authentication import AuthBearer
 
 from industry.endpoints.orders.schemas import (
     OrderListItemResponse,
@@ -13,15 +11,14 @@ from industry.models import IndustryOrder
 PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List industry orders for the authenticated user's characters, with location",
-    "auth": AuthBearer(),
+    "summary": "List all industry orders with location",
     "response": {200: List[OrderListItemResponse]},
 }
 
 
 def get_orders(request):
     orders = (
-        IndustryOrder.objects.filter(character__user=request.user)
+        IndustryOrder.objects.all()
         .select_related("character", "location")
         .order_by("-created_at")
     )

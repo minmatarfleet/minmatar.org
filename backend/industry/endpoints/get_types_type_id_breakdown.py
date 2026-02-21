@@ -1,3 +1,5 @@
+"""Deprecated: use industry product breakdown or order item breakdown endpoints instead."""
+
 from typing import List
 
 from eveuniverse.models import EveType
@@ -25,9 +27,10 @@ NestedBreakdownNode.model_rebuild()
 @router.get(
     "/types/{type_id}/breakdown",
     response={200: NestedBreakdownNode, 404: ErrorResponse},
+    deprecated=True,
 )
 def get_types_type_id_breakdown(request, type_id: int, quantity: int = 1):
-    """Return nested component breakdown for an Eve type (e.g. ship, module)."""
+    """Return nested component breakdown for an Eve type (e.g. ship, module). Deprecated."""
     try:
         eve_type, _ = EveType.objects.get_or_create_esi(id=type_id)
     except Exception:

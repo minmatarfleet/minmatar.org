@@ -43,3 +43,18 @@ class OrderBreakdownResponse(BaseModel):
     """Nested breakdown for an order: one root per product type in the order."""
 
     roots: List[NestedBreakdownNode]
+
+
+class AssignmentBreakdownResponse(BaseModel):
+    """Material breakdown for one assignment (character + quantity) on an order item."""
+
+    character_id: int
+    character_name: str
+    quantity: int
+    breakdown: NestedBreakdownNode
+
+
+class OrderItemAssignmentsBreakdownResponse(BaseModel):
+    """Breakdown per assignment for an order item."""
+
+    assignments: List[AssignmentBreakdownResponse]

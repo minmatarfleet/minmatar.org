@@ -1,3 +1,5 @@
+"""Deprecated: use GET /api/industry/orders and per-order breakdown endpoints instead."""
+
 from collections import defaultdict
 from datetime import timedelta
 
@@ -48,9 +50,9 @@ def _get_flat_items_last_30_days():
     ]
 
 
-@router.get("/janice", response=SummaryJaniceResponse)
+@router.get("/janice", response=SummaryJaniceResponse, deprecated=True)
 def get_orders_breakdown_summary_janice(request):
-    """Submit aggregated flat materials (last 30 days) to Janice pricer; returns link to Janice API docs."""
+    """Submit aggregated flat materials (last 30 days) to Janice pricer; returns link to Janice API docs. Deprecated."""
     items = _get_flat_items_last_30_days()
     api_key = getattr(settings, "JANICE_API_KEY", None) or ""
     api_url = getattr(

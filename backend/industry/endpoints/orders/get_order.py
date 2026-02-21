@@ -1,7 +1,6 @@
-"""GET /{order_id} - fetch one order with items and who committed to it."""
+"""GET /{order_id} - fetch one order with items and who committed to it (public)."""
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
 
 from industry.endpoints.orders.schemas import (
     AssignmentResponse,
@@ -15,10 +14,8 @@ PATH = "{int:order_id}"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "Get a single order with items and who has committed to each item",
-    "auth": AuthBearer(),
     "response": {
         200: OrderDetailResponse,
-        403: ErrorResponse,
         404: ErrorResponse,
     },
 }
@@ -37,10 +34,6 @@ def get_order(request, order_id: int):
         )
     except IndustryOrder.DoesNotExist:
         return 404, ErrorResponse(detail=f"Order {order_id} not found.")
-    if order.character.user_id != request.user.id:
-        return 403, ErrorResponse(
-            detail="You may only view orders for your own characters."
-        )
     return 200, OrderDetailResponse(
         id=order.pk,
         created_at=order.created_at,

@@ -1,3 +1,5 @@
+"""Deprecated: use GET /api/industry/orders and per-order breakdown endpoints instead."""
+
 from collections import defaultdict
 from datetime import timedelta
 from typing import List
@@ -26,9 +28,9 @@ class SummaryFlatResponse(BaseModel):
     items: List[SummaryItem]
 
 
-@router.get("/flat", response=SummaryFlatResponse)
+@router.get("/flat", response=SummaryFlatResponse, deprecated=True)
 def get_orders_breakdown_summary_flat(request):
-    """Aggregated flat list of base materials for all order items in the last 30 days."""
+    """Aggregated flat list of base materials for all order items in the last 30 days. Deprecated."""
     since = timezone.now() - timedelta(days=30)
     orders = IndustryOrder.objects.filter(
         created_at__gte=since
