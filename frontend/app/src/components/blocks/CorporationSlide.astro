@@ -24,6 +24,9 @@ const {
     mirror_slide = false,
 } = Astro.props
 
+const current_page = `${Astro.url.pathname}${Astro.url.search}`
+const slide_url = translatePath(`${current_page}#${corporation.corporation_name.replaceAll(' ', '_')}`)
+
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -66,7 +69,11 @@ import { query_string } from '@helpers/string';
                     <picture>
                         <img loading="lazy" src={get_corporation_logo(corporation.corporation_id, 64)} width="64" height="64" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
                     </picture>
-                    <h2>{corporation.corporation_name}</h2>
+                    <h2>
+                        <a href={slide_url}>
+                            {corporation.corporation_name}
+                        </a>
+                    </h2>
                 </FixedFluid>
             </VerticalCenter>
             <TextBox>
