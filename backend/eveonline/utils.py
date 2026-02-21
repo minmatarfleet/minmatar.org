@@ -2,7 +2,7 @@
 EVE Online / ESI utilities.
 """
 
-from datetime import time
+from datetime import time, timezone as dt_timezone
 
 from django.utils import timezone
 
@@ -19,7 +19,7 @@ def get_esi_downtime_countdown() -> int:
     now = timezone.now()
     if now.tzinfo is None:
         now = timezone.make_aware(now)
-    utc_now = timezone.localtime(now, timezone.utc)
+    utc_now = timezone.localtime(now, dt_timezone.utc)
 
     if ESI_DOWNTIME_START <= utc_now.time() < ESI_DOWNTIME_END:
         end_today = utc_now.replace(
