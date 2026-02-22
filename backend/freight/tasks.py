@@ -1,133 +1,138 @@
 import logging
 
-from bravado.exception import HTTPNotModified
-
 from app.celery import app
-from eveonline.client import EsiClient
-from eveonline.models import EveCharacter
+from eveuniverse.models import EveStation
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EveCorporationContract,
+)
 from freight.models import EveFreightContract
 from structures.models import EveStructure
 
 logger = logging.getLogger(__name__)
 
 
-@app.task()
-def update_contracts():
-    """Update freight contracts."""
-    logger.info("Updating contracts")
-    # required_scopes = ["esi-contracts.read_corporation_contracts.v1"]
-    # token = Token.get_token(
-    #     EveFreightContract.supported_ceo_id, required_scopes
-    # )
-    # if not token:
-    #     logger.error("Unable to get valid EveFreightContract CEO token")
-    #     return
-
-    try:
-        esi_response = EsiClient(
-            EveFreightContract.supported_ceo_id
-        ).get_corporation_contracts(
-            EveFreightContract.supported_corporation_id
+def _resolve_location_name_from_db(location_id):
+    """
+    Resolve a location ID to a display name using only the database.
+    Stations (60M–61M) use EveStation when present; structures use EveStructure.
+    """
+    if location_id is None:
+        return "Unknown"
+    loc_id = int(location_id)
+    if 60000000 < loc_id < 61000000:
+        station = (
+            EveStation.objects.filter(id=loc_id)
+            .select_related("eve_solar_system")
+            .first()
         )
-    except HTTPNotModified:
-        logger.debug(
-            "Contracts not modified for corp %d",
-            EveFreightContract.supported_corporation_id,
-        )
-        return
+        if station and station.eve_solar_system:
+            return station.eve_solar_system.name
+        if station:
+            return station.name
+        return "Unknown"
+    structure = EveStructure.objects.filter(id=loc_id).first()
+    if structure:
+        return structure.name
+    return "Structure"
 
-    if not esi_response.success():
-        logger.warning(
-            "ESI call failed for corporation contracts (corp %d): %s (code %d)",
-            EveFreightContract.supported_corporation_id,
-            esi_response.error_text(),
-            esi_response.response_code,
-        )
-        return
 
-    contracts_data = esi_response.results()
-
-    contract_ids = set()
-    for contract in contracts_data:
-        if (
-            contract["type"] == EveFreightContract.expected_contract_type
-            and contract["status"] in EveFreightContract.tracked_statuses
-            and contract["assignee_id"]
-            == EveFreightContract.supported_corporation_id
-        ):
-            contract_ids.add(int(contract["contract_id"]))
-            update_contract(contract)
-
-    # Update all hanging contracts
-    contracts = EveFreightContract.objects.filter(
-        status__in=["outstanding", "in_progress"],
+def _create_or_update_freight_contract_from_db(db_contract):
+    """Create or update EveFreightContract from an EveCorporationContract."""
+    start_location_name = _resolve_location_name_from_db(
+        db_contract.start_location_id
     )
-    for contract in contracts:
-        if int(contract.contract_id) not in contract_ids:
-            contract.status = "expired"
-            contract.save()
-
-
-def update_contract(esi_contract):
-    start_id = int(esi_contract["start_location_id"])
-    end_id = int(esi_contract["end_location_id"])
-
-    start_location = "Unknown"
-    if 60000000 < start_id < 61000000:
-        station = EsiClient(None).get_station(start_id)
-        start_location = station.eve_solar_system.name
-        # system_id = esi.client.Universe.get_universe_stations_station_id(
-        #     station_id=start_id
-        # ).results()["system_id"]
-        # system_name = esi.client.Universe.get_universe_systems_system_id(
-        #     system_id=system_id
-        # ).results()["name"]
-        # start_location = system_name
-    else:
-        if EveStructure.objects.filter(id=start_id).exists():
-            start_location = EveStructure.objects.get(id=start_id).name
-        else:
-            start_location = "Structure"
-
-    end_location = "Unknown"
-    if 60000000 < end_id < 61000000:
-        station = EsiClient(None).get_station(end_id)
-        end_location = station.eve_solar_system.name
-        # system_id = esi.client.Universe.get_universe_stations_station_id(
-        #     station_id=end_id
-        # ).results()["system_id"]
-        # system_name = esi.client.Universe.get_universe_systems_system_id(
-        #     system_id=system_id
-        # ).results()["name"]
-        # end_location = system_name
-    else:
-        if EveStructure.objects.filter(id=end_id).exists():
-            end_location = EveStructure.objects.get(id=end_id).name
-        else:
-            end_location = "Structure"
+    end_location_name = _resolve_location_name_from_db(
+        db_contract.end_location_id
+    )
 
     completed_by = None
-    if (
-        esi_contract["acceptor_id"]
-        != EveFreightContract.supported_corporation_id
+    if db_contract.acceptor_id and (
+        db_contract.acceptor_id != EveFreightContract.supported_corporation_id
     ):
         completed_by_character = EveCharacter.objects.filter(
-            character_id=esi_contract["acceptor_id"]
+            character_id=db_contract.acceptor_id
         ).first()
-        if completed_by_character and completed_by_character.token:
+        if completed_by_character and getattr(
+            completed_by_character, "token", None
+        ):
             completed_by = completed_by_character.token.user
 
+    volume = db_contract.volume
+    if volume is not None:
+        volume = int(volume)
+    else:
+        volume = 0
+    collateral = db_contract.collateral
+    if collateral is not None:
+        collateral = int(collateral)
+    else:
+        collateral = 0
+    reward = db_contract.reward
+    if reward is not None:
+        reward = int(reward)
+    else:
+        reward = 0
+
     EveFreightContract.objects.update_or_create(
-        contract_id=esi_contract["contract_id"],
+        contract_id=db_contract.contract_id,
         defaults={
-            "status": esi_contract["status"],
-            "start_location_name": start_location,
-            "end_location_name": end_location,
-            "volume": esi_contract["volume"],
-            "collateral": esi_contract["collateral"],
-            "reward": esi_contract["reward"],
+            "status": db_contract.status or "outstanding",
+            "start_location_name": start_location_name,
+            "end_location_name": end_location_name,
+            "volume": volume,
+            "collateral": collateral,
+            "reward": reward,
             "completed_by": completed_by,
-            "date_issued": esi_contract["date_issued"],
-            "date_completed": esi_contract["date_completed"],
+            "date_issued": db_contract.date_issued,
+            "date_completed": db_contract.date_completed,
         },
     )
+
+
+@app.task()
+def update_contracts():
+    """
+    Update freight contracts from the internal database (EveCorporationContract).
+    Does not fetch from ESI; relies on corporation contracts being synced elsewhere.
+    """
+    logger.info("Updating freight contracts from database")
+
+    corporation = EveCorporation.objects.filter(
+        corporation_id=EveFreightContract.supported_corporation_id
+    ).first()
+    if not corporation:
+        logger.warning(
+            "Corporation %s not found, skipping freight contract update",
+            EveFreightContract.supported_corporation_id,
+        )
+        return
+
+    db_contracts = EveCorporationContract.objects.filter(
+        corporation=corporation,
+        type=EveFreightContract.expected_contract_type,
+        assignee_id=EveFreightContract.supported_corporation_id,
+        status__in=EveFreightContract.tracked_statuses,
+    )
+
+    contract_ids = set()
+    for db_contract in db_contracts:
+        contract_ids.add(db_contract.contract_id)
+        _create_or_update_freight_contract_from_db(db_contract)
+
+    logger.info(
+        "Stored %s freight contract(s) from database",
+        len(contract_ids),
+    )
+
+    # Mark outstanding/in_progress contracts not in DB as expired
+    expired_count = (
+        EveFreightContract.objects.filter(
+            status__in=["outstanding", "in_progress"],
+        )
+        .exclude(contract_id__in=contract_ids)
+        .update(status="expired")
+    )
+    if expired_count:
+        logger.info("Expired %s freight contract(s)", expired_count)

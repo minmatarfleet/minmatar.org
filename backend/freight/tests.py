@@ -2,10 +2,12 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
-from unittest.mock import patch
 
-from eveonline.models import EveLocation
-from eveonline.client import EsiResponse
+from eveonline.models import (
+    EveCorporation,
+    EveCorporationContract,
+    EveLocation,
+)
 from freight.models import (
     EveFreightRoute,
     EveFreightRouteOption,
@@ -98,31 +100,37 @@ class FreightRouterTestCase(TestCase):
 
 
 class FreightTaskTestCase(TestCase):
-    "Unit tests for freight management background tasks"
+    """Unit tests for freight management background tasks."""
 
-    @patch("freight.tasks.EsiClient")
-    def test_update_freight_contracts(self, esi_class):
-        esi = esi_class.return_value
-        esi.get_corporation_contracts.return_value = EsiResponse(
-            response_code=200,
-            data=[
-                {
-                    "type": EveFreightContract.expected_contract_type,
-                    "status": "outstanding",
-                    "assignee_id": EveFreightContract.supported_corporation_id,
-                    "contract_id": 12345,
-                    "start_location_id": 100001,
-                    "end_location_id": 100002,
-                    "acceptor_id": None,
-                    "volume": 10000,
-                    "collateral": 1000000,
-                    "reward": 10000,
-                    "date_issued": timezone.now(),
-                    "date_completed": None,
-                }
-            ],
+    def test_update_freight_contracts(self):
+        """Contracts are updated from EveCorporationContract (internal DB)."""
+        corp = EveCorporation.objects.create(
+            corporation_id=EveFreightContract.supported_corporation_id,
+            name="Test Corp",
+            ticker="TEST",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=12345,
+            corporation=corp,
+            type=EveFreightContract.expected_contract_type,
+            status="outstanding",
+            issuer_id=99999,
+            assignee_id=EveFreightContract.supported_corporation_id,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
         )
 
         update_contracts()
 
         self.assertEqual(1, EveFreightContract.objects.count())
+        contract = EveFreightContract.objects.get(contract_id=12345)
+        self.assertEqual(contract.status, "outstanding")
+        self.assertEqual(contract.volume, 10000)
+        self.assertEqual(contract.reward, 10000)
+        # Location names fall back to "Structure" when not in EveStructure
+        self.assertEqual(contract.start_location_name, "Structure")
+        self.assertEqual(contract.end_location_name, "Structure")
