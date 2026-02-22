@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { OrderLocation } from '@dtypes/layout_components'
+
+interface Props {
+    active_orders_locations:        OrderLocation;
+    non_active_orders_locations:    OrderLocation[];
+    init_tooltips:                  boolean;
+}
+
+const {
+    active_orders_locations,
+    non_active_orders_locations,
+    init_tooltips,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const REEL_GAP = 80
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import OrderItem from '@components/blocks/OrderItem.astro';
+import LocationsReel from '@components/blocks/LocationsReel.astro';
+import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+---
+
+<Flexblock class="[ order-table ]" gap='var(--space-xl)'>
+    <LocationsReel gap={REEL_GAP}>
+        <LocationsReelSlide gap={REEL_GAP}>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>
+                    <a href={translatePath(`/industry/orders?${query_string({
+                            location_name: active_orders_locations.location_name
+                        })}`)}
+                    >
+                        {active_orders_locations.location_name}
+                    </a>
+                </h2>
+                <small>{t(active_orders_locations.orders.length != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(active_orders_locations.orders.length))}</small>
+            </Flexblock>
+        </LocationsReelSlide>
+
+        {non_active_orders_locations.map(location =>
+            <LocationsReelSlide gap={REEL_GAP}>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h3>
+                        <a href={translatePath(`/industry/orders?${query_string({
+                                location_name: location.location_name
+                            })}`)}
+                        >
+                            {location.location_name}
+                        </a>
+                    </h3>
+                    <small>{t(location.orders.length != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(location.orders.length))}</small>
+                </Flexblock>
+            </LocationsReelSlide>
+        )}
+    </LocationsReel>
+
+    <BlockList role="list" gap='var(--space-l)'>
+        {active_orders_locations.orders.map((order) =>
+            <div x-show="show_item($el)">
+                <OrderItem order={order} init_tooltips={init_tooltips} />
+            </div>
+        )}
+        {<p class="[ no-result-text ]">{t('no_results')}</p>}
+    </BlockList>
+</Flexblock>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+</style>

@@ -994,3 +994,20 @@ export type FleetRoles = typeof fleet_roles[number]
 
 export const fleet_roles_subtypes = ['armor', 'shield', 'info', 'skirmish'] as const
 export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
+
+import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
+export interface IndustryOrderUI {
+    id:                 number;
+    created_at:         Date;
+    needed_by:          Date;
+    fulfilled_at:       Date | null;
+    character_id:       number;
+    character_name:     string;
+    location:           BaseLocation;
+    items:              RootItem[];
+    assigned_to:        Producer[];
+}
+
+export interface OrderLocation extends BaseLocation {
+    orders:     IndustryOrderUI[];
+}

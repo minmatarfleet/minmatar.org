@@ -250,9 +250,12 @@ export interface FleetMember {
     solar_system_name: string,
 }
 
-export interface Location {
-    location_id:        number;
-    location_name:      string;
+export interface BaseLocation {
+    location_id:    number;
+    location_name:  string;
+}
+
+export interface Location extends BaseLocation {
     solar_system_id:    number;
     solar_system_name:  string;
     short_name:         string;
@@ -696,7 +699,7 @@ export interface NestedIndustryOrder extends BaseIndustryOrder {
 export interface Producer {
     id:                 number;
     name:               string;
-    total_value_isk:    number;
+    total_value_isk?:   number;
 }
 
 export interface ProductBase {
@@ -713,4 +716,22 @@ export interface Product extends ProductBase {
     supplies:                       ProductBase[];
     character_producers:            Producer[];
     corporation_producers:          Producer[]
+}
+
+export interface RootItem {
+    eve_type_id:    number;
+    eve_type_name:  string;
+    quantity:       number;
+}
+
+export interface IndustryOrder {
+    id:                 number;
+    created_at:         Date;
+    needed_by:          Date;
+    fulfilled_at:       Date | null;
+    character_id:       number;
+    character_name:     string;
+    location:           BaseLocation;
+    items:              RootItem[];
+    assigned_to:        Character[];
 }

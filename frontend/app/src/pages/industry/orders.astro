@@ -2,23 +2,38 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { BaseIndustryOrder, NestedIndustryOrder } from '@dtypes/api.minmatar.org'
-import { fetch_orders_summary_flat, fetch_orders_summary } from '@helpers/fetching/industry'
+import type { OrderLocation } from '@dtypes/layout_components'
+import { fetch_orders_by_locations } from '@helpers/fetching/industry'
 
-let materials_required:BaseIndustryOrder[] = []
 let fetching_error:string | false = false
-let orders:NestedIndustryOrder[] = []
+let orders_locations:OrderLocation[] = []
 
 try {
-    orders = await fetch_orders_summary()
-    materials_required = await fetch_orders_summary_flat()
+    orders_locations = await fetch_orders_by_locations()
 } catch (error) {
     fetching_error = error.message
 }
 
-const INDUSTRY_ORDERS_PARTIAL_URL = translatePath('/partials/industry_orders_component')
+let active_location_name = Astro.url.searchParams.get('location_name') ?? (orders_locations[0]?.location_name ?? '')
 
-const count_text = t(orders.length != 1 ? 'orders_post_plural' : 'orders_post_singular').replace('{count}', String(orders.length))
+if (orders_locations.length > 0) {
+    if (active_location_name === '' || !orders_locations.find(location => location.location_name === active_location_name) )
+        active_location_name = orders_locations[0].location_name
+}
+
+const active_orders_locations = orders_locations.find(location => location.location_name === active_location_name)
+const orders_count = active_orders_locations?.orders.length ?? 0
+
+const non_active_orders_locations = orders_locations.filter(location => location.location_name !== active_location_name)
+
+import { query_string } from '@helpers/string';
+
+const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component?${query_string({
+    location_name: active_location_name
+})}`)
+
+
+const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -28,8 +43,11 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import IndustrySummary from '@components/blocks/IndustrySummary.astro'
+import OrdersTable from '@components/blocks/OrdersTable.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('industry.orders.page_title');
 ---
@@ -40,13 +58,42 @@ const page_title = t('industry.orders.page_title');
 >
     <PageWide
         cover={{
-            image: "/images/industry-cover.jpg",
-            image_990: "/images/industry-cover.jpg",
-            overlay: true,
-            scrollable: true,
+			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
+                    undefined,
+			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
+                    undefined,
+            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+                    '/images/industry-cover.jpg',
+            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+                       '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: !is_video_cover,
+            overlay: !is_video_cover,
         }}
         x-data={`{
-            count_text: '${count_text}',
+            orders_count: ${orders_count},
+            item_name_filter: '',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_item(el) {
+                const name_filter_element = el.querySelectorAll('.order-item')
+
+                return ( this.item_name_filter === '' || name_filter_element[0].textContent.toLowerCase().includes(this.item_name_filter.toLowerCase()) )
+            },
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
@@ -54,8 +101,19 @@ const page_title = t('industry.orders.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <small x-text="count_text">{count_text}</small>
+                <small x-text={`\`${t('showing')} \${orders_count} \${orders_count !== 1 ? '${t('orders')}' : '${t('order')}'}\``}>
+                    {t('showing')} {orders_count} {orders_count !== 1 ? t('orders') : t('order')}
+                </small>
             </Flexblock>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="item_name_filter"
+                    x-on:keyup="setTimeout(function () { orders_count = countVisibleElements('.order-item') })"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </FlexInline>
         </FlexInline>
 
         {fetching_error !== false ?
@@ -67,10 +125,13 @@ const page_title = t('industry.orders.page_title');
                 }}
             />
             :
-            <IndustrySummary
-                orders={orders}
-                materials_required={materials_required} 
-            />
+            active_orders_locations !== undefined ?
+                <OrdersTable
+                    active_orders_locations={active_orders_locations}
+                    non_active_orders_locations={non_active_orders_locations}
+                    init_tooltips={false}
+                /> :
+                <p>{t('no_market_locations')}</p>
         }
     </PageWide>
 </Viewport>

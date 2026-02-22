@@ -11,6 +11,7 @@ interface Props {
     narrow?:        boolean;
     icon_quality?:  EvEImageServiceSize;
     mask?:          boolean;
+    quantity?:      number;
 }
 
 const {
@@ -20,9 +21,12 @@ const {
     narrow = false,
     icon_quality = 64,
     mask = false,
+    quantity,
 } = Astro.props
 
 import { get_item_icon } from '@helpers/eve_image_server';
+
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 ---
 
 <picture class="animated">
@@ -34,9 +38,22 @@ import { get_item_icon } from '@helpers/eve_image_server';
         src={get_item_icon(item_id, icon_quality ?? size)}
         alt={item_name ?? t('item_picture')}
     />
+    {quantity &&
+        <NotificationBadge class="[ quantity-badge ]" number={quantity} />
+    }
 </picture>
 
 <style lang="scss">
+    picture {
+        position: relative;
+
+        .quantity-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+        }
+    }
+
     img {
         object-fit: cover;
         width: 100%;

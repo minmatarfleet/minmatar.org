@@ -162,3 +162,18 @@ export const time_diff_text = (locale:Locales = 'en', from:Date, to:Date):string
 
     return parts.join(' ')
 }
+
+export function get_date_progress_percent(start_date: Date | string, end_date: Date | string, fulfilment_date: Date | string = new Date()) {
+    const start = typeof start_date === 'string' ? new Date(start_date).getTime() : start_date.getTime()
+    const end = typeof end_date === 'string' ? new Date(end_date).getTime() : end_date.getTime()
+    const current = typeof fulfilment_date === 'string' ? new Date(fulfilment_date).getTime() : fulfilment_date.getTime()
+
+    if (end <= start) return 100
+    if (current <= start) return 0
+    if (current >= end) return 100
+
+    const total_duration = end - start
+    const elapsed = current - start
+
+    return (elapsed / total_duration) * 100
+}

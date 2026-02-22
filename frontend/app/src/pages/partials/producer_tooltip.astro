@@ -1,19 +1,16 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
-
 import { number_thousand_separator } from '@helpers/numbers'
 
 const producer_name = Astro.url.searchParams.get('producer_name')
-const money = parseInt(Astro.url.searchParams.get('money') ?? '0')
+const money = Astro.url.searchParams.get('money')
+
+const show_money = money && !isNaN(parseInt(money))
+const TitleElement = show_money ? 'h4' : 'span'
 
 import Context from '@components/layout/Context.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <Context>
-    <FlexInline justification='space-between'>
-        <h4>{producer_name}</h4>
-    </FlexInline>
-    <span>{number_thousand_separator(money)} ISK</span>
+    <TitleElement>{producer_name}</TitleElement>
+    {show_money && <span>{number_thousand_separator(parseInt(money))} ISK</span>}
 </Context>

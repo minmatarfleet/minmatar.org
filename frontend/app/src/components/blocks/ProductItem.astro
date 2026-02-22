@@ -23,12 +23,8 @@ import Grid from '@components/compositions/Grid.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Picture from '@components/blocks/Picture.astro';
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import CorporationPicture from '@components/blocks/CorporationPicture.astro';
-import TippyProducer from '@components/blocks/TippyProducer.astro';
-import Tag from '@components/blocks/Tag.astro';
+import ProducersList from '@components/blocks/ProducersList.astro';
 
-import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
 ---
 
@@ -63,8 +59,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 
     <div class="[ alignment-hack ]">
         <Grid class="[ pl-[64px] ]" min_item_width='250px'>
-            
-            <FixedFluid width='32px' breakpoint='30%' class="[  items-center! ]">
+            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
                 <div class="[ text-highlight ]">
                     <IndustryIcon size={32} />
                 </div>
@@ -90,43 +85,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                 }
             </FixedFluid>
 
-            <FixedFluid width='32px' breakpoint='30%' class="[  items-center! text-highlight ]">
-                <IndustrialistIcon size={32} />
-
-                <FlexInline gap='var(--space-3xs)'>
-                    {product.character_producers.map(producer =>
-                        <TippyProducer
-                            producer_name={producer.name}
-                            money={producer.total_value_isk}
-                            init_tooltip={init_tooltips}
-                        >
-                            <CharacterPicture
-                                character_id={producer.id}
-                                character_name={producer.name}
-                                size={24}
-                            />
-                            <div class="[ sr-only ]">{producer.name}</div>
-                        </TippyProducer>
-                    )}
-                    {product.corporation_producers.map(producer =>
-                        <TippyProducer
-                            producer_name={producer.name}
-                            money={producer.total_value_isk}
-                            init_tooltip={init_tooltips}
-                        >
-                            <CorporationPicture
-                                corporation_id={producer.id}
-                                corporation_name={producer.name}
-                                size={24}
-                            />
-                            <div class="[ sr-only ]">{producer.name}</div>
-                        </TippyProducer>
-                    )}
-                    {product.character_producers.length === 0 && product.corporation_producers.length === 0 &&
-                        <Tag text={t('no_producers')} />
-                    }
-                </FlexInline>
-            </FixedFluid>
+            <ProducersList
+                character_producers={product.character_producers}
+                corporation_producers={product.corporation_producers}
+                init_tooltips={init_tooltips}
+            />
         </Grid>
     </div>
 </FixedFluid>

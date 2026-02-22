@@ -18,7 +18,7 @@ import ProductItem from '@components/blocks/ProductItem.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 ---
 
-<BlockList>
+<BlockList gap='var(--space-l)'>
     {products.map(product =>
         <ProductItem product={product} init_tooltips={init_tooltips} />
     )}

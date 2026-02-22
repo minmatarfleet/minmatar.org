@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { BaseIndustryOrder, NestedIndustryOrder } from '@dtypes/api.minmatar.org'
+import { fetch_orders_summary_flat, fetch_orders_summary } from '@helpers/fetching/industry'
+
+let materials_required:BaseIndustryOrder[] = []
+let fetching_error:string | false = false
+let orders:NestedIndustryOrder[] = []
+
+try {
+    orders = await fetch_orders_summary()
+    materials_required = await fetch_orders_summary_flat()
+} catch (error) {
+    fetching_error = error.message
+}
+
+const INDUSTRY_ORDERS_PARTIAL_URL = translatePath('/partials/industry_orders_component')
+
+const count_text = t(orders.length != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(orders.length))
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import IndustrySummary from '@components/blocks/IndustrySummary.astro'
+
+const page_title = t('industry.orders.page_title');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.orders.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        x-data={`{
+            count_text: '${count_text}',
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small x-text="count_text">{count_text}</small>
+            </Flexblock>
+        </FlexInline>
+
+        {fetching_error !== false ?
+            <ErrorRefetch
+                args={{
+                    partial: INDUSTRY_ORDERS_PARTIAL_URL,
+                    message: fetching_error,
+                    delay: 0,
+                }}
+            />
+            :
+            <IndustrySummary
+                orders={orders}
+                materials_required={materials_required} 
+            />
+        }
+    </PageWide>
+</Viewport>

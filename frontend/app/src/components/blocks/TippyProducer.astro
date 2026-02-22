@@ -4,7 +4,7 @@ const { translatePath } = i18n(Astro.url)
 
 interface Props {
     producer_name:  string;
-    money:          number;
+    money?:         number;
     init_tooltip?:  boolean;
     placement?:     string;
     htmltag?:       string;
@@ -27,7 +27,7 @@ import { query_string } from '@helpers/string';
 
 const query = query_string({
     producer_name: producer_name,
-    money: money,
+    ...(money && { money }),
 })
 
 import Tippy from '@components/blocks/Tippy.astro';
