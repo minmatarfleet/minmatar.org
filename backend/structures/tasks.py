@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 from datetime import datetime, timedelta
 
 from django.utils import timezone
@@ -11,15 +10,17 @@ from app.celery import app
 from discord.client import DiscordClient
 from eveonline.client import EsiClient, esi_for
 from eveonline.helpers.corporations import get_director_with_scope
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.utils import get_esi_downtime_countdown
 
-from .models import EveStructure, EveStructureManager, EveStructurePing
+from .models import EveStructure, EveStructurePing
 from structures.helpers import (
     parse_structure_notification,
     is_new_event,
     discord_message_for_ping,
     parse_esi_time,
+    ensure_timer_from_reinforcement_notification,
+    get_characters_with_notification_scope_for_structure_corps,
 )
 
 discord = DiscordClient()
@@ -146,11 +147,18 @@ def update_corporation_structures(corporation_id: int):
         )
 
 
+def _notification_characters_for_minute(current_minute: int):
+    """Characters with read_notifications in corps that have structures, in this minute's bucket (0–9)."""
+    mod = current_minute % 10
+    chars = get_characters_with_notification_scope_for_structure_corps()
+    return [c for c in chars if c.character_id % 10 == mod]
+
+
 @app.task
 def process_structure_notifications(
     current_minute: datetime | None = None,
 ):
-    """Schedule notification fetch for each structure-manager character with spread countdown (rate-limited like character updates)."""
+    """Schedule notification fetch for each director (with read_notifications) in corps that have structures."""
     countdown = get_esi_downtime_countdown()
     if countdown > 0:
         process_structure_notifications.apply_async(countdown=countdown)
@@ -163,25 +171,24 @@ def process_structure_notifications(
     if current_minute is None:
         current_minute = timezone.now().minute
 
-    # Queue one task per character (with ESM for this minute bucket), spread over 10 minutes
-    esms = list(structure_managers_for_minute(current_minute))
-    for i, esm in enumerate(esms):
+    characters = list(_notification_characters_for_minute(current_minute))
+    for i, character in enumerate(characters):
         delay = i % 600  # spread over 10 min
         fetch_structure_notifications_for_character.apply_async(
-            args=[esm.character_id],
+            args=[character.character_id],
             countdown=delay,
         )
-    if esms:
+    if characters:
         logger.info(
-            "Scheduled notification fetch for %d structure manager(s)",
-            len(esms),
+            "Scheduled notification fetch for %d character(s) with read_notifications",
+            len(characters),
         )
-    return len(esms), 0
+    return len(characters), 0
 
 
 @app.task(rate_limit="1/m")
 def fetch_structure_notifications_for_character(character_id: int):
-    """Fetch notifications for one structure-manager character (rate-limited)."""
+    """Fetch notifications for one character with read_notifications in a corp that has structures."""
     countdown = get_esi_downtime_countdown()
     if countdown > 0:
         fetch_structure_notifications_for_character.apply_async(
@@ -191,37 +198,70 @@ def fetch_structure_notifications_for_character(character_id: int):
         return 0, 0
 
     try:
-        esm = EveStructureManager.objects.get(character_id=character_id)
-    except EveStructureManager.DoesNotExist:
-        logger.warning("No structure manager for character %s", character_id)
+        character = EveCharacter.objects.get(character_id=character_id)
+    except EveCharacter.DoesNotExist:
+        logger.warning("Character %s not found", character_id)
         return 0, 0
 
-    return fetch_structure_notifications(esm)
+    if not character.corporation_id:
+        logger.warning("Character %s has no corporation", character_id)
+        return 0, 0
+
+    # Only poll if this character is still in a corp that has structures and has the scope
+    if (
+        not get_characters_with_notification_scope_for_structure_corps()
+        .filter(character_id=character_id)
+        .exists()
+    ):
+        logger.debug(
+            "Character %s no longer in a structure corp with read_notifications, skipping",
+            character_id,
+        )
+        return 0, 0
+
+    return fetch_structure_notifications(character)
 
 
-def fetch_structure_notifications(manager: EveStructureManager):
-    response = EsiClient(manager.character).get_character_notifications()
+def fetch_structure_notifications(character):
+    response = EsiClient(character).get_character_notifications()
     if not response.success():
         logger.error(
             "Error %d fetching notifications for %s : %s",
             response.response_code,
-            manager.character.character_name,
+            character.character_name,
             response.response,
         )
         return 0, 0
-
-    manager.last_polled = timezone.now()
-    manager.save()
 
     combat_types = [
         "StructureDestroyed",
         "StructureLostArmor",
         "StructureLostShields",
         "StructureUnderAttack",
+        "OrbitalAttacked",
+        "OrbitalReinforced",
     ]
 
     total_found = 0
     total_new = 0
+    esi = EsiClient(character)
+    corp = EveCorporation.objects.filter(
+        corporation_id=character.corporation_id
+    ).first()
+    corporation_name = corp.name if corp else "Unknown"
+    alliance_name = (
+        corp.alliance.name
+        if corp and corp.alliance_id and corp.alliance
+        else None
+    )
+
+    def resolve_system_name(system_id: int) -> str:
+        try:
+            solar_system = esi.get_solar_system(system_id)
+            return solar_system.name
+        except Exception:
+            return f"System {system_id}"
+
     for notification in response.results():
         if notification["type"] in combat_types:
             data = parse_structure_notification(notification["text"])
@@ -231,7 +271,7 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     "notification_type": notification["type"],
                     "summary": data["data"],
                     "structure_id": data["structure_id"],
-                    "reported_by": manager.character,
+                    "reported_by": character,
                     "text": notification["text"],
                     "event_time": parse_esi_time(notification["timestamp"]),
                 },
@@ -250,31 +290,18 @@ def fetch_structure_notifications(manager: EveStructureManager):
                     )
                     total_new += 1
 
+            # When we have a reinforcement with a timer, add/update EveStructureTimer
+            ensure_timer_from_reinforcement_notification(
+                notification["type"],
+                data,
+                corporation_name=corporation_name,
+                alliance_name=alliance_name,
+                system_name_resolver=resolve_system_name,
+            )
+
             total_found += 1
 
     return (total_found, total_new)
-
-
-def structure_managers_for_minute(current_minute: int):
-    mod_minute = current_minute % 10
-    return EveStructureManager.objects.filter(poll_time=mod_minute)
-
-
-def setup_structure_managers(corp, chars):
-    logger.info(
-        "Setting up %d structure managers for %s", len(chars), corp.name
-    )
-    interval = math.floor(10 / len(chars))
-    minute = 0
-
-    # Set up new ESMs for corp
-    for char in chars:
-        EveStructureManager.objects.create(
-            corporation=corp,
-            character=char,
-            poll_time=minute,
-        )
-        minute += interval
 
 
 def send_discord_structure_notification(ping: EveStructurePing, channel: int):

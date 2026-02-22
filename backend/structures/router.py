@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
@@ -9,13 +9,12 @@ from pydantic import BaseModel
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
-from eveonline.models import EveCharacter, EveCorporation
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
     get_generic_details,
 )
-from .models import EveStructure, EveStructureTimer, EveStructureManager
+from .models import EveStructure, EveStructureTimer
 
 router = Router(tags=["Structures"])
 logger = logging.getLogger(__name__)
@@ -96,24 +95,6 @@ class EveStructureTimerResponse(BaseModel):
     corporation_name: str | None = None
     alliance_name: str | None = None
     structure_id: int | None = None
-
-
-class StructureManagerResponse(BaseModel):
-    """Details of a corp Structure Manager"""
-
-    id: int
-    corp_id: int
-    character_id: int
-    character_name: str
-    poll_time: int
-    last_polled: Optional[datetime]
-
-
-class CreateStructureManagerRequest(BaseModel):
-    """Request to set up a new EveStructureManager"""
-
-    character_id: int
-    poll_time: int
 
 
 @router.get(
@@ -286,83 +267,3 @@ def verify_structure_timer(
     }
 
     return response
-
-
-@router.get(
-    "/managers",
-    auth=AuthBearer(),
-    response={
-        200: List[StructureManagerResponse],
-        403: ErrorResponse,
-        404: ErrorResponse,
-    },
-)
-def get_structure_managers(request, corp_id: int):
-    corp = EveCorporation.objects.filter(corporation_id=corp_id).first()
-    if not corp:
-        return 404, ErrorResponse(detail=f"Corp not found: {corp_id}")
-
-    is_ceo = corp.ceo.user == request.user
-    if not (is_ceo or request.user.is_superuser):
-        return 403, ErrorResponse(detail="Access denied")
-
-    managers = []
-    for esm in EveStructureManager.objects.filter(corporation=corp):
-        managers.append(
-            StructureManagerResponse(
-                id=esm.id,
-                corp_id=esm.corporation_id,
-                character_id=esm.character_id,
-                character_name=esm.character.character_name,
-                poll_time=esm.poll_time,
-                last_polled=esm.last_polled,
-            )
-        )
-
-    return 200, managers
-
-
-@router.post(
-    "/managers",
-    auth=AuthBearer(),
-    response={
-        200: int,
-        403: ErrorResponse,
-        404: ErrorResponse,
-    },
-)
-def add_structure_manager(request, payload: CreateStructureManagerRequest):
-    if not request.user.has_perm("structures.change_evestructuretimer"):
-        return 403, ErrorResponse(message="Permission denied")
-
-    char = EveCharacter.objects.filter(
-        character_id=payload.character_id
-    ).first()
-    if not char:
-        return 404, ErrorResponse(
-            detail="Character {payload.charater_id} not found"
-        )
-
-    corp = (
-        EveCorporation.objects.filter(
-            corporation_id=char.corporation_id
-        ).first()
-        if char.corporation_id
-        else None
-    )
-    if not corp:
-        return 404, ErrorResponse(detail="Character corporation not found")
-
-    esm = EveStructureManager.objects.create(
-        character=char,
-        corporation=corp,
-        poll_time=payload.poll_time,
-    )
-
-    logger.info(
-        "Structure manager %s added by %s",
-        char.character_name,
-        request.user.username,
-    )
-
-    return esm.id

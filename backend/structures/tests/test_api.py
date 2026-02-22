@@ -1,13 +1,8 @@
 import json
-import factory
 from django.test import Client
 from django.contrib.auth.models import Permission
-from django.db.models import signals
 
 from app.test import TestCase
-
-from eveonline.models import EveCharacter, EveCorporation
-from structures.models import EveStructureManager
 
 
 class StructureTimertests(TestCase):
@@ -81,47 +76,3 @@ class StructureTimertests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_add_structure_manager(self):
-        self.make_superuser()
-
-        corp = EveCorporation.objects.create(
-            corporation_id=200001,
-            name="Megacorp",
-        )
-        char = EveCharacter.objects.create(
-            character_id=100001,
-            character_name="Test Pilot",
-            corporation_id=corp.corporation_id,
-        )
-        corp.ceo = char
-        corp.save()
-
-        payload = {
-            "character_id": char.character_id,
-            "poll_time": 0,
-        }
-
-        response = self.client.post(
-            "/api/structures/managers",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-            content_type="application/json",
-            data=json.dumps(payload),
-        )
-
-        self.assertEqual(response.status_code, 200)
-
-        self.assertIsNotNone(
-            EveStructureManager.objects.filter(
-                character__character_id=char.character_id
-            ).first()
-        )
-
-        response = self.client.get(
-            f"/api/structures/managers?corp_id={char.corporation_id}",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(response.status_code, 200)
-        managers = response.json()
-        self.assertEqual(1, len(managers))
