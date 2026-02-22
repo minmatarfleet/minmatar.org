@@ -13,8 +13,23 @@ class OrderLocationResponse(BaseModel):
     location_name: str
 
 
+class OrderItemQuantityResponse(BaseModel):
+    """One item in an order with quantity (flat list entry)."""
+
+    eve_type_id: int
+    eve_type_name: str
+    quantity: int
+
+
+class OrderAssigneeResponse(BaseModel):
+    """A character assigned to build something on this order (flat list entry)."""
+
+    character_id: int
+    character_name: str
+
+
 class OrderListItemResponse(BaseModel):
-    """One order in the list with location."""
+    """One order in the list with location, flat items and assignees."""
 
     id: int
     created_at: datetime
@@ -23,6 +38,8 @@ class OrderListItemResponse(BaseModel):
     character_id: int
     character_name: str
     location: OrderLocationResponse | None
+    items: List[OrderItemQuantityResponse]
+    assigned_to: List[OrderAssigneeResponse]
 
 
 class AssignmentResponse(BaseModel):

@@ -81,6 +81,13 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(
             data[0]["location"]["location_name"], self.location.location_name
         )
+        self.assertEqual(len(data[0]["items"]), 1)
+        self.assertEqual(data[0]["items"][0]["eve_type_id"], self.eve_type.id)
+        self.assertEqual(
+            data[0]["items"][0]["eve_type_name"], self.eve_type.name
+        )
+        self.assertEqual(data[0]["items"][0]["quantity"], 2)
+        self.assertEqual(data[0]["assigned_to"], [])
 
     def test_get_orders_returns_empty_when_none(self):
         response = self.client.get("/api/industry/orders")
@@ -109,6 +116,54 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(len(data), 2)
         ids = {o["id"] for o in data}
         self.assertEqual(ids, {order1.pk, order2.pk})
+
+    def test_get_orders_includes_flat_items_and_assigned_to(self):
+        """List response includes items (type + quantity) and unique assignees."""
+        assignee = EveCharacter.objects.create(
+            character_id=999006,
+            character_name="Builder One",
+            user=self.user,
+        )
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        item1 = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=10
+        )
+        eve_type2 = EveType.objects.create(
+            id=999202,
+            name="Test Alloy",
+            published=True,
+            eve_group=self.eve_group,
+        )
+        item2 = IndustryOrderItem.objects.create(
+            order=order, eve_type=eve_type2, quantity=5
+        )
+        IndustryOrderItemAssignment.objects.create(
+            order_item=item1, character=assignee, quantity=10
+        )
+        IndustryOrderItemAssignment.objects.create(
+            order_item=item2, character=assignee, quantity=5
+        )
+        response = self.client.get("/api/industry/orders")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data[0]["items"]), 2)
+        by_type = {it["eve_type_id"]: it for it in data[0]["items"]}
+        self.assertEqual(
+            by_type[self.eve_type.id]["eve_type_name"], "Test Mineral"
+        )
+        self.assertEqual(by_type[self.eve_type.id]["quantity"], 10)
+        self.assertEqual(by_type[eve_type2.id]["eve_type_name"], "Test Alloy")
+        self.assertEqual(by_type[eve_type2.id]["quantity"], 5)
+        self.assertEqual(len(data[0]["assigned_to"]), 1)
+        self.assertEqual(data[0]["assigned_to"][0]["character_id"], 999006)
+        self.assertEqual(
+            data[0]["assigned_to"][0]["character_name"], "Builder One"
+        )
 
     def test_get_order_returns_detail_with_items_and_assignments(self):
         order = IndustryOrder.objects.create(
