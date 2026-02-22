@@ -1742,5 +1742,6 @@ export const ui = {
         'deadline_percent': '{percent}% to deadline',
         'completed_percent': 'Fulfilled at {date}',
         'overdue': 'Overdue',
+        'no_manufacturing_orders': 'There are currently not manufacturing orders.',
     },
 } as const;
