@@ -19,12 +19,12 @@ from market.helpers import (
     update_expired_contracts,
 )
 from market.models import EveMarketContract, EveMarketContractError
-from market.tasks import fetch_eve_public_contracts
+from market.tasks import fetch_eve_market_contracts
 
 
 class MarketTaskTestCase(TestCase):
     @patch("market.tasks.EsiClient")
-    def test_fetch_eve_public_contracts(self, esi_mock):
+    def test_fetch_eve_market_contracts(self, esi_mock):
         location = EveLocation.objects.create(
             location_id=1001,
             location_name="Home base",
@@ -93,7 +93,7 @@ class MarketTaskTestCase(TestCase):
             ],
         )
 
-        fetch_eve_public_contracts()
+        fetch_eve_market_contracts()
 
         contracts = EveMarketContract.objects.all()
 

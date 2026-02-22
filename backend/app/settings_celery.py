@@ -24,10 +24,10 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
-        "[Market] Fetch Public Contracts",
+        "[Market] Fetch Market Contracts",
         {
-            "task": "market.tasks.fetch_eve_public_contracts",
-            "schedule": crontab(minute=21, hour="*/4"),
+            "task": "market.tasks.fetch_eve_market_contracts",
+            "schedule": schedule(timedelta(minutes=60)),
         },
     ),
     (

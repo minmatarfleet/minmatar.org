@@ -91,6 +91,55 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
     return fitting
 
 
+def _map_contract_status(esi_status: str) -> str:
+    """Map ESI contract status to EveMarketContract status_choices."""
+    if esi_status in ("outstanding", "in_progress"):
+        return "outstanding"
+    if esi_status == "finished":
+        return "finished"
+    if esi_status == "expired":
+        return "expired"
+    return "outstanding"
+
+
+def create_or_update_contract_from_db_contract(
+    db_contract, location: EveLocation
+) -> bool:
+    """
+    Create or update EveMarketContract from an EveCharacterContract or
+    EveCorporationContract. Only stores if type is item_exchange, location
+    matches, and title matches a known fitting. Returns True if stored.
+    """
+    if db_contract.type != EveMarketContract.esi_contract_type:
+        return False
+    if db_contract.start_location_id != location.location_id:
+        return False
+    fitting = get_fitting_for_contract(db_contract.title or "")
+    if not fitting:
+        return False
+    status = _map_contract_status(db_contract.status or "")
+    contract, _ = EveMarketContract.objects.get_or_create(
+        id=db_contract.contract_id,
+        defaults={
+            "price": db_contract.price or 0,
+            "issuer_external_id": db_contract.issuer_id,
+        },
+    )
+    contract.title = db_contract.title or ""
+    contract.status = status
+    contract.issued_at = db_contract.date_issued
+    contract.expires_at = db_contract.date_expired
+    contract.completed_at = db_contract.date_completed
+    contract.fitting = fitting
+    contract.location = location
+    contract.is_public = False
+    contract.assignee_id = db_contract.assignee_id
+    contract.acceptor_id = db_contract.acceptor_id
+    contract.last_updated = timezone.now()
+    contract.save()
+    return True
+
+
 def create_or_update_contract(esi_contract, location: EveLocation):
     if not esi_contract["type"] == EveMarketContract.esi_contract_type:
         return

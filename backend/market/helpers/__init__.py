@@ -11,6 +11,7 @@ from market.helpers.orders import (
 from market.helpers.contracts import (
     MarketContractHistoricalQuantity,
     create_or_update_contract,
+    create_or_update_contract_from_db_contract,
     get_fitting_for_contract,
     get_historical_quantity,
     update_completed_contracts,
@@ -23,6 +24,7 @@ __all__ = [
     "MarketContractHistoricalQuantity",
     "clear_structure_sell_orders_for_location",
     "create_or_update_contract",
+    "create_or_update_contract_from_db_contract",
     "entity_name_by_id",
     "get_fitting_for_contract",
     "get_historical_quantity",

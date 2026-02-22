@@ -9,10 +9,15 @@ from celery import chain, group
 from app.celery import app
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
-from eveonline.models import EveLocation
+from eveonline.models import (
+    EveCharacterContract,
+    EveCorporationContract,
+    EveLocation,
+)
 from market.helpers import (
     clear_structure_sell_orders_for_location,
     create_or_update_contract,
+    create_or_update_contract_from_db_contract,
     get_character_with_structure_markets_scope,
     process_structure_sell_orders_page,
     update_completed_contracts,
@@ -208,14 +213,21 @@ def notify_eve_market_contract_warnings():
 
 
 @app.task()
-def fetch_eve_public_contracts():
+def fetch_eve_market_contracts():
     start_time = timezone.now()
 
     EveMarketContractError.objects.all().delete()
 
-    logger.info("Fetching and updating public contracts")
+    logger.info(
+        "Fetching and updating market contracts (public, character, corporation)"
+    )
 
-    for location in EveLocation.objects.filter(market_active=True):
+    market_locations = list(EveLocation.objects.filter(market_active=True))
+    location_ids = [loc.location_id for loc in market_locations]
+    locations_by_id = {loc.location_id: loc for loc in market_locations}
+
+    # 1. Fetch public contracts from ESI and store them
+    for location in market_locations:
         logger.info("Fetching contracts for %s", location.location_name)
         if not location.region_id:
             logger.info(
@@ -233,7 +245,50 @@ def fetch_eve_public_contracts():
         for contract in esi_response.results():
             create_or_update_contract(contract, location)
 
-    logger.info("Public contracts updated")
+    logger.info("Public contracts from ESI updated")
+
+    # Contract IDs already stored as finished (private) never change state; skip them
+    finished_private_contract_ids = set(
+        EveMarketContract.objects.filter(
+            status="finished", is_public=False
+        ).values_list("id", flat=True)
+    )
+
+    # 2. Fetch character contracts from our database, store if they match parameters
+    if location_ids:
+        char_contracts = EveCharacterContract.objects.filter(
+            type=EveMarketContract.esi_contract_type,
+            start_location_id__in=location_ids,
+        ).exclude(contract_id__in=finished_private_contract_ids)
+        char_stored = 0
+        for db_contract in char_contracts:
+            location = locations_by_id.get(db_contract.start_location_id)
+            if location and create_or_update_contract_from_db_contract(
+                db_contract, location
+            ):
+                char_stored += 1
+        logger.info(
+            "Stored %s character contract(s) into EveMarketContract",
+            char_stored,
+        )
+
+    # 3. Fetch corporation contracts from our database, store if they match parameters
+    if location_ids:
+        corp_contracts = EveCorporationContract.objects.filter(
+            type=EveMarketContract.esi_contract_type,
+            start_location_id__in=location_ids,
+        ).exclude(contract_id__in=finished_private_contract_ids)
+        corp_stored = 0
+        for db_contract in corp_contracts:
+            location = locations_by_id.get(db_contract.start_location_id)
+            if location and create_or_update_contract_from_db_contract(
+                db_contract, location
+            ):
+                corp_stored += 1
+        logger.info(
+            "Stored %s corporation contract(s) into EveMarketContract",
+            corp_stored,
+        )
 
     update_completed_contracts(start_time)
     update_expired_contracts(start_time)
