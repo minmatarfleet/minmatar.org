@@ -46,6 +46,7 @@ delete attributes.class
     width={`${size}px`}
     gap={size < 64 ? 'var(--space-3xs)' : 'var(--space-s)'}
     class:list={['pilot-item', { 'inert': inert }, Astro.props.class]}
+    breakpoint='30%'
     {...attributes}
 >
     <CharacterPicture
