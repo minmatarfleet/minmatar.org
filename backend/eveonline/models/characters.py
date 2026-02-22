@@ -197,6 +197,7 @@ class EveCharacterContract(models.Model):
     )
     start_location_id = models.BigIntegerField(null=True, blank=True)
     end_location_id = models.BigIntegerField(null=True, blank=True)
+    title = models.CharField(blank=True, max_length=255)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

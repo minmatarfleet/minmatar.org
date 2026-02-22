@@ -1,42 +1,20 @@
-"""Helpers for deciding which characters/corporations to fetch contracts for."""
+"""Helpers for structure markets and market contract issuer checks."""
 
 from esi.models import Token
 
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 
-CORPORATION_CONTRACT_SCOPES = ["esi-contracts.read_corporation_contracts.v1"]
-CHARACTER_CONTRACT_SCOPES = ["esi-contracts.read_character_contracts.v1"]
 STRUCTURE_MARKET_SCOPES = ["esi-markets.structure_markets.v1"]
-CONTRACT_FETCH_SPREAD_SECONDS = 4 * 3600  # 4 hours
 MARKET_ITEM_HISTORY_SPREAD_SECONDS = 4 * 3600  # 4 hours
 
 
-def alliance_corporation_ids():
+def _alliance_corporation_ids():
     """Corporation IDs for all corporations in tracked alliances."""
     return set(
         EveCorporation.objects.filter(
             alliance__in=EveAlliance.objects.all()
         ).values_list("corporation_id", flat=True)
     )
-
-
-def get_character_with_contract_scope_for_corporation(
-    corporation_id: int,
-) -> int | None:
-    """
-    Return a character_id in this corporation with a valid token that has
-    corporation contract scope, or None if none found.
-    """
-    for character in (
-        EveCharacter.objects.filter(corporation_id=corporation_id)
-        .exclude(token__isnull=True)
-        .exclude(esi_suspended=True)
-    ):
-        if Token.get_token(
-            character.character_id, CORPORATION_CONTRACT_SCOPES
-        ):
-            return character.character_id
-    return None
 
 
 def get_character_with_structure_markets_scope() -> int | None:
@@ -67,5 +45,5 @@ def known_contract_issuer_ids():
             "character_id", flat=True
         )
     )
-    corp_ids = alliance_corporation_ids()
+    corp_ids = _alliance_corporation_ids()
     return character_ids | corp_ids

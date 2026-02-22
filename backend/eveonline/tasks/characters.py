@@ -92,10 +92,5 @@ def update_alliance_characters():
         user__in=users_with_alliance_chars
     ).exclude(token=None)
 
-    counter = 0
     for character in all_characters:
-        logger.debug("Queuing update for character %s", character.character_id)
-        update_character.apply_async(
-            args=[character.character_id], countdown=counter % 3600
-        )
-        counter += 1
+        update_character.apply_async(args=[character.character_id])

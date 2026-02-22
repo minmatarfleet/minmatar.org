@@ -4,18 +4,14 @@ import uuid
 from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
-from esi.models import Token
-
 from celery import chain, group
 
 from app.celery import app
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
-from eveonline.models import EveAlliance, EveCharacter, EveLocation
+from eveonline.models import EveLocation
 from market.helpers import (
     clear_structure_sell_orders_for_location,
-    create_character_market_contracts,
-    create_corporation_market_contracts,
     create_or_update_contract,
     get_character_with_structure_markets_scope,
     process_structure_sell_orders_page,
@@ -24,11 +20,7 @@ from market.helpers import (
     update_region_market_history_for_type,
 )
 from market.helpers.contract_fetch import (
-    CHARACTER_CONTRACT_SCOPES,
-    CONTRACT_FETCH_SPREAD_SECONDS,
     MARKET_ITEM_HISTORY_SPREAD_SECONDS,
-    alliance_corporation_ids,
-    get_character_with_contract_scope_for_corporation,
     known_contract_issuer_ids,
 )
 from market.models import (
@@ -41,106 +33,6 @@ from market.models import (
 logger = logging.getLogger(__name__)
 
 discord = DiscordClient()
-
-
-@app.task()
-def fetch_eve_character_contracts_for_character(character_id: int):
-    """Fetch market contracts for a single character. Idempotent."""
-    character = EveCharacter.objects.filter(character_id=character_id).first()
-    if not character:
-        logger.warning(
-            "Character %s not found, skipping contract fetch", character_id
-        )
-        return
-    if character.esi_suspended:
-        logger.info(
-            "Not fetching character contracts for ESI suspended character %s",
-            character_id,
-        )
-        return
-    if not Token.get_token(character_id, CHARACTER_CONTRACT_SCOPES):
-        logger.debug(
-            "No valid token for character %s, skipping contract fetch",
-            character_id,
-        )
-        return
-    try:
-        create_character_market_contracts(character_id)
-    except Exception as e:
-        logger.error(
-            "Failed to fetch character contracts %s: %s",
-            character_id,
-            e,
-        )
-
-
-@app.task()
-def fetch_eve_corporation_contracts_for_corporation(corporation_id: int):
-    """Fetch market contracts for a single corporation. Idempotent."""
-    character_id = get_character_with_contract_scope_for_corporation(
-        corporation_id
-    )
-    if not character_id:
-        logger.warning(
-            "No character with contract scope for corporation %s, skipping",
-            corporation_id,
-        )
-        return
-    try:
-        create_corporation_market_contracts(corporation_id, character_id)
-    except Exception as e:
-        logger.error(
-            "Failed to fetch corporation contracts %s: %s",
-            corporation_id,
-            e,
-        )
-
-
-@app.task()
-def fetch_eve_character_contracts():
-    """
-    Schedule per-character contract fetches for alliance characters,
-    spread over CONTRACT_FETCH_SPREAD_SECONDS (4 hours).
-    """
-    alliance_ids = set(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
-    character_ids = list(
-        EveCharacter.objects.exclude(token__isnull=True)
-        .filter(alliance_id__in=alliance_ids)
-        .values_list("character_id", flat=True)
-    )
-    for i, character_id in enumerate(character_ids):
-        delay = i % CONTRACT_FETCH_SPREAD_SECONDS
-        fetch_eve_character_contracts_for_character.apply_async(
-            args=[character_id],
-            countdown=delay,
-        )
-    logger.info(
-        "Scheduled %s character contract fetches over %s hours",
-        len(character_ids),
-        CONTRACT_FETCH_SPREAD_SECONDS / 3600,
-    )
-
-
-@app.task()
-def fetch_eve_corporation_contracts():
-    """
-    Schedule per-corporation contract fetches for alliance corporations,
-    spread over CONTRACT_FETCH_SPREAD_SECONDS (4 hours).
-    """
-    corporation_ids = list(alliance_corporation_ids())
-    for i, corporation_id in enumerate(corporation_ids):
-        delay = i % CONTRACT_FETCH_SPREAD_SECONDS
-        fetch_eve_corporation_contracts_for_corporation.apply_async(
-            args=[corporation_id],
-            countdown=delay,
-        )
-    logger.info(
-        "Scheduled %s corporation contract fetches over %s hours",
-        len(corporation_ids),
-        CONTRACT_FETCH_SPREAD_SECONDS / 3600,
-    )
 
 
 @app.task()

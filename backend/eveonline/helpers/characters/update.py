@@ -242,6 +242,7 @@ def update_character_contracts(eve_character_id: int) -> int:
                 "volume": volume,
                 "start_location_id": raw.get("start_location_id"),
                 "end_location_id": raw.get("end_location_id"),
+                "title": raw.get("title", ""),
             },
         )
     logger.info(

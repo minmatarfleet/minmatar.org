@@ -1,9 +1,14 @@
 # Corporation helpers. Re-export for backward compatibility.
 from eveonline.helpers.corporations.update import (
+    CONTRACT_FETCH_SPREAD_SECONDS,
+    SCOPE_CHARACTER_CONTRACTS,
     SCOPE_CORPORATION_CONTRACTS,
     SCOPE_CORPORATION_INDUSTRY_JOBS,
     SCOPE_CORPORATION_MEMBERSHIP,
+    alliance_corporation_ids,
+    get_character_with_contract_scope_for_corporation,
     get_director_with_scope,
+    known_contract_issuer_ids,
     sync_alliance_corporations_from_esi,
     update_corporation_contracts,
     update_corporation_industry_jobs,
@@ -12,10 +17,15 @@ from eveonline.helpers.corporations.update import (
 )
 
 __all__ = [
+    "CONTRACT_FETCH_SPREAD_SECONDS",
+    "SCOPE_CHARACTER_CONTRACTS",
     "SCOPE_CORPORATION_CONTRACTS",
     "SCOPE_CORPORATION_INDUSTRY_JOBS",
     "SCOPE_CORPORATION_MEMBERSHIP",
+    "alliance_corporation_ids",
+    "get_character_with_contract_scope_for_corporation",
     "get_director_with_scope",
+    "known_contract_issuer_ids",
     "sync_alliance_corporations_from_esi",
     "update_corporation_contracts",
     "update_corporation_industry_jobs",
