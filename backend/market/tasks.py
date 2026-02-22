@@ -4,19 +4,20 @@ import uuid
 from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
-from esi.models import Token
-
 from celery import chain, group
 
 from app.celery import app
 from discord.client import DiscordClient
 from eveonline.client import EsiClient
-from eveonline.models import EveAlliance, EveCharacter, EveLocation
+from eveonline.models import (
+    EveCharacterContract,
+    EveCorporationContract,
+    EveLocation,
+)
 from market.helpers import (
     clear_structure_sell_orders_for_location,
-    create_character_market_contracts,
-    create_corporation_market_contracts,
     create_or_update_contract,
+    create_or_update_contract_from_db_contract,
     get_character_with_structure_markets_scope,
     process_structure_sell_orders_page,
     update_completed_contracts,
@@ -24,11 +25,7 @@ from market.helpers import (
     update_region_market_history_for_type,
 )
 from market.helpers.contract_fetch import (
-    CHARACTER_CONTRACT_SCOPES,
-    CONTRACT_FETCH_SPREAD_SECONDS,
     MARKET_ITEM_HISTORY_SPREAD_SECONDS,
-    alliance_corporation_ids,
-    get_character_with_contract_scope_for_corporation,
     known_contract_issuer_ids,
 )
 from market.models import (
@@ -41,106 +38,6 @@ from market.models import (
 logger = logging.getLogger(__name__)
 
 discord = DiscordClient()
-
-
-@app.task()
-def fetch_eve_character_contracts_for_character(character_id: int):
-    """Fetch market contracts for a single character. Idempotent."""
-    character = EveCharacter.objects.filter(character_id=character_id).first()
-    if not character:
-        logger.warning(
-            "Character %s not found, skipping contract fetch", character_id
-        )
-        return
-    if character.esi_suspended:
-        logger.info(
-            "Not fetching character contracts for ESI suspended character %s",
-            character_id,
-        )
-        return
-    if not Token.get_token(character_id, CHARACTER_CONTRACT_SCOPES):
-        logger.debug(
-            "No valid token for character %s, skipping contract fetch",
-            character_id,
-        )
-        return
-    try:
-        create_character_market_contracts(character_id)
-    except Exception as e:
-        logger.error(
-            "Failed to fetch character contracts %s: %s",
-            character_id,
-            e,
-        )
-
-
-@app.task()
-def fetch_eve_corporation_contracts_for_corporation(corporation_id: int):
-    """Fetch market contracts for a single corporation. Idempotent."""
-    character_id = get_character_with_contract_scope_for_corporation(
-        corporation_id
-    )
-    if not character_id:
-        logger.warning(
-            "No character with contract scope for corporation %s, skipping",
-            corporation_id,
-        )
-        return
-    try:
-        create_corporation_market_contracts(corporation_id, character_id)
-    except Exception as e:
-        logger.error(
-            "Failed to fetch corporation contracts %s: %s",
-            corporation_id,
-            e,
-        )
-
-
-@app.task()
-def fetch_eve_character_contracts():
-    """
-    Schedule per-character contract fetches for alliance characters,
-    spread over CONTRACT_FETCH_SPREAD_SECONDS (4 hours).
-    """
-    alliance_ids = set(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
-    character_ids = list(
-        EveCharacter.objects.exclude(token__isnull=True)
-        .filter(alliance_id__in=alliance_ids)
-        .values_list("character_id", flat=True)
-    )
-    for i, character_id in enumerate(character_ids):
-        delay = i % CONTRACT_FETCH_SPREAD_SECONDS
-        fetch_eve_character_contracts_for_character.apply_async(
-            args=[character_id],
-            countdown=delay,
-        )
-    logger.info(
-        "Scheduled %s character contract fetches over %s hours",
-        len(character_ids),
-        CONTRACT_FETCH_SPREAD_SECONDS / 3600,
-    )
-
-
-@app.task()
-def fetch_eve_corporation_contracts():
-    """
-    Schedule per-corporation contract fetches for alliance corporations,
-    spread over CONTRACT_FETCH_SPREAD_SECONDS (4 hours).
-    """
-    corporation_ids = list(alliance_corporation_ids())
-    for i, corporation_id in enumerate(corporation_ids):
-        delay = i % CONTRACT_FETCH_SPREAD_SECONDS
-        fetch_eve_corporation_contracts_for_corporation.apply_async(
-            args=[corporation_id],
-            countdown=delay,
-        )
-    logger.info(
-        "Scheduled %s corporation contract fetches over %s hours",
-        len(corporation_ids),
-        CONTRACT_FETCH_SPREAD_SECONDS / 3600,
-    )
 
 
 @app.task()
@@ -316,14 +213,21 @@ def notify_eve_market_contract_warnings():
 
 
 @app.task()
-def fetch_eve_public_contracts():
+def fetch_eve_market_contracts():
     start_time = timezone.now()
 
     EveMarketContractError.objects.all().delete()
 
-    logger.info("Fetching and updating public contracts")
+    logger.info(
+        "Fetching and updating market contracts (public, character, corporation)"
+    )
 
-    for location in EveLocation.objects.filter(market_active=True):
+    market_locations = list(EveLocation.objects.filter(market_active=True))
+    location_ids = [loc.location_id for loc in market_locations]
+    locations_by_id = {loc.location_id: loc for loc in market_locations}
+
+    # 1. Fetch public contracts from ESI and store them
+    for location in market_locations:
         logger.info("Fetching contracts for %s", location.location_name)
         if not location.region_id:
             logger.info(
@@ -341,7 +245,50 @@ def fetch_eve_public_contracts():
         for contract in esi_response.results():
             create_or_update_contract(contract, location)
 
-    logger.info("Public contracts updated")
+    logger.info("Public contracts from ESI updated")
+
+    # Contract IDs already stored as finished (private) never change state; skip them
+    finished_private_contract_ids = set(
+        EveMarketContract.objects.filter(
+            status="finished", is_public=False
+        ).values_list("id", flat=True)
+    )
+
+    # 2. Fetch character contracts from our database, store if they match parameters
+    if location_ids:
+        char_contracts = EveCharacterContract.objects.filter(
+            type=EveMarketContract.esi_contract_type,
+            start_location_id__in=location_ids,
+        ).exclude(contract_id__in=finished_private_contract_ids)
+        char_stored = 0
+        for db_contract in char_contracts:
+            location = locations_by_id.get(db_contract.start_location_id)
+            if location and create_or_update_contract_from_db_contract(
+                db_contract, location
+            ):
+                char_stored += 1
+        logger.info(
+            "Stored %s character contract(s) into EveMarketContract",
+            char_stored,
+        )
+
+    # 3. Fetch corporation contracts from our database, store if they match parameters
+    if location_ids:
+        corp_contracts = EveCorporationContract.objects.filter(
+            type=EveMarketContract.esi_contract_type,
+            start_location_id__in=location_ids,
+        ).exclude(contract_id__in=finished_private_contract_ids)
+        corp_stored = 0
+        for db_contract in corp_contracts:
+            location = locations_by_id.get(db_contract.start_location_id)
+            if location and create_or_update_contract_from_db_contract(
+                db_contract, location
+            ):
+                corp_stored += 1
+        logger.info(
+            "Stored %s corporation contract(s) into EveMarketContract",
+            corp_stored,
+        )
 
     update_completed_contracts(start_time)
     update_expired_contracts(start_time)

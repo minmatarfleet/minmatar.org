@@ -6,7 +6,6 @@ import pytz
 from django.db.models import Q
 from django.utils import timezone
 
-from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from fittings.models import EveFitting
 
@@ -28,170 +27,6 @@ class MarketContractHistoricalQuantity:
     def __init__(self, date: str, quantity: int):
         self.date = date
         self.quantity = quantity
-
-
-def create_market_contract(contract: dict, issuer_id: int) -> None:
-    # Need to add comma for ships that contain same name
-    # e.g Exequror and Exequror Navy Issue
-    alias_title_lookup = f"{contract['title']},"
-    logger.debug(
-        f"Processing contract {contract['contract_id']}, {contract['title']}"
-    )
-    if contract["acceptor_id"] == issuer_id:
-        logger.debug(
-            f"Skipping contract {contract['contract_id']}, issuer is also acceptor."
-        )
-        return
-    if contract["type"] != EveMarketContract.esi_contract_type:
-        logger.debug(
-            f"Skipping contract {contract['contract_id']}, not an item exchange."
-        )
-        return
-
-    if not EveLocation.objects.filter(
-        location_id=contract["start_location_id"]
-    ).exists():
-        logger.info(
-            "Skipping contract %s, location not found, %s",
-            contract["contract_id"],
-            contract["start_location_id"],
-        )
-        return
-
-    if not EveFitting.objects.filter(
-        Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
-    ).exists():
-        logger.info(
-            "Skipping contract %s, fitting not found, %s",
-            contract["contract_id"],
-            contract["title"],
-        )
-        return
-
-    if (
-        EveFitting.objects.filter(
-            Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
-        ).count()
-        > 1
-    ):
-        logger.info(
-            "Skipping contract %s, unable to determine fitting, %s",
-            contract["contract_id"],
-            contract["title"],
-        )
-        return
-
-    # Data massaging
-    location = EveLocation.objects.get(
-        location_id=contract["start_location_id"]
-    )
-    fitting = EveFitting.objects.get(
-        Q(name=contract["title"]) | Q(aliases__contains=alias_title_lookup)
-    )
-    if contract["status"] == "outstanding":
-        status = "outstanding"
-    elif contract["status"] == "finished":
-        status = "finished"
-    else:
-        status = "expired"
-
-    logger.info(
-        "Updating contract %s, %s in %s (%s)",
-        contract["contract_id"],
-        contract["title"],
-        contract["start_location_id"],
-        contract["status"],
-    )
-
-    contract_instance, _ = EveMarketContract.objects.update_or_create(
-        id=contract["contract_id"],
-        defaults={
-            "title": contract["title"],
-            "status": status,
-            "price": contract["price"],
-            "assignee_id": contract["assignee_id"],
-            "acceptor_id": contract["acceptor_id"],
-            "issuer_external_id": issuer_id,
-            "completed_at": contract["date_completed"],
-            "fitting_id": fitting.id,
-            "location_id": location.location_id,
-        },
-    )
-    logger.debug("Contract %d created", contract["contract_id"])
-    return contract_instance
-
-
-def create_character_market_contracts(character_id: int):
-    response = EsiClient(character_id).get_character_contracts()
-    if not response.success():
-        logger.error(
-            "Error %d getting contracts for %s.",
-            response.response_code,
-            character_id,
-        )
-        return
-    contracts = response.data
-
-    known_contract_ids = []
-    for contract in contracts:
-        if (
-            contract["for_corporation"]
-            and contract["issuer_id"] != character_id
-        ):
-            continue
-        create_market_contract(contract, character_id)
-        known_contract_ids.append(contract["contract_id"])
-
-    # Clean up contracts that are no longer in the list
-    EveMarketContract.objects.filter(issuer_external_id=character_id).exclude(
-        id__in=known_contract_ids
-    ).update(status="expired")
-    return
-
-
-def create_corporation_market_contracts(
-    corporation_id: int, character_id: int | None = None
-):
-    """
-    Fetch and sync market contracts for a corporation.
-
-    Uses character_id for the ESI token if provided; otherwise uses the
-    corporation's CEO. Caller should pass a character that has a valid token
-    with esi-contracts.read_corporation_contracts.v1 and is in the corporation.
-    """
-    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
-    token_character_id = character_id
-    if token_character_id is None:
-        if not corporation.ceo:
-            logger.error(f"Corporation {corporation_id} does not have a CEO.")
-            return
-        token_character_id = corporation.ceo.character_id
-
-    response = EsiClient(token_character_id).get_corporation_contracts(
-        corporation_id
-    )
-
-    if not response.success():
-        logger.error(
-            f"Error fetching contracts for corporation {corporation_id} ({response.response_code})"
-        )
-        return
-
-    known_contract_ids = []
-    for contract in response.results():
-        if (
-            not contract["for_corporation"]
-            and contract["issuer_corporation_id"] != corporation_id
-        ):
-            continue
-        create_market_contract(contract, corporation_id)
-        known_contract_ids.append(contract["contract_id"])
-
-    # Clean up contracts that are no longer in the list
-    EveMarketContract.objects.filter(
-        issuer_external_id=corporation_id
-    ).exclude(id__in=known_contract_ids).update(status="expired")
-    return
 
 
 def get_historical_quantity(
@@ -254,6 +89,55 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
 
     fitting_cache[contract_summary] = fitting
     return fitting
+
+
+def _map_contract_status(esi_status: str) -> str:
+    """Map ESI contract status to EveMarketContract status_choices."""
+    if esi_status in ("outstanding", "in_progress"):
+        return "outstanding"
+    if esi_status == "finished":
+        return "finished"
+    if esi_status == "expired":
+        return "expired"
+    return "outstanding"
+
+
+def create_or_update_contract_from_db_contract(
+    db_contract, location: EveLocation
+) -> bool:
+    """
+    Create or update EveMarketContract from an EveCharacterContract or
+    EveCorporationContract. Only stores if type is item_exchange, location
+    matches, and title matches a known fitting. Returns True if stored.
+    """
+    if db_contract.type != EveMarketContract.esi_contract_type:
+        return False
+    if db_contract.start_location_id != location.location_id:
+        return False
+    fitting = get_fitting_for_contract(db_contract.title or "")
+    if not fitting:
+        return False
+    status = _map_contract_status(db_contract.status or "")
+    contract, _ = EveMarketContract.objects.get_or_create(
+        id=db_contract.contract_id,
+        defaults={
+            "price": db_contract.price or 0,
+            "issuer_external_id": db_contract.issuer_id,
+        },
+    )
+    contract.title = db_contract.title or ""
+    contract.status = status
+    contract.issued_at = db_contract.date_issued
+    contract.expires_at = db_contract.date_expired
+    contract.completed_at = db_contract.date_completed
+    contract.fitting = fitting
+    contract.location = location
+    contract.is_public = False
+    contract.assignee_id = db_contract.assignee_id
+    contract.acceptor_id = db_contract.acceptor_id
+    contract.last_updated = timezone.now()
+    contract.save()
+    return True
 
 
 def create_or_update_contract(esi_contract, location: EveLocation):

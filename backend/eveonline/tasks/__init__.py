@@ -6,7 +6,12 @@ when it loads eveonline.tasks. Also re-export task functions for callers that
 do `from eveonline.tasks import update_character`, etc.
 """
 
-from eveonline.tasks import affiliations, characters, corporations, players
+from eveonline.tasks import (
+    affiliations,
+    characters,
+    corporations,
+    players,
+)
 
 task_config = affiliations.task_config
 
