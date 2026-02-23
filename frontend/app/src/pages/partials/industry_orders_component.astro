@@ -28,9 +28,11 @@ const non_active_orders_locations = orders_locations.filter(location => location
 
 import { query_string } from '@helpers/string';
 
-const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component?${query_string({
+const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component${active_location_name ? `?${query_string({
     location_name: active_location_name
-})}`)
+})}` : ''}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
@@ -42,7 +44,7 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
         args={{
             partial: INDUSTRY_ORDERS_PARTIAL_URL,
             message: fetching_error,
-            delay: 0,
+            delay: delay,
         }}
     />
     :

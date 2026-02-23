@@ -28,9 +28,9 @@ const non_active_orders_locations = orders_locations.filter(location => location
 
 import { query_string } from '@helpers/string';
 
-const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component?${query_string({
+const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component${active_location_name ? `?${query_string({
     location_name: active_location_name
-})}`)
+})}` : ''}`)
 
 const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
 

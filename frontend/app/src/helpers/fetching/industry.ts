@@ -18,7 +18,9 @@ export async function fetch_orders_by_locations() {
     let orders_by_locations: Record<string, IndustryOrder[]> = {}
     let orders_locations:OrderLocation[] = []
 
-    orders.map(order => {
+    orders.forEach(order => {
+        if (!order.location) return true
+
         if (!orders_by_locations[order.location.location_id.toString()])
             orders_by_locations[order.location.location_id.toString()] = []
 
