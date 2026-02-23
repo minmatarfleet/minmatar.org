@@ -342,7 +342,7 @@ def fetch_market_item_history_for_type(type_id: int) -> int:
     from market-active locations. Returns total history rows updated.
     """
     region_ids = list(
-        EveLocation.objects.filter(market_active=True, region_id__isnull=False)
+        EveLocation.objects.filter(prices_active=True, region_id__isnull=False)
         .values_list("region_id", flat=True)
         .distinct()
     )

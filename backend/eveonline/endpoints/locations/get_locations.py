@@ -18,6 +18,7 @@ class LocationResponse(BaseModel):
     short_name: str
     region_id: int | None = None
     market_active: bool
+    prices_active: bool
     freight_active: bool
     staging_active: bool
 
@@ -38,6 +39,7 @@ def get_locations(request) -> List[LocationResponse]:
             short_name=loc.short_name,
             region_id=loc.region_id,
             market_active=loc.market_active,
+            prices_active=loc.prices_active,
             freight_active=loc.freight_active,
             staging_active=loc.staging_active,
         )

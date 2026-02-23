@@ -30,10 +30,10 @@ MARKET_INDEX_MODELS = {
 
 
 def get_market_item_trends(item_id):
-    """Build trend data for one item across all market location regions: dates × regions (average)."""
+    """Build trend data for one item across all price-active location regions: dates × regions (average)."""
     locations = list(
         EveLocation.objects.filter(
-            market_active=True, region_id__isnull=False
+            prices_active=True, region_id__isnull=False
         ).order_by("location_name")
     )
     if not locations:

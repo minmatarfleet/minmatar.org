@@ -198,6 +198,7 @@ def seed_locations():
             "short_name": "the roost",
             "region_id": 10000030,
             "market_active": True,
+            "prices_active": True,
             "freight_active": True,
             "staging_active": True,
             "structure": structure,

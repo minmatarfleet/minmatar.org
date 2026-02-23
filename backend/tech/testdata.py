@@ -77,6 +77,7 @@ def setup_orgs(user: User) -> EveCharacter:
             "staging_active": True,
             "freight_active": True,
             "market_active": True,
+            "prices_active": True,
         },
     )
     fl33t, _ = EveAlliance.objects.get_or_create(

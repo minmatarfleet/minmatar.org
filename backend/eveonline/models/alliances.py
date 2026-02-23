@@ -27,6 +27,7 @@ class EveLocation(models.Model):
     short_name = models.CharField(max_length=32)
     region_id = models.BigIntegerField(null=True)
     market_active = models.BooleanField(default=False)
+    prices_active = models.BooleanField(default=False)
     freight_active = models.BooleanField(default=False)
     staging_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
