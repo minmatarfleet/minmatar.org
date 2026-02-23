@@ -4,6 +4,8 @@ from typing import List
 
 from pydantic import BaseModel
 
+from bravado.exception import HTTPError
+
 from eveonline.client import EsiClient
 
 from moons.models import EveMoon, EveMoonDistribution
@@ -26,6 +28,7 @@ class MoonParsingResult(BaseModel):
     moons_added: int = 0
     moons_ignored: int = 0
     ids_added: List[int] = []
+    errors: List[str] = []
 
 
 def _parse_eve_moon_format(moon_paste: str) -> List[ParsedEveMoonQuantity]:
@@ -84,38 +87,52 @@ def process_moon_paste(
     esi = EsiClient(None)
 
     for parsed_moon in parsed_moons:
-        system = esi.get_solar_system(parsed_moon.system_id)
+        try:
+            system = esi.get_solar_system(parsed_moon.system_id)
 
-        # Name comes back as Rahadalon VI
-        planet = esi.get_planet(parsed_moon.planet_id)
-        planet_number = planet.name.split(" ")[-1]
+            # Name comes back as Rahadalon VI
+            planet = esi.get_planet(parsed_moon.planet_id)
+            planet_number = planet.name.split(" ")[-1]
 
-        # Name comes back as Rahadalon VI - Moon 1
-        moon = esi.get_moon(parsed_moon.moon_id)
+            # Name comes back as Rahadalon VI - Moon 1
+            moon = esi.get_moon(parsed_moon.moon_id)
 
-        moon_number = int(moon.name.split(" ")[-1])
-        eve_moon, created = EveMoon.objects.get_or_create(
-            system=system.name,
-            planet=planet_number,
-            moon=moon_number,
-            defaults={"reported_by_id": user_id},
-        )
-
-        if created:
-            result.moons_added += 1
-        else:
-            ignored_moons[moon.name] = True
-
-        if not EveMoonDistribution.objects.filter(
-            moon=eve_moon, ore=parsed_moon.ore
-        ).exists():
-            EveMoonDistribution.objects.create(
-                moon=eve_moon,
-                ore=parsed_moon.ore,
-                yield_percent=parsed_moon.quantity,
+            moon_number = int(moon.name.split(" ")[-1])
+            eve_moon, created = EveMoon.objects.get_or_create(
+                system=system.name,
+                planet=planet_number,
+                moon=moon_number,
+                defaults={"reported_by_id": user_id},
             )
 
-        result.ids_added.append(eve_moon.id)
+            if created:
+                result.moons_added += 1
+            else:
+                ignored_moons[moon.name] = True
+
+            if not EveMoonDistribution.objects.filter(
+                moon=eve_moon, ore=parsed_moon.ore
+            ).exists():
+                EveMoonDistribution.objects.create(
+                    moon=eve_moon,
+                    ore=parsed_moon.ore,
+                    yield_percent=parsed_moon.quantity,
+                )
+
+            result.ids_added.append(eve_moon.id)
+        except HTTPError as e:
+            msg = (
+                f"Moon ID {parsed_moon.moon_id} not found in ESI "
+                f"(status={e.status_code}). "
+                "If pasted from a scan, check for a missing digit in MoonID "
+                "(e.g. 40148004 not 4014800)."
+            )
+            logger.warning(msg, exc_info=True)
+            result.errors.append(msg)
+        except Exception as e:
+            msg = f"Moon ID {parsed_moon.moon_id}: " f"{type(e).__name__}: {e}"
+            logger.exception(msg)
+            result.errors.append(msg)
 
     result.moons_ignored = len(ignored_moons)
 
