@@ -1708,6 +1708,8 @@ export const ui = {
         'reaction': 'Reaction',
         'orders_plural': '{count} orders',
         'orders_singular': '1 order',
+        'showing_orders_plural': 'Showing {count} orders',
+        'showing_orders_singular': 'Showing 1 order',
         'produced': 'Produced',
         'harvested': 'Harvested',
         'imported': 'Imported',

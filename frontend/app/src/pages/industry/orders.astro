@@ -80,6 +80,8 @@ const page_title = t('industry.orders.page_title');
         x-data={`{
             orders_count: ${orders_count},
             item_name_filter: '',
+            orders_plural: '${t('showing_orders_plural')}',
+            orders_singular: '${t('showing_orders_singular')}',
             countVisibleElements(selector, parent = document) {
                 const elements = parent.querySelectorAll(selector)
                 let visible_count = 0
@@ -104,9 +106,7 @@ const page_title = t('industry.orders.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <small x-text={`\`${t('showing')} \${orders_count} \${orders_count !== 1 ? '${t('orders')}' : '${t('order')}'}\``}>
-                    {t('showing')} {orders_count} {orders_count !== 1 ? t('orders') : t('order')}
-                </small>
+                <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">{orders_count}</small>
             </Flexblock>
             <FlexInline>
                 <Input type="text"
