@@ -403,6 +403,80 @@ class EsiClient:
 
         return EsiResponse(response_code=SUCCESS, data=all_jobs)
 
+    def get_corporation_wallet_journal(
+        self, corporation_id: int, division: int, page: int = 1
+    ) -> EsiResponse:
+        """
+        Returns wallet journal for one corporation division and page.
+        Requires esi-wallet.read_corporation_wallets.v1 (Director/Market/Accountant).
+        """
+        token, status = self._valid_token(
+            ["esi-wallet.read_corporation_wallets.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            resp = requests.get(
+                url,
+                params={"page": page},
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        data = resp.json() if resp.content else []
+        return EsiResponse(response_code=SUCCESS, data=data)
+
+    def get_corporation_wallet_journal_all_divisions(
+        self, corporation_id: int
+    ) -> EsiResponse:
+        """
+        Fetches all wallet journal entries for all divisions (1-7), all pages.
+        Requires esi-wallet.read_corporation_wallets.v1.
+        Returns EsiResponse with data = list of (division, entries) or flat list.
+        """
+        token, status = self._valid_token(
+            ["esi-wallet.read_corporation_wallets.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        all_entries = []
+        for division in range(1, 8):
+            page = 1
+            while True:
+                url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
+                headers = {"Authorization": f"Bearer {token}"}
+                try:
+                    resp = requests.get(
+                        url,
+                        params={"page": page},
+                        headers=headers,
+                        timeout=30,
+                    )
+                except Exception as e:
+                    return EsiResponse(
+                        response_code=ERROR_CALLING_ESI, response=e
+                    )
+                if resp.status_code >= 400:
+                    return EsiResponse(response_code=resp.status_code)
+                entries = resp.json() if resp.content else []
+                for e in entries:
+                    e["division"] = division
+                all_entries.extend(entries)
+                total_pages = int(resp.headers.get("X-Pages", 1))
+                if page >= total_pages:
+                    break
+                page += 1
+
+        return EsiResponse(response_code=SUCCESS, data=all_entries)
+
     def get_public_contracts(self, region_id) -> EsiResponse:
         operation = (
             esi_provider.client.Contracts.get_contracts_public_region_id(

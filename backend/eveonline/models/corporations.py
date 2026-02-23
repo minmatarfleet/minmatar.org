@@ -219,3 +219,55 @@ class EveCorporationBlueprint(models.Model):
         return (
             f"BP {self.item_id} ({self.corporation.name}, type {self.type_id})"
         )
+
+
+class EveCorporationWalletJournalEntry(models.Model):
+    """
+    Corporation wallet journal entry from ESI (esi-wallet.read_corporation_wallets.v1).
+    Stores all journal entries for PI tax, ratting tax, and other wallet transactions.
+    """
+
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+        related_name="wallet_journal_entries",
+    )
+    division = models.PositiveSmallIntegerField(
+        help_text="Wallet division 1-7.",
+        db_index=True,
+    )
+    ref_id = models.BigIntegerField(
+        help_text="Unique journal entry ID from ESI.",
+        db_index=True,
+    )
+    date = models.DateTimeField(db_index=True)
+    ref_type = models.CharField(max_length=64, db_index=True)
+    first_party_id = models.BigIntegerField(null=True, blank=True)
+    second_party_id = models.BigIntegerField(null=True, blank=True)
+    amount = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    balance = models.DecimalField(
+        max_digits=32, decimal_places=2, null=True, blank=True
+    )
+    description = models.TextField(blank=True)
+    context_id = models.BigIntegerField(null=True, blank=True)
+    context_id_type = models.CharField(max_length=32, blank=True)
+    reason = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date"]
+        unique_together = (("corporation", "division", "ref_id"),)
+        indexes = [
+            models.Index(fields=["corporation", "ref_type"]),
+            models.Index(fields=["corporation", "date"]),
+        ]
+        verbose_name = "corporation wallet journal entry"
+        verbose_name_plural = "corporation wallet journal entries"
+
+    def __str__(self):
+        return (
+            f"Journal {self.ref_id} ({self.corporation.name}, "
+            f"div {self.division}, {self.ref_type})"
+        )

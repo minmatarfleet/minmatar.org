@@ -16,6 +16,7 @@ from eveonline.models import (
     EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
+    EveCorporationWalletJournalEntry,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ SCOPE_CORPORATION_CONTRACTS = ["esi-contracts.read_corporation_contracts.v1"]
 SCOPE_CHARACTER_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
 SCOPE_CORPORATION_INDUSTRY_JOBS = ["esi-industry.read_corporation_jobs.v1"]
 SCOPE_CORPORATION_BLUEPRINTS = ["esi-corporations.read_blueprints.v1"]
+SCOPE_CORPORATION_WALLET = ["esi-wallet.read_corporation_wallets.v1"]
 CONTRACT_FETCH_SPREAD_SECONDS = 4 * 3600  # 4 hours
 
 
@@ -492,3 +494,82 @@ def update_corporation_blueprints(corporation_id: int) -> int:
         corporation_id,
     )
     return len(blueprints_data)
+
+
+def update_corporation_wallet_journal(corporation_id: int) -> int:
+    """
+    Sync corporation wallet journal from ESI into EveCorporationWalletJournalEntry.
+    Fetches all divisions (1-7) and all pages. Only runs when a director (or CEO)
+    has esi-wallet.read_corporation_wallets.v1. Returns count of entries synced.
+    """
+    corporation = EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).first()
+    if not corporation:
+        logger.debug(
+            "Corporation %s not found, skipping wallet journal", corporation_id
+        )
+        return 0
+
+    character = get_director_with_scope(corporation, SCOPE_CORPORATION_WALLET)
+    if not character:
+        logger.debug(
+            "No director with %s for corporation %s (%s), skipping wallet journal",
+            SCOPE_CORPORATION_WALLET[0],
+            corporation.name,
+            corporation_id,
+        )
+        return 0
+
+    response = EsiClient(
+        character
+    ).get_corporation_wallet_journal_all_divisions(corporation.corporation_id)
+    if not response.success():
+        logger.warning(
+            "ESI error %s fetching wallet journal for corporation %s (%s)",
+            response.response_code,
+            corporation.name,
+            corporation_id,
+        )
+        return 0
+
+    entries_data = response.results() or []
+    synced = 0
+    for raw in entries_data:
+        ref_id = raw.get("id")
+        if ref_id is None:
+            continue
+        division = raw.get("division", 1)
+        amount = raw.get("amount")
+        if amount is not None:
+            amount = Decimal(str(amount))
+        balance = raw.get("balance")
+        if balance is not None:
+            balance = Decimal(str(balance))
+
+        EveCorporationWalletJournalEntry.objects.update_or_create(
+            corporation=corporation,
+            division=division,
+            ref_id=ref_id,
+            defaults={
+                "date": _parse_esi_date(raw.get("date")),
+                "ref_type": raw.get("ref_type", ""),
+                "first_party_id": raw.get("first_party_id"),
+                "second_party_id": raw.get("second_party_id"),
+                "amount": amount,
+                "balance": balance,
+                "description": raw.get("description", ""),
+                "context_id": raw.get("context_id"),
+                "context_id_type": raw.get("context_id_type", ""),
+                "reason": raw.get("reason", ""),
+            },
+        )
+        synced += 1
+
+    logger.info(
+        "Synced %s wallet journal entry(ies) for corporation %s (%s)",
+        synced,
+        corporation.name,
+        corporation_id,
+    )
+    return synced

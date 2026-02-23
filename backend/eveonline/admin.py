@@ -18,6 +18,7 @@ from .models import (
     EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
+    EveCorporationWalletJournalEntry,
     EveSkillset,
     EveTag,
     EveCharacterTag,
@@ -355,6 +356,26 @@ class EveCorporationIndustryJobAdmin(admin.ModelAdmin):
     search_fields = ("job_id", "corporation__name")
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("corporation",)
+
+
+@admin.register(EveCorporationWalletJournalEntry)
+class EveCorporationWalletJournalEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "ref_id",
+        "corporation",
+        "division",
+        "date",
+        "ref_type",
+        "amount",
+        "balance",
+        "first_party_id",
+        "second_party_id",
+    )
+    list_filter = ("ref_type", "corporation", "division")
+    search_fields = ("ref_id", "corporation__name", "description")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("corporation",)
+    date_hierarchy = "date"
 
 
 @admin.register(EveCorporationBlueprint)

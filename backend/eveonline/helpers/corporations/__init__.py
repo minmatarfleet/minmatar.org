@@ -6,6 +6,7 @@ from eveonline.helpers.corporations.update import (
     SCOPE_CORPORATION_CONTRACTS,
     SCOPE_CORPORATION_INDUSTRY_JOBS,
     SCOPE_CORPORATION_MEMBERSHIP,
+    SCOPE_CORPORATION_WALLET,
     alliance_corporation_ids,
     get_character_with_contract_scope_for_corporation,
     get_director_with_scope,
@@ -16,6 +17,7 @@ from eveonline.helpers.corporations.update import (
     update_corporation_industry_jobs,
     update_corporation_members_and_roles,
     update_corporation_populate,
+    update_corporation_wallet_journal,
 )
 
 __all__ = [
@@ -25,6 +27,7 @@ __all__ = [
     "SCOPE_CORPORATION_CONTRACTS",
     "SCOPE_CORPORATION_INDUSTRY_JOBS",
     "SCOPE_CORPORATION_MEMBERSHIP",
+    "SCOPE_CORPORATION_WALLET",
     "alliance_corporation_ids",
     "get_character_with_contract_scope_for_corporation",
     "get_director_with_scope",
@@ -35,4 +38,5 @@ __all__ = [
     "update_corporation_industry_jobs",
     "update_corporation_members_and_roles",
     "update_corporation_populate",
+    "update_corporation_wallet_journal",
 ]
