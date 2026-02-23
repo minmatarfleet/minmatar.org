@@ -32,9 +32,6 @@ const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_com
     location_name: active_location_name
 })}`)
 
-
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -58,21 +55,10 @@ const page_title = t('industry.orders.page_title');
 >
     <PageWide
         cover={{
-			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
-                    undefined,
-			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
-                    undefined,
-            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                    '/images/industry-cover.jpg',
-            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
-					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                       '/images/industry-cover.jpg',
-            animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover.jpg",
+            overlay: true,
+            scrollable: true,
         }}
         x-data={`{
             orders_count: ${orders_count},
@@ -110,6 +96,7 @@ const page_title = t('industry.orders.page_title');
                     placeholder={t('filter')}
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { orders_count = countVisibleElements('.order-item') })"
+                    x-init="$el.focus()"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
