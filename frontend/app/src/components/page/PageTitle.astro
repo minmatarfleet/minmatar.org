@@ -10,10 +10,12 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 interface Props {
     is_landing?:    boolean;
+    no_link?:       boolean;
 }
 
 const {
     is_landing = false,
+    no_link = false,
 } = Astro.props
 
 console.log(Astro.url.href)
@@ -35,7 +37,10 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         <ReferralLink user_id={user.user_id} />
     }
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
-        <a href={translatePath(current_page)}><slot /></a>
+        {no_link ?
+            <slot /> :
+            <a href={translatePath(current_page)}><slot /></a>
+        }
     </h1>
 </FlexInline>
 

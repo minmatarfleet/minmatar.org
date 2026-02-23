@@ -177,7 +177,7 @@ const page_title = post?.title ?? t('new_post')
                 x-bind:class="{ '!items-start': !sticky }"
             >
                 <TextBox>
-                    <PageTitle>
+                    <PageTitle no_link={true}>
                         <StylessTextArea
                             placeholder={t('add_title')}
                             class="[ uppercase !text-[var(--highlight)] !max-h-fit text-balance ]"
