@@ -1740,7 +1740,7 @@ export const ui = {
         'order': 'Order',
         'contractor': 'Contractor',
         'deadline_percent': '{percent}% to deadline',
-        'completed_percent': 'Fulfilled at {date}',
+        'completed_percent': 'Fulfilled on {date}',
         'overdue': 'Overdue',
         'no_manufacturing_orders': 'There are currently not manufacturing orders.',
     },
