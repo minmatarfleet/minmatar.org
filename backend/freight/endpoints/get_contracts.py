@@ -41,6 +41,9 @@ def _build_contract_response(c):
         date_completed=(
             c.date_completed.isoformat() if c.date_completed else None
         ),
+        issuer_character_name=(
+            c.issuer.character_name if c.issuer_id else None
+        ),
         completed_by_character_name=_completed_by_display_name(c),
     )
 
@@ -54,6 +57,7 @@ def get_contracts(request):
     qs = (
         EveFreightContract.objects.filter(status__in=ACTIVE_STATUSES)
         .select_related(
+            "issuer",
             "completed_by",
             "completed_by__eveplayer",
             "completed_by__eveplayer__primary_character",

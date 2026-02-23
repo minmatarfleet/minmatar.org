@@ -15,6 +15,7 @@ class FreightContractResponse(BaseModel):
     reward: int
     date_issued: str
     date_completed: Optional[str] = None
+    issuer_character_name: Optional[str] = None
     completed_by_character_name: Optional[str] = None
 
 

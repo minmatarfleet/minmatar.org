@@ -47,6 +47,12 @@ def _create_or_update_freight_contract_from_db(db_contract):
         db_contract.end_location_id
     )
 
+    issuer = None
+    if db_contract.issuer_id:
+        issuer = EveCharacter.objects.filter(
+            character_id=db_contract.issuer_id
+        ).first()
+
     completed_by = None
     if db_contract.acceptor_id and (
         db_contract.acceptor_id != EveFreightContract.supported_corporation_id
@@ -84,6 +90,7 @@ def _create_or_update_freight_contract_from_db(db_contract):
             "volume": volume,
             "collateral": collateral,
             "reward": reward,
+            "issuer": issuer,
             "completed_by": completed_by,
             "date_issued": db_contract.date_issued,
             "date_completed": db_contract.date_completed,

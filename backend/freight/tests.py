@@ -4,6 +4,7 @@ from django.utils import timezone
 from app.test import TestCase
 
 from eveonline.models import (
+    EveCharacter,
     EveCorporation,
     EveCorporationContract,
     EveLocation,
@@ -134,3 +135,38 @@ class FreightTaskTestCase(TestCase):
         # Location names fall back to "Structure" when not in EveStructure
         self.assertEqual(contract.start_location_name, "Structure")
         self.assertEqual(contract.end_location_name, "Structure")
+        # issuer_id 99999 has no EveCharacter → issuer is None
+        self.assertIsNone(contract.issuer_id)
+
+    def test_update_freight_contracts_with_issuer(self):
+        """When issuer character exists, EveFreightContract gets issuer set."""
+        corp = EveCorporation.objects.create(
+            corporation_id=EveFreightContract.supported_corporation_id,
+            name="Test Corp",
+            ticker="TEST",
+        )
+        issuer_char = EveCharacter.objects.create(
+            character_id=88888,
+            character_name="Contract Issuer",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=54321,
+            corporation=corp,
+            type=EveFreightContract.expected_contract_type,
+            status="outstanding",
+            issuer_id=issuer_char.character_id,
+            assignee_id=EveFreightContract.supported_corporation_id,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=5000,
+            collateral=500000,
+            reward=5000,
+            date_issued=timezone.now(),
+        )
+
+        update_contracts()
+
+        contract = EveFreightContract.objects.get(contract_id=54321)
+        self.assertEqual(contract.issuer_id, issuer_char.id)
+        self.assertEqual(contract.issuer.character_id, 88888)
+        self.assertEqual(contract.issuer.character_name, "Contract Issuer")

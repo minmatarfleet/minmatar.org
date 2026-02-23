@@ -20,6 +20,7 @@ def get_contracts_history(request):
     qs = (
         EveFreightContract.objects.filter(status="finished")
         .select_related(
+            "issuer",
             "completed_by",
             "completed_by__eveplayer",
             "completed_by__eveplayer__primary_character",

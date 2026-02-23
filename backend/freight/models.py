@@ -28,6 +28,13 @@ class EveFreightContract(models.Model):
     reward = models.BigIntegerField()
     date_issued = models.DateTimeField()
     date_completed = models.DateTimeField(null=True, blank=True)
+    issuer = models.ForeignKey(
+        "eveonline.EveCharacter",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issued_freight_contracts",
+    )
     completed_by = models.ForeignKey(
         "auth.User",
         on_delete=models.SET_NULL,
