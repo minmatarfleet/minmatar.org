@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 import type { FittingMarketData } from '@helpers/fetching/market'
 
@@ -22,6 +22,8 @@ const expected_quantity = fitting.expectation_quantity ?? 0
 const current_quantity = fitting.current_quantity ?? 0
 const low_amount = expected_quantity > 0 && (current_quantity <= (20 * expected_quantity) / 100)
 const completion = current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 100
+
+import { semantic_list } from '@helpers/array'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -63,7 +65,7 @@ import FittingLink from '@components/blocks/FittingLink.astro';
                             </Progress>
                         }
 
-                        <small class="[ subtitle ]">{fitting.doctrine_name}</small>
+                        <small class="[ subtitle ]">{semantic_list(lang, (fitting.doctrine_name ?? '').split(','))}</small>
                     </Flexblock>
                 </ItemBadge>
             </div>

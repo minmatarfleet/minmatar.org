@@ -21,7 +21,7 @@ function deduple_market_location_fittings(market_location_fittings:FittingMarket
         if (!active_market_locations_fittings[fitting.fitting_id])
             active_market_locations_fittings[fitting.fitting_id] = fitting
         else
-            active_market_locations_fittings[fitting.fitting_id].doctrine_name = active_market_locations_fittings[fitting.fitting_id].doctrine_name?.concat(`, ${fitting.doctrine_name}`)
+            active_market_locations_fittings[fitting.fitting_id].doctrine_name = active_market_locations_fittings[fitting.fitting_id].doctrine_name?.concat(`,${fitting.doctrine_name}`)
     })
 
     let deduped_active_market_locations_fittings:FittingMarketData[] = []
