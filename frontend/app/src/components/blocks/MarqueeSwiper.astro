@@ -1,0 +1,108 @@
+---
+interface Props {
+    swiper_selector?:   string;
+    pagination?:        boolean;
+    gap?:               number;
+    initial_slide?:     number;
+    align?:             'start' | 'center' | 'end';
+}
+
+const {
+    swiper_selector = '.swiper',
+    pagination = true,
+    gap = 5,
+    initial_slide = 0,
+    align = 'start',
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline
+    class:list={['swiper-wrapper select-none', `!items-${align}`]}
+    gap='0'
+    x-data={`{
+        swiper: null,
+        init() {
+            const INIT_WORKAROUND_TIMER_MS = 100
+            reset_autoplay_timer = null
+
+            function resetAutoplay(swiper) {
+                const t = swiper.getTranslate()
+
+                swiper.autoplay.stop()
+
+                swiper.setTranslate(t)
+                swiper.updateProgress()
+                swiper.updateActiveIndex()
+
+                swiper.autoplay.start()
+            }
+
+            setTimeout(() => {
+                this.swiper = new Swiper('${swiper_selector}', {
+                    initialSlide: ${initial_slide},
+                    slidesPerView: "auto",
+                    watchSlidesVisibility: true,
+                    spaceBetween: ${gap},
+                    pagination: false,
+                    loop: false,
+                    speed: 5000,
+                    autoplay: {
+                        delay: 0,
+                        disableOnInteraction: false,
+                    },
+                    allowTouchMove: true,
+                    on: {
+                        navigationNext(swiper) {
+                            swiper.autoplay.stop()
+                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2500)
+                        },
+
+                        navigationPrev(swiper) {
+                            swiper.autoplay.stop()
+                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2500)
+                        },
+
+                        touchStart(swiper) {
+                            swiper.autoplay.stop()
+                        },
+
+                        touchEnd(swiper) {
+                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2000)
+                        },
+                    },
+                    navigation: {
+                        nextEl: '${swiper_selector}-button-next',
+                        prevEl: '${swiper_selector}-button-prev',
+                    },
+                });
+            }, INIT_WORKAROUND_TIMER_MS)
+        }
+    }`}
+>
+    <slot />
+</FlexInline>
+
+{pagination && <div class="swiper-pagination"></div>}
+
+<style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+     .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        transition-timing-function: linear !important;
+     }
+</style>

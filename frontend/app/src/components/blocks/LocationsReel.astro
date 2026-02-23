@@ -22,13 +22,13 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         class="[ swiper ][ w-full ]"
         id="locations-list"
     >
-        <LandingSwiper pagination={false} gap={gap} align='center'>
+        <LandingSwiper swiper_selector='#locations-list' pagination={false} gap={gap} align='center'>
             <slot />
         </LandingSwiper>
     </div>
 
-    <div class="[ swiper-button-prev ]"></div>
-    <div class="[ swiper-button-next ]"></div>
+    <div id="locations-list-button-prev" class="[ swiper-button-prev ]"></div>
+    <div id="locations-list-button-next" class="[ swiper-button-next ]"></div>
 </Wrapper>
 
 <style lang="scss">

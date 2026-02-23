@@ -1708,7 +1708,6 @@ export const ui = {
         'reaction': 'Reaction',
         'orders_plural': '{count} orders',
         'orders_singular': '1 order',
-        'all_material_requirements': 'All material requirements',
         'produced': 'Produced',
         'harvested': 'Harvested',
         'imported': 'Imported',
@@ -1743,5 +1742,6 @@ export const ui = {
         'completed_percent': 'Fulfilled on {date}',
         'overdue': 'Overdue',
         'no_manufacturing_orders': 'There are currently not manufacturing orders.',
+        'all_material_requirements': 'All locations material requirements',
     },
 } as const;

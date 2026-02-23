@@ -6,56 +6,91 @@ import type { BaseIndustryOrder } from '@dtypes/api.minmatar.org'
 
 interface Props {
     materials_required:     BaseIndustryOrder[];
+    init_tooltips:          boolean;
 }
 
 const {
     materials_required,
+    init_tooltips,
 } = Astro.props
 
-const AUTOPLAY_DELAY = 5000
+let copy_materials = ''
+materials_required.map(material => {
+    copy_materials = copy_materials.concat(`${material.name}\t${material.quantity}\r\n`)
+})
 
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
-import ItemBadge from '@components/blocks/ItemBadge.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 ---
 
-<Wrapper
-    class="[ materials-reel ]"
-    padding_block='0'
-    padding_inline='0'
-    max_width='100%'
->
-    <div
-        class="[ swiper ][ w-full ]"
-        id="materials-list"
+<div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! ]">
+    <Wrapper
+        class="[ materials-reel ]"
+        neocom={true}
+        max_width='var(--max-content-width)'
+        centered={true}
+        padding_block='var(--space-2xs)'
     >
-        <LandingSwiper pagination={false} delay={AUTOPLAY_DELAY} gap={10}>
-            {materials_required.map(material =>
-                <div class="[ swiper-slide ]" style="margin-right: 10px">
-                    <ComponentBlock padding_block='var(--space-3xs)' padding_inline='var(--space-2xs)'>
-                        <ItemBadge
-                            item_name={material.name}
-                            type_id={material.type_id}
-                            size={32}
-                            gap='var(--space-2xs)'
+        <FixedFluid width='160px' class="[ items-center! ]" gap='var(--space-xl)'>
+            <h4>{t('all_material_requirements')}</h4>
+            <div>
+                <FluidFixed width='165px' class="[ items-center! ]">
+                    <div class="[ relative ]">
+                        <div
+                            class="[ swiper ][ w-full ]"
+                            id="materials-list"
                         >
-                            <small>{number_thousand_separator(material.quantity)}</small>
-                        </ItemBadge>
-                    </ComponentBlock>
-                </div>
-            )}
-        </LandingSwiper>
-    </div>
+                            <MarqueeSwiper swiper_selector='#materials-list' pagination={false} gap={20}>
+                                {materials_required.map(material =>
+                                    <div class="[ swiper-slide ]" style="margin-right: 20px">
+                                        <FlexInline
+                                            class="[ items-center! ]"
+                                            gap='var(--space-3xs)'
+                                            data-tippy-content={material.name}
+                                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                        >
+                                            <ItemPicture
+                                                item_name={material.name}
+                                                item_id={material.type_id}
+                                                size={32}
+                                            />
+                                            <small>{number_thousand_separator(material.quantity)}</small>
+                                        </FlexInline>
+                                    </div>
+                                )}
+                            </MarqueeSwiper>
+                        </div>
 
-    <div class="[ swiper-button-prev ]"></div>
-    <div class="[ swiper-button-next ]"></div>
-</Wrapper>
+                        <div id="materials-list-button-prev" class="[ swiper-button-prev ]"></div>
+                        <div id="materials-list-button-next" class="[ swiper-button-next ]"></div>
+                    </div>
+
+                    <FlexInline justification='flex-end'>
+                        <ClipboardButton id="materials">{copy_materials}</ClipboardButton>
+                    </FlexInline>
+                </FluidFixed>
+            </div>
+        </FixedFluid>
+    </Wrapper>
+</div>
 
 <style lang="scss">
+    .bottom-bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: var(--sticky-z-index);
+    }
+
     .materials-reel {
         position: relative;
     }
@@ -87,6 +122,5 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
     .swiper-slide {
         width: fit-content;
-        min-width: 200px;
     }
 </style>

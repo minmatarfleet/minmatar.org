@@ -2,14 +2,17 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { BaseIndustryOrder } from '@dtypes/api.minmatar.org'
 import type { OrderLocation } from '@dtypes/layout_components'
-import { fetch_orders_by_locations } from '@helpers/fetching/industry'
+import { fetch_orders_by_locations, fetch_orders_summary_flat } from '@helpers/fetching/industry'
 
 let fetching_error:string | false = false
 let orders_locations:OrderLocation[] = []
+let materials_required:BaseIndustryOrder[] = []
 
 try {
     orders_locations = await fetch_orders_by_locations()
+    materials_required = await fetch_orders_summary_flat()
 } catch (error) {
     fetching_error = error.message
 }
@@ -45,6 +48,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
+import MaterialReels from '@components/blocks/MaterialReels.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -130,7 +134,9 @@ const page_title = t('industry.orders.page_title');
                     active_orders_locations={active_orders_locations}
                     non_active_orders_locations={non_active_orders_locations}
                     init_tooltips={false}
-                /> :
+                />
+                <MaterialReels materials_required={materials_required} init_tooltips={false} />
+                :
                 <p>{t('no_manufacturing_orders')}</p>
         }
     </PageWide>
