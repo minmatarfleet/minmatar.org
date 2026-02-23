@@ -14,6 +14,7 @@ from market.helpers.contracts import (
     create_or_update_contract_from_db_contract,
     get_fitting_for_contract,
     get_historical_quantity,
+    get_historical_quantity_for_fitting,
     update_completed_contracts,
     update_expired_contracts,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "entity_name_by_id",
     "get_fitting_for_contract",
     "get_historical_quantity",
+    "get_historical_quantity_for_fitting",
     "get_character_with_structure_markets_scope",
     "known_contract_issuer_ids",
     "process_structure_sell_orders_page",

@@ -72,7 +72,7 @@ class MarketRouterTestCase(TestCase):
         )
 
         response = self.client.get(
-            f"{BASE_URL}/contracts",
+            f"{BASE_URL}/contracts?location_id={expectation.location.location_id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
@@ -87,6 +87,55 @@ class MarketRouterTestCase(TestCase):
         self.assertEqual(
             "Test Pilot", data[0]["responsibilities"][0]["entity_name"]
         )
+        self.assertIn("doctrines", data[0])
+        self.assertIsInstance(data[0]["doctrines"], list)
+
+    def test_get_contracts_unknown_location_returns_empty(self):
+        response = self.client.get(
+            f"{BASE_URL}/contracts?location_id=999999",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], response.json())
+
+    def test_get_contracts_includes_fittings_with_contracts_but_no_expectation(
+        self,
+    ):
+        """Fittings that have contracts at the location but no expectation are still returned."""
+        loc = EveLocation.objects.create(
+            location_id=5555,
+            location_name="Contract-only location",
+            solar_system_id=1,
+            solar_system_name="Somewhere",
+            market_active=True,
+        )
+        fit = EveFitting.objects.create(
+            name="[NVY-9] No Expectation",
+            ship_id=2,
+            description="No expectation",
+            eft_format="[Merlin, [NVY-9] No Expectation]",
+        )
+        EveMarketContract.objects.create(
+            id=9999,
+            location=loc,
+            fitting=fit,
+            status="outstanding",
+            price=1.0,
+            issuer_external_id=1,
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts?location_id={loc.location_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual("[NVY-9] No Expectation", data[0]["title"])
+        self.assertEqual(1, data[0]["current_quantity"])
+        self.assertEqual(0, data[0]["desired_quantity"])
+        self.assertIsNone(data[0]["expectation_id"])
+        self.assertEqual([], data[0]["responsibilities"])
+        self.assertEqual([], data[0]["doctrines"])
 
     def test_inactive_market(self):
         # Test that locations with market_active=False are not included

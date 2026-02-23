@@ -32,6 +32,17 @@ class MarketContractHistoricalQuantity:
 def get_historical_quantity(
     expectation: EveMarketContractExpectation,
 ) -> List[MarketContractHistoricalQuantity]:
+    """Historical finished contract counts for an expectation's fitting (and location)."""
+    return get_historical_quantity_for_fitting(
+        expectation.fitting, location=expectation.location
+    )
+
+
+def get_historical_quantity_for_fitting(
+    fitting: EveFitting,
+    location: EveLocation | None = None,
+) -> List[MarketContractHistoricalQuantity]:
+    """Historical finished contract counts per month for a fitting, optionally at a location."""
     historical_quantity = []
     today = datetime.today()
     utc = pytz.UTC
@@ -40,15 +51,18 @@ def get_historical_quantity(
             today.replace(day=1, tzinfo=utc) - timedelta(days=i * 30)
         ).replace(day=1)
         month_end = (month_start + timedelta(days=32)).replace(day=1)
+        qs = EveMarketContract.objects.filter(
+            fitting=fitting,
+            status="finished",
+            completed_at__gte=month_start,
+            completed_at__lt=month_end,
+        )
+        if location is not None:
+            qs = qs.filter(location=location)
         historical_quantity.append(
             MarketContractHistoricalQuantity(
                 date=month_start.strftime("%Y-%m-%d"),
-                quantity=EveMarketContract.objects.filter(
-                    fitting=expectation.fitting,
-                    status="finished",
-                    completed_at__gte=month_start,
-                    completed_at__lt=month_end,
-                ).count(),
+                quantity=qs.count(),
             )
         )
 

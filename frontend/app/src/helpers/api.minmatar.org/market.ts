@@ -3,12 +3,12 @@ import { get_error_message, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/market`
 
-export async function get_market_contracts() {
+export async function get_market_contracts(location_id: number) {
     const headers = {
         'Content-Type': 'application/json',
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/contracts`
+    const ENDPOINT = `${API_ENDPOINT}/contracts?location_id=${location_id}`
 
     console.log(`Requesting: ${ENDPOINT}`)
 

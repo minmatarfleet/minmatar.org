@@ -483,16 +483,25 @@ export interface SavedLogsRequest {
     fitting_id?:  number;
 }
 
+export interface ContractDoctrine {
+    id:     number;
+    name:   string;
+    type:   string;
+    role:   string;
+}
+
 export interface Contract {
-    expectation_id:         number;
-    title:                  string;
-    fitting_id:             number;
-    structure_id:           number;
-    location_name:          string;
-    desired_quantity:       number;
-    current_quantity:       number;
-    historical_quantity:    Record[];
-    responsibilities:       Responsability[]
+    expectation_id:             number | null;
+    title:                      string;
+    fitting_id:                 number;
+    structure_id:               number | null;
+    location_name:              string;
+    desired_quantity:           number;
+    current_quantity:           number;
+    latest_contract_timestamp:  string | null;
+    historical_quantity:        Record[];
+    responsibilities:          Responsability[];
+    doctrines:                  ContractDoctrine[];
 }
 
 export interface Record {

@@ -36,13 +36,17 @@ export interface LocationMarketData {
 
 export async function fetch_market_locations_with_doctrines(): Promise<LocationMarketData[]> {
     // Fetch all required data using new endpoints
-    const [locations, doctrines, fittings, expectations, contracts] = await Promise.all([
+    const [locations, doctrines, fittings, expectations] = await Promise.all([
         get_market_locations(), // Only market-active locations
         get_doctrines(), // Need doctrines to know which fittings belong to which doctrines
         get_market_locations_with_doctrines(), // New endpoint: flat list of fittings
         get_market_expectations_by_location(), // New endpoint: expectations grouped by location
-        get_market_contracts() // For current_quantity
     ])
+
+    // Fetch contracts per location (API returns all contracts for a given location_id)
+    const contractsByLocation = await Promise.all(
+        locations.map(loc => get_market_contracts(loc.location_id))
+    )
 
     // Create a map of expectations by location_id and fitting_id for quick lookup
     const expectationMap = new Map<string, { quantity: number, expectation_id: number }>()
@@ -58,9 +62,11 @@ export async function fetch_market_locations_with_doctrines(): Promise<LocationM
 
     // Create a map of current quantities by location_name and fitting_id
     const currentQuantityMap = new Map<string, number>()
-    contracts.forEach(contract => {
-        const key = `${contract.location_name}-${contract.fitting_id}`
-        currentQuantityMap.set(key, contract.current_quantity)
+    contractsByLocation.forEach((contracts, i) => {
+        const location = locations[i]
+        contracts.forEach(contract => {
+            currentQuantityMap.set(`${location.location_name}-${contract.fitting_id}`, contract.current_quantity)
+        })
     })
 
     // Organize data by location

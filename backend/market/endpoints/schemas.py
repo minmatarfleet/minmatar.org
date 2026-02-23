@@ -3,6 +3,15 @@ from typing import List
 from pydantic import BaseModel
 
 
+class MarketContractDoctrineResponse(BaseModel):
+    """Doctrine that includes this fitting (for market contract response)."""
+
+    id: int
+    name: str
+    type: str
+    role: str  # primary, secondary, support
+
+
 class LocationFittingExpectationResponse(BaseModel):
     fitting_id: int
     fitting_name: str
@@ -30,7 +39,9 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 
 class MarketContractResponse(BaseModel):
-    expectation_id: int
+    expectation_id: int | None = (
+        None  # None when no expectation for this fitting at location
+    )
     title: str
     fitting_id: int
     structure_id: int | None = None
@@ -40,3 +51,4 @@ class MarketContractResponse(BaseModel):
     latest_contract_timestamp: str | None = None
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
     responsibilities: List[MarketContractResponsibilityResponse]
+    doctrines: List[MarketContractDoctrineResponse]
