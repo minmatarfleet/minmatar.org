@@ -35,6 +35,7 @@ import PilotBadge from "@components/blocks/PilotBadge.astro";
 import Progress from "@components/blocks/Progress.astro";
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
+import Button from '@components/blocks/Button.astro';
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
 ---
@@ -50,6 +51,29 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
         </PilotBadge>
     </div>
     <FlexInline>
+        <div class="[ basis-[250px] ]">
+            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
+                <div class="[ text-highlight ]">
+                    <IndustryIcon size={32} />
+                </div>
+                <FlexInline gap='var(--space-2xs)'>
+                    {order.items.map(item =>
+                        <div
+                            data-tippy-content={item.eve_type_name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <ItemPicture
+                                item_name={item.eve_type_name}
+                                item_id={item.eve_type_id}
+                                quantity={item.quantity}
+                                size={32}
+                            />
+                            <div class="[ sr-only ]">{item.eve_type_name}</div>
+                        </div>
+                    )}
+                </FlexInline>
+            </FixedFluid>
+        </div>
         <Flexblock class="[ basis-[350px] pr-10 ]" gap='var(--space-3xs)'>
             <FlexInline justification='space-between'>
                 <small>{format_date(lang, order.created_at)}</small>
@@ -70,29 +94,6 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                 </Progress>
             </div>
         </Flexblock>
-        <div class="[ basis-[250px] ]">
-            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div class="[ text-highlight ]">
-                    <IndustryIcon size={32} />
-                </div>
-                <FlexInline gap='var(--space-2xs)'>
-                    {order.items.map(item =>
-                        <div
-                             data-tippy-content={item.eve_type_name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                        >
-                            <ItemPicture
-                                item_name={item.eve_type_name}
-                                item_id={item.eve_type_id}
-                                quantity={item.quantity}
-                                size={32}
-                            />
-                            <div class="[ sr-only ]">{item.eve_type_name}</div>
-                        </div>
-                    )}
-                </FlexInline>
-            </FixedFluid>
-        </div>
         <div class="[ basis-[300px] ]">
             <ProducersList
                 character_producers={order.assigned_to}
@@ -106,5 +107,26 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     .timeline {
         border: solid var(--highlight);
         border-width: 0 1px 0 1px;
+        position: relative;
+        
+        &:before,
+        &:after {
+            content: ' ';
+            position: absolute;
+            height: 100%;
+            bottom: 0;
+        }
+
+        &:before {
+            left: 25%;
+            border: solid var(--highlight);
+            border-width: 0 1px 0 1px;
+            width: 50%;
+        }
+
+        &:after {
+            left: 50%;
+            border-left: solid 1px var(--highlight);
+        }
     }
 </style>
