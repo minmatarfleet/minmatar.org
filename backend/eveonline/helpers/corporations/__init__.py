@@ -2,6 +2,7 @@
 from eveonline.helpers.corporations.update import (
     CONTRACT_FETCH_SPREAD_SECONDS,
     SCOPE_CHARACTER_CONTRACTS,
+    SCOPE_CORPORATION_BLUEPRINTS,
     SCOPE_CORPORATION_CONTRACTS,
     SCOPE_CORPORATION_INDUSTRY_JOBS,
     SCOPE_CORPORATION_MEMBERSHIP,
@@ -10,6 +11,7 @@ from eveonline.helpers.corporations.update import (
     get_director_with_scope,
     known_contract_issuer_ids,
     sync_alliance_corporations_from_esi,
+    update_corporation_blueprints,
     update_corporation_contracts,
     update_corporation_industry_jobs,
     update_corporation_members_and_roles,
@@ -19,6 +21,7 @@ from eveonline.helpers.corporations.update import (
 __all__ = [
     "CONTRACT_FETCH_SPREAD_SECONDS",
     "SCOPE_CHARACTER_CONTRACTS",
+    "SCOPE_CORPORATION_BLUEPRINTS",
     "SCOPE_CORPORATION_CONTRACTS",
     "SCOPE_CORPORATION_INDUSTRY_JOBS",
     "SCOPE_CORPORATION_MEMBERSHIP",
@@ -27,6 +30,7 @@ __all__ = [
     "get_director_with_scope",
     "known_contract_issuer_ids",
     "sync_alliance_corporations_from_esi",
+    "update_corporation_blueprints",
     "update_corporation_contracts",
     "update_corporation_industry_jobs",
     "update_corporation_members_and_roles",

@@ -13,6 +13,7 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
+    EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
 )
@@ -25,6 +26,7 @@ SCOPE_CORPORATION_MEMBERSHIP = [
 SCOPE_CORPORATION_CONTRACTS = ["esi-contracts.read_corporation_contracts.v1"]
 SCOPE_CHARACTER_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
 SCOPE_CORPORATION_INDUSTRY_JOBS = ["esi-industry.read_corporation_jobs.v1"]
+SCOPE_CORPORATION_BLUEPRINTS = ["esi-corporations.read_blueprints.v1"]
 CONTRACT_FETCH_SPREAD_SECONDS = 4 * 3600  # 4 hours
 
 
@@ -431,3 +433,62 @@ def update_corporation_industry_jobs(corporation_id: int) -> int:
         corporation_id,
     )
     return len(jobs_data)
+
+
+def update_corporation_blueprints(corporation_id: int) -> int:
+    """Fetch corporation blueprints from ESI and replace. Returns count synced."""
+    corporation = (
+        EveCorporation.objects.filter(corporation_id=corporation_id)
+    ).first()
+    if not corporation:
+        logger.warning(
+            "Corporation %s not found, skipping blueprints sync",
+            corporation_id,
+        )
+        return 0
+
+    character = get_director_with_scope(
+        corporation, SCOPE_CORPORATION_BLUEPRINTS
+    )
+    if not character:
+        logger.debug(
+            "No director with %s for corporation %s (%s), skipping blueprints",
+            SCOPE_CORPORATION_BLUEPRINTS[0],
+            corporation.name,
+            corporation_id,
+        )
+        return 0
+
+    response = EsiClient(character).get_corporation_blueprints(
+        corporation.corporation_id
+    )
+    if not response.success():
+        logger.warning(
+            "ESI error %s fetching blueprints for corporation %s (%s)",
+            response.response_code,
+            corporation.name,
+            corporation_id,
+        )
+        return 0
+
+    blueprints_data = response.results() or []
+    EveCorporationBlueprint.objects.filter(corporation=corporation).delete()
+    for raw in blueprints_data:
+        EveCorporationBlueprint.objects.create(
+            corporation=corporation,
+            item_id=raw["item_id"],
+            type_id=raw["type_id"],
+            location_id=raw["location_id"],
+            location_flag=raw["location_flag"],
+            material_efficiency=raw["material_efficiency"],
+            time_efficiency=raw["time_efficiency"],
+            quantity=raw["quantity"],
+            runs=raw["runs"],
+        )
+    logger.info(
+        "Synced %s blueprint(s) for corporation %s (%s)",
+        len(blueprints_data),
+        corporation.name,
+        corporation_id,
+    )
+    return len(blueprints_data)

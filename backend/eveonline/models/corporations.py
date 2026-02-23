@@ -180,3 +180,42 @@ class EveCorporationIndustryJob(models.Model):
 
     def __str__(self):
         return f"Job {self.job_id} ({self.corporation.name}, {self.status})"
+
+
+class EveCorporationBlueprint(models.Model):
+    """
+    Corporation blueprint from ESI (esi-corporations.read_blueprints.v1).
+    item_id is the blueprint instance ID; type_id is the blueprint type.
+    """
+
+    item_id = models.BigIntegerField(db_index=True)
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+        related_name="blueprints",
+    )
+    type_id = models.IntegerField(db_index=True)
+    location_id = models.BigIntegerField(db_index=True)
+    location_flag = models.CharField(max_length=32, db_index=True)
+    material_efficiency = models.SmallIntegerField(
+        help_text="ME level 0-10; -1 if not researched."
+    )
+    time_efficiency = models.SmallIntegerField(
+        help_text="TE level 0-20; -1 if not researched."
+    )
+    quantity = models.IntegerField(
+        help_text="Copy count; -1 for BPO (original)."
+    )
+    runs = models.IntegerField(
+        help_text="Manufacturing runs left; -1 for BPO."
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (("corporation", "item_id"),)
+        indexes = [models.Index(fields=["corporation", "type_id"])]
+
+    def __str__(self):
+        return (
+            f"BP {self.item_id} ({self.corporation.name}, type {self.type_id})"
+        )

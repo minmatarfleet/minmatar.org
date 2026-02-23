@@ -8,12 +8,14 @@ from .models import (
     EvePlayer,
     EveAlliance,
     EveCharacter,
+    EveCharacterBlueprint,
     EveCharacterContract,
     EveCharacterIndustryJob,
     EveCharacterMiningEntry,
     EveCharacterPlanet,
     EveCharacterPlanetOutput,
     EveCorporation,
+    EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
     EveSkillset,
@@ -140,8 +142,26 @@ class EveCharacterIndustryJobAdmin(admin.ModelAdmin):
     search_fields = ("job_id", "character__character_name")
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("character",)
-    date_hierarchy = "end_date"
-    ordering = ("-end_date",)
+
+
+@admin.register(EveCharacterBlueprint)
+class EveCharacterBlueprintAdmin(admin.ModelAdmin):
+    list_display = (
+        "item_id",
+        "character",
+        "type_id",
+        "location_id",
+        "location_flag",
+        "material_efficiency",
+        "time_efficiency",
+        "quantity",
+        "runs",
+        "updated_at",
+    )
+    list_filter = ("character", "location_flag")
+    search_fields = ("character__character_name", "item_id", "type_id")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("character",)
 
 
 @admin.register(EveCharacterMiningEntry)
@@ -335,8 +355,26 @@ class EveCorporationIndustryJobAdmin(admin.ModelAdmin):
     search_fields = ("job_id", "corporation__name")
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("corporation",)
-    date_hierarchy = "end_date"
-    ordering = ("-end_date",)
+
+
+@admin.register(EveCorporationBlueprint)
+class EveCorporationBlueprintAdmin(admin.ModelAdmin):
+    list_display = (
+        "item_id",
+        "corporation",
+        "type_id",
+        "location_id",
+        "location_flag",
+        "material_efficiency",
+        "time_efficiency",
+        "quantity",
+        "runs",
+        "updated_at",
+    )
+    list_filter = ("corporation", "location_flag")
+    search_fields = ("corporation__name", "item_id", "type_id")
+    readonly_fields = ("updated_at",)
+    autocomplete_fields = ("corporation",)
 
 
 # ---------------------------------------------------------------------------

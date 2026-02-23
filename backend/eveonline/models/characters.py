@@ -251,6 +251,43 @@ class EveCharacterIndustryJob(models.Model):
         return f"Job {self.job_id} ({self.character.character_name}, {self.status})"
 
 
+class EveCharacterBlueprint(models.Model):
+    """
+    Character blueprint from ESI (esi-characters.read_blueprints.v1).
+    item_id is the blueprint instance ID; type_id is the blueprint type.
+    """
+
+    item_id = models.BigIntegerField(db_index=True)
+    character = models.ForeignKey(
+        "EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="blueprints",
+    )
+    type_id = models.IntegerField(db_index=True)
+    location_id = models.BigIntegerField(db_index=True)
+    location_flag = models.CharField(max_length=32, db_index=True)
+    material_efficiency = models.SmallIntegerField(
+        help_text="ME level 0-10; -1 if not researched."
+    )
+    time_efficiency = models.SmallIntegerField(
+        help_text="TE level 0-20; -1 if not researched."
+    )
+    quantity = models.IntegerField(
+        help_text="Copy count; -1 for BPO (original)."
+    )
+    runs = models.IntegerField(
+        help_text="Manufacturing runs left; -1 for BPO."
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (("character", "item_id"),)
+        indexes = [models.Index(fields=["character", "type_id"])]
+
+    def __str__(self):
+        return f"BP {self.item_id} ({self.character.character_name}, type {self.type_id})"
+
+
 class EveCharacterPlanet(models.Model):
     """A character's planetary interaction colony on a specific planet."""
 

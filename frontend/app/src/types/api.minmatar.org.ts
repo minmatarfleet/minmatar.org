@@ -261,6 +261,7 @@ export interface Location extends BaseLocation {
     short_name:         string;
     region_id:          number | null;
     market_active:      boolean;
+    prices_active:      boolean;
     freight_active:     boolean;
     staging_active:     boolean;
 }

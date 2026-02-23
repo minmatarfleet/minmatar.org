@@ -2,11 +2,13 @@ import logging
 
 from app.celery import app
 from eveonline.helpers.corporations import (
+    SCOPE_CORPORATION_BLUEPRINTS,
     SCOPE_CORPORATION_CONTRACTS,
     SCOPE_CORPORATION_INDUSTRY_JOBS,
     SCOPE_CORPORATION_MEMBERSHIP,
     get_director_with_scope,
     sync_alliance_corporations_from_esi,
+    update_corporation_blueprints as refresh_corporation_blueprints,
     update_corporation_contracts as refresh_corporation_contracts,
     update_corporation_industry_jobs as refresh_corporation_industry_jobs,
     update_corporation_members_and_roles as refresh_corporation_members_and_roles,
@@ -75,3 +77,5 @@ def update_corporation(corporation_id):
         refresh_corporation_contracts(corporation_id)
     if get_director_with_scope(corporation, SCOPE_CORPORATION_INDUSTRY_JOBS):
         refresh_corporation_industry_jobs(corporation_id)
+    if get_director_with_scope(corporation, SCOPE_CORPORATION_BLUEPRINTS):
+        refresh_corporation_blueprints(corporation_id)

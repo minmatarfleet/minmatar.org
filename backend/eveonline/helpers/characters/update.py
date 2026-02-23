@@ -11,6 +11,7 @@ from django.utils import timezone
 from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacter,
+    EveCharacterBlueprint,
     EveCharacterContract,
     EveCharacterIndustryJob,
     EveCharacterKillmail,
@@ -319,3 +320,52 @@ def update_character_industry_jobs(eve_character_id: int) -> int:
         eve_character_id,
     )
     return len(jobs_data)
+
+
+def update_character_blueprints(eve_character_id: int) -> int:
+    """Fetch blueprints from ESI and replace character's blueprints. Returns count synced."""
+    character = (
+        EveCharacter.objects.filter(character_id=eve_character_id)
+    ).first()
+    if not character:
+        logger.warning(
+            "Character %s not found, skipping blueprints sync",
+            eve_character_id,
+        )
+        return 0
+    if character.esi_suspended:
+        logger.debug(
+            "Skipping blueprints for ESI suspended character %s",
+            eve_character_id,
+        )
+        return 0
+
+    response = EsiClient(character).get_character_blueprints()
+    if not response.success():
+        logger.warning(
+            "Skipping blueprints for character %s, %s",
+            eve_character_id,
+            response.response_code,
+        )
+        return 0
+
+    blueprints_data = response.results() or []
+    EveCharacterBlueprint.objects.filter(character=character).delete()
+    for raw in blueprints_data:
+        EveCharacterBlueprint.objects.create(
+            character=character,
+            item_id=raw["item_id"],
+            type_id=raw["type_id"],
+            location_id=raw["location_id"],
+            location_flag=raw["location_flag"],
+            material_efficiency=raw["material_efficiency"],
+            time_efficiency=raw["time_efficiency"],
+            quantity=raw["quantity"],
+            runs=raw["runs"],
+        )
+    logger.info(
+        "Synced %s blueprint(s) for character %s",
+        len(blueprints_data),
+        eve_character_id,
+    )
+    return len(blueprints_data)

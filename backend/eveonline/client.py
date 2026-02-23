@@ -210,6 +210,51 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_character_blueprints(self) -> EsiResponse:
+        """
+        Returns all blueprints for the character. Paginated; fetches all pages.
+        Requires esi-characters.read_blueprints.v1.
+        """
+        token, status = self._valid_token(
+            ["esi-characters.read_blueprints.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}/characters/{self.character_id}/blueprints/"
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            resp = requests.get(
+                url,
+                params={"page": 1},
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        all_blueprints = resp.json() if resp.content else []
+        total_pages = int(resp.headers.get("X-Pages", 1))
+
+        for page in range(2, total_pages + 1):
+            try:
+                page_resp = requests.get(
+                    url,
+                    params={"page": page},
+                    headers=headers,
+                    timeout=30,
+                )
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if page_resp.status_code >= 400:
+                return EsiResponse(response_code=page_resp.status_code)
+            page_data = page_resp.json() if page_resp.content else []
+            all_blueprints.extend(page_data)
+
+        return EsiResponse(response_code=SUCCESS, data=all_blueprints)
+
     def get_character_industry_jobs(
         self, include_completed: bool = True
     ) -> EsiResponse:
@@ -263,6 +308,51 @@ class EsiClient:
         )
 
         return self._operation_results(operation)
+
+    def get_corporation_blueprints(self, corporation_id: int) -> EsiResponse:
+        """
+        Returns all blueprints for the corporation. Paginated; fetches all pages.
+        Requires esi-corporations.read_blueprints.v1 (Director).
+        """
+        token, status = self._valid_token(
+            ["esi-corporations.read_blueprints.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/blueprints/"
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            resp = requests.get(
+                url,
+                params={"page": 1},
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        all_blueprints = resp.json() if resp.content else []
+        total_pages = int(resp.headers.get("X-Pages", 1))
+
+        for page in range(2, total_pages + 1):
+            try:
+                page_resp = requests.get(
+                    url,
+                    params={"page": page},
+                    headers=headers,
+                    timeout=30,
+                )
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if page_resp.status_code >= 400:
+                return EsiResponse(response_code=page_resp.status_code)
+            page_data = page_resp.json() if page_resp.content else []
+            all_blueprints.extend(page_data)
+
+        return EsiResponse(response_code=SUCCESS, data=all_blueprints)
 
     def get_corporation_industry_jobs(
         self, corporation_id: int, include_completed: bool = True

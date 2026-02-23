@@ -6,6 +6,7 @@ from esi.models import Token
 from app.celery import app
 from eveonline.helpers.characters import (
     update_character_assets as refresh_character_assets,
+    update_character_blueprints as refresh_character_blueprints,
     update_character_contracts as refresh_character_contracts,
     update_character_industry_jobs as refresh_character_industry_jobs,
     update_character_killmails as refresh_character_killmails,
@@ -25,6 +26,7 @@ SCOPE_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
 SCOPE_INDUSTRY_JOBS = ["esi-industry.read_character_jobs.v1"]
 SCOPE_MINING = ["esi-industry.read_character_mining.v1"]
 SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
+SCOPE_BLUEPRINTS = ["esi-characters.read_blueprints.v1"]
 
 
 @app.task(rate_limit="1/m")
@@ -69,6 +71,8 @@ def update_character(eve_character_id):
         refresh_character_mining(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_PLANETS):
         refresh_character_planets(eve_character_id)
+    if Token.get_token(eve_character_id, SCOPE_BLUEPRINTS):
+        refresh_character_blueprints(eve_character_id)
 
 
 @app.task()
