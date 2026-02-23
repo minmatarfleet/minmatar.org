@@ -32,19 +32,11 @@ if (market_locations.length > 0) {
 }
 
 const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
-    let completion = 0
-    let total_expectations = 0
-
     const fittings = location.doctrines.map(doctrine => {
         if (location.location_name === active_location_name)
             doctrines.push(doctrine.doctrine_name)
 
         return doctrine.fittings.map(fitting => {
-            const expected_quantity = fitting.expectation_quantity ?? 0
-            const current_quantity = fitting.current_quantity ?? 0
-            completion += current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 0
-            total_expectations += expected_quantity > 0 ? 1 : 0
-
             return {
                 ...fitting,
                 doctrine_name: doctrine.doctrine_name,
@@ -68,7 +60,6 @@ const market_locations_ui:MarketLocationUI[] = await Promise.all(market_location
     return {
         name: location.location_name,
         doctrine_count: location.doctrines.length,
-        completion: total_expectations > 0 ? (completion / total_expectations) : 100,
         fittings: sorted_location_fittings,
     } as MarketLocationUI
 }))
@@ -179,6 +170,7 @@ const page_description = t('contracts.leading_text')
                     placeholder={t('filter')}
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.title') })"
+                    x-init="$el.focus()"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>

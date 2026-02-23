@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { FittingMarketData } from '@helpers/fetching/market'
 import type { MarketLocationUI } from '@dtypes/layout_components';
 
 interface Props {
@@ -14,8 +15,56 @@ const {
     non_active_market_locations_ui,
 } = Astro.props
 
+function deduple_market_location_fittings(market_location_fittings:FittingMarketData[]) {
+    const active_market_locations_fittings: Record<string,FittingMarketData> = {} 
+    market_location_fittings.map(fitting => {
+        if (!active_market_locations_fittings[fitting.fitting_id])
+            active_market_locations_fittings[fitting.fitting_id] = fitting
+        else
+            active_market_locations_fittings[fitting.fitting_id].doctrine_name = active_market_locations_fittings[fitting.fitting_id].doctrine_name?.concat(`, ${fitting.doctrine_name}`)
+    })
+
+    let deduped_active_market_locations_fittings:FittingMarketData[] = []
+    for (let id in active_market_locations_fittings)
+        deduped_active_market_locations_fittings.push(active_market_locations_fittings[id])
+
+    return deduped_active_market_locations_fittings
+}
+
+active_market_locations_ui.fittings = deduple_market_location_fittings(active_market_locations_ui.fittings)
+
+function get_completion(market_location_fittings:FittingMarketData[]) {
+    let completion = 0
+    let total_expectations = 0
+
+    market_location_fittings.forEach(fitting => {
+        if (!fitting.expectation_quantity) return true
+
+        if (fitting.expectation_quantity > 0 && fitting.current_quantity > fitting.expectation_quantity)
+            completion += 100
+        else if (fitting.expectation_quantity > 0)
+            completion += fitting.current_quantity / fitting.expectation_quantity * 100
+
+        total_expectations++
+    })
+
+    return total_expectations > 0 ? (completion / total_expectations) : 100
+}
+
+active_market_locations_ui.completion = get_completion(active_market_locations_ui.fittings)
+
 const contracts_with_expectations = active_market_locations_ui.fittings.filter(fitting => fitting.expectation_quantity)
 const contracts_without_expectations = active_market_locations_ui.fittings.filter(fitting => !fitting.expectation_quantity)
+
+let deduped_non_active_market_locations_ui = non_active_market_locations_ui.map(non_active_market_location => {
+    non_active_market_location.fittings = deduple_market_location_fittings(non_active_market_location.fittings)
+    return non_active_market_location
+})
+
+deduped_non_active_market_locations_ui = deduped_non_active_market_locations_ui.map(non_active_market_location => {
+    non_active_market_location.completion = get_completion(non_active_market_location.fittings)
+    return non_active_market_location
+})
 
 import { query_string } from '@helpers/string';
 
@@ -54,7 +103,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
             </Flexblock>
         </LocationsReelSlide>
 
-        {non_active_market_locations_ui.map(location =>
+        {deduped_non_active_market_locations_ui.map(location =>
             <LocationsReelSlide gap={REEL_GAP}>
                 <Flexblock gap='var(--space-2xs)'>
                     <h3>
