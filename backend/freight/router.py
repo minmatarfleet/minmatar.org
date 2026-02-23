@@ -4,9 +4,11 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 
+from freight.endpoints import router as endpoints_router
 from .models import EveFreightRoute, EveFreightRouteOption
 
 router = Router(tags=["Freight"])
+router.add_router("", endpoints_router)
 
 
 class EveFreightLocationResponse(BaseModel):
