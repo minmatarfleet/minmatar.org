@@ -12,23 +12,23 @@ router = Router(tags=["Freight"])
 ACTIVE_STATUSES = ["outstanding", "in_progress"]
 
 
-def _completed_by_display_name(contract):
-    """Resolve completed_by User to a character name (primary preferred)."""
+def _completed_by_character(contract):
+    """Resolve completed_by User to a character (primary preferred, else first)."""
     if not contract.completed_by_id:
         return None
     user = contract.completed_by
     try:
         primary = user.eveplayer.primary_character
         if primary:
-            return primary.character_name
+            return primary
     except Exception:
         pass
     chars = list(user.evecharacter_set.all())
-    first = min(chars, key=lambda c: (c.character_name or ""), default=None)
-    return first.character_name if first else None
+    return min(chars, key=lambda c: (c.character_name or ""), default=None)
 
 
 def _build_contract_response(c):
+    completed_by_char = _completed_by_character(c)
     return FreightContractResponse(
         contract_id=c.contract_id,
         status=c.status,
@@ -41,10 +41,16 @@ def _build_contract_response(c):
         date_completed=(
             c.date_completed.isoformat() if c.date_completed else None
         ),
+        issuer_id=c.issuer.character_id if c.issuer_id else None,
         issuer_character_name=(
             c.issuer.character_name if c.issuer_id else None
         ),
-        completed_by_character_name=_completed_by_display_name(c),
+        completed_by_id=(
+            completed_by_char.character_id if completed_by_char else None
+        ),
+        completed_by_character_name=(
+            completed_by_char.character_name if completed_by_char else None
+        ),
     )
 
 
