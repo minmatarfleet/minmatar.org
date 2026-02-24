@@ -3,6 +3,8 @@
 from typing import List
 
 from django.db.models import F, OuterRef, Subquery, Value
+from django.db.models.functions import Coalesce
+from eveuniverse.models import EveType
 from ninja import Router
 
 from eveonline.models import (
@@ -52,6 +54,16 @@ def get_blueprints(request) -> List[BlueprintOriginalResponse]:
                 )[:1]
             )
         )
+        .annotate(
+            blueprint_type_name=Coalesce(
+                Subquery(
+                    EveType.objects.filter(id=OuterRef("type_id")).values(
+                        "name"
+                    )[:1]
+                ),
+                Value(""),
+            )
+        )
         .order_by("type_id", "item_id")
     )
 
@@ -77,15 +89,28 @@ def get_blueprints(request) -> List[BlueprintOriginalResponse]:
                 )[:1]
             )
         )
+        .annotate(
+            blueprint_type_name=Coalesce(
+                Subquery(
+                    EveType.objects.filter(id=OuterRef("type_id")).values(
+                        "name"
+                    )[:1]
+                ),
+                Value(""),
+            )
+        )
         .order_by("type_id", "item_id")
     )
 
     out: List[BlueprintOriginalResponse] = []
     for row in char_bpos:
+        name = row.blueprint_type_name
         out.append(
             BlueprintOriginalResponse(
                 item_id=row.item_id,
                 type_id=row.type_id,
+                blueprint_name=name,
+                type_name=name,
                 location_id=row.location_id,
                 location_flag=row.location_flag,
                 material_efficiency=row.material_efficiency,
@@ -101,10 +126,13 @@ def get_blueprints(request) -> List[BlueprintOriginalResponse]:
             )
         )
     for row in corp_bpos:
+        name = row.blueprint_type_name
         out.append(
             BlueprintOriginalResponse(
                 item_id=row.item_id,
                 type_id=row.type_id,
+                blueprint_name=name,
+                type_name=name,
                 location_id=row.location_id,
                 location_flag=row.location_flag,
                 material_efficiency=row.material_efficiency,

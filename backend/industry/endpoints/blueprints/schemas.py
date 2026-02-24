@@ -18,6 +18,8 @@ class BlueprintOriginalResponse(BaseModel):
 
     item_id: int
     type_id: int
+    blueprint_name: str
+    type_name: str
     location_id: int
     location_flag: str
     material_efficiency: int
@@ -31,6 +33,8 @@ class BlueprintCopyResponse(BaseModel):
 
     item_id: int
     type_id: int
+    blueprint_name: str
+    type_name: str
     location_id: int
     location_flag: str
     material_efficiency: int
