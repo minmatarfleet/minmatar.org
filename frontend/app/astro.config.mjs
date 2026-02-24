@@ -45,6 +45,25 @@ export default defineConfig({
     devToolbar: { enabled: false },
     prefetch: false,
     integrations: integrations,
+    image: {
+        remotePatterns: [{
+                protocol: 'https',
+                hostname: 'preview.redd.it'
+            }, {
+                protocol: 'https',
+                hostname: 'i.redd.it'
+            }, {
+                protocol: "http",
+                hostname: "localhost"
+            }, {
+                protocol: "https",
+                hostname: "i.ytimg.com"
+            }, {
+                protocol: "https",
+                hostname: "my.minmatar.org"
+            }
+        ],
+    },
     vite: {
         server: {
             hmr: false,

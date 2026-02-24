@@ -1,13 +1,20 @@
 ---
+import type { ComponentProps } from "astro/types";
+type AstroImageOptions = ComponentProps<typeof Image>;
+
+import { Image } from 'astro:assets';
+
 interface Props {
-    src:    string;
-    alt?:   string;
+    src:            string;
+    alt?:           string;
+    astro_image?:   AstroImageOptions;
     [propName: string]: any;
 }
 
 const {
     src,
     alt = '',
+    astro_image,
     ...attributes
 } = Astro.props
 ---
@@ -25,13 +32,21 @@ const {
     }`}
     x-init="init_zoom()"
 >
-    <img
-        data-zoomable
-        src={src}
-        alt={alt}
-        loading="lazy"
-        {...attributes}
-    />
+    {astro_image ?
+        <Image
+            data-zoomable
+            data-zoom-src={src}
+            {...attributes}
+            {...astro_image}
+        /> :
+        <img
+            data-zoomable
+            src={src}
+            alt={alt}
+            loading="lazy"
+            {...attributes}
+        />
+    }
 </figure>
 
 <style lang="scss">

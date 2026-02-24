@@ -301,3 +301,7 @@ lite-youtube {
 [data-tippy-root] + [data-tippy-root] {
     z-index: calc(var(--tooltips-z-index) - 1);
 }
+
+.medium-zoom-image--hidden {
+    opacity: 0;
+}

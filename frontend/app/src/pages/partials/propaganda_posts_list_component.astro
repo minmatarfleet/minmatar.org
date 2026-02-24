@@ -54,7 +54,7 @@ try {
 
 const count_text = t(post_count != 1 ? 'propaganda_post_plural' : 'propaganda_post_singular').replace('COUNT', String(post_count))
 
-const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}${status ? `state=${status}` : ''}`
+const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda_posts_list_component')}${status ? `?state=${status}` : ''}`
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

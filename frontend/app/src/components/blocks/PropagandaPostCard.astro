@@ -16,6 +16,9 @@ const {
     is_editing,
 } = Astro.props
 
+// Remove extra amp; characters from the URI for reddit images
+const image_sanitized = post.image ? post.image.replaceAll('amp;', '') : undefined
+
 import { get_player_icon } from '@helpers/eve_image_server'
 import { format_date } from '@helpers/date'
 
@@ -31,6 +34,15 @@ import Tag from '@components/blocks/Tag.astro';
     alt={post.title}
     narrow={true}
     zoomable={post.image ? true : false}
+    astro_image={image_sanitized ? {
+        src: image_sanitized,
+        width: 300,
+        height: 300,
+        format: 'webp',
+        quality: 65,
+        alt: post.title,
+        loading: 'lazy',
+    } : undefined}
     data-desature={post.state === 'trash' ? 'mild' : undefined}
 >
     {(post.user_id === editor_id && is_editing) &&

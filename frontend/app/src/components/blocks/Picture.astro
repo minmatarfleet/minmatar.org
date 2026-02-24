@@ -1,5 +1,9 @@
 ---
 import type { ImageSize } from '@dtypes/layout_components'
+import type { ComponentProps } from "astro/types";
+type AstroImageOptions = ComponentProps<typeof Image>;
+
+import { Image } from 'astro:assets';
 
 interface Props {
     src:            string;
@@ -9,6 +13,7 @@ interface Props {
     mask?:          boolean;
     zoomable?:      boolean;
     placeholder?:   string;
+    astro_image?:   AstroImageOptions;
 }
 
 const {
@@ -19,6 +24,7 @@ const {
     mask = false,
     zoomable = false,
     placeholder,
+    astro_image,
 } = Astro.props
 
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
@@ -31,6 +37,7 @@ import ZoomableImage from "@components/blocks/ZoomableImage.astro";
             src={src}
             alt={alt ? alt : undefined}
             loading="lazy"
+            astro_image={astro_image ? astro_image : undefined}
         /> :
         <img
             class:list={{ mask }}

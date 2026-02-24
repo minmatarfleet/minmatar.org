@@ -1,9 +1,15 @@
 ---
+import type { ComponentProps } from "astro/types";
+type AstroImageOptions = ComponentProps<typeof Image>;
+
+import { Image } from 'astro:assets';
+
 interface Props {
-    src:        string;
-    alt?:       string;
-    narrow?:    boolean;
-    zoomable?:  boolean;
+    src:            string;
+    alt?:           string;
+    narrow?:        boolean;
+    zoomable?:      boolean;
+    astro_image?:   AstroImageOptions;
     [propName: string]: any;
 }
 
@@ -12,6 +18,7 @@ const {
     alt,
     narrow = false,
     zoomable = false,
+    astro_image,
     ...attributes
 } = Astro.props
 
@@ -28,6 +35,7 @@ import Card from "@components/blocks/Card.astro";
         narrow={narrow}
         mask={true}
         zoomable={zoomable}
+        astro_image={astro_image ? astro_image : undefined}
     />
 
     <slot name="header" slot="header" />
