@@ -1,0 +1,62 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    post:      PostListUI;
+}
+
+const {
+    post,
+} = Astro.props
+
+const MEDIA_ICON = {
+    'Metropolis': '/images/icons/Metropilis.png',
+    'Frontlines': '/images/icons/Frontlines.png',
+    'Metro Daily News': '/images/icons/Metro-Daily-News.png',
+    'The Cope': '/images/icons/The-Cope.png',
+    'Rust and Blood': '/images/icons/Rust-and-Blood.png',
+    'Waifu Wars': '/images/icons/Waifu-Wars.png',
+}
+
+import { format_date } from '@helpers/date'
+
+import { Image } from 'astro:assets';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Badge from '@components/blocks/Badge.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <Badge
+        class="[ items-center! text-nowrap! ]"
+        title={post.title}
+        size={32}
+    >
+        <picture slot="picture">
+            {MEDIA_ICON[post.tags[0]] ?
+                <img
+                    class="[ w-auto ]"
+                    src={MEDIA_ICON[post.tags[0]]}
+                    loading='lazy'
+                    height={32}
+                    width={32}
+                    alt={post.tags[0]}
+                /> :
+                <CharacterPicture
+                    character_id={post.author.character_id}
+                    character_name={post.author.character_name}
+                    size={32}
+                />
+            }
+        </picture>
+        <small>{format_date(lang, post.date_posted)}</small>
+    </Badge>
+</FlexInline>

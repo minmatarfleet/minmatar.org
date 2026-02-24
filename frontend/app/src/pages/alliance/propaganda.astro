@@ -18,16 +18,26 @@ const post_editor = can_manage_posts ? (user as User).user_id : false
 import { prod_error_messages } from '@helpers/env'
 
 import type { PostListUI } from '@dtypes/layout_components'
-import { fetch_posts_grouped_by_tags } from '@helpers/fetching/posts'
+import { fetch_posts_grouped_by_tags, fetch_posts } from '@helpers/fetching/posts'
 
 let posts: Record<string, PostListUI[]> = {}
+let news_reel_posts:PostListUI[] = []
 let post_fetching_error:string | false = false
 let post_count = 0
+const PAGE_LENGTH = 10
 
 try {
     const posts_grouped = await fetch_posts_grouped_by_tags({ status: 'published' })
     posts = posts_grouped.posts_by_tag
     post_count = posts_grouped.post_count
+
+    const paginated_posts = await fetch_posts({
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
+    })
+
+    news_reel_posts = paginated_posts.chunk
 } catch (error) {
     post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
@@ -49,6 +59,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import PropagandaReels from '@components/blocks/PropagandaReels.astro';
 import Button from '@components/blocks/Button.astro';
+import NewsReel from '@components/blocks/NewsReel.astro'
 
 const page_title = t('propaganda.page_title');
 const leading_text = t('propaganda.leading_text');
@@ -125,6 +136,7 @@ const leading_text = t('propaganda.leading_text');
                     editor_id={post_editor ? post_editor : undefined}
                     is_editing={false}
                 />
+                <NewsReel posts={news_reel_posts} />
             }
         </Flexblock>
     </PageWide>

@@ -2,61 +2,64 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+import type { PostListUI } from '@dtypes/layout_components'
 
 interface Props {
-    space_truckers:     SpaceTruckerStatistics[];
+    posts:     PostListUI[];
 }
 
 const {
-    space_truckers,
+    posts,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
-import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
+import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
 ---
 
 <div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! ]">
     <Wrapper
-        class="[ space-truckers-reel ]"
+        class="[ news-reel ]"
         neocom={true}
         max_width='var(--max-content-width)'
         centered={true}
         padding_block='var(--space-2xs)'
     >
-        <FixedFluid width='170px' class="[ items-center! ]" gap='var(--space-xl)'>
-            <h4>{t('space_trucker_ranking')}</h4>
+        <FixedFluid width='120px' class="[ items-center! ]" gap='var(--space-xl)'>
+            <h4>{t('recent_events')}</h4>
+
             <div class="[ relative ]">
                 <div
                     class="[ swiper ][ w-full ]"
-                    id="space-truckers-list"
+                    id="news-list"
                 >
                     <MarqueeSwiper
-                        swiper_selector='#space-truckers-list'
+                        swiper_selector='#news-list'
                         pagination={false}
                         gap={40}
-                        speed={7000}
+                        speed={9000}
                     >
-                        {space_truckers.map((trucker, index) =>
+                        <div class="[ swiper-slide ]" style="margin-right: 40px; width: 450px"></div>
+                        {posts.map(post =>
                             <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                                <NewsReelBadge post={post} />
                             </div>
                         )}
-                        {space_truckers.length >= 6 && space_truckers.length < 12 &&
-                            space_truckers.map((trucker, index) =>
+                        <div class="[ swiper-slide ]" style="margin-right: 40px; width: 450px"></div>
+                        {posts.length >= 6 && posts.length < 12 &&
+                            posts.map(post =>
                                 <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                    <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                                    <NewsReelBadge post={post} />
                                 </div>
                             )
                         }
                     </MarqueeSwiper>
                 </div>
 
-                <div id="space-truckers-list-button-prev" class="[ swiper-button-prev ]"></div>
-                <div id="space-truckers-list-button-next" class="[ swiper-button-next ]"></div>
+                <div id="news-list-button-prev" class="[ swiper-button-prev ]"></div>
+                <div id="news-list-button-next" class="[ swiper-button-next ]"></div>
             </div>
         </FixedFluid>
     </Wrapper>
@@ -71,7 +74,7 @@ import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
         z-index: var(--sticky-z-index);
     }
 
-    .space-truckers-reel {
+    .news-reel {
         position: relative;
     }
 

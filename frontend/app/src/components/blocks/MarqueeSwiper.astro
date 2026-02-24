@@ -5,6 +5,7 @@ interface Props {
     gap?:               number;
     initial_slide?:     number;
     align?:             'start' | 'center' | 'end';
+    speed?:             number,
 }
 
 const {
@@ -13,6 +14,7 @@ const {
     gap = 5,
     initial_slide = 0,
     align = 'start',
+    speed = 5000,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -47,7 +49,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                     spaceBetween: ${gap},
                     pagination: false,
                     loop: true,
-                    speed: 5000,
+                    speed: ${speed},
                     autoplay: {
                         delay: 0,
                         disableOnInteraction: false,

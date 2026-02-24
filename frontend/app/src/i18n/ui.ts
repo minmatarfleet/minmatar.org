@@ -1768,5 +1768,6 @@ export const ui = {
         'manufacturing': 'Manufacturing',
         'space_trucker': 'Space trucker',
         'view_contract_history': 'View contract history',
+        'recent_events': 'Recent events',
     },
 } as const;
