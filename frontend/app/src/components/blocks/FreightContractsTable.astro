@@ -30,10 +30,14 @@ const active_contracts_location_count = active_contracts_location?.destinations.
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FreightContractItem from '@components/blocks/FreightContractItem.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+
+import ArrowRightIcon from '@components/icons/ArrowRightIcon.astro';
 ---
 
 <Flexblock class="[ order-table ]" gap='var(--space-xl)'>
@@ -75,7 +79,12 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 
     <BlockList class="[ pb-[64px] ]" gap='var(--space-l)'>
         {active_contracts_location.destinations.map((destination) =>
-            <h3>➡️ {STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
+            <FlexInline gap='var(--space-2xs)'>
+                <NotificationBadge number={0} color='fleet-yellow' text_color='black'>
+                    <ArrowRightIcon />
+                </NotificationBadge>
+                <h3>{STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
+            </FlexInline>
             <BlockList role="list" gap='var(--space-l)'>
                 {destination.contracts.map(contract =>
                     <div x-show="show_item($el)">

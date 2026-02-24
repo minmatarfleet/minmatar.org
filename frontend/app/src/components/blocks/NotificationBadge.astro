@@ -2,22 +2,26 @@
 import type { BadgeColors } from '@dtypes/layout_components';
 
 interface Props {
-    number: number;
-    color?: BadgeColors;
+    number:         number;
+    color?:         BadgeColors;
+    text_color?:    string;
     [propName: string]: any;
 }
 
 const {
     number,
     color = 'fleet-red',
+    text_color,
     ...attributes
 } = Astro.props;
 
 const badge_background_color = `var(--${color})`;
-const badge_color = (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)')
+const badge_color = !text_color ? (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)') : text_color
 ---
 
-<span class:list={['badge', Astro.props.class]} {...attributes}>{number}</span>
+<span class:list={['badge', Astro.props.class]} {...attributes}>
+    <slot>{number}</slot>
+</span>
 
 <style lang="scss" define:vars={{ badge_background_color, badge_color }}>
     .badge {
