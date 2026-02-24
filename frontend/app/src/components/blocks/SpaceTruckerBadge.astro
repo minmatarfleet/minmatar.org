@@ -1,0 +1,36 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    place:      number;
+    trucker:    SpaceTruckerStatistics;
+}
+
+const {
+    place,
+    trucker,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <h2>{place}</h2>
+    <PilotBadge
+        class="[ items-center! ]"
+        character_id={trucker.primary_character_id}
+        character_name={trucker.primary_character_name}
+        size={32}
+    >
+        <small>{t(trucker.completed_contracts_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(trucker.completed_contracts_count))}</small>
+    </PilotBadge>
+</FlexInline>

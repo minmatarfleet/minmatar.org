@@ -13,11 +13,10 @@ const {
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
-import PilotBadge from '@components/blocks/PilotBadge.astro';
+import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
 ---
 
 <div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! ]">
@@ -38,22 +37,16 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
                     <MarqueeSwiper swiper_selector='#space-truckers-list' pagination={false} gap={40}>
                         {space_truckers.map((trucker, index) =>
                             <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                <FlexInline
-                                    class="[ items-center! ]"
-                                    gap='var(--space-xs)'
-                                >
-                                    <h2>{index + 1}</h2>
-                                    <PilotBadge
-                                        class="[ items-center! ]"
-                                        character_id={trucker.primary_character_id}
-                                        character_name={trucker.primary_character_name}
-                                        size={32}
-                                    >
-                                        <small>{t(trucker.completed_contracts_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(trucker.completed_contracts_count))}</small>
-                                    </PilotBadge>
-                                </FlexInline>
+                                <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                             </div>
                         )}
+                        {space_truckers.length >= 6 && space_truckers.length < 12 &&
+                            space_truckers.map((trucker, index) =>
+                                <div class="[ swiper-slide ]" style="margin-right: 40px">
+                                    <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                                </div>
+                            )
+                        }
                     </MarqueeSwiper>
                 </div>
 
