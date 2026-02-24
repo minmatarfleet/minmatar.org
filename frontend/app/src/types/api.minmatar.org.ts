@@ -681,7 +681,6 @@ export interface Player {
     prime_time:             PrimeTime | null;
 }
 
-
 export const srp_categories = [ 'logistics', 'support', 'dps', 'capital' ] as const
 export type SRPCategory = typeof srp_categories[number]
 
@@ -744,4 +743,29 @@ export interface IndustryOrder {
     location:           BaseLocation;
     items:              RootItem[];
     assigned_to:        Character[];
+}
+
+export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
+export type FreightContractStatus = typeof freight_contract_statuses[number]
+
+export interface FreightContract {
+    contract_id:                    number;
+    status:                         FreightContractStatus;
+    start_location_name:            string;
+    end_location_name:              string;
+    volume:                         number;
+    collateral:                     number;
+    reward:                         number;
+    date_issued:                    Date;
+    date_completed:                 Date | null;
+    issuer_id:                      number;
+    issuer_character_name:          string;
+    completed_by_id:                number;
+    completed_by_character_name:    string | null;
+}
+
+export interface SpaceTruckerStatistics {
+    primary_character_id:       number;
+    primary_character_name:     string;
+    completed_contracts_count:  number;
 }

@@ -1,0 +1,108 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    space_truckers:     SpaceTruckerStatistics[];
+}
+
+const {
+    space_truckers,
+} = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+---
+
+<div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! ]">
+    <Wrapper
+        class="[ space-truckers-reel ]"
+        neocom={true}
+        max_width='var(--max-content-width)'
+        centered={true}
+        padding_block='var(--space-2xs)'
+    >
+        <FixedFluid width='170px' class="[ items-center! ]" gap='var(--space-xl)'>
+            <h4>{t('space_trucker_ranking')}</h4>
+            <div class="[ relative ]">
+                <div
+                    class="[ swiper ][ w-full ]"
+                    id="space-truckers-list"
+                >
+                    <MarqueeSwiper swiper_selector='#space-truckers-list' pagination={false} gap={40}>
+                        {space_truckers.map((trucker, index) =>
+                            <div class="[ swiper-slide ]" style="margin-right: 40px">
+                                <FlexInline
+                                    class="[ items-center! ]"
+                                    gap='var(--space-xs)'
+                                >
+                                    <h2>{index + 1}</h2>
+                                    <PilotBadge
+                                        class="[ items-center! ]"
+                                        character_id={trucker.primary_character_id}
+                                        character_name={trucker.primary_character_name}
+                                        size={32}
+                                    >
+                                        <small>{t(trucker.completed_contracts_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(trucker.completed_contracts_count))}</small>
+                                    </PilotBadge>
+                                </FlexInline>
+                            </div>
+                        )}
+                    </MarqueeSwiper>
+                </div>
+
+                <div id="space-truckers-list-button-prev" class="[ swiper-button-prev ]"></div>
+                <div id="space-truckers-list-button-next" class="[ swiper-button-next ]"></div>
+            </div>
+        </FixedFluid>
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    .bottom-bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: var(--sticky-z-index);
+    }
+
+    .space-truckers-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -32px;
+        --swiper-navigation-size: 22px;
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-slide {
+        width: fit-content;
+    }
+</style>

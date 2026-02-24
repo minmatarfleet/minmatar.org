@@ -28,7 +28,13 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 ---
 
 <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
-    <IndustrialistIcon size={32} />
+    <div
+        class="[ text-highlight ]"
+        data-tippy-content={t('industrialists')}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    >
+        <IndustrialistIcon size={32} />
+    </div>
 
     <FlexInline gap='var(--space-3xs)'>
         {character_producers.map(producer =>

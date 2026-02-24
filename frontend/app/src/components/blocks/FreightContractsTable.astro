@@ -1,0 +1,95 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FreightContractLocation } from '@dtypes/layout_components'
+
+interface Props {
+    active_contracts_location:         FreightContractLocation;
+    non_active_contracts_location:     FreightContractLocation[];
+    init_tooltips:                      boolean;
+    is_history?:                        boolean;
+}
+
+const {
+    active_contracts_location,
+    non_active_contracts_location,
+    init_tooltips,
+    is_history = false,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const REEL_GAP = 80
+
+const STATIONS_NAMES = {
+    'Jita': 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
+}
+
+const active_contracts_location_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import FreightContractItem from '@components/blocks/FreightContractItem.astro';
+import LocationsReel from '@components/blocks/LocationsReel.astro';
+import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+---
+
+<Flexblock class="[ order-table ]" gap='var(--space-xl)'>
+    <LocationsReel gap={REEL_GAP}>
+        <LocationsReelSlide gap={REEL_GAP}>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>
+                    <a href={translatePath(`/market/freight/contracts${is_history ? '/history' : ''}?${query_string({
+                            location_name: active_contracts_location.location_name
+                        })}`)}
+                    >
+                        {STATIONS_NAMES[active_contracts_location.location_name] ?? active_contracts_location.location_name}
+                    </a>
+                </h2>
+                <small>{t(active_contracts_location_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(active_contracts_location_count))}</small>
+            </Flexblock>
+        </LocationsReelSlide>
+
+        {non_active_contracts_location.map(non_active_contracts_location => {
+            const non_active_contracts_location_count = non_active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
+
+            return (
+                <LocationsReelSlide gap={REEL_GAP}>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h3>
+                            <a href={translatePath(`/market/freight/contracts${is_history ? '/history' : ''}?${query_string({
+                                    location_name: non_active_contracts_location.location_name
+                                })}`)}
+                            >
+                                {STATIONS_NAMES[non_active_contracts_location.location_name] ?? non_active_contracts_location.location_name}
+                            </a>
+                        </h3>
+                        <small>{t(non_active_contracts_location_count != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(non_active_contracts_location_count))}</small>
+                    </Flexblock>
+                </LocationsReelSlide>
+            )
+        })}
+    </LocationsReel>
+
+    <BlockList class="[ pb-[64px] ]" gap='var(--space-l)'>
+        {active_contracts_location.destinations.map((destination) =>
+            <h3>➡️ {STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
+            <BlockList role="list" gap='var(--space-l)'>
+                {destination.contracts.map(contract =>
+                    <div x-show="show_item($el)">
+                        <FreightContractItem contract={contract} init_tooltips={init_tooltips} />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
+        )}
+    </BlockList>
+</Flexblock>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+</style>

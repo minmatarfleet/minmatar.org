@@ -61,13 +61,13 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         )}
     </LocationsReel>
 
-    <BlockList role="list" gap='var(--space-l)'>
+    <BlockList class="[ pb-[64px] ]" role="list" gap='var(--space-l)'>
         {active_orders_locations.orders.map((order) =>
             <div x-show="show_item($el)">
                 <OrderItem order={order} init_tooltips={init_tooltips} />
             </div>
         )}
-        {<p class="[ no-result-text ]">{t('no_results')}</p>}
+        <p class="[ no-result-text ]">{t('no_results')}</p>
     </BlockList>
 </Flexblock>
 

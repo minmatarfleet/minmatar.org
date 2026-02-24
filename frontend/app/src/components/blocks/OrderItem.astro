@@ -53,7 +53,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     <FlexInline>
         <div class="[ basis-[250px] ]">
             <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div class="[ text-highlight ]">
+                <div
+                    class="[ text-highlight h-[32px] ]"
+                    data-tippy-content={t('manufacturing')}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
                     <IndustryIcon size={32} />
                 </div>
                 <FlexInline gap='var(--space-2xs)'>

@@ -60,7 +60,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     <div class="[ alignment-hack ]">
         <Grid class="[ pl-[64px] ]" min_item_width='250px'>
             <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div class="[ text-highlight ]">
+                <div
+                    class="[ text-highlight ]"
+                    data-tippy-content={t('manufacturing')}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
                     <IndustryIcon size={32} />
                 </div>
                 

@@ -1011,3 +1011,15 @@ export interface IndustryOrderUI {
 export interface OrderLocation extends BaseLocation {
     orders:     IndustryOrderUI[];
 }
+
+import type { FreightContract } from '@dtypes/api.minmatar.org'
+
+export interface FreightContractLocationDestination {
+    location_name:  string;
+    contracts:      FreightContract[];
+}
+
+export interface FreightContractLocation {
+    location_name:  string;
+    destinations:   FreightContractLocationDestination[];
+}

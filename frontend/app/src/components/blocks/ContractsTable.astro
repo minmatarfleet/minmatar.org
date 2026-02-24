@@ -128,7 +128,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         )}
     </LocationsReel>
 
-    <BlockList role="list">
+    <BlockList role="list" gap='var(--space-l)'>
         {contracts_with_expectations.map((fitting) =>
             <div x-show="show_item($el)">
                 <MarketFittingCard fitting={fitting} no_expectation_progress={false} />

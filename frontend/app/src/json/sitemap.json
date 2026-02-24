@@ -384,6 +384,18 @@
         "description": "page_finder.market.standard.description"
     },
     {
+        "slug": "freight_contracts",
+        "path": "/market/freight/contracts",
+        "publish": true,
+        "description": "page_finder.freight_contracts.description"
+    },
+    {
+        "slug": "freight_contracts.history",
+        "path": "/market/freight/contracts/history",
+        "publish": true,
+        "description": "page_finder.freight_contracts.history.description"
+    },
+    {
         "slug": "contracts",
         "alt": "icon.contract.alt",
         "path": "/market/contracts/",

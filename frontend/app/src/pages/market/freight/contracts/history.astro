@@ -1,0 +1,153 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FreightContractLocation } from '@dtypes/layout_components'
+import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+import { fetch_freight_contracts } from '@helpers/fetching/freights'
+import { get_characters_statistics } from '@helpers/api.minmatar.org/freights'
+
+let fetching_error:string | false = false
+let location_contracts:FreightContractLocation[] = []
+let space_truckers:SpaceTruckerStatistics[] = []
+
+try {
+    location_contracts = await fetch_freight_contracts(true)
+    space_truckers = await get_characters_statistics()
+} catch (error) {
+    fetching_error = error.message
+}
+
+let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
+
+if (location_contracts.length > 0) {
+    if (active_location_name === '' || !location_contracts.find(route => route.location_name === active_location_name) )
+        active_location_name = location_contracts[0].location_name
+}
+
+const active_contracts_location = location_contracts.find(route => route.location_name === active_location_name)
+const contracts_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
+const contracts_count_text = t(contracts_count != 1 ? 'showing_orders_plural' : 'showing_orders_singular').replace('{count}', String(contracts_count))
+
+const non_active_contracts_location = location_contracts.filter(route => route.location_name !== active_location_name)
+
+import { query_string } from '@helpers/string';
+
+const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
+    location_name: active_location_name,
+    is_history: true,
+})}` : ''}`)
+
+const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' ||
+                       active_location_name === 'Amamake - 5 times nearly AT winners' ||
+                       active_location_name === 'Jita'
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Input from '@components/blocks/Input.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import FreightContractsTable from '@components/blocks/FreightContractsTable.astro'
+import SpaceTruckersReel from '@components/blocks/SpaceTruckersReel.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('freight_contracts.history.page_title');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('freight_contracts.history.meta_description')}
+>
+    <PageWide
+        cover={{
+			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
+					active_location_name === 'Jita' ? '/videos/jita-loop.webm' :
+                    undefined,
+			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
+					active_location_name === 'Jita' ? '/images/home-jita-cover.jpg' :
+                    undefined,
+            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+					active_location_name === 'Jita' ? '/images/home-jita-cover-eve.jpg' :
+                    '/images/freight-service-cover.jpg',
+            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
+					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
+					   active_location_name === 'Jita' ? '/images/home-jita-cover-eve.jpg' :
+                       '/images/freight-service-cover.jpg',
+            animated: false,
+            scrollable: !is_video_cover,
+            overlay: !is_video_cover,
+        }}
+        x-data={`{
+            contracts_count: ${contracts_count},
+            item_name_filter: '',
+            contracts_plural: '${t('showing_contracts_plural')}',
+            contracts_singular: '${t('showing_contracts_singular')}',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_item(el) {
+                const name_filter_element = el.querySelectorAll('.freight-contract-item')
+
+                return ( this.item_name_filter === '' || name_filter_element[0].textContent.toLowerCase().includes(this.item_name_filter.toLowerCase()) )
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small x-text="(contracts_count != 1 ? contracts_plural : contracts_singular).replace('{count}', String(contracts_count))">{contracts_count_text}</small>
+            </Flexblock>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('filter')}
+                    x-model="item_name_filter"
+                    x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.freight-contract-item') })"
+                    x-init="$el.focus()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </FlexInline>
+        </FlexInline>
+
+        {fetching_error !== false ?
+            <ErrorRefetch
+                args={{
+                    partial: FREIGHT_CONTRACTS_PARTIAL_URL,
+                    message: fetching_error,
+                    delay: 0,
+                }}
+            />
+            :
+            active_contracts_location !== undefined ?
+                <FreightContractsTable
+                    active_contracts_location={active_contracts_location}
+                    non_active_contracts_location={non_active_contracts_location}
+                    init_tooltips={false}
+                    is_history={true}
+                />
+                <SpaceTruckersReel space_truckers={space_truckers} />
+                :
+                <p>{t('no_freighter_contracts')}</p>
+        }
+    </PageWide>
+</Viewport>

@@ -26,6 +26,7 @@ if (orders_locations.length > 0) {
 
 const active_orders_locations = orders_locations.find(location => location.location_name === active_location_name)
 const orders_count = active_orders_locations?.orders.length ?? 0
+const orders_count_text = (orders_count != 1 ? t('showing_orders_plural') : t('showing_orders_singular')).replace('{count}', String(orders_count))
 
 const non_active_orders_locations = orders_locations.filter(location => location.location_name !== active_location_name)
 
@@ -106,7 +107,7 @@ const page_title = t('industry.orders.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">{orders_count}</small>
+                <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">{orders_count_text}</small>
             </Flexblock>
             <FlexInline>
                 <Input type="text"

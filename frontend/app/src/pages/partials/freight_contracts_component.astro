@@ -1,0 +1,72 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FreightContractLocation } from '@dtypes/layout_components'
+import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+import { fetch_freight_contracts } from '@helpers/fetching/freights'
+import { get_characters_statistics } from '@helpers/api.minmatar.org/freights'
+
+let fetching_error:string | false = false
+let location_contracts:FreightContractLocation[] = []
+let space_truckers:SpaceTruckerStatistics[] = []
+
+try {
+    location_contracts = await fetch_freight_contracts()
+    space_truckers = await get_characters_statistics()
+} catch (error) {
+    fetching_error = error.message
+}
+
+let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
+const is_history = Astro.url.searchParams.get('is_history') ? JSON.parse(Astro.url.searchParams.get('is_history') ?? '') : undefined
+
+if (location_contracts.length > 0) {
+    if (active_location_name === '' || !location_contracts.find(route => route.location_name === active_location_name) )
+        active_location_name = location_contracts[0].location_name
+}
+
+const active_contracts_location = location_contracts.find(route => route.location_name === active_location_name)
+const contracts_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
+
+const non_active_contracts_location = location_contracts.filter(route => route.location_name !== active_location_name)
+
+import { query_string } from '@helpers/string';
+
+const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
+    location_name: active_location_name,
+    ...(is_history && { is_history }),
+})}` : ''}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import FreightContractsTable from '@components/blocks/FreightContractsTable.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import SpaceTruckersReel from '@components/blocks/SpaceTruckersReel.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: FREIGHT_CONTRACTS_PARTIAL_URL,
+            message: fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    active_contracts_location !== undefined ?
+        <FreightContractsTable
+            active_contracts_location={active_contracts_location}
+            non_active_contracts_location={non_active_contracts_location}
+            init_tooltips={false}
+        />
+        <SpaceTruckersReel space_truckers={space_truckers} />
+        <UpdateAlpineVariables
+            variables={{
+                contracts_count: contracts_count,
+            }}
+        />
+        :
+        <p>{t('no_freighter_contracts')}</p>
+}

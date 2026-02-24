@@ -1,0 +1,105 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FreightContract } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    contract:              FreightContract;
+    init_tooltips:      boolean;
+}
+
+const {
+    contract,
+    init_tooltips,
+} = Astro.props
+
+import { number_name } from '@helpers/numbers.ts';
+import { format_date_time, format_date, format_date_short, get_date_progress_percent } from '@helpers/date'
+
+import FixedFluid from "@components/compositions/FixedFluid.astro";
+import Flexblock from "@components/compositions/Flexblock.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+
+import PilotBadge from "@components/blocks/PilotBadge.astro";
+import CharacterPicture from "@components/blocks/CharacterPicture.astro";
+import Tag from '@components/blocks/Tag.astro';
+
+import VolumenIcon from '@components/icons/VolumenIcon.astro';
+import InsuranceIcon from '@components/icons/InsuranceIcon.astro';
+import RewardIcon from '@components/icons/RewardIcon.astro';
+import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
+---
+
+<FixedFluid width='350px' class="[ freight-contract-item ]">
+    <Flexblock gap='var(--space-3xs)'>
+        <PilotBadge
+            character_id={contract.issuer_id}
+            character_name={contract.issuer_character_name}
+            heading={true}
+        >
+            <small>{t(`contract_${contract.status}` as any)}</small>
+        </PilotBadge>
+    </Flexblock>
+    <FlexInline gap='var(--space-l)'>
+        <FixedFluid class="[ items-center! basis-[150px] ]" width='32px' gap='var(--space-2xs)'>
+            <div
+                class="[ text-highlight h-[32px] ]"
+                data-tippy-content={t('volumen')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <VolumenIcon size={32} />
+            </div>
+            <div><span data-tippy-content={number_name(contract.volume, lang)}>{contract.volume.toLocaleString()} m<sup>3</sup></span></div>
+        </FixedFluid>
+
+        <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
+            <div
+                class="[ text-highlight h-[32px] ]"
+                data-tippy-content={t('collateral')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <InsuranceIcon size={32} />
+            </div>
+            <div><span data-tippy-content={number_name(contract.collateral, lang)}>{contract.collateral.toLocaleString()} ISK</span></div>
+        </FixedFluid>
+
+        <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
+            <div
+                class="[ text-highlight h-[32px] ]"
+                data-tippy-content={t('reward')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <RewardIcon size={32} />
+            </div>
+            <div><span data-tippy-content={number_name(contract.reward, lang)}>{contract.reward.toLocaleString()} ISK</span></div>
+        </FixedFluid>
+
+        <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
+            <div
+                class="[ text-highlight h-[32px] ]"
+                data-tippy-content={t('space_trucker')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <IndustrialistIcon size={32} />
+            </div>
+
+            <FlexInline gap='var(--space-3xs)'>
+                {contract.completed_by_id ?
+                    <div
+                        data-tippy-content={contract.completed_by_character_name}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <CharacterPicture
+                            character_id={contract.completed_by_id}
+                            character_name={contract.completed_by_character_name ?? ''}
+                            size={24}
+                        />
+                        <div class="[ sr-only ]">{contract.completed_by_character_name}</div>
+                    </div> :
+                    <Tag text={t('not_taken')} />
+                }
+            </FlexInline>
+        </FixedFluid>
+    </FlexInline>
+</FixedFluid>
