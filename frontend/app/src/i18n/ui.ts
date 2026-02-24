@@ -1752,7 +1752,7 @@ export const ui = {
         'completed_percent': 'Fulfilled on {date}',
         'overdue': 'Overdue',
         'no_manufacturing_orders': 'There are no currently manufacturing orders.',
-        'all_material_requirements': 'All locations material requirements',
+        'material_requirements': 'Material requirements',
         'contracts_plural': '{count} contracts',
         'contracts_singular': '1 contract',
         'showing_contracts_plural': 'Showing {count} contracts',
