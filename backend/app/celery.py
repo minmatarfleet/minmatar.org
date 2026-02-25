@@ -24,9 +24,6 @@ app.conf.task_queues = (
     Queue("celery", routing_key="celery"),
     Queue("eveonline", routing_key="eveonline"),
 )
-app.conf.task_routes = {
-    "eveonline.*": {"queue": "eveonline"},
-}
 
 # Celery 6+: use this for startup retries; silences deprecation warning in 5.x
 app.conf.broker_connection_retry_on_startup = True
