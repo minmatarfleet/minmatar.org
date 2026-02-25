@@ -67,8 +67,7 @@ CELERYBEAT_CHARACTERS = [
         "[Characters] Update Affiliations",
         {
             "task": "eveonline.tasks.affiliations.update_character_affilliations",
-            "schedule": crontab(minute="18,48", hour="*"),
-            "options": {"queue": "eveonline"},
+            "schedule": crontab(minute="0,30", hour="*"),
         },
     ),
     (
@@ -84,7 +83,6 @@ CELERYBEAT_CHARACTERS = [
         {
             "task": "eveonline.tasks.players.update_players",
             "schedule": schedule(timedelta(hours=8)),
-            "options": {"queue": "eveonline"},
         },
     ),
 ]
@@ -96,7 +94,6 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "eveonline.tasks.corporations.sync_alliance_corporations",
             "schedule": crontab(minute=0, hour="*/2"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -182,7 +179,7 @@ CELERYBEAT_GROUPS = [
         "[Groups] Update User Affiliations",
         {
             "task": "groups.tasks.update_affiliations",
-            "schedule": crontab(minute="19,49", hour="*"),
+            "schedule": crontab(minute="15,45", hour="*"),
         },
     ),
 ]
