@@ -4,6 +4,7 @@ from typing import List
 
 from ninja import Router
 
+from eveonline.helpers.characters import character_primary
 from freight.models import EveFreightContract
 from freight.endpoints.schemas import FreightContractResponse
 
@@ -27,8 +28,20 @@ def _completed_by_character(contract):
     return min(chars, key=lambda c: (c.character_name or ""), default=None)
 
 
+def _issuer_display_character(contract):
+    """Resolve issuer to primary character for display (prefer primary over alt)."""
+    if not contract.issuer_id:
+        return None
+    try:
+        primary = character_primary(contract.issuer)
+        return primary if primary else contract.issuer
+    except Exception:
+        return contract.issuer
+
+
 def _build_contract_response(c):
     completed_by_char = _completed_by_character(c)
+    issuer_char = _issuer_display_character(c)
     return FreightContractResponse(
         contract_id=c.contract_id,
         status=c.status,
@@ -41,9 +54,9 @@ def _build_contract_response(c):
         date_completed=(
             c.date_completed.isoformat() if c.date_completed else None
         ),
-        issuer_id=c.issuer.character_id if c.issuer_id else None,
+        issuer_id=issuer_char.character_id if issuer_char else None,
         issuer_character_name=(
-            c.issuer.character_name if c.issuer_id else None
+            issuer_char.character_name if issuer_char else None
         ),
         completed_by_id=(
             completed_by_char.character_id if completed_by_char else None
@@ -64,6 +77,9 @@ def get_contracts(request):
         EveFreightContract.objects.filter(status__in=ACTIVE_STATUSES)
         .select_related(
             "issuer",
+            "issuer__user",
+            "issuer__user__eveplayer",
+            "issuer__user__eveplayer__primary_character",
             "completed_by",
             "completed_by__eveplayer",
             "completed_by__eveplayer__primary_character",
