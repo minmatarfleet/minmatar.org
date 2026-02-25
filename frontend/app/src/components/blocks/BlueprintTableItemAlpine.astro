@@ -117,7 +117,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     <CargoIcon size={32} xlink='#cargo_icon' />
                 </div>
 
-                <small x-text={`'${t('stored_in')}'.replace('{location}', LOCATION_TEXT[blueprint.location_flag] ?? blueprint.location_flag)`} />
+                <small x-text='LOCATION_TEXT[blueprint.location_flag] ?? blueprint.location_flag' />
             </FixedFluid>
         </FlexInline>
     </FixedFluid>

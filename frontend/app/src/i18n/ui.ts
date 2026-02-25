@@ -1803,7 +1803,6 @@ export const ui = {
         'FleetHangar': 'Feet hangar',
         'Deliveries': 'Deliveries',
         'CorpSAG': 'Corporation Hangar Division',
-        'stored_in': 'Stored in {location}',
         'narrow_down_blueprints': 'Too many items to show. Keep narrowing down the blueprint name or increase the results limit.',
         'narrow_down_blueprint_copies': 'Too many items to show. Keep narrowing down the blueprint copy name or increase the results limit.',
         'find_originals': 'Find originals',
