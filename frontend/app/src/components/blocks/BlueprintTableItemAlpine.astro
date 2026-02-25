@@ -58,7 +58,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     >
                         <MaterialEfficiencyIcon size={16} xlink='#material_efficiency_icon' />
                     </div>
-                    <span x-text="`${blueprint.material_efficiency}%`" />
+                    <small x-text="`${blueprint.material_efficiency}%`" />
                 </FlexInline>
                 <Progress
                     class="[ w-full ]"
@@ -78,7 +78,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     >
                         <TimeEfficiencyIcon size={16} xlink='#time_efficiency_icon' />
                     </div>
-                    <span x-text="`${blueprint.time_efficiency}%`" />
+                    <small x-text="`${blueprint.time_efficiency}%`" />
                 </FlexInline>
                 <Progress
                     class="[ w-full ]"
@@ -117,7 +117,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     <CargoIcon size={32} xlink='#cargo_icon' />
                 </div>
 
-                <span x-text={`'${t('stored_in')}'.replace('{location}', LOCATION_TEXT[blueprint.location_flag] ?? blueprint.location_flag)`} />
+                <small x-text={`'${t('stored_in')}'.replace('{location}', LOCATION_TEXT[blueprint.location_flag] ?? blueprint.location_flag)`} />
             </FixedFluid>
         </FlexInline>
     </FixedFluid>
