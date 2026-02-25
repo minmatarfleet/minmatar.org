@@ -154,7 +154,7 @@ const page_title = t(`industry.${blueprint_kind}.page_title`);
             <FlexInline justification='space-between'>
                 <div>
                     <small
-                        x-show="item_name_filter.length > 0 && blueprints_count < item_listing_limit"
+                        x-show="item_name_filter.length > 0 && blueprints_count > 0 && blueprints_count < item_listing_limit"
                         x-text="(blueprints_count != 1 ? showing_blueprints_plural : showing_blueprints_singular).replace('{count}', blueprints_count.toLocaleString())"
                         style="display: none"
                     />
