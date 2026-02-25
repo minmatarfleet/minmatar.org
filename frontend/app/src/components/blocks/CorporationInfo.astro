@@ -28,7 +28,7 @@ try {
 }
 
 const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/corporation_modal_component')
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
 
 import { get_zkillboard_corporation_link } from '@helpers/eve'
 

@@ -1,0 +1,23 @@
+---
+interface Props {
+    size?:      number;
+    xlink?:     string;
+}
+
+const {
+    size = 128,
+    xlink,
+} = Astro.props
+---
+
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	viewBox="0 0 32 32"
+	width={size}
+	height={size}
+>
+    {xlink ?
+        <use xlink:href={xlink}></use> :
+	    <path fill-rule="evenodd" class="s0" d="m32 12.13l-9.6 9.6 1.6-8-7.2 12.85-7.2-12.85 1.6 8-11.2-9.6 6.4-6.4h20.8z" fill="currentColor" />
+    }
+</svg>

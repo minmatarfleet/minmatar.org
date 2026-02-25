@@ -1,4 +1,10 @@
-import type { IndustryOrder, BaseIndustryOrder, NestedIndustryOrder, Product } from '@dtypes/api.minmatar.org'
+import type {
+    IndustryOrder,
+    BaseIndustryOrder,
+    NestedIndustryOrder,
+    Product,
+    Blueprint
+} from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/industry`
@@ -182,5 +188,34 @@ export async function get_product_breakdown(product_id:number, quantity:number, 
         return await response.json() as Product[];
     } catch (error) {
         throw new Error(`Error fetching product breakdown: ${error.message}`);
+    }
+}
+
+export async function get_blueprints(is_copy:boolean = false) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/blueprints${is_copy ? '/copies/copies' : ''}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as Blueprint[];
+    } catch (error) {
+        throw new Error(`Error fetching blueprints: ${error.message}`);
     }
 }

@@ -18,6 +18,9 @@ for (let label in variables) {
     if (typeof value === 'boolean')
         value = `${JSON.stringify(value)}`
 
+    if (typeof value === 'object')
+        value = `${JSON.stringify(value)}`
+
     asignations = asignations.concat(`${label} = ${value};`)
 }
 ---

@@ -421,6 +421,12 @@
         "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
     },
     {
+        "slug": "industry.blueprints",
+        "path": "/industry/blueprints/",
+        "publish": true,
+        "description": "page_finder.blueprints.description"
+    },
+    {
         "slug": "industry.products",
         "alt": "icon.products.alt",
         "path": "/industry/products/",

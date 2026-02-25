@@ -1,0 +1,272 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+import { fetch_blueprints } from '@helpers/fetching/industry'
+
+const is_copy = Astro.url.searchParams.get('is_copy') ? JSON.parse(Astro.url.searchParams.get('is_copy') ?? 'false') : undefined
+
+let blueprints:Blueprint[] = []
+let fetching_error:string | false = false
+
+try {
+    blueprints = await fetch_blueprints(is_copy)
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_blueprints_error') : error.message)
+}
+
+const BLUEPRINTS_PARTIAL_URL = translatePath(`/partials/blueprints_component${is_copy ? '?is_copy=true' : ''}`)
+
+const blueprint_kind = is_copy ? 'blueprint_copies' : 'blueprints'
+
+const count_text = t(blueprints.length != 1 ? `${blueprint_kind}_plural` : `${blueprint_kind}_singular`).replace('{count}', blueprints?.length.toLocaleString())
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
+import Input from '@components/blocks/Input.astro'
+import Button from '@components/blocks/Button.astro'
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t(`industry.${blueprint_kind}.page_title`);
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t(`industry.${blueprint_kind}.meta_description`)}
+>
+    <PageWide
+        cover={{
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        x-data={`{
+            blueprints: ${JSON.stringify(blueprints)},
+            blueprints_filtered: [],
+            item_listing_limit: $persist(1000),
+            LOCATION_TEXT: {
+                'Hangar': '${t('Hangar')}',
+                'Cargo': '${t('Cargo')}',
+                'AssetSafety': '${t('AssetSafety')}',
+                'FleetHangar': '${t('FleetHangar')}',
+                'Deliveries': '${t('Deliveries')}',
+                'CorpSAG': '${t('CorpSAG')}',
+            },
+            sorting: 'best_efficiency',
+            blueprints_count: 0,
+            count_text: '${count_text}',
+            runs_count_plural: '${t('runs_count_plural')}',
+            runs_count_singular: '${t('runs_count_singular')}',
+            showing_blueprints_plural: '${t(`showing_${blueprint_kind}_plural`)}',
+            showing_blueprints_singular: '${t(`showing_${blueprint_kind}_singular`)}',
+            item_name_filter: '',
+            filter() {
+                if (this.item_name_filter === '') {
+                    this.blueprints_filtered = []
+                    this.blueprints_count = ${blueprints.length}
+                    return
+                }
+
+                this.blueprints_filtered = this.blueprints.filter(blueprint => blueprint.blueprint_name.toLowerCase().includes(this.item_name_filter.toLowerCase()))
+                this.blueprints_count = this.blueprints_filtered.length
+
+                if (this.item_listing_limit !== -1 && this.blueprints_count > this.item_listing_limit) this.blueprints_filtered = []
+
+                if (this.sorting !== 'best_efficiency')
+                    this.blueprints_filtered = this.blueprints_filtered.sort((a, b) => b[this.sorting] - a[this.sorting])
+                else
+                    this.blueprints_filtered = this.blueprints_filtered.sort((a, b) => (b.material_efficiency + b.time_efficiency) - (a.material_efficiency + a.time_efficiency))
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small x-text="count_text">{count_text}</small>
+            </Flexblock>
+            <FlexInline>
+                <Button href={translatePath(!is_copy ? '/industry/blueprints?is_copy=true' : '/industry/blueprints/')}>
+                    {t(!is_copy ? 'find_blueprint_copy' : 'find_blueprint')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <FlexInline slot="subheader" justification='center'>
+            <Flexblock class="[ basis-200 ]" gap='var(--space-2xs)'>
+                <Input
+                    type="text"
+                    placeholder={t(`find_${blueprint_kind}_placeholder`)}
+                    x-model="item_name_filter"
+                    x-on:input="filter()"
+                    x-init="$el.focus()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+
+                <FlexInline>
+                    <h4>{t('sort_by')}</h4>
+
+                    <UnstyledRadioCheckButton
+                        label={t('best_efficiency')}
+                        type='radio'
+                        x-model="sorting"
+                        value="best_efficiency"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label={t('material_efficiency')}
+                        type='radio'
+                        x-model="sorting"
+                        value="material_efficiency"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label={t('time_efficiency')}
+                        type='radio'
+                        x-model="sorting"
+                        value="time_efficiency"
+                        x-on:change="filter()"
+                    />
+                </FlexInline>
+            </Flexblock>
+        </FlexInline>
+        
+        <BlockList>
+            <FlexInline justification='space-between'>
+                <div>
+                    <small
+                        x-show="item_name_filter.length > 0 && blueprints_count < item_listing_limit"
+                        x-text="(blueprints_count != 1 ? showing_blueprints_plural : showing_blueprints_singular).replace('{count}', blueprints_count.toLocaleString())"
+                        style="display: none"
+                    />
+
+                    <small x-show="item_name_filter !== '' && blueprints_count > item_listing_limit">{t(`narrow_down_${blueprint_kind}`)}</small>
+                    
+                    <small x-show="item_name_filter !== '' && blueprints_count === 0">{t(`no_${blueprint_kind}_to_display`)}</small>
+                </div>
+
+                <FlexInline>
+                    <h4>{t('results_limit')}:</h4>
+
+                    <UnstyledRadioCheckButton
+                        label='500'
+                        type='radio'
+                        x-model="item_listing_limit"
+                        value="500"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label='1000'
+                        type='radio'
+                        x-model="item_listing_limit"
+                        value="1000"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label='2000'
+                        type='radio'
+                        x-model="item_listing_limit"
+                        value="2000"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label='3000'
+                        type='radio'
+                        x-model="item_listing_limit"
+                        value="3000"
+                        x-on:change="filter()"
+                    />
+
+                    <UnstyledRadioCheckButton
+                        label={t('unlimited')}
+                        type='radio'
+                        x-model="item_listing_limit"
+                        value="Infinity"
+                        x-on:change="filter()"
+                    />
+                </FlexInline>
+            </FlexInline>
+
+            {fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: BLUEPRINTS_PARTIAL_URL,
+                        message: fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <BlueprintTableAlpine
+                    is_copy={is_copy}
+                />
+            }
+        </Flexblock>
+    </PageWide>
+
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0">
+        <defs>
+            <symbol id="material_efficiency_icon">
+                <path fill-rule="evenodd" class="s0" d="m32 12.13l-9.6 9.6 1.6-8-7.2 12.85-7.2-12.85 1.6 8-11.2-9.6 6.4-6.4h20.8z" fill="currentColor" />
+            </symbol>
+            <symbol id="time_efficiency_icon">
+                <path fill-rule="evenodd" class="s0" d="m23 2c0.62 0 1 0.47 1 1 0 0.53 0 4.44 0 5 0 0.56-0.34 1.32-1 2-0.66 0.68-5 3.52-5 4 0 0.48 0 2 0 3 0 1 4.58 3.48 6 6 1.26 2.23 0.75 6.06 0 7-0.45 0.56-1.49 1-2 1-0.51 0-11.47 0-12 0-0.53 0-1.57-0.45-2-1-0.69-0.88-1.32-4.54 0-7 1.19-2.22 6-5.14 6-6 0-0.86 0-2.31 0-3 0-0.69-4.41-3.5-5-4-0.59-0.5-1-1.25-1-2 0-0.75 0-4.37 0-5 0-0.63 0.49-1 1-1 0.51 0 13.38 0 14 0zm-4 6c-0.06 1.06-5.97 1.28-6 0h-2l4 5v7.97c0 0-6 4.87-6 7.03 0 0.81 1 1 1 1 0.44-0.57 10.84-0.5 12 0 0 0 1 0.12 1-1 0-1.81-6-7.03-6-7.03v-7.97l4-5z" fill="currentColor" />
+            </symbol>
+            <symbol id="cargo_icon" width="128" height="128">
+                <path d="M78.397 19.36L66.268 31.426l-7.758 7.779L70.64 27.14z"
+                    opacity=".6"/>
+                <path d="M70.61 37.383l-8.055 8.019-.978.98-15.199 15.242.04.017z"
+                    opacity=".6"/>
+
+                <path d="
+                    M84.672 43.416L60.474 67.68l-.005-.011-7.758 7.779
+                    9.02 21.131 7.759-7.78-3.018-7.068
+                    15.262-15.303 8.94-8.964z
+                    M108.566 49.57l-7.758 7.78-9.02-21.138 7.758-7.78z
+                " opacity=".6"/>
+
+                <path d="M39.32 58.596L27.192 70.654l-7.759 7.779 12.129-12.058z"
+                    opacity=".6"/>
+
+                <path d="
+                    M52.711 75.448l-21.149-9.073-12.128 12.058
+                    9.028 21.135 21.149 9.072 12.12-12.061z
+                    M91.788 36.212l9.02 21.138-12.12 12.061-6.954-2.983
+                    8.94-8.964-6.002-14.048-14.063-6.033
+                    -8.053 8.019-.979.981-3.067-7.178
+                    12.129-12.066z
+                "/>
+
+                <path d="
+                    M52.711 75.448l7.758-7.779.005.011
+                    24.198-24.264-14.063-6.033
+                    -24.191 24.258-.04-.017
+                    -7.058-3.028-7.758 7.779z
+                    M70.639 27.139l7.758-7.779
+                    21.149 9.072-7.758 7.78z
+                " opacity=".8"/>
+            </symbol>
+        </defs>
+    </svg>
+</Viewport>

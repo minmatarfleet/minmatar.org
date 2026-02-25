@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+import { fetch_blueprints } from '@helpers/fetching/industry'
+
+const is_copy = Astro.url.searchParams.get('is_copy') ? JSON.parse(Astro.url.searchParams.get('is_copy') ?? 'false') : undefined
+
+let blueprints:Blueprint[] = []
+let fetching_error:string | false = false
+
+try {
+    blueprints = await fetch_blueprints(is_copy)
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_blueprints_error') : error.message)
+}
+
+const BLUEPRINTS_PARTIAL_URL = translatePath(`/partials/blueprints_component${is_copy ? '?is_copy=true' : ''}`)
+
+const blueprint_kind = is_copy ? 'blueprint_copies' : 'blueprints'
+
+const count_text = t(blueprints.length != 1 ? `${blueprint_kind}_plural` : `${blueprint_kind}_singular`).replace('{count}', blueprints?.length.toLocaleString())
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: BLUEPRINTS_PARTIAL_URL,
+            message: fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <BlueprintTableAlpine
+        is_copy={is_copy}
+    />
+    <UpdateAlpineVariables
+        variables={{
+            blueprints: blueprints,
+            count_text: count_text,
+        }}
+    />
+}

@@ -769,3 +769,28 @@ export interface SpaceTruckerStatistics {
     primary_character_name:     string;
     completed_contracts_count:  number;
 }
+
+export const blueprint_owner_entity = [ 'character', 'corporation'  ] as const
+export type BlueprintOwnerEntity = typeof blueprint_owner_entity[number]
+
+export const blueprint_location_flag = [ 'Hangar', 'Cargo', 'AssetSafety', 'FleetHangar', 'Deliveries', 'CorpSAG'  ] as const
+export type BlueprintLocationFlag = typeof blueprint_location_flag[number]
+
+export interface BlueprintOwner {
+    entity_id:              number;
+    entity_type:            BlueprintOwnerEntity;
+    primary_character_id:   number;
+}
+
+export interface Blueprint {
+    item_id:                number;
+    type_id:                number;
+    blueprint_name:         string;
+    type_name:              string;
+    location_id:            number;
+    location_flag:          BlueprintLocationFlag;
+    material_efficiency:    number;
+    time_efficiency:        number;
+    runs:                   number;
+    owner:                  BlueprintOwner;
+}

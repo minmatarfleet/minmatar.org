@@ -19,7 +19,7 @@ try {
 }
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
-const is_history = Astro.url.searchParams.get('is_history') ? JSON.parse(Astro.url.searchParams.get('is_history') ?? '') : undefined
+const is_history = Astro.url.searchParams.get('is_history') ? JSON.parse(Astro.url.searchParams.get('is_history') ?? 'false') : undefined
 
 if (location_contracts.length > 0) {
     if (active_location_name === '' || !location_contracts.find(route => route.location_name === active_location_name) )

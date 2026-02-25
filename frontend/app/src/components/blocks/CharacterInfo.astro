@@ -46,7 +46,7 @@ try {
 const birthday = is_birthday(character?.birthday as Date)
 
 const CHARACTER_MODAL_PARTIAL_URL = translatePath('/partials/character_modal_component')
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
 
 const MINMATAR_FLEET_ALLIANCE_ID = 99011978
 const MINMATAR_FLEET_ASSOCIATES_ID = 99012009

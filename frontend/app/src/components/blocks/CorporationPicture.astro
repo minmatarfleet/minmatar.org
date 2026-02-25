@@ -39,7 +39,7 @@ import { get_corporation_logo } from '@helpers/eve_image_server'
                     return
 
                 show_modal({
-                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation_id}',
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id='+(${x_corporation_id} ? ${x_corporation_id} : '${corporation_id.toString()}'),
                 })
             }
         }`}

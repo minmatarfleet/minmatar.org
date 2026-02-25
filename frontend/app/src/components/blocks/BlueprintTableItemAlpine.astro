@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_copy:            boolean;
+}
+
+const {
+    is_copy,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import CorporationPicture from '@components/blocks/CorporationPicture.astro';
+import Progress from '@components/blocks/Progress.astro';
+
+import MaterialEfficiencyIcon from '@components/icons/MaterialEfficiencyIcon.astro';
+import TimeEfficiencyIcon from '@components/icons/TimeEfficiencyIcon.astro';
+import CargoIcon from '@components/icons/CargoIcon.astro';
+---
+
+<div class="[ blueprint-item ]">
+    <FixedFluid
+        width='450px'
+        gap='var(--space-3xs)'
+    >
+        <div>
+            <FixedFluid
+                class="[ items-center ]"
+                width='64'
+            >
+                <picture>
+                    <img
+                        loading="lazy"
+                        x-bind:src={`get_bpc_icon(blueprint.type_id, ${JSON.stringify(is_copy)})`}
+                        width='64'
+                        height='64'
+                    />
+                </picture>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h3 x-text="blueprint.blueprint_name" />
+                    <small x-text={`blueprint.runs === -1 ? '${t('infinite_runs')}' : (blueprint.runs != 1 ? runs_count_plural : runs_count_singular).replace('{count}', String(blueprint.runs))`} />
+                </Flexblock>
+            </FixedFluid>
+        </div>
+
+        <FlexInline gap='var(--space-l)'>
+            <Flexblock class="[ basis-17.5 ]" gap='var(--space-3xs)'>
+                <FlexInline class="[ items-center! ]">
+                    <div
+                        class="[ text-highlight h-[16px] ]"
+                        data-tippy-content={t('material_efficiency')}
+                        x-init='tippy($el, tippy_options)'
+                    >
+                        <MaterialEfficiencyIcon size={16} xlink='#material_efficiency_icon' />
+                    </div>
+                    <span x-text="`${blueprint.material_efficiency}%`" />
+                </FlexInline>
+                <Progress
+                    class="[ w-full ]"
+                    max="10"
+                    x-bind:value='blueprint.material_efficiency.toString()'
+                    x-bind:data-tippy-content='`${blueprint.material_efficiency}%`'
+                    x-text='`${blueprint.material_efficiency}%`'
+                />
+            </Flexblock>
+
+            <Flexblock class="[ basis-17.5 ]" gap='var(--space-3xs)'>
+                <FlexInline class="[ items-center! ]">
+                    <div
+                        class="[ text-highlight h-[16px] ]"
+                        data-tippy-content={t('time_efficiency')}
+                        x-init='tippy($el, tippy_options)'
+                    >
+                        <TimeEfficiencyIcon size={16} xlink='#time_efficiency_icon' />
+                    </div>
+                    <span x-text="`${blueprint.time_efficiency}%`" />
+                </FlexInline>
+                <Progress
+                    class="[ w-full ]"
+                    max="20"
+                    x-bind:value='blueprint.time_efficiency.toString()'
+                    x-bind:data-tippy-content='`${blueprint.time_efficiency}%`'
+                    x-text='`${blueprint.time_efficiency}%`'
+                />
+            </Flexblock>
+            
+            <FlexInline gap='var(--space-3xs)'>
+                <template x-if="blueprint.owner.entity_type === 'character'">
+                    <CharacterPicture
+                        character_id={0}
+                        x_character_id='blueprint.owner.entity_id'
+                        size={32}
+                    />
+                </template>
+                <template x-if="blueprint.owner.entity_type === 'corporation'">
+                    <div class="[ border ]">
+                        <CorporationPicture
+                            corporation_id={0}
+                            x_corporation_id="blueprint.owner.entity_id"
+                            size={32}
+                        />
+                    </div>
+                </template>
+            </FlexInline>
+
+            <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
+                <div
+                    class="[ text-highlight h-[32px] ]"
+                    data-tippy-content={t('location')}
+                    x-init='tippy($el, tippy_options)'
+                >
+                    <CargoIcon size={32} xlink='#cargo_icon' />
+                </div>
+
+                <span x-text={`'${t('stored_in')}'.replace('{location}', LOCATION_TEXT[blueprint.location_flag] ?? blueprint.location_flag)`} />
+            </FixedFluid>
+        </FlexInline>
+    </FixedFluid>
+</div>

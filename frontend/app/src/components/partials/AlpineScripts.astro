@@ -454,6 +454,9 @@ export const UtilitiesXData = `
     },
     get_item_icon(id, size = 64) {
         return 'https://images.evetech.net/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
+    },
+    get_bpc_icon(id, is_copy = false, size = 64) {
+        return 'https://images.evetech.net/types/'+id+'/'+(is_copy ? 'bpc' : 'bp')+'?size='+size;
     },`
 
 export const InitXData = `

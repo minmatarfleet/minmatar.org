@@ -1,0 +1,21 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_copy:            boolean;
+}
+
+const {
+    is_copy,
+} = Astro.props
+
+import BlueprintTableItemAlpine from '@components/blocks/BlueprintTableItemAlpine.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+---
+
+<BlockList gap='var(--space-l)'>
+    <template x-for="blueprint in blueprints_filtered">
+        <BlueprintTableItemAlpine is_copy={is_copy} />
+    </template>
+</BlockList>

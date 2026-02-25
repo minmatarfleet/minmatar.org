@@ -1,6 +1,6 @@
 import type { BaseIndustryOrder, IndustryOrder, Producer } from '@dtypes/api.minmatar.org'
 import type { OrderLocation } from '@dtypes/layout_components'
-import { get_orders_summary_flat, get_orders_summary_nested, get_orders_with_location } from '@helpers/api.minmatar.org/industry'
+import { get_orders_summary_flat, get_orders_summary_nested, get_orders_with_location, get_blueprints } from '@helpers/api.minmatar.org/industry'
 
 export async function fetch_orders_summary_flat() {
     const orders = await get_orders_summary_flat()
@@ -55,4 +55,14 @@ export async function fetch_orders_by_locations() {
     }
 
     return orders_locations
+}
+
+export async function fetch_blueprints(is_copy:boolean = false) {
+    let blueprints = await get_blueprints(is_copy)
+    blueprints = blueprints.map(blueprint => {
+        blueprint.location_flag = blueprint.location_flag.startsWith('CorpSAG') ? 'CorpSAG' : blueprint.location_flag
+        return blueprint
+    })
+
+    return blueprints
 }
