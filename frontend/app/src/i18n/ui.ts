@@ -1806,6 +1806,7 @@ export const ui = {
         'stored_in': 'Stored in {location}',
         'narrow_down_blueprints': 'Too many items to show. Keep narrowing down the blueprint name.',
         'narrow_down_blueprint_copies': 'Too many items to show. Keep narrowing down the blueprint copy name.',
+        'find_originals': 'Find originals',
         'find_copies': 'Find copies',
         'sort_by': 'Sort by:',
         'best_efficiency': 'Best efficiency',
