@@ -49,6 +49,9 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                             id="materials-list"
                         >
                             <MarqueeSwiper swiper_selector='#materials-list' pagination={false} gap={20}>
+                                <div class="[ swiper-slide ]" style="margin-right: 20px; width: 100px"></div>
+                                <div class="[ swiper-slide ]" style="margin-right: 20px; width: 100px"></div>
+                                <div class="[ swiper-slide ]" style="margin-right: 20px; width: 100px"></div>
                                 {materials_required.map(material =>
                                     <div class="[ swiper-slide ]" style="margin-right: 20px">
                                         <FlexInline

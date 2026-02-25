@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang } = i18n(Astro.url)
+const { lang, translatePath } = i18n(Astro.url)
 
 import type { PostListUI } from '@dtypes/layout_components'
 
@@ -23,18 +23,13 @@ const MEDIA_ICON = {
 
 import { format_date } from '@helpers/date'
 
-import { Image } from 'astro:assets';
-import FlexInline from '@components/compositions/FlexInline.astro';
-
 import Badge from '@components/blocks/Badge.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 
 ---
 
-<FlexInline
-    class="[ items-center! ]"
-    gap='var(--space-xs)'
->
+<StylessButton href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
     <Badge
         class="[ items-center! text-nowrap! ]"
         title={post.title}
@@ -57,6 +52,6 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro';
                 />
             }
         </picture>
-        <small>{format_date(lang, post.date_posted)}</small>
+        <small class="[ text-foreground ]">{format_date(lang, post.date_posted)}</small>
     </Badge>
-</FlexInline>
+</StylessButton>

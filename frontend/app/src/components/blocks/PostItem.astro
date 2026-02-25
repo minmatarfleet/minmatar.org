@@ -28,7 +28,7 @@ import Tag from '@components/blocks/Tag.astro';
         character_name={post.author.character_name}
     />
     <Flexblock gap='var(--space-xs)'>
-        <h3><a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>{post.title}</a></h3>
+        <h3><a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>{post.title}</a></h3>
         <FlexInline>
             {post.tags.map(tag =>
                 <Tag text={tag} />
