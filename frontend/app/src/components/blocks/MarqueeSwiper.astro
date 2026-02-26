@@ -27,17 +27,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         swiper: null,
         init() {
             const INIT_WORKAROUND_TIMER_MS = 100
+            const AUTOPLAY_RESTARTING_DELAY_MS = 5000
             reset_autoplay_timer = null
 
             function resetAutoplay(swiper) {
-                const t = swiper.getTranslate()
-
-                swiper.autoplay.stop()
-
-                swiper.setTranslate(t)
-                swiper.updateProgress()
-                swiper.updateActiveIndex()
-
+                swiper.setTransition(${speed})
                 swiper.autoplay.start()
             }
 
@@ -49,6 +43,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                     spaceBetween: ${gap},
                     pagination: false,
                     loop: true,
+                    freeMode: true,
                     speed: ${speed},
                     autoplay: {
                         delay: 0,
@@ -57,24 +52,34 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                     allowTouchMove: true,
                     on: {
                         navigationNext(swiper) {
-                            swiper.autoplay.stop()
-                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
-                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2500)
+                            swiper.setTransition(500)
+                            swiper.autoplay.running && swiper.autoplay.stop()
+                            swiper.once('transitionEnd', () => {
+                                swiper.slideNext(500, false)
+
+                                reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                                reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
+                            })
                         },
 
                         navigationPrev(swiper) {
-                            swiper.autoplay.stop()
-                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
-                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2500)
+                            swiper.setTransition(500)
+                            swiper.autoplay.running && swiper.autoplay.stop()
+                            swiper.once('transitionEnd', () => {
+                                swiper.slidePrev(500, false)
+
+                                reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                                reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
+                            })
                         },
 
                         touchStart(swiper) {
-                            swiper.autoplay.stop()
+                            swiper.autoplay.running && swiper.autoplay.stop()
                         },
 
                         touchEnd(swiper) {
                             reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
-                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), 2000)
+                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
                         },
                     },
                     navigation: {
