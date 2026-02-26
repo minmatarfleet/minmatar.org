@@ -1814,7 +1814,7 @@ export const ui = {
         'results_limit': 'Results limit',
         'high_collateral_warning': '⚠️ Contracts with collateral over {value} ISK in this route may take longer to deliver, as less pilots can accept them. We recommend splitting your shipment into multiple smaller contracts.',
         'maximum_cargo': 'You exceeded the maximum of {maximum} m3.',
-        'freight_maximum_cargo': 'Volumen of the combination of all the items to deliver. Maximum amount possible is {maximum} m3.',
+        'freight_maximum_cargo': 'Volumen of the combination of all the items to deliver. Maximum contract size is {maximum} m3.',
         'invalid_contract_size': 'The contract size is not valid.',
         'invalid_collateral': 'The collateral value is not valid.',
     },
