@@ -419,6 +419,8 @@ export const ui = {
         'freight.contract.step_4_text': 'Review everything is fine and finish the contract.',
         'freight.contract.faq_1_title': 'What is reward?',
         'freight.contract.faq_1_text': 'Reward is a payment that covers the jump freighter’s fuel and time. It’s typically based on the m3 value of the cargo you’re moving, as well as the collateral (risk) they need to cover.',
+        'freight.contract.high_collateral_warning': 'Contracts with collateral over 2.5 billion ISK may take longer to deliver, as less pilots can accept them. We recommend splitting your shipment into multiple smaller contracts.',
+        'freight.volume_placeholder': 'e.g. 60k or 50000',
 
         'icon.contract.alt': 'EVE Online Contracts Icon',
         'icon.fleet.alt': 'EVE Online Fleet Icon',

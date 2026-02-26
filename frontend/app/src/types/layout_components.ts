@@ -733,17 +733,21 @@ export interface StructureTimerUI {
 
 export type MemberStatus = 'registered' | 'unregistered'
 
-import type { RouteOptions } from '@dtypes/api.minmatar.org'
+export interface FreightRouteDetails {
+    expiration_days:     number;
+    days_to_complete:   number;
+    collateral_modifier: number;
+}
 
 export interface FreightRoutesData {
     routes:             SelectOptions[];
-    sizes:              FreightSizes;
     route_translation:  RouteTranslate;
     stations:           RouteStations;
+    route_details:      Record<string, FreightRouteDetails>;
 }
 
 export interface RoutesData {
-    [propName: string]: RouteOptions;
+    [propName: string]: unknown;
 }
 
 export interface FreightSizes {

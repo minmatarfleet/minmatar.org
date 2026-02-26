@@ -32,6 +32,7 @@ import Input from '@components/blocks/Input.astro';
         },
     }`}
     x-model={model}
+    x-on:input="$dispatch('collateral-change', parseFloat(($event.target.value || '').replace(/,/g, '')) || 0)"
     x-bind:data-tippy-content={`number_name((${model} ?? 0).toString(), '${lang}')`}
     onkeyup={`this._tippy.setContent(this.getAttribute('data-tippy-content'), '${lang}')`}
     @keypress={`

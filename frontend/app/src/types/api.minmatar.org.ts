@@ -352,21 +352,18 @@ export const post_states = [ 'draft', 'published', 'trash' ] as const
 export type PostStates = typeof post_states[number]
 
 export interface FreightRoute {
-    orgin:          FreightLocation;
-    destination:    FreightLocation;
-    bidirectional:  boolean;
-    route_id:       number;
+    orgin:              FreightLocation;
+    destination:        FreightLocation;
+    route_id:           number;
+    expiration_days:    number;
+    days_to_complete:   number;
+    collateral_modifier: number;
 }
 
 export interface FreightLocation {
     location_id:    number;
     name:           string;
     short_name:     string;
-}
-
-export interface RouteOptions {
-    route_option_id:    number;
-    maximum_m3:         number;
 }
 
 export interface RouteCost {

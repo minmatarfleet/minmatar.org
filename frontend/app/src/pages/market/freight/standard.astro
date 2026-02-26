@@ -12,7 +12,7 @@ let fetch_freight_routes_error:string | null = null
 
 try {
     freight_routes_data = await fetch_freight_routes()
-    default_route = freight_routes_data.routes[0].value ?? ''
+    default_route = freight_routes_data.routes[0]?.value ?? ''
 } catch (error) {
     fetch_freight_routes_error = prod_error_messages() ? t('fetch_freight_routes_error') : error.message
 }

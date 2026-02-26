@@ -9,11 +9,7 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
-from freight.models import (
-    EveFreightRoute,
-    EveFreightRouteOption,
-    EveFreightContract,
-)
+from freight.models import EveFreightRoute, EveFreightContract
 from freight.tasks import update_contracts
 
 BASE_URL = "/api/freight"
@@ -46,12 +42,11 @@ class FreightRouterTestCase(TestCase):
         EveFreightRoute.objects.create(
             origin_location=loc1,
             destination_location=loc2,
-            bidirectional=False,
+            isk_per_m3=100,
         )
         EveFreightRoute.objects.create(
             origin_location=loc2,
             destination_location=loc1,
-            bidirectional=False,
             active=False,
         )
         response = self.client.get(
@@ -62,6 +57,10 @@ class FreightRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         routes = response.json()
         self.assertEqual(1, len(routes))
+        self.assertIn("expiration_days", routes[0])
+        self.assertIn("days_to_complete", routes[0])
+        self.assertEqual(routes[0]["expiration_days"], 3)
+        self.assertEqual(routes[0]["days_to_complete"], 3)
 
     def test_freight_cost(self):
         loc1 = EveLocation.objects.create(
@@ -81,23 +80,19 @@ class FreightRouterTestCase(TestCase):
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
             destination_location=loc2,
-            bidirectional=True,
-        )
-        option = EveFreightRouteOption.objects.create(
-            route=route,
-            base_cost=1000,
+            isk_per_m3=100,
             collateral_modifier=0.25,
-            maximum_m3=1000,
         )
 
         response = self.client.get(
-            f"{BASE_URL}/routes/{route.id}/options/{option.id}/cost?collateral=2000",
+            f"{BASE_URL}/routes/{route.id}/cost?m3=10&collateral=2000",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(route.id, response.json()["route_id"])
-        self.assertEqual(1000 + (0.25 * 2000), response.json()["cost"])
+        # 100 * 10 + ceil(0.25 * 2000) = 1000 + 500 = 1500
+        self.assertEqual(1500, response.json()["cost"])
 
 
 class FreightTaskTestCase(TestCase):
