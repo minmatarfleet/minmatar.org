@@ -32,7 +32,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
             function resetAutoplay(swiper) {
                 swiper.setTransition(${speed})
-                swiper.autoplay.start()
+                swiper.slideReset(100, false)
+                setTimeout(() => swiper.autoplay.start(), 110)
             }
 
             setTimeout(() => {
@@ -74,8 +75,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         },
 
                         touchEnd(swiper) {
-                            reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
-                            reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
+                            swiper.once('transitionEnd', () => {
+                                reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
+                                reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
+                            })
                         },
                     },
                     navigation: {
