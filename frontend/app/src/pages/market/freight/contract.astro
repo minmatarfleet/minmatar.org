@@ -5,7 +5,6 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import { prod_error_messages } from '@helpers/env'
 import { get_route_cost } from '@helpers/api.minmatar.org/freights'
 import { fetch_freight_routes } from '@helpers/fetching/freights'
-import { parseVolumeInput } from '@helpers/numbers'
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
 let freight_routes_data:FreightRoutesData
@@ -13,12 +12,13 @@ let data_fetching_error:string | null = null
 
 let cost:number = 0
 let route:string = ''
-let m3:number = 0
+let contract_size:number = 0
 let collateral:number = 0
 let origin:string = ''
 let destination:string = ''
 let expiration_days:number = 3
 let days_to_complete:number = 3
+const MAXIMUM_CARGO = 350000
 
 if (Astro.request.method !== "POST")
     return Astro.redirect(translatePath('/market/freight/standard'))
@@ -29,23 +29,28 @@ try {
     const data = await Astro.request.formData();
     
     route = data.get("route") as string
-    const m3Raw = (data.get("m3") as string) ?? ''
-    m3 = parseVolumeInput(m3Raw) || 0
-    if (m3 < 1) {
-        data_fetching_error = t('fetch_freight_cost_error')
-        m3 = 0
-    } else {
-        collateral = parseInt((data.get("collateral") as string).replaceAll(',', ''), 10) || 0
-        const route_id = freight_routes_data.route_translation[route]
-        const route_cost = await get_route_cost(route_id, m3, collateral)
-        cost = route_cost.cost
-        origin = freight_routes_data.stations[route][0]
-        destination = freight_routes_data.stations[route][1]
-        const details = freight_routes_data.route_details[route]
-        if (details) {
-            expiration_days = details.expiration_days
-            days_to_complete = details.days_to_complete
-        }
+    contract_size = parseInt((data.get("contract_size") as string).replaceAll(',', ''), 10) || 0
+
+    if (isNaN(contract_size) || contract_size < 0 || contract_size > MAXIMUM_CARGO)
+        throw new Error(t('invalid_contract_size'))
+
+    collateral = parseInt((data.get("collateral") as string).replaceAll(',', ''), 10) || 0
+
+    if (isNaN(collateral) || collateral < 0)
+        throw new Error(t('invalid_collateral'))
+    
+    const route_id = freight_routes_data.route_translation[route]
+
+    const route_cost = await get_route_cost(route_id, contract_size, collateral)
+
+    cost = route_cost.cost
+    origin = freight_routes_data.stations[route][0]
+    destination = freight_routes_data.stations[route][1]
+    const details = freight_routes_data.route_details[route]
+
+    if (details) {
+        expiration_days = details.expiration_days
+        days_to_complete = details.days_to_complete
     }
 } catch (error) {
     data_fetching_error = prod_error_messages() ? t('fetch_freight_cost_error') : error.message
@@ -162,7 +167,7 @@ const page_title = t('freight.contract.page_title');
                             <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                                 <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                                     <h4>{t('contract_size')} (m³)</h4>
-                                    <p>{m3.toLocaleString()}</p>
+                                    <p>{contract_size.toLocaleString()}</p>
                                 </Flexblock>
                             </FlexInline>
                         </VerticalCenter>

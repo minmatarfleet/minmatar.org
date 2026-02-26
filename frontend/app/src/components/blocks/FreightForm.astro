@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
@@ -14,8 +14,10 @@ const {
     default_route,
 } = Astro.props
 
-// Escape for use inside JSON.stringify (route_details may contain numbers)
-const route_details_json = JSON.stringify(freight_routes_data.route_details ?? {})
+import { number_name } from '@helpers/numbers.ts'
+
+const MAXIMUM_CARGO = 350000
+const HIGH_COLLATERAL_WARNING = 2500000000
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -23,22 +25,8 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
-import Input from '@components/blocks/Input.astro';
-import MoneyInput from './MoneyInput.astro';
+import NumberInput from './NumberInput.astro';
 ---
-
-<script is:inline>
-window.parseFreightVolume = function(s) {
-  if (s == null) return NaN;
-  s = String(s).trim().toLowerCase().replace(/,/g, '');
-  if (!s) return NaN;
-  if (/^[\d.]+k$/.test(s)) return Math.round(parseFloat(s) * 1000);
-  if (/^[\d.]+m$/.test(s)) return Math.round(parseFloat(s) * 1e6);
-  if (/^[\d.]+b$/.test(s)) return Math.round(parseFloat(s) * 1e9);
-  var n = parseFloat(s);
-  return isNaN(n) ? NaN : Math.round(n);
-};
-</script>
 
 <form
     method="POST"
@@ -46,23 +34,12 @@ window.parseFreightVolume = function(s) {
     x-data={`{
         route_id: '${default_route}',
         routes_options: ${JSON.stringify(freight_routes_data.routes)},
-        route_details: ${route_details_json},
-        m3: '',
+        route_details: ${JSON.stringify(freight_routes_data.route_details ?? {})},
+        contract_size: '',
         collateralValue: 0,
         submitted: false,
-        parseAndSubmit(e) {
-            if (this.submitted) return;
-            e.preventDefault();
-            var p = window.parseFreightVolume(this.m3);
-            if (!isNaN(p) && p >= 1) {
-                this.m3 = String(p);
-                this.submitted = true;
-                var form = this.$el;
-                this.$nextTick(function() { form.submit(); });
-            }
-        }
     }`}
-    x-on:submit="parseAndSubmit($event)"
+    x-on:submit="submitted = true"
     x-on:collateral-change="collateralValue = $event.detail"
 >
     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
@@ -82,57 +59,63 @@ window.parseFreightVolume = function(s) {
 
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                    <label for="m3">{t('contract_size')} (<span class="[ lowercase ]">m<sup>3</sup></span>)</label>
-                    <Input
-                        id="m3"
-                        type="text"
-                        name="m3"
-                        inputmode="numeric"
+                    <label for="contract_size">
+                        <span data-tippy-content={t('freight_maximum_cargo').replace('{maximum}', MAXIMUM_CARGO.toLocaleString())}>
+                            {t('contract_size')} (m<sup>3</sup>)
+                        </span>
+                    </label>
+                    <NumberInput
+                        id="contract_size"
+                        name="contract_size"
                         required
                         placeholder={t('freight.volume_placeholder')}
-                        x-model="m3"
+                        model="contract_size"
+                        x-data={`{
+                            MAXIMUM_CARGO: ${MAXIMUM_CARGO},
+                            update_validity() {
+                                const current_val = parseFloat($el.value.replaceAll(',', ''))
+
+                                if (current_val > this.MAXIMUM_CARGO)
+                                    $el.setCustomValidity('${t('maximum_cargo')}'.replace('{maximum}', this.MAXIMUM_CARGO.toLocaleString()))
+                                else
+                                    $el.setCustomValidity('')
+                            }
+                        }`}
+                        x-on:input="update_validity()"
                     />
                 </FixedFluid>
             </VerticalCenter>
 
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                    <label for="collateral"><span data-tippy-content={t('freight.standard.faq_2_text')}>{t('collateral')}</span></label>
-                    <MoneyInput
+                    <label for="collateral"><span data-tippy-content={t('freight.standard.faq_2_text')}>{t('collateral')} (ISK)</span></label>
+                    <NumberInput
                         id="collateral"
                         name="collateral"
                         model="collateral"
+                        x-on:input="$dispatch('collateral-change', parseFloat(($event.target.value || '').replace(/,/g, '')) || 0)"
                         required
                     />
                 </FixedFluid>
             </VerticalCenter>
-        </Flexblock>
 
-        <div
-            class="freight-high-collateral-warning"
-            role="alert"
-            x-show="route_details[route_id] && route_details[route_id].collateral_modifier > 0 && collateralValue >= 2500000000"
-            x-cloak
-            x-transition
-        >
-            <p>{t('freight.contract.high_collateral_warning')}</p>
-        </div>
+            <div
+                class="[ high-collateral-warning ]"
+                x-show={`route_details[route_id] && route_details[route_id].collateral_modifier > 0 && collateralValue >= ${HIGH_COLLATERAL_WARNING}`}
+                style="display: none"
+                role="alert"
+            >
+                <FixedFluid
+                    gap="var(--space-3xs)"
+                    width="250px"
+                    breakpoint="60%"
+                >
+                    <div></div>
+                    <p class="[ animate-rubber-band ]">{t('high_collateral_warning').replace('{value}', number_name(HIGH_COLLATERAL_WARNING, lang))}</p>
+                </FixedFluid>
+            </div>
+        </Flexblock>
 
         <Button x-bind:disabled="submitted" type="submit" class="[ w-full ]">{t('calculate')}</Button>
     </Flexblock>
 </form>
-
-<style lang="scss">
-    .freight-high-collateral-warning {
-        margin-block: var(--space-s);
-        padding: var(--space-s);
-        background: var(--color-warning-bg, rgba(200, 140, 0, 0.12));
-        border: 1px solid var(--color-warning-border, rgba(200, 140, 0, 0.4));
-        border-radius: 4px;
-    }
-    .freight-high-collateral-warning p {
-        margin: 0;
-        color: var(--color-warning-text, #b38600);
-    }
-    [x-cloak] { display: none !important; }
-</style>

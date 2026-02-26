@@ -11,8 +11,14 @@ interface Props {
 const {
     model,
     placeholder = t('money_input_placeholder'),
-    ...atributes
+    ...attributes
 } = Astro.props
+
+const x_data = attributes['x-data'] ?? ''
+const x_data_elements = x_data ? x_data.slice(1, -1) : ''
+
+console.log(attributes['x-data'])
+delete attributes['x-data']
 
 import Input from '@components/blocks/Input.astro';
 ---
@@ -20,7 +26,7 @@ import Input from '@components/blocks/Input.astro';
 <Input
     type="text"
     placeholder={placeholder}
-    onclick="this.select();"
+    x-on:click="$el.select()"
     data-tippy-content=""
     x-mask:dynamic="$money($input)"
     x-data={`{
@@ -30,15 +36,17 @@ import Input from '@components/blocks/Input.astro';
             const num = value.replace(/[^-0-9\.]/g, '');
             return clamp(num * mult, min, max);
         },
+        ${x_data_elements}
     }`}
     x-model={model}
-    x-on:input="$dispatch('collateral-change', parseFloat(($event.target.value || '').replace(/,/g, '')) || 0)"
     x-bind:data-tippy-content={`number_name((${model} ?? 0).toString(), '${lang}')`}
     onkeyup={`this._tippy.setContent(this.getAttribute('data-tippy-content'), '${lang}')`}
     @keypress={`
         const current_val = parseFloat(${model}.replaceAll(',', ''))
         
-        if($event.key.toLowerCase() === 'm' && current_val < 1000)
+        if($event.key.toLowerCase() === 'k' && current_val < 1000)
+            ${model} = updateValue(${model}, 1000, 0, Number.MAX_VALUE).toString()
+        else if($event.key.toLowerCase() === 'm' && current_val < 1000)
             ${model} = updateValue(${model}, 1000000, 0, Number.MAX_VALUE).toString()
         else if($event.key.toLowerCase() === 'b' && current_val < 1000)
             ${model} = updateValue(${model}, 1000000000, 0, Number.MAX_VALUE).toString()
@@ -46,5 +54,5 @@ import Input from '@components/blocks/Input.astro';
             ${model} = updateValue(${model}, 1000000000000, 0, Number.MAX_VALUE).toString()
     `}
     data-tippy-placement='top'
-    {...atributes}
+    {...attributes}
 />
