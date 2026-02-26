@@ -25,7 +25,8 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
-import NumberInput from './NumberInput.astro';
+import NumberInput from '@components/blocks/NumberInput.astro';
+import Markdown from '@components/blocks/Markdown.astro';
 ---
 
 <form
@@ -111,7 +112,11 @@ import NumberInput from './NumberInput.astro';
                     breakpoint="60%"
                 >
                     <div></div>
-                    <p class="[ animate-rubber-band ]">{t('high_collateral_warning').replace('{value}', number_name(HIGH_COLLATERAL_WARNING, lang))}</p>
+                    <Markdown
+                        class="[ animate-rubber-band ]"
+                        inline={true}
+                        markdown={t('high_collateral_warning').replace('{value}', number_name(HIGH_COLLATERAL_WARNING, lang))}
+                    />
                 </FixedFluid>
             </div>
         </Flexblock>
