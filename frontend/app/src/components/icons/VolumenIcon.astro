@@ -1,10 +1,13 @@
 ---
 interface Props {
-    size?:  number;
+    size?:      number;
+    xlink?:     string;
+
 }
 
 const {
-    size = 128
+    size = 128,
+    xlink,
 } = Astro.props
 ---
 
@@ -14,11 +17,14 @@ const {
     width={size}
     height={size}
 >
-	<style>
-		.s1 { opacity: .25; }
-		.s2 { opacity: .6; }
-	</style>
-	<path class="s0" d="m46.85 91.71l-39.75-22.95v-45.97l39.75 22.95z" fill="currentColor" />
-	<path class="s1" d="m46.85 45.74l39.69-22.91-39.69-22.92-39.69 22.92z" fill="currentColor" />
-	<path class="s2" d="m46.85 45.74v45.97l39.75-22.95v-45.96z" fill="currentColor" />
+	{xlink ?
+        <use xlink:href={xlink}></use> :
+		<style>
+			.s1 { opacity: .25; }
+			.s2 { opacity: .6; }
+		</style>
+		<path class="s0" d="m46.85 91.71l-39.75-22.95v-45.97l39.75 22.95z" fill="currentColor" />
+		<path class="s1" d="m46.85 45.74l39.69-22.91-39.69-22.92-39.69 22.92z" fill="currentColor" />
+		<path class="s2" d="m46.85 45.74v45.97l39.75-22.95v-45.96z" fill="currentColor" />
+	}
 </svg>

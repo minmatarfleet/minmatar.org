@@ -427,6 +427,12 @@
         "description": "page_finder.blueprints.description"
     },
     {
+        "slug": "industry.blueprint.copies",
+        "path": "/industry/blueprints/copies/",
+        "publish": true,
+        "description": "page_finder.blueprints.description"
+    },
+    {
         "slug": "industry.products",
         "alt": "icon.products.alt",
         "path": "/industry/products/",

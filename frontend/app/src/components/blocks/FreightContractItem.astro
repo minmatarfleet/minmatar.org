@@ -48,7 +48,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                 data-tippy-content={t('volumen')}
                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
-                <VolumenIcon size={32} />
+                <VolumenIcon xlink='#volumen_icon' size={32} />
             </div>
             <div><span data-tippy-content={number_name(contract.volume, lang)}>{contract.volume.toLocaleString()} m<sup>3</sup></span></div>
         </FixedFluid>
@@ -59,7 +59,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                 data-tippy-content={t('collateral')}
                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
-                <InsuranceIcon size={32} />
+                <InsuranceIcon xlink='#insurance_icon' size={32} />
             </div>
             <div><span data-tippy-content={number_name(contract.collateral, lang)}>{contract.collateral.toLocaleString()} ISK</span></div>
         </FixedFluid>
@@ -70,7 +70,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                 data-tippy-content={t('reward')}
                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
-                <RewardIcon size={32} />
+                <RewardIcon xlink='#reward_icon' size={32} />
             </div>
             <div><span data-tippy-content={number_name(contract.reward, lang)}>{contract.reward.toLocaleString()} ISK</span></div>
         </FixedFluid>
