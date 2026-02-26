@@ -55,8 +55,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                             swiper.setTransition(500)
                             swiper.autoplay.running && swiper.autoplay.stop()
                             swiper.once('transitionEnd', () => {
-                                swiper.slideNext(500, false)
-
                                 reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
                                 reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
                             })
@@ -66,8 +64,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                             swiper.setTransition(500)
                             swiper.autoplay.running && swiper.autoplay.stop()
                             swiper.once('transitionEnd', () => {
-                                swiper.slidePrev(500, false)
-
                                 reset_autoplay_timer && clearTimeout(reset_autoplay_timer)
                                 reset_autoplay_timer = setTimeout(() => resetAutoplay(swiper), AUTOPLAY_RESTARTING_DELAY_MS)
                             })
