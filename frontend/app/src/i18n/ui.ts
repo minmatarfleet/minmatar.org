@@ -235,9 +235,9 @@ export const ui = {
         'industry.blueprints.meta_description': 'Most orders require blueprints to fulfill. Find who is in possession the ones you need.',
         'page_finder.blueprints.description': 'Browse alliance members blueprints and copies.',
 
-        'industry.blueprint_copies.page_title': 'Blueprint copies',
-        'industry.blueprint_copies.leading_text': 'Most orders require blueprints copies to fulfill. Find who is in possession the ones you need.',
-        'industry.blueprint_copies.meta_description': 'Most orders require blueprints to fulfill. Find who is in possession the ones you need.',
+        'industry.blueprint.copies.page_title': 'Blueprint copies',
+        'industry.blueprint.copies.leading_text': 'Most orders require blueprints copies to fulfill. Find who is in possession the ones you need.',
+        'industry.blueprint.copies.meta_description': 'Most orders require blueprints to fulfill. Find who is in possession the ones you need.',
 
         'industry.my_orders.page_title': 'My orders',
         'industry.my_orders.leading_text': 'Inspect alliance manufacturing orders and bill of materials.',

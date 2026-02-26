@@ -11,14 +11,14 @@ let blueprints:Blueprint[] = []
 let fetching_error:string | false = false
 
 try {
-    blueprints = await fetch_blueprints()
+    blueprints = await fetch_blueprints(true)
 } catch (error) {
     fetching_error = (prod_error_messages() ? t('get_blueprints_error') : error.message)
 }
 
-const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component')
+const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component?is_copy=true')
 
-const count_text = t(blueprints.length != 1 ? 'blueprints_plural' : 'blueprints_singular').replace('{count}', blueprints?.length.toLocaleString())
+const count_text = t(blueprints.length != 1 ? 'blueprint_copies_plural' : 'blueprint_copies_singular').replace('{count}', blueprints?.length.toLocaleString())
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -37,12 +37,12 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('industry.blueprints.page_title');
+const page_title = t('industry.blueprint.copies.page_title');
 ---
 
 <Viewport
     title={page_title}
-    meta_description={t('industry.blueprints.meta_description')}
+    meta_description={t('industry.blueprint.copies.meta_description')}
 >
     <PageWide
         cover={{
@@ -68,8 +68,8 @@ const page_title = t('industry.blueprints.page_title');
             count_text: '${count_text}',
             runs_count_plural: '${t('runs_count_plural')}',
             runs_count_singular: '${t('runs_count_singular')}',
-            showing_blueprints_plural: '${t('showing_blueprints_plural')}',
-            showing_blueprints_singular: '${t('showing_blueprints_singular')}',
+            showing_blueprints_plural: '${t('showing_blueprint_copies_plural')}',
+            showing_blueprints_singular: '${t('showing_blueprint_copies_singular')}',
             item_name_filter: '',
             filter() {
                 if (this.item_name_filter === '') {
@@ -98,8 +98,8 @@ const page_title = t('industry.blueprints.page_title');
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
             <FlexInline>
-                <Button href={translatePath('/industry/blueprints/copies/')}>
-                    {t('find_copies')}
+                <Button href={translatePath('/industry/blueprints/')}>
+                    {t('find_originals')}
                 </Button>
             </FlexInline>
         </FlexInline>
@@ -108,7 +108,7 @@ const page_title = t('industry.blueprints.page_title');
             <Flexblock class="[ basis-200 ]" gap='var(--space-2xs)'>
                 <Input
                     type="text"
-                    placeholder={t('find_blueprints_placeholder')}
+                    placeholder={t('find_blueprint_copies_placeholder')}
                     x-model="item_name_filter"
                     x-on:input="filter()"
                     x-init="$el.focus()"
@@ -155,9 +155,9 @@ const page_title = t('industry.blueprints.page_title');
                         style="display: none"
                     />
 
-                    <span x-show="item_name_filter !== '' && blueprints_count > item_listing_limit">{t('narrow_down_blueprints')}</span>
+                    <span x-show="item_name_filter !== '' && blueprints_count > item_listing_limit">{t('narrow_down_blueprint_copies')}</span>
                     
-                    <span x-show="item_name_filter !== '' && blueprints_count === 0">{t('no_blueprints_to_display')}</span>
+                    <span x-show="item_name_filter !== '' && blueprints_count === 0">{t('no_blueprint_copies_to_display')}</span>
                 </FlexInline>
 
                 <FlexInline>
@@ -215,7 +215,7 @@ const page_title = t('industry.blueprints.page_title');
                 />
                 :
                 <BlueprintTableAlpine
-                    is_copy={false}
+                    is_copy={true}
                 />
             }
         </Flexblock>
