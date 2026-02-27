@@ -19,23 +19,22 @@ try {
 }
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
-const is_history = Astro.url.searchParams.get('is_history') ? JSON.parse(Astro.url.searchParams.get('is_history') ?? 'false') : undefined
 
 if (location_contracts.length > 0) {
-    if (active_location_name === '' || !location_contracts.find(route => route.location_name === active_location_name) )
+    if (active_location_name === '' || !location_contracts.find(location => location.location_name === active_location_name) )
         active_location_name = location_contracts[0].location_name
 }
 
-const active_contracts_location = location_contracts.find(route => route.location_name === active_location_name)
+const active_contracts_location = location_contracts.find(location => location.location_name === active_location_name)
 const contracts_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
+const contracts_count_text = t(contracts_count != 1 ? 'showing_orders_plural' : 'showing_orders_singular').replace('{count}', String(contracts_count))
 
-const non_active_contracts_location = location_contracts.filter(route => route.location_name !== active_location_name)
+const non_active_contracts_location = location_contracts.filter(location => location.location_name !== active_location_name)
 
 import { query_string } from '@helpers/string';
 
 const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
-    location_name: active_location_name,
-    ...(is_history && { is_history }),
+    location_name: active_location_name
 })}` : ''}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')

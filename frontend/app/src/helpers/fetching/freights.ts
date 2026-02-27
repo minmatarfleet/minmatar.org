@@ -38,10 +38,13 @@ export async function fetch_freight_contracts(history:boolean = false) {
     const valid_contracts = contracts.filter(contract => contract.issuer_id > 0)
     const routes: Record<string, Record<string, FreightContract[]>> = {}
     const contracts_by_locations:FreightContractLocation[] = []
+    const LOCATION_TRANSLATION = {
+        'Structure': 'Amamake - 5 times nearly AT winners'
+    }
     
     valid_contracts.forEach(contract => {
-        const start_location_name = contract.start_location_name
-        const end_location_name = contract.end_location_name
+        const start_location_name = LOCATION_TRANSLATION[contract.start_location_name] ?? contract.start_location_name
+        const end_location_name = LOCATION_TRANSLATION[contract.end_location_name] ?? contract.end_location_name
 
         if (!routes[start_location_name]) routes[start_location_name] = {}
         if (!routes[start_location_name][end_location_name]) routes[start_location_name][end_location_name] = []
