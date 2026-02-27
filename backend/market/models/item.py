@@ -1,9 +1,13 @@
+import re
+from collections import defaultdict
+
 from django.db import models
 from django.db.models import Exists, OuterRef, Sum
 from django.utils import timezone
 
 from eveuniverse.models import EveType
 from eveonline.models import EveLocation
+from fittings.models import EveFitting
 
 
 class EveTypeWithSellOrdersManager(models.Manager):
@@ -135,3 +139,90 @@ class EveMarketItemTransaction(models.Model):
 
     def __str__(self):
         return str(f"{self.item.name} - {self.location.location_name}")
+
+
+def parse_eft_items(eft_format):
+    """
+    Parse an EFT-format fitting string and return a dict of {item_name: quantity}.
+    Includes the ship (qty 1) and all modules, rigs, charges, and cargo.
+    """
+    lines = eft_format.strip().split("\n")
+    if not lines:
+        return {}
+
+    items = defaultdict(int)
+
+    # First line: [ShipName, Fitting name]
+    header = lines[0].strip()
+    ship_name = header.split(",")[0].strip().strip("[]")
+    if ship_name:
+        items[ship_name] += 1
+
+    cargo_re = re.compile(r"^(.+?)\s+x(\d+)$")
+
+    for line in lines[1:]:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("[Empty "):
+            continue
+
+        m = cargo_re.match(line)
+        if m:
+            items[m.group(1).strip()] += int(m.group(2))
+        else:
+            items[line] += 1
+
+    return dict(items)
+
+
+class EveMarketFittingExpectation(models.Model):
+    """
+    Track a target number of a fitting at a location.  The fitting is
+    decomposed into its ship + modules so each component appears as an
+    item-level expectation on the market.
+    """
+
+    fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
+    quantity = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = [["fitting", "location"]]
+
+    def __str__(self):
+        return f"{self.fitting.name} x{self.quantity} - {self.location.location_name}"
+
+    def get_item_quantities(self):
+        """
+        Decompose the fitting and multiply by the expectation quantity.
+        Returns {item_name: total_quantity_needed}.
+        """
+        per_fit = parse_eft_items(self.fitting.eft_format)
+        return {name: qty * self.quantity for name, qty in per_fit.items()}
+
+
+def get_effective_item_expectations(location):
+    """
+    Combine individual ``EveMarketItemExpectation`` rows and all
+    ``EveMarketFittingExpectation`` rows for *location* into a single
+    dict of ``{item_name: quantity}``.
+
+    For each item the effective quantity is the **maximum** across every
+    independent source (each individual expectation and each fitting
+    expectation), because a larger stock requirement covers the smaller ones.
+    """
+    effective = defaultdict(int)
+
+    for exp in EveMarketItemExpectation.objects.filter(
+        location=location
+    ).select_related("item"):
+        effective[exp.item.name] = max(effective[exp.item.name], exp.quantity)
+
+    for fexp in EveMarketFittingExpectation.objects.filter(
+        location=location
+    ).select_related("fitting"):
+        for name, qty in fexp.get_item_quantities().items():
+            effective[name] = max(effective[name], qty)
+
+    return dict(effective)

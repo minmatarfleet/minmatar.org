@@ -236,6 +236,56 @@ export interface LocationExpectations {
     expectations: LocationFittingExpectation[]
 }
 
+export interface SellOrderItem {
+    item_name: string
+    type_id: number | null
+    category_id: number | null
+    category_name: string
+    group_id: number | null
+    group_name: string
+    expected_quantity: number
+    current_quantity: number
+    fulfilled: boolean
+    issuer_ids: number[]
+}
+
+export interface SellOrderLocation {
+    location_id: number
+    location_name: string
+    short_name: string
+    items: SellOrderItem[]
+}
+
+export async function get_sell_orders(location_id?: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    let ENDPOINT = `${API_ENDPOINT}/sell-orders`
+    if (location_id !== undefined) {
+        ENDPOINT += `?location_id=${location_id}`
+    }
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as SellOrderLocation[];
+    } catch (error) {
+        throw new Error(`Error fetching sell orders: ${error.message}`);
+    }
+}
+
 export async function get_market_expectations_by_location() {
     const headers = {
         'Content-Type': 'application/json',

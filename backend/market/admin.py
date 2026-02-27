@@ -13,6 +13,7 @@ from market.models import (
     EveMarketContractError,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
+    EveMarketFittingExpectation,
     EveMarketItemExpectation,
     EveMarketItemHistory,
     EveMarketItemOrder,
@@ -20,11 +21,13 @@ from market.models import (
     EveMarketItemTransaction,
     EveTypeWithSellOrders,
 )
+from market.models.item import parse_eft_items
 from market.tasks import fetch_market_item_history_for_type
 
 # Only these two appear in the Market admin index
 MARKET_INDEX_MODELS = {
     "evemarketcontractexpectation": "Market contracts",
+    "evemarketfittingexpectation": "Market fitting expectations",
     "evetypewithsellorders": "Market sell orders",
 }
 
@@ -252,6 +255,54 @@ class EveMarketContractErrorAdmin(admin.ModelAdmin):
     readonly_fields = ("updated_at",)
     date_hierarchy = "updated_at"
     autocomplete_fields = ("issuer", "location")
+
+
+# ----- Fitting expectations (decomposed into items) -----
+
+
+@admin.register(EveMarketFittingExpectation)
+class EveMarketFittingExpectationAdmin(admin.ModelAdmin):
+    """Fitting expectations: a fitting × quantity per location, decomposed into item-level expectations."""
+
+    list_display = (
+        "fitting",
+        "location",
+        "quantity",
+        "get_item_count",
+    )
+    list_display_links = ("fitting", "location")
+    search_fields = (
+        "fitting__name",
+        "location__location_name",
+        "location__short_name",
+    )
+    list_filter = ("location", "fitting")
+    list_per_page = 50
+    autocomplete_fields = ("fitting", "location")
+    ordering = ("fitting__name", "location__location_name")
+    readonly_fields = ("get_decomposed_items",)
+    fieldsets = (
+        ("Details", {"fields": ("fitting", "location", "quantity")}),
+        (
+            "Decomposed items",
+            {
+                "fields": ("get_decomposed_items",),
+            },
+        ),
+    )
+
+    @admin.display(description="Unique items")
+    def get_item_count(self, obj):
+        return len(parse_eft_items(obj.fitting.eft_format))
+
+    @admin.display(description="Items from fitting")
+    def get_decomposed_items(self, obj):
+        if not obj.pk:
+            return "–"
+        items = obj.get_item_quantities()
+        rows = sorted(items.items(), key=lambda kv: kv[0])
+        lines = [f"{name} × {qty}" for name, qty in rows]
+        return format_html("<br>".join(lines))
 
 
 # ----- Market sell orders (unique EVE types with sell orders) -----
