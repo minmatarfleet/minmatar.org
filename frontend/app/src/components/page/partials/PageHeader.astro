@@ -15,24 +15,24 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 const subheader_content = await Astro.slots.render('subheader');
 ---
 
+<div id="top-sentinel"></div>
 <div
-    class="[ post-header ][ relative lg:sticky! ]"
+    class="[ post-header ][ relative lg:sticky! lg:top-0 ]"
     x-data={`{
         sticky: false,
         init() {
             const observer = new IntersectionObserver(
                 ([entry]) => {
-                    if (getComputedStyle($el).position !== 'sticky') return
+                    console.log(entry.isIntersecting)
 
-                    if (entry.intersectionRatio < 1 && entry.boundingClientRect.top <= 0)
+                    if (!entry.isIntersecting)
                         this.sticky = true
                     else
                         this.sticky = false
                 },
-                { threshold: [1] }
             )
             
-            observer.observe($el)
+            observer.observe(document.getElementById('top-sentinel'))
         }
     }`}
     x-bind:class="{ glass: sticky }"
@@ -67,6 +67,14 @@ const subheader_content = await Astro.slots.render('subheader');
 </style>
 
 <style lang="scss">
+    #top-sentinel {
+        position: absolute;
+        top: 0;
+        height: 1px;
+        width: 1px;
+        pointer-events: none;
+    }
+
     .glass {
         background-color: var(--dark-transparency-background-mobile);
 
@@ -88,7 +96,6 @@ const subheader_content = await Astro.slots.render('subheader');
     
     .post-header {
         transition: var(--fast-transition);
-        top: -1px;
         z-index: var(--header-z-index);
         padding-top: var(--space-xl);
 
