@@ -38,7 +38,7 @@ fittings.forEach((fitting) => {
     fitting_type[fitting.fitting_type] = fitting.fitting_type;
     ship_type[fitting.ship_type] = fitting.ship_type;
     if (fitting.ship_type === 'Unknown')
-        console.log(fitting.ship_type)
+        console.log(fitting)
 })
 
 let fitting_ship_types = Object.keys(ship_type)
@@ -176,13 +176,15 @@ const page_title = t('fitting.list.page_title');
                         gap='var(--space-m)'
                     >
                         <FlexInline gap='var(--space-2xs)'>
-                            <img
-                                class="[ mt-[2px] ]"
-                                src={`/images/icons/ships/${get_ship_type_icon(group_fittings[0].ship_type)}`}
-                                height="32"
-                                width="32"
-                                alt={`${group_fittings[0].ship_type} icon`}
-                            />
+                            {get_ship_type_icon(group_fittings[0].ship_type) !== null &&
+                                <img
+                                    class="[ mt-[2px] ]"
+                                    src={`/images/icons/ships/${get_ship_type_icon(group_fittings[0].ship_type)}`}
+                                    height="32"
+                                    width="32"
+                                    alt={`${group_fittings[0].ship_type} icon`}
+                                />
+                            }
                             <h2>{group_fittings[0].ship_type}</h2>
                         </FlexInline>
                         <Grid

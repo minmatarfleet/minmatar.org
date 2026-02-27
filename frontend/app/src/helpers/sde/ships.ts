@@ -69,7 +69,7 @@ export async function get_ship_info(ship_id:number) {
         schema.invTypes,
         eq(schema.invGroups.groupID, schema.invTypes.groupID),
     )
-    .innerJoin(
+    .leftJoin(
         schema.chrRaces,
         eq(schema.invTypes.raceID, schema.chrRaces.raceID),
     )
