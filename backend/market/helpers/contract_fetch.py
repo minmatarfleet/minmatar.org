@@ -5,7 +5,6 @@ from esi.models import Token
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 
 STRUCTURE_MARKET_SCOPES = ["esi-markets.structure_markets.v1"]
-MARKET_ITEM_HISTORY_SPREAD_SECONDS = 4 * 3600  # 4 hours
 
 
 def _alliance_corporation_ids():

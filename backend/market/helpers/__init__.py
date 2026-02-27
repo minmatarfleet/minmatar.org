@@ -1,5 +1,4 @@
 from market.helpers.contract_fetch import (
-    MARKET_ITEM_HISTORY_SPREAD_SECONDS,
     get_character_with_structure_markets_scope,
     known_contract_issuer_ids,
 )
@@ -21,7 +20,6 @@ from market.helpers.contracts import (
 from market.helpers.entity_resolution import entity_name_by_id
 
 __all__ = [
-    "MARKET_ITEM_HISTORY_SPREAD_SECONDS",
     "MarketContractHistoricalQuantity",
     "clear_structure_sell_orders_for_location",
     "create_or_update_contract",

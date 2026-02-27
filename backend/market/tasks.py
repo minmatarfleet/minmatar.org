@@ -25,7 +25,6 @@ from market.helpers import (
     update_region_market_history_for_type,
 )
 from market.helpers.contract_fetch import (
-    MARKET_ITEM_HISTORY_SPREAD_SECONDS,
     known_contract_issuer_ids,
 )
 from market.models import (
@@ -368,9 +367,7 @@ def fetch_market_item_history_for_type(type_id: int) -> int:
 def fetch_market_item_history():
     """
     Fire a task per unique type_id we track in EveMarketItemOrder; each task
-    processes that type_id across all unique location regions. Tasks are
-    spread over MARKET_ITEM_HISTORY_SPREAD_SECONDS (4 hours).
-    Runs daily.
+    processes that type_id across all unique location regions. Runs daily.
     """
     logger.info("Starting fetch_market_item_history")
 
@@ -382,15 +379,10 @@ def fetch_market_item_history():
         logger.info("No item orders, skipping market item history")
         return
 
-    for i, type_id in enumerate(type_ids):
-        delay = i % MARKET_ITEM_HISTORY_SPREAD_SECONDS
-        fetch_market_item_history_for_type.apply_async(
-            args=[type_id],
-            countdown=delay,
-        )
+    for type_id in type_ids:
+        fetch_market_item_history_for_type.apply_async(args=[type_id])
 
     logger.info(
-        "fetch_market_item_history scheduled %s type_id task(s) over %.0f hour(s)",
+        "fetch_market_item_history scheduled %s type_id task(s)",
         len(type_ids),
-        MARKET_ITEM_HISTORY_SPREAD_SECONDS / 3600,
     )
