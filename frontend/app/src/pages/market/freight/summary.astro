@@ -38,7 +38,7 @@ import Context from '@components/layout/Context.astro';
 const page_title = t('freight.summary.page_title');
 ---
 
-<Viewport title={page_title}>
+<Viewport title={page_title} meta_description={t('freight.summary.meta_description')}>
     <PageDefault
         cover={{
             image: "/images/freight-service-cover.jpg",

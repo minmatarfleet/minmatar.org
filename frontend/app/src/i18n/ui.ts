@@ -191,26 +191,29 @@ export const ui = {
 
         'market.page_title': 'Market',
         'market.leading_text': 'The Minmatar Republic bleeds nearly half a trillion ISK per month in faction warfare losses. The sheer scale of the conflict has made importing resources logistically impossible, even for the most resourceful capsuleers. This interesting challenge demands a fundamental shift in strategy: local industry must become the backbone of our military strategy.',
-        'market.meta_description': 'Learn more about the trillions of ISK that changes hands in Minmatar Fleet Alliance, and the various services that faciliate this.',
+        'market.meta_description': 'Minmatar Fleet Alliance market hub: supply contracts for EVE Online doctrine ships and fittings, alliance freight from Jita, and sell order stock levels at our staging structures.',
         'market.cover_alt': 'Closeup picture of Jita station entrance',
         'market.description': 'Request alliance freight service and check for opportunities with our contract service.',
 
-        'contracts.page_title': 'Market',
+        'contracts.page_title': 'Supply Contracts',
         'contracts.leading_text': 'Minmatar Fleet is supplied by individuals like YOU rather than a tight knit cartel of leadership. Learn more about our available contracts, and become a supplier!',
+        'contracts.meta_description': 'Browse EVE Online item exchange contracts at Minmatar Fleet staging. See doctrine fittings, hulls, and consumables needed per location. Become a supplier.',
         'contracts.cover_alt': 'Lower view of a Raitaru structure main tower with FLEET icon and a dramatic cloud scenography behind',
         'page_finder.contracts.description': 'List of contracts supply opportunities.',
 
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'Minmatar Fleet Logistics is a logistics powerhouse that supports Minmatar Fleet efforts. We move tens of millions of m3 every single month to the front lines, ensuring that pilots can destroy hundreds of billions of ISK every month.',
+        'freight.meta_description': 'Minmatar Fleet freight: jump freighter hauling from Jita and wormhole routes. Courier contracts, calculator, and 30-day summary for EVE Online pilots.',
         'freight.cover_alt': 'An Amarr hauler initiating warp drive.',
 
         'freight_contracts.page_title': 'Freight Contracts',
-        'freight_contracts.meta_description': 'Keep tracking of the status of your courrier contracts or fill the gap with your space trucker skills.',
+        'freight_contracts.meta_description': 'Track your Minmatar Fleet courier contracts by location and destination. Accept contracts as a hauler or monitor delivery status.',
         
         'freight_contracts.history.page_title': 'Freight Contracts History',
-        'freight_contracts.history.meta_description': 'Browse all fulfilled courier contracts.',
+        'freight_contracts.history.meta_description': 'History of fulfilled Minmatar Fleet courier contracts. Browse completed hauls by location and destination.',
 
         'freight.summary.page_title': '30 Days Summary',
+        'freight.summary.meta_description': '30-day freight summary: total contracts, volume, collateral, and reward for Minmatar Fleet Logistics courier activity.',
         'freight.summary.historical_header': 'Historical Summary',
         'freight.summary.current_title': 'Current Summary',
 
@@ -386,7 +389,7 @@ export const ui = {
         'corporations.application.leading_text': 'Review the following application.',
 
         'freight.standard.page_title': 'Standard Freight',
-        'freight.standard.meta_description': 'Looking to ship in from Jita? Minmatar Freight has got you covered, at half the price of PushX.',
+        'freight.standard.meta_description': 'Ship from Jita to Minmatar Fleet staging. Freight calculator, routes, and pricing. EVE Online jump freighter hauling at competitive rates.',
         'freight.standard.jita_hauling_ads': 'For Jita - HS routes, we recommend using [Red Frog](https://red-frog.org/). We’d like to optimize our routes to be strictly from Minmatar space.',
         'freight.standard.calculator_title': 'Freight calculator',
         'freight.standard.faq_title': 'FAQ',
@@ -400,6 +403,7 @@ export const ui = {
         'freight.standard.faq_4_text': 'Keeping a record of the cost of all your contracted items. You may use tools like [Janice](https://janice.e-351.com/) to estimate it in case you don’t have any record at your disposal.',
 
         'freight.wormhole.page_title': 'Wormhole Freight',
+        'freight.wormhole.meta_description': 'Wormhole freight routes and calculator for Minmatar Fleet. Courier cargo to and from wormhole space via jump freighter.',
         'freight.wormhole.calculator_title': 'Freight calculator',
         'freight.wormhole.faq_title': 'FAQ',
         'freight.wormhole.faq_1_title': 'Why do you only serve certain destinations?',
@@ -410,6 +414,7 @@ export const ui = {
         'freight.wormhole.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics. Contact BearThatCares.',
 
         'freight.contract.page_title': 'Freight contract',
+        'freight.contract.meta_description': 'Create a Minmatar Fleet courier contract. Choose route, volume, collateral, and reward. Step-by-step contract creation.',
 
         'freight.contract.instruction_paragraph': 'Start creating a contract by selecting your items from your Inventory or Personal Assets, at the station specified below, right click and create contract.',
         'freight.contract.step_1_title': 'Create Contract (1/4)',
@@ -1680,7 +1685,7 @@ export const ui = {
         'view_sell_orders': 'View sell orders',
         'sell_orders.page_title': 'Sell Orders',
         'sell_orders.leading_text': 'Track sell order stock levels across our market locations. See what items are needed and help keep our markets stocked.',
-        'sell_orders.meta_description': 'Market sell order expectations and current stock levels.',
+        'sell_orders.meta_description': 'Minmatar Fleet market sell orders: expected vs current stock by location. See what EVE Online items are needed, copy shopping lists, and help keep staging structures stocked.',
         'copy_shopping_list': 'Copy shopping list',
         'copy_full_list': 'Copy full list',
         'sell_orders.copy_selected': 'Copy selected',

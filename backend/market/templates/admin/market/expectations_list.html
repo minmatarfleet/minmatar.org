@@ -1,0 +1,68 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Market expectations" %}{{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+  &rsaquo; {% trans "Market expectations" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  <div class="module" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <a href="{{ add_item_url }}" class="addlink" style="padding: 8px 12px;">{% trans "Add item expectation" %}</a>
+    <a href="{{ add_fitting_url }}" class="addlink" style="padding: 8px 12px;">{% trans "Add fitting expectation" %}</a>
+
+    <form method="get" style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+      <label for="id_location"><strong>{% trans "Location:" %}</strong></label>
+      <select id="id_location" name="location" onchange="this.form.submit();">
+        <option value="">{% trans "All locations" %}</option>
+        {% for loc in locations %}
+        <option value="{{ loc.pk }}" {% if selected_location == loc.pk|stringformat:"s" %}selected{% endif %}>
+          {{ loc.location_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if rows %}
+  <div class="module">
+    <div style="overflow-x: auto;">
+      <table id="result_list">
+        <thead>
+          <tr>
+            <th scope="col"><div class="text">{% trans "Name" %}</div></th>
+            <th scope="col"><div class="text">{% trans "Source" %}</div></th>
+            <th scope="col"><div class="text">{% trans "Location" %}</div></th>
+            <th scope="col"><div class="text">{% trans "Quantity" %}</div></th>
+            <th scope="col"><div class="text"></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr class="{% cycle 'row1' 'row2' %}">
+            <td><a href="{{ row.edit_url }}">{{ row.name }}</a></td>
+            <td>{{ row.source }}</td>
+            <td>{{ row.location_name }}</td>
+            <td>{{ row.quantity }}</td>
+            <td><a href="{{ row.edit_url }}">{% trans "Edit" %}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="paginator">{{ rows|length }} {% trans "expectation(s)" %}</p>
+  </div>
+  {% else %}
+  <div class="module">
+    <p>{% trans "No expectations found." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

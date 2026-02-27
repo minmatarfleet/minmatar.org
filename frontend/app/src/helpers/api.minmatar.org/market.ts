@@ -247,12 +247,15 @@ export interface SellOrderItem {
     current_quantity: number
     fulfilled: boolean
     issuer_ids: number[]
+    lowest_price: number | null
+    baseline_price: number | null
 }
 
 export interface SellOrderLocation {
     location_id: number
     location_name: string
     short_name: string
+    is_price_baseline: boolean
     items: SellOrderItem[]
 }
 

@@ -12,6 +12,7 @@ from market.models.item import (
     EveMarketItemResponsibility,
     EveMarketItemTransaction,
     EveTypeWithSellOrders,
+    _get_consumable_items,
     get_effective_item_expectations,
     parse_eft_items,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "EveMarketItemResponsibility",
     "EveMarketItemTransaction",
     "EveTypeWithSellOrders",
+    "_get_consumable_items",
     "get_effective_item_expectations",
     "parse_eft_items",
 ]

@@ -1,10 +1,11 @@
 from ninja import Router
 from pydantic import BaseModel
 
-from django.db.models import Sum
+from django.db.models import Min, Sum
 
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
+from market.models.contract import EveMarketContractExpectation
 from market.models.item import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
@@ -15,25 +16,39 @@ from market.models.item import (
 router = Router(tags=["Market"])
 
 
+def _get_baseline_prices() -> dict[str, float]:
+    """Lowest sell-order price per item at the price_baseline location."""
+    baseline = EveLocation.objects.filter(price_baseline=True).first()
+    if not baseline:
+        return {}
+    return dict(
+        EveMarketItemOrder.objects.filter(location=baseline)
+        .values("item__name")
+        .annotate(lowest=Min("price"))
+        .values_list("item__name", "lowest")
+    )
+
+
 class SellOrderItemResponse(BaseModel):
     item_name: str
-    type_id: int | None  # EVE type ID for icon; None if type not in DB
-    category_id: int | None  # EVE category ID for grouping (e.g. Ammo, Module)
-    category_name: str  # EVE category name for display (empty if unknown)
-    group_id: int | None  # EVE market group ID
-    group_name: str  # EVE group name (empty if unknown)
+    type_id: int | None
+    category_id: int | None
+    category_name: str
+    group_id: int | None
+    group_name: str
     expected_quantity: int
     current_quantity: int
     fulfilled: bool
-    issuer_ids: list[
-        int
-    ]  # character IDs of who has sell orders for this item (distinct)
+    issuer_ids: list[int]
+    lowest_price: float | None
+    baseline_price: float | None
 
 
 class SellOrderLocationResponse(BaseModel):
     location_id: int
     location_name: str
     short_name: str
+    is_price_baseline: bool
     items: list[SellOrderItemResponse]
 
 
@@ -58,10 +73,19 @@ def get_sell_orders(request, location_id: int | None = None):
                 "location_id", flat=True
             )
         )
-        all_ids = item_location_ids | fitting_location_ids
+        contract_location_ids = set(
+            EveMarketContractExpectation.objects.values_list(
+                "location_id", flat=True
+            )
+        )
+        all_ids = (
+            item_location_ids | fitting_location_ids | contract_location_ids
+        )
         locations = EveLocation.objects.filter(
             location_id__in=all_ids, market_active=True
         ).order_by("location_name")
+
+    baseline_prices = _get_baseline_prices()
 
     results = []
     for location in locations:
@@ -90,6 +114,15 @@ def get_sell_orders(request, location_id: int | None = None):
             )
         )
 
+        lowest_prices = dict(
+            EveMarketItemOrder.objects.filter(
+                location=location, item__name__in=all_item_names
+            )
+            .values("item__name")
+            .annotate(lowest=Min("price"))
+            .values_list("item__name", "lowest")
+        )
+
         order_issuers = (
             EveMarketItemOrder.objects.filter(
                 location=location,
@@ -114,6 +147,8 @@ def get_sell_orders(request, location_id: int | None = None):
             type_id, category_id, category_name, group_id, group_name = (
                 type_info.get(name, (None, None, "", None, ""))
             )
+            lp = lowest_prices.get(name)
+            bp = baseline_prices.get(name)
             items.append(
                 SellOrderItemResponse(
                     item_name=name,
@@ -126,6 +161,8 @@ def get_sell_orders(request, location_id: int | None = None):
                     current_quantity=current,
                     fulfilled=current >= expected if expected > 0 else True,
                     issuer_ids=issuers_by_name.get(name, []),
+                    lowest_price=float(lp) if lp is not None else None,
+                    baseline_price=float(bp) if bp is not None else None,
                 )
             )
 
@@ -134,6 +171,7 @@ def get_sell_orders(request, location_id: int | None = None):
                 location_id=location.location_id,
                 location_name=location.location_name,
                 short_name=location.short_name,
+                is_price_baseline=location.price_baseline,
                 items=items,
             )
         )

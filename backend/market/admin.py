@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum
 from django.http import HttpResponseRedirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
@@ -21,15 +23,21 @@ from market.models import (
     EveMarketItemTransaction,
     EveTypeWithSellOrders,
 )
-from market.models.item import parse_eft_items
+from market.models.item import _get_consumable_items, parse_eft_items
 from market.tasks import fetch_market_item_history_for_type
 
-# Only these two appear in the Market admin index
 MARKET_INDEX_MODELS = {
     "evemarketcontractexpectation": "Market contracts",
-    "evemarketfittingexpectation": "Market fitting expectations",
     "evetypewithsellorders": "Market sell orders",
 }
+
+MARKET_EXTRA_INDEX_LINKS = [
+    {
+        "name": "Market expectations",
+        "admin_url": "admin:market_expectations",
+        "view_only": True,
+    },
+]
 
 
 def get_market_item_trends(item_id):
@@ -641,11 +649,107 @@ class EveMarketItemHistoryAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related("item")
 
 
-# ----- Market admin index: only Contracts + Sell orders -----
+# ----- Unified expectations view -----
+
+
+@staff_member_required
+def market_expectations_view(request):
+    """Custom admin view listing all market expectations broken down to individual items."""
+    location_filter = request.GET.get("location")
+
+    locations = EveLocation.objects.filter(market_active=True).order_by(
+        "location_name"
+    )
+
+    item_qs = EveMarketItemExpectation.objects.select_related(
+        "item", "location"
+    )
+    fitting_qs = EveMarketFittingExpectation.objects.select_related(
+        "fitting", "location"
+    )
+    contract_qs = EveMarketContractExpectation.objects.select_related(
+        "fitting", "location"
+    )
+
+    if location_filter:
+        item_qs = item_qs.filter(location_id=location_filter)
+        fitting_qs = fitting_qs.filter(location_id=location_filter)
+        contract_qs = contract_qs.filter(location_id=location_filter)
+
+    rows = []
+
+    for exp in item_qs.order_by("item__name", "location__location_name"):
+        rows.append(
+            {
+                "name": exp.item.name,
+                "source": "Item",
+                "location_name": exp.location.location_name,
+                "quantity": exp.quantity,
+                "edit_url": reverse(
+                    "admin:market_evemarketitemexpectation_change",
+                    args=[exp.pk],
+                ),
+            }
+        )
+
+    for exp in fitting_qs:
+        edit_url = reverse(
+            "admin:market_evemarketfittingexpectation_change",
+            args=[exp.pk],
+        )
+        for item_name, qty in exp.get_item_quantities().items():
+            rows.append(
+                {
+                    "name": item_name,
+                    "source": f"Fitting: {exp.fitting.name}",
+                    "location_name": exp.location.location_name,
+                    "quantity": qty,
+                    "edit_url": edit_url,
+                }
+            )
+
+    for exp in contract_qs:
+        edit_url = reverse(
+            "admin:market_evemarketcontractexpectation_change",
+            args=[exp.pk],
+        )
+        consumables = _get_consumable_items(exp.fitting)
+        for item_name, qty in consumables.items():
+            rows.append(
+                {
+                    "name": item_name,
+                    "source": f"Doctrine: {exp.fitting.name}",
+                    "location_name": exp.location.location_name,
+                    "quantity": qty * exp.quantity,
+                    "edit_url": edit_url,
+                }
+            )
+
+    rows.sort(
+        key=lambda r: (r["name"].lower(), r["source"], r["location_name"])
+    )
+
+    context = {
+        **admin.site.each_context(request),
+        "title": "Market expectations",
+        "rows": rows,
+        "locations": locations,
+        "selected_location": location_filter or "",
+        "add_item_url": reverse("admin:market_evemarketitemexpectation_add"),
+        "add_fitting_url": reverse(
+            "admin:market_evemarketfittingexpectation_add"
+        ),
+    }
+    return TemplateResponse(
+        request, "admin/market/expectations_list.html", context
+    )
+
+
+# ----- Market admin index -----
 
 
 def _market_get_app_list(request):
-    """Show a single Market section with only Market contracts and Market sell orders."""
+    """Show a filtered Market section: model entries from MARKET_INDEX_MODELS plus extra custom links."""
     app_list = admin.site.get_app_list_original(request)
     for app in app_list:
         if app["app_label"] != "market":
@@ -656,12 +760,56 @@ def _market_get_app_list(request):
             if key in MARKET_INDEX_MODELS:
                 display_name = MARKET_INDEX_MODELS[key]
                 models.append({**m, "name": display_name})
+        for extra in MARKET_EXTRA_INDEX_LINKS:
+            models.append(
+                {
+                    "name": extra["name"],
+                    "object_name": extra["name"],
+                    "perms": {
+                        "add": False,
+                        "change": True,
+                        "delete": False,
+                        "view": True,
+                    },
+                    "admin_url": reverse(extra["admin_url"]),
+                    "view_only": extra.get("view_only", False),
+                }
+            )
         if models:
             app["models"] = models
         break
     return app_list
 
 
+_original_admin_urls = None
+
+
+def _get_custom_admin_urls():
+    """Return the market custom admin URLs to be prepended to the default admin URLs."""
+    return [
+        path(
+            "market/expectations/",
+            admin.site.admin_view(market_expectations_view),
+            name="market_expectations",
+        ),
+    ]
+
+
+def _patched_get_urls(original_get_urls):
+    """Wrap AdminSite.get_urls to inject our custom URLs."""
+
+    def get_urls():
+        return _get_custom_admin_urls() + original_get_urls()
+
+    return get_urls
+
+
 if not hasattr(admin.site, "get_app_list_original"):
     admin.site.get_app_list_original = admin.site.get_app_list  # bound method
     admin.site.get_app_list = _market_get_app_list
+
+_MARKET_URLS_PATCHED_ATTR = "market_urls_patched"
+
+if not getattr(admin.site, _MARKET_URLS_PATCHED_ATTR, False):
+    admin.site.get_urls = _patched_get_urls(admin.site.get_urls)
+    setattr(admin.site, _MARKET_URLS_PATCHED_ATTR, True)

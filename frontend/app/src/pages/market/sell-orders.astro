@@ -25,6 +25,8 @@ if (sell_order_locations.length > 0) {
 const active_location = sell_order_locations.find(loc => loc.location_name === active_location_name)
 const non_active_locations = sell_order_locations.filter(loc => loc.location_name !== active_location_name)
 
+const is_baseline = active_location?.is_price_baseline ?? false
+
 interface ItemDisplay {
     item_name: string
     type_id: number | null
@@ -38,15 +40,21 @@ interface ItemDisplay {
     issuer_ids: number[]
     completion: number
     low_amount: boolean
+    lowest_price: number | null
+    baseline_price: number | null
+    markup_pct: number | null
 }
 
-function to_display(item: { item_name: string, type_id: number | null, category_id: number | null, category_name: string, group_id: number | null, group_name: string, expected_quantity: number, current_quantity: number, fulfilled: boolean, issuer_ids: number[] }): ItemDisplay {
+function to_display(item: { item_name: string, type_id: number | null, category_id: number | null, category_name: string, group_id: number | null, group_name: string, expected_quantity: number, current_quantity: number, fulfilled: boolean, issuer_ids: number[], lowest_price: number | null, baseline_price: number | null }): ItemDisplay {
     const completion = item.expected_quantity > 0
         ? Math.min(100, (item.current_quantity / item.expected_quantity) * 100)
         : 100
     const threshold = (20 * item.expected_quantity) / 100
     const low_amount = item.expected_quantity > 0 && item.current_quantity <= threshold
-    return { ...item, completion, low_amount }
+    const markup_pct = (item.lowest_price != null && item.baseline_price != null && item.baseline_price > 0)
+        ? ((item.lowest_price - item.baseline_price) / item.baseline_price) * 100
+        : null
+    return { ...item, completion, low_amount, markup_pct }
 }
 
 const items_with_expectations: ItemDisplay[] = (active_location?.items.filter(i => i.expected_quantity > 0) ?? []).map(to_display)
@@ -380,45 +388,54 @@ const REEL_GAP = 80
                                 <BlockList role="list" gap='var(--space-3xs)'>
                                     {groupItems.map((item) =>
                                         <div class="[ sell-order-row ]" x-show="show_item($el)">
-                                            <Wrapper
-                                                padding_block='0'
-                                                padding_inline='0'
-                                                max_width='54rem'
-                                            >
-                                                <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                                                    <FlexInline gap='var(--space-s)' class="[ items-center min-w-0 flex-1 ]">
-                                                        {item.type_id
-                                                            ? <ItemPicture item_id={item.type_id} item_name={item.item_name} size={32} icon_quality={32} />
-                                                            : <span class="[ sell-order-icon-placeholder ]" aria-hidden="true" />
-                                                        }
-                                                        <Flexblock gap='var(--space-3xs)' class="[ min-w-0 flex-1 ]">
-                                                            <FlexInline justification='space-between'>
-                                                                <span class="[ item-name ]">{item.item_name}</span>
-                                                                <span class="[ quantity ]">{item.current_quantity}/{item.expected_quantity}</span>
-                                                            </FlexInline>
-                                                            <Progress
-                                                                class:list={[ 'w-full', { danger: item.low_amount } ]}
-                                                                max="100"
-                                                                value={item.completion > 0 ? item.completion : 0.1}
-                                                                data-tippy-content={`${item.completion.toFixed(0)}%`}
-                                                            >
-                                                                {item.completion.toFixed(2)}%
-                                                            </Progress>
-                                                        </Flexblock>
-                                                    </FlexInline>
-                                                    {item.issuer_ids.length > 0 &&
-                                                        <FlexInline gap='var(--space-3xs)' class="[ sell-order-issuers ]">
-                                                            {item.issuer_ids.map((issuer_id) => (
-                                                                <CharacterPicture
-                                                                    character_id={issuer_id}
-                                                                    size={24}
-                                                                    icon_quality={32}
-                                                                />
-                                                            ))}
-                                                        </FlexInline>
+                                            <div class="[ sell-order-grid ]">
+                                                <FlexInline gap='var(--space-s)' class="[ items-center min-w-0 ]">
+                                                    {item.type_id
+                                                        ? <ItemPicture item_id={item.type_id} item_name={item.item_name} size={32} icon_quality={32} />
+                                                        : <span class="[ sell-order-icon-placeholder ]" aria-hidden="true" />
                                                     }
+                                                    <Flexblock gap='var(--space-3xs)' class="[ min-w-0 flex-1 ]">
+                                                        <FlexInline justification='space-between'>
+                                                            <span class="[ item-name ]">{item.item_name}</span>
+                                                            <span class="[ quantity ]">{item.current_quantity}/{item.expected_quantity}</span>
+                                                        </FlexInline>
+                                                        <Progress
+                                                            class:list={[ 'w-full', { danger: item.low_amount } ]}
+                                                            max="100"
+                                                            value={item.completion > 0 ? item.completion : 0.1}
+                                                            data-tippy-content={`${item.completion.toFixed(0)}%`}
+                                                        >
+                                                            {item.completion.toFixed(2)}%
+                                                        </Progress>
+                                                    </Flexblock>
                                                 </FlexInline>
-                                            </Wrapper>
+
+                                                {!is_baseline && (
+                                                    <div class="[ markup-cell ]">
+                                                        {item.markup_pct != null ? (
+                                                            <span class:list={['markup-badge', { positive: item.markup_pct > 0, negative: item.markup_pct < 0 }]}
+                                                                data-tippy-content={`${item.lowest_price?.toLocaleString('en-US', { maximumFractionDigits: 0 })} ISK vs ${item.baseline_price?.toLocaleString('en-US', { maximumFractionDigits: 0 })} ISK baseline`}
+                                                            >
+                                                                {item.markup_pct > 0 ? '+' : ''}{item.markup_pct.toFixed(0)}%
+                                                            </span>
+                                                        ) : (
+                                                            <span class="[ markup-badge no-data ]" data-tippy-content="No price data">—</span>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {item.issuer_ids.length > 0 &&
+                                                    <FlexInline gap='var(--space-3xs)' class="[ sell-order-issuers ]">
+                                                        {item.issuer_ids.map((issuer_id) => (
+                                                            <CharacterPicture
+                                                                character_id={issuer_id}
+                                                                size={24}
+                                                                icon_quality={32}
+                                                            />
+                                                        ))}
+                                                    </FlexInline>
+                                                }
+                                            </div>
                                         </div>
                                     )}
                                     <p class="[ no-result-text ]">{t('no_results')}</p>
@@ -506,6 +523,44 @@ const REEL_GAP = 80
         font-size: var(--step-0);
         font-weight: 400;
         color: var(--highlight);
+    }
+
+    .markup-badge {
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        padding: 1px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.5);
+
+        &.positive {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        &.negative {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        &.no-data {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.25);
+        }
+    }
+
+    .sell-order-grid {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: var(--space-s);
+        align-items: center;
+    }
+
+    .markup-cell {
+        display: flex;
+        justify-content: flex-end;
+        min-width: 4rem;
     }
 
     .sell-order-icon-placeholder {

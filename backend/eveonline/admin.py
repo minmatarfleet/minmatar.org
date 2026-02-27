@@ -417,6 +417,7 @@ class EveLocationAdmin(admin.ModelAdmin):
         "solar_system_name",
         "market_active",
         "prices_active",
+        "price_baseline",
         "freight_active",
         "staging_active",
     )
@@ -424,6 +425,7 @@ class EveLocationAdmin(admin.ModelAdmin):
     list_filter = (
         "market_active",
         "prices_active",
+        "price_baseline",
         "freight_active",
         "staging_active",
     )

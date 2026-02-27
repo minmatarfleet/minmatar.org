@@ -9,6 +9,8 @@ from eveuniverse.models import EveType
 from eveonline.models import EveLocation
 from fittings.models import EveFitting
 
+from market.models.contract import EveMarketContractExpectation
+
 
 class EveTypeWithSellOrdersManager(models.Manager):
     """Return only EveTypes that have at least one EveMarketItemOrder."""
@@ -202,15 +204,50 @@ class EveMarketFittingExpectation(models.Model):
         return {name: qty * self.quantity for name, qty in per_fit.items()}
 
 
+_STRUCTURAL_CATEGORIES = frozenset({"Ship", "Module", "Subsystem"})
+
+
+def _get_consumable_items(fitting):
+    """
+    Parse a fitting's EFT and return ``{item_name: qty}`` for consumable
+    items only — charges, drones, nanite paste, etc.  The hull, modules,
+    rigs, and subsystems are excluded.
+
+    Items whose EveType cannot be resolved are also excluded (we need a
+    known category to classify them).
+    """
+    all_items = parse_eft_items(fitting.eft_format)
+    if not all_items:
+        return {}
+
+    type_categories = dict(
+        EveType.objects.filter(
+            name__in=list(all_items.keys()),
+        ).values_list("name", "eve_group__eve_category__name")
+    )
+
+    return {
+        name: qty
+        for name, qty in all_items.items()
+        if name in type_categories
+        and type_categories[name] not in _STRUCTURAL_CATEGORIES
+    }
+
+
 def get_effective_item_expectations(location):
     """
-    Combine individual ``EveMarketItemExpectation`` rows and all
-    ``EveMarketFittingExpectation`` rows for *location* into a single
+    Combine individual ``EveMarketItemExpectation`` rows, all
+    ``EveMarketFittingExpectation`` rows, and consumable items from
+    ``EveMarketContractExpectation`` rows for *location* into a single
     dict of ``{item_name: quantity}``.
 
+    Contract fitting expectations contribute only their consumable items
+    (charges, drones, etc.) because the hull and modules are delivered
+    via the contract itself.
+
     For each item the effective quantity is the **maximum** across every
-    independent source (each individual expectation and each fitting
-    expectation), because a larger stock requirement covers the smaller ones.
+    independent source, because a larger stock requirement covers the
+    smaller ones.
     """
     effective = defaultdict(int)
 
@@ -224,5 +261,13 @@ def get_effective_item_expectations(location):
     ).select_related("fitting"):
         for name, qty in fexp.get_item_quantities().items():
             effective[name] = max(effective[name], qty)
+
+    for cexp in EveMarketContractExpectation.objects.filter(
+        location=location
+    ).select_related("fitting"):
+        consumables = _get_consumable_items(cexp.fitting)
+        for name, qty in consumables.items():
+            total = qty * cexp.quantity
+            effective[name] = max(effective[name], total)
 
     return dict(effective)
