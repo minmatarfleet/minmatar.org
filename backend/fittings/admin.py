@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from eveuniverse.models import EveType
+
 from .forms import EveDoctrineForm
 from .models import (
     EveDoctrine,
@@ -18,6 +20,19 @@ class EveFittingAdmin(admin.ModelAdmin):
     list_filter = ("ship_id",)
     list_per_page = 50
     ordering = ("name",)
+
+    def save_model(self, request, obj, form, change):
+        eft_format = form.cleaned_data.get("eft_format") or getattr(
+            obj, "eft_format", ""
+        )
+        if eft_format and eft_format.strip():
+            obj.name = EveFitting.fitting_name_from_eft(eft_format)
+            ship_name = EveFitting.ship_name_from_eft(eft_format)
+            if ship_name:
+                eve_type = EveType.objects.filter(name=ship_name).first()
+                if eve_type is not None:
+                    obj.ship_id = eve_type.id
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(EveFittingRefit)

@@ -35,8 +35,7 @@ class EveFitting(models.Model):
 
     def save(self, *args, **kwargs):
         self.latest_version = str(uuid.uuid4())
-        fitting_name = self.eft_format.split("\n")[0].split(",")[1].strip()
-        fitting_name = fitting_name[:-1].strip()
+        fitting_name = self.fitting_name_from_eft(self.eft_format)
         if self.name != fitting_name:
             raise ValidationError(
                 f"Name '{self.name}' does not match EFT name '{fitting_name}'"
@@ -48,6 +47,19 @@ class EveFitting(models.Model):
         """Extract ship name from the first line of EFT format [ShipName, Fitting name]."""
         first_line = eft_format.split("\n")[0]
         return first_line.split(",")[0].strip().strip("[]")
+
+    @staticmethod
+    def fitting_name_from_eft(eft_format):
+        """Extract fitting name from the first line of EFT format [ShipName, Fitting name]."""
+        if not (eft_format and eft_format.strip()):
+            return ""
+        parts = eft_format.split("\n")[0].split(",", 1)
+        if len(parts) < 2:
+            return ""
+        fitting_name = parts[1].strip()
+        if fitting_name.endswith("]"):
+            fitting_name = fitting_name[:-1].strip()
+        return fitting_name
 
 
 class EveFittingRefit(models.Model):
