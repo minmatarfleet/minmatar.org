@@ -1,50 +1,41 @@
 from django.db import models
 
-from eveonline.models import EveLocation
+from eveonline.models import EveCorporationContract, EveLocation
+
+FREIGHT_CORPORATION_ID = 98705678
+FREIGHT_CONTRACT_TYPE = "courier"
 
 
-# Create your models here.
-class EveFreightContract(models.Model):
-    """Model for a freight contract."""
+class FreightContractQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(status__in=["outstanding", "in_progress"])
 
-    expected_contract_type = "courier"
-    supported_ceo_id = 96046515
-    supported_corporation_id = 98705678
+    def finished(self):
+        return self.filter(status="finished")
 
-    tracked_statuses = ["outstanding", "in_progress", "finished"]
-    status_choices = (
-        ("outstanding", "Outstanding"),
-        ("in_progress", "In Progress"),
-        ("finished", "Finished"),
-        ("expired", "Expired"),
-    )
 
-    contract_id = models.BigIntegerField(unique=True)
-    status = models.CharField(max_length=32)
-    start_location_name = models.CharField(max_length=255)
-    end_location_name = models.CharField(max_length=255)
-    volume = models.BigIntegerField()
-    collateral = models.BigIntegerField()
-    reward = models.BigIntegerField()
-    date_issued = models.DateTimeField()
-    date_completed = models.DateTimeField(null=True, blank=True)
-    issuer = models.ForeignKey(
-        "eveonline.EveCharacter",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="issued_freight_contracts",
-    )
-    completed_by = models.ForeignKey(
-        "auth.User",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="completed_contracts",
-    )
+class FreightContractManager(
+    models.Manager.from_queryset(FreightContractQuerySet)
+):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(
+                corporation__corporation_id=FREIGHT_CORPORATION_ID,
+                type=FREIGHT_CONTRACT_TYPE,
+                assignee_id=FREIGHT_CORPORATION_ID,
+            )
+        )
 
-    def __str__(self):
-        return f"{self.contract_id} ({self.status})"
+
+class FreightContract(EveCorporationContract):
+    """Proxy view over EveCorporationContract for the freight corporation's courier contracts."""
+
+    objects = FreightContractManager()
+
+    class Meta:
+        proxy = True
 
 
 class EveFreightRoute(models.Model):

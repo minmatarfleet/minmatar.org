@@ -46,13 +46,6 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
-        "[Market] Update Courier Contracts",
-        {
-            "task": "freight.tasks.update_contracts",
-            "schedule": crontab(minute="18,48", hour="*"),
-        },
-    ),
-    (
         "[Market] Update Moon Revenue",
         {
             "task": "moons.tasks.update_moon_revenues",

@@ -9,8 +9,12 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
-from freight.models import EveFreightRoute, EveFreightContract
-from freight.tasks import update_contracts
+from freight.models import (
+    EveFreightRoute,
+    FreightContract,
+    FREIGHT_CORPORATION_ID,
+    FREIGHT_CONTRACT_TYPE,
+)
 
 BASE_URL = "/api/freight"
 
@@ -19,9 +23,7 @@ class FreightRouterTestCase(TestCase):
     """Test cases for the freight router."""
 
     def setUp(self):
-        # create test client
         self.client = Client()
-
         super().setUp()
 
     def test_freight_routes(self):
@@ -95,23 +97,89 @@ class FreightRouterTestCase(TestCase):
         self.assertEqual(1500, response.json()["cost"])
 
 
-class FreightTaskTestCase(TestCase):
-    """Unit tests for freight management background tasks."""
+class FreightContractProxyTestCase(TestCase):
+    """Verify that FreightContract is a correct filtered view of EveCorporationContract."""
 
-    def test_update_freight_contracts(self):
-        """Contracts are updated from EveCorporationContract (internal DB)."""
-        corp = EveCorporation.objects.create(
-            corporation_id=EveFreightContract.supported_corporation_id,
-            name="Test Corp",
-            ticker="TEST",
+    def setUp(self):
+        super().setUp()
+        self.corp = EveCorporation.objects.create(
+            corporation_id=FREIGHT_CORPORATION_ID,
+            name="Freight Corp",
+            ticker="FRT",
         )
+        self.other_corp = EveCorporation.objects.create(
+            corporation_id=12345,
+            name="Other Corp",
+            ticker="OTH",
+        )
+
+    def _make_contract(self, corporation=None, **overrides):
+        defaults = {
+            "corporation": corporation or self.corp,
+            "type": FREIGHT_CONTRACT_TYPE,
+            "status": "outstanding",
+            "issuer_id": 99999,
+            "assignee_id": FREIGHT_CORPORATION_ID,
+            "start_location_id": 100001,
+            "end_location_id": 100002,
+            "volume": 10000,
+            "collateral": 1000000,
+            "reward": 10000,
+            "date_issued": timezone.now(),
+        }
+        defaults.update(overrides)
+        return EveCorporationContract.objects.create(**defaults)
+
+    def test_proxy_filters_to_freight_corporation(self):
+        self._make_contract(contract_id=1)
+        self._make_contract(contract_id=2, corporation=self.other_corp)
+        self.assertEqual(FreightContract.objects.count(), 1)
+        self.assertEqual(FreightContract.objects.first().contract_id, 1)
+
+    def test_proxy_filters_to_courier_type(self):
+        self._make_contract(contract_id=1)
+        self._make_contract(contract_id=2, type="item_exchange")
+        self.assertEqual(FreightContract.objects.count(), 1)
+
+    def test_proxy_filters_to_assignee(self):
+        self._make_contract(contract_id=1)
+        self._make_contract(contract_id=2, assignee_id=77777)
+        self.assertEqual(FreightContract.objects.count(), 1)
+
+    def test_active_queryset(self):
+        self._make_contract(contract_id=1, status="outstanding")
+        self._make_contract(contract_id=2, status="in_progress")
+        self._make_contract(contract_id=3, status="finished")
+        self._make_contract(contract_id=4, status="expired")
+        self.assertEqual(FreightContract.objects.active().count(), 2)
+
+    def test_finished_queryset(self):
+        self._make_contract(contract_id=1, status="outstanding")
+        self._make_contract(contract_id=2, status="finished")
+        self._make_contract(contract_id=3, status="finished")
+        self.assertEqual(FreightContract.objects.finished().count(), 2)
+
+
+class FreightContractsEndpointTestCase(TestCase):
+    """Test the /contracts endpoint returns data from EveCorporationContract."""
+
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+        self.corp = EveCorporation.objects.create(
+            corporation_id=FREIGHT_CORPORATION_ID,
+            name="Freight Corp",
+            ticker="FRT",
+        )
+
+    def test_get_active_contracts(self):
         EveCorporationContract.objects.create(
             contract_id=12345,
-            corporation=corp,
-            type=EveFreightContract.expected_contract_type,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
             status="outstanding",
             issuer_id=99999,
-            assignee_id=EveFreightContract.supported_corporation_id,
+            assignee_id=FREIGHT_CORPORATION_ID,
             start_location_id=100001,
             end_location_id=100002,
             volume=10000,
@@ -119,38 +187,29 @@ class FreightTaskTestCase(TestCase):
             reward=10000,
             date_issued=timezone.now(),
         )
-
-        update_contracts()
-
-        self.assertEqual(1, EveFreightContract.objects.count())
-        contract = EveFreightContract.objects.get(contract_id=12345)
-        self.assertEqual(contract.status, "outstanding")
-        self.assertEqual(contract.volume, 10000)
-        self.assertEqual(contract.reward, 10000)
-        # Location names fall back to "Structure" when not in EveStructure
-        self.assertEqual(contract.start_location_name, "Structure")
-        self.assertEqual(contract.end_location_name, "Structure")
-        # issuer_id 99999 has no EveCharacter → issuer is None
-        self.assertIsNone(contract.issuer_id)
-
-    def test_update_freight_contracts_with_issuer(self):
-        """When issuer character exists, EveFreightContract gets issuer set."""
-        corp = EveCorporation.objects.create(
-            corporation_id=EveFreightContract.supported_corporation_id,
-            name="Test Corp",
-            ticker="TEST",
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        issuer_char = EveCharacter.objects.create(
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["contract_id"], 12345)
+        self.assertEqual(data[0]["status"], "outstanding")
+        self.assertEqual(data[0]["volume"], 10000)
+
+    def test_get_active_contracts_with_issuer(self):
+        issuer = EveCharacter.objects.create(
             character_id=88888,
             character_name="Contract Issuer",
         )
         EveCorporationContract.objects.create(
             contract_id=54321,
-            corporation=corp,
-            type=EveFreightContract.expected_contract_type,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
             status="outstanding",
-            issuer_id=issuer_char.character_id,
-            assignee_id=EveFreightContract.supported_corporation_id,
+            issuer_id=issuer.character_id,
+            assignee_id=FREIGHT_CORPORATION_ID,
             start_location_id=100001,
             end_location_id=100002,
             volume=5000,
@@ -158,10 +217,12 @@ class FreightTaskTestCase(TestCase):
             reward=5000,
             date_issued=timezone.now(),
         )
-
-        update_contracts()
-
-        contract = EveFreightContract.objects.get(contract_id=54321)
-        self.assertEqual(contract.issuer_id, issuer_char.id)
-        self.assertEqual(contract.issuer.character_id, 88888)
-        self.assertEqual(contract.issuer.character_name, "Contract Issuer")
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["issuer_id"], 88888)
+        self.assertEqual(data[0]["issuer_character_name"], "Contract Issuer")
