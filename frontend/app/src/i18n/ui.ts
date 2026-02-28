@@ -1856,5 +1856,7 @@ export const ui = {
         'markup_tooltip': '{lowest} ISK vs {baseline} ISK {baseline_label}',
         'expected_fittings': 'Expected fittings',
         'other_fittings_seeded_at_station': 'Other fittings seeded at the station',
+        'standard_view': 'Standard view',
+        'enter': 'Enter',
     },
 } as const;

@@ -89,8 +89,6 @@ const categories_select_options = categories.map( category_name => {
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -105,6 +103,7 @@ import Select from '@components/blocks/Select.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import MarketTable from '@components/blocks/MarketTable.astro';
 import ButtonExportShortfallItems from '@components/blocks/ButtonExportShortfallItems.astro';
+import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -211,6 +210,9 @@ const page_title = t('sell_orders.page_title')
                 shortfall_items_by_category={shortfall_items_by_category}
                 shortfall_categories={shortfall_categories}
             />
+            <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
+                {t('standard_view')}
+            </Button>
         </FlexInline>
     
         {data_fetching_error ?

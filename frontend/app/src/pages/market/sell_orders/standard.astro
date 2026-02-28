@@ -105,6 +105,7 @@ import Select from '@components/blocks/Select.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import MarketList from '@components/blocks/MarketList.astro';
 import ButtonExportShortfallItems from '@components/blocks/ButtonExportShortfallItems.astro';
+import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -217,6 +218,9 @@ const page_title = t('sell_orders.page_title')
                 shortfall_items_by_category={shortfall_items_by_category}
                 shortfall_categories={shortfall_categories}
             />
+            <Button size='sm' href={translatePath('/market/sell_orders/')}>
+                {t('tabular_view')}
+            </Button>
         </FlexInline>
     
         {data_fetching_error ?
