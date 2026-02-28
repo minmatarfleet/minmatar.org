@@ -6,12 +6,33 @@ import { get_market_contracts, get_market_locations_with_doctrines, get_market_e
 import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
 import { get_fitting_item } from '@helpers/fetching/ships'
-import type {
-    Fitting,
-    FittingMarketData,
-    DoctrineMarketData,
-    LocationMarketData,
-} from '@dtypes/api.minmatar.org'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+export interface FittingMarketData {
+    fitting_id:             number;
+    fitting_name:           string
+    ship_id:                number;
+    ship_name:              string;
+    role:                   'primary' | 'secondary' | 'support';
+    expectation_quantity:   number | null;
+    current_quantity:       number;
+    doctrine_name?:         string;
+    eft?:                   string;
+}
+
+export interface DoctrineMarketData {
+    doctrine_id: number
+    doctrine_name: string
+    fittings: FittingMarketData[]
+}
+
+export interface LocationMarketData {
+    location_id: number
+    location_name: string
+    solar_system_name: string
+    short_name: string
+    doctrines: DoctrineMarketData[]
+}
 
 export async function fetch_market_locations_with_doctrines(): Promise<LocationMarketData[]> {
     // Fetch all required data using new endpoints

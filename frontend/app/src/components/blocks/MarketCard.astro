@@ -34,7 +34,6 @@ const markup_tooltip = t('markup_tooltip').replace('{lowest}', number_thousand_s
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import Progress from '@components/blocks/Progress.astro';
@@ -57,15 +56,15 @@ import Tag from '@components/blocks/Tag.astro';
             <div></div>
         }
         <Flexblock gap='var(--space-3xs)'>
-            <FlexInlineSiblings shrinkable-sibbling='first' min-shink-width='250px'>
-                <Flexblock gap='var(--space-3xs)'>
+            <FlexInline class="[ min-w-0 ]">
+                <Flexblock gap='var(--space-3xs)' class="[ min-w-[250px] flex-1 ]">
                     <h3 class="[ title ]">{item.item_name}</h3>
                     <small class="[ subtitle ]">{item.category_name} / {item.group_name}</small>
                 </Flexblock>
-                <Flexblock>
+                <Flexblock class="[ shrink-0 ]">
                     <span class="[ quantity ]">{number_thousand_separator(current_quantity)}{expected_quantity > 0 && `/${number_thousand_separator(expected_quantity)}`}</span>
                 </Flexblock>
-            </FlexInlineSiblings>
+            </FlexInline>
             {(no_expectation_progress || expected_quantity > 0) &&
                 <Progress
                     class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}

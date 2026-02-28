@@ -1,0 +1,129 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FittingMarketData } from '@helpers/fetching/market'
+
+interface Props {
+    fitting:                    FittingMarketData;
+    init_tooltips?:             boolean;
+    no_expectation_progress?:   boolean;
+    [propName: string]:         any;
+}
+
+const {
+    fitting,
+    init_tooltips = false,
+    no_expectation_progress = true,
+    ...attributes
+} = Astro.props
+
+const expected_quantity = fitting.expectation_quantity ?? 0
+const current_quantity = fitting.current_quantity ?? 0
+const low_amount = expected_quantity > 0 && (current_quantity <= (20 * expected_quantity) / 100)
+const completion = current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 100
+
+import { semantic_list } from '@helpers/array'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+
+import Progress from '@components/blocks/Progress.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import FittingLink from '@components/blocks/FittingLink.astro';
+---
+
+<Wrapper
+    class="[ market-fitting-card ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='54rem'
+    {...attributes}
+>
+    <FlexInline justification='space-between' gap='var(--space-3xs)'>
+        <FluidFixed width='50px' breakpoint='75%' class="[ items-center! basis-[550px] ]">
+            <div>
+                <ItemBadge
+                    class="[ w-full items-center! ]"
+                    item_name={fitting.fitting_name}
+                    type_id={fitting.ship_id}
+                    title_el='h3'
+                >
+                    <Flexblock gap='var(--space-3xs)'>
+                        {(no_expectation_progress || expected_quantity > 0) &&
+                            <Progress
+                                class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
+                                max="100"
+                                value={completion > 0 ? completion : 0.1}
+                                data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                {completion.toFixed(2)}%
+                            </Progress>
+                        }
+
+                        <small class="[ subtitle ]">{semantic_list(lang, (fitting.doctrine_name ?? '').split(','))}</small>
+                    </Flexblock>
+                </ItemBadge>
+            </div>
+            <span class="[ quantity ]">{current_quantity}{expected_quantity > 0 && `/${expected_quantity}`}</span>
+        </FixedFluid>
+        
+        <FlexInline class="[ hidden! lg:flex! ]">
+            <FittingLink
+                class="[ action-button ]"
+                fitting_id={fitting.fitting_id}
+                is_button={true}
+            >
+                {t('open_fitting')}
+            </FittingLink>
+            <ClipboardButton
+                class="[ action-button ]"
+                text={t('copy_eft')}
+                narrow={true}
+                id={`${fitting.fitting_id.toString()}-row-copy`}
+            >
+                {fitting.eft}
+            </ClipboardButton>
+        </FlexInline>
+    </FlexInline>
+</Wrapper>
+
+<style lang="scss">
+    .market-fitting-card {
+        @media (hover: hover) {
+            .action-button {
+                transition: var(--fast-transition);
+                opacity: 0;
+            }
+
+            &:hover,
+            &:focus-within {
+                .action-button {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+
+    .quantity {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        font-size: var(--step-0);
+        font-weight: 400;
+        color: var(--highlight);
+    }
+
+    .title {
+        min-width: 0;
+        flex: 1;
+    }
+
+    h3 {
+        font-size: var(--step--1);
+        line-height: 1.2;
+    }
+</style>
