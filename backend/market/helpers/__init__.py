@@ -3,6 +3,9 @@ from market.helpers.contract_fetch import (
     known_contract_issuer_ids,
 )
 from market.helpers.history import update_region_market_history_for_type
+from market.helpers.location_price import (
+    fetch_and_update_market_location_prices,
+)
 from market.helpers.orders import (
     clear_structure_sell_orders_for_location,
     process_structure_sell_orders_page,
@@ -22,6 +25,7 @@ from market.helpers.entity_resolution import entity_name_by_id
 __all__ = [
     "MarketContractHistoricalQuantity",
     "clear_structure_sell_orders_for_location",
+    "fetch_and_update_market_location_prices",
     "create_or_update_contract",
     "create_or_update_contract_from_db_contract",
     "entity_name_by_id",

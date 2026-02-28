@@ -32,6 +32,13 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
+        "[Market] Update Location Prices (sell/buy/split from ESI)",
+        {
+            "task": "market.tasks.fetch_market_location_prices",
+            "schedule": crontab(minute=45, hour="*/4"),
+        },
+    ),
+    (
         "[Market] Fetch Market Item History",
         {
             "task": "market.tasks.fetch_market_item_history",

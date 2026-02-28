@@ -27,6 +27,10 @@ class EveLocation(models.Model):
     solar_system_name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=32)
     region_id = models.BigIntegerField(null=True)
+    is_structure = models.BooleanField(
+        default=False,
+        help_text="True if location_id is an Upwell structure (use structure markets API). False for NPC station (use region orders API).",
+    )
     market_active = models.BooleanField(default=False)
     prices_active = models.BooleanField(default=False)
     price_baseline = models.BooleanField(

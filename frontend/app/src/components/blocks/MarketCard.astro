@@ -23,14 +23,14 @@ const current_quantity = item.current_quantity ?? 0
 const low_amount = expected_quantity > 0 && (current_quantity <= (20 * expected_quantity) / 100)
 const completion = current_quantity > expected_quantity ? 100 : expected_quantity > 0 ? (current_quantity / expected_quantity * 100) : 100
 
-const markup_pct = (item.lowest_price != null && item.baseline_price != null && item.baseline_price > 0)
-        ? ((item.lowest_price - item.baseline_price) / item.baseline_price) * 100
+const markup_pct = (item.current_lowest_price != null && item.baseline_price != null && item.baseline_price > 0)
+        ? ((item.current_lowest_price - item.baseline_price) / item.baseline_price) * 100
         : null
 
 import { get_item_icon, get_bpc_icon } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
 
-const markup_tooltip = t('markup_tooltip').replace('{lowest}', number_thousand_separator(item?.lowest_price ?? 0)).replace('{baseline}', number_thousand_separator(item?.baseline_price ?? 0))
+const markup_tooltip = t('markup_tooltip').replace('{lowest}', number_thousand_separator(item?.current_lowest_price ?? 0)).replace('{baseline}', number_thousand_separator(item?.baseline_price ?? 0))
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';

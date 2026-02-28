@@ -18,6 +18,7 @@ from market.models import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
     EveMarketItemHistory,
+    EveMarketItemLocationPrice,
     EveMarketItemOrder,
     EveMarketItemResponsibility,
     EveMarketItemTransaction,
@@ -520,6 +521,31 @@ class EveMarketItemResponsibilityAdmin(admin.ModelAdmin):
     @admin.display(description="Location")
     def get_location(self, obj):
         return obj.expectation.location.location_name
+
+
+@admin.register(EveMarketItemLocationPrice)
+class EveMarketItemLocationPriceAdmin(admin.ModelAdmin):
+    """Derived sell/buy/split prices per (location, item) from structure orders."""
+
+    list_display = (
+        "item",
+        "location",
+        "sell_price",
+        "buy_price",
+        "split_price",
+        "updated_at",
+    )
+    list_display_links = ("item", "location")
+    list_filter = ("location",)
+    list_per_page = 50
+    search_fields = (
+        "item__name",
+        "location__location_name",
+        "location__short_name",
+    )
+    autocomplete_fields = ("location",)
+    raw_id_fields = ("item",)
+    ordering = ("location__location_name", "item__name")
 
 
 @admin.register(EveMarketItemOrder)

@@ -6,20 +6,21 @@ from ninja import Router
 from eveonline.models import EveLocation
 from fittings.models import EveDoctrineFitting
 
+from market.endpoints.cache import get_cached
+from market.endpoints.schemas import (
+    MarketContractDoctrineResponse,
+    MarketContractHistoricalQuantityResponse,
+    MarketContractResponse,
+    MarketContractResponsibilityResponse,
+)
 from market.helpers import (
-    get_historical_quantity_for_fitting,
     entity_name_by_id,
+    get_historical_quantity_for_fitting,
 )
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
     EveMarketContractResponsibility,
-)
-from market.endpoints.schemas import (
-    MarketContractResponse,
-    MarketContractResponsibilityResponse,
-    MarketContractHistoricalQuantityResponse,
-    MarketContractDoctrineResponse,
 )
 
 router = Router(tags=["Market"])
@@ -30,6 +31,7 @@ router = Router(tags=["Market"])
     description="Fetch all market contracts for a location (all EveMarketContracts at that location)",
     response=list[MarketContractResponse],
 )
+@get_cached(key_suffix=lambda req, location_id: f"contracts:{location_id}")
 def fetch_eve_market_contracts(request, location_id: int):
     try:
         location = EveLocation.objects.get(location_id=location_id)

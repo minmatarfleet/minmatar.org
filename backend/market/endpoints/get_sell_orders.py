@@ -5,6 +5,9 @@ from django.db.models import Min, OuterRef, Subquery, Sum
 
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
+
+from market.endpoints.cache import get_cached
+from market.models import EveMarketItemLocationPrice
 from market.models.contract import EveMarketContractExpectation
 from market.models.history import EveMarketItemHistory
 from market.models.item import (
@@ -38,6 +41,28 @@ def _get_baseline_prices() -> dict[str, float]:
     )
 
 
+def _get_baseline_location_prices() -> (
+    dict[str, tuple[float | None, float | None, float | None]]
+):
+    """Sell, buy, split prices per item name at the price_baseline location (EveMarketItemLocationPrice)."""
+    baseline = EveLocation.objects.filter(price_baseline=True).first()
+    if not baseline:
+        return {}
+    rows = (
+        EveMarketItemLocationPrice.objects.filter(location=baseline)
+        .select_related("item")
+        .values_list("item__name", "sell_price", "buy_price", "split_price")
+    )
+    return {
+        name: (
+            float(sell) if sell is not None else None,
+            float(buy) if buy is not None else None,
+            float(split) if split is not None else None,
+        )
+        for name, sell, buy, split in rows
+    }
+
+
 class SellOrderItemResponse(BaseModel):
     item_name: str
     type_id: int | None
@@ -49,8 +74,11 @@ class SellOrderItemResponse(BaseModel):
     current_quantity: int
     fulfilled: bool
     issuer_ids: list[int]
-    lowest_price: float | None
+    current_lowest_price: float | None
     baseline_price: float | None
+    baseline_sell_price: float | None
+    baseline_buy_price: float | None
+    baseline_split_price: float | None
 
 
 class SellOrderLocationResponse(BaseModel):
@@ -65,6 +93,9 @@ class SellOrderLocationResponse(BaseModel):
     "/sell-orders",
     description="Get sell order expectations and current stock per location",
     response=list[SellOrderLocationResponse],
+)
+@get_cached(
+    key_suffix=lambda req, location_id=None: f"sell-orders:{location_id or 'all'}"
 )
 def get_sell_orders(request, location_id: int | None = None):
     if location_id is not None:
@@ -95,6 +126,7 @@ def get_sell_orders(request, location_id: int | None = None):
         ).order_by("location_name")
 
     baseline_prices = _get_baseline_prices()
+    baseline_location_prices = _get_baseline_location_prices()
 
     results = []
     for location in locations:
@@ -158,6 +190,10 @@ def get_sell_orders(request, location_id: int | None = None):
             )
             lp = lowest_prices.get(name)
             bp = baseline_prices.get(name)
+            blp = baseline_location_prices.get(name)
+            baseline_sell, baseline_buy, baseline_split = (
+                blp if blp else (None, None, None)
+            )
             items.append(
                 SellOrderItemResponse(
                     item_name=name,
@@ -170,8 +206,11 @@ def get_sell_orders(request, location_id: int | None = None):
                     current_quantity=current,
                     fulfilled=current >= expected if expected > 0 else True,
                     issuer_ids=issuers_by_name.get(name, []),
-                    lowest_price=float(lp) if lp is not None else None,
+                    current_lowest_price=float(lp) if lp is not None else None,
                     baseline_price=float(bp) if bp is not None else None,
+                    baseline_sell_price=baseline_sell,
+                    baseline_buy_price=baseline_buy,
+                    baseline_split_price=baseline_split,
                 )
             )
 

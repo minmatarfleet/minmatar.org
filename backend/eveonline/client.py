@@ -915,6 +915,44 @@ class EsiClient:
         return station
 
 
+def get_region_market_orders_pages(region_id: int, type_id: int | None = None):
+    """
+    Yields one page of market orders at a time for a region (public endpoint,
+    no auth). Each order includes location_id, type_id, price, is_buy_order,
+    range, etc. Use this for NPC station locations; filter by location_id.
+    If type_id is set, only orders for that type are returned (fewer pages).
+    """
+    page = 1
+    page_size = 1000
+    params: dict = {"page": page}
+    if type_id is not None:
+        params["type_id"] = type_id
+    while True:
+        url = f"{ESI_BASE_URL}/markets/{region_id}/orders/"
+        try:
+            resp = requests.get(url, params=params, timeout=30)
+        except Exception as e:
+            logger.exception(
+                "ESI request failed for region %s page %s: %s",
+                region_id,
+                page,
+                e,
+            )
+            yield None
+            return
+        if resp.status_code >= 400:
+            yield None
+            return
+        page_data = resp.json() if resp.content else []
+        if not page_data:
+            break
+        yield page_data
+        if len(page_data) < page_size:
+            break
+        page += 1
+        params["page"] = page
+
+
 def esi_for(character) -> EsiClient:
     """
     Returns an ESI client for the specified character.

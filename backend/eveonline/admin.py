@@ -415,6 +415,7 @@ class EveLocationAdmin(admin.ModelAdmin):
         "location_id",
         "location_name",
         "solar_system_name",
+        "is_structure",
         "market_active",
         "prices_active",
         "price_baseline",
@@ -423,6 +424,7 @@ class EveLocationAdmin(admin.ModelAdmin):
     )
     search_fields = ("location_name", "short_name", "solar_system_name")
     list_filter = (
+        "is_structure",
         "market_active",
         "prices_active",
         "price_baseline",

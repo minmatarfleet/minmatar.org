@@ -844,8 +844,11 @@ export interface SellOrderItem {
     current_quantity:       number;
     fulfilled:              boolean;
     issuer_ids:             number[];
-    lowest_price:           number | null;
+    current_lowest_price:   number | null;
     baseline_price:         number | null;
+    baseline_sell_price:    number | null;
+    baseline_buy_price:     number | null;
+    baseline_split_price:   number | null;
 }
 
 export interface SellOrderLocation {

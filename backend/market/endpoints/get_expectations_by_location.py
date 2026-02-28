@@ -1,5 +1,6 @@
 from ninja import Router
 
+from market.endpoints.cache import get_cached
 from market.models import EveMarketContractExpectation
 from market.endpoints.schemas import (
     LocationExpectationsResponse,
@@ -14,6 +15,7 @@ router = Router(tags=["Market"])
     description="Get all market contract expectations grouped by location and fitting",
     response=list[LocationExpectationsResponse],
 )
+@get_cached(key_suffix="expectations-by-location")
 def get_expectations_by_location(
     request,
 ) -> list[LocationExpectationsResponse]:

@@ -5,6 +5,7 @@ from market.models.contract import (
     EveMarketContractResponsibility,
 )
 from market.models.history import EveMarketItemHistory
+from market.models.location_price import EveMarketItemLocationPrice
 from market.models.item import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
@@ -25,6 +26,7 @@ __all__ = [
     "EveMarketFittingExpectation",
     "EveMarketItemExpectation",
     "EveMarketItemHistory",
+    "EveMarketItemLocationPrice",
     "EveMarketItemOrder",
     "EveMarketItemResponsibility",
     "EveMarketItemTransaction",

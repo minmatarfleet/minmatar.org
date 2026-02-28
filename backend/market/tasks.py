@@ -18,6 +18,7 @@ from market.helpers import (
     clear_structure_sell_orders_for_location,
     create_or_update_contract,
     create_or_update_contract_from_db_contract,
+    fetch_and_update_market_location_prices,
     get_character_with_structure_markets_scope,
     process_structure_sell_orders_page,
     update_completed_contracts,
@@ -82,6 +83,43 @@ def process_structure_sell_orders_page_task(
         total_volume,
     )
     return orders_created, total_volume
+
+
+@app.task()
+def fetch_market_location_prices():
+    """
+    For each market-active location, fetch market orders from ESI (structure
+    or region API per location.is_structure), compute lowest sell / highest
+    buy (station-range) / split per item, and update EveMarketItemLocationPrice.
+    Does not touch EveMarketItemOrder.
+    """
+    locations_list = list(EveLocation.objects.filter(market_active=True))
+    has_structure = any(loc.is_structure for loc in locations_list)
+    character_id = (
+        get_character_with_structure_markets_scope() if has_structure else None
+    )
+    if has_structure and not character_id:
+        logger.warning(
+            "No character with structure market scope; structure locations will be skipped"
+        )
+    total = 0
+    for location in locations_list:
+        try:
+            n = fetch_and_update_market_location_prices(
+                character_id, location.location_id
+            )
+            total += n
+        except Exception as e:
+            logger.exception(
+                "Failed to update location prices for %s: %s",
+                location.location_name,
+                e,
+            )
+    logger.info(
+        "fetch_market_location_prices complete: %s location(s), %s price row(s)",
+        len(locations_list),
+        total,
+    )
 
 
 @app.task()
