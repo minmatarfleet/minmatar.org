@@ -405,7 +405,9 @@
     },
     {
         "slug": "sell_orders",
+        "alt": "icon.contract.alt",
         "path": "/market/sell_orders/",
+        "icon": "/images/icons/48px-Marketdeliveries.png",
         "publish": true,
         "description": "page_finder.sell_orders.description"
     },

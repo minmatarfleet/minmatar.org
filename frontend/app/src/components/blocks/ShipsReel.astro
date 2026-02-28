@@ -2,13 +2,12 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
-import Markdown from '@components/blocks/Markdown.astro';
 
 import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
@@ -20,88 +19,37 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
     padding_inline='0'
     max_width='100%'
 >
-    <div
-        class="[ swiper ][ w-full pb-10! ]"
-        id="ships-list"
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="580px"
     >
-        <LandingSwiper>
-            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard
-                    class="[ animate-delay-0 ]"
-                    title={t('fittings')}
-                    description={t('fitting.leading_text')}
-                    cover='/images/fittings-tile-background.jpg'
-                >
-                    <FitsEvEIcon class="[ ml-[-7px] ]" slot="icon" />
-                        
-                    <Button size='sm' href={translatePath('/ships/fitting/list/')}>
-                        {t('view_fittings')}
-                    </Button>
-                </SwiperCard>
-            </div>
+        <SwiperCard
+            title={t('fittings')}
+            description={t('fitting.leading_text')}
+            cover='/images/fittings-tile-background.webp'
+        >
+            <FitsEvEIcon class="[ ml-[-7px] ]" slot="icon" />
+                
+            <Button size='sm' href={translatePath('/ships/fitting/list/')}>
+                {t('view_fittings')}
+            </Button>
+        </SwiperCard>
 
-            <div class="[ swiper-slide ]">
-                <SwiperCard
-                    class="[ animate-delay-200 ]"
-                    title={t('doctrines.page_title')}
-                    description={t('doctrines.leading_text')}
-                    cover='/images/doctrines-tile-background.jpg'
-                >
-                    <DoctrinesEvEIcon class="[ ml-[-7px] ]" slot="icon" />
-                    
-                    <Button
-                        size='sm'
-                        href={translatePath('/ships/doctrines/list/')}
-                    >
-                        {t('view_doctrines')}
-                    </Button>
-                </SwiperCard>
-            </div>
-        </LandingSwiper>
-    </div>
-
-    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
-    <div class="[ swiper-button-next hidden lg:block! ]"></div>
+        <SwiperCard
+            title={t('doctrines.page_title')}
+            description={t('doctrines.leading_text')}
+            cover='/images/doctrines-tile-background.webp'
+        >
+            <DoctrinesEvEIcon class="[ ml-[-7px] ]" slot="icon" />
+            
+            <Button
+                size='sm'
+                href={translatePath('/ships/doctrines/list/')}
+            >
+                {t('view_doctrines')}
+            </Button>
+        </SwiperCard>
+    </Grid>
 </Wrapper>
-
-<style lang="scss">
-    .ships-reel {
-        position: relative;
-    }
-
-    .swiper-button-prev,
-    .swiper-button-next {
-        --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: -46px;
-
-        opacity: 0;
-    }
-
-    .swiper-initialized ~ .swiper-button-prev,
-    .swiper-initialized ~ .swiper-button-next {
-        opacity: 1;
-    }
-
-    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
-    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
-        opacity: 0;
-    }
-
-    .swiper-button-next.swiper-button-disabled,
-    .swiper-button-prev.swiper-button-disabled {
-        --swiper-navigation-color: var(--fleet-yellow);
-        opacity: 1;
-    }
-
-    .swiper-button-prev {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-button-next {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-slide {
-        width: min(100%, 700px);
-    }
-</style>

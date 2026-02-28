@@ -11,106 +11,68 @@ const {
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
 
+import MarketDeliveriesEVEIcon from '@components/icons/MarketDeliveriesEVEIcon.astro';
 import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
 ---
 
 <Wrapper
-    class="[ ships-reel ]"
+    class="[ market-reel ]"
     padding_block='0'
     padding_inline='0'
     max_width='100%'
 >
-    <div
-        class="[ swiper ][ w-full pb-10! ]"
-        id="ships-list"
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="580px"
     >
-        <LandingSwiper>
-            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard
-                    class="[ animate-delay-0 ]"
-                    title={t('freight.page_title')}
-                    description={t('freight.leading_text')}
-                    cover='/images/freight-tile-background.jpg'
-                >
-                    <FreightServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
+        <SwiperCard
+            title={t('contracts.page_title')}
+            description={t('contracts.leading_text')}
+            cover='/images/contracts-tile-background.webp'
+        >
+            <ContractsServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
+                
+            <Button size='sm' href={translatePath('/market/contracts/')}>
+                {t('view_market_expectations')}
+            </Button>
+        </SwiperCard>
 
-                    <Button size='sm' href={translatePath('/market/freight/standard/')}>
-                        {t('standard_freight')}
-                    </Button>
-                    <Button size='sm' href={translatePath('/market/freight/contracts/')}>
-                        {t('freight_contracts.page_title')}
-                    </Button>
-                </SwiperCard>
-            </div>
+        <SwiperCard
+            title={t('sell_orders.page_title')}
+            description={t('sell_orders.leading_text')}
+            cover='/images/sellorders-tile-background.webp'
+        >
+            <MarketDeliveriesEVEIcon class="[ ml-[-7px] ]" slot="icon" />
+            
+            <Button size='sm' href={translatePath('/market/sell_orders/')}>
+                {t('browse')}
+            </Button>
+            <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
+                {t('standard_view')}
+            </Button>
+        </SwiperCard>
 
-            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard
-                    class="[ animate-delay-200 ]"
-                    title={t('market')}
-                    description={t('contracts.leading_text')}
-                    cover='/images/contracts-tile-background.jpg'
-                >
-                    <ContractsServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
-                        
-                    <Button size='sm' href={translatePath('/market/contracts/')}>
-                        {t('view_market_expectations')}
-                    </Button>
-                    <Button size='sm' href={translatePath('/market/sell_orders/')}>
-                        {t('view_sell_orders')}
-                    </Button>
-                </SwiperCard>
-            </div>
-        </LandingSwiper>
-    </div>
+        <SwiperCard
+            title={t('freight.page_title')}
+            description={t('freight.leading_text')}
+            cover='/images/freight-tile-background.webp'
+        >
+            <FreightServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
 
-    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
-    <div class="[ swiper-button-next hidden lg:block! ]"></div>
+            <Button size='sm' href={translatePath('/market/freight/standard/')}>
+                {t('standard_freight')}
+            </Button>
+            <Button size='sm' href={translatePath('/market/freight/contracts/')}>
+                {t('freight_contracts.page_title')}
+            </Button>
+        </SwiperCard>
+    </Grid>
 </Wrapper>
-
-<style lang="scss">
-    .ships-reel {
-        position: relative;
-    }
-
-    .swiper-button-prev,
-    .swiper-button-next {
-        --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: -46px;
-
-        opacity: 0;
-    }
-
-    .swiper-initialized ~ .swiper-button-prev,
-    .swiper-initialized ~ .swiper-button-next {
-        opacity: 1;
-    }
-
-    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
-    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
-        opacity: 0;
-    }
-
-    .swiper-button-next.swiper-button-disabled,
-    .swiper-button-prev.swiper-button-disabled {
-        --swiper-navigation-color: var(--fleet-yellow);
-        opacity: 1;
-    }
-
-    .swiper-button-prev {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-button-next {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-slide {
-        width: min(100%, 700px);
-    }
-</style>
