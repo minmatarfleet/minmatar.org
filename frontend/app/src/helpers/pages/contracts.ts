@@ -2,8 +2,7 @@ import { useTranslations } from '@i18n/utils';
 
 import { prod_error_messages } from '@helpers/env'
 
-import type { LocationMarketData } from '@dtypes/api.minmatar.org'
-import { fetch_market_locations_with_doctrines } from '@helpers/fetching/market'
+import { fetch_market_locations_with_doctrines, type LocationMarketData } from '@helpers/fetching/market'
 
 export interface ContractsData {
     market_locations?:          LocationMarketData[];

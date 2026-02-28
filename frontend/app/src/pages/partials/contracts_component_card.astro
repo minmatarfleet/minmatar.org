@@ -2,11 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { ContractMarketLocationUI, SelectOptions } from '@dtypes/layout_components';
-import type { LocationMarketData } from '@dtypes/api.minmatar.org'
+import type { MarketLocationUI, SelectOptions } from '@dtypes/layout_components';
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_contracts_data } from '@helpers/pages/contracts'
 import type { ContractsData } from '@helpers/pages/contracts'
+import type { LocationMarketData } from '@helpers/fetching/market'
 import { get_ship_info } from '@helpers/sde/ships'
 
 let contracts_data:ContractsData = {}
@@ -24,7 +24,7 @@ const {
 
 let doctrines:string[] = []
 
-const market_locations_ui:ContractMarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
+const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
     let completion = 0
     let total_expectations = 0
 
@@ -63,7 +63,7 @@ const market_locations_ui:ContractMarketLocationUI[] = await Promise.all(market_
         doctrine_count: location.doctrines.length,
         completion: total_expectations > 0 ? (completion / total_expectations) : 100,
         fittings: sorted_location_fittings,
-    } as ContractMarketLocationUI
+    } as MarketLocationUI
 }))
 
 const unique_doctrines = Array.from(new Set(doctrines))
@@ -81,7 +81,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import ContractMarketFittingCard from '@components/blocks/ContractMarketFittingCard.astro';
+import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 ---
@@ -114,7 +114,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
                         >
                             {location.fittings.map((fitting) =>
                                 <div x-show="show_item($el)">
-                                    <ContractMarketFittingCard fitting={fitting} init_tooltips={true} />
+                                    <MarketFittingCard fitting={fitting} init_tooltips={true} />
                                 </div>
                             )}
                             {<p class="[ no-result-text ]">{t('no_results')}</p>}

@@ -2,11 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { ContractMarketLocationUI, SelectOptions } from '@dtypes/layout_components';
-import type { LocationMarketData } from '@dtypes/api.minmatar.org'
+import type { MarketLocationUI, SelectOptions } from '@dtypes/layout_components';
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_contracts_data } from '@helpers/pages/contracts'
 import type { ContractsData } from '@helpers/pages/contracts'
+import type { LocationMarketData } from '@helpers/fetching/market'
 import { get_ship_info } from '@helpers/sde/ships'
 
 let contracts_data:ContractsData = {}
@@ -31,7 +31,7 @@ if (market_locations.length > 0) {
         active_location_name = market_locations[0].location_name
 }
 
-const market_locations_ui:ContractMarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
+const market_locations_ui:MarketLocationUI[] = await Promise.all(market_locations.map(async (location:LocationMarketData) => {
     const fittings = location.doctrines.map(doctrine => {
         if (location.location_name === active_location_name)
             doctrines.push(doctrine.doctrine_name)
@@ -61,8 +61,7 @@ const market_locations_ui:ContractMarketLocationUI[] = await Promise.all(market_
         name: location.location_name,
         doctrine_count: location.doctrines.length,
         fittings: sorted_location_fittings,
-        completion: 0, // To be calculated
-    } as ContractMarketLocationUI
+    } as MarketLocationUI
 }))
 
 const unique_doctrines = Array.from(new Set(doctrines))

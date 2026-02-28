@@ -77,34 +77,28 @@ import ArrowRightIcon from '@components/icons/ArrowRightIcon.astro';
         })}
     </LocationsReel>
 
-    <Flexblock class="[ pb-[64px] ]" gap='var(--space-2xl)'>
+    <BlockList class="[ pb-[64px] ]" gap='var(--space-l)'>
         {active_contracts_location.destinations.map((destination) =>
-            <Flexblock gap='var(--space-l)'>
-                <FlexInline gap='var(--space-2xs)'>
-                    <NotificationBadge number={0} color='fleet-yellow' text_color='black'>
-                        <ArrowRightIcon />
-                    </NotificationBadge>
-                    <h3 class="[ group-title ]">{STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
-                </FlexInline>
-                <BlockList role="list" gap='var(--space-l)'>
-                    {destination.contracts.map(contract =>
-                        <div x-show="show_item($el)">
-                            <FreightContractItem contract={contract} init_tooltips={init_tooltips} />
-                        </div>
-                    )}
-                    <p class="[ no-result-text ]">{t('no_results')}</p>
-                </BlockList>
-            </Flexblock>
+            <FlexInline gap='var(--space-2xs)'>
+                <NotificationBadge number={0} color='fleet-yellow' text_color='black'>
+                    <ArrowRightIcon />
+                </NotificationBadge>
+                <h3>{STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
+            </FlexInline>
+            <BlockList role="list" gap='var(--space-l)'>
+                {destination.contracts.map(contract =>
+                    <div x-show="show_item($el)">
+                        <FreightContractItem contract={contract} init_tooltips={init_tooltips} />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
         )}
-    </Flexblock>
+    </BlockList>
 </Flexblock>
 
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
-    }
-    
-    .group-title {
-        font-size: var(--step-1);
     }
 </style>
