@@ -984,9 +984,9 @@ export interface DoctrineLocationUI {
     doctrines:          DoctrineType[];
 }
 
-import type { FittingMarketData } from '../helpers/fetching/market';
+import type { FittingMarketData, SellOrderItem } from '@dtypes/api.minmatar.org';
 
-export interface MarketLocationUI {
+export interface ContractMarketLocationUI {
     name:               string;
     doctrine_count:     number;
     completion:         number;
@@ -1026,4 +1026,11 @@ export interface FreightContractLocationDestination {
 export interface FreightContractLocation {
     location_name:  string;
     destinations:   FreightContractLocationDestination[];
+}
+
+export interface MarketLocationUI {
+    name:               string;
+    items_count:        number;
+    completion:         number;
+    items:              SellOrderItem[];
 }

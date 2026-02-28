@@ -1,0 +1,94 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SellOrderItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    shortfall_items_by_category:    Record<string, SellOrderItem[]>;
+    shortfall_categories:           string[];
+    hidden?:                        boolean;
+    id?:                            string;
+}
+
+const {
+    shortfall_items_by_category,
+    shortfall_categories,
+    hidden = false,
+    id,
+} = Astro.props
+
+
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+<DialogButton
+    id={id ? id : undefined}
+    size='sm'
+    color='fleet-red'
+    hidden={hidden}
+    max_width='500px'
+>
+    {t('export_shortfall_items_dialog_title')}
+
+    <Flexblock
+        slot="dialog"
+        gap="var(--space-l)"
+        x-data={`{
+            categories: [],
+            export_text: '',
+            shortfall_items_by_category: ${JSON.stringify(shortfall_items_by_category)},
+            update_export_text() {
+                console.log(this.categories)
+                this.export_text = ''
+                this.categories.map(category => {
+                    console.log(this.shortfall_items_by_category[category])
+                    this.export_text += \`\${category.item_name}\n\`
+                    this.shortfall_items_by_category[category].map(item => {
+                        this.export_text += \`\${item.item_name}\t\${item.expected_quantity - item.current_quantity}\n\`
+                    })
+                })
+            }
+        }`}
+    >
+        <Flexblock gap="var(--space-s)">
+            <h3>{t('export_shortfall_items_dialog_title')}</h3>
+            
+            <p>{t('export_shortfall_items_dialog_text')}</p>
+            
+            <FlexInline>
+                {shortfall_categories.map(category =>
+                    <UnstyledRadioCheckButton
+                        label={category}
+                        type='checkbox'
+                        x-model="categories"
+                        value={category}
+                        x-on:change="update_export_text"
+                    />
+                )}
+            </FlexInline>
+        </Flexblock>
+
+        <FlexInline justification='flex-end'>
+            <ClipboardButton
+                id="shortfall-items"
+                size='sm'
+                x_value='export_text'
+            />
+            <Button
+                type="button"
+                size='sm'
+                x-on:click="close_dialog()"
+            >
+                {t('close')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</DialogButton>

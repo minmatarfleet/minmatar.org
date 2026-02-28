@@ -1,4 +1,15 @@
-import type { Contract, Character, MarketCorporation, MarketExpectation, MarketLocation, DoctrineFitting } from '@dtypes/api.minmatar.org'
+import type {
+    Contract,
+    Character,
+    MarketCorporation,
+    MarketExpectation,
+    MarketLocation,
+    DoctrineFitting,
+    LocationFittingExpectation,
+    LocationExpectations,
+    SellOrderItem,
+    SellOrderLocation,
+} from '@dtypes/api.minmatar.org'
 import { get_error_message, parse_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/market`
@@ -219,44 +230,6 @@ export async function get_market_locations_with_doctrines() {
     } catch (error) {
         throw new Error(`Error fetching market locations with doctrines: ${error.message}`);
     }
-}
-
-export interface LocationFittingExpectation {
-    fitting_id: number
-    fitting_name: string
-    expectation_id: number
-    quantity: number
-}
-
-export interface LocationExpectations {
-    location_id: number
-    location_name: string
-    solar_system_name: string
-    short_name: string
-    expectations: LocationFittingExpectation[]
-}
-
-export interface SellOrderItem {
-    item_name: string
-    type_id: number | null
-    category_id: number | null
-    category_name: string
-    group_id: number | null
-    group_name: string
-    expected_quantity: number
-    current_quantity: number
-    fulfilled: boolean
-    issuer_ids: number[]
-    lowest_price: number | null
-    baseline_price: number | null
-}
-
-export interface SellOrderLocation {
-    location_id: number
-    location_name: string
-    short_name: string
-    is_price_baseline: boolean
-    items: SellOrderItem[]
 }
 
 export async function get_sell_orders(location_id?: number) {
