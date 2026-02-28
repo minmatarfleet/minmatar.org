@@ -826,11 +826,11 @@ export interface LocationFittingExpectation {
 }
 
 export interface LocationExpectations {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    expectations:       LocationFittingExpectation[];
+    location_id:            number;
+    location_name:          string;
+    solar_system_name:      string;
+    short_name:             string;
+    expectations:           LocationFittingExpectation[];
 }
 
 export interface SellOrderItem {

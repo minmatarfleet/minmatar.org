@@ -1,0 +1,165 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SellOrderItem } from '@dtypes/api.minmatar.org';
+import type { MarketLocationUI } from '@dtypes/layout_components';
+
+interface Props {
+    active_market_locations_ui:         MarketLocationUI;
+    non_active_market_locations_ui:     MarketLocationUI[];
+    is_baseline:                        boolean;
+    init_tooltips:                      boolean;
+}
+
+const {
+    active_market_locations_ui,
+    non_active_market_locations_ui,
+    is_baseline,
+    init_tooltips,
+} = Astro.props
+
+function get_completion(market_location_items:SellOrderItem[]) {
+    let completion = 0
+    let total_expectations = 0
+
+    market_location_items.forEach(item => {
+        if (!item.expected_quantity) return true
+
+        if (item.expected_quantity > 0 && item.current_quantity > item.expected_quantity)
+            completion += 100
+        else if (item.expected_quantity > 0)
+            completion += item.current_quantity / item.expected_quantity * 100
+
+        total_expectations++
+    })
+
+    return total_expectations > 0 ? (completion / total_expectations) : 100
+}
+
+active_market_locations_ui.completion = get_completion(active_market_locations_ui.items)
+
+const orders_with_expectations = active_market_locations_ui.items.filter(item => item.expected_quantity)
+const sorted_orders_with_expectations = orders_with_expectations.sort((a, b) => {
+    const completion_of_a = a.expected_quantity > 0 ? a.current_quantity/a.expected_quantity*100 : 0
+    const completion_of_b = b.expected_quantity > 0 ? b.current_quantity/b.expected_quantity*100 : 0
+    return completion_of_a - completion_of_b
+})
+
+const orders_without_expectations = active_market_locations_ui.items.filter(item => !item.expected_quantity)
+const sorted_orders_without_expectations = orders_without_expectations.sort((a, b) => a.current_quantity - b.current_quantity)
+
+const completion_non_active_market_locations_ui = non_active_market_locations_ui.map(non_active_market_location => {
+    non_active_market_location.completion = get_completion(non_active_market_location.items)
+    return non_active_market_location
+})
+
+import { query_string } from '@helpers/string';
+import { number_thousand_separator } from '@helpers/numbers'
+
+const REEL_GAP = 80
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import MarketCard from '@components/blocks/MarketCard.astro';
+import Progress from '@components/blocks/Progress.astro';
+import LocationsReel from '@components/blocks/LocationsReel.astro';
+import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+---
+
+<Flexblock gap='var(--space-2xl)'>
+    <LocationsReel gap={REEL_GAP}>
+        <LocationsReelSlide gap={REEL_GAP}>
+            <Flexblock gap='var(--space-2xs)'>
+                <h2>
+                    <a href={translatePath(`/market/sell_orders/standard?${query_string({
+                            location_name: active_market_locations_ui.name
+                        })}`)}
+                    >
+                        {active_market_locations_ui.name}
+                    </a>
+                </h2>
+                <Progress
+                    class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
+                    max="100"
+                    value={active_market_locations_ui.completion > 0 ? active_market_locations_ui.completion : 0.1}
+                    data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
+                >
+                    {active_market_locations_ui.completion.toFixed(2)}%
+                </Progress>
+                <small>{t(active_market_locations_ui.items.length !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(active_market_locations_ui.items.length))}</small>
+            </Flexblock>
+        </LocationsReelSlide>
+
+        {completion_non_active_market_locations_ui.map(location =>
+            <LocationsReelSlide gap={REEL_GAP}>
+                <Flexblock gap='var(--space-2xs)'>
+                    <h3>
+                        <a href={translatePath(`/market/sell_orders/standard?${query_string({
+                                location_name: location.name
+                            })}`)}
+                        >
+                            {location.name}
+                        </a>
+                    </h3>
+                    <Progress
+                        class:list={[ 'w-full', { danger: location.completion < 30 } ]}
+                        max="100"
+                        value={location.completion > 0 ? location.completion : 1}
+                        data-tippy-content={`${location.completion.toFixed(0)}%`}
+                    >
+                        {location.completion.toFixed(2)}%
+                    </Progress>
+                    <small>{t(location.items.length !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(location.items.length))}</small>
+                </Flexblock>
+            </LocationsReelSlide>
+        )}
+    </LocationsReel>
+
+    <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('expected_items')}</h3>
+            <BlockList role="list" gap='var(--space-l)'>
+                {sorted_orders_with_expectations.map((item) =>
+                    <div x-show="show_item($el)">
+                        <MarketCard
+                            item={item}
+                            no_expectation_progress={false}
+                            is_baseline={is_baseline}
+                            init_tooltips={init_tooltips}
+                        />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
+        </Flexblock>
+        
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('other_items_on_market')}</h3>
+            <BlockList role="list" gap='var(--space-l)'>
+                {sorted_orders_without_expectations.map((item) =>
+                    <div x-show="show_item($el)">
+                        <MarketCard
+                            item={item}
+                            no_expectation_progress={false}
+                            is_baseline={is_baseline}
+                            init_tooltips={init_tooltips}
+                        />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
+        </Flexblock>
+    </BlockList>
+</Flexblock>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>

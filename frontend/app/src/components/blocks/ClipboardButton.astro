@@ -15,6 +15,7 @@ interface Props {
     text?:              string;
     copied_text?:       string;
     iconed?:            boolean;
+    x_value?:           string;
     [propName: string]: any;
 }
 
@@ -26,6 +27,7 @@ const {
     text = t('copy'),
     copied_text = t('copied'),
     iconed = true,
+    x_value,
     ...attributes
 } = Astro.props
 
@@ -50,4 +52,4 @@ const Textarea = 'textarea';
     <span x-text="button_text">{text}</span>
 </Button>
 
-<Textarea class="[ hidden ]" id={id} readonly><slot /></Textarea>
+<Textarea class="[ hidden ]" id={id} readonly x-text={x_value ? x_value : undefined}><slot /></Textarea>

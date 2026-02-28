@@ -10,7 +10,6 @@ const {
     is_superuser = false,
 } = Astro.props
 
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
@@ -53,7 +52,7 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
             <div class="[ swiper-slide ]" style="margin-right: 5px">
                 <SwiperCard
                     class="[ animate-delay-200 ]"
-                    title={t('contracts.page_title')}
+                    title={t('market')}
                     description={t('contracts.leading_text')}
                     cover='/images/contracts-tile-background.jpg'
                 >
@@ -62,7 +61,7 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
                     <Button size='sm' href={translatePath('/market/contracts/')}>
                         {t('view_market_expectations')}
                     </Button>
-                    <Button size='sm' href={translatePath('/market/sell-orders/')}>
+                    <Button size='sm' href={translatePath('/market/sell_orders/')}>
                         {t('view_sell_orders')}
                     </Button>
                 </SwiperCard>
