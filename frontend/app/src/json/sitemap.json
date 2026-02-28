@@ -404,6 +404,12 @@
         "description": "page_finder.contracts.description"
     },
     {
+        "slug": "sell_orders",
+        "path": "/market/sell_orders/",
+        "publish": true,
+        "description": "page_finder.sell_orders.description"
+    },
+    {
         "slug": "industry",
         "alt": "icon.industry.alt",
         "path": "/industry/",

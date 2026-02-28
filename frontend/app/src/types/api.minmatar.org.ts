@@ -791,3 +791,67 @@ export interface Blueprint {
     runs:                   number;
     owner:                  BlueprintOwner;
 }
+
+export interface FittingMarketData {
+    fitting_id:             number;
+    fitting_name:           string
+    ship_id:                number;
+    ship_name:              string;
+    role:                   'primary' | 'secondary' | 'support';
+    expectation_quantity:   number | null;
+    current_quantity:       number;
+    doctrine_name?:         string;
+    eft?:                   string;
+}
+
+export interface DoctrineMarketData {
+    doctrine_id:        number;
+    doctrine_name:      string;
+    fittings:           FittingMarketData[];
+}
+
+export interface LocationMarketData {
+    location_id:        number;
+    location_name:      string;
+    solar_system_name:  string;
+    short_name:         string;
+    doctrines:          DoctrineMarketData[];
+}
+
+export interface LocationFittingExpectation {
+    fitting_id:         number;
+    fitting_name:       string;
+    expectation_id:     number;
+    quantity:           number;
+}
+
+export interface LocationExpectations {
+    location_id:        number;
+    location_name:      string;
+    solar_system_name:  string;
+    short_name:         string;
+    expectations:       LocationFittingExpectation[];
+}
+
+export interface SellOrderItem {
+    item_name:              string;
+    type_id:                number | null;
+    category_id:            number | null;
+    category_name:          string;
+    group_id:               number | null;
+    group_name:             string;
+    expected_quantity:      number;
+    current_quantity:       number;
+    fulfilled:              boolean;
+    issuer_ids:             number[];
+    lowest_price:           number | null;
+    baseline_price:         number | null;
+}
+
+export interface SellOrderLocation {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    is_price_baseline:  boolean;
+    items:              SellOrderItem[];
+}

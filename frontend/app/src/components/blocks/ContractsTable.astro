@@ -2,12 +2,12 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FittingMarketData } from '@helpers/fetching/market'
-import type { MarketLocationUI } from '@dtypes/layout_components';
+import type { FittingMarketData } from '@dtypes/api.minmatar.org'
+import type { ContractMarketLocationUI } from '@dtypes/layout_components';
 
 interface Props {
-    active_market_locations_ui:         MarketLocationUI;
-    non_active_market_locations_ui:     MarketLocationUI[];
+    active_market_locations_ui:         ContractMarketLocationUI;
+    non_active_market_locations_ui:     ContractMarketLocationUI[];
 }
 
 const {
@@ -56,6 +56,13 @@ active_market_locations_ui.completion = get_completion(active_market_locations_u
 const contracts_with_expectations = active_market_locations_ui.fittings.filter(fitting => fitting.expectation_quantity)
 const contracts_without_expectations = active_market_locations_ui.fittings.filter(fitting => !fitting.expectation_quantity)
 
+const sorted_contracts_with_expectations = contracts_with_expectations.sort((a, b) => {
+    const completion_of_a = (a.expectation_quantity as number) > 0 ? a.current_quantity/(a.expectation_quantity as number)*100 : 0
+    const completion_of_b = (b.expectation_quantity as number) > 0 ? b.current_quantity/(b.expectation_quantity as number)*100 : 0
+    return completion_of_a - completion_of_b
+})
+const sorted_contracts_without_expectations = contracts_without_expectations.sort((a, b) => a.current_quantity - b.current_quantity)
+
 let deduped_non_active_market_locations_ui = non_active_market_locations_ui.map(non_active_market_location => {
     non_active_market_location.fittings = deduple_market_location_fittings(non_active_market_location.fittings)
     return non_active_market_location
@@ -73,7 +80,7 @@ const REEL_GAP = 80
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
-import MarketFittingCard from '@components/blocks/MarketFittingCard.astro';
+import ContractMarketFittingCard from '@components/blocks/ContractMarketFittingCard.astro';
 import Progress from '@components/blocks/Progress.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
@@ -128,23 +135,37 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         )}
     </LocationsReel>
 
-    <BlockList role="list" gap='var(--space-l)'>
-        {contracts_with_expectations.map((fitting) =>
-            <div x-show="show_item($el)">
-                <MarketFittingCard fitting={fitting} no_expectation_progress={false} />
-            </div>
-        )}
-        {contracts_without_expectations.map((fitting) =>
-            <div x-show="show_item($el)">
-                <MarketFittingCard fitting={fitting} no_expectation_progress={false} />
-            </div>
-        )}
-        {<p class="[ no-result-text ]">{t('no_results')}</p>}
-    </BlockList>
+    <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('expected_fittings')}</h3>
+            <BlockList role="list" gap='var(--space-l)'>
+                {sorted_contracts_with_expectations.map((fitting) =>
+                    <div x-show="show_item($el)">
+                        <ContractMarketFittingCard fitting={fitting} no_expectation_progress={false} />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
+        </Flexblock>
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('other_fittings_seeded_at_station')}</h3>
+            <BlockList role="list" gap='var(--space-l)'>
+                {sorted_contracts_without_expectations.map((fitting) =>
+                    <div x-show="show_item($el)">
+                        <ContractMarketFittingCard fitting={fitting} no_expectation_progress={false} />
+                    </div>
+                )}
+                <p class="[ no-result-text ]">{t('no_results')}</p>
+            </BlockList>
+    </Flexblock>
 </Flexblock>
 
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
     }
 </style>
