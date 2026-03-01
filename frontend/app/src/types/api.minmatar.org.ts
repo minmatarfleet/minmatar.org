@@ -18,6 +18,104 @@ export interface Group {
     content?:       string;
 }
 
+export interface TribeCharacterRef {
+    character_id:   number;
+    character_name: string;
+}
+
+export interface TribeQualifyingAssetType {
+    type_id:        number;
+    type_name:      string;
+    minimum_count:  number;
+    location_id:    number | null;
+}
+
+export interface TribeQualifyingSkill {
+    skill_type_id:  number;
+    skill_name:     string;
+    minimum_level:  number;
+}
+
+export interface TribeRequirement {
+    id:                     number;
+    requirement_type:       string;
+    asset_types:            TribeQualifyingAssetType[];
+    qualifying_skills:      TribeQualifyingSkill[];
+}
+
+export interface TribeGroup {
+    id:                     number;
+    tribe_id:               number;
+    tribe_name:             string;
+    name:                   string;
+    description:            string;
+    discord_channel_id:     number | null;
+    chief:                  TribeCharacterRef | null;
+    elders:                 TribeCharacterRef[];
+    ship_type_ids:          number[];
+    blueprint_type_ids:     number[];
+    is_active:              boolean;
+    member_count:           number;
+    requirements:           TribeRequirement[];
+}
+
+export interface Tribe {
+    id:                     number;
+    name:                   string;
+    slug:                   string;
+    description:            string;
+    content:                string;
+    image_url:              string | null;
+    banner_url:             string | null;
+    discord_channel_id:     number | null;
+    chief:                  TribeCharacterRef | null;
+    is_active:              boolean;
+    group_count:            number;
+    total_member_count:     number;
+}
+
+export interface TribeGroupOutputSummary {
+    tribe_group_id:     number;
+    tribe_group_name:   string;
+    tribe_id:           number;
+    period_start:       string | null;
+    period_end:         string | null;
+    totals:             Record<string, number>;  // e.g. { "kills (kills)": 5, "mining_contribution (m3)": 150000 }
+}
+
+export interface TribeLeaderboardEntry {
+    user_id:        number;
+    character_id:   number | null;
+    character_name: string | null;
+    total:          number;
+    unit:           string;
+}
+
+export type TribeMembershipStatus = 'pending' | 'approved' | 'denied' | 'left' | 'removed'
+
+export interface TribeMembershipCharacter {
+    id:             number;
+    character_id:   number;
+    character_name: string;
+    committed_at:   string;
+    left_at:        string | null;
+}
+
+export interface TribeMembership {
+    id:                     number;
+    user_id:                number;
+    tribe_group_id:         number;
+    tribe_group_name:       string;
+    tribe_id:               number;
+    status:                 TribeMembershipStatus;
+    requirement_snapshot:   Record<string, unknown> | null;
+    created_at:             string;
+    approved_by_id:         number | null;
+    approved_at:            string | null;
+    left_at:                string | null;
+    characters:             TribeMembershipCharacter[];
+}
+
 export interface SigRequest {
     id:             number;
     user:           number;

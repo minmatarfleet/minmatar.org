@@ -1,0 +1,102 @@
+"""GET "/{tribe_id}/groups/{group_id}" - tribe group detail."""
+
+from ninja import Router
+
+from tribes.endpoints.groups.schemas import (
+    CharacterRefSchema,
+    QualifyingAssetTypeSchema,
+    QualifyingSkillSchema,
+    RequirementSchema,
+    TribeGroupSchema,
+)
+from tribes.models import TribeGroup, TribeGroupMembership
+
+PATH = "/{tribe_id}/groups/{group_id}"
+METHOD = "get"
+ROUTE_SPEC = {
+    "summary": "Tribe group detail with requirements.",
+    "response": {200: TribeGroupSchema, 404: dict},
+}
+
+router = Router(tags=["Tribes - Groups"])
+
+
+def _user_to_character_ref(user) -> "CharacterRefSchema | None":
+    try:
+        char = user.eveplayer.primary_character
+        if char:
+            return CharacterRefSchema(
+                character_id=char.character_id,
+                character_name=char.character_name,
+            )
+    except Exception:
+        pass
+    return None
+
+
+def get_tribe_group(request, tribe_id: int, group_id: int):
+    tg = (
+        TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id)
+        .select_related("chief__eveplayer__primary_character")
+        .prefetch_related(
+            "elders__eveplayer__primary_character",
+            "requirements__asset_types__eve_type",
+            "requirements__qualifying_skills__eve_type",
+        )
+        .first()
+    )
+    if not tg:
+        return 404, {"detail": "TribeGroup not found."}
+
+    member_count = TribeGroupMembership.objects.filter(
+        tribe_group=tg, status=TribeGroupMembership.STATUS_APPROVED
+    ).count()
+
+    chief_ref = _user_to_character_ref(tg.chief) if tg.chief else None
+    elder_refs = [
+        r for u in tg.elders.all() if (r := _user_to_character_ref(u))
+    ]
+
+    return 200, TribeGroupSchema(
+        id=tg.pk,
+        tribe_id=tg.tribe_id,
+        tribe_name=tg.tribe.name,
+        name=tg.name,
+        description=tg.description,
+        discord_channel_id=tg.discord_channel_id,
+        chief=chief_ref,
+        elders=elder_refs,
+        ship_type_ids=tg.ship_type_ids or [],
+        blueprint_type_ids=tg.blueprint_type_ids or [],
+        is_active=tg.is_active,
+        member_count=member_count,
+        requirements=[
+            RequirementSchema(
+                id=req.pk,
+                requirement_type=req.requirement_type,
+                asset_types=[
+                    QualifyingAssetTypeSchema(
+                        type_id=at.eve_type_id,
+                        type_name=at.eve_type.name if at.eve_type else "",
+                        minimum_count=at.minimum_count,
+                        location_id=at.location_id,
+                    )
+                    for at in req.asset_types.all()
+                    if at.eve_type_id
+                ],
+                qualifying_skills=[
+                    QualifyingSkillSchema(
+                        skill_type_id=s.eve_type_id,
+                        skill_name=s.eve_type.name if s.eve_type else "",
+                        minimum_level=s.minimum_level,
+                    )
+                    for s in req.qualifying_skills.all()
+                    if s.eve_type_id
+                ],
+            )
+            for req in tg.requirements.all()
+        ],
+    )
+
+
+router.get(PATH, **ROUTE_SPEC)(get_tribe_group)
