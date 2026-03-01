@@ -35,6 +35,7 @@ from fleets.router import router as fleets_router
 from freight.router import router as freight_router
 from groups.router_sigs import router as sigs_router
 from groups.router_teams import router as teams_router
+from tribes.router import router as tribes_router
 from industry.router import router as industry_router
 from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
@@ -52,6 +53,7 @@ api.add_router("users/", users_router)
 api.add_router("eveonline/", router)
 api.add_router("teams/", teams_router)
 api.add_router("sigs/", sigs_router)
+api.add_router("tribes/", tribes_router)
 api.add_router("applications/", applications_router)
 api.add_router("fittings/", fittings_router)
 api.add_router("doctrines/", doctrines_router)

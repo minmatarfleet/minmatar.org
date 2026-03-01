@@ -18,6 +18,7 @@ CELERY_IMPORTS = (
     "industry.tasks",
     "mumble.tasks",
     "reddit.tasks",
+    "tribes.tasks",
 )
 
 
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     "discord.apps.DiscordConfig",
     "eveonline.apps.EveonlineConfig",
     "groups.apps.GroupsConfig",
+    "tribes.apps.TribesConfig",
     "applications.apps.ApplicationsConfig",
     "users.apps.UsersConfig",
     "fittings.apps.FittingsConfig",
