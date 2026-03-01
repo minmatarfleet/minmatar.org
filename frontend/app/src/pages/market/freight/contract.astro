@@ -21,7 +21,7 @@ let days_to_complete:number = 3
 const MAXIMUM_CARGO = 350000
 
 if (Astro.request.method !== "POST")
-    return Astro.redirect(translatePath('/market/freight/standard'))
+    return Astro.redirect(translatePath('/market/freight/calculator'))
 
 try {
     freight_routes_data = await fetch_freight_routes()
@@ -58,7 +58,7 @@ try {
 
 if (data_fetching_error) {
     Astro.cookies.set('contract_error', data_fetching_error, { path: '/' })
-    return Astro.redirect(translatePath('/market/freight/standard'))
+    return Astro.redirect(translatePath('/market/freight/calculator'))
 }
 
 import { number_name } from '@helpers/numbers.ts';
@@ -101,7 +101,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/standard/`)}>
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/calculator/`)}>
                     <HistoryIcon slot="icon" />
                     {t('recalculate')}
                 </Button>

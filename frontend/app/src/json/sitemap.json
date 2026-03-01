@@ -376,12 +376,12 @@
         "description": "page_finder.market.description"
     },
     {
-        "slug": "freight.standard",
+        "slug": "freight.calculator",
         "alt": "icon.fit_cargo.alt",
-        "path": "/market/freight/standard/",
+        "path": "/market/freight/calculator/",
         "publish": true,
         "icon": "/images/icons/48px-Cargo.png",
-        "description": "page_finder.market.standard.description"
+        "description": "page_finder.market.calculator.description"
     },
     {
         "slug": "freight_contracts",

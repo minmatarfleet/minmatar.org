@@ -44,7 +44,7 @@ import Markdown from '@components/blocks/Markdown.astro';
     x-on:collateral-change="collateralValue = $event.detail"
 >
     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-        <h2>{t('freight.standard.calculator_title')}</h2>
+        <h2>{t('freight.calculator.calculator_title')}</h2>
         
         <Flexblock>
             <VerticalCenter>
@@ -89,7 +89,7 @@ import Markdown from '@components/blocks/Markdown.astro';
 
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                    <label for="collateral"><span data-tippy-content={t('freight.standard.faq_2_text')}>{t('collateral')} (ISK)</span></label>
+                    <label for="collateral"><span data-tippy-content={t('freight.calculator.faq_2_text')}>{t('collateral')} (ISK)</span></label>
                     <NumberInput
                         id="collateral"
                         name="collateral"
