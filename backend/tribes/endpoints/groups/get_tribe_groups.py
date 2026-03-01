@@ -77,7 +77,6 @@ def get_tribe_groups(request, tribe_id: int):
                 requirements=[
                     RequirementSchema(
                         id=req.pk,
-                        requirement_type=req.requirement_type,
                         asset_types=[
                             QualifyingAssetTypeSchema(
                                 type_id=at.eve_type_id,

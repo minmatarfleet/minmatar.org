@@ -38,7 +38,6 @@ export interface TribeQualifyingSkill {
 
 export interface TribeRequirement {
     id:                     number;
-    requirement_type:       string;
     asset_types:            TribeQualifyingAssetType[];
     qualifying_skills:      TribeQualifyingSkill[];
 }

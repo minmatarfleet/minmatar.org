@@ -87,37 +87,19 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 const page_title = tribe?.name ?? ''
 const page_description = tribe?.description ?? ''
 
-const REQUIREMENT_LABELS: Record<string, string> = {
-    asset_type:         t('tribes.detail.requirement_asset'),
-    skill:              t('tribes.detail.requirement_skill'),
-}
-
-function req_display(req: TribeGroup['requirements'][number]): string {
-    switch (req.requirement_type) {
-        case 'asset_type': {
-            if (req.asset_types.length === 0) return '—'
-            const allDefault = req.asset_types.every(at => at.minimum_count === 1 && !at.location_id)
-            if (allDefault) {
-                const names = req.asset_types.map(at => at.type_name || String(at.type_id))
-                return names.length === 1 ? names[0] : `Any of: ${names.join(', ')}`
-            }
-            const parts = req.asset_types.map(at => {
-                const name = at.type_name || String(at.type_id)
-                const loc  = at.location_id ? ` @ ${at.location_id}` : ''
-                const qty  = at.minimum_count > 1 ? `≥${at.minimum_count}× ` : ''
-                return `${qty}${name}${loc}`
-            })
-            return parts.join(' / ')
-        }
-        case 'skill': {
-            if (req.qualifying_skills.length === 0) return '—'
-            return req.qualifying_skills
-                .map(s => `${s.skill_name || s.skill_type_id} ${s.minimum_level}`)
-                .join(', ')
-        }
-        default:
-            return req.requirement_type
+function asset_display(req: TribeGroup['requirements'][number]): string {
+    if (req.asset_types.length === 0) return '—'
+    const allDefault = req.asset_types.every(at => at.minimum_count === 1 && !at.location_id)
+    if (allDefault) {
+        const names = req.asset_types.map(at => at.type_name || String(at.type_id))
+        return names.length === 1 ? names[0] : `Any of: ${names.join(', ')}`
     }
+    return req.asset_types.map(at => {
+        const name = at.type_name || String(at.type_id)
+        const loc  = at.location_id ? ` @ ${at.location_id}` : ''
+        const qty  = at.minimum_count > 1 ? `≥${at.minimum_count}× ` : ''
+        return `${qty}${name}${loc}`
+    }).join(' / ')
 }
 
 const cover_image = tribe?.banner_url ?? "/images/groups-cover.jpg"
@@ -256,32 +238,38 @@ const cover_image = tribe?.banner_url ?? "/images/groups-cover.jpg"
                                         <p class="[ tribe-group-card__req-label ]">{t('tribes.detail.requirements')}</p>
                                         {group.requirements.length > 0 ? (
                                             <ul class="[ tribe-group-card__req-list ]">
-                                                {group.requirements.map(req => (
-                                                    req.requirement_type === 'skill' ? (
-                                                        <li class="[ tribe-group-card__req-item tribe-group-card__req-item--skill ]">
-                                                            <div class="[ req-skill-header ]">
-                                                                <span class="[ req-type-badge ]">{REQUIREMENT_LABELS.skill}</span>
-                                                                <span class="[ req-all-note ]">all required</span>
+                                                {group.requirements.map((req, req_idx) => (
+                                                    <li class="[ tribe-group-card__req-item tribe-group-card__req-item--compound ]">
+                                                        {req_idx > 0 && (
+                                                            <span class="[ req-or-divider ]">OR</span>
+                                                        )}
+                                                        {req.qualifying_skills.length > 0 && (
+                                                            <div class="[ req-skill-block ]">
+                                                                <div class="[ req-skill-header ]">
+                                                                    <span class="[ req-type-badge ]">{t('tribes.detail.requirement_skill')}</span>
+                                                                    <span class="[ req-all-note ]">all required</span>
+                                                                </div>
+                                                                <ul class="[ req-skill-list ]">
+                                                                    {req.qualifying_skills.map(s => (
+                                                                        <li class="[ req-skill-row ]">
+                                                                            <span class="[ req-skill-name ]">{s.skill_name || s.skill_type_id}</span>
+                                                                            <span class="[ req-skill-dots ]" aria-label={`Level ${s.minimum_level}`}>
+                                                                                {[1,2,3,4,5].map(lvl => (
+                                                                                    <span class={`dot ${lvl <= s.minimum_level ? 'dot--on' : 'dot--off'}`} />
+                                                                                ))}
+                                                                            </span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
-                                                            <ul class="[ req-skill-list ]">
-                                                                {req.qualifying_skills.map(s => (
-                                                                    <li class="[ req-skill-row ]">
-                                                                        <span class="[ req-skill-name ]">{s.skill_name || s.skill_type_id}</span>
-                                                                        <span class="[ req-skill-dots ]" aria-label={`Level ${s.minimum_level}`}>
-                                                                            {[1,2,3,4,5].map(lvl => (
-                                                                                <span class={`dot ${lvl <= s.minimum_level ? 'dot--on' : 'dot--off'}`} />
-                                                                            ))}
-                                                                        </span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </li>
-                                                    ) : (
-                                                        <li class="[ tribe-group-card__req-item ]">
-                                                            <span class="[ req-type-badge ]">{REQUIREMENT_LABELS[req.requirement_type] ?? req.requirement_type}</span>
-                                                            <span class="[ req-detail ]">{req_display(req)}</span>
-                                                        </li>
-                                                    )
+                                                        )}
+                                                        {req.asset_types.length > 0 && (
+                                                            <div class="[ req-asset-block ]">
+                                                                <span class="[ req-type-badge ]">{t('tribes.detail.requirement_asset')}</span>
+                                                                <span class="[ req-detail ]">{asset_display(req)}</span>
+                                                            </div>
+                                                        )}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         ) : (
