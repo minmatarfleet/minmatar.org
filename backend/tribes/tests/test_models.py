@@ -22,7 +22,9 @@ def setUpModule():
     from discord.signals import user_group_changed  # noqa: PLC0415
 
     django_signals.m2m_changed.disconnect(
-        user_group_changed, sender=User.groups.through, dispatch_uid="user_group_changed"
+        user_group_changed,
+        sender=User.groups.through,
+        dispatch_uid="user_group_changed",
     )
 
 
@@ -79,25 +81,35 @@ class TribeGroupModelTestCase(TestCase):
 class TribeGroupMembershipModelTestCase(TestCase):
     def setUp(self):
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Mining"
+        )
         self.user = User.objects.create_user(username="miner")
 
     def test_default_status_is_pending(self):
-        m = TribeGroupMembership.objects.create(user=self.user, tribe_group=self.tribe_group)
+        m = TribeGroupMembership.objects.create(
+            user=self.user, tribe_group=self.tribe_group
+        )
         self.assertEqual(m.status, TribeGroupMembership.STATUS_PENDING)
 
     def test_str(self):
-        m = TribeGroupMembership.objects.create(user=self.user, tribe_group=self.tribe_group)
+        m = TribeGroupMembership.objects.create(
+            user=self.user, tribe_group=self.tribe_group
+        )
         self.assertIn("miner", str(m))
         self.assertIn("pending", str(m))
 
     def test_unique_active_constraint_allows_multiple_inactive(self):
         """Multiple non-approved memberships (e.g. historical) should be allowed."""
         TribeGroupMembership.objects.create(
-            user=self.user, tribe_group=self.tribe_group, status=TribeGroupMembership.STATUS_LEFT
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_LEFT,
         )
         TribeGroupMembership.objects.create(
-            user=self.user, tribe_group=self.tribe_group, status=TribeGroupMembership.STATUS_LEFT
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_LEFT,
         )
 
     def test_unique_active_constraint_blocks_two_approved(self):
@@ -117,7 +129,9 @@ class TribeGroupMembershipModelTestCase(TestCase):
 class TribeGroupMembershipCharacterModelTestCase(TestCase):
     def setUp(self):
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Mining"
+        )
         self.user = User.objects.create_user(username="miner")
         self.membership = TribeGroupMembership.objects.create(
             user=self.user, tribe_group=self.tribe_group
@@ -148,7 +162,9 @@ class TribeGroupMembershipCharacterModelTestCase(TestCase):
 class TribeActivityModelTestCase(TestCase):
     def setUp(self):
         self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
-        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Dreads")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Dreads"
+        )
         self.user = User.objects.create_user(username="pilot")
 
     def test_create_activity(self):
