@@ -24,7 +24,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-import IntelReel from '@components/blocks/IntelReel.astro';
+import IntelTiles from '@components/blocks/IntelTiles.astro';
 
 const page_title = t('intel.page_title');
 const leading_text = t('intel.leading_text');
@@ -59,7 +59,7 @@ const leading_text = t('intel.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <IntelReel
+            <IntelTiles
                 can_view_timers={can_view_timers}
                 can_add_moons={can_add_moons}
                 can_view_moons={can_view_moons}

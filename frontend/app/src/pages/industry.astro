@@ -17,7 +17,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-import IndustryReel from '@components/blocks/IndustryReel.astro';
+import IndustryTiles from '@components/blocks/IndustryTiles.astro';
 
 const page_title = t('industry.page_title');
 const leading_text = t('industry.leading_text');
@@ -48,7 +48,7 @@ const leading_text = t('industry.leading_text');
                 </Flexblock>
             </Wrapper>
             
-            <IndustryReel is_superuser={is_superuser} />
+            <IndustryTiles is_superuser={is_superuser} />
         </Flexblock>
     </PageLanding>
 </Viewport>
