@@ -22,7 +22,6 @@ class QualifyingSkillSchema(BaseModel):
 
 class RequirementSchema(BaseModel):
     id: int
-    requirement_type: str
     asset_types: List[QualifyingAssetTypeSchema] = []
     qualifying_skills: List[QualifyingSkillSchema] = []
 
