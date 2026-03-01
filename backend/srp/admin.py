@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib import admin, messages
+from django.db.models import Sum
 
 from .helpers import recalculate_reimbursement_amount
 from .models import EveFleetShipReimbursement, ShipReimbursementAmount
@@ -75,6 +76,16 @@ class SrpAdmin(admin.ModelAdmin):
     search_fields = ("character_name", "ship_name", "killmail_id")
     list_filter = ["status"]
     actions = [recalculate_selected_amounts, refresh_all_outstanding]
+
+    def changelist_view(self, request, extra_context=None):
+        outstanding = EveFleetShipReimbursement.objects.filter(
+            status__in=["pending", "approved"]
+        )
+        agg = outstanding.aggregate(total=Sum("amount"))
+        extra_context = extra_context or {}
+        extra_context["outstanding_count"] = outstanding.count()
+        extra_context["outstanding_total"] = agg["total"] or 0
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 @admin.register(ShipReimbursementAmount)

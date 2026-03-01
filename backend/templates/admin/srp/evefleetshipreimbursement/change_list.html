@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1em; padding: 0.75em 1em; background: #f8f8f8; border: 1px solid #ddd; border-left: 4px solid #417690; border-radius: 2px; font-size: 0.9em;">
+  <strong>Outstanding SRP summary</strong> &mdash;
+  <strong>{{ outstanding_count }}</strong> request{{ outstanding_count|pluralize }} &nbsp;|&nbsp;
+  Total payout: <strong>{{ outstanding_total|floatformat:0 }} ISK</strong>
+</div>
+{{ block.super }}
+{% endblock %}
