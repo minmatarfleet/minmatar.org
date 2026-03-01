@@ -28,21 +28,15 @@ def setUpModule():
     from discord.signals import user_group_changed  # noqa: PLC0415
 
     django_signals.m2m_changed.disconnect(
-        user_group_changed,
-        sender=User.groups.through,
-        dispatch_uid="user_group_changed",
+        user_group_changed, sender=User.groups.through, dispatch_uid="user_group_changed"
     )
 
 
 class TribesListTestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.tribe = Tribe.objects.create(
-            name="Capitals", slug="capitals", is_active=True
-        )
-        self.inactive = Tribe.objects.create(
-            name="Old", slug="old", is_active=False
-        )
+        self.tribe = Tribe.objects.create(name="Capitals", slug="capitals", is_active=True)
+        self.inactive = Tribe.objects.create(name="Old", slug="old", is_active=False)
 
     def test_list_returns_only_active(self):
         response = self.client.get(f"{BASE_URL}/")
@@ -71,12 +65,8 @@ class TribeGroupsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
-        self.g1 = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads", is_active=True
-        )
-        self.g2 = TribeGroup.objects.create(
-            tribe=self.tribe, name="Carriers", is_active=True
-        )
+        self.g1 = TribeGroup.objects.create(tribe=self.tribe, name="Dreads", is_active=True)
+        self.g2 = TribeGroup.objects.create(tribe=self.tribe, name="Carriers", is_active=True)
         self.inactive = TribeGroup.objects.create(
             tribe=self.tribe, name="Old", is_active=False
         )
@@ -94,9 +84,7 @@ class MembershipApplyTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Mining"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
         self.user = User.objects.create_user(username="miner")
         self.token = _make_token(self.user)
         self.character = EveCharacter.objects.create(
@@ -143,9 +131,7 @@ class MembershipApprovalTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Mining"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
 
         self.applicant = User.objects.create_user(username="applicant")
         self.chief = User.objects.create_user(username="chief")
@@ -166,9 +152,7 @@ class MembershipApprovalTestCase(TestCase):
         response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
-        self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_APPROVED
-        )
+        self.assertEqual(self.membership.status, TribeGroupMembership.STATUS_APPROVED)
 
     def test_random_user_cannot_approve(self):
         token = _make_token(self.random)
@@ -182,9 +166,7 @@ class MembershipApprovalTestCase(TestCase):
         response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
-        self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_DENIED
-        )
+        self.assertEqual(self.membership.status, TribeGroupMembership.STATUS_DENIED)
 
     def test_elder_can_approve(self):
         elder = User.objects.create_user(username="elder")
@@ -199,9 +181,7 @@ class MembershipLeaveTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Mining"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
         self.user = User.objects.create_user(username="miner")
         self.membership = TribeGroupMembership.objects.create(
             user=self.user,
@@ -212,14 +192,10 @@ class MembershipLeaveTestCase(TestCase):
     def test_user_can_leave_own_membership(self):
         token = _make_token(self.user)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}"
-        response = self.client.delete(
-            url, HTTP_AUTHORIZATION=f"Bearer {token}"
-        )
+        response = self.client.delete(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
-        self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_LEFT
-        )
+        self.assertEqual(self.membership.status, TribeGroupMembership.STATUS_LEFT)
 
     def test_chief_can_remove_member(self):
         chief = User.objects.create_user(username="chief")
@@ -228,14 +204,10 @@ class MembershipLeaveTestCase(TestCase):
 
         token = _make_token(chief)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}"
-        response = self.client.delete(
-            url, HTTP_AUTHORIZATION=f"Bearer {token}"
-        )
+        response = self.client.delete(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
-        self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_REMOVED
-        )
+        self.assertEqual(self.membership.status, TribeGroupMembership.STATUS_REMOVED)
         self.assertEqual(self.membership.removed_by, chief)
 
 
@@ -243,9 +215,7 @@ class OutputEndpointsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Dreads Tribe", slug="dreads")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Dreads")
         self.user = User.objects.create_user(username="pilot")
 
         TribeActivity.objects.create(
@@ -274,8 +244,7 @@ class OutputEndpointsTestCase(TestCase):
         # New shape: list of GroupOutputSummarySchema (one per group).
         self.assertIsInstance(data, list)
         group_summary = next(
-            (r for r in data if r["tribe_group_id"] == self.tribe_group.pk),
-            None,
+            (r for r in data if r["tribe_group_id"] == self.tribe_group.pk), None
         )
         self.assertIsNotNone(group_summary)
         kills_total = group_summary["totals"].get("kills (kills)")
@@ -308,9 +277,7 @@ class LogActivityTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Conversion", slug="conversion")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Conversion"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Conversion")
         self.chief = User.objects.create_user(username="chief")
         self.tribe_group.chief = self.chief
         self.tribe_group.save()
@@ -355,9 +322,7 @@ class CurrentUserTribesTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.tribe = Tribe.objects.create(name="Mining", slug="mining")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Mining"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Mining")
         self.user = User.objects.create_user(username="miner")
         TribeGroupMembership.objects.create(
             user=self.user,

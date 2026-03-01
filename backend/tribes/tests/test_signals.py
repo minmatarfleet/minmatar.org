@@ -18,9 +18,7 @@ def setUpModule():
     from discord.signals import user_group_changed  # noqa: PLC0415
 
     django_signals.m2m_changed.disconnect(
-        user_group_changed,
-        sender=User.groups.through,
-        dispatch_uid="user_group_changed",
+        user_group_changed, sender=User.groups.through, dispatch_uid="user_group_changed"
     )
 
 
@@ -67,9 +65,7 @@ class MembershipSignalTestCase(TestCase):
         self.assertNotIn(self.group_auth_group, self.user.groups.all())
         self.assertNotIn(self.tribe_auth_group, self.user.groups.all())
 
-    def test_removed_leaves_tribe_group_if_other_active_membership_exists(
-        self,
-    ):
+    def test_removed_leaves_tribe_group_if_other_active_membership_exists(self):
         """User stays in tribe auth group if they still have another active TribeGroup in the tribe."""
         group2_auth = Group.objects.create(name="Carriers Auth Group")
         tribe_group2 = TribeGroup.objects.create(
@@ -101,9 +97,7 @@ class MembershipSignalTestCase(TestCase):
 class ElderSignalTestCase(TestCase):
     def setUp(self):
         self.tribe = Tribe.objects.create(name="Dreads Tribe", slug="dreads")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads"
-        )
+        self.tribe_group = TribeGroup.objects.create(tribe=self.tribe, name="Dreads")
         self.elder = User.objects.create_user(username="elder")
 
     def test_elder_added_gets_alliance_director_group(self):
