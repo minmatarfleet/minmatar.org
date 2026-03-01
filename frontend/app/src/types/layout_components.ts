@@ -2,7 +2,7 @@ export type Locales = 'en'
 export type ButtonColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'transparent'
 export type ButtonSizes = 'sm' | 'lg'
 export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'fleet-yellow'
-export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green'
+export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'security-status-1' | 'security-status-point-9' | 'security-status-point-8' | 'security-status-point-7' | 'security-status-point-6' | 'security-status-point-5' | 'security-status-point-4' | 'security-status-point-3' | 'security-status-point-2' | 'security-status-point-1' | 'security-status-null'
 export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-around' | 'space-between'
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type ImageSize = 16 | 24 | 32 | 64 | 128 | 256 | 512 | 1024
@@ -984,9 +984,9 @@ export interface DoctrineLocationUI {
     doctrines:          DoctrineType[];
 }
 
-import type { FittingMarketData } from '../helpers/fetching/market';
+import type { FittingMarketData, SellOrderItem } from '@dtypes/api.minmatar.org';
 
-export interface MarketLocationUI {
+export interface ContractMarketLocationUI {
     name:               string;
     doctrine_count:     number;
     completion:         number;
@@ -1026,4 +1026,11 @@ export interface FreightContractLocationDestination {
 export interface FreightContractLocation {
     location_name:  string;
     destinations:   FreightContractLocationDestination[];
+}
+
+export interface MarketLocationUI {
+    name:               string;
+    items_count:        number;
+    completion:         number;
+    items:              SellOrderItem[];
 }

@@ -58,10 +58,14 @@ const subheader_content = await Astro.slots.render('subheader');
     }
 
     .post-header h1 {
+        transition: var(--fast-transition);
+        transition-delay: 0.3s;
         font-size: var(--step-4) !important;
     }
 
     .post-header.glass h1 {
+        transition: var(--fast-transition);
+        transition-delay: 0.3s;
         font-size: var(--step-1) !important;
     }
 </style>

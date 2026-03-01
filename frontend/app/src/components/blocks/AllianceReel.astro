@@ -2,16 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
 
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import SwiperCard from '@components/blocks/SwiperCard.astro';
-import Markdown from '@components/blocks/Markdown.astro';
-
-import GroupsEvEIcon from '@components/icons/GroupsEvEIcon.astro';
-import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
 ---
 
 <Wrapper
@@ -20,59 +15,50 @@ import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
     padding_inline='0'
     max_width='100%'
 >
-    <div
-        class="[ swiper ][ w-full pb-10! ]"
-        id="corporations-list"
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="580px"
     >
-        <LandingSwiper>
-            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard
-                    class="[ animate-delay-0 ]"
-                    title={t('our_dna')}
-                    description={t('dna.leading_text')}
-                    cover='/images/corporations-tile-background.jpg'
-                >               
-                    <Button size='sm' href={translatePath('/alliance/story/')}>
-                        {t('our_story')}
-                    </Button>
-                    <Button size='sm' href={translatePath('/alliance/values/')}>
-                        {t('our_values')}
-                    </Button>
-                    <Button size='sm' href={translatePath('/alliance/playstyle/')}>
-                        {t('our_playstyle')}
-                    </Button>
-                </SwiperCard>
-            </div>
+        <SwiperCard
+            title={t('our_dna')}
+            description={t('dna.leading_text')}
+            cover='/images/corporations-tile-background.webp'
+        >               
+            <Button size='sm' href={translatePath('/alliance/story/')}>
+                {t('our_story')}
+            </Button>
+            <Button size='sm' href={translatePath('/alliance/values/')}>
+                {t('our_values')}
+            </Button>
+            <Button size='sm' href={translatePath('/alliance/playstyle/')}>
+                {t('our_playstyle')}
+            </Button>
+        </SwiperCard>
+    
+        <SwiperCard
+            title={t('our_community')}
+            description={t('community.leading_text')}
+            cover='/images/sigs-tile-background.webp'
+        >                        
+            <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
+                {t('corporations')}
+            </Button>
 
-            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                <SwiperCard
-                    class="[ animate-delay-200 ]"
-                    title={t('our_community')}
-                    description={t('community.leading_text')}
-                    cover='/images/sigs-tile-background.jpg'
-                >                        
-                    <Button size='sm' href={translatePath('/alliance/corporations/list/')}>
-                        {t('corporations')}
-                    </Button>
+            <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
+                {t('groups.list.page_title')}
+            </Button>
 
-                    <Button size='sm' href={translatePath('/alliance/sigs/list/')}>
-                        {t('sigs')}
-                    </Button>
+            <Button size='sm' href={translatePath('/alliance/teams/list/')}>
+                {t('teams.list.page_title')}
+            </Button>
 
-                    <Button size='sm' href={translatePath('/alliance/teams/list/')}>
-                        {t('teams.list.page_title')}
-                    </Button>
-
-                    <Button size='sm' href={translatePath('/alliance/propaganda/')}>
-                        {t('propaganda.page_title')}
-                    </Button>
-                </SwiperCard>
-            </div>
-        </LandingSwiper>
-    </div>
-
-    <div class="[ swiper-button-prev hidden lg:block! ]"></div>
-    <div class="[ swiper-button-next hidden lg:block! ]"></div>
+            <Button size='sm' href={translatePath('/alliance/propaganda/')}>
+                {t('propaganda.page_title')}
+            </Button>
+        </SwiperCard>
+    </Grid>
 </Wrapper>
 
 <style lang="scss">

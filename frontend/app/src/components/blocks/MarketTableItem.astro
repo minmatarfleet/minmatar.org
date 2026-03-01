@@ -42,6 +42,10 @@ const markup_tooltip = t('markup_tooltip')
                             .replace('{baseline}', number_thousand_separator(effective_baseline ?? 0))
                             .replace('{baseline_label}', baseline_label)
 
+const progress_color = completion >= 50 ? '--security-status-point-6' :
+                       completion >= 10 && completion < 50 ? '--security-status-point-4':
+                       '--fleet-red'
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -52,34 +56,28 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import Tag from '@components/blocks/Tag.astro';
 ---
 
-<FlexInline class="[ market-card ]">
-    <FixedFluid class="[ items-center! basis-[550px] ]" width='64px'>
+<FlexInline class="[ market-table-item ]">
+    <FixedFluid class="[ items-center! basis-[550px] ]" width='32px'>
         {item.category_name !== 'SKINs' ?
             <Picture
                 src={item.category_name === 'Blueprint' ?
-                    get_bpc_icon(item.type_id ?? 0, false, 64) :
-                    get_item_icon(item.type_id ?? 0, 64)
+                    get_bpc_icon(item.type_id ?? 0, false, 32) :
+                    get_item_icon(item.type_id ?? 0, 32)
                 }
-                placeholder={item.category_name === 'Blueprint' ? get_bpc_icon(item.type_id ?? 0, true, 64) : undefined}
-                size={64}
+                placeholder={item.category_name === 'Blueprint' ? get_bpc_icon(item.type_id ?? 0, true, 32) : undefined}
+                size={32}
             /> :
             <div></div>
         }
         <Flexblock gap='var(--space-3xs)'>
             <FlexInline class="[ min-w-0 ]">
                 <Flexblock gap='var(--space-3xs)' class="[ min-w-[250px] flex-1 ]">
-                    <h3 class="[ title ]">{item.item_name}</h3>
-                    <FlexInline class="[ subtitle ]" gap="var(--space-3xs)">
-                        <small class="[ category ]">{item.category_name}</small>
-                        <small>/</small>
-                        <small class="[ group ]">{item.group_name}</small>
-                    </FlexInline>
-                </Flexblock>
-                <Flexblock class="[ shrink-0 ]">
-                    <span class="[ quantity ]">{number_thousand_separator(current_quantity)}{expected_quantity > 0 && `/${number_thousand_separator(expected_quantity)}`}</span>
+                    <span class="[ title ]">{item.item_name}</span>
+                    <small class="[ category ][ sr-only ]">{item.category_name}</small>
+                    <small class="[ group ][ sr-only ]">{item.group_name}</small>
                 </Flexblock>
             </FlexInline>
-            {(no_expectation_progress || expected_quantity > 0) &&
+            {/*(no_expectation_progress || expected_quantity > 0) &&
                 <Progress
                     class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
                     max="100"
@@ -89,9 +87,45 @@ import Tag from '@components/blocks/Tag.astro';
                 >
                     {completion.toFixed(2)}%
                 </Progress>
-            }
+            */}
         </Flexblock>
     </FixedFluid>
+
+    <FlexInline class="[ basis-[180px] ]" gap="var(--space-3xs)">
+        <span>{number_thousand_separator(current_quantity)}</span>
+        {expected_quantity > 0 &&
+            <span>/</span>
+            <span class="[ text-highlight ]">{number_thousand_separator(expected_quantity)}</span>
+        }
+    </FlexInline>
+
+    <Flexblock class="[ basis-[80px] ]">
+        {(no_expectation_progress || expected_quantity > 0) &&
+            <Progress
+                class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
+                max="100"
+                value={completion > 0 ? completion : 0.1}
+                data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
+            >
+                {completion.toFixed(2)}%
+            </Progress>
+        }
+    </Flexblock>
+
+    <Flexblock class="[ basis-[120px] ]">
+        {expected_quantity > 0 &&
+            <span class:list={[
+                    { 'text-status-point-6': completion >= 50 },
+                    { 'text-status-point-4': completion >= 10 && completion < 50 },
+                    { 'text-red': completion >= 0 && completion < 10 },
+                ]}
+            >
+                {completion.toFixed(0)}%
+            </span>
+        }
+    </Flexblock>
 
     {!is_baseline && markup_pct != null && 
         <Tag
@@ -116,7 +150,7 @@ import Tag from '@components/blocks/Tag.astro';
 </FlexInline>
 
 <style lang="scss">
-    .market-card {
+    .market-table-item {
         > div {
             padding-right: var(--space-3xs);
         }
@@ -142,13 +176,6 @@ import Tag from '@components/blocks/Tag.astro';
         font-size: var(--step-0);
         font-weight: 400;
         color: var(--highlight);
-        line-height: 1.2;
-    }
-
-    .title {
-        min-width: 0;
-        flex: 1;
-        font-size: var(--step-0);
         line-height: 1.2;
     }
 </style>

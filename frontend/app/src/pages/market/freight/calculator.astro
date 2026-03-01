@@ -50,12 +50,12 @@ import FreightFAQs from '@components/blocks/FreightFAQs.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FreightForm from '@components/blocks/FreightForm.astro'
 
-const page_title = t('freight.standard.page_title');
+const page_title = t('freight.calculator.page_title');
 ---
 
 <Viewport
     title={page_title}
-    meta_description={t('freight.standard.meta_description')}
+    meta_description={t('freight.calculator.meta_description')}
     components={{
         alert_dialog: true
     }}
@@ -99,7 +99,7 @@ const page_title = t('freight.standard.page_title');
                         <Wrapper
                             padding_block="var(--space-2xs)"
                             padding_inline="var(--space-s)"
-                            set:html={marked.parseInline(t('freight.standard.jita_hauling_ads'), { renderer })}
+                            set:html={marked.parseInline(t('freight.calculator.jita_hauling_ads'), { renderer })}
                         />
                     </VerticalCenter>
                 </FixedFluid>

@@ -1,0 +1,123 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MarketLocationUI, SelectOptions } from '@dtypes/layout_components';
+import type { SellOrderLocation, SellOrderItem } from '@dtypes/api.minmatar.org'
+import { get_sell_orders } from '@helpers/api.minmatar.org/market'
+
+let market_locations: SellOrderLocation[] = []
+let data_fetching_error = ''
+
+try {
+    market_locations = await get_sell_orders()
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+let active_location_name = Astro.url.searchParams.get('location_name') ?? (market_locations[0]?.location_name ?? '')
+
+if (market_locations.length > 0) {
+    if (active_location_name === '' || !market_locations.find(location => location.location_name === active_location_name) )
+        active_location_name = market_locations[0].location_name
+}
+
+const active_market_locations = market_locations.find(market_location => market_location.location_name === active_location_name)
+
+const market_locations_ui:MarketLocationUI[] = market_locations.map(location => {
+    return {
+        name: location.location_name,
+        items_count: location.items.length,
+        items: location.items,
+        completion: 0, // To be calculated
+    } as MarketLocationUI
+})
+
+import { query_string } from '@helpers/string';
+
+const CONTRACTS_PARTIAL_URL = translatePath(`/partials/sell_orders_component?${query_string({
+    location_name: active_location_name
+})}`)
+
+const active_market_locations_ui = market_locations_ui.find(location => location.name === active_location_name)
+const items_count = active_market_locations_ui?.items.length ?? 0
+const items_count_text = (items_count != 1 ? t('showing_orders_plural') : t('showing_orders_singular')).replace('{count}', String(items_count))
+
+let categories:string[] = []
+let shortfall_items_by_category:Record<string, SellOrderItem[]> = {}
+let shortfall_categories:string[] = []
+let groups_by_category:Record<string,string[]> = {
+    all: []
+}
+
+active_market_locations_ui?.items.map(item => {
+    categories.push(item.category_name)
+
+    if (item.current_quantity < item.expected_quantity) {
+        if (!shortfall_items_by_category[item.category_name])
+            shortfall_items_by_category[item.category_name] = []
+
+        shortfall_items_by_category[item.category_name].push(item)
+        shortfall_categories.push(item.category_name)
+    }
+
+    if (!groups_by_category[item.category_name])
+        groups_by_category[item.category_name] = []
+
+    groups_by_category['all'].push(item.group_name)
+    groups_by_category[item.category_name].push(item.group_name)
+})
+
+import { unique_values } from '@helpers/array'
+categories = unique_values(categories)
+shortfall_categories = unique_values(shortfall_categories)
+categories = categories.sort((a, b) => a.localeCompare(b))
+shortfall_categories = shortfall_categories.sort((a, b) => a.localeCompare(b))
+
+let groups_by_category_options:Record<string, SelectOptions[]> = {}
+
+const all_categories = [ 'all', ...categories ]
+all_categories.map(category => {
+    groups_by_category_options[category] = unique_values(groups_by_category[category]).map(value => {
+        return { label: value, value: value } as SelectOptions
+    })
+})
+
+const categories_select_options = categories.map( category_name => {
+    return { label: category_name, value: category_name } as SelectOptions
+})
+
+const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import MarketList from '@components/blocks/MarketList.astro';
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro';
+---
+    
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: CONTRACTS_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    active_market_locations_ui !== undefined ?
+        <MarketList
+            active_market_locations_ui={active_market_locations_ui}
+            non_active_market_locations_ui={non_active_market_locations_ui}
+            is_baseline={active_market_locations?.is_price_baseline ?? false}
+            init_tooltips={true}
+        />
+        <UpdateAlpineVariables
+            variables={{
+                items_count: items_count,
+                categories_select_options: categories_select_options,
+                groups_by_category_options: groups_by_category_options,
+            }}
+        /> :
+        <p>{t('no_market_locations')}</p>
+}
