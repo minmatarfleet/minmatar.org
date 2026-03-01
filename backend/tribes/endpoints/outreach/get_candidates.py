@@ -5,10 +5,9 @@ from typing import List, Optional
 from ninja import Router
 
 from authentication import AuthBearer
-from eveonline.models.characters import EveCharacterSkillset
 from tribes.endpoints.outreach.schemas import CandidateSchema
 from tribes.helpers import user_can_manage_group
-from tribes.models import TribeGroup, TribeGroupOutreach, TribeGroupRequirement
+from tribes.models import TribeGroup
 
 PATH = "/{tribe_id}/groups/{group_id}/candidates"
 METHOD = "get"
@@ -33,49 +32,9 @@ def get_candidates(
     if not user_can_manage_group(request.user, tg):
         return 403, {"detail": "Chiefs and elders only."}
 
-    skillset_reqs = tg.requirements.filter(
-        requirement_type=TribeGroupRequirement.REQUIREMENT_TYPE_SKILLSET
-    ).select_related("skillset")
-
-    if not skillset_reqs.exists():
-        return 200, []
-
-    already_outreached = set(
-        TribeGroupOutreach.objects.filter(tribe_group=tg).values_list(
-            "character__character_id", flat=True
-        )
-    )
-
-    results: List[CandidateSchema] = []
-    seen = set()
-    for req in skillset_reqs:
-        if not req.skillset:
-            continue
-        qs = EveCharacterSkillset.objects.filter(
-            eve_skillset=req.skillset,
-            progress__gte=minimum_progress,
-        ).select_related("character__user")
-        for skill_rec in qs:
-            char = skill_rec.character
-            key = (char.character_id, req.skillset_id)
-            if key in seen:
-                continue
-            seen.add(key)
-            results.append(
-                CandidateSchema(
-                    character_id=char.character_id,
-                    character_name=char.character_name,
-                    user_id=char.user_id,
-                    skillset_id=req.skillset_id,
-                    skillset_name=req.skillset.name,
-                    progress=skill_rec.progress,
-                    missing_skills=skill_rec.missing_skills or 0,
-                    already_outreached=char.character_id in already_outreached,
-                )
-            )
-
-    results.sort(key=lambda c: c.progress, reverse=True)
-    return 200, results
+    # Skillset-based requirements have been removed; candidates are no longer
+    # driven by a skillset type. Return an empty list for now.
+    return 200, []
 
 
 router.get(PATH, **ROUTE_SPEC)(get_candidates)

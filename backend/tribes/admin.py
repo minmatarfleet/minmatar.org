@@ -54,7 +54,7 @@ class TribeGroupRequirementInline(admin.TabularInline):
     model = TribeGroupRequirement
     extra = 0
     show_change_link = True
-    fields = ("requirement_type",)
+    fields = ()
 
 
 @admin.register(TribeGroup)
@@ -69,8 +69,7 @@ class TribeGroupAdmin(admin.ModelAdmin):
 
 @admin.register(TribeGroupRequirement)
 class TribeGroupRequirementAdmin(admin.ModelAdmin):
-    list_display = ("tribe_group", "requirement_type")
-    list_filter = ("requirement_type",)
+    list_display = ("tribe_group",)
     raw_id_fields = ("tribe_group",)
     inlines = [AssetTypeInline, QualifyingSkillInline]
 

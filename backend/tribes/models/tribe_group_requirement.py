@@ -3,37 +3,34 @@ from django.db import models
 
 class TribeGroupRequirement(models.Model):
     """
-    Eligibility gate for joining a TribeGroup. Requirements are stackable (AND logic).
-    They gate applications and power the compliance snapshot — they do NOT auto-enroll anyone.
-    """
+    Eligibility gate for joining a TribeGroup.
 
-    REQUIREMENT_TYPE_ASSET = "asset_type"
-    REQUIREMENT_TYPE_SKILL = "skill"
-    REQUIREMENT_TYPE_CHOICES = [
-        (REQUIREMENT_TYPE_ASSET, "Asset Ownership"),
-        (REQUIREMENT_TYPE_SKILL, "Qualifying Skill"),
-    ]
+    Within a single requirement, all conditions AND together:
+    - If qualifying_skills are defined, the character must have ALL of them at their minimum_level.
+    - If asset_types are defined, the character must own >= minimum_count of ANY listed type.
+    - If both are defined, both conditions must be satisfied.
+
+    Multiple TribeGroupRequirement objects on the same group are OR'd: a character
+    satisfies the group's requirements if they meet ANY one of them.
+    """
 
     tribe_group = models.ForeignKey(
         "tribes.TribeGroup",
         on_delete=models.CASCADE,
         related_name="requirements",
     )
-    requirement_type = models.CharField(
-        max_length=32, choices=REQUIREMENT_TYPE_CHOICES
-    )
 
-    # --- asset_type requirement ---
+    # --- asset_type condition ---
     # Qualifying types (with per-type minimum_count and location_id) are stored
     # in the related TribeGroupRequirementAssetType model.
-    # Owning >= minimum_count of ANY listed type satisfies this requirement (OR logic).
+    # Owning >= minimum_count of ANY listed type satisfies this condition (OR across types).
 
-    # --- skill requirement ---
+    # --- skill condition ---
     # Qualifying skills are stored in the related TribeGroupRequirementSkill model.
-    # All listed skills must be trained to their minimum_level (AND logic).
+    # All listed skills must be trained to their minimum_level (AND across skills).
 
     def __str__(self):
-        return f"{self.tribe_group} — {self.get_requirement_type_display()}"
+        return f"Requirement #{self.pk} ({self.tribe_group})"
 
     class Meta:
-        ordering = ["tribe_group", "requirement_type"]
+        ordering = ["tribe_group"]

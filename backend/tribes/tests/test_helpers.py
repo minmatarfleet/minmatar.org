@@ -89,8 +89,7 @@ class CheckRequirementsTestCase(TestCase):
             skill_points=24000000,
         )
         req = TribeGroupRequirement.objects.create(
-            tribe_group=self.tribe_group,
-            requirement_type=TribeGroupRequirement.REQUIREMENT_TYPE_SKILL,
+            tribe_group=self.tribe_group
         )
         TribeGroupRequirementSkill.objects.create(
             requirement=req,
@@ -113,8 +112,7 @@ class CheckRequirementsTestCase(TestCase):
             skill_points=500000,
         )
         req = TribeGroupRequirement.objects.create(
-            tribe_group=self.tribe_group,
-            requirement_type=TribeGroupRequirement.REQUIREMENT_TYPE_SKILL,
+            tribe_group=self.tribe_group
         )
         TribeGroupRequirementSkill.objects.create(
             requirement=req,
