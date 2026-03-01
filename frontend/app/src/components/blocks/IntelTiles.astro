@@ -20,7 +20,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Tile from '@components/blocks/Tile.astro';
 import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
@@ -50,7 +50,7 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
         }    
                 
         {can_view_timers &&
-            <SwiperCard
+            <Tile
                 title={t('structure_timers')}
                 description={t('intel.timers.leading_text')}
                 cover='/images/timers-tile-background.webp'
@@ -63,11 +63,11 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                 <Button size='sm' href={translatePath('/intel/timers/add/')}>
                     {t('add_timer')}
                 </Button>
-            </SwiperCard>
+            </Tile>
         }
 
         {(can_add_moons || can_view_moons) &&
-            <SwiperCard
+            <Tile
                 title={t('moon_tracking')}
                 description={t('intel.moon_tracking.leading_text')}
                 cover='/images/moon-tracking-tile-background.webp'
@@ -87,10 +87,10 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                         {t('add_moon')}
                     </Button>
                 }
-            </SwiperCard>
+            </Tile>
         }
 
-        <SwiperCard
+        <Tile
             title={t('combat_log_analyzer')}
             description={t('intel.combatlog.leading_text')}
             cover='/images/combatlog-tile-background.webp'
@@ -100,6 +100,6 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
             <Button size='sm' href={translatePath('/intel/combatlog/')}>
                 {t('enter')}
             </Button>
-        </SwiperCard>
+        </Tile>
     </Grid>
 </Wrapper>

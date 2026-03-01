@@ -14,7 +14,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Tile from '@components/blocks/Tile.astro';
 ---
 
 <Wrapper
@@ -29,7 +29,7 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
         column_gap="var(--space-3xs)"
         min_item_width="580px"
     >
-        <SwiperCard
+        <Tile
             title={t('industry.orders.page_title')}
             description={t('industry.orders.leading_text')}
             cover='/images/orders-tile-background.webp'
@@ -41,9 +41,9 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
             <Button size='sm' href={translatePath('/industry/blueprints/')}>
                 {t('find_blueprints')}
             </Button>
-        </SwiperCard>
+        </Tile>
         
-        <SwiperCard
+        <Tile
             title={t('industry.products.page_title')}
             description={t('industry.products.leading_text')}
             cover='/images/products-tile-background.webp'
@@ -63,6 +63,6 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
             <Button size='sm' href={translatePath('/industry/products?strategy=imported')}>
                 {t('imported')}
             </Button>
-        </SwiperCard>
+        </Tile>
     </Grid>
 </Wrapper>

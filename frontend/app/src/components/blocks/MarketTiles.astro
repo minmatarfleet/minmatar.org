@@ -14,7 +14,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Tile from '@components/blocks/Tile.astro';
 
 import MarketDeliveriesEVEIcon from '@components/icons/MarketDeliveriesEVEIcon.astro';
 import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
@@ -33,7 +33,7 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
         column_gap="var(--space-3xs)"
         min_item_width="580px"
     >
-        <SwiperCard
+        <Tile
             title={t('contracts.page_title')}
             description={t('contracts.leading_text')}
             cover='/images/contracts-tile-background.webp'
@@ -43,9 +43,9 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
             <Button size='sm' href={translatePath('/market/contracts/')}>
                 {t('view_market_expectations')}
             </Button>
-        </SwiperCard>
+        </Tile>
 
-        <SwiperCard
+        <Tile
             title={t('sell_orders.page_title')}
             description={t('sell_orders.leading_text')}
             cover='/images/sellorders-tile-background.webp'
@@ -58,9 +58,9 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
             <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
                 {t('standard_view')}
             </Button>
-        </SwiperCard>
+        </Tile>
 
-        <SwiperCard
+        <Tile
             title={t('freight.page_title')}
             description={t('freight.leading_text')}
             cover='/images/freight-tile-background.webp'
@@ -73,6 +73,6 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
             <Button size='sm' href={translatePath('/market/freight/contracts/')}>
                 {t('freight_contracts.page_title')}
             </Button>
-        </SwiperCard>
+        </Tile>
     </Grid>
 </Wrapper>

@@ -6,7 +6,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Tile from '@components/blocks/Tile.astro';
 ---
 
 <Wrapper
@@ -21,7 +21,7 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
         column_gap="var(--space-3xs)"
         min_item_width="580px"
     >
-        <SwiperCard
+        <Tile
             title={t('our_dna')}
             description={t('dna.leading_text')}
             cover='/images/corporations-tile-background.webp'
@@ -35,9 +35,9 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
             <Button size='sm' href={translatePath('/alliance/playstyle/')}>
                 {t('our_playstyle')}
             </Button>
-        </SwiperCard>
+        </Tile>
     
-        <SwiperCard
+        <Tile
             title={t('our_community')}
             description={t('community.leading_text')}
             cover='/images/sigs-tile-background.webp'
@@ -57,7 +57,7 @@ import SwiperCard from '@components/blocks/SwiperCard.astro';
             <Button size='sm' href={translatePath('/alliance/propaganda/')}>
                 {t('propaganda.page_title')}
             </Button>
-        </SwiperCard>
+        </Tile>
     </Grid>
 </Wrapper>
 

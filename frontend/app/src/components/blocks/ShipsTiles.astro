@@ -7,7 +7,7 @@ import Grid from '@components/compositions/Grid.astro';
 
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
-import SwiperCard from '@components/blocks/SwiperCard.astro';
+import Tile from '@components/blocks/Tile.astro';
 
 import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
@@ -25,7 +25,7 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
         column_gap="var(--space-3xs)"
         min_item_width="580px"
     >
-        <SwiperCard
+        <Tile
             title={t('fittings')}
             description={t('fitting.leading_text')}
             cover='/images/fittings-tile-background.webp'
@@ -35,9 +35,9 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
             <Button size='sm' href={translatePath('/ships/fitting/list/')}>
                 {t('view_fittings')}
             </Button>
-        </SwiperCard>
+        </Tile>
 
-        <SwiperCard
+        <Tile
             title={t('doctrines.page_title')}
             description={t('doctrines.leading_text')}
             cover='/images/doctrines-tile-background.webp'
@@ -50,6 +50,6 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
             >
                 {t('view_doctrines')}
             </Button>
-        </SwiperCard>
+        </Tile>
     </Grid>
 </Wrapper>
