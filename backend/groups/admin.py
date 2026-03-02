@@ -2,10 +2,15 @@ import csv
 import io
 
 from django.contrib import admin
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
 from django.urls import path
+
+from discord.models import DiscordUser
+from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCorporation
 
 from .models import (
     AffiliationType,
@@ -36,11 +41,116 @@ def _bulk_upload_context(admin_instance, title, summary=None):
     return ctx
 
 
+class CorporationFilter(admin.SimpleListFilter):
+    """Filter UserCommunityStatus by primary character's corporation."""
+
+    title = "corporation"
+    parameter_name = "corporation"
+
+    def lookups(self, request, model_admin):
+        # Only corporations in our alliances (EveAlliance)
+        alliance_corp_ids = EveCorporation.objects.filter(
+            alliance__isnull=False,
+        ).values_list("corporation_id", flat=True)
+        # Of those, corporations that have at least one community status user with that corp as primary
+        corp_ids = (
+            UserCommunityStatus.objects.filter(
+                user__eveplayer__primary_character__corporation_id__in=alliance_corp_ids,
+            )
+            .values_list(
+                "user__eveplayer__primary_character__corporation_id", flat=True
+            )
+            .distinct()
+        )
+        corps = (
+            EveCorporation.objects.filter(corporation_id__in=corp_ids)
+            .order_by("name")
+            .values_list("corporation_id", "name")
+        )
+        return [(cid, name or str(cid)) for cid, name in corps]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        return queryset.filter(
+            user__eveplayer__primary_character__corporation_id=value,
+        )
+
+
 @admin.register(UserCommunityStatus)
 class UserCommunityStatusAdmin(admin.ModelAdmin):
-    list_display = ("user", "status")
-    list_filter = ("status",)
+    list_display = (
+        "user",
+        "status",
+        "primary_character_name",
+        "corporation",
+        "days_in_community",
+    )
+    list_filter = ("status", CorporationFilter)
     search_fields = ("user__username",)
+    readonly_fields = (
+        "primary_character_name",
+        "corporation",
+        "days_in_community",
+    )
+    fieldsets = (
+        (None, {"fields": ("user", "status")}),
+        (
+            "Community info",
+            {
+                "fields": (
+                    "primary_character_name",
+                    "corporation",
+                    "days_in_community",
+                ),
+                "description": "Derived from primary character and Discord.",
+            },
+        ),
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("user", "user__eveplayer__primary_character")
+
+    def primary_character_name(self, obj):
+        if not obj or not obj.user:
+            return "—"
+        primary = user_primary_character(obj.user)
+        return primary.character_name if primary else "—"
+
+    primary_character_name.short_description = "Primary character"
+
+    def corporation(self, obj):
+        if not obj or not obj.user:
+            return "—"
+        primary = user_primary_character(obj.user)
+        if not primary or not primary.corporation_id:
+            return "—"
+        corp = (
+            EveCorporation.objects.filter(
+                corporation_id=primary.corporation_id
+            )
+            .values_list("name", flat=True)
+            .first()
+        )
+        return corp or str(primary.corporation_id)
+
+    corporation.short_description = "Corporation"
+
+    def days_in_community(self, obj):
+        if not obj or not obj.user:
+            return "—"
+        try:
+            discord_user = DiscordUser.objects.get(user=obj.user)
+        except DiscordUser.DoesNotExist:
+            return "—"
+        if not discord_user.created_at:
+            return "—"
+        delta = (timezone.now() - discord_user.created_at).days
+        return delta
+
+    days_in_community.short_description = "Days in community"
 
     def get_urls(self):
         urls = super().get_urls()
