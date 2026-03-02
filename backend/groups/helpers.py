@@ -142,17 +142,11 @@ def sync_user_community_groups(user: User) -> None:
     Trial: affiliation group + Trial group.
     Active: affiliation group only.
     On Leave: On Leave group only (no affiliation group).
+    Only adds/removes groups when membership actually changes to avoid Discord overhead.
     """
     trial_group, on_leave_group = _trial_and_on_leave_groups()
     affiliation = UserAffiliation.objects.filter(user=user).first()
     affiliation_group = affiliation.affiliation.group if affiliation else None
-
-    if trial_group:
-        user.groups.remove(trial_group)
-    if on_leave_group:
-        user.groups.remove(on_leave_group)
-    if affiliation_group:
-        user.groups.remove(affiliation_group)
 
     try:
         ucs = user.community_status
@@ -160,20 +154,32 @@ def sync_user_community_groups(user: User) -> None:
     except UserCommunityStatus.DoesNotExist:
         status = UserCommunityStatus.STATUS_ACTIVE
 
+    community_groups = [
+        g for g in (trial_group, on_leave_group, affiliation_group) if g
+    ]
+    if not community_groups:
+        return
+
     if status == UserCommunityStatus.STATUS_ON_LEAVE:
-        if on_leave_group:
-            user.groups.add(on_leave_group)
-        return
-    if status == UserCommunityStatus.STATUS_TRIAL:
-        if affiliation_group:
-            user.groups.add(affiliation_group)
-        if trial_group:
-            user.groups.add(trial_group)
-        return
-    if status == UserCommunityStatus.STATUS_ACTIVE:
-        if affiliation_group:
-            user.groups.add(affiliation_group)
-        return
+        desired = {on_leave_group} if on_leave_group else set()
+    elif status == UserCommunityStatus.STATUS_TRIAL:
+        desired = {g for g in (trial_group, affiliation_group) if g}
+    else:
+        desired = {affiliation_group} if affiliation_group else set()
+
+    current = set(
+        user.groups.filter(
+            pk__in=[g.pk for g in community_groups]
+        ).values_list("pk", flat=True)
+    )
+    desired_pks = {g.pk for g in desired}
+    to_remove = current - desired_pks
+    to_add = desired_pks - current
+
+    if to_remove:
+        user.groups.remove(*user.groups.filter(pk__in=to_remove))
+    if to_add:
+        user.groups.add(*user.groups.model.objects.filter(pk__in=to_add))
 
 
 def user_in_team(user: User, team_name: str) -> bool:
