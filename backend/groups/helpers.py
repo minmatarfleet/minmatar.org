@@ -4,7 +4,12 @@ from django.contrib.auth.models import User
 from eveonline.models import EveCorporation
 from users.helpers import offboard_group
 
-from .models import EveCorporationGroup, Team
+from .models import (
+    EveCorporationGroup,
+    Team,
+    UserAffiliation,
+    UserCommunityStatus,
+)
 
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
@@ -76,6 +81,53 @@ def offboard_corporation_groups(corporation: EveCorporation) -> None:
     )
     for group_id in group_ids:
         offboard_group(group_id)
+
+
+def _trial_and_on_leave_groups():
+    """Get or create Trial and On Leave groups in app context so signals (e.g. Discord role) trigger."""
+    trial_group, _ = AuthGroup.objects.get_or_create(name="Trial")
+    on_leave_group, _ = AuthGroup.objects.get_or_create(name="On Leave")
+    return trial_group, on_leave_group
+
+
+def sync_user_community_groups(user: User) -> None:
+    """
+    Set the user's Django groups based on UserCommunityStatus and UserAffiliation.
+    Trial: affiliation group + Trial group.
+    Active: affiliation group only.
+    On Leave: On Leave group only (no affiliation group).
+    """
+    trial_group, on_leave_group = _trial_and_on_leave_groups()
+    affiliation = UserAffiliation.objects.filter(user=user).first()
+    affiliation_group = affiliation.affiliation.group if affiliation else None
+
+    if trial_group:
+        user.groups.remove(trial_group)
+    if on_leave_group:
+        user.groups.remove(on_leave_group)
+    if affiliation_group:
+        user.groups.remove(affiliation_group)
+
+    try:
+        ucs = user.community_status
+        status = ucs.status
+    except UserCommunityStatus.DoesNotExist:
+        status = UserCommunityStatus.STATUS_ACTIVE
+
+    if status == UserCommunityStatus.STATUS_ON_LEAVE:
+        if on_leave_group:
+            user.groups.add(on_leave_group)
+        return
+    if status == UserCommunityStatus.STATUS_TRIAL:
+        if affiliation_group:
+            user.groups.add(affiliation_group)
+        if trial_group:
+            user.groups.add(trial_group)
+        return
+    if status == UserCommunityStatus.STATUS_ACTIVE:
+        if affiliation_group:
+            user.groups.add(affiliation_group)
+        return
 
 
 def user_in_team(user: User, team_name: str) -> bool:
