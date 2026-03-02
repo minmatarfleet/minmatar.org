@@ -98,9 +98,87 @@ class AffiliationType(models.Model):
     alliances = models.ManyToManyField(EveAlliance, blank=True)
     factions = models.ManyToManyField(EveFaction, blank=True)
     default = models.BooleanField(default=False)
+    requires_trial = models.BooleanField(
+        default=False,
+        help_text="When True, users who first get this affiliation start as trial.",
+    )
 
     def __str__(self):
         return self.group.name
+
+
+class UserCommunityStatus(models.Model):
+    """Current community status for a user (trial, active, on_leave). Overrides effective group."""
+
+    STATUS_ACTIVE = "active"
+    STATUS_TRIAL = "trial"
+    STATUS_ON_LEAVE = "on_leave"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_TRIAL, "Trial"),
+        (STATUS_ON_LEAVE, "On Leave"),
+    ]
+
+    user = models.OneToOneField(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="community_status",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+    )
+
+    class Meta:
+        verbose_name_plural = "User community statuses"
+
+    def __str__(self):
+        return f"{self.user} — {self.get_status_display()}"
+
+
+class UserCommunityStatusHistory(models.Model):
+    """Append-only audit log for community status changes."""
+
+    STATUS_ACTIVE = "active"
+    STATUS_TRIAL = "trial"
+    STATUS_ON_LEAVE = "on_leave"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_TRIAL, "Trial"),
+        (STATUS_ON_LEAVE, "On Leave"),
+    ]
+
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="community_status_history",
+    )
+    from_status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        null=True,
+        blank=True,
+    )
+    to_status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+    changed_by = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="community_status_changes_made",
+    )
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-changed_at"]
+        verbose_name_plural = "User community status histories"
+
+    def __str__(self):
+        return f"{self.user} {self.from_status or '?'} → {self.to_status} at {self.changed_at}"
 
 
 class UserAffiliation(models.Model):

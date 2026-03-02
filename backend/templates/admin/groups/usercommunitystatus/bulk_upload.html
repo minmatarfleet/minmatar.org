@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p>Upload a CSV with columns: <strong>username</strong>, <strong>community_status</strong> (values: active, trial, on_leave). Optional column: <strong>reason</strong>.</p>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p>
+    <label for="id_csv_file">CSV file:</label>
+    <input type="file" name="csv_file" id="id_csv_file" accept=".csv" required>
+  </p>
+  <p>
+    <label for="id_reason">Default reason (optional):</label>
+    <input type="text" name="reason" id="id_reason" value="" maxlength="255" size="40" placeholder="e.g. bulk leave list Q1">
+  </p>
+  <p>
+    <input type="submit" value="Upload and apply">
+  </p>
+</form>
+{% if summary %}
+<h2>Summary</h2>
+<ul>
+  <li>Applied: {{ summary.applied }}</li>
+  {% if summary.not_found %}
+  <li>Usernames not found: {{ summary.not_found|join:", " }}</li>
+  {% endif %}
+  {% if summary.errors %}
+  <li>Errors: {{ summary.errors|join:"; " }}</li>
+  {% endif %}
+</ul>
+{% endif %}
+<p><a href="{% url 'admin:groups_usercommunitystatus_changelist' %}">Back to Community Status list</a></p>
+{% endblock %}

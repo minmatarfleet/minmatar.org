@@ -19,22 +19,17 @@ DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = (
 
 def get_expected_nickname(user: User):
     """
-    Hardcoded to particular groups for now,
-    more robust solution can come later
+    Return the expected Discord nickname for this user (character name format).
+    Applies to all users with a primary character and DiscordUser, regardless of
+    affiliation or community status (Trial, On Leave, Alliance, etc.).
     """
     user = User.objects.get(id=user.id)
-    valid_user_group_names = ["Alliance", "Associate"]
-    user_group_names = [group.name for group in user.groups.all()]
-    is_valid_for_nickname = False
-    for group in user_group_names:
-        if group in valid_user_group_names:
-            is_valid_for_nickname = True
-    discord_user = DiscordUser.objects.get(user_id=user.id)
-    eve_primary_character = user_primary_character(user)
-
-    if not eve_primary_character or not is_valid_for_nickname:
+    discord_user = DiscordUser.objects.filter(user_id=user.id).first()
+    if not discord_user:
         return None
-
+    eve_primary_character = user_primary_character(user)
+    if not eve_primary_character:
+        return None
     return make_nickname(eve_primary_character, discord_user)
 
 

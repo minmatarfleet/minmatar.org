@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1em;">
+  <a href="{% url 'admin:groups_usercommunitystatus_bulk_upload' %}" class="addlink">Bulk update status (CSV upload)</a>
+</div>
+{{ block.super }}
+{% endblock %}
