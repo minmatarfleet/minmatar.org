@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import render
 from django.urls import path
 
-from .helpers import sync_user_community_groups
 from .models import (
     AffiliationType,
     EveCorporationGroup,
@@ -16,10 +15,9 @@ from .models import (
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+from .tasks import bulk_update_community_status
 
 User = get_user_model()
-
-VALID_STATUSES = {"active", "trial", "on_leave"}
 
 # Register your models here.
 admin.site.register(AffiliationType)
@@ -36,44 +34,6 @@ def _bulk_upload_context(admin_instance, title, summary=None):
     if summary is not None:
         ctx["summary"] = summary
     return ctx
-
-
-def _process_bulk_row(row, row_num, default_reason, request_user):
-    """
-    Process one CSV row. Returns (applied, not_found_name, error_msg).
-    applied=True means we updated the user and caller should count and sync.
-    """
-    username = (row.get("username") or "").strip()
-    status = (row.get("community_status") or "").strip().lower()
-    row_reason = (row.get("reason") or default_reason).strip()
-    if not username:
-        return (False, None, None)
-    if status not in VALID_STATUSES:
-        return (
-            False,
-            None,
-            f"Row {row_num}: invalid status '{status}' for {username}",
-        )
-    user = User.objects.filter(username=username).first()
-    if not user:
-        return (False, username, None)
-    ucs, created = UserCommunityStatus.objects.get_or_create(
-        user=user, defaults={"status": status}
-    )
-    if not created and ucs.status != status:
-        ucs.status = status
-        ucs.save()
-    latest = (
-        UserCommunityStatusHistory.objects.filter(user=user)
-        .order_by("-changed_at")
-        .first()
-    )
-    if latest:
-        latest.changed_by = request_user
-        latest.reason = row_reason or "bulk upload"
-        latest.save(update_fields=["changed_by", "reason"])
-    sync_user_community_groups(user)
-    return (True, None, None)
 
 
 @admin.register(UserCommunityStatus)
@@ -134,44 +94,16 @@ class UserCommunityStatusAdmin(admin.ModelAdmin):
                 "admin/groups/usercommunitystatus/bulk_upload.html",
                 _bulk_upload_context(self, "Bulk update community status"),
             )
-        applied = 0
-        not_found = []
-        errors = []
-        for i, row in enumerate(reader, start=2):
-            did_apply, not_found_name, error_msg = _process_bulk_row(
-                row, i, reason, request.user
-            )
-            if did_apply:
-                applied += 1
-            elif not_found_name:
-                not_found.append(not_found_name)
-            elif error_msg:
-                errors.append(error_msg)
-        msg_parts = [f"Applied {applied} row(s)."]
-        if not_found:
-            msg_parts.append(
-                f"Usernames not found ({len(not_found)}): {', '.join(not_found[:10])}{'…' if len(not_found) > 10 else ''}"
-            )
-        if errors:
-            msg_parts.append(
-                f"Errors: {'; '.join(errors[:5])}{'…' if len(errors) > 5 else ''}"
-            )
-        if not_found or errors:
-            self.message_user(request, " ".join(msg_parts), messages.WARNING)
-        else:
-            self.message_user(request, msg_parts[0], messages.SUCCESS)
+        bulk_update_community_status.delay(content, reason, request.user.id)
+        self.message_user(
+            request,
+            "Bulk update started. Processing runs in the background; Discord role updates may take a few minutes. Check logs for applied/not_found/errors.",
+            messages.SUCCESS,
+        )
         return render(
             request,
             "admin/groups/usercommunitystatus/bulk_upload.html",
-            _bulk_upload_context(
-                self,
-                "Bulk update community status",
-                summary={
-                    "applied": applied,
-                    "not_found": not_found,
-                    "errors": errors,
-                },
-            ),
+            _bulk_upload_context(self, "Bulk update community status"),
         )
 
     def save_model(self, request, obj, form, change):

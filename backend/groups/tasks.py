@@ -1,3 +1,5 @@
+import csv
+import io
 import logging
 
 from django.contrib.auth.models import User
@@ -9,6 +11,7 @@ from eveonline.helpers.characters import (
 )
 from eveonline.models import EvePlayer
 
+from .helpers import process_bulk_community_status_row
 from .models import (
     AffiliationType,
     EveCorporationGroup,
@@ -21,6 +24,53 @@ from .models import (
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
+
+
+@app.task
+def bulk_update_community_status(
+    csv_content: str, default_reason: str, changed_by_user_id: int
+):
+    """
+    Process a bulk community status CSV in the background (updates status + Discord roles).
+    csv_content: UTF-8 CSV with username, community_status, optional reason.
+    default_reason: applied when row has no reason.
+    changed_by_user_id: User pk for history.changed_by.
+    """
+    reader = csv.DictReader(io.StringIO(csv_content))
+    if (
+        not reader.fieldnames
+        or "username" not in reader.fieldnames
+        or "community_status" not in reader.fieldnames
+    ):
+        logger.warning("bulk_update_community_status: invalid CSV columns")
+        return
+    applied = 0
+    not_found = []
+    errors = []
+    for i, row in enumerate(reader, start=2):
+        did_apply, not_found_name, error_msg = (
+            process_bulk_community_status_row(
+                row, i, default_reason, changed_by_user_id
+            )
+        )
+        if did_apply:
+            applied += 1
+        elif not_found_name:
+            not_found.append(not_found_name)
+        elif error_msg:
+            errors.append(error_msg)
+    logger.info(
+        "bulk_update_community_status: applied=%s not_found=%s errors=%s",
+        applied,
+        len(not_found),
+        len(errors),
+    )
+    if not_found:
+        logger.info(
+            "bulk_update_community_status not_found: %s", not_found[:20]
+        )
+    if errors:
+        logger.warning("bulk_update_community_status errors: %s", errors[:10])
 
 
 @app.task

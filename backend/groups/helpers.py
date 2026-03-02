@@ -9,7 +9,10 @@ from .models import (
     Team,
     UserAffiliation,
     UserCommunityStatus,
+    UserCommunityStatusHistory,
 )
+
+VALID_STATUSES = {"active", "trial", "on_leave"}
 
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
@@ -88,6 +91,49 @@ def _trial_and_on_leave_groups():
     trial_group, _ = AuthGroup.objects.get_or_create(name="Trial")
     on_leave_group, _ = AuthGroup.objects.get_or_create(name="On Leave")
     return trial_group, on_leave_group
+
+
+def process_bulk_community_status_row(
+    row, row_num, default_reason, changed_by_user_id=None
+):
+    """
+    Process one CSV row for bulk community status update.
+    Returns (applied, not_found_name, error_msg).
+    changed_by_user_id: optional User pk for history.changed_by.
+    """
+    username = (row.get("username") or "").strip()
+    status = (row.get("community_status") or "").strip().lower()
+    row_reason = (row.get("reason") or default_reason).strip()
+    if not username:
+        return (False, None, None)
+    if status not in VALID_STATUSES:
+        return (
+            False,
+            None,
+            f"Row {row_num}: invalid status '{status}' for {username}",
+        )
+    user = User.objects.filter(username=username).first()
+    if not user:
+        return (False, username, None)
+    ucs, created = UserCommunityStatus.objects.get_or_create(
+        user=user, defaults={"status": status}
+    )
+    if not created and ucs.status != status:
+        ucs.status = status
+        ucs.save()
+    latest = (
+        UserCommunityStatusHistory.objects.filter(user=user)
+        .order_by("-changed_at")
+        .first()
+    )
+    if latest and changed_by_user_id is not None:
+        changed_by = User.objects.filter(pk=changed_by_user_id).first()
+        if changed_by:
+            latest.changed_by = changed_by
+            latest.reason = row_reason or "bulk upload"
+            latest.save(update_fields=["changed_by", "reason"])
+    sync_user_community_groups(user)
+    return (True, None, None)
 
 
 def sync_user_community_groups(user: User) -> None:
