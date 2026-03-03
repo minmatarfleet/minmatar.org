@@ -51,7 +51,7 @@ def sync_alliance_corporations():
     return total_created
 
 
-@app.task(rate_limit="1/m")
+@app.task(rate_limit="10/m")
 def update_corporation(corporation_id):
     """Update a corporation's public info and, when a director has scope, members/roles, contracts, industry jobs."""
     corporation = EveCorporation.objects.filter(

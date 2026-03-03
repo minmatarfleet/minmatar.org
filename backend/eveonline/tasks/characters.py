@@ -29,7 +29,7 @@ SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
 SCOPE_BLUEPRINTS = ["esi-characters.read_blueprints.v1"]
 
 
-@app.task(rate_limit="1/m")
+@app.task(rate_limit="5/m")
 def update_character(eve_character_id):
     """Update a character's assets, skills, killmails, contracts, and industry jobs."""
     countdown = get_esi_downtime_countdown()

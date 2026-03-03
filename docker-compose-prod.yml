@@ -55,7 +55,7 @@ services:
         command: celery -A app worker -l info -Q eveonline
         deploy:
             mode: replicated
-            replicas: 2
+            replicas: 6
         depends_on:
             - app
 
