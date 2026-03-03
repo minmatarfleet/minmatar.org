@@ -1,0 +1,17 @@
+---
+interface Props {
+    text:   string;
+}
+
+const {
+    text
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline class="[ w-full ]">
+    <hr class="[ border grow ]" />
+    <small>{text}</small>
+    <hr class="[ border grow ]" />
+</FlexInline>

@@ -1,0 +1,59 @@
+---
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    label:              string;
+    color?:             ButtonColors;
+    size?:              ButtonSizes;
+    narrow?:            boolean;
+    centered?:          boolean;
+    off_disable?:       boolean;
+}
+
+const {
+    label,
+    color = 'fleet-red',
+    size = 'lg',
+    narrow = false,
+    centered = true,
+    off_disable = false,
+} = Astro.props;
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<div
+    class="[ confirm-button ]"
+    x-data={`{
+        TIMEOUT: 5000,
+        timer: null,
+        confirm: false,
+        activate_confirm() {
+            this.confirm = true
+            this.timer = setTimeout(() => { this.confirm = false }, this.TIMEOUT)
+        },
+        confirmed() {
+            clearTimeout(this.timer)
+        }
+    }`}
+>
+    <Button
+        color={color}
+        size={size}
+        narrow={narrow}
+        centered={centered}
+        off_disable={off_disable}
+        x-show="!confirm"
+        x-on:click="activate_confirm()"
+    >
+        {label}
+    </Button>
+
+    <div
+        x-show="confirm"
+        style="display: none"
+        x-on:click="confirmed()"
+    >
+        <slot />
+    </div>
+</div>

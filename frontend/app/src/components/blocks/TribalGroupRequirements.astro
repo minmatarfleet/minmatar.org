@@ -1,0 +1,61 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeRequirement } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    requirement:    TribeRequirement;
+    init_tooltips:  boolean;
+}
+
+const {
+    requirement,
+    init_tooltips,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import SkillItem from '@components/blocks/SkillItem.astro';
+import TextSeparator from '@components/blocks/TextSeparator.astro';
+---
+
+<Flexblock>
+    {requirement?.asset_types.length > 0 &&
+        <h4>{t('any_following_hull')}</h4>
+
+        <FlexInline gap='var(--space-3xs)'>
+            {requirement.asset_types.map(asset =>
+                <div
+                    data-tippy-content={asset.type_name}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
+                    <ItemPicture
+                        item_id={asset.type_id}
+                        item_name={asset.type_name}
+                    />
+                </div>
+            )}
+        </FlexInline>
+    }
+    {requirement?.asset_types.length > 0 && requirement?.qualifying_skills.length > 0 &&
+        <TextSeparator text={t('and')} />
+    }
+    {requirement?.qualifying_skills.length > 0 &&
+        <h4>{t('all_following_skills')}</h4>
+
+        <Flexblock gap='var(--space-3xs)'>
+            {requirement.qualifying_skills.map(skill =>
+                <SkillItem
+                    current_skill_level={skill.minimum_level + 1}
+                    skill={{
+                        skill_name: skill.skill_name,
+                        skill_level: skill.minimum_level
+                    }}
+                />
+            )}
+        </Flexblock>
+    }
+</Flexblock>

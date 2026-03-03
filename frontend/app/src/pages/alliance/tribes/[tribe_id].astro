@@ -6,950 +6,144 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found, HTTP_500_Server_Error } from '@helpers/http_responses'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import type { Tribe, TribeGroup, TribeMembership, TribeGroupOutputSummary, Character } from '@dtypes/api.minmatar.org'
+import type {
+    Tribe,
+    TribeGroup,
+    TribeMembership,
+    SummaryCharacter
+} from '@dtypes/api.minmatar.org'
 import {
     get_tribe,
     get_tribe_groups,
     get_memberships,
-    get_tribe_output,
 } from '@helpers/api.minmatar.org/tribes'
-import { get_characters } from '@helpers/api.minmatar.org/characters'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 const tribe_id = parseInt(Astro.params.tribe_id as string)
 if (isNaN(tribe_id)) return HTTP_404_Not_Found()
 
 let tribe: Tribe | null = null
 let tribe_groups: TribeGroup[] = []
-// membership_by_group: group_id → TribeMembership | null
 const membership_by_group = new Map<number, TribeMembership | null>()
-// output_by_group: group_id → TribeGroupOutputSummary
-const output_by_group = new Map<number, TribeGroupOutputSummary>()
+let user_characters: SummaryCharacter[] = []
+let get_tribe_error: string | null = null
 
 try {
     tribe = await get_tribe(tribe_id)
-} catch (error) {
-    return HTTP_500_Server_Error()
-}
-
-try {
     tribe_groups = await get_tribe_groups(tribe_id)
-} catch {
-    tribe_groups = []
-}
 
-try {
-    const output_list = await get_tribe_output(tribe_id)
-    for (const summary of output_list)
-        output_by_group.set(summary.tribe_group_id, summary)
-} catch {
-    // output is optional — don't block the page
-}
-
-let user_characters: Character[] = []
-
-if (auth_token && user) {
-    for (const group of tribe_groups) {
-        try {
+    if (auth_token && user) {
+        for (const group of tribe_groups) {
             const memberships = await get_memberships(auth_token, tribe_id, group.id)
-            // Find the most recent membership for this user
             const mine = memberships.find(m => m.user_id === user.user_id) ?? null
             membership_by_group.set(group.id, mine)
-        } catch {
-            membership_by_group.set(group.id, null)
         }
+        
+        const summary = await get_characters_summary_sorted(auth_token)
+        user_characters = summary.characters ?? []
     }
-    try {
-        user_characters = await get_characters(auth_token)
-    } catch {
-        user_characters = []
-    }
+} catch (error) {
+    get_tribe_error = prod_error_messages() ? t('fetch_tribe_error') : error.message
 }
 
-import { marked } from 'marked'
-import { renderer } from '@helpers/marked'
 import { strip_markdown } from '@helpers/string'
 
-import Viewport from '@layouts/Viewport.astro'
-import PageLanding from '@components/page/PageLanding.astro'
-import TextBox from '@components/layout/TextBox.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
-import Tag from '@components/blocks/Tag.astro'
-import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+const TRIBE_PARTIAL_URL = translatePath(`/partials/tribe_component?tribe_id=${tribe_id}`)
+
+const count_text = t(tribe_groups.length != 1 ? 'tribes_plural' : 'tribes_singular').replace('{count}', String(tribe_groups.length))
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import TribeTiles from '@components/blocks/TribeTiles.astro';
+import Button from '@components/blocks/Button.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro'
 
 const page_title = tribe?.name ?? ''
 const page_description = tribe?.description ?? ''
-
-function asset_display(req: TribeGroup['requirements'][number]): string {
-    if (req.asset_types.length === 0) return '—'
-    const allDefault = req.asset_types.every(at => at.minimum_count === 1 && !at.location_id)
-    if (allDefault) {
-        const names = req.asset_types.map(at => at.type_name || String(at.type_id))
-        return names.length === 1 ? names[0] : `Any of: ${names.join(', ')}`
-    }
-    return req.asset_types.map(at => {
-        const name = at.type_name || String(at.type_id)
-        const loc  = at.location_id ? ` @ ${at.location_id}` : ''
-        const qty  = at.minimum_count > 1 ? `≥${at.minimum_count}× ` : ''
-        return `${qty}${name}${loc}`
-    }).join(' / ')
-}
-
-const cover_image = tribe?.banner_url ?? "/images/groups-cover.jpg"
+const meta_description = await strip_markdown(page_description)
 ---
 
 <Viewport
     title={page_title}
-    meta_description={await strip_markdown(page_description)}
+    meta_description={meta_description}
     components={{
         alert_dialog: true,
         confirm_dialog: true,
+        modal: true,
     }}
 >
-    <PageLanding
-        wide={true}
+    <PageWide
         cover={{
-            image: cover_image,
-            image_990: cover_image,
-            scrollable: true,
+            image: "/images/groups-cover.jpg",
+            image_990: "/images/groups-cover.jpg",
             overlay: true,
+            scrollable: true,
         }}
+        wide={true}
+        x-data={`{
+            count_text: '${count_text}',
+        }`}
     >
-        <Flexblock gap="var(--space-2xl)">
-
-            <!-- Tribe header -->
-            <FlexInline class="[ !items-start ]" justification="space-between">
-                <FlexInline gap="var(--space-m)">
-                    {tribe?.image_url && (
-                        <picture class="[ tribe-logo ]">
-                            <img
-                                loading="lazy"
-                                src={tribe.image_url}
-                                width="96"
-                                height="96"
-                                alt={`${tribe.name} logo`}
-                                onerror={`this.onerror=null;this.src='/images/icons/48px-Grouplist.png';this.height=48;this.width=48;`}
-                            />
-                        </picture>
-                    )}
-                    <TextBox>
-                        <h1>{tribe?.name}</h1>
-                        {tribe?.chief && (
-                            <div class="[ tribe-chief ]">
-                                <CharacterPicture
-                                    character_id={tribe.chief.character_id}
-                                    character_name={tribe.chief.character_name}
-                                    size={32}
-                                    icon_quality={32}
-                                    tooltip={tribe.chief.character_name}
-                                />
-                                <span class="[ tribe-chief__name ]">{tribe.chief.character_name}</span>
-                                <span class="[ tribe-chief__role ]">{t('tribes.detail.role_chief')}</span>
-                            </div>
-                        )}
-                    </TextBox>
-                </FlexInline>
-                <FlexInline class="[ !items-start ]">
-                    <Button href={translatePath('/alliance/tribes/list')}>
-                        {t('back_to_tribes')}
-                    </Button>
-                </FlexInline>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock id="header-oob" gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                {tribe?.chief &&
+                    <PilotBadge
+                        character_id={tribe.chief.character_id}
+                        character_name={tribe.chief.character_name}
+                        size={32}
+                        centered={true}
+                    >
+                        <small>{t('tribe_chief')}</small>
+                    </PilotBadge>
+                }
+            </Flexblock>
+            <FlexInline>
+                <Button href={translatePath('/alliance/tribes/')}>
+                    {t('back_to_tribes')}
+                </Button>
             </FlexInline>
+        </FlexInline>
 
+        <Flexblock gap='var(--space-2xl)'>
             <TextBox>
-                <Flexblock gap="var(--space-xl)">
-                    {tribe?.description && (
-                        <p class="[ excerpt ]">{tribe.description}</p>
-                    )}
-
-                    {tribe?.content && (
-                        <div
-                            class="[ prose ]"
-                            set:html={marked.parse(tribe.content as string, { renderer })}
-                            x-data={`{
-                                init_zoom() {
-                                    mediumZoom('img[data-zoomable]', {
-                                        background: 'var(--solid-transparency-background)',
-                                        scrollOffset: 0,
-                                        margin: 24,
-                                        metaClick: false,
-                                    })
-                                }
-                            }`}
-                            x-init="init_zoom()"
-                        />
-                    )}
-                </Flexblock>
+                <p id="excerpt-oob" class="[ excerpt ]">{page_description}</p>
             </TextBox>
 
-            <!-- Groups section -->
-            {tribe_groups.length > 0 && (
-                <Flexblock gap="var(--space-l)">
-                    <h2 class="[ groups-section-title ]">{t('tribes.detail.groups_section')}</h2>
-
-                    <div class="[ tribe-groups-grid ]">
-                        {tribe_groups.map(group => {
-                            const membership = membership_by_group.get(group.id) ?? null
-                            const is_approved = membership?.status === 'approved'
-                            const is_pending  = membership?.status === 'pending'
-                            const output      = output_by_group.get(group.id) ?? null
-                            const output_entries = output ? Object.entries(output.totals) : []
-
-                            return (
-                                <div class={`[ tribe-group-card ]${is_approved ? ' tribe-group-card--member' : ''}`}>
-                                    <!-- Group header -->
-                                    <div class="[ tribe-group-card__header ]">
-                                        <FlexInline justification="space-between" class="[ !items-start ]">
-                                            <h3 class="[ tribe-group-card__name ]">{group.name}</h3>
-                                            <span class="[ tribe-group-meta ]">
-                                                <strong>{group.member_count}</strong> {t('tribes.detail.member_count')}
-                                            </span>
-                                        </FlexInline>
-                                        {group.description && (
-                                            <p class="[ tribe-group-card__description ]">{group.description}</p>
-                                        )}
-                                    </div>
-
-                                    <!-- Ship renders -->
-                                    {group.ship_type_ids.length > 0 && (
-                                        <div class="[ tribe-group-card__ships ]">
-                                            {group.ship_type_ids.map(type_id => (
-                                                <img
-                                                    src={`https://images.evetech.net/types/${type_id}/render?size=64`}
-                                                    alt={`Ship ${type_id}`}
-                                                    class="[ tribe-group-ship-render ]"
-                                                    loading="lazy"
-                                                    width="64"
-                                                    height="64"
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <!-- Requirements -->
-                                    <div class="[ tribe-group-card__requirements ]">
-                                        <p class="[ tribe-group-card__req-label ]">{t('tribes.detail.requirements')}</p>
-                                        {group.requirements.length > 0 ? (
-                                            <ul class="[ tribe-group-card__req-list ]">
-                                                {group.requirements.map((req, req_idx) => (
-                                                    <li class="[ tribe-group-card__req-item tribe-group-card__req-item--compound ]">
-                                                        {req_idx > 0 && (
-                                                            <span class="[ req-or-divider ]">OR</span>
-                                                        )}
-                                                        {req.qualifying_skills.length > 0 && (
-                                                            <div class="[ req-skill-block ]">
-                                                                <div class="[ req-skill-header ]">
-                                                                    <span class="[ req-type-badge ]">{t('tribes.detail.requirement_skill')}</span>
-                                                                    <span class="[ req-all-note ]">all required</span>
-                                                                </div>
-                                                                <ul class="[ req-skill-list ]">
-                                                                    {req.qualifying_skills.map(s => (
-                                                                        <li class="[ req-skill-row ]">
-                                                                            <span class="[ req-skill-name ]">{s.skill_name || s.skill_type_id}</span>
-                                                                            <span class="[ req-skill-dots ]" aria-label={`Level ${s.minimum_level}`}>
-                                                                                {[1,2,3,4,5].map(lvl => (
-                                                                                    <span class={`dot ${lvl <= s.minimum_level ? 'dot--on' : 'dot--off'}`} />
-                                                                                ))}
-                                                                            </span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )}
-                                                        {req.asset_types.length > 0 && (
-                                                            <div class="[ req-asset-block ]">
-                                                                <span class="[ req-type-badge ]">{t('tribes.detail.requirement_asset')}</span>
-                                                                <span class="[ req-detail ]">{asset_display(req)}</span>
-                                                            </div>
-                                                        )}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p class="[ tribe-group-card__no-req ]">{t('tribes.detail.no_requirements')}</p>
-                                        )}
-                                    </div>
-
-                                    <!-- Activity output (per group) -->
-                                    {output_entries.length > 0 && (
-                                        <div class="[ tribe-group-card__activity ]">
-                                            <p class="[ tribe-group-card__req-label ]">{t('tribes.detail.activity')}</p>
-                                            <ul class="[ tribe-group-card__activity-list ]">
-                                                {output_entries.map(([label, value]) => (
-                                                    <li class="[ tribe-group-card__activity-item ]">
-                                                        <span class="[ activity-label ]">{label}</span>
-                                                        <span class="[ activity-value ]">{value.toLocaleString()}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    <!-- Group leadership -->
-                                    {(group.chief || group.elders.length > 0) && (
-                                        <div class="[ tribe-group-card__leadership ]">
-                                            <p class="[ tribe-group-card__req-label ]">{t('tribes.detail.leadership')}</p>
-                                            <div class="[ tribe-group-leadership-list ]">
-                                                {group.chief && (
-                                                    <div class="[ tribe-group-leader ]">
-                                                        <CharacterPicture
-                                                            character_id={group.chief.character_id}
-                                                            character_name={group.chief.character_name}
-                                                            size={32}
-                                                            icon_quality={32}
-                                                            tooltip={group.chief.character_name}
-                                                        />
-                                                        <div class="[ tribe-group-leader__info ]">
-                                                            <span class="[ tribe-group-leader__name ]">{group.chief.character_name}</span>
-                                                            <span class="[ tribe-group-leader__role ]">{t('tribes.detail.role_chief')}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {group.elders.map(elder => (
-                                                    <div class="[ tribe-group-leader ]">
-                                                        <CharacterPicture
-                                                            character_id={elder.character_id}
-                                                            character_name={elder.character_name}
-                                                            size={32}
-                                                            icon_quality={32}
-                                                            tooltip={elder.character_name}
-                                                        />
-                                                        <div class="[ tribe-group-leader__info ]">
-                                                            <span class="[ tribe-group-leader__name ]">{elder.character_name}</span>
-                                                            <span class="[ tribe-group-leader__role ]">{t('tribes.detail.role_elder')}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <!-- Membership action -->
-                                    <div class="[ tribe-group-card__action ]">
-                                        {!user && (
-                                            <Button
-                                                href={translatePath('/redirects/auth_init')}
-                                                size="sm"
-                                                color="green"
-                                            >
-                                                {t('tribes.detail.login_to_apply')}
-                                            </Button>
-                                        )}
-                                        {user && is_approved && (
-                                            <Tag
-                                                color="alliance-blue"
-                                                text={t('tribes.detail.member')}
-                                            />
-                                        )}
-                                        {user && is_pending && membership && (
-                                            <div
-                                                x-data={`{
-                                                    withdrawn: false,
-                                                    loading: false,
-                                                    error: null,
-                                                    async withdraw() {
-                                                        this.loading = true
-                                                        this.error = null
-                                                        try {
-                                                            const res = await fetch(
-                                                                '${`/api/tribes/${tribe_id}/groups/${group.id}/memberships?membership_id=${membership.id}`}',
-                                                                {
-                                                                    method: 'DELETE',
-                                                                    headers: {
-                                                                        'Content-Type': 'application/json',
-                                                                        'Authorization': 'Bearer ${auth_token}'
-                                                                    }
-                                                                }
-                                                            )
-                                                            if (res.ok) {
-                                                                this.withdrawn = true
-                                                            } else {
-                                                                const d = await res.json()
-                                                                this.error = d.detail ?? 'Error withdrawing'
-                                                            }
-                                                        } catch(e) {
-                                                            this.error = e.message
-                                                        } finally {
-                                                            this.loading = false
-                                                        }
-                                                    }
-                                                }`}
-                                            >
-                                                <template x-if="!withdrawn">
-                                                    <div class="[ tribe-pending-wrapper ]">
-                                                        <Tag
-                                                            color="alliance-blue"
-                                                            text={t('tribes.detail.pending')}
-                                                        />
-                                                        <button
-                                                            class="[ tribe-withdraw-btn ]"
-                                                            x-bind:disabled="loading"
-                                                            x-on:click="withdraw()"
-                                                            type="button"
-                                                        >
-                                                            <span x-show="!loading">{t('tribes.detail.withdraw')}</span>
-                                                            <span x-show="loading" x-cloak>…</span>
-                                                        </button>
-                                                        <template x-if="error">
-                                                            <p class="[ apply-error ]" x-text="error"></p>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                                <template x-if="withdrawn">
-                                                    <p class="[ tribe-withdrawn ]">{t('tribes.detail.withdrawn')}</p>
-                                                </template>
-                                            </div>
-                                        )}
-                                        {user && !is_approved && !is_pending && (
-                                            <div
-                                                x-data={`{
-                                                    chars: ${JSON.stringify(user_characters.map(c => ({ id: c.character_id, name: c.character_name })))},
-                                                    selected: [],
-                                                    loading: false,
-                                                    applied: false,
-                                                    error: null,
-                                                    async apply() {
-                                                        this.loading = true
-                                                        this.error = null
-                                                        try {
-                                                            const res = await fetch(
-                                                                '${`/api/tribes/${tribe_id}/groups/${group.id}/memberships`}',
-                                                                {
-                                                                    method: 'POST',
-                                                                    headers: {
-                                                                        'Content-Type': 'application/json',
-                                                                        'Authorization': 'Bearer ${auth_token}'
-                                                                    },
-                                                                    body: JSON.stringify({ character_ids: this.selected })
-                                                                }
-                                                            )
-                                                            if (res.ok) {
-                                                                this.applied = true
-                                                            } else {
-                                                                const data = await res.json()
-                                                                const msg = data.detail ?? 'Error applying'
-                                                                if (msg.toLowerCase().includes('pending')) {
-                                                                    this.applied = true
-                                                                } else {
-                                                                    this.error = msg
-                                                                }
-                                                            }
-                                                        } catch(e) {
-                                                            this.error = e.message
-                                                        } finally {
-                                                            this.loading = false
-                                                        }
-                                                    }
-                                                }`}
-                                            >
-                                                <template x-if="!applied && !error">
-                                                    <div class="[ tribe-apply-wrapper ]">
-                                                        <template x-if="chars.length > 0">
-                                                            <div class="[ tribe-apply-chars ]">
-                                                                <p class="[ tribe-apply-chars__label ]">{t('tribes.detail.select_pilots')}</p>
-                                                                <template x-for="c in chars" :key="c.id">
-                                                                    <label class="[ tribe-apply-char ]">
-                                                                        <input type="checkbox" :value="c.id" x-model="selected" />
-                                                                        <img
-                                                                            :src="`https://images.evetech.net/characters/${c.id}/portrait?size=32`"
-                                                                            class="[ tribe-apply-char__portrait ]"
-                                                                            width="32"
-                                                                            height="32"
-                                                                            alt=""
-                                                                        />
-                                                                        <span class="[ tribe-apply-char__name ]" x-text="c.name"></span>
-                                                                    </label>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                        <button
-                                                            class="[ btn btn--sm btn--green ]"
-                                                            x-bind:disabled="loading"
-                                                            x-on:click="apply()"
-                                                            type="button"
-                                                        >
-                                                            <span x-show="!loading">{t('tribes.detail.apply')}</span>
-                                                            <span x-show="loading" x-cloak>…</span>
-                                                        </button>
-                                                    </div>
-                                                </template>
-                                                <template x-if="applied">
-                                                    <Tag
-                                                        color="alliance-blue"
-                                                        text={t('tribes.detail.pending')}
-                                                    />
-                                                </template>
-                                                <template x-if="error">
-                                                    <p class="[ apply-error ]" x-text="error"></p>
-                                                </template>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </Flexblock>
-            )}
-
-        </Flexblock>
-    </PageLanding>
-</Viewport>
-
-<style lang="scss">
-    .excerpt {
-        font-size: var(--step-1);
-    }
-
-    .tribe-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        aspect-ratio: 1 / 1;
-        width: 96px;
-        flex-shrink: 0;
-    }
-
-    .groups-section-title {
-        font-size: var(--step-2);
-        color: var(--highlight, #c8a951);
-    }
-
-    .tribe-groups-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-        gap: var(--space-m);
-        align-items: start;
-    }
-
-    .tribe-group-card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius, 4px);
-        background: var(--surface-1, hsl(0 0% 8%));
-
-        &--member {
-            border-color: var(--fleet-yellow, #f0d060);
-        }
-    }
-
-    .tribe-group-card__header {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-    }
-
-    .tribe-group-card__name {
-        font-size: var(--step-1);
-        font-weight: 600;
-        margin: 0;
-        color: var(--highlight, #c8a951);
-    }
-
-    .tribe-group-meta {
-        font-size: var(--step--2);
-        color: var(--foreground-2, hsl(0 0% 65%));
-        white-space: nowrap;
-
-        strong {
-            color: var(--foreground, white);
-            font-size: var(--step-0);
-        }
-    }
-
-    .tribe-group-card__description {
-        font-size: var(--step--1);
-        color: var(--foreground-2, hsl(0 0% 65%));
-        line-height: 1.5;
-        margin: 0;
-    }
-
-    .tribe-group-card__requirements {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        padding-top: var(--space-xs);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .tribe-group-card__req-label {
-        font-size: var(--step--2);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--foreground-2, hsl(0 0% 65%));
-        margin: 0;
-        font-weight: 600;
-    }
-
-    .tribe-group-card__no-req {
-        font-size: var(--step--1);
-        color: var(--foreground-2, hsl(0 0% 65%));
-        margin: 0;
-        font-style: italic;
-    }
-
-    .tribe-group-card__req-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-    }
-
-    .tribe-group-card__req-item {
-        display: flex;
-        align-items: baseline;
-        gap: var(--space-2xs);
-        font-size: var(--step--1);
-    }
-
-    .req-type-badge {
-        font-size: var(--step--2);
-        padding: 1px 6px;
-        border-radius: 3px;
-        background: color-mix(in srgb, var(--highlight, #c8a951) 15%, transparent);
-        color: var(--highlight, #c8a951);
-        border: 1px solid color-mix(in srgb, var(--highlight, #c8a951) 30%, transparent);
-        white-space: nowrap;
-        flex-shrink: 0;
-        font-weight: 600;
-    }
-
-    .req-detail {
-        color: var(--foreground, white);
-    }
-
-    .tribe-group-card__ships {
-        display: flex;
-        gap: var(--space-3xs);
-        flex-wrap: wrap;
-        padding-bottom: var(--space-xs);
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .tribe-group-ship-render {
-        width: 64px;
-        height: 64px;
-        border-radius: 3px;
-        background: hsl(0 0% 4%);
-        object-fit: cover;
-    }
-
-    .tribe-group-card__req-item--skill {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-        align-items: start;
-    }
-
-    .req-skill-header {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
-    .req-all-note {
-        font-size: var(--step--2);
-        color: var(--foreground-2, hsl(0 0% 55%));
-        font-style: italic;
-    }
-
-    .req-skill-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        padding-left: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .req-skill-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-s);
-        font-size: var(--step--1);
-    }
-
-    .req-skill-name {
-        color: var(--foreground, white);
-    }
-
-    .req-skill-dots {
-        display: flex;
-        gap: 3px;
-        flex-shrink: 0;
-    }
-
-    .dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        border: 1px solid color-mix(in srgb, var(--highlight, #c8a951) 50%, transparent);
-
-        &.dot--on {
-            background: var(--highlight, #c8a951);
-            border-color: var(--highlight, #c8a951);
-        }
-
-        &.dot--off {
-            background: transparent;
-        }
-    }
-
-    .tribe-chief {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        margin-top: var(--space-2xs);
-
-        picture {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-    }
-
-    .tribe-chief__name {
-        font-size: var(--step-0);
-        color: var(--foreground, white);
-        font-weight: 600;
-    }
-
-    .tribe-chief__role {
-        font-size: var(--step--2);
-        color: var(--highlight, #c8a951);
-        padding: 1px 5px;
-        border-radius: 3px;
-        background: color-mix(in srgb, var(--highlight, #c8a951) 12%, transparent);
-        border: 1px solid color-mix(in srgb, var(--highlight, #c8a951) 25%, transparent);
-        font-weight: 600;
-    }
-
-    .tribe-group-card__leadership {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        padding-top: var(--space-xs);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .tribe-group-leadership-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-    }
-
-    .tribe-group-leader {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-
-        picture {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-    }
-
-    .tribe-group-leader__info {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
-    .tribe-group-leader__name {
-        font-size: var(--step--1);
-        color: var(--foreground, white);
-    }
-
-    .tribe-group-leader__role {
-        font-size: var(--step--2);
-        color: var(--foreground-2, hsl(0 0% 55%));
-        font-style: italic;
-    }
-
-    .tribe-apply-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-    }
-
-    .tribe-apply-chars {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-    }
-
-    .tribe-apply-chars__label {
-        font-size: var(--step--2);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--foreground-2, hsl(0 0% 65%));
-        margin: 0;
-        font-weight: 600;
-    }
-
-    .tribe-apply-char {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        cursor: pointer;
-        font-size: var(--step--1);
-        color: var(--foreground, white);
-        user-select: none;
-
-        input[type="checkbox"] {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-            accent-color: var(--highlight, #c8a951);
-            cursor: pointer;
-        }
-    }
-
-    .tribe-apply-char__portrait {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .tribe-pending-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-xs);
-    }
-
-    .tribe-withdraw-btn {
-        background: none;
-        border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-        border-radius: 4px;
-        color: var(--foreground-2, hsl(0 0% 65%));
-        cursor: pointer;
-        font-size: var(--step--2);
-        padding: 2px 8px;
-        transition: color 0.15s, border-color 0.15s;
-
-        &:hover:not(:disabled) {
-            color: var(--fleet-red, #e05050);
-            border-color: var(--fleet-red, #e05050);
-        }
-
-        &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-    }
-
-    .tribe-withdrawn {
-        font-size: var(--step--1);
-        color: var(--foreground-2, hsl(0 0% 65%));
-        font-style: italic;
-        margin: 0;
-    }
-
-    .apply-error {
-        font-size: var(--step--1);
-        color: var(--fleet-red, #e05050);
-        margin: 0;
-    }
-
-    .tribe-group-card__activity {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        padding-top: var(--space-xs);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .tribe-group-card__activity-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-    }
-
-    .tribe-group-card__activity-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: var(--space-2xs);
-        font-size: var(--step--1);
-    }
-
-    .activity-label {
-        color: var(--foreground-2, hsl(0 0% 65%));
-    }
-
-    .activity-value {
-        color: var(--foreground, white);
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .tribe-group-card__action {
-        padding-top: var(--space-xs);
-        border-top: 1px solid var(--border-color);
-    }
-
-    /* Inline button style matching existing btn classes */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-3xs);
-        padding-block: 0.4em;
-        padding-inline: 1em;
-        border: 1px solid transparent;
-        border-radius: var(--border-radius, 4px);
-        cursor: pointer;
-        font-weight: 600;
-        font-size: var(--step--1);
-        transition: opacity 150ms;
-        text-decoration: none;
-
-        &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        &--sm {
-            font-size: var(--step--2);
-            padding-block: 0.3em;
-            padding-inline: 0.8em;
-        }
-
-        &--green {
-            background: color-mix(in srgb, var(--green, #4ade80) 20%, transparent);
-            color: var(--green, #4ade80);
-            border-color: color-mix(in srgb, var(--green, #4ade80) 40%, transparent);
-
-            &:hover:not(:disabled) {
-                background: color-mix(in srgb, var(--green, #4ade80) 30%, transparent);
+            {get_tribe_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: TRIBE_PARTIAL_URL,
+                        message: get_tribe_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <TribeTiles
+                    tribe_groups={tribe_groups}
+                    user_characters={user_characters}
+                    init_tooltips={false}
+                    is_auth={!!user}
+                    membership_by_group={membership_by_group}
+                />
             }
-        }
-    }
-
-    [x-cloak] { display: none !important; }
-</style>
+        </Flexblock>
+    </PageWide>
+</Viewport>

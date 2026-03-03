@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    TribeGroup,
+    SummaryCharacter,
+    TribeMembership,
+    TribeGroupOutputSummary,
+} from '@dtypes/api.minmatar.org'
+
+interface Props {
+    group:                  TribeGroup;
+    tribe_id:               number;
+    group_id:               number;
+    is_auth:                boolean;
+    user_characters:        SummaryCharacter[];
+    membership_by_group:    Map<number, TribeMembership | null>;
+}
+
+const {
+    group,
+    tribe_id,
+    group_id,
+    is_auth,
+    user_characters,
+    membership_by_group,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+const membership = membership_by_group.get(group.id) ?? null
+const is_approved = membership?.status === 'approved'
+const is_pending = membership?.status === 'pending'
+
+const id = `tribe-group-status-${group.tribe_id}-${group.id}`
+
+import Button from '@components/blocks/Button.astro';
+import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+---
+
+<div id={id}>
+    {
+        !is_auth ?
+            <ButtonAuth
+                color='green'
+                size='sm'
+                dialog_title={group.name}
+            >
+                {t('tribes.detail.login_to_apply')}
+            </ButtonAuth> :
+        is_auth && membership && (is_pending || is_approved) ?
+            <ButtonConfirm
+                label={is_pending ? t('tribes.detail.withdraw') : t('tribes.detail.leave')}
+            >
+                <Button
+                    hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}?${query_string({
+                        tribe_id: tribe_id,
+                        group_id: group_id,
+                        membership_id: membership.id,
+                    })}`}
+                    hx-target={`#${id}`}
+                    hx-indicator=".loader"
+                    hx-swap="outerHTML transition:true"
+                    x-on:click="$el.setAttribute('disabled','')"
+                >
+                    {t('confirm')}
+                </Button>
+            </ButtonConfirm> :
+        is_auth && !is_approved && !is_pending ?
+            <ButtonApplyTribe
+                target_id={id}
+                title={group.name}
+                tribe_id={tribe_id}
+                group_id={group_id}
+                pilots={user_characters}
+            />
+        :
+        ''
+    }
+</div>

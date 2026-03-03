@@ -15,6 +15,7 @@ interface Props {
     tooltip?:           string;
     mask?:              boolean;
     inert?:             boolean;
+    centered?:          boolean;
 }
 
 const {
@@ -28,13 +29,14 @@ const {
     tooltip,
     mask = false,
     inert = false,
+    centered = false,
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
 ---
 
 <picture
-    class={inert ? 'animated' : undefined}
+    class:list={[{ animated: inert }, { centered: centered } ]}
     data-tippy-content={tooltip ? tooltip : undefined}
     x-init={tooltip ? 'tippy($el, tippy_options)' : undefined}
 >
@@ -67,6 +69,11 @@ import { get_player_icon } from '@helpers/eve_image_server'
         filter: brightness(1);
         object-fit: cover;
         width: 100%;
+    }
+
+    picture.centered {
+        display: flex;
+        align-items: center;
     }
 
     picture:not(.animated) {
