@@ -2,6 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+const is_auth = !!user
+
 import type {
     TribeGroup,
     SummaryCharacter,
@@ -11,7 +19,6 @@ import type {
 interface Props {
     tribe_group:            TribeGroup;
     user_characters:        SummaryCharacter[];
-    is_auth:                boolean;
     membership_by_group:    Map<number, TribeMembership | null>;
     init_tooltips:          boolean;
     index?:                 number;
@@ -20,7 +27,6 @@ interface Props {
 const {
     tribe_group,
     user_characters,
-    is_auth,
     init_tooltips,
     membership_by_group,
     index,
@@ -46,12 +52,15 @@ const COVERS = {
 const id = `tribe-group-${tribe_group.tribe_id}-${tribe_group.id}`
 
 const membership = membership_by_group.get(tribe_group.id) ?? null
+const user_character_ids = membership?.approved_at && !membership.left_at
+                            ? membership?.characters.map(character => character.character_id) :
+                            []
+const leaders = [ tribe_group.chief, ...tribe_group.elders ]
+const is_leader = leaders.find(leader => user_character_ids?.includes(leader?.character_id ?? 0))
 const is_member = membership?.status === 'approved'
 const is_pending = membership?.status === 'pending'
 
 const TILE_FALLBACK = '/images/capitals-tribe-cover.webp'
-
-const start_after = typeof index === 'number' ? (index % 2 + 1) * 3000 : undefined
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -59,12 +68,13 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import TribeStatus from '@components/blocks/TribeStatus.astro';
 import Tile from '@components/blocks/Tile.astro';
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import RequirementSwiper from '@components/blocks/RequirementSwiper.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro';
 import Button from '@components/blocks/Button.astro';
 
 import MemberIcon from '@components/icons/MemberIcon.astro';
+import NotificationBadge from './NotificationBadge.astro'
 ---
 
 <Flexblock
@@ -80,7 +90,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
     >
         <Flexblock slot="subtitle" gap='var(--space-l)'>
             <FlexInline class="[ items-center! ]" gap='var(--space-3xs)'>
-                {[ tribe_group.chief, ...tribe_group.elders ].map((tribe_leader, index) =>
+                {leaders.map((tribe_leader, index) =>
                     tribe_leader &&
                         <PilotBadge
                             class="[ pr-(--space-l) ]"
@@ -137,7 +147,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                         max_width='100%'
                     >
                         <div id={`${id}-requirements-reel`} class="[ swiper ][ w-full ]">
-                            <LandingSwiper
+                            <RequirementSwiper
                                 swiper_selector={`#${id}-requirements-reel`}
                                 pagination={false}
                                 gap={60}
@@ -145,14 +155,21 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                             >
                                 {tribe_group.requirements.map((req, index) =>
                                     <div class="[ swiper-slide ]" style="margin-right: 60px" >
-                                        {tribe_group.requirements?.length > 1 && <h3 class="[ requirement-number ]">{index + 1}</h3>}
+                                        {tribe_group.requirements?.length > 1 &&
+                                            <NotificationBadge
+                                                class="[ requirement-number ]"
+                                                number={index + 1}
+                                                color='fleet-yellow'
+                                                text_color='var(--background)'
+                                            />
+                                        }
                                         <TribalGroupRequirements
                                             requirement={req}
                                             init_tooltips={init_tooltips}
                                         />
                                     </div>
                                 )}
-                            </LandingSwiper>
+                            </RequirementSwiper>
                         </div>
 
                         <div id={`${id}-requirements-reel-button-prev`} class="[ swiper-button-prev ]"></div>
@@ -164,14 +181,28 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
             }
 
             <FlexInline>
-                <TribeStatus
-                    group={tribe_group}
-                    tribe_id={tribe_group.tribe_id}
-                    group_id={tribe_group.id}
-                    user_characters={user_characters}
-                    is_auth={is_auth}
-                    membership_by_group={membership_by_group}
-                />
+                {!is_leader ?
+                    <TribeStatus
+                        group={tribe_group}
+                        tribe_id={tribe_group.tribe_id}
+                        group_id={tribe_group.id}
+                        user_characters={user_characters}
+                        is_auth={is_auth}
+                        membership_by_group={membership_by_group}
+                    />
+                    <>{is_superuser &&
+                        <Button
+                            href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
+                            color='transparent'
+                        >
+                            {t('manage')}
+                        </Button>
+                    }</>
+                    :
+                    <Button href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}>
+                        {t('manage_membership')}
+                    </Button>
+                }
             </FlexInline>
         </Flexblock>
     </Wrapper>
@@ -185,10 +216,16 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
     .swiper-button-prev,
     .swiper-button-next {
         --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: -28px;
+        --swiper-navigation-sides-offset: 0;
         --swiper-navigation-size: 22px;
+        --swiper-navigation-top-offset: -57px;
 
         opacity: 0;
+    }
+
+    .swiper-button-prev {
+        right: 30px;
+        left: auto;
     }
 
     .swiper-initialized ~ .swiper-button-prev,
@@ -208,7 +245,8 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
     }
 
     .swiper-slide {
-        width: min(100%, 350px);
+        width: 350px;
+        width: clamp(300px, 25%, 500px);
     }
 
     .requirement-number {

@@ -8,7 +8,6 @@ import type {
 interface Props {
     tribe_groups:           TribeGroup[];
     user_characters:        SummaryCharacter[];
-    is_auth:                boolean;
     membership_by_group:    Map<number, TribeMembership | null>;
     init_tooltips:          boolean;
 }
@@ -16,7 +15,6 @@ interface Props {
 const {
     tribe_groups,
     user_characters,
-    is_auth,
     membership_by_group,
     init_tooltips,
 } = Astro.props
@@ -60,7 +58,6 @@ import TribeGroupTile from '@components/blocks/TribeGroupTile.astro';
                 tribe_group={tribe_group}
                 user_characters={user_characters}
                 membership_by_group={membership_by_group}
-                is_auth={is_auth}
                 init_tooltips={init_tooltips}
                 index={tribe_group.requirements.length > 1 ? requirements_index - 1 : undefined}
             />)

@@ -1,0 +1,74 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { TribeMembership } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    membership:         TribeMembership;
+    init_tooltips:      boolean;
+}
+
+const {
+    membership,
+    init_tooltips,
+} = Astro.props
+
+const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${membership.tribe_id}&group_id=${membership.tribe_group_id}`)
+
+import { query_string } from '@helpers/string';
+
+import { format_date_short, time_diff_text } from '@helpers/date';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+<FlexInline gap='var(--space-2xs)'>
+    <Flexblock class="[ basis-[300px] ]" gap='var(--space-3xs)'>
+        <h3>{t('mempership_title').replace('{number}', String(membership.id))}</h3>
+        <small>{`${format_date_short(lang, membership.approved_at)} (${time_diff_text(lang, new Date(membership.approved_at as string), new Date())})`}</small>
+    </Flexblock>
+
+    <FlexInline
+        gap='var(--space-3xs)'
+        class="[ membership-characters ][ basis-[350px] ]"
+    >
+        {membership.characters.map(character =>
+            <div
+                data-tippy-content={character.character_name}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <CharacterPicture
+                    character_id={character.character_id}
+                    character_name={character.character_name}
+                    size={32}
+                />
+                <div class="[ sr-only ]">{character.character_name}</div>
+            </div>
+        )}
+    </FlexInline>
+    <FlexInline>
+        <ButtonConfirm
+            label={t('remove')}
+            size='sm'
+        >
+            <Button
+                size='sm'
+                hx-delete={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
+                    membership_id: membership.id,
+                })}`}
+                hx-target={`#members`}
+                hx-indicator=".loader"
+                hx-swap="outerHTML transition:true"
+                x-on:click="$el.setAttribute('disabled','')"
+            >
+                {t('confirm')}
+            </Button>
+        </ButtonConfirm>
+    </FlexInline>
+</FlexInline>

@@ -23,8 +23,6 @@ const subheader_content = await Astro.slots.render('subheader');
         init() {
             const observer = new IntersectionObserver(
                 ([entry]) => {
-                    console.log(entry.isIntersecting)
-
                     if (!entry.isIntersecting)
                         this.sticky = true
                     else

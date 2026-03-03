@@ -1,0 +1,194 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import { get_auth_url } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+
+if (isNaN(tribe_id) || isNaN(group_id))
+    return HTTP_400_Bad_Request()
+
+import type { TribeGroup, TribeMembership } from '@dtypes/api.minmatar.org'
+import {
+    get_tribe_group,
+    get_memberships,
+    approve_membership,
+    deny_membership,
+    delete_membership,
+    delete_membership_character,
+} from '@helpers/api.minmatar.org/tribes'
+import type { Alert } from '@dtypes/layout_components'
+
+let update_membership_error:string | false = false
+let remove_membership_error:string | false = false
+let alert:Alert | false = false
+let reload_page_header = true
+
+if (Astro.request.method === "POST") {
+    reload_page_header = false
+
+    const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '')
+    const status = Astro.url.searchParams.get('status')
+
+    try {
+        if (isNaN(membership_id))
+            throw new Error(t('invalid_membership_id'))
+
+        if (status === 'approve')
+            await approve_membership(auth_token as string, tribe_id, group_id, membership_id)
+        else if (status === 'deny')
+            await deny_membership(auth_token as string, tribe_id, group_id, membership_id)
+        else
+            throw new Error(t('invalid_membership_action'))
+    } catch (error) {
+        update_membership_error = prod_error_messages() ? t('update_membership_error') : error.message
+    }
+
+    if (update_membership_error) {
+        alert = {
+            title: (status === 'approve' ? t('approving_membership') : t('denying_membership')),
+            content: update_membership_error,
+        }
+    }
+}
+
+if (Astro.request.method === "DELETE") {
+    reload_page_header = false
+
+    const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '')
+
+    try {
+        if (isNaN(membership_id))
+            throw new Error(t('invalid_membership_id'));
+
+        await delete_membership(
+            auth_token as string,
+            tribe_id,
+            group_id,
+            membership_id,
+        )
+    } catch (error) {
+        remove_membership_error = prod_error_messages() ? t('remove_membership_error') : error.message
+    }
+
+    if (remove_membership_error) {
+        alert = {
+            title: t('removing_membership'),
+            content: remove_membership_error,
+        }
+    }
+}
+
+let tribe_group:TribeGroup | null = null
+let approved:TribeMembership[] = []
+let pending:TribeMembership[] = []
+let fetch_membership_error:string | false = false
+
+try {
+    tribe_group = await get_tribe_group(tribe_id, group_id)
+
+    approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'approved')
+    pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
+} catch (error) {
+    fetch_membership_error = prod_error_messages() ? t('fetch_membership_error') : error.message
+}
+
+const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Button from '@components/blocks/Button.astro';
+import Input from '@components/blocks/Input.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import MembershipRequests from '@components/blocks/MembershipRequests.astro'
+import MembershipTable from '@components/blocks/MembershipTable.astro'
+import DebugTag from '@components/blocks/DebugTag.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('tribes.groups.membership.page_title').replace('{group}', tribe_group?.name ?? '')
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_membership_error ?
+    <ErrorRefetch
+        args={{
+            partial: TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL,
+            message: fetch_membership_error,
+            delay: delay,
+        }}
+    />
+    :
+    tribe_group ?
+        <>{reload_page_header &&
+            <FlexInline id="header-oob" hx-swap-oob="true" justification='space-between' class="[ w-full ]">
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle no_link={true}>
+                        {page_title}
+                    </PageTitle>
+                    {tribe_group?.chief &&
+                        <PilotBadge
+                            character_id={tribe_group.chief.character_id}
+                            character_name={tribe_group.chief.character_name}
+                            size={32}
+                            centered={true}
+                        >
+                            <small>{t('group_chief')}</small>
+                        </PilotBadge>
+                    }
+                </Flexblock>
+                <FlexInline>
+                    <Input type="text"
+                        placeholder={t('filter')}
+                        x-model="item_name_filter"
+                        x-init="$el.focus()"
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
+                </FlexInline>
+            </FlexInline>
+
+            <FlexInline id="subheader-oob" hx-swap-oob="true">
+                <Button
+                    href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
+                    size='sm'
+                >
+                    {t('back_to_name').replace('{name}', tribe_group?.tribe_name ?? t('tribe'))}
+                </Button>
+            </FlexInline>
+        }</>
+
+        <Flexblock id="members" gap='var(--space-2xl)'>
+            {pending.length > 0 || approved.length > 0 ?
+                <MembershipRequests requests={pending} init_tooltips={true} />
+                <MembershipTable memberships={approved} init_tooltips={true} />
+                :
+                <p>{t('no_request_no_members')}</p>
+            }
+        </Flexblock>
+        :
+        <DebugTag set:html={t('no_tribe_group_unexpected_error')} />
+}

@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeMembership } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    memberships:        TribeMembership[];
+    init_tooltips:      boolean;
+}
+
+const {
+    memberships,
+    init_tooltips,
+} = Astro.props
+
+import BlockList from '@components/compositions/BlockList.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import MembershipItem from '@components/blocks/MembershipItem.astro';
+
+import MemberIcon from '@components/icons/MemberIcon.astro';
+---
+
+{memberships.length > 0 &&
+    <Flexblock gap='var(--space-l)'>
+        <FlexInline>
+            <div class="[ text-highlight h-[32px] ]">
+                <MemberIcon size={32} />
+            </div>
+            <h3 class="[ group-title ]">{t('group_membership')}</h3>
+        </FlexInline>
+        
+        <BlockList>
+            {memberships.map(membership =>
+                <div x-show="show_item($el)">
+                    <MembershipItem membership={membership} init_tooltips={init_tooltips} />
+                </div>
+            )}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </BlockList>
+    </Flexblock>
+}
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>

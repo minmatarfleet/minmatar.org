@@ -163,6 +163,53 @@ export async function leave_group(
     }
 }
 
+export async function delete_membership(
+    access_token: string,
+    tribe_id: number,
+    group_id: number,
+    membership_id: number,
+): Promise<void> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}`
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`))
+    } catch (error) {
+        throw new Error(`Error deleting membership: ${error.message}`)
+    }
+}
+
+export async function delete_membership_character(
+    access_token: string,
+    tribe_id: number,
+    group_id: number,
+    membership_id: number,
+    character_id: number,
+): Promise<void> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters/${character_id}`
+    console.log(`Requesting DELETE: ${ENDPOINT}`)
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`))
+    } catch (error) {
+        throw new Error(`Error deleting membership character: ${error.message}`)
+    }
+}
+
 export async function approve_membership(
     access_token: string,
     tribe_id: number,

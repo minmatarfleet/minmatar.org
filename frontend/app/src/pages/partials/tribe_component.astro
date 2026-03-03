@@ -78,7 +78,7 @@ const page_description = tribe?.description ?? ''
     />
     :
     <Flexblock hx-swap-oob="true" id="header-oob" gap="var(--space-3xs)">
-        <PageTitle>
+        <PageTitle no_link={true}>
             {page_title}
         </PageTitle>
         {tribe?.chief &&
@@ -99,7 +99,6 @@ const page_description = tribe?.description ?? ''
         tribe_groups={tribe_groups}
         user_characters={user_characters}
         init_tooltips={false}
-        is_auth={!!user}
         membership_by_group={membership_by_group}
     />
 }
