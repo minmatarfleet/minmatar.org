@@ -6,7 +6,6 @@ interface Props {
     initial_slide?:     number;
     align?:             'start' | 'center' | 'end';
     delay?:             number;
-    index?:             number;
 }
 
 const {
@@ -16,7 +15,6 @@ const {
     initial_slide = 0,
     align = 'start',
     delay = 0,
-    index,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -39,18 +37,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             setTimeout(() => {
                 this.swiper = new Swiper('${swiper_selector}', {
                     initialSlide: ${initial_slide},
-                    slidesPerView: 1,
-                    breakpointsBase: 'container',
-                    breakpoints: {
-                        650: {
-                            slidesPerView: 2,
-                            spaceBetween: ${gap}
-                        },
-                        1000: {
-                            slidesPerView: 3,
-                            spaceBetween: ${gap}
-                        }
-                    },
+                    slidesPerView: 'auto',
                     spaceBetween: ${gap},
                     pagination: ${pagination ? JSON.stringify({
                         clickable: true,
@@ -58,7 +45,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         el: ".swiper-pagination",
                     }) : JSON.stringify(false)},
                     loop: false,
-                    rewind: true,
                     ${delay > 0 ? `
                     autoplay: {
                         delay: ${delay},
@@ -74,7 +60,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             }, INIT_WORKAROUND_TIMER_MS)
         }
     }`}
-    @tick.window={`$event.detail === ${index} && next_slide()`}
 >
     <slot />
 </FlexInline>
