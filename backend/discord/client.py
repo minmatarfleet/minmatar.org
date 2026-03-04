@@ -225,6 +225,22 @@ class DiscordClient(DiscordBaseClient):
             json=payload,
         )
 
+    def create_dm_channel(self, discord_user_id: str) -> dict:
+        """Open (or retrieve) a DM channel with a Discord user."""
+        return self.post(
+            f"{BASE_URL}/users/@me/channels",
+            json={"recipient_id": discord_user_id},
+        ).json()
+
+    def send_dm(
+        self, discord_user_id: str, message: str = None, payload: dict = None
+    ) -> dict:
+        """Send a direct message to a Discord user by their Discord snowflake ID."""
+        channel = self.create_dm_channel(discord_user_id)
+        return self.create_message(
+            channel["id"], message=message, payload=payload
+        )
+
     def update_message(
         self, channel_id, message_id, message=None, payload=None
     ):

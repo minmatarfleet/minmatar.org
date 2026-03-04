@@ -1,11 +1,9 @@
 import logging
 
-from django.contrib.auth.models import Group
 from django.db.models import signals
 from django.dispatch import receiver
 
 from tribes.models import (
-    TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipHistory,
 )
@@ -118,43 +116,3 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
                 user,
                 tribe.group,
             )
-
-
-@receiver(
-    signals.m2m_changed,
-    sender=TribeGroup.elders.through,
-    dispatch_uid="tribe_group_elders_changed",
-)
-def tribe_group_elders_changed(
-    sender, instance, action, reverse, model, pk_set, **kwargs
-):
-    """
-    Sync TribeGroup elders to the 'Alliance Director' auth group.
-    Mirrors the behaviour of team_directors_changed in groups/signals.py.
-    """
-    alliance_director_group, _ = Group.objects.get_or_create(
-        name="Alliance Director"
-    )
-    logger.info(
-        "TribeGroup elders changed (%s), updating Alliance Director group",
-        action,
-    )
-
-    if action == "pre_add":
-        for user_id in pk_set:
-            user = model.objects.get(pk=user_id)
-            logger.info(
-                "Adding tribe elder %s to group %s",
-                user,
-                alliance_director_group,
-            )
-            user.groups.add(alliance_director_group)
-    elif action == "pre_remove":
-        for user_id in pk_set:
-            user = model.objects.get(pk=user_id)
-            logger.info(
-                "Removing tribe elder %s from group %s",
-                user,
-                alliance_director_group,
-            )
-            user.groups.remove(alliance_director_group)
