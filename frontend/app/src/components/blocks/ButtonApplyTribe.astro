@@ -63,11 +63,20 @@ import Tag from '@components/blocks/Tag.astro';
         x-on:submit="close_dialog(false)"
         x-data={`{
             characters: [],
-            character_ids: '',
+            character_ids: '[]',
+            tippy_instance: null,
             update_character_ids() {
                 this.character_ids = JSON.stringify(this.characters.map(c => parseInt(c)));
+
+                $nextTick(() => {
+                    if (this.characters.length === 0)
+                        this.tippy_instance = tippy($el.querySelector('.apply-tooltip'), tippy_options)
+                    else
+                        if (this.tippy_instance) this.tippy_instance.destroy()
+                })
             }
         }`}
+        x-init="update_character_ids()"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
@@ -107,7 +116,7 @@ import Tag from '@components/blocks/Tag.astro';
                                                     character_id={pilot.character_id}
                                                     character_name={pilot.character_name}
                                                     x-model="characters"
-                                                    x-on:change="update_character_ids"
+                                                    x-on:change="update_character_ids()"
                                                     value={pilot.character_id}
                                                 >
                                                     <Flexblock gap='var(--space-3xs)'>
@@ -135,7 +144,7 @@ import Tag from '@components/blocks/Tag.astro';
                                 )
                             })}
                         </LandingSwiper>
-                        <input type="hidden" name="character_ids" x-model="character_ids" />
+                        <input type="hidden" name="character_ids" x-model="character_ids" value="[]" />
                     </div>
 
                     <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
@@ -144,13 +153,21 @@ import Tag from '@components/blocks/Tag.astro';
             </Flexblock>
 
             <FlexInline justification='flex-end'>
-                <Button
-                    type="submit"
-                    color='green'
-                    size='sm'
+                <div
+                    class="[ apply-tooltip ]"
+                    x-bind:data-tippy-content={`character_ids === '[]' && '${t('apply_character_selection_required')}'`}
                 >
-                    {t('apply')}
-                </Button>
+                    <Button
+                        type="submit"
+                        color='green'
+                        size='sm'
+                        x-bind:disabled="character_ids === '[]'"
+                        off_disable={true}
+                        disabled
+                    >
+                        {t('apply')}
+                    </Button>
+                </div>
 
                 <Button
                     type="button"

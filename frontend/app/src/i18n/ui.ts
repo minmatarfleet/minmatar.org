@@ -1961,5 +1961,6 @@ export const ui = {
         'remove_membership_error': 'An error ocurred removing the membership.',
         'second': 'second',
         'manage': 'Manage',
+        'apply_character_selection_required': 'Select at least one character in order to apply.',
     },
 } as const;
