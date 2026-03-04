@@ -2,9 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { icons_bug } from '@helpers/env';
-import { get_random_icon } from '@helpers/bug_icons'
-
-const src = icons_bug() && Math.random() <= 0.2 ? get_random_icon() : "/images/icons/48px-Fitting.png"
+import { get_bug_icon } from '@helpers/bug_icons'
 ---
-<img class={Astro.props.class} loading="lazy" src={src} width="48" height="48" alt={t('icon.fits.alt')} />
+<img class={Astro.props.class} loading="lazy" src={get_bug_icon("/images/icons/48px-Fitting.png")} width="48" height="48" alt={t('icon.fits.alt')} />

@@ -39,6 +39,10 @@ export const icons_bug = () => {
     return import.meta.env.ICONS_BUG ?? false
 }
 
+export const icons_bug_percentage = () => {
+    return import.meta.env.ICONS_BUG_PERCENTAGE ?? 0.15
+}
+
 export const get_prod_url = () => {
     return import.meta.env.PROD_URL ?? 'https://my.minmatar.org';
 }
