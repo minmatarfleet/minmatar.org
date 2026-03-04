@@ -39,7 +39,9 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
     }
 
     .selectable-card:not(:checked) + * {
-        filter: saturate(20%);
+        *:not(:has(*)):not(.no-desaturate) {
+            filter: saturate(20%);
+        }
     }
 
     .selectable-card:focus-visible + * {
@@ -50,7 +52,9 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
 
     .selectable-card:focus-visible + *,
     .selectable-card:not(:checked) + *:hover {
-        filter: saturate(50%);
+        *:not(:has(*)):not(.no-desaturate) {
+            filter: saturate(50%);
+        }
     }
 
     small {

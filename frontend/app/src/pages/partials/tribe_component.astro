@@ -65,9 +65,9 @@ try {
                 }
             }),
         )
-        for (const [gid, list] of availableResults) {
-            available_by_group.set(gid, list)
-        }
+        
+        for (const [gid, list] of availableResults)
+            available_by_group.set(gid, list as TribeAvailableCharacter[])
     }
 } catch (error) {
     get_tribe_error = prod_error_messages() ? t('fetch_tribe_error') : error.message
