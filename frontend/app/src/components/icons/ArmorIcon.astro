@@ -1,5 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
+
+import { icons_bug } from '@helpers/env';
+import { get_random_icon } from '@helpers/bug_icons'
+
+const src = icons_bug() && Math.random() <= 0.2 ? get_random_icon() : "/images/icons/Icon_ISIS_defense_armor.png"
 ---
-<img loading="lazy" src="/images/icons/Icon_ISIS_defense_armor.png" width="30" height="30" alt={t('icon.armor.alt')} />
+<img loading="lazy" src={src} width="30" height="30" alt={t('icon.armor.alt')} />
