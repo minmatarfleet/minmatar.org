@@ -14,11 +14,6 @@ from tribes.models import (
 )
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/history"
-ROUTE_SPEC = {
-    "summary": "Status history for a tribe group membership (chief or own).",
-    "response": {200: List["MembershipHistorySchema"], 403: dict, 404: dict},
-    "auth": AuthBearer(),
-}
 
 router = Router(tags=["Tribes - Memberships"])
 
@@ -31,6 +26,13 @@ class MembershipHistorySchema(BaseModel):
     changed_at: str
     changed_by_id: Optional[int] = None
     reason: str
+
+
+ROUTE_SPEC = {
+    "summary": "Status history for a tribe group membership (chief or own).",
+    "response": {200: List[MembershipHistorySchema], 403: dict, 404: dict},
+    "auth": AuthBearer(),
+}
 
 
 def get_membership_history(
