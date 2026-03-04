@@ -15,7 +15,7 @@ import CharacterCard from '@components/blocks/CharacterCard.astro'
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
 ---
 
-<UnstyledRadioCheckButton {...attributes} class="[ selectable-card ]" type="checkbox" label={character_name}>
+<UnstyledRadioCheckButton {...attributes} class="[ selectable-character-card ]" type="checkbox" label={character_name}>
     <CharacterCard
         character_id={character_id}
         character_name={character_name}
@@ -27,7 +27,7 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
 </UnstyledRadioCheckButton>
 
 <style lang="scss" is:global>
-    .selectable-card + *:before {
+    .selectable-character-card + *:before {
         content: ' ';
         z-index: 1;
         position: absolute;
@@ -38,24 +38,28 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
         background-color: var(--fleet-yellow);
     }
 
-    .selectable-card:checked + *:before {
+    .selectable-character-card:checked + *:before {
         background-color: var(--green);
         border: solid 2px var(--fleet-yellow);
     }
 
-    .selectable-card:not(:checked) + * {
-        filter: saturate(20%);
+    .selectable-character-card:not(:checked) + * {
+        *:not(:has(*)):not(.no-desaturate) {
+            filter: saturate(20%);
+        }
     }
 
-    .selectable-card:focus-visible + * {
+    .selectable-character-card:focus-visible + * {
         picture.animated img {
             transform: scale(1.1);
         }
     }
 
-    .selectable-card:focus-visible + *,
-    .selectable-card:not(:checked) + *:hover {
-        filter: saturate(50%);
+    .selectable-character-card:focus-visible + *,
+    .selectable-character-card:not(:checked) + *:hover {
+        *:not(:has(*)):not(.no-desaturate) {
+            filter: saturate(50%);
+        }
     }
 
     small {

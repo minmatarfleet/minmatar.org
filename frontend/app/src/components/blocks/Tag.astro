@@ -15,6 +15,8 @@ const {
     ...attributes
 } = Astro.props;
 
+delete attributes.class
+
 const tag_color = `var(--${color})`;
 
 const optional_attributes = {
@@ -22,7 +24,7 @@ const optional_attributes = {
 }
 ---
 
-<span class="[ tag ][ w-fit ]" {...optional_attributes} {...attributes}>{text}</span>
+<span class:list={['tag w-fit', Astro.props.class]} {...optional_attributes} {...attributes}>{text}</span>
 
 <style lang="scss" define:vars={{ tag_color }}>
     span {
