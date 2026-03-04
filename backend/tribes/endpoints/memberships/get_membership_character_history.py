@@ -17,15 +17,6 @@ PATH = (
     "/{tribe_id}/groups/{group_id}/memberships/{membership_id}"
     "/characters/{character_id}/history"
 )
-ROUTE_SPEC = {
-    "summary": "Character add/remove history for a membership (chief or own).",
-    "response": {
-        200: List["MembershipCharacterHistorySchema"],
-        403: dict,
-        404: dict,
-    },
-    "auth": AuthBearer(),
-}
 
 router = Router(tags=["Tribes - Memberships"])
 
@@ -39,6 +30,17 @@ class MembershipCharacterHistorySchema(BaseModel):
     at: str
     by_id: Optional[int] = None
     leave_reason: str
+
+
+ROUTE_SPEC = {
+    "summary": "Character add/remove history for a membership (chief or own).",
+    "response": {
+        200: List[MembershipCharacterHistorySchema],
+        403: dict,
+        404: dict,
+    },
+    "auth": AuthBearer(),
+}
 
 
 def get_membership_character_history(
