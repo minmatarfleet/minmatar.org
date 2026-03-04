@@ -33,6 +33,11 @@ PRODUCTION_ACTIVITIES = (ACTIVITY_MANUFACTURING, ACTIVITY_REACTION)
 
 ORE_MINERAL_SHARE_THRESHOLD = 0.25
 
+# Default reprocessing yield (84%) for valuing mined ore → mineral output
+DEFAULT_REFINE_RATE = 0.84
+# SDE type material quantities are per 100 units of ore (batch), not per 1 unit
+ORE_BATCH_SIZE = 100
+
 # Rolling window and minimum value for PI and mining producers on industry products
 PI_ROLLING_DAYS = 30
 MINING_WINDOW_DAYS = 30
@@ -541,7 +546,7 @@ def get_mining_producers_for_type(product_type_id: int):
     material_to_products.setdefault(product_type_id, []).append(
         product_type_id
     )
-    yield_frac = _get_ore_yield_fractions(material_to_products)
+    yield_per_unit = _get_ore_yield_per_unit(material_to_products)
     price = float(
         _get_material_prices([product_type_id]).get(product_type_id) or 0
     )
@@ -559,8 +564,9 @@ def get_mining_producers_for_type(product_type_id: int):
         cid = r["character__character_id"]
         ore_tid = r["eve_type_id"]
         qty = r["total_quantity"]
-        y = yield_frac.get((ore_tid, product_type_id), 0.0)
-        value = qty * y * price
+        y = yield_per_unit.get((ore_tid, product_type_id), 0.0)
+        refine = DEFAULT_REFINE_RATE if ore_tid != product_type_id else 1.0
+        value = qty * y * refine * price
         char = characters.get(cid)
         primary = None
         if char:
@@ -594,26 +600,23 @@ def get_mining_producers_for_type(product_type_id: int):
     return out
 
 
-def _get_ore_yield_fractions(
+def _get_ore_yield_per_unit(
     material_to_products: dict[int, list[int]],
 ) -> dict[tuple[int, int], float]:
-    """Return (ore_tid, product_tid) -> yield fraction (mineral per unit ore). Direct ore = 1.0."""
+    """
+    Return (ore_tid, product_tid) -> mineral units per unit ore (at 100% refine).
+    SDE quantities are per batch of ORE_BATCH_SIZE (100) ore, so we divide by
+    ORE_BATCH_SIZE. Direct ore (product is the ore itself) = 1.0.
+    Value = qty * yield_per_unit * refine_rate * price.
+    """
     if not material_to_products:
         return {}
-    ore_ids = list(material_to_products.keys())
-    vol_totals = dict(
-        EveTypeMaterial.objects.filter(eve_type_id__in=ore_ids)
-        .values("eve_type_id")
-        .annotate(total=Sum("quantity"))
-        .values_list("eve_type_id", "total")
-    )
     out: dict[tuple[int, int], float] = {}
     for ore_tid, product_tids in material_to_products.items():
-        total = vol_totals.get(ore_tid) or 0
         for product_tid in product_tids:
             if ore_tid == product_tid:
                 out[(ore_tid, product_tid)] = 1.0
-            elif total > 0:
+            else:
                 qty = (
                     EveTypeMaterial.objects.filter(
                         eve_type_id=ore_tid,
@@ -623,9 +626,8 @@ def _get_ore_yield_fractions(
                     .first()
                     or 0
                 )
-                out[(ore_tid, product_tid)] = qty / total
-            else:
-                out[(ore_tid, product_tid)] = 0.0
+                # SDE quantity is per 100 units of ore
+                out[(ore_tid, product_tid)] = float(qty) / ORE_BATCH_SIZE
     return out
 
 
@@ -691,7 +693,7 @@ def _fill_mining_producers(result, type_ids):
         material_to_products.setdefault(tid, []).append(tid)
     all_ore_type_ids.update(type_ids)
 
-    yield_frac = _get_ore_yield_fractions(material_to_products)
+    yield_per_unit = _get_ore_yield_per_unit(material_to_products)
     prices = _get_material_prices(type_ids)
 
     cutoff = timezone.now().date() - timedelta(days=MINING_WINDOW_DAYS)
@@ -722,9 +724,10 @@ def _fill_mining_producers(result, type_ids):
         for product_tid in material_to_products.get(ore_tid, []):
             if product_tid not in result:
                 continue
-            y = yield_frac.get((ore_tid, product_tid), 0.0)
+            y = yield_per_unit.get((ore_tid, product_tid), 0.0)
             price = float(prices.get(product_tid) or 0)
-            value = qty * y * price
+            refine = DEFAULT_REFINE_RATE if ore_tid != product_tid else 1.0
+            value = qty * y * refine * price
             miner_value[product_tid][cid] = (
                 miner_value[product_tid].get(cid, 0) + value
             )
