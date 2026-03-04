@@ -8,6 +8,10 @@ class MembershipCharacterSchema(BaseModel):
     character_name: str
     committed_at: Optional[str] = None
     left_at: Optional[str] = None
+    # Requirement qualification (for chief viewing members).
+    qualifies: Optional[bool] = None
+    missing_skills: Optional[bool] = None
+    missing_assets: Optional[bool] = None
 
 
 class MembershipSchema(BaseModel):
@@ -31,4 +35,31 @@ class ApplyToGroupRequest(BaseModel):
 
 
 class AddCharacterRequest(BaseModel):
+    character_id: int
+
+
+class RequirementQualificationSchema(BaseModel):
+    """Per-requirement qualification result for one character."""
+
+    requirement_id: str
+    display: str
+    met: bool
+    detail: str
+
+
+class AvailableCharacterSchema(BaseModel):
+    """User character with qualification status for a group's requirements."""
+
+    character_id: int
+    character_name: str
+    qualifies: bool
+    requirements: List[RequirementQualificationSchema] = []
+    # When qualifies is False: what they're missing (for simple UI message).
+    missing_skills: bool = False
+    missing_assets: bool = False
+
+
+class RefreshAvailableCharacterRequest(BaseModel):
+    """Request body for POST characters-available/refresh."""
+
     character_id: int

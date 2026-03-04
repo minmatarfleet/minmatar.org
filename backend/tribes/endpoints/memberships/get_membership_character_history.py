@@ -18,7 +18,7 @@ PATH = (
     "/characters/{character_id}/history"
 )
 ROUTE_SPEC = {
-    "summary": "Character add/remove history for a membership (chiefs/elders or own).",
+    "summary": "Character add/remove history for a membership (chief or own).",
     "response": {
         200: List["MembershipCharacterHistorySchema"],
         403: dict,

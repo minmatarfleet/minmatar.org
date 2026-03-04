@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/approve"
 METHOD = "post"
 ROUTE_SPEC = {
-    "summary": "Approve a pending membership (chiefs/elders only).",
+    "summary": "Approve a pending membership (chief only).",
     "response": {200: MembershipSchema, 400: dict, 403: dict, 404: dict},
     "auth": AuthBearer(),
 }

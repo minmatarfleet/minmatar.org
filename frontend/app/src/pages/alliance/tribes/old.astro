@@ -293,40 +293,23 @@ const cover_image = tribe?.banner_url ?? "/images/groups-cover.jpg"
                                     )}
 
                                     <!-- Group leadership -->
-                                    {(group.chief || group.elders.length > 0) && (
+                                    {group.chief && (
                                         <div class="[ tribe-group-card__leadership ]">
                                             <p class="[ tribe-group-card__req-label ]">{t('tribes.detail.leadership')}</p>
                                             <div class="[ tribe-group-leadership-list ]">
-                                                {group.chief && (
-                                                    <div class="[ tribe-group-leader ]">
-                                                        <CharacterPicture
-                                                            character_id={group.chief.character_id}
-                                                            character_name={group.chief.character_name}
-                                                            size={32}
-                                                            icon_quality={32}
-                                                            tooltip={group.chief.character_name}
-                                                        />
-                                                        <div class="[ tribe-group-leader__info ]">
-                                                            <span class="[ tribe-group-leader__name ]">{group.chief.character_name}</span>
-                                                            <span class="[ tribe-group-leader__role ]">{t('tribes.detail.role_chief')}</span>
-                                                        </div>
+                                                <div class="[ tribe-group-leader ]">
+                                                    <CharacterPicture
+                                                        character_id={group.chief.character_id}
+                                                        character_name={group.chief.character_name}
+                                                        size={32}
+                                                        icon_quality={32}
+                                                        tooltip={group.chief.character_name}
+                                                    />
+                                                    <div class="[ tribe-group-leader__info ]">
+                                                        <span class="[ tribe-group-leader__name ]">{group.chief.character_name}</span>
+                                                        <span class="[ tribe-group-leader__role ]">{t('tribes.detail.role_chief')}</span>
                                                     </div>
-                                                )}
-                                                {group.elders.map(elder => (
-                                                    <div class="[ tribe-group-leader ]">
-                                                        <CharacterPicture
-                                                            character_id={elder.character_id}
-                                                            character_name={elder.character_name}
-                                                            size={32}
-                                                            icon_quality={32}
-                                                            tooltip={elder.character_name}
-                                                        />
-                                                        <div class="[ tribe-group-leader__info ]">
-                                                            <span class="[ tribe-group-leader__name ]">{elder.character_name}</span>
-                                                            <span class="[ tribe-group-leader__role ]">{t('tribes.detail.role_elder')}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                </div>
                                             </div>
                                         </div>
                                     )}

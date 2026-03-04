@@ -34,7 +34,6 @@ class TribeGroupSchema(BaseModel):
     description: str
     discord_channel_id: Optional[int] = None
     chief: Optional[CharacterRefSchema] = None
-    elders: List[CharacterRefSchema] = []
     ship_type_ids: List[int] = []
     blueprint_type_ids: List[int] = []
     is_active: bool

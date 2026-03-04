@@ -15,7 +15,7 @@ def user_is_tribe_chief(user, tribe) -> bool:
 def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     """
     Return True if the user can approve/deny memberships for a TribeGroup.
-    Covers: tribe chief, group chief, group elder, superuser, or explicit perm.
+    Covers: tribe chief, group chief, superuser, or explicit perm.
     """
     if user.is_superuser:
         return True
@@ -25,8 +25,6 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     if tribe.chief_id and tribe.chief_id == user.pk:
         return True
     if tribe_group.chief_id and tribe_group.chief_id == user.pk:
-        return True
-    if tribe_group.elders.filter(pk=user.pk).exists():
         return True
     return False
 

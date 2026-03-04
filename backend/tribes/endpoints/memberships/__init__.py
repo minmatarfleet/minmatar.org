@@ -14,6 +14,16 @@ from tribes.endpoints.memberships.get_memberships import (
     ROUTE_SPEC as GET_MEMBERSHIPS_SPEC,
     get_memberships,
 )
+from tribes.endpoints.memberships.get_membership_characters_available import (
+    PATH as CHARACTERS_AVAILABLE_PATH,
+    ROUTE_SPEC as GET_CHARACTERS_AVAILABLE_SPEC,
+    get_membership_characters_available,
+)
+from tribes.endpoints.memberships.post_membership_characters_available_refresh import (
+    PATH as CHARACTERS_AVAILABLE_REFRESH_PATH,
+    ROUTE_SPEC as POST_CHARACTERS_AVAILABLE_REFRESH_SPEC,
+    post_membership_characters_available_refresh,
+)
 from tribes.endpoints.memberships.post_membership_approve import (
     router as post_membership_approve_router,
 )
@@ -47,6 +57,15 @@ router = Router(tags=["Tribes - Memberships"])
 # Memberships collection — GET + POST share the same path.
 router.get(MEMBERSHIPS_PATH, **GET_MEMBERSHIPS_SPEC)(get_memberships)
 router.post(MEMBERSHIPS_PATH, **POST_MEMBERSHIPS_SPEC)(post_membership)
+
+# Your characters and whether they qualify (owner only). Register before
+# {membership_id} routes so "characters-available" is not captured as id.
+router.get(CHARACTERS_AVAILABLE_PATH, **GET_CHARACTERS_AVAILABLE_SPEC)(
+    get_membership_characters_available
+)
+router.post(
+    CHARACTERS_AVAILABLE_REFRESH_PATH, **POST_CHARACTERS_AVAILABLE_REFRESH_SPEC
+)(post_membership_characters_available_refresh)
 
 router.add_router("", post_membership_approve_router)
 router.add_router("", post_membership_deny_router)

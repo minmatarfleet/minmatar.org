@@ -2,16 +2,17 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
 
 interface Props {
-    target_id:  string;
-    title:      string;
-    tribe_id:   number;
-    group_id:   number;
-    pilots:     SummaryCharacter[],
-    hidden?:    boolean;
-    id?:        string;
+    target_id:              string;
+    title:                  string;
+    tribe_id:               number;
+    group_id:               number;
+    pilots:                 SummaryCharacter[];
+    available_characters?:  TribeAvailableCharacter[];
+    hidden?:                boolean;
+    id?:                    string;
 }
 
 const {
@@ -20,12 +21,15 @@ const {
     tribe_id,
     group_id,
     pilots,
+    available_characters,
     hidden = false,
     id,
 } = Astro.props
 
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
+// Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
+// esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -60,7 +64,7 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
             characters: [],
             character_ids: '',
             update_character_ids() {
-                this.character_ids = JSON.stringify(this.characters.map(character => parseInt(character)))
+                this.character_ids = JSON.stringify(this.characters.map(c => parseInt(c)));
             }
         }`}
     >
@@ -77,29 +81,58 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
                 >
                     <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
                         <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
-                            {pilots.map(pilot =>
-                                <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                    <SelectableCharacterCard
-                                        character_id={pilot.character_id}
-                                        character_name={pilot.character_name}
-                                        x-model="characters"
-                                        x-on:change="update_character_ids"
-                                        value={pilot.character_id}
-                                    >
-                                        <Flexblock gap='var(--space-3xs)'>
-                                            <h3>{pilot.character_name}</h3>
-                                            <CorporationBadge
-                                                corporation={{
-                                                    id: pilot.corp_id,
-                                                    name: pilot.corp_name,
-                                                    size: 'xs',
-                                                }}
-                                                highlight={false}
-                                            />
-                                        </Flexblock>
-                                    </SelectableCharacterCard>
-                                </div>
-                            )}
+                            {pilots.map((pilot) => {
+                                const available = available_characters?.find(
+                                    (a) => a.character_id === pilot.character_id
+                                )
+                                const cid = pilot.character_id
+                                const hasBar = available != null
+                                const barLabel = hasBar
+                                    ? (available.qualifies
+                                        ? t('tribes.detail.qualified')
+                                        : available.missing_skills && available.missing_assets
+                                            ? t('tribes.detail.missing_skills_and_assets')
+                                            : available.missing_skills
+                                                ? t('tribes.detail.missing_skills')
+                                                : available.missing_assets
+                                                    ? t('tribes.detail.missing_assets')
+                                                    : t('tribes.detail.unqualified'))
+                                    : '';
+                                return (
+                                    <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                        <div class="[ tribe-apply-character-card ]">
+                                            <div class="[ tribe-apply-card-header ]">
+                                                <SelectableCharacterCard
+                                                    character_id={pilot.character_id}
+                                                    character_name={pilot.character_name}
+                                                    x-model="characters"
+                                                    x-on:change="update_character_ids"
+                                                    value={pilot.character_id}
+                                                >
+                                                    <Flexblock gap='var(--space-3xs)'>
+                                                        <h3>{pilot.character_name}</h3>
+                                                        <CorporationBadge
+                                                            corporation={{
+                                                                id: pilot.corp_id,
+                                                                name: pilot.corp_name,
+                                                                size: 'xs',
+                                                            }}
+                                                            highlight={false}
+                                                        />
+                                                    </Flexblock>
+                                                </SelectableCharacterCard>
+                                            </div>
+                                            {hasBar && (
+                                                <div
+                                                    class={`tribe-apply-qualifies-bar ${available.qualifies ? 'tribe-apply-qualifies-bar--qualified' : 'tribe-apply-qualifies-bar--unqualified'}`}
+                                                >
+                                                    <span>{barLabel}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </LandingSwiper>
                         <input type="hidden" name="character_ids" x-model="character_ids" />
                     </div>
@@ -133,6 +166,37 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 <style lang="scss">
     h3 {
         font-size: var(--step-1);
+    }
+
+    .tribe-apply-character-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tribe-apply-card-header {
+        position: relative;
+    }
+
+    .tribe-apply-qualifies-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2rem;
+        margin-top: 0;
+        padding: 0 var(--space-xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--button-color);
+    }
+
+    .tribe-apply-qualifies-bar--qualified {
+        background-color: var(--green);
+    }
+
+    .tribe-apply-qualifies-bar--unqualified {
+        background-color: var(--fleet-red);
     }
 
     .alliance-reel {

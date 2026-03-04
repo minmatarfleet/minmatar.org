@@ -11,7 +11,7 @@ from tribes.models import TribeGroup, TribeGroupMembership
 PATH = "/{tribe_id}/groups/{group_id}/memberships"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List memberships for a tribe group (chiefs/elders see all; members see own).",
+    "summary": "List memberships for a tribe group (chief sees all; members see own).",
     "response": {200: List[MembershipSchema], 403: dict, 404: dict},
     "auth": AuthBearer(),
 }
@@ -37,8 +37,14 @@ def get_memberships(
     if status:
         qs = qs.filter(status=status)
 
+    can_manage = user_can_manage_group(request.user, tg)
     qs = qs.select_related("tribe_group__tribe").prefetch_related(
-        "characters__character"
+        "characters__character",
+        "tribe_group__requirements__asset_types__eve_type",
+        "tribe_group__requirements__qualifying_skills__eve_type",
     )
 
-    return 200, [serialize_membership(m) for m in qs]
+    return 200, [
+        serialize_membership(m, include_requirement_status=can_manage)
+        for m in qs
+    ]

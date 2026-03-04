@@ -85,11 +85,12 @@ if (Astro.request.method === "DELETE") {
     }
 }
 
-import type { TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import type { TribeGroup, SummaryCharacter, TribeMembership, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
+import { get_tribe_group, get_memberships, get_membership_characters_available } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 let user_characters: SummaryCharacter[] = []
+let available_characters: TribeAvailableCharacter[] = []
 let tribe_group:TribeGroup | null = null
 const membership_by_group = new Map<number, TribeMembership | null>()
 let is_member = false
@@ -105,7 +106,13 @@ try {
 
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
-    
+
+    available_characters = await get_membership_characters_available(
+        auth_token as string,
+        tribe_id,
+        tribe_group.id,
+    )
+
     const membership = membership_by_group.get(tribe_group.id) ?? null
     is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
@@ -147,6 +154,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             tribe_id={tribe_group.tribe_id}
             group_id={tribe_group.id}
             user_characters={user_characters}
+            available_characters={available_characters}
             is_auth={!!user}
             membership_by_group={membership_by_group}
         />

@@ -50,7 +50,6 @@ export interface TribeGroup {
     description:            string;
     discord_channel_id:     number | null;
     chief:                  TribeCharacterRef | null;
-    elders:                 TribeCharacterRef[];
     ship_type_ids:          number[];
     blueprint_type_ids:     number[];
     is_active:              boolean;
@@ -98,6 +97,10 @@ export interface TribeMembershipCharacter {
     character_name: string;
     committed_at:   string | null;
     left_at:        string | null;
+    /** Requirement qualification (present when viewer is chief). */
+    qualifies?:     boolean | null;
+    missing_skills?: boolean | null;
+    missing_assets?: boolean | null;
 }
 
 export interface TribeMembership {
@@ -114,6 +117,25 @@ export interface TribeMembership {
     approved_at:            string | null;
     left_at:                string | null;
     characters:             TribeMembershipCharacter[];
+}
+
+/** Per-requirement qualification result for one character (memberships/characters-available). */
+export interface TribeRequirementQualification {
+    requirement_id: string;
+    display: string;
+    met: boolean;
+    detail: string;
+}
+
+/** User character with qualification status for a group's requirements (memberships/characters-available). */
+export interface TribeAvailableCharacter {
+    character_id: number;
+    character_name: string;
+    qualifies: boolean;
+    requirements: TribeRequirementQualification[];
+    /** When qualifies is false: missing skills, assets, or both (for simple UI). */
+    missing_skills: boolean;
+    missing_assets: boolean;
 }
 
 export interface TribeActivity {

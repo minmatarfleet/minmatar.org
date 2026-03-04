@@ -5,6 +5,7 @@ from typing import List
 from authentication import AuthBearer
 from tribes.endpoints.memberships.schemas import MembershipCharacterSchema
 from tribes.helpers import user_can_manage_group
+from tribes.helpers.requirements import check_character_meets_requirements
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -23,7 +24,14 @@ ROUTE_SPEC = {
 def get_membership_characters(
     request, tribe_id: int, group_id: int, membership_id: int
 ):
-    tg = TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id).first()
+    tg = (
+        TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id)
+        .prefetch_related(
+            "requirements__asset_types__eve_type",
+            "requirements__qualifying_skills__eve_type",
+        )
+        .first()
+    )
     if not tg:
         return 404, {"detail": "TribeGroup not found."}
 
@@ -51,6 +59,20 @@ def get_membership_characters(
     result = []
     for c in chars:
         h_at = history_map.get(c.character_id)
+        qualifies = None
+        missing_skills = None
+        missing_assets = None
+        if user_can_manage_group(request.user, tg):
+            req_snapshot = check_character_meets_requirements(c.character, tg)
+            qualifies = any(data["met"] for data in req_snapshot.values())
+            missing_skills = any(
+                data.get("skill_met") is False
+                for data in req_snapshot.values()
+            )
+            missing_assets = any(
+                data.get("asset_met") is False
+                for data in req_snapshot.values()
+            )
         result.append(
             MembershipCharacterSchema(
                 id=c.pk,
@@ -58,6 +80,9 @@ def get_membership_characters(
                 character_name=c.character.character_name,
                 committed_at=h_at.isoformat() if h_at else None,
                 left_at=None,
+                qualifies=qualifies,
+                missing_skills=missing_skills,
+                missing_assets=missing_assets,
             )
         )
     return 200, result

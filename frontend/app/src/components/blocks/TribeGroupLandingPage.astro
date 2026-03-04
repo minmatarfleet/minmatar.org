@@ -35,16 +35,15 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 
 <Flexblock gap='var(--space-l)'>
     <FlexInline class="[ items-center! ]" gap='var(--space-3xs)'>
-        {[ tribe_group.chief, ...tribe_group.elders ].map((tribe_leader, index) =>
-            tribe_leader &&
+        {tribe_group.chief && (
                 <PilotBadge
                     class="[ pr-(--space-l) ]"
-                    character_id={tribe_leader?.character_id}
-                    character_name={tribe_leader?.character_name}
+                    character_id={tribe_group.chief.character_id}
+                    character_name={tribe_group.chief.character_name}
                     size={32}
                     centered={true}
                 >
-                    <small>{tribe_group.chief && index === 0 ? t('group_chief') : t('group_elder')}</small>
+                    <small>{t('group_chief')}</small>
                 </PilotBadge>
         )}
         <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">

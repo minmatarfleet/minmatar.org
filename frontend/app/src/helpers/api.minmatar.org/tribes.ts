@@ -2,6 +2,7 @@ import type {
     Tribe,
     TribeGroup,
     TribeMembership,
+    TribeAvailableCharacter,
     TribeGroupOutputSummary,
     TribeLeaderboardEntry,
     TribeActivity,
@@ -113,6 +114,48 @@ export async function get_memberships(
     } catch (error) {
         throw new Error(`Error fetching memberships: ${error.message}`)
     }
+}
+
+export async function get_membership_characters_available(
+    access_token: string,
+    tribe_id: number,
+    group_id: number,
+): Promise<TribeAvailableCharacter[]> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/characters-available`
+    console.log(`Requesting: ${ENDPOINT}`)
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+        return await response.json() as TribeAvailableCharacter[]
+    } catch (error) {
+        throw new Error(`Error fetching available characters: ${error.message}`)
+    }
+}
+
+export async function refresh_available_character(
+    access_token: string,
+    tribe_id: number,
+    group_id: number,
+    character_id: number,
+): Promise<TribeAvailableCharacter> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/characters-available/refresh`
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${access_token}`,
+        },
+        body: JSON.stringify({ character_id }),
+    })
+    if (!response.ok)
+        throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+    return await response.json() as TribeAvailableCharacter
 }
 
 export async function apply_to_group(

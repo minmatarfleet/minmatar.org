@@ -38,19 +38,46 @@ import Button from '@components/blocks/Button.astro';
         gap='var(--space-3xs)'
         class="[ membership-characters ][ basis-[350px] ]"
     >
-        {membership.characters.map(character =>
-            <div
-                data-tippy-content={character.character_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <CharacterPicture
-                    character_id={character.character_id}
-                    character_name={character.character_name}
-                    size={32}
-                />
-                <div class="[ sr-only ]">{character.character_name}</div>
-            </div>
-        )}
+        {membership.characters.map((character) => {
+            const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+            const statusLabel = hasStatus
+                ? (character.qualifies
+                    ? t('tribes.detail.qualified')
+                    : character.missing_skills && character.missing_assets
+                        ? t('tribes.detail.missing_skills_and_assets')
+                        : character.missing_skills
+                            ? t('tribes.detail.missing_skills')
+                            : character.missing_assets
+                                ? t('tribes.detail.missing_assets')
+                                : t('tribes.detail.unqualified'))
+                : null
+            return (
+                <div
+                    class="[ membership-character-item ]"
+                    data-tippy-content={statusLabel ? `${character.character_name}: ${statusLabel}` : character.character_name}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
+                    <CharacterPicture
+                        character_id={character.character_id}
+                        character_name={character.character_name}
+                        size={32}
+                    />
+                    {hasStatus && (
+                        <span
+                            class:list={[
+                                'membership-character-status',
+                                { 'membership-character-status--qualified': character.qualifies },
+                                { 'membership-character-status--unqualified': character.qualifies === false },
+                            ]}
+                            title={statusLabel ?? undefined}
+                        >
+                            {character.qualifies ? '✓' : '✗'}
+                        </span>
+                    )}
+                    <div class="[ sr-only ]">{character.character_name}</div>
+                </div>
+            )
+        })}
     </FlexInline>
     <FlexInline>
         <ButtonConfirm
@@ -72,3 +99,25 @@ import Button from '@components/blocks/Button.astro';
         </ButtonConfirm>
     </FlexInline>
 </FlexInline>
+
+<style lang="scss">
+    .membership-character-item {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .membership-character-status {
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .membership-character-status--qualified {
+        color: var(--green);
+    }
+
+    .membership-character-status--unqualified {
+        color: var(--fleet-red);
+    }
+</style>

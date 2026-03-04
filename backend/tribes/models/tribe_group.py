@@ -29,12 +29,6 @@ class TribeGroup(models.Model):
         related_name="led_tribe_groups",
         help_text="Group leader; can approve/deny membership for this group.",
     )
-    elders = models.ManyToManyField(
-        "auth.User",
-        blank=True,
-        related_name="elder_tribe_groups",
-        help_text="Supporting leaders; can also approve/deny membership for this group.",
-    )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
     ship_type_ids = models.JSONField(
         default=list,

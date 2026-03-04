@@ -219,14 +219,6 @@ class MembershipApprovalTestCase(TestCase):
             self.membership.status, TribeGroupMembership.STATUS_INACTIVE
         )
 
-    def test_elder_can_approve(self):
-        elder = User.objects.create_user(username="elder")
-        self.tribe_group.elders.add(elder)
-        token = _make_token(elder)
-        url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}/approve"
-        response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
-        self.assertEqual(response.status_code, 200)
-
 
 class MembershipLeaveTestCase(TestCase):
     def setUp(self):

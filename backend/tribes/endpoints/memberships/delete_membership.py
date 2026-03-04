@@ -14,7 +14,7 @@ from tribes.models import (
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}"
 METHOD = "delete"
 ROUTE_SPEC = {
-    "summary": "Leave (own) or remove (chief/elder) a tribe group membership.",
+    "summary": "Leave (own) or remove (chief) a tribe group membership.",
     "response": {200: dict, 403: dict, 404: dict},
     "auth": AuthBearer(),
 }

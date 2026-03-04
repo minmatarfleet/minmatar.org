@@ -3,11 +3,13 @@ import type {
     TribeGroup,
     SummaryCharacter,
     TribeMembership,
+    TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
 
 interface Props {
     tribe_groups:           TribeGroup[];
     user_characters:        SummaryCharacter[];
+    available_by_group?:    Map<number, TribeAvailableCharacter[]>;
     membership_by_group:    Map<number, TribeMembership | null>;
     init_tooltips:          boolean;
 }
@@ -15,6 +17,7 @@ interface Props {
 const {
     tribe_groups,
     user_characters,
+    available_by_group,
     membership_by_group,
     init_tooltips,
 } = Astro.props
@@ -57,6 +60,7 @@ import TribeGroupTile from '@components/blocks/TribeGroupTile.astro';
             return (<TribeGroupTile
                 tribe_group={tribe_group}
                 user_characters={user_characters}
+                available_characters={available_by_group?.get(tribe_group.id)}
                 membership_by_group={membership_by_group}
                 init_tooltips={init_tooltips}
                 index={tribe_group.requirements.length > 1 ? requirements_index - 1 : undefined}

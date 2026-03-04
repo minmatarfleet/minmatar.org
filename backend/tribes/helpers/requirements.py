@@ -180,6 +180,8 @@ def check_character_meets_requirements(
             ),
             "met": met,
             "detail": detail,
+            "asset_met": asset_met,
+            "skill_met": skill_met,
         }
 
     return snapshot
