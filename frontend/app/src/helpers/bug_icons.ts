@@ -12,5 +12,5 @@ const FEATURE_ACTIVE = icons_bug()
 const BUG_PERCENTAGE = icons_bug_percentage()
 
 export const get_bug_icon = (icon:string) => {
-    return FEATURE_ACTIVE() && Math.random() <= BUG_PERCENTAGE ? get_random_icon() : icon
+    return FEATURE_ACTIVE && Math.random() <= BUG_PERCENTAGE ? get_random_icon() : icon
 }
