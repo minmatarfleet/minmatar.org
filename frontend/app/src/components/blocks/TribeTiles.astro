@@ -43,16 +43,20 @@ import TribeGroupTile from '@components/blocks/TribeGroupTile.astro';
         min_item_width="570px"
         x-data={`{
             index: -1,
-            timer: null,
             init() {
-                this.timer = setInterval(() => {
+                const timer = setInterval(() => {
                     this.index = (this.index + 1) % 3
-                    console.log(this.index)
                     $dispatch('tick', this.index)
                 }, 3000)
+
+                function clearTimer(event) {
+                    clearInterval(timer)
+                    event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                }
+
+                document.addEventListener('astro:after-swap', clearTimer)
             }
         }`}
-        @astro:before-swap.window="console.log('after-swap'); clearInterval(this.timer)"
     >
         {tribe_groups.map(tribe_group => {
             requirements_index += Number(tribe_group.requirements.length > 1)
