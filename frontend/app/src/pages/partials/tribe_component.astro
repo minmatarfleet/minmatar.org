@@ -77,8 +77,8 @@ const page_description = tribe?.description ?? ''
         }}
     />
     :
-    <Flexblock hx-swap-oob="true" id="header-oob" gap="var(--space-3xs)">
-        <PageTitle no_link={true}>
+    <Flexblock id="header-oob" gap="var(--space-3xs)" hx-swap-oob="true">
+        <PageTitle is_landing={true} no_link={true}>
             {page_title}
         </PageTitle>
         {tribe?.chief &&
