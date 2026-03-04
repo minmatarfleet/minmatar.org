@@ -32,3 +32,21 @@ class ApplyToGroupRequest(BaseModel):
 
 class AddCharacterRequest(BaseModel):
     character_id: int
+
+
+class RequirementQualificationSchema(BaseModel):
+    """Per-requirement qualification result for one character."""
+
+    requirement_id: str
+    display: str
+    met: bool
+    detail: str
+
+
+class AvailableCharacterSchema(BaseModel):
+    """User character with qualification status for a group's requirements."""
+
+    character_id: int
+    character_name: str
+    qualifies: bool
+    requirements: List[RequirementQualificationSchema] = []

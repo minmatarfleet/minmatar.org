@@ -23,10 +23,13 @@ class TribeGroupRequirementAssetType(models.Model):
         default=1,
         help_text="Minimum number of this asset the character must own.",
     )
-    location_id = models.BigIntegerField(
+    location = models.ForeignKey(
+        "eveonline.EveLocation",
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
-        help_text="Required asset location (station/structure ID). Leave blank for any location.",
+        limit_choices_to={"staging_active": True},
+        help_text="Required asset location (staging only). Leave blank for any location.",
     )
 
     class Meta:
