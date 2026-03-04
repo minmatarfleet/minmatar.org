@@ -11,7 +11,7 @@ from tribes.models import TribeGroup, TribeGroupMembership
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/deny"
 METHOD = "post"
 ROUTE_SPEC = {
-    "summary": "Deny a pending membership (chiefs/elders only).",
+    "summary": "Deny a pending membership (chief only).",
     "response": {200: MembershipSchema, 400: dict, 403: dict, 404: dict},
     "auth": AuthBearer(),
 }

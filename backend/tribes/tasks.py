@@ -49,10 +49,6 @@ def _build_reminder_message(tribe_group, memberships: list) -> str:
         chief_mention = _discord_mention(tribe_group.chief)
         if chief_mention:
             mentions.append(chief_mention)
-    for elder in tribe_group.elders.all():
-        elder_mention = _discord_mention(elder)
-        if elder_mention:
-            mentions.append(elder_mention)
     if mentions:
         lines.append(" ".join(mentions))
 
@@ -84,15 +80,11 @@ def _send_group_reminder(tribe_group, memberships: list) -> None:
 def create_tribe_membership_reminders():
     """
     Post Discord reminders to tribe/group channels for any pending
-    TribeGroupMembership applications so chiefs and elders can action them.
+    TribeGroupMembership applications so chiefs can action them.
     """
-    pending = (
-        TribeGroupMembership.objects.filter(
-            status=TribeGroupMembership.STATUS_PENDING
-        )
-        .select_related("tribe_group__tribe", "tribe_group", "user")
-        .prefetch_related("tribe_group__elders")
-    )
+    pending = TribeGroupMembership.objects.filter(
+        status=TribeGroupMembership.STATUS_PENDING
+    ).select_related("tribe_group__tribe", "tribe_group", "user")
 
     by_group: dict = defaultdict(list)
     for membership in pending:

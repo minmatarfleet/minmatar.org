@@ -4,28 +4,6 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
-def backfill_location_fk(apps, schema_editor):
-    """Copy old location_id (EVE ID) to new location FK where EveLocation exists."""
-    from django.db import connection
-
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE tribes_tribegrouprequirementassettype
-            SET location_fk_id = location_id
-            WHERE location_id IS NOT NULL
-            AND EXISTS (
-                SELECT 1 FROM eveonline_evelocation
-                WHERE eveonline_evelocation.location_id = tribes_tribegrouprequirementassettype.location_id
-            )
-            """
-        )
-
-
-def noop(apps, schema_editor):
-    pass
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -34,26 +12,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Add FK with temporary column name to avoid clashing with existing location_id
-        migrations.AddField(
-            model_name="tribegrouprequirementassettype",
-            name="location",
-            field=models.ForeignKey(
-                blank=True,
-                help_text="Required asset location (staging only). Leave blank for any location.",
-                limit_choices_to={"staging_active": True},
-                null=True,
-                on_delete=django.db.models.deletion.CASCADE,
-                to="eveonline.evelocation",
-                db_column="location_fk_id",
-            ),
-        ),
-        migrations.RunPython(backfill_location_fk, noop),
         migrations.RemoveField(
             model_name="tribegrouprequirementassettype",
             name="location_id",
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name="tribegrouprequirementassettype",
             name="location",
             field=models.ForeignKey(

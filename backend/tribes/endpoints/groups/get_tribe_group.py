@@ -39,7 +39,6 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
         TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id)
         .select_related("chief__eveplayer__primary_character")
         .prefetch_related(
-            "elders__eveplayer__primary_character",
             "requirements__asset_types__eve_type",
             "requirements__qualifying_skills__eve_type",
         )
@@ -53,9 +52,6 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
     ).count()
 
     chief_ref = _user_to_character_ref(tg.chief) if tg.chief else None
-    elder_refs = [
-        r for u in tg.elders.all() if (r := _user_to_character_ref(u))
-    ]
 
     return 200, TribeGroupSchema(
         id=tg.pk,
@@ -65,7 +61,6 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
         description=tg.description,
         discord_channel_id=tg.discord_channel_id,
         chief=chief_ref,
-        elders=elder_refs,
         ship_type_ids=tg.ship_type_ids or [],
         blueprint_type_ids=tg.blueprint_type_ids or [],
         is_active=tg.is_active,

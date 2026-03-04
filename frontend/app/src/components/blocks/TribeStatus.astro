@@ -6,6 +6,7 @@ import type {
     TribeGroup,
     SummaryCharacter,
     TribeMembership,
+    TribeAvailableCharacter,
     TribeGroupOutputSummary,
 } from '@dtypes/api.minmatar.org'
 
@@ -15,6 +16,7 @@ interface Props {
     group_id:               number;
     is_auth:                boolean;
     user_characters:        SummaryCharacter[];
+    available_characters?:  TribeAvailableCharacter[];
     membership_by_group:    Map<number, TribeMembership | null>;
 }
 
@@ -24,6 +26,7 @@ const {
     group_id,
     is_auth,
     user_characters,
+    available_characters,
     membership_by_group,
 } = Astro.props
 
@@ -79,6 +82,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                 tribe_id={tribe_id}
                 group_id={group_id}
                 pilots={user_characters}
+                available_characters={available_characters}
             />
         :
         ''

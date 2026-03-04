@@ -15,7 +15,7 @@ from tribes.models import (
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/history"
 ROUTE_SPEC = {
-    "summary": "Status history for a tribe group membership (chiefs/elders or own).",
+    "summary": "Status history for a tribe group membership (chief or own).",
     "response": {200: List["MembershipHistorySchema"], 403: dict, 404: dict},
     "auth": AuthBearer(),
 }

@@ -19,6 +19,11 @@ from tribes.endpoints.memberships.get_membership_characters_available import (
     ROUTE_SPEC as GET_CHARACTERS_AVAILABLE_SPEC,
     get_membership_characters_available,
 )
+from tribes.endpoints.memberships.post_membership_characters_available_refresh import (
+    PATH as CHARACTERS_AVAILABLE_REFRESH_PATH,
+    ROUTE_SPEC as POST_CHARACTERS_AVAILABLE_REFRESH_SPEC,
+    post_membership_characters_available_refresh,
+)
 from tribes.endpoints.memberships.post_membership_approve import (
     router as post_membership_approve_router,
 )
@@ -58,6 +63,9 @@ router.post(MEMBERSHIPS_PATH, **POST_MEMBERSHIPS_SPEC)(post_membership)
 router.get(CHARACTERS_AVAILABLE_PATH, **GET_CHARACTERS_AVAILABLE_SPEC)(
     get_membership_characters_available
 )
+router.post(
+    CHARACTERS_AVAILABLE_REFRESH_PATH, **POST_CHARACTERS_AVAILABLE_REFRESH_SPEC
+)(post_membership_characters_available_refresh)
 
 router.add_router("", post_membership_approve_router)
 router.add_router("", post_membership_deny_router)

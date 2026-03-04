@@ -14,11 +14,13 @@ import type {
     TribeGroup,
     SummaryCharacter,
     TribeMembership,
+    TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
 
 interface Props {
     tribe_group:            TribeGroup;
     user_characters:        SummaryCharacter[];
+    available_characters?:  TribeAvailableCharacter[];
     membership_by_group:    Map<number, TribeMembership | null>;
     init_tooltips:          boolean;
     index?:                 number;
@@ -27,6 +29,7 @@ interface Props {
 const {
     tribe_group,
     user_characters,
+    available_characters,
     init_tooltips,
     membership_by_group,
     index,
@@ -55,7 +58,7 @@ const membership = membership_by_group.get(tribe_group.id) ?? null
 const user_character_ids = membership?.status === 'active'
                             ? membership?.characters.map(character => character.character_id) :
                             []
-const leaders = [ tribe_group.chief, ...tribe_group.elders ]
+const leaders = tribe_group.chief ? [ tribe_group.chief ] : []
 const is_leader = leaders.find(leader => user_character_ids?.includes(leader?.character_id ?? 0))
 const is_member = membership?.status === 'active'
 const is_pending = membership?.status === 'pending'
@@ -99,7 +102,7 @@ import NotificationBadge from './NotificationBadge.astro'
                             size={32}
                             centered={true}
                         >
-                            <small>{tribe_group.chief && index === 0 ? t('group_chief') : t('group_elder')}</small>
+                            <small>{t('group_chief')}</small>
                         </PilotBadge>
                 )}
                 <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
@@ -187,6 +190,7 @@ import NotificationBadge from './NotificationBadge.astro'
                         tribe_id={tribe_group.tribe_id}
                         group_id={tribe_group.id}
                         user_characters={user_characters}
+                        available_characters={available_characters}
                         is_auth={is_auth}
                         membership_by_group={membership_by_group}
                     />

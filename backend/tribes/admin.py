@@ -63,7 +63,6 @@ class TribeGroupAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "tribe")
     search_fields = ("name", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
-    filter_horizontal = ("elders",)
     inlines = [TribeGroupRequirementInline]
 
 

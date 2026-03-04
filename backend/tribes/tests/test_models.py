@@ -55,7 +55,6 @@ class TribeGroupModelTestCase(TestCase):
         self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
         self.tribe_group_auth = Group.objects.create(name="Dreads")
         self.chief = User.objects.create_user(username="chief")
-        self.elder = User.objects.create_user(username="elder")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
             name="Dreads",
@@ -64,13 +63,9 @@ class TribeGroupModelTestCase(TestCase):
             chief=self.chief,
             ship_type_ids=[19720, 19726],
         )
-        self.group.elders.add(self.elder)
 
     def test_str(self):
         self.assertEqual(str(self.group), "Capitals — Dreads")
-
-    def test_elders_m2m(self):
-        self.assertIn(self.elder, self.group.elders.all())
 
     def test_unique_together_tribe_name(self):
         with self.assertRaises(IntegrityError):

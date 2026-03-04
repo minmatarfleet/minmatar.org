@@ -16,12 +16,14 @@ import type {
     Tribe,
     TribeGroup,
     TribeMembership,
-    SummaryCharacter
+    SummaryCharacter,
+    TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
 import {
     get_tribe,
     get_tribe_groups,
     get_memberships,
+    get_membership_characters_available,
 } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
@@ -31,6 +33,7 @@ if (isNaN(tribe_id)) return HTTP_404_Not_Found()
 let tribe: Tribe | null = null
 let tribe_groups: TribeGroup[] = []
 const membership_by_group = new Map<number, TribeMembership | null>()
+const available_by_group = new Map<number, TribeAvailableCharacter[]>()
 let user_characters: SummaryCharacter[] = []
 let get_tribe_error: string | null = null
 
@@ -44,9 +47,27 @@ try {
             const mine = memberships.find(m => m.user_id === user.user_id) ?? null
             membership_by_group.set(group.id, mine)
         }
-        
+
         const summary = await get_characters_summary_sorted(auth_token)
         user_characters = summary.characters ?? []
+
+        const availableResults = await Promise.all(
+            tribe_groups.map(async (group) => {
+                try {
+                    const list = await get_membership_characters_available(
+                        auth_token as string,
+                        tribe_id,
+                        group.id,
+                    )
+                    return [group.id, list] as const
+                } catch {
+                    return [group.id, []] as const
+                }
+            }),
+        )
+        for (const [gid, list] of availableResults) {
+            available_by_group.set(gid, list)
+        }
     }
 } catch (error) {
     get_tribe_error = prod_error_messages() ? t('fetch_tribe_error') : error.message
@@ -98,6 +119,7 @@ const page_description = tribe?.description ?? ''
     <TribeTiles
         tribe_groups={tribe_groups}
         user_characters={user_characters}
+        available_by_group={available_by_group}
         init_tooltips={false}
         membership_by_group={membership_by_group}
     />

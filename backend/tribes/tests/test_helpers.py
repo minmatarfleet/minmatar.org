@@ -140,14 +140,12 @@ class UserPermissionHelpersTestCase(TestCase):
         )
         self.chief = User.objects.create_user(username="tribe_chief")
         self.group_chief = User.objects.create_user(username="group_chief")
-        self.elder = User.objects.create_user(username="elder")
         self.regular = User.objects.create_user(username="regular")
 
         self.tribe.chief = self.chief
         self.tribe.save()
         self.tribe_group.chief = self.group_chief
         self.tribe_group.save()
-        self.tribe_group.elders.add(self.elder)
 
     def test_tribe_chief_can_manage_group(self):
         self.assertTrue(user_can_manage_group(self.chief, self.tribe_group))
@@ -156,9 +154,6 @@ class UserPermissionHelpersTestCase(TestCase):
         self.assertTrue(
             user_can_manage_group(self.group_chief, self.tribe_group)
         )
-
-    def test_elder_can_manage_group(self):
-        self.assertTrue(user_can_manage_group(self.elder, self.tribe_group))
 
     def test_regular_cannot_manage_group(self):
         self.assertFalse(user_can_manage_group(self.regular, self.tribe_group))
