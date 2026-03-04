@@ -52,12 +52,12 @@ const COVERS = {
 const id = `tribe-group-${tribe_group.tribe_id}-${tribe_group.id}`
 
 const membership = membership_by_group.get(tribe_group.id) ?? null
-const user_character_ids = membership?.approved_at && !membership.left_at
+const user_character_ids = membership?.status === 'active'
                             ? membership?.characters.map(character => character.character_id) :
                             []
 const leaders = [ tribe_group.chief, ...tribe_group.elders ]
 const is_leader = leaders.find(leader => user_character_ids?.includes(leader?.character_id ?? 0))
-const is_member = membership?.status === 'approved'
+const is_member = membership?.status === 'active'
 const is_pending = membership?.status === 'pending'
 
 const TILE_FALLBACK = '/images/capitals-tribe-cover.webp'

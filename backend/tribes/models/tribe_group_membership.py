@@ -3,21 +3,20 @@ from django.db import models
 
 class TribeGroupMembership(models.Model):
     """
-    Full lifecycle of a player's membership in a TribeGroup.
-    Covers application → approval/denial → departure. Re-joining creates a new row.
+    A player's membership in a TribeGroup.
+    Exactly one row per (user, tribe_group) pair — enforced by a unique constraint.
+    Status transitions (pending → active → inactive) are all tracked in
+    TribeGroupMembershipHistory. Re-applying after going inactive resets
+    this same row back to pending rather than creating a new one.
     """
 
     STATUS_PENDING = "pending"
-    STATUS_APPROVED = "approved"
-    STATUS_DENIED = "denied"
-    STATUS_LEFT = "left"
-    STATUS_REMOVED = "removed"
+    STATUS_ACTIVE = "active"
+    STATUS_INACTIVE = "inactive"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
-        (STATUS_APPROVED, "Approved"),
-        (STATUS_DENIED, "Denied"),
-        (STATUS_LEFT, "Left"),
-        (STATUS_REMOVED, "Removed"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
     ]
 
     user = models.ForeignKey(
@@ -48,7 +47,7 @@ class TribeGroupMembership(models.Model):
     left_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Set when status becomes 'left' or 'removed'.",
+        help_text="Set when status becomes inactive.",
     )
     removed_by = models.ForeignKey(
         "auth.User",
@@ -58,6 +57,19 @@ class TribeGroupMembership(models.Model):
         related_name="removed_tribe_memberships",
     )
 
+    # ------------------------------------------------------------------
+    # Transient attributes — set by callers before .save() to pass
+    # context into the post_save signal without persisting extra data.
+    # These are never stored in the database.
+    # ------------------------------------------------------------------
+    #: User who triggered the status change (written to history).
+    history_changed_by = None
+    #: Machine-readable reason when transitioning to inactive
+    #: (e.g. "denied", "left", "removed").
+    history_inactive_reason = ""
+    #: Snapshot of status before save, populated by the pre_save signal.
+    history_pre_save_status = None
+
     def __str__(self):
         return f"{self.user} in {self.tribe_group} ({self.status})"
 
@@ -66,24 +78,17 @@ class TribeGroupMembership(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["tribe_group", "user"],
-                condition=models.Q(status="approved"),
-                name="tribes_tribegroupmembership_one_active_per_user_group",
+                name="tribes_tribegroupmembership_unique_per_user_group",
             )
         ]
 
 
 class TribeGroupMembershipCharacter(models.Model):
     """
-    Tracks which specific EveCharacter instances a player has committed to a TribeGroup membership.
-    Evaluated for requirements; activities are attributed per committed character.
+    Current roster: records which EveCharacters are actively committed to a membership.
+    This is the live state only — no audit fields here.
+    All history (when added, when removed, why) lives in TribeGroupMembershipCharacterHistory.
     """
-
-    LEAVE_REASON_VOLUNTARY = "voluntary"
-    LEAVE_REASON_REMOVED = "removed"
-    LEAVE_REASON_CHOICES = [
-        (LEAVE_REASON_VOLUNTARY, "Voluntary"),
-        (LEAVE_REASON_REMOVED, "Removed"),
-    ]
 
     membership = models.ForeignKey(
         "tribes.TribeGroupMembership",
@@ -95,21 +100,14 @@ class TribeGroupMembershipCharacter(models.Model):
         on_delete=models.CASCADE,
         related_name="tribe_commitments",
     )
-    committed_at = models.DateTimeField(auto_now_add=True)
-    left_at = models.DateTimeField(null=True, blank=True)
-    leave_reason = models.CharField(
-        max_length=16, choices=LEAVE_REASON_CHOICES, null=True, blank=True
-    )
 
     def __str__(self):
         return f"{self.character} → {self.membership.tribe_group}"
 
     class Meta:
-        ordering = ["-committed_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=["membership", "character"],
-                condition=models.Q(left_at__isnull=True),
-                name="tribes_tribegroupmembershipchar_one_active_per_character",
+                name="tribes_tribegroupmembershipchar_unique_per_membership",
             )
         ]

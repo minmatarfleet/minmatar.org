@@ -197,7 +197,7 @@ const cover_image = tribe?.banner_url ?? "/images/groups-cover.jpg"
                     <div class="[ tribe-groups-grid ]">
                         {tribe_groups.map(group => {
                             const membership = membership_by_group.get(group.id) ?? null
-                            const is_approved = membership?.status === 'approved'
+                            const is_approved = membership?.status === 'active'
                             const is_pending  = membership?.status === 'pending'
                             const output      = output_by_group.get(group.id) ?? null
                             const output_entries = output ? Object.entries(output.totals) : []

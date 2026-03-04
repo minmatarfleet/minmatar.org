@@ -4,15 +4,14 @@ from django.contrib.auth.models import Group, User
 from django.db import IntegrityError
 from django.db.models import signals as django_signals
 from django.test import TestCase
-from django.utils import timezone
 
 from eveonline.models import EveCharacter
 from tribes.models import (
     Tribe,
-    TribeActivity,
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 
 
@@ -99,30 +98,31 @@ class TribeGroupMembershipModelTestCase(TestCase):
         self.assertIn("miner", str(m))
         self.assertIn("pending", str(m))
 
-    def test_unique_active_constraint_allows_multiple_inactive(self):
-        """Multiple non-approved memberships (e.g. historical) should be allowed."""
+    def test_unique_constraint_blocks_second_row_any_status(self):
+        """Exactly one row per (tribe_group, user) regardless of status."""
         TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_LEFT,
-        )
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_LEFT,
-        )
-
-    def test_unique_active_constraint_blocks_two_approved(self):
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_INACTIVE,
         )
         with self.assertRaises(IntegrityError):
             TribeGroupMembership.objects.create(
                 user=self.user,
                 tribe_group=self.tribe_group,
-                status=TribeGroupMembership.STATUS_APPROVED,
+                status=TribeGroupMembership.STATUS_INACTIVE,
+            )
+
+    def test_unique_constraint_blocks_second_active_row(self):
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        with self.assertRaises(IntegrityError):
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_PENDING,
             )
 
 
@@ -141,84 +141,49 @@ class TribeGroupMembershipCharacterModelTestCase(TestCase):
         )
 
     def test_create_committed_character(self):
+        """Adding a character creates a current-roster link."""
         mc = TribeGroupMembershipCharacter.objects.create(
             membership=self.membership, character=self.character
         )
         self.assertEqual(mc.membership, self.membership)
         self.assertEqual(mc.character, self.character)
-        self.assertIsNone(mc.left_at)
 
-    def test_soft_delete(self):
+    def test_remove_character_deletes_link_and_writes_history(self):
+        """Removing a character deletes the roster link and appends history."""
         mc = TribeGroupMembershipCharacter.objects.create(
             membership=self.membership, character=self.character
         )
-        mc.left_at = timezone.now()
-        mc.leave_reason = TribeGroupMembershipCharacter.LEAVE_REASON_VOLUNTARY
-        mc.save()
-        self.assertIsNotNone(mc.left_at)
-        self.assertEqual(mc.leave_reason, "voluntary")
-
-
-class TribeActivityModelTestCase(TestCase):
-    def setUp(self):
-        self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads"
+        TribeGroupMembershipCharacterHistory.objects.create(
+            membership=self.membership,
+            character=self.character,
+            action=TribeGroupMembershipCharacterHistory.ACTION_ADDED,
         )
-        self.user = User.objects.create_user(username="pilot")
-
-    def test_create_activity(self):
-        a = TribeActivity.objects.create(
-            tribe_group=self.tribe_group,
-            user=self.user,
-            activity_type=TribeActivity.ACTIVITY_KILLS,
-            quantity=1.0,
-            unit="kills",
-            reference_type="EveCharacterKillmailAttacker",
-            reference_id="99999:12345",
+        # Simulate the remove flow.
+        TribeGroupMembershipCharacterHistory.objects.create(
+            membership=self.membership,
+            character=self.character,
+            action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+            leave_reason=TribeGroupMembershipCharacterHistory.LEAVE_REASON_VOLUNTARY,
         )
-        self.assertEqual(a.quantity, 1.0)
-        self.assertEqual(a.unit, "kills")
+        mc.delete()
 
-    def test_unique_reference_constraint(self):
-        TribeActivity.objects.create(
-            tribe_group=self.tribe_group,
-            user=self.user,
-            activity_type=TribeActivity.ACTIVITY_KILLS,
-            quantity=1.0,
-            unit="kills",
-            reference_type="EveCharacterKillmailAttacker",
-            reference_id="99999:12345",
+        self.assertFalse(
+            TribeGroupMembershipCharacter.objects.filter(pk=mc.pk).exists()
+        )
+        self.assertEqual(
+            TribeGroupMembershipCharacterHistory.objects.filter(
+                membership=self.membership,
+                character=self.character,
+                action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+            ).count(),
+            1,
+        )
+
+    def test_unique_constraint_prevents_duplicate_current_link(self):
+        TribeGroupMembershipCharacter.objects.create(
+            membership=self.membership, character=self.character
         )
         with self.assertRaises(IntegrityError):
-            TribeActivity.objects.create(
-                tribe_group=self.tribe_group,
-                user=self.user,
-                activity_type=TribeActivity.ACTIVITY_KILLS,
-                quantity=1.0,
-                unit="kills",
-                reference_type="EveCharacterKillmailAttacker",
-                reference_id="99999:12345",
+            TribeGroupMembershipCharacter.objects.create(
+                membership=self.membership, character=self.character
             )
-
-    def test_empty_reference_id_not_constrained(self):
-        """Two activities with empty reference_id should be allowed (manual logs)."""
-        TribeActivity.objects.create(
-            tribe_group=self.tribe_group,
-            user=self.user,
-            activity_type=TribeActivity.ACTIVITY_CUSTOM,
-            quantity=1.0,
-            unit="tickets",
-            reference_type="manual",
-            reference_id="",
-        )
-        TribeActivity.objects.create(
-            tribe_group=self.tribe_group,
-            user=self.user,
-            activity_type=TribeActivity.ACTIVITY_CUSTOM,
-            quantity=1.0,
-            unit="tickets",
-            reference_type="manual",
-            reference_id="",
-        )
-        self.assertEqual(TribeActivity.objects.count(), 2)

@@ -32,7 +32,8 @@ import { query_string } from '@helpers/string';
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
 const membership = membership_by_group.get(group.id) ?? null
-const is_approved = membership?.status === 'approved'
+const is_approved = membership?.status === 'active'
+// Note: status === 'active' is the single source of truth for membership.
 const is_pending = membership?.status === 'pending'
 
 const id = `tribe-group-status-${group.tribe_id}-${group.id}`

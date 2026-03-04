@@ -9,6 +9,7 @@ from tribes.models import (
     Tribe,
     TribeGroup,
     TribeGroupMembership,
+    TribeGroupMembershipHistory,
 )
 
 
@@ -40,34 +41,47 @@ class MembershipSignalTestCase(TestCase):
         )
         self.user = User.objects.create_user(username="pilot")
 
-    def test_approved_adds_user_to_group_auth_groups(self):
+    def test_active_adds_user_to_group_auth_groups(self):
         membership = TribeGroupMembership.objects.create(
             user=self.user, tribe_group=self.tribe_group
         )
-        membership.status = TribeGroupMembership.STATUS_APPROVED
+        membership.status = TribeGroupMembership.STATUS_ACTIVE
         membership.save()
 
         self.assertIn(self.group_auth_group, self.user.groups.all())
         self.assertIn(self.tribe_auth_group, self.user.groups.all())
 
-    def test_left_removes_user_from_group_auth_group(self):
+    def test_active_appends_membership_history(self):
+        membership = TribeGroupMembership.objects.create(
+            user=self.user, tribe_group=self.tribe_group
+        )
+        membership.status = TribeGroupMembership.STATUS_ACTIVE
+        membership.save()
+
+        history = TribeGroupMembershipHistory.objects.filter(
+            membership=membership, to_status=TribeGroupMembership.STATUS_ACTIVE
+        )
+        self.assertTrue(history.exists())
+
+    def test_inactive_removes_user_from_group_auth_group(self):
         membership = TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
-        # Manually add user (signal fires on save)
+        # Manually add user (signal fires on save above)
         self.user.groups.add(self.group_auth_group)
         self.user.groups.add(self.tribe_auth_group)
 
-        membership.status = TribeGroupMembership.STATUS_LEFT
+        membership.status = TribeGroupMembership.STATUS_INACTIVE
         membership.left_at = timezone.now()
+        membership.history_inactive_reason = "left"
         membership.save()
 
         self.assertNotIn(self.group_auth_group, self.user.groups.all())
         self.assertNotIn(self.tribe_auth_group, self.user.groups.all())
 
-    def test_removed_leaves_tribe_group_if_other_active_membership_exists(
+    def test_inactive_leaves_tribe_group_if_other_active_membership_exists(
         self,
     ):
         """User stays in tribe auth group if they still have another active TribeGroup in the tribe."""
@@ -79,19 +93,20 @@ class MembershipSignalTestCase(TestCase):
         m1 = TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
         TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=tribe_group2,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
         self.user.groups.add(self.tribe_auth_group)
         self.user.groups.add(self.group_auth_group)
 
-        # Remove from first group — tribe auth group should remain because of m2.
-        m1.status = TribeGroupMembership.STATUS_REMOVED
+        # Go inactive in first group — tribe auth group should remain because of m2.
+        m1.status = TribeGroupMembership.STATUS_INACTIVE
         m1.left_at = timezone.now()
+        m1.history_inactive_reason = "removed"
         m1.save()
 
         self.assertNotIn(self.group_auth_group, self.user.groups.all())

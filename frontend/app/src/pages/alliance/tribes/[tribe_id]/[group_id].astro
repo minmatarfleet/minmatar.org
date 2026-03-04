@@ -50,13 +50,13 @@ try {
     const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id)
     const mine = memberships.find(m => m.user_id === user.user_id) ?? null
     membership_by_group.set(tribe_group.id, mine)
-    members = memberships.filter(membership => membership.approved_at && !membership.left_at)
+    members = memberships.filter(membership => membership.status === 'active')
 
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
     
     const membership = membership_by_group.get(tribe_group.id) ?? null
-    is_member = membership?.status === 'approved'
+    is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
 } catch (error) {
     fetch_group_error = prod_error_messages() ? t('fetch_group_error') : error.message

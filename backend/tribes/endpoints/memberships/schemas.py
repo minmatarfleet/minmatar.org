@@ -6,7 +6,7 @@ class MembershipCharacterSchema(BaseModel):
     id: int
     character_id: int
     character_name: str
-    committed_at: str
+    committed_at: Optional[str] = None
     left_at: Optional[str] = None
 
 
@@ -17,6 +17,7 @@ class MembershipSchema(BaseModel):
     tribe_group_name: str
     tribe_id: int
     status: str
+    inactive_reason: Optional[str] = None
     requirement_snapshot: Optional[Dict[str, Any]] = None
     created_at: str
     approved_by_id: Optional[int] = None

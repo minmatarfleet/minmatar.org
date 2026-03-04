@@ -8,6 +8,7 @@ from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/characters/{character_id}"
@@ -41,14 +42,19 @@ def delete_membership_character(
     mc = TribeGroupMembershipCharacter.objects.filter(
         membership=membership,
         character__character_id=character_id,
-        left_at__isnull=True,
     ).first()
     if not mc:
         return 404, {"detail": "Character commitment not found."}
 
-    mc.left_at = timezone.now()
-    mc.leave_reason = TribeGroupMembershipCharacter.LEAVE_REASON_VOLUNTARY
-    mc.save()
+    TribeGroupMembershipCharacterHistory.objects.create(
+        membership=membership,
+        character=mc.character,
+        action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+        at=timezone.now(),
+        by=request.user,
+        leave_reason=TribeGroupMembershipCharacterHistory.LEAVE_REASON_VOLUNTARY,
+    )
+    mc.delete()
     return 200, {"detail": "Character removed from membership."}
 
 

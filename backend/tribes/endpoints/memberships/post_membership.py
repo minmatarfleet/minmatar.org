@@ -8,11 +8,13 @@ from tribes.endpoints.memberships.schemas import (
     ApplyToGroupRequest,
     MembershipSchema,
 )
+from tribes.endpoints.memberships.serializers import serialize_membership
 from tribes.helpers import build_membership_snapshot
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,27 +38,45 @@ def post_membership(
         return 404, {"detail": "TribeGroup not found."}
 
     existing = TribeGroupMembership.objects.filter(
-        user=request.user,
-        tribe_group=tg,
-        status__in=[
-            TribeGroupMembership.STATUS_PENDING,
-            TribeGroupMembership.STATUS_APPROVED,
-        ],
+        user=request.user, tribe_group=tg
     ).first()
-    if existing:
-        return 400, {
-            "detail": f"Existing membership in status '{existing.status}' already exists."
-        }
 
-    snapshot = build_membership_snapshot(
-        request.user, tg, payload.character_ids
-    )
-    membership = TribeGroupMembership.objects.create(
-        user=request.user,
-        tribe_group=tg,
-        status=TribeGroupMembership.STATUS_PENDING,
-        requirement_snapshot=snapshot,
-    )
+    if existing:
+        if existing.status in (
+            TribeGroupMembership.STATUS_PENDING,
+            TribeGroupMembership.STATUS_ACTIVE,
+        ):
+            return 400, {
+                "detail": f"Existing membership in status '{existing.status}' already exists."
+            }
+
+        # status == inactive — reset to pending (re-application).
+        membership = existing
+        snapshot = build_membership_snapshot(
+            request.user, tg, payload.character_ids
+        )
+        membership.status = TribeGroupMembership.STATUS_PENDING
+        membership.requirement_snapshot = snapshot
+        membership.approved_by = None
+        membership.approved_at = None
+        membership.left_at = None
+        membership.removed_by = None
+        membership.history_changed_by = request.user
+        membership.save()
+
+        # Clear any stale current-roster links (should be empty after leave,
+        # but guard anyway) before attaching the new characters.
+        membership.characters.all().delete()
+    else:
+        snapshot = build_membership_snapshot(
+            request.user, tg, payload.character_ids
+        )
+        membership = TribeGroupMembership.objects.create(
+            user=request.user,
+            tribe_group=tg,
+            status=TribeGroupMembership.STATUS_PENDING,
+            requirement_snapshot=snapshot,
+        )
 
     for char_id in payload.character_ids:
         character = EveCharacter.objects.filter(
@@ -69,38 +89,16 @@ def post_membership(
                 request.user,
             )
             continue
-        TribeGroupMembershipCharacter.objects.get_or_create(
+        _, created = TribeGroupMembershipCharacter.objects.get_or_create(
             membership=membership,
             character=character,
         )
+        if created:
+            TribeGroupMembershipCharacterHistory.objects.create(
+                membership=membership,
+                character=character,
+                action=TribeGroupMembershipCharacterHistory.ACTION_ADDED,
+                by=request.user,
+            )
 
-    return 200, _serialize(membership)
-
-
-def _serialize(m: TribeGroupMembership) -> MembershipSchema:
-    chars = TribeGroupMembershipCharacter.objects.filter(
-        membership=m, left_at__isnull=True
-    ).select_related("character")
-    return MembershipSchema(
-        id=m.pk,
-        user_id=m.user_id,
-        tribe_group_id=m.tribe_group_id,
-        tribe_group_name=str(m.tribe_group),
-        tribe_id=m.tribe_group.tribe_id,
-        status=m.status,
-        requirement_snapshot=m.requirement_snapshot,
-        created_at=m.created_at.isoformat(),
-        approved_by_id=m.approved_by_id,
-        approved_at=m.approved_at.isoformat() if m.approved_at else None,
-        left_at=m.left_at.isoformat() if m.left_at else None,
-        characters=[
-            {
-                "id": c.pk,
-                "character_id": c.character.character_id,
-                "character_name": c.character.character_name,
-                "committed_at": c.committed_at.isoformat(),
-                "left_at": c.left_at.isoformat() if c.left_at else None,
-            }
-            for c in chars
-        ],
-    )
+    return 200, serialize_membership(membership)

@@ -9,6 +9,7 @@ from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 from eveonline.models import EveCharacter
 
@@ -44,7 +45,7 @@ def post_membership_character(
         return 404, {"detail": "Membership not found."}
     if membership.status not in [
         TribeGroupMembership.STATUS_PENDING,
-        TribeGroupMembership.STATUS_APPROVED,
+        TribeGroupMembership.STATUS_ACTIVE,
     ]:
         return 400, {"detail": "Cannot add characters to a closed membership."}
 
@@ -57,7 +58,7 @@ def post_membership_character(
         }
 
     if TribeGroupMembershipCharacter.objects.filter(
-        membership=membership, character=character, left_at__isnull=True
+        membership=membership, character=character
     ).exists():
         return 400, {
             "detail": "Character already committed to this membership."
@@ -66,10 +67,16 @@ def post_membership_character(
     mc = TribeGroupMembershipCharacter.objects.create(
         membership=membership, character=character
     )
+    history = TribeGroupMembershipCharacterHistory.objects.create(
+        membership=membership,
+        character=character,
+        action=TribeGroupMembershipCharacterHistory.ACTION_ADDED,
+        by=request.user,
+    )
     return 200, MembershipCharacterSchema(
         id=mc.pk,
         character_id=character.character_id,
         character_name=character.character_name,
-        committed_at=mc.committed_at.isoformat(),
+        committed_at=history.at.isoformat(),
         left_at=None,
     )

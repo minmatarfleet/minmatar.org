@@ -11,8 +11,10 @@ from tribes.models.tribe_group_membership import (
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
 )
-from tribes.models.tribe_activity import TribeActivity
-from tribes.models.tribe_group_outreach import TribeGroupOutreach
+from tribes.models.tribe_group_membership_history import (
+    TribeGroupMembershipHistory,
+    TribeGroupMembershipCharacterHistory,
+)
 
 __all__ = [
     "Tribe",
@@ -22,6 +24,6 @@ __all__ = [
     "TribeGroupRequirementSkill",
     "TribeGroupMembership",
     "TribeGroupMembershipCharacter",
-    "TribeActivity",
-    "TribeGroupOutreach",
+    "TribeGroupMembershipHistory",
+    "TribeGroupMembershipCharacterHistory",
 ]
