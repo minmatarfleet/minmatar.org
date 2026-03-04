@@ -60,7 +60,7 @@ const count_text = t(tribe_groups.length != 1 ? 'tribes_plural' : 'tribes_singul
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageWide from '@components/page/PageWide.astro';
+import PageLanding from '@components/page/PageLanding.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -87,7 +87,7 @@ const meta_description = await strip_markdown(page_description)
         modal: true,
     }}
 >
-    <PageWide
+    <PageLanding
         cover={{
             image: "/images/groups-cover.jpg",
             image_990: "/images/groups-cover.jpg",
@@ -99,30 +99,32 @@ const meta_description = await strip_markdown(page_description)
             count_text: '${count_text}',
         }`}
     >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock id="header-oob" gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                {tribe?.chief &&
-                    <PilotBadge
-                        character_id={tribe.chief.character_id}
-                        character_name={tribe.chief.character_name}
-                        size={32}
-                        centered={true}
-                    >
-                        <small>{t('tribe_chief')}</small>
-                    </PilotBadge>
-                }
-            </Flexblock>
-            <FlexInline>
-                <Button href={translatePath('/alliance/tribes/')}>
-                    {t('back_to_tribes')}
-                </Button>
-            </FlexInline>
-        </FlexInline>
-
         <Flexblock gap='var(--space-2xl)'>
+            <FlexInline class="[ !items-start ]" justification='space-between'>
+                <TextBox>
+                    <Flexblock id="header-oob" gap="var(--space-3xs)">
+                        <PageTitle is_landing={true}>
+                            {page_title}
+                        </PageTitle>
+                        {tribe?.chief &&
+                            <PilotBadge
+                                character_id={tribe.chief.character_id}
+                                character_name={tribe.chief.character_name}
+                                size={32}
+                                centered={true}
+                            >
+                                <small>{t('tribe_chief')}</small>
+                            </PilotBadge>
+                        }
+                    </Flexblock>
+                </TextBox>
+                <FlexInline class="[ !items-start ]">
+                    <Button href={translatePath('/alliance/tribes/')}>
+                        {t('back_to_tribes')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+
             <TextBox>
                 <p id="excerpt-oob" class="[ excerpt ]">{page_description}</p>
             </TextBox>
@@ -144,5 +146,5 @@ const meta_description = await strip_markdown(page_description)
                 />
             }
         </Flexblock>
-    </PageWide>
+    </PageLanding>
 </Viewport>
