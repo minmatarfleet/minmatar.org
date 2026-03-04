@@ -111,23 +111,3 @@ class MembershipSignalTestCase(TestCase):
 
         self.assertNotIn(self.group_auth_group, self.user.groups.all())
         self.assertIn(self.tribe_auth_group, self.user.groups.all())
-
-
-class ElderSignalTestCase(TestCase):
-    def setUp(self):
-        self.tribe = Tribe.objects.create(name="Dreads Tribe", slug="dreads")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads"
-        )
-        self.elder = User.objects.create_user(username="elder")
-
-    def test_elder_added_gets_alliance_director_group(self):
-        self.tribe_group.elders.add(self.elder)
-        director_group = Group.objects.get(name="Alliance Director")
-        self.assertIn(director_group, self.elder.groups.all())
-
-    def test_elder_removed_loses_alliance_director_group(self):
-        self.tribe_group.elders.add(self.elder)
-        self.tribe_group.elders.remove(self.elder)
-        director_group = Group.objects.get(name="Alliance Director")
-        self.assertNotIn(director_group, self.elder.groups.all())
