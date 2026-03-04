@@ -1,6 +1,7 @@
 """Tests for eveonline.helpers.characters.planets – update_character_planets."""
 
 import factory
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
 from django.db.models import signals
@@ -11,7 +12,10 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 from eveonline.client import EsiClient, EsiResponse
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EveCharacterPlanet
-from eveonline.helpers.characters.planets import update_character_planets
+from eveonline.helpers.characters.planets import (
+    update_character_planets,
+    _extract_planet_outputs_with_daily,
+)
 
 PLANETS_LIST = [
     {
@@ -416,3 +420,261 @@ class UpdateCharacterPlanetsTest(TestCase):
             character=char, planet_id=40001
         )
         self.assertEqual(planet.outputs.count(), 5)
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for _extract_planet_outputs_with_daily (supply-chain capping)
+# ---------------------------------------------------------------------------
+
+
+class ExtractPlanetOutputsSupplyCapTest(TestCase):
+    """
+    Tests for the supply-chain-limited factory output calculation.
+
+    Planet topology used throughout:
+      Extractor (pin 100) → Launchpad (pin 400) → Basic factory (pin 200) → Launchpad
+    Schematic 126: cycle_time 1800 s, consumes 3000 P0 per cycle, produces 20 P1.
+    """
+
+    # Shared planet structure (pins without extractor_details for factory-only tests)
+    LAUNCHPAD_PIN = {"pin_id": 400, "type_id": 2544}
+    FACTORY_PIN = {"pin_id": 200, "type_id": 2473, "schematic_id": 126}
+
+    SCHEMATIC_CYCLE = {126: 1800}
+
+    def _planet(
+        self, extractor_cycle, extractor_qty, include_storage_to_factory=True
+    ):
+        """
+        Build a planet_detail dict with one extractor, one launchpad, one factory.
+
+        extractor → launchpad (route qty = extractor_qty per extractor cycle)
+        launchpad → factory (route qty = 3000 per factory cycle, the schematic input)
+        factory → launchpad (route qty = 20 per factory cycle, the schematic output)
+        """
+        pins = [
+            {
+                "pin_id": 100,
+                "extractor_details": {
+                    "cycle_time": extractor_cycle,
+                    "product_type_id": 2267,
+                    "qty_per_cycle": extractor_qty,
+                    "heads": [],
+                },
+            },
+            self.LAUNCHPAD_PIN,
+            self.FACTORY_PIN,
+        ]
+        routes = [
+            # Extractor → launchpad
+            {
+                "route_id": 1,
+                "source_pin_id": 100,
+                "destination_pin_id": 400,
+                "content_type_id": 2267,
+                "quantity": extractor_qty,
+            },
+            # Factory → launchpad (output)
+            {
+                "route_id": 3,
+                "source_pin_id": 200,
+                "destination_pin_id": 400,
+                "content_type_id": 2398,
+                "quantity": 20,
+            },
+        ]
+        if include_storage_to_factory:
+            routes.insert(
+                1,
+                {
+                    # Launchpad → factory (input requirement: 3000 P0 per 1800 s cycle)
+                    "route_id": 2,
+                    "source_pin_id": 400,
+                    "destination_pin_id": 200,
+                    "content_type_id": 2267,
+                    "quantity": 3000,
+                },
+            )
+        return {"pins": pins, "routes": routes}
+
+    def test_factory_supply_limited_when_extractor_under_produces(self):
+        """
+        Extractor cycle is slower than needed → factory runs at half capacity.
+
+        Extractor: 3000 qty / 3600 s cycle = 72,000 P0/day
+        Factory at capacity: 3000 P0 needed per 1800 s cycle = 144,000 P0/day
+        Limiting factor: 72,000 / 144,000 = 0.5
+        Expected produced P1: (20/1800 * 86400) * 0.5 = 480/day
+        """
+        detail = self._planet(extractor_cycle=3600, extractor_qty=3000)
+        harvested, produced = _extract_planet_outputs_with_daily(
+            detail, self.SCHEMATIC_CYCLE
+        )
+
+        self.assertIn(2267, harvested)
+        extractor_daily = Decimal(3000) / Decimal(3600) * Decimal(86400)
+        self.assertEqual(harvested[2267], extractor_daily)
+
+        capacity = Decimal(20) / Decimal(1800) * Decimal(86400)
+        supply = Decimal(3000) / Decimal(3600) * Decimal(86400)
+        required = Decimal(3000) / Decimal(1800) * Decimal(86400)
+        expected = capacity * (supply / required)
+        self.assertAlmostEqual(
+            float(produced.get(2398, 0)), float(expected), places=4
+        )
+
+    def test_factory_at_full_capacity_when_supply_balanced(self):
+        """
+        Extractor exactly matches factory needs → no supply limit applied.
+
+        Extractor: 3000 qty / 1800 s = 144,000 P0/day = factory's full requirement.
+        Expected produced P1: 20/1800 * 86400 = 960/day (full capacity).
+        """
+        detail = self._planet(extractor_cycle=1800, extractor_qty=3000)
+        _, produced = _extract_planet_outputs_with_daily(
+            detail, self.SCHEMATIC_CYCLE
+        )
+
+        capacity = Decimal(20) / Decimal(1800) * Decimal(86400)
+        self.assertAlmostEqual(
+            float(produced.get(2398, 0)), float(capacity), places=4
+        )
+
+    def test_factory_uses_capacity_when_no_inbound_routes(self):
+        """
+        Factory has no inbound routes (simplified/old ESI data) → capacity fallback.
+        """
+        detail = self._planet(
+            extractor_cycle=3600,
+            extractor_qty=3000,
+            include_storage_to_factory=False,
+        )
+        _, produced = _extract_planet_outputs_with_daily(
+            detail, self.SCHEMATIC_CYCLE
+        )
+
+        capacity = Decimal(20) / Decimal(1800) * Decimal(86400)
+        self.assertAlmostEqual(
+            float(produced.get(2398, 0)), float(capacity), places=4
+        )
+
+    def test_import_planet_uses_capacity(self):
+        """
+        Factory fed only by an import launchpad (no in-planet extractor supply)
+        → capacity fallback because supply is unmeasurable.
+        """
+        detail = {
+            "pins": [self.LAUNCHPAD_PIN, self.FACTORY_PIN],
+            "routes": [
+                # Launchpad → factory: import-fed (launchpad has no in-planet supply)
+                {
+                    "route_id": 2,
+                    "source_pin_id": 400,
+                    "destination_pin_id": 200,
+                    "content_type_id": 2267,
+                    "quantity": 3000,
+                },
+                {
+                    "route_id": 3,
+                    "source_pin_id": 200,
+                    "destination_pin_id": 400,
+                    "content_type_id": 2398,
+                    "quantity": 20,
+                },
+            ],
+        }
+        _, produced = _extract_planet_outputs_with_daily(
+            detail, self.SCHEMATIC_CYCLE
+        )
+
+        capacity = Decimal(20) / Decimal(1800) * Decimal(86400)
+        self.assertAlmostEqual(
+            float(produced.get(2398, 0)), float(capacity), places=4
+        )
+        # No harvested either — pure factory planet
+        harvested, _ = _extract_planet_outputs_with_daily(
+            detail, self.SCHEMATIC_CYCLE
+        )
+        self.assertEqual(harvested, {})
+
+    def test_multi_tier_chain_propagates_supply_limit(self):
+        """
+        Two-tier chain: extractor → storage → basic factory → storage → advanced factory.
+        Supply limit cascades: advanced factory is constrained by basic factory output,
+        which is itself constrained by the extractor.
+
+        Extractor: 3000 / 3600 s = 72,000 P0/day
+        Basic factory (schematic 126, 1800 s): needs 3000/1800*86400=144,000 P0/day
+          → factor 0.5 → produces 20/1800*86400*0.5 = 480 P1/day
+        Advanced factory (schematic 127, 3600 s): needs 40/3600*86400=960 P1/day
+          → supply 480 → factor 0.5 → produces 5/3600*86400*0.5 = 60 P2/day
+        """
+        detail = {
+            "pins": [
+                {
+                    "pin_id": 100,
+                    "extractor_details": {
+                        "cycle_time": 3600,
+                        "product_type_id": 2267,
+                        "qty_per_cycle": 3000,
+                        "heads": [],
+                    },
+                },
+                {"pin_id": 400, "type_id": 2544},  # launchpad
+                {"pin_id": 200, "type_id": 2473, "schematic_id": 126},  # basic
+                {
+                    "pin_id": 300,
+                    "type_id": 2474,
+                    "schematic_id": 127,
+                },  # advanced
+            ],
+            "routes": [
+                # Extractor → launchpad
+                {
+                    "route_id": 1,
+                    "source_pin_id": 100,
+                    "destination_pin_id": 400,
+                    "content_type_id": 2267,
+                    "quantity": 3000,
+                },
+                # Launchpad → basic factory
+                {
+                    "route_id": 2,
+                    "source_pin_id": 400,
+                    "destination_pin_id": 200,
+                    "content_type_id": 2267,
+                    "quantity": 3000,
+                },
+                # Basic factory → launchpad (P1)
+                {
+                    "route_id": 3,
+                    "source_pin_id": 200,
+                    "destination_pin_id": 400,
+                    "content_type_id": 2398,
+                    "quantity": 20,
+                },
+                # Launchpad → advanced factory (P1 input; needs 40/3600s cycle)
+                {
+                    "route_id": 4,
+                    "source_pin_id": 400,
+                    "destination_pin_id": 300,
+                    "content_type_id": 2398,
+                    "quantity": 40,
+                },
+                # Advanced factory → launchpad (P2)
+                {
+                    "route_id": 5,
+                    "source_pin_id": 300,
+                    "destination_pin_id": 400,
+                    "content_type_id": 2399,
+                    "quantity": 5,
+                },
+            ],
+        }
+        schematics = {126: 1800, 127: 3600}
+        _, produced = _extract_planet_outputs_with_daily(detail, schematics)
+
+        # Basic factory: 960 capacity * 0.5 = 480 P1/day
+        self.assertAlmostEqual(float(produced.get(2398, 0)), 480.0, places=2)
+        # Advanced factory: 120 capacity * 0.5 = 60 P2/day
+        self.assertAlmostEqual(float(produced.get(2399, 0)), 60.0, places=2)

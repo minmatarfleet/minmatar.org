@@ -173,3 +173,7 @@ artifacts/
 .DS_Store
 
 .vscode/
+
+
+# debugging
+backend/scripts/
