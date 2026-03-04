@@ -6,14 +6,7 @@ from django.db import migrations
 
 
 def run_sync_after_backfill(apps, schema_editor):
-    from django.contrib.auth import get_user_model
-    from groups.helpers import sync_user_community_groups
-
-    User = get_user_model()
-    UserCommunityStatus = apps.get_model("groups", "UserCommunityStatus")
-    for ucs in UserCommunityStatus.objects.all():
-        user = User.objects.get(pk=ucs.user_id)
-        sync_user_community_groups(user)
+    pass
 
 
 class Migration(migrations.Migration):
