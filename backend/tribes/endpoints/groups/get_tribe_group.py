@@ -49,7 +49,7 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
         return 404, {"detail": "TribeGroup not found."}
 
     member_count = TribeGroupMembership.objects.filter(
-        tribe_group=tg, status=TribeGroupMembership.STATUS_APPROVED
+        tribe_group=tg, status=TribeGroupMembership.STATUS_ACTIVE
     ).count()
 
     chief_ref = _user_to_character_ref(tg.chief) if tg.chief else None

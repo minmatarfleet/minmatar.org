@@ -5,7 +5,11 @@ from ninja import Router
 
 from authentication import AuthBearer
 from tribes.helpers import user_can_manage_group
-from tribes.models import TribeGroup, TribeGroupMembership
+from tribes.models import (
+    TribeGroup,
+    TribeGroupMembership,
+    TribeGroupMembershipCharacterHistory,
+)
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}"
 METHOD = "delete"
@@ -38,19 +42,45 @@ def delete_membership(
         return 403, {"detail": "You cannot remove this membership."}
 
     now = timezone.now()
-    if is_own and not is_manager:
-        membership.status = TribeGroupMembership.STATUS_LEFT
-        membership.left_at = now
-    else:
-        membership.status = TribeGroupMembership.STATUS_REMOVED
-        membership.removed_by = request.user
-        membership.left_at = now
-    membership.save()
+    is_forced_removal = is_manager and not is_own
 
-    membership.characters.filter(left_at__isnull=True).update(
-        left_at=now,
-        leave_reason="removed" if is_manager and not is_own else "voluntary",
+    if is_forced_removal:
+        inactive_reason = "removed"
+        leave_reason = (
+            TribeGroupMembershipCharacterHistory.LEAVE_REASON_REMOVED
+        )
+        membership.removed_by = request.user
+    else:
+        inactive_reason = "left"
+        leave_reason = (
+            TribeGroupMembershipCharacterHistory.LEAVE_REASON_VOLUNTARY
+        )
+
+    # Write history row for each currently committed character before clearing them.
+    current_chars = list(
+        membership.characters.select_related("character").all()
     )
+    char_history = [
+        TribeGroupMembershipCharacterHistory(
+            membership=membership,
+            character=mc.character,
+            action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+            at=now,
+            by=request.user,
+            leave_reason=leave_reason,
+        )
+        for mc in current_chars
+    ]
+    TribeGroupMembershipCharacterHistory.objects.bulk_create(char_history)
+
+    # Remove all current character links.
+    membership.characters.all().delete()
+
+    membership.status = TribeGroupMembership.STATUS_INACTIVE
+    membership.left_at = now
+    membership.history_inactive_reason = inactive_reason
+    membership.history_changed_by = request.user
+    membership.save()
 
     return 200, {"detail": "Membership ended."}
 

@@ -176,7 +176,7 @@ class UserPermissionHelpersTestCase(TestCase):
         TribeGroupMembership.objects.create(
             user=self.regular,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
         self.assertTrue(user_in_tribe_group(self.regular, self.tribe_group))
         self.assertFalse(user_in_tribe_group(self.chief, self.tribe_group))

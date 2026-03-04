@@ -8,13 +8,13 @@ from tribes.helpers import user_can_manage_group
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
-    TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/{membership_id}/characters"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List characters committed to a membership.",
+    "summary": "List characters currently committed to a membership.",
     "response": {200: List[MembershipCharacterSchema], 403: dict, 404: dict},
     "auth": AuthBearer(),
 }
@@ -37,16 +37,27 @@ def get_membership_characters(
     if not is_own and not user_can_manage_group(request.user, tg):
         return 403, {"detail": "Access denied."}
 
-    chars = TribeGroupMembershipCharacter.objects.filter(
-        membership=membership, left_at__isnull=True
-    ).select_related("character")
-    return 200, [
-        MembershipCharacterSchema(
-            id=c.pk,
-            character_id=c.character.character_id,
-            character_name=c.character.character_name,
-            committed_at=c.committed_at.isoformat(),
-            left_at=c.left_at.isoformat() if c.left_at else None,
+    chars = membership.characters.select_related("character").all()
+
+    # Derive committed_at from character history.
+    history_map = {
+        h.character_id: h.at
+        for h in TribeGroupMembershipCharacterHistory.objects.filter(
+            membership=membership,
+            action=TribeGroupMembershipCharacterHistory.ACTION_ADDED,
+        ).order_by("at")
+    }
+
+    result = []
+    for c in chars:
+        h_at = history_map.get(c.character_id)
+        result.append(
+            MembershipCharacterSchema(
+                id=c.pk,
+                character_id=c.character.character_id,
+                character_name=c.character.character_name,
+                committed_at=h_at.isoformat() if h_at else None,
+                left_at=None,
+            )
         )
-        for c in chars
-    ]
+    return 200, result

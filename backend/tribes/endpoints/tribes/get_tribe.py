@@ -42,7 +42,7 @@ def get_tribe(request, tribe_id: int):
     total_members = (
         TribeGroupMembership.objects.filter(
             tribe_group__tribe=tribe,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
         .values("user")
         .distinct()

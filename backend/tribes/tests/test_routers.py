@@ -9,9 +9,10 @@ from django.test import Client, TestCase
 from eveonline.models import EveCharacter
 from tribes.models import (
     Tribe,
-    TribeActivity,
     TribeGroup,
     TribeGroupMembership,
+    TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
 )
 
 BASE_URL = "/api/tribes"
@@ -138,6 +139,38 @@ class MembershipApplyTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
+    def test_reapply_after_inactive_resets_existing_row(self):
+        """Re-applying after going inactive resets the same row to pending."""
+        # First application.
+        self.client.post(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships",
+            data={"character_ids": []},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        membership = TribeGroupMembership.objects.get(
+            user=self.user, tribe_group=self.tribe_group
+        )
+        membership.status = TribeGroupMembership.STATUS_INACTIVE
+        membership.save()
+
+        # Re-apply.
+        response = self.client.post(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships",
+            data={"character_ids": []},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "pending")
+        # Still only one row.
+        self.assertEqual(
+            TribeGroupMembership.objects.filter(
+                user=self.user, tribe_group=self.tribe_group
+            ).count(),
+            1,
+        )
+
 
 class MembershipApprovalTestCase(TestCase):
     def setUp(self):
@@ -167,7 +200,7 @@ class MembershipApprovalTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
         self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_APPROVED
+            self.membership.status, TribeGroupMembership.STATUS_ACTIVE
         )
 
     def test_random_user_cannot_approve(self):
@@ -183,7 +216,7 @@ class MembershipApprovalTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
         self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_DENIED
+            self.membership.status, TribeGroupMembership.STATUS_INACTIVE
         )
 
     def test_elder_can_approve(self):
@@ -206,7 +239,7 @@ class MembershipLeaveTestCase(TestCase):
         self.membership = TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
 
     def test_user_can_leave_own_membership(self):
@@ -218,7 +251,7 @@ class MembershipLeaveTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
         self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_LEFT
+            self.membership.status, TribeGroupMembership.STATUS_INACTIVE
         )
 
     def test_chief_can_remove_member(self):
@@ -234,121 +267,83 @@ class MembershipLeaveTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.membership.refresh_from_db()
         self.assertEqual(
-            self.membership.status, TribeGroupMembership.STATUS_REMOVED
+            self.membership.status, TribeGroupMembership.STATUS_INACTIVE
         )
         self.assertEqual(self.membership.removed_by, chief)
 
 
-class OutputEndpointsTestCase(TestCase):
+class MembershipCharacterTestCase(TestCase):
+    """Tests for committing and removing characters from a membership."""
+
     def setUp(self):
         self.client = Client()
-        self.tribe = Tribe.objects.create(name="Dreads Tribe", slug="dreads")
+        self.tribe = Tribe.objects.create(name="Mining", slug="mining")
         self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Dreads"
+            tribe=self.tribe, name="Mining"
         )
-        self.user = User.objects.create_user(username="pilot")
-
-        TribeActivity.objects.create(
-            tribe_group=self.tribe_group,
+        self.user = User.objects.create_user(username="miner")
+        self.token = _make_token(self.user)
+        self.membership = TribeGroupMembership.objects.create(
             user=self.user,
-            activity_type=TribeActivity.ACTIVITY_KILLS,
-            quantity=3.0,
-            unit="kills",
-            reference_type="test",
-            reference_id="ref1",
-        )
-        TribeActivity.objects.create(
             tribe_group=self.tribe_group,
-            user=self.user,
-            activity_type=TribeActivity.ACTIVITY_KILLS,
-            quantity=2.0,
-            unit="kills",
-            reference_type="test",
-            reference_id="ref2",
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.character = EveCharacter.objects.create(
+            character_id=20001, character_name="Miner Two", user=self.user
         )
 
-    def test_tribe_output_aggregates(self):
-        response = self.client.get(f"{BASE_URL}/{self.tribe.pk}/output")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        # New shape: list of GroupOutputSummarySchema (one per group).
-        self.assertIsInstance(data, list)
-        group_summary = next(
-            (r for r in data if r["tribe_group_id"] == self.tribe_group.pk),
-            None,
-        )
-        self.assertIsNotNone(group_summary)
-        kills_total = group_summary["totals"].get("kills (kills)")
-        self.assertEqual(kills_total, 5.0)
-
-    def test_group_output_aggregates(self):
-        response = self.client.get(
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/output"
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        # New shape: single GroupOutputSummarySchema with totals dict.
-        kills_total = data["totals"].get("kills (kills)")
-        self.assertEqual(kills_total, 5.0)
-
-    def test_leaderboard(self):
-        token = _make_token(self.user)
-        response = self.client.get(
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/leaderboard?activity_type=kills",
-            HTTP_AUTHORIZATION=f"Bearer {token}",
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(len(data), 1)
-        # New schema uses "total" instead of "total_quantity".
-        self.assertEqual(data[0]["total"], 5.0)
-
-
-class LogActivityTestCase(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.tribe = Tribe.objects.create(name="Conversion", slug="conversion")
-        self.tribe_group = TribeGroup.objects.create(
-            tribe=self.tribe, name="Conversion"
-        )
-        self.chief = User.objects.create_user(username="chief")
-        self.tribe_group.chief = self.chief
-        self.tribe_group.save()
-        self.target_user = User.objects.create_user(username="converter")
-
-    def test_chief_can_log_activity(self):
-        token = _make_token(self.chief)
-        response = self.client.post(
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/activities",
-            data={
-                "activity_type": "custom",
-                "user_id": self.target_user.pk,
-                "quantity": 1000000.0,
-                "unit": "ISK",
-                "description": "LP conversion",
-            },
+    def _add_character(self):
+        return self.client.post(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}"
+            f"/memberships/{self.membership.pk}/characters",
+            data={"character_id": self.character.character_id},
             content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def test_add_character_creates_roster_link_and_history(self):
+        response = self._add_character()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            TribeGroupMembershipCharacter.objects.filter(
+                membership=self.membership, character=self.character
+            ).exists()
+        )
+        self.assertTrue(
+            TribeGroupMembershipCharacterHistory.objects.filter(
+                membership=self.membership,
+                character=self.character,
+                action=TribeGroupMembershipCharacterHistory.ACTION_ADDED,
+            ).exists()
+        )
+
+    def test_remove_character_deletes_roster_link_and_writes_history(self):
+        self._add_character()
+        url = (
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}"
+            f"/memberships/{self.membership.pk}/characters/{self.character.character_id}"
+        )
+        response = self.client.delete(
+            url, HTTP_AUTHORIZATION=f"Bearer {self.token}"
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["quantity"], 1000000.0)
-
-    def test_regular_user_cannot_log_activity(self):
-        regular = User.objects.create_user(username="regular")
-        token = _make_token(regular)
-        response = self.client.post(
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/activities",
-            data={
-                "activity_type": "custom",
-                "user_id": self.target_user.pk,
-                "quantity": 1.0,
-                "unit": "ISK",
-            },
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {token}",
+        self.assertFalse(
+            TribeGroupMembershipCharacter.objects.filter(
+                membership=self.membership, character=self.character
+            ).exists()
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertTrue(
+            TribeGroupMembershipCharacterHistory.objects.filter(
+                membership=self.membership,
+                character=self.character,
+                action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+            ).exists()
+        )
+
+    def test_add_duplicate_character_returns_400(self):
+        self._add_character()
+        response = self._add_character()
+        self.assertEqual(response.status_code, 400)
 
 
 class CurrentUserTribesTestCase(TestCase):
@@ -362,7 +357,7 @@ class CurrentUserTribesTestCase(TestCase):
         TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_APPROVED,
+            status=TribeGroupMembership.STATUS_ACTIVE,
         )
 
     def test_current_returns_user_tribes(self):

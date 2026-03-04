@@ -34,7 +34,7 @@ let fetch_membership_error:string | false = false
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
 
-    approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'approved')
+    approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'active')
     pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
 } catch (error) {
     fetch_membership_error = prod_error_messages() ? t('fetch_membership_error') : error.message

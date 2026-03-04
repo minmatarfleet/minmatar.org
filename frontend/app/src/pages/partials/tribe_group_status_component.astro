@@ -107,7 +107,7 @@ try {
     user_characters = summary.characters ?? []
     
     const membership = membership_by_group.get(tribe_group.id) ?? null
-    is_member = membership?.status === 'approved'
+    is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
 } catch (error) {
     fetch_group_error = prod_error_messages() ? t('fetch_group_error') : error.message

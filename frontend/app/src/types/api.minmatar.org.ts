@@ -90,13 +90,13 @@ export interface TribeLeaderboardEntry {
     unit:           string;
 }
 
-export type TribeMembershipStatus = 'pending' | 'approved' | 'denied' | 'left' | 'removed'
+export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
 
 export interface TribeMembershipCharacter {
     id:             number;
     character_id:   number;
     character_name: string;
-    committed_at:   string;
+    committed_at:   string | null;
     left_at:        string | null;
 }
 
@@ -107,6 +107,7 @@ export interface TribeMembership {
     tribe_group_name:       string;
     tribe_id:               number;
     status:                 TribeMembershipStatus;
+    inactive_reason:        string | null;
     requirement_snapshot:   Record<string, unknown> | null;
     created_at:             string;
     approved_by_id:         number | null;

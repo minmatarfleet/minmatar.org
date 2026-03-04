@@ -14,7 +14,6 @@ from tribes.endpoints.memberships.get_memberships import (
     ROUTE_SPEC as GET_MEMBERSHIPS_SPEC,
     get_memberships,
 )
-
 from tribes.endpoints.memberships.post_membership_approve import (
     router as post_membership_approve_router,
 )
@@ -36,6 +35,12 @@ from tribes.endpoints.memberships.post_membership_character import (
 from tribes.endpoints.memberships.delete_membership_character import (
     router as delete_membership_character_router,
 )
+from tribes.endpoints.memberships.get_membership_history import (
+    router as get_membership_history_router,
+)
+from tribes.endpoints.memberships.get_membership_character_history import (
+    router as get_membership_character_history_router,
+)
 
 router = Router(tags=["Tribes - Memberships"])
 
@@ -52,5 +57,9 @@ router.get(CHARACTERS_PATH, **GET_CHARACTERS_SPEC)(get_membership_characters)
 router.post(CHARACTERS_PATH, **POST_CHARACTERS_SPEC)(post_membership_character)
 
 router.add_router("", delete_membership_character_router)
+
+# History sub-resources (read-only audit).
+router.add_router("", get_membership_history_router)
+router.add_router("", get_membership_character_history_router)
 
 __all__ = ["router"]

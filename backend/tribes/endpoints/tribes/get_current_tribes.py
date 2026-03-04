@@ -22,7 +22,7 @@ router = Router(tags=["Tribes"])
 def get_current_tribes(request):
     tribe_ids = (
         TribeGroupMembership.objects.filter(
-            user=request.user, status=TribeGroupMembership.STATUS_APPROVED
+            user=request.user, status=TribeGroupMembership.STATUS_ACTIVE
         )
         .values_list("tribe_group__tribe_id", flat=True)
         .distinct()
@@ -33,7 +33,7 @@ def get_current_tribes(request):
         total_members = (
             TribeGroupMembership.objects.filter(
                 tribe_group__tribe=tribe,
-                status=TribeGroupMembership.STATUS_APPROVED,
+                status=TribeGroupMembership.STATUS_ACTIVE,
             )
             .values("user")
             .distinct()

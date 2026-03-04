@@ -4,6 +4,7 @@ from ninja import Router
 
 from authentication import AuthBearer
 from tribes.endpoints.memberships.schemas import MembershipSchema
+from tribes.endpoints.memberships.serializers import serialize_membership
 from tribes.helpers import user_can_manage_group
 from tribes.models import TribeGroup, TribeGroupMembership
 
@@ -39,27 +40,12 @@ def post_membership_deny(
             "detail": f"Cannot deny a membership with status '{membership.status}'."
         }
 
-    membership.status = TribeGroupMembership.STATUS_DENIED
+    membership.status = TribeGroupMembership.STATUS_INACTIVE
+    membership.history_inactive_reason = "denied"
+    membership.history_changed_by = request.user
     membership.save()
 
-    return 200, MembershipSchema(
-        id=membership.pk,
-        user_id=membership.user_id,
-        tribe_group_id=membership.tribe_group_id,
-        tribe_group_name=str(membership.tribe_group),
-        tribe_id=membership.tribe_group.tribe_id,
-        status=membership.status,
-        requirement_snapshot=membership.requirement_snapshot,
-        created_at=membership.created_at.isoformat(),
-        approved_by_id=membership.approved_by_id,
-        approved_at=(
-            membership.approved_at.isoformat()
-            if membership.approved_at
-            else None
-        ),
-        left_at=membership.left_at.isoformat() if membership.left_at else None,
-        characters=[],
-    )
+    return 200, serialize_membership(membership)
 
 
 router.post(PATH, **ROUTE_SPEC)(post_membership_deny)

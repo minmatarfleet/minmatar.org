@@ -32,9 +32,9 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
 
 
 def user_in_tribe_group(user, tribe_group: TribeGroup) -> bool:
-    """Return True if the user has an approved TribeGroupMembership in tribe_group."""
+    """Return True if the user has an active TribeGroupMembership in tribe_group."""
     return TribeGroupMembership.objects.filter(
         user=user,
         tribe_group=tribe_group,
-        status=TribeGroupMembership.STATUS_APPROVED,
+        status=TribeGroupMembership.STATUS_ACTIVE,
     ).exists()

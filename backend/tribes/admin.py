@@ -2,11 +2,11 @@ from django.contrib import admin
 
 from tribes.models import (
     Tribe,
-    TribeActivity,
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
-    TribeGroupOutreach,
+    TribeGroupMembershipHistory,
+    TribeGroupMembershipCharacterHistory,
     TribeGroupRequirement,
     TribeGroupRequirementAssetType,
     TribeGroupRequirementSkill,
@@ -77,9 +77,20 @@ class TribeGroupRequirementAdmin(admin.ModelAdmin):
 class TribeGroupMembershipCharacterInline(admin.TabularInline):
     model = TribeGroupMembershipCharacter
     extra = 0
-    fields = ("character", "committed_at", "left_at", "leave_reason")
-    readonly_fields = ("committed_at",)
+    fields = ("character",)
     raw_id_fields = ("character",)
+
+
+class TribeGroupMembershipHistoryInline(admin.TabularInline):
+    model = TribeGroupMembershipHistory
+    extra = 0
+    fields = ("from_status", "to_status", "changed_at", "changed_by", "reason")
+    readonly_fields = ("changed_at",)
+    raw_id_fields = ("changed_by",)
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(TribeGroupMembership)
@@ -95,44 +106,58 @@ class TribeGroupMembershipAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "tribe_group__name")
     raw_id_fields = ("user", "tribe_group", "approved_by", "removed_by")
     readonly_fields = ("created_at",)
-    inlines = [TribeGroupMembershipCharacterInline]
+    inlines = [
+        TribeGroupMembershipCharacterInline,
+        TribeGroupMembershipHistoryInline,
+    ]
 
 
 @admin.register(TribeGroupMembershipCharacter)
 class TribeGroupMembershipCharacterAdmin(admin.ModelAdmin):
-    list_display = (
-        "character",
-        "membership",
-        "committed_at",
-        "left_at",
-        "leave_reason",
-    )
-    list_filter = ("leave_reason",)
+    list_display = ("character", "membership")
     search_fields = ("character__character_name",)
     raw_id_fields = ("membership", "character")
-    readonly_fields = ("committed_at",)
 
 
-@admin.register(TribeActivity)
-class TribeActivityAdmin(admin.ModelAdmin):
+@admin.register(TribeGroupMembershipHistory)
+class TribeGroupMembershipHistoryAdmin(admin.ModelAdmin):
     list_display = (
-        "user",
-        "tribe_group",
-        "activity_type",
-        "quantity",
-        "unit",
-        "created_at",
+        "membership",
+        "from_status",
+        "to_status",
+        "changed_at",
+        "changed_by",
+        "reason",
     )
-    list_filter = ("activity_type", "tribe_group__tribe")
-    search_fields = ("user__username", "reference_id")
-    raw_id_fields = ("tribe_group", "user", "character")
-    readonly_fields = ("created_at",)
+    list_filter = ("to_status",)
+    search_fields = ("membership__user__username",)
+    raw_id_fields = ("membership", "changed_by")
+    readonly_fields = ("changed_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
-@admin.register(TribeGroupOutreach)
-class TribeGroupOutreachAdmin(admin.ModelAdmin):
-    list_display = ("character", "tribe_group", "sent_by", "sent_at")
-    list_filter = ("tribe_group__tribe",)
-    search_fields = ("character__character_name", "sent_by__username")
-    raw_id_fields = ("tribe_group", "character", "sent_by")
-    readonly_fields = ("sent_at",)
+@admin.register(TribeGroupMembershipCharacterHistory)
+class TribeGroupMembershipCharacterHistoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "membership",
+        "character",
+        "action",
+        "at",
+        "by",
+        "leave_reason",
+    )
+    list_filter = ("action", "leave_reason")
+    search_fields = ("character__character_name",)
+    raw_id_fields = ("membership", "character", "by")
+    readonly_fields = ("at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
