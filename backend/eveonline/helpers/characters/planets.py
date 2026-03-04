@@ -245,6 +245,11 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
     resolves factories in topological order so multi-tier chains (P1→P2→P3)
     cascade correctly.
 
+    Produced quantities are NET (leftovers): we subtract what is consumed
+    by downstream factories on the same planet. E.g. Precious Metals produced
+    by a basic factory but fed into a Mechanical Parts factory only count as
+    produced for the surplus that is not consumed up the chain.
+
     Fallbacks that use capacity instead of supply limit:
     - Factory has no inbound routes recorded (simplified or old ESI data).
     - Factory's inbound supply traces to a launchpad with no in-planet feed
@@ -267,6 +272,8 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
     pin_resolved, node_inflow, harvested = _resolve_extractors(pins, outbound)
 
     produced: dict[int, Decimal] = {}
+    # consumed[type_id] = daily units of this type used as input by factories
+    consumed: dict[int, Decimal] = {}
     unresolved = list(factory_pin_ids)
     max_passes = len(factory_pin_ids) + 2
     passes = 0
@@ -289,6 +296,7 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
             capacity_daily = (out_qty / factory_cycle) * SECONDS_PER_DAY
 
             in_rs = inbound.get(fpid, [])
+            required_by_type: dict[int, Decimal] = {}
             if not in_rs:
                 # No inbound routes: fall back to capacity.
                 daily = capacity_daily
@@ -317,6 +325,14 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
                         capacity_daily, supply_by_type, required_by_type
                     )
                 )
+                # Record consumption: this factory uses required_by_type at
+                # (daily/capacity_daily) of full rate.
+                if capacity_daily > 0 and required_by_type:
+                    factor = daily / capacity_daily
+                    for in_type, req in required_by_type.items():
+                        consumed[in_type] = (
+                            consumed.get(in_type, Decimal(0)) + factor * req
+                        )
 
             resolved_now.append(fpid)
             _propagate_factory_output(
@@ -345,6 +361,13 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
                 produced.get(ot, Decimal(0))
                 + (oq / factory_cycle) * SECONDS_PER_DAY
             )
+
+    # Report net production (leftovers): gross produced minus consumed on-planet.
+    for type_id in list(produced.keys()):
+        used = consumed.get(type_id, Decimal(0))
+        produced[type_id] = max(Decimal(0), produced[type_id] - used)
+        if produced[type_id] == 0:
+            del produced[type_id]
 
     return harvested, produced
 

@@ -674,7 +674,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
         schematics = {126: 1800, 127: 3600}
         _, produced = _extract_planet_outputs_with_daily(detail, schematics)
 
-        # Basic factory: 960 capacity * 0.5 = 480 P1/day
-        self.assertAlmostEqual(float(produced.get(2398, 0)), 480.0, places=2)
-        # Advanced factory: 120 capacity * 0.5 = 60 P2/day
+        # P1 (2398) is fully consumed by the advanced factory → net 0 (leftovers).
+        self.assertAlmostEqual(float(produced.get(2398, 0)), 0.0, places=2)
+        # P2 (2399) is the only net output: 120 capacity * 0.5 = 60/day
         self.assertAlmostEqual(float(produced.get(2399, 0)), 60.0, places=2)
