@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type {
+    Tribe,
+    TribeGroup,
+    TribeMembership,
+    SummaryCharacter
+} from '@dtypes/api.minmatar.org'
+import {
+    get_tribe,
+    get_tribe_groups,
+    get_memberships,
+} from '@helpers/api.minmatar.org/tribes'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+if (isNaN(tribe_id)) return HTTP_404_Not_Found()
+
+let tribe: Tribe | null = null
+let tribe_groups: TribeGroup[] = []
+const membership_by_group = new Map<number, TribeMembership | null>()
+let user_characters: SummaryCharacter[] = []
+let get_tribe_error: string | null = null
+
+try {
+    tribe = await get_tribe(tribe_id)
+    tribe_groups = await get_tribe_groups(tribe_id)
+
+    if (auth_token && user) {
+        for (const group of tribe_groups) {
+            const memberships = await get_memberships(auth_token, tribe_id, group.id)
+            const mine = memberships.find(m => m.user_id === user.user_id) ?? null
+            membership_by_group.set(group.id, mine)
+        }
+        
+        const summary = await get_characters_summary_sorted(auth_token)
+        user_characters = summary.characters ?? []
+    }
+} catch (error) {
+    get_tribe_error = prod_error_messages() ? t('fetch_tribe_error') : error.message
+}
+
+const TRIBE_PARTIAL_URL = translatePath(`/partials/tribe_component?tribe_id=${tribe_id}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import TribeTiles from '@components/blocks/TribeTiles.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+
+const page_title = tribe?.name ?? ''
+const page_description = tribe?.description ?? ''
+---
+
+{get_tribe_error ?
+    <ErrorRefetch
+        args={{
+            partial: TRIBE_PARTIAL_URL,
+            message: get_tribe_error,
+            delay: delay,
+        }}
+    />
+    :
+    <Flexblock hx-swap-oob="true" id="header-oob" gap="var(--space-3xs)">
+        <PageTitle no_link={true}>
+            {page_title}
+        </PageTitle>
+        {tribe?.chief &&
+            <PilotBadge
+                character_id={tribe.chief.character_id}
+                character_name={tribe.chief.character_name}
+                size={32}
+                centered={true}
+            >
+                <small>{t('tribe_chief')}</small>
+            </PilotBadge>
+        }
+    </Flexblock>
+
+    <p hx-swap-oob="true" id="excerpt-oob" class="[ excerpt ]">{page_description}</p>
+
+    <TribeTiles
+        tribe_groups={tribe_groups}
+        user_characters={user_characters}
+        init_tooltips={false}
+        membership_by_group={membership_by_group}
+    />
+}

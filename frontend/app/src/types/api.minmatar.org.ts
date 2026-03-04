@@ -115,6 +115,42 @@ export interface TribeMembership {
     characters:             TribeMembershipCharacter[];
 }
 
+export interface TribeActivity {
+    id:             number;
+    tribe_group_id: number;
+    tribe_group_name: string;
+    user_id:        number;
+    character_id:   number | null;
+    activity_type:  ActivityType;
+    quantity:       number;
+    unit:           string;
+    description:    string;
+    created_at:     string;
+}
+
+export const activity_types = [
+    'fleet_participation',
+    'kills',
+    'losses',
+    'mining_contribution',
+    'freight_contribution',
+    'industry_job_completed',
+    'content_contribution',
+    'doctrine_update',
+    'fitting_update',
+    'custom',
+] as const
+export type ActivityType = typeof activity_types[number]
+
+export interface LogActivityPayload {
+    user_id: number;
+    character_id?: number | null;
+    activity_type: ActivityType;
+    quantity: number;
+    unit: string;
+    description?: string;
+}
+
 export interface SigRequest {
     id:             number;
     user:           number;
@@ -594,12 +630,12 @@ export interface Contract {
     desired_quantity:           number;
     current_quantity:           number;
     latest_contract_timestamp:  string | null;
-    historical_quantity:        Record[];
-    responsibilities:          Responsability[];
+    historical_quantity:        History[];
+    responsibilities:           Responsability[];
     doctrines:                  ContractDoctrine[];
 }
 
-export interface Record {
+export interface History {
     date:       string;
     quantity:   number;
 }

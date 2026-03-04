@@ -1,0 +1,110 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Tribe } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    tribes:                 Tribe[];
+    current_tribe_ids?:     Set<number>;
+    init_tooltips:          boolean;
+}
+
+const {
+    tribes,
+    current_tribe_ids,
+    init_tooltips,
+} = Astro.props
+
+const COVERS = {
+    1: '/images/capitals-tribe-cover.webp',
+    4: '/images/comunity-tribe-cover.webp',
+    2: '/images/industry-tribe-cover.webp',
+    3: '/images/market-tribe-cover.webp',
+}
+
+console.log(current_tribe_ids)
+
+const TILE_FALLBACK = '/images/capitals-tribe-cover.webp'
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import Tile from '@components/blocks/Tile.astro';
+import Tag from '@components/blocks/Tag.astro';
+import { Image } from 'astro:assets';
+
+import GroupListIcon from '@components/icons/GroupListIcon.astro'
+import MemberIcon from '@components/icons/MemberIcon.astro'
+---
+
+<Wrapper
+    class="[ intel-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="580px"
+    >
+        {tribes.map(tribe =>
+            <Tile
+                title={tribe.name}
+                description={tribe.description}
+                cover={COVERS[tribe.id] ? COVERS[tribe.id] : TILE_FALLBACK}
+            >
+                {current_tribe_ids && current_tribe_ids.has(tribe.id) && (
+                    <Tag slot="title" text={t('member')} />
+                )}
+                
+                {tribe?.image_url &&
+                    <Image
+                        class="[ mb-(--space-xs)! ]"
+                        slot="icon"
+                        src={tribe?.image_url}
+                        width="64"
+                        height="64"
+                        alt={`${tribe.name} ${t('tribe_logo')}`}
+                        quality={90}
+                    />
+                }
+
+                <FlexInline slot="subtitle" class="[ items-center! ]">
+                    <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                        <div
+                            class="[ text-highlight h-[16px] ]"
+                            data-tippy-content={t('tribe_groups')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <GroupListIcon size={16} />
+                        </div>
+                        <span>{tribe.group_count}</span>
+                    </FlexInline>
+                    <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                        <div
+                            class="[ text-highlight h-[16px] ]"
+                            data-tippy-content={t('tribe_members')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <MemberIcon size={16} />
+                        </div>
+                        <span>{tribe.total_member_count}</span>
+                    </FlexInline>
+
+                    {current_tribe_ids && current_tribe_ids.has(tribe.id) &&
+                        <small class="[ text-highlight ]">{t('member_of_tribe')}</small>
+                    }
+                </FlexInline>
+
+                <Button size='sm' href={translatePath(`/alliance/tribes/${tribe.id}`)}>
+                    {t('browse')}
+                </Button>
+            </Tile>
+        )}
+    </Grid>
+</Wrapper>

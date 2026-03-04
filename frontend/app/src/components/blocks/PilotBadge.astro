@@ -12,6 +12,7 @@ interface Props {
     icon_quality?:  EvEImageServiceSize;
     inert?:         boolean;
     heading?:       boolean;
+    centered?:      boolean;
     [propName: string]: any;
 }
 
@@ -23,6 +24,7 @@ const {
     icon_quality = 64,
     inert = false,
     heading = false,
+    centered = false,
     ...attributes
 } = Astro.props
 
@@ -54,6 +56,7 @@ delete attributes.class
         character_name={character_name}
         size={size}
         icon_quality={icon_quality}
+        centered={centered}
     />
     <VerticalCenter>
         <Flexblock gap={heading ? 'var(--space-3xs)' : '0'} class="[ w-full ]">

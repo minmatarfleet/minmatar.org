@@ -43,7 +43,7 @@ const SKILL_SQUARE_WIDTH = 10
             <SkillSquare status={ current_skill_level > 4 ? 'learned' : 'unlearned' } />
         }
         {skill.skill_level > 4 &&
-            <SkillSquare status='unlearned' />
+            <SkillSquare status={ current_skill_level > 5 ? 'learned' : 'unlearned' } />
         }
     </FlexInline>
     <span>{skill.skill_name} {SKILL_NUMBER[skill.skill_level]}</span>

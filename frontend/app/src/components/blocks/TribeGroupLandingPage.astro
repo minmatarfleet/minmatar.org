@@ -1,0 +1,126 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Tribe, TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    tribe_group:            TribeGroup;
+    members:                TribeMembership[];
+    is_member:              boolean;
+    is_pending:             boolean;
+    init_tooltips:          boolean;
+}
+
+const {
+    tribe_group,
+    members,
+    is_member,
+    is_pending,
+    init_tooltips,
+} = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro'
+
+import MemberIcon from '@components/icons/MemberIcon.astro';
+---
+
+<Flexblock gap='var(--space-l)'>
+    <FlexInline class="[ items-center! ]" gap='var(--space-3xs)'>
+        {[ tribe_group.chief, ...tribe_group.elders ].map((tribe_leader, index) =>
+            tribe_leader &&
+                <PilotBadge
+                    class="[ pr-(--space-l) ]"
+                    character_id={tribe_leader?.character_id}
+                    character_name={tribe_leader?.character_name}
+                    size={32}
+                    centered={true}
+                >
+                    <small>{tribe_group.chief && index === 0 ? t('group_chief') : t('group_elder')}</small>
+                </PilotBadge>
+        )}
+        <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+            <div
+                class="[ text-highlight h-[16px] ]"
+                data-tippy-content={t('group_members')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <MemberIcon size={16} />
+            </div>
+            <span>{tribe_group.member_count}</span>
+        </FlexInline>
+    </FlexInline>
+        
+    <small
+        id={`membership-${tribe_group.tribe_id}-${tribe_group.id}`}
+        class:list={[ 'text-highlight', { hidden: !is_member && !is_pending } ]}
+    >
+        {is_member ? t('member_of_tribe_group') : is_pending ? t('tribes.detail.apply_confirm_text') : ''}
+    </small>
+</Flexblock>
+
+{tribe_group.requirements.length > 0 ?
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h3>{t(tribe_group.requirements.length !==1 ? 'requirements' : 'requirement')}</h3>
+            {tribe_group.requirements?.length > 1 && <small>{t('tribal_group_requirement_text').replace('{count}', String(tribe_group.requirements?.length))}</small>}
+        </Flexblock>
+
+        <Wrapper
+            class="[ requirements-reel ]"
+            padding_block='0'
+            padding_inline='0'
+            max_width='100%'
+        >
+            <div id={`tribe-group-${tribe_group.tribe_id}-${tribe_group.id}-requirements-reel`} class="[ swiper ][ w-full ]">
+                <LandingSwiper
+                    swiper_selector={`#tribe-group-${tribe_group.tribe_id}-${tribe_group.id}-requirements-reel`}
+                    pagination={false}
+                    gap={60}
+                >
+                    {tribe_group.requirements.map((req, index) =>
+                        <div class="[ swiper-slide ]" style="margin-right: 60px" >
+                            {tribe_group.requirements?.length > 1 && <h3 class="[ requirement-number ]">{index + 1}</h3>}
+                            <TribalGroupRequirements requirement={req} init_tooltips={init_tooltips} />
+                        </div>
+                    )}
+                </LandingSwiper>
+            </div>
+
+            <div id={`tribe-group-${tribe_group.tribe_id}-${tribe_group.id}-requirements-reel-button-prev`} class="[ swiper-button-prev ]"></div>
+            <div id={`tribe-group-${tribe_group.tribe_id}-${tribe_group.id}-requirements-reel-button-next`} class="[ swiper-button-next ]"></div>
+        </Wrapper>
+    </Flexblock>
+    :
+    <p>{t('tribes.detail.no_requirements')}</p>
+}
+
+{/*members.length > 0 &&
+    <Flexblock>
+        <h3>{t('meet_the_gang')}</h3>
+
+        <FlexInline gap='var(--space-3xs)'>
+            {members.map(member =>
+                member.characters.map(character =>
+                    <div
+                        data-tippy-content={character.character_name}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <CharacterPicture
+                            character_id={character.character_id}
+                            character_name={character.character_name}
+                        />
+                    </div>
+                )
+            )}
+        </FlexInline>
+    </Flexblock>
+*/}

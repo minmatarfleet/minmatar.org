@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { Tribe } from '@dtypes/api.minmatar.org'
+import { get_tribes, get_current_tribes } from '@helpers/api.minmatar.org/tribes'
+
+let tribes: Tribe[] = []
+let current_tribe_ids: Set<number> = new Set()
+let get_tribes_error: string | null = null
+
+try {
+    tribes = await get_tribes()
+
+    if (auth_token) {
+        const current = await get_current_tribes(auth_token)
+        current_tribe_ids = new Set(current.map(t => t.id))
+    }
+} catch (error) {
+    get_tribes_error = prod_error_messages() ? t('fetch_tribes_error') : error.message
+}
+
+const TRIBES_LIST_PARTIAL_URL = translatePath('/partials/tribes_list_component')
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import TribesTiles from '@components/blocks/TribesTiles.astro';
+
+const page_title = t('tribes.page_title');
+const leading_text = t('tribes.leading_text');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('tribes.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageLanding
+        cover={{
+            image: "/images/groups-cover.jpg",
+            image_990: "/images/groups-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <Wrapper
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap='var(--space-xl)'>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]">{leading_text}</p>
+                </Flexblock>
+            </Wrapper>
+
+            {get_tribes_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: TRIBES_LIST_PARTIAL_URL,
+                        message: get_tribes_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <TribesTiles
+                    tribes={tribes}
+                    current_tribe_ids={current_tribe_ids}
+                    init_tooltips={false}
+                />
+            }
+        </Flexblock>
+    </PageLanding>
+</Viewport>

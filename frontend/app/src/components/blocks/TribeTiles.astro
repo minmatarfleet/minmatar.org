@@ -1,0 +1,66 @@
+---
+import type {
+    TribeGroup,
+    SummaryCharacter,
+    TribeMembership,
+} from '@dtypes/api.minmatar.org'
+
+interface Props {
+    tribe_groups:           TribeGroup[];
+    user_characters:        SummaryCharacter[];
+    membership_by_group:    Map<number, TribeMembership | null>;
+    init_tooltips:          boolean;
+}
+
+const {
+    tribe_groups,
+    user_characters,
+    membership_by_group,
+    init_tooltips,
+} = Astro.props
+
+let requirements_index = 0
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import TribeGroupTile from '@components/blocks/TribeGroupTile.astro';
+---
+
+<Wrapper
+    class="[ intel-reel ]"
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+>
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="570px"
+        x-data={`{
+            index: -1,
+            timer: null,
+            init() {
+                this.timer = setInterval(() => {
+                    this.index = (this.index + 1) % 3
+                    console.log(this.index)
+                    $dispatch('tick', this.index)
+                }, 3000)
+            }
+        }`}
+        @astro:before-swap.window="console.log('after-swap'); clearInterval(this.timer)"
+    >
+        {tribe_groups.map(tribe_group => {
+            requirements_index += Number(tribe_group.requirements.length > 1)
+
+            return (<TribeGroupTile
+                tribe_group={tribe_group}
+                user_characters={user_characters}
+                membership_by_group={membership_by_group}
+                init_tooltips={init_tooltips}
+                index={tribe_group.requirements.length > 1 ? requirements_index - 1 : undefined}
+            />)
+        })}
+    </Grid>
+</Wrapper>

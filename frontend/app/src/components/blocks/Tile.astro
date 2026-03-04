@@ -3,6 +3,7 @@ interface Props {
     title:              string;
     description:        string;
     cover:              string;
+    transparent?:       boolean;
     [propName: string]: any;
 }
 
@@ -10,20 +11,27 @@ const {
     title,
     description,
     cover,
+    transparent = false,
     ...attributes
 } = Astro.props
+
+const transparent_class = transparent ? '' : 'border light-transparency'
+
+const slot_content = await Astro.slots.render('default')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 ---
 
-<ComponentBlock
-    class:list={['relative tile', Astro.props.class ]}
+<Wrapper
+    class:list={[`card component relative tile ${transparent_class}`, Astro.props.class ]}
     padding_inline='var(--component-padding-block)'
+    padding_block='var(--component-padding-block)'
+    max_width='100%'
 >
     <img class="[ z-0 ]" src={cover} />
     
@@ -34,12 +42,14 @@ import Markdown from '@components/blocks/Markdown.astro';
         </Flexblock>
         
         <Flexblock gap='var(--space-m)'>
-            <Markdown class="[ max-w-[380px] ]" markdown={description} inline={true} />
+            {description && <Markdown class="[ max-w-[380px] ]" markdown={description} inline={true} />}
 
-            <FlexInline><slot /></FlexInline>
+            <slot name="subtitle" />
+
+            {slot_content && <FlexInline><slot /></FlexInline>}
         </Flexblock>
     </BlockList>
-</ComponentBlock>
+</Wrapper>
 
 <style lang="scss">
     img {

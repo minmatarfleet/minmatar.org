@@ -1,0 +1,177 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    target_id:  string;
+    title:      string;
+    tribe_id:   number;
+    group_id:   number;
+    pilots:     SummaryCharacter[],
+    hidden?:    boolean;
+    id?:        string;
+}
+
+const {
+    target_id,
+    title,
+    tribe_id,
+    group_id,
+    pilots,
+    hidden = false,
+    id,
+} = Astro.props
+
+const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import SelectableCharacterCard from '@components/blocks/SelectableCharacterCard.astro';
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+---
+
+<DialogButton
+    id={id ? id : undefined}
+    color='green'
+    narrow={false}
+    hidden={hidden}
+    max_width='820px'
+    @dialog_opened.stop="$el.querySelector('button').setAttribute('disabled', '')"
+    @dialog_closed.stop="$el.querySelector('button').removeAttribute('disabled')"
+>
+    {t('tribes.detail.apply')}
+
+    <form
+        slot="dialog" 
+        hx-post={TRIBE_GROUP_STATUS_PARTIAL_URL}
+        hx-trigger="submit"
+        hx-target={`#${target_id}`}
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-on:submit="close_dialog(false)"
+        x-data={`{
+            characters: [],
+            character_ids: '',
+            update_character_ids() {
+                this.character_ids = JSON.stringify(this.characters.map(character => parseInt(character)))
+            }
+        }`}
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-s)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h3>{title}</h3>
+                    <small>{t('tribes.detail.apply')}</small>
+                </Flexblock>
+                
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='var(--space-xl)'
+                >
+                    <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                        <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
+                            {pilots.map(pilot =>
+                                <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                    <SelectableCharacterCard
+                                        character_id={pilot.character_id}
+                                        character_name={pilot.character_name}
+                                        x-model="characters"
+                                        x-on:change="update_character_ids"
+                                        value={pilot.character_id}
+                                    >
+                                        <Flexblock gap='var(--space-3xs)'>
+                                            <h3>{pilot.character_name}</h3>
+                                            <CorporationBadge
+                                                corporation={{
+                                                    id: pilot.corp_id,
+                                                    name: pilot.corp_name,
+                                                    size: 'xs',
+                                                }}
+                                                highlight={false}
+                                            />
+                                        </Flexblock>
+                                    </SelectableCharacterCard>
+                                </div>
+                            )}
+                        </LandingSwiper>
+                        <input type="hidden" name="character_ids" x-model="character_ids" />
+                    </div>
+
+                    <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                    <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+                </Wrapper>
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
+                <Button
+                    type="submit"
+                    color='green'
+                    size='sm'
+                >
+                    {t('apply')}
+                </Button>
+
+                <Button
+                    type="button"
+                    size='sm'
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .alliance-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: var(--space-l);
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 240px);
+    }
+</style>

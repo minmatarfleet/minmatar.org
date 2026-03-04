@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeMembership } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    requests:   TribeMembership[];
+    init_tooltips:      boolean;
+}
+
+const {
+    requests,
+    init_tooltips,
+} = Astro.props
+
+import BlockList from '@components/compositions/BlockList.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import MembershipRequestItem from '@components/blocks/MembershipRequestItem.astro';
+
+import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
+---
+
+{requests.length > 0 &&
+    <Flexblock gap='var(--space-l)'>
+        <FlexInline>
+            <div slot="picture" class="[ text-highlight h-[32px] ]">
+                <RecruitmentIcon size={32} />
+            </div>
+            <h3 class="[ group-title ]">{t('membership_requests')}</h3>
+        </FlexInline>
+
+        <BlockList>
+            {requests.map(request =>
+                <div x-show="show_item($el)">
+                    <MembershipRequestItem request={request} init_tooltips={init_tooltips} />
+                </div>
+            )}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </BlockList>
+    </Flexblock>
+}
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>
