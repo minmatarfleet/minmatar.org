@@ -1,3 +1,4 @@
+# fmt: off
 """
 Refactors TribeGroupMembership status (approved→active, denied/left/removed→inactive),
 strips audit columns from TribeGroupMembershipCharacter (committed_at, left_at,
@@ -53,13 +54,11 @@ def backfill_history(apps, schema_editor):
 
     conn = connections[db_alias]
     with conn.cursor() as cursor:
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT id, membership_id, character_id,
                    committed_at, left_at, leave_reason
             FROM tribes_tribegroupmembershipcharacter
-            """
-        )
+            """)
         rows = cursor.fetchall()
 
     to_add = []
@@ -310,3 +309,4 @@ class Migration(migrations.Migration):
             ),
         ),
     ]
+# fmt: on
