@@ -95,6 +95,8 @@ import Tag from '@components/blocks/Tag.astro';
                                 const available = available_characters?.find(
                                     (a) => a.character_id === pilot.character_id
                                 )
+                                if (available?.requirements.length === 0)
+                                    available.qualifies = true
                                 const cid = pilot.character_id
                                 const hasBar = available != null
                                 const barLabel = hasBar
