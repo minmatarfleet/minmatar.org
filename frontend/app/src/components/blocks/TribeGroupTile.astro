@@ -50,6 +50,7 @@ const COVERS = {
     11: '/images/sellorders-tile-background.webp',
     10: '/images/contracts-tile-background.webp',
     9: '/images/freight-tile-background.webp',
+    17: '/images/tournament-cover.webp',
 }
 
 const id = `tribe-group-${tribe_group.tribe_id}-${tribe_group.id}`
@@ -63,7 +64,7 @@ const is_leader = leaders.find(leader => user_character_ids?.includes(leader?.ch
 const is_member = membership?.status === 'active'
 const is_pending = membership?.status === 'pending'
 
-const TILE_FALLBACK = '/images/capitals-tribe-cover.webp'
+const TILE_FALLBACK = '/images/tribes-fallback-cover.webp'
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
