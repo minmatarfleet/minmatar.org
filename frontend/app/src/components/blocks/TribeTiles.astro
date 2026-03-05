@@ -11,6 +11,7 @@ interface Props {
     user_characters:        SummaryCharacter[];
     available_by_group?:    Map<number, TribeAvailableCharacter[]>;
     membership_by_group:    Map<number, TribeMembership | null>;
+    is_alliance_member:     boolean;
     init_tooltips:          boolean;
 }
 
@@ -19,6 +20,7 @@ const {
     user_characters,
     available_by_group,
     membership_by_group,
+    is_alliance_member,
     init_tooltips,
 } = Astro.props
 
@@ -66,8 +68,9 @@ import TribeGroupTile from '@components/blocks/TribeGroupTile.astro';
                 user_characters={user_characters}
                 available_characters={available_by_group?.get(tribe_group.id)}
                 membership_by_group={membership_by_group}
-                init_tooltips={init_tooltips}
+                is_alliance_member={is_alliance_member}
                 index={tribe_group.requirements.length > 1 ? requirements_index - 1 : undefined}
+                init_tooltips={init_tooltips}
             />)
         })}
     </Grid>
