@@ -22,6 +22,7 @@ interface Props {
     user_characters:        SummaryCharacter[];
     available_characters?:  TribeAvailableCharacter[];
     membership_by_group:    Map<number, TribeMembership | null>;
+    is_alliance_member:     boolean;
     init_tooltips:          boolean;
     index?:                 number;
 }
@@ -30,6 +31,7 @@ const {
     tribe_group,
     user_characters,
     available_characters,
+    is_alliance_member,
     init_tooltips,
     membership_by_group,
     index,
@@ -185,31 +187,33 @@ import NotificationBadge from './NotificationBadge.astro'
                 <p>{t('tribes.detail.no_requirements')}</p>
             }
 
-            <FlexInline>
-                {!is_leader ?
-                    <TribeStatus
-                        group={tribe_group}
-                        tribe_id={tribe_group.tribe_id}
-                        group_id={tribe_group.id}
-                        user_characters={user_characters}
-                        available_characters={available_characters}
-                        is_auth={is_auth}
-                        membership_by_group={membership_by_group}
-                    />
-                    <>{is_superuser &&
-                        <Button
-                            href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
-                            color='transparent'
-                        >
-                            {t('manage')}
+            {is_alliance_member &&
+                <FlexInline>
+                    {!is_leader ?
+                        <TribeStatus
+                            group={tribe_group}
+                            tribe_id={tribe_group.tribe_id}
+                            group_id={tribe_group.id}
+                            user_characters={user_characters}
+                            available_characters={available_characters}
+                            is_auth={is_auth}
+                            membership_by_group={membership_by_group}
+                        />
+                        <>{is_superuser &&
+                            <Button
+                                href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
+                                color='transparent'
+                            >
+                                {t('manage')}
+                            </Button>
+                        }</>
+                        :
+                        <Button href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}>
+                            {t('manage_membership')}
                         </Button>
-                    }</>
-                    :
-                    <Button href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}>
-                        {t('manage_membership')}
-                    </Button>
-                }
-            </FlexInline>
+                    }
+                </FlexInline>
+            }
         </Flexblock>
     </Wrapper>
 </Flexblock>
