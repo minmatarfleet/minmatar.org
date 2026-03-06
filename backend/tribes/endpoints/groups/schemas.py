@@ -2,6 +2,34 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
+class TribeGroupActivityRecordSchema(BaseModel):
+    """Single activity record for timeline display."""
+
+    id: int
+    created_at: str
+    activity_type: str
+    activity_type_display: str
+    character_id: Optional[int] = None
+    character_name: str = ""
+    user_id: Optional[int] = None
+    username: str = ""
+    source_type_id: Optional[int] = None
+    target_type_id: Optional[int] = None
+    quantity: Optional[float] = None
+    unit: str = ""
+    reference_type: str
+    reference_id: str
+
+
+class TribeGroupActivityListSchema(BaseModel):
+    """Paginated list of tribe group activity records."""
+
+    items: List[TribeGroupActivityRecordSchema]
+    total: int
+    limit: int
+    offset: int
+
+
 class CharacterRefSchema(BaseModel):
     character_id: int
     character_name: str = ""

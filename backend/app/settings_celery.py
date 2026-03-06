@@ -185,6 +185,17 @@ CELERYBEAT_GROUPS = [
     ),
 ]
 
+# Tribes (activity records from killmails, mining, etc.)
+CELERYBEAT_TRIBES = [
+    (
+        "[Tribes] Process tribe group activities",
+        {
+            "task": "tribes.tasks.process_tribe_group_activities",
+            "schedule": crontab(minute=0, hour=3),
+        },
+    ),
+]
+
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
 CELERYBEAT_OTHER = [
     (
@@ -266,5 +277,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_CORPORATIONS
     + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
+    + CELERYBEAT_TRIBES
     + CELERYBEAT_OTHER
 )
