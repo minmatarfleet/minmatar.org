@@ -18,7 +18,8 @@ class TribeGroupRequirementSkill(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        help_text="EVE skill type (must be a skill item).",
+        limit_choices_to={"eve_group__eve_category_id": 16},
+        help_text="EVE skill type.",
     )
     minimum_level = models.PositiveIntegerField(
         default=5,

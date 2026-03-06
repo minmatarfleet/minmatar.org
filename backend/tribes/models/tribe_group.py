@@ -30,16 +30,6 @@ class TribeGroup(models.Model):
         help_text="Group leader; can approve/deny membership for this group.",
     )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
-    ship_type_ids = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="EVE type IDs (hull IDs) used to attribute kills/losses/fleet events to this group.",
-    )
-    blueprint_type_ids = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Blueprint type IDs used to attribute industry jobs to this group.",
-    )
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

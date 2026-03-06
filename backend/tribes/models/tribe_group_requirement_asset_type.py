@@ -4,7 +4,7 @@ from django.db import models
 class TribeGroupRequirementAssetType(models.Model):
     """
     An EVE type that satisfies a TribeGroupRequirement with type 'asset_type'.
-    Owning >= requirement.minimum_count of ANY row in this table qualifies the character.
+    Owning ANY row in this table qualifies the character.
     """
 
     requirement = models.ForeignKey(
@@ -17,19 +17,14 @@ class TribeGroupRequirementAssetType(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        help_text="EVE ship/item type that qualifies the character.",
+        limit_choices_to={"eve_group__eve_category_id": 6},
+        help_text="EVE ship type that qualifies the character.",
     )
-    minimum_count = models.PositiveIntegerField(
-        default=1,
-        help_text="Minimum number of this asset the character must own.",
-    )
-    location = models.ForeignKey(
+    locations = models.ManyToManyField(
         "eveonline.EveLocation",
-        on_delete=models.CASCADE,
-        null=True,
         blank=True,
         limit_choices_to={"staging_active": True},
-        help_text="Required asset location (staging only). Leave blank for any location.",
+        help_text="Required asset locations (staging only). Leave blank for any location.",
     )
 
     class Meta:

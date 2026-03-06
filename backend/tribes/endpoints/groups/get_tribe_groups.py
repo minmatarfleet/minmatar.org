@@ -47,6 +47,7 @@ def get_tribe_groups(request, tribe_id: int):
         .select_related("chief__eveplayer__primary_character")
         .prefetch_related(
             "requirements__asset_types__eve_type",
+            "requirements__asset_types__locations",
             "requirements__qualifying_skills__eve_type",
         )
     ):
@@ -65,8 +66,6 @@ def get_tribe_groups(request, tribe_id: int):
                 description=tg.description,
                 discord_channel_id=tg.discord_channel_id,
                 chief=chief_ref,
-                ship_type_ids=tg.ship_type_ids or [],
-                blueprint_type_ids=tg.blueprint_type_ids or [],
                 is_active=tg.is_active,
                 member_count=member_count,
                 requirements=[
@@ -78,8 +77,9 @@ def get_tribe_groups(request, tribe_id: int):
                                 type_name=(
                                     at.eve_type.name if at.eve_type else ""
                                 ),
-                                minimum_count=at.minimum_count,
-                                location_id=at.location_id,
+                                location_ids=list(
+                                    at.locations.values_list("id", flat=True)
+                                ),
                             )
                             for at in req.asset_types.all()
                             if at.eve_type_id

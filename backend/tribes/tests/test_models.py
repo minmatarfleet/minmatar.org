@@ -61,7 +61,6 @@ class TribeGroupModelTestCase(TestCase):
             description="Dreadnought pilots",
             group=self.tribe_group_auth,
             chief=self.chief,
-            ship_type_ids=[19720, 19726],
         )
 
     def test_str(self):

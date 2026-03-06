@@ -10,8 +10,7 @@ class CharacterRefSchema(BaseModel):
 class QualifyingAssetTypeSchema(BaseModel):
     type_id: int
     type_name: str = ""
-    minimum_count: int = 1
-    location_id: Optional[int] = None
+    location_ids: List[int] = []
 
 
 class QualifyingSkillSchema(BaseModel):
@@ -34,8 +33,6 @@ class TribeGroupSchema(BaseModel):
     description: str
     discord_channel_id: Optional[int] = None
     chief: Optional[CharacterRefSchema] = None
-    ship_type_ids: List[int] = []
-    blueprint_type_ids: List[int] = []
     is_active: bool
     member_count: int = 0
     requirements: List[RequirementSchema] = []

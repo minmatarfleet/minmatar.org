@@ -33,8 +33,8 @@ class TribeAdmin(admin.ModelAdmin):
 class AssetTypeInline(admin.TabularInline):
     model = TribeGroupRequirementAssetType
     extra = 1
-    fields = ("eve_type", "minimum_count", "location")
-    autocomplete_fields = ("eve_type", "location")
+    fields = ("eve_type", "locations")
+    autocomplete_fields = ("eve_type",)
     verbose_name = "Qualifying Asset Type"
     verbose_name_plural = (
         "Qualifying Asset Types (any one satisfies the requirement)"
