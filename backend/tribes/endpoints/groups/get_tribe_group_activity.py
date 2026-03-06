@@ -68,7 +68,9 @@ def get_tribe_group_activity(
                 activity_type_display=activity_type_labels.get(
                     activity_type, activity_type
                 ),
-                character_id=r.character_id,
+                character_id=(
+                    r.character.character_id if r.character else None
+                ),
                 character_name=(
                     r.character.character_name if r.character else ""
                 ),
