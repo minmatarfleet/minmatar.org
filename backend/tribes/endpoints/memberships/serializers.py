@@ -54,7 +54,8 @@ def serialize_membership(
             req_snapshot = check_character_meets_requirements(
                 c.character, m.tribe_group
             )
-            char_data["qualifies"] = any(
+            # No requirements → everyone qualifies; otherwise at least one requirement must be met
+            char_data["qualifies"] = not req_snapshot or any(
                 data["met"] for data in req_snapshot.values()
             )
             char_data["missing_skills"] = any(
