@@ -2,9 +2,10 @@
 import type { TagColors } from '@dtypes/layout_components';
 
 interface Props {
-    text: string;
-    title?: string;
-    color?: TagColors | string;
+    text:                   string;
+    title?:                 string;
+    color?:                 TagColors | string;
+    narrow?:                boolean;
     [propName: string]: any;
 }
 
@@ -12,6 +13,7 @@ const {
     text,
     title,
     color = 'fleet-red',
+    narrow = false,
     ...attributes
 } = Astro.props;
 
@@ -24,7 +26,7 @@ const optional_attributes = {
 }
 ---
 
-<span class:list={['tag w-fit', Astro.props.class]} {...optional_attributes} {...attributes}>{text}</span>
+<span class:list={['tag w-fit', { narrow: narrow }, Astro.props.class]} {...optional_attributes} {...attributes}>{text}</span>
 
 <style lang="scss" define:vars={{ tag_color }}>
     span {
@@ -33,5 +35,9 @@ const optional_attributes = {
         font-size: var(--step--2);
         color: var(--highlight);
         background-color: var(--tag_color);
+
+        &.narrow {
+            padding: 0px 3px;
+        }
     }
 </style>

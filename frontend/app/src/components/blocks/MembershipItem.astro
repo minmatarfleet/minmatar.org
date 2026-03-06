@@ -26,6 +26,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import Button from '@components/blocks/Button.astro';
+import Tag from '@components/blocks/Tag.astro';
 ---
 
 <FlexInline gap='var(--space-2xs)'>
@@ -35,7 +36,7 @@ import Button from '@components/blocks/Button.astro';
     </Flexblock>
 
     <FlexInline
-        gap='var(--space-3xs)'
+        gap='var(--space-2xs)'
         class="[ membership-characters ][ basis-[350px] ]"
     >
         {membership.characters.map((character) => {
@@ -50,31 +51,30 @@ import Button from '@components/blocks/Button.astro';
                             : character.missing_assets
                                 ? t('tribes.detail.missing_assets')
                                 : t('tribes.detail.unqualified'))
-                : null
+                : undefined
             return (
-                <div
-                    class="[ membership-character-item ]"
-                    data-tippy-content={statusLabel ? `${character.character_name}: ${statusLabel}` : character.character_name}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >
-                    <CharacterPicture
-                        character_id={character.character_id}
-                        character_name={character.character_name}
-                        size={32}
-                    />
-                    {hasStatus && (
-                        <span
-                            class:list={[
-                                'membership-character-status',
-                                { 'membership-character-status--qualified': character.qualifies },
-                                { 'membership-character-status--unqualified': character.qualifies === false },
-                            ]}
-                            title={statusLabel ?? undefined}
-                        >
-                            {character.qualifies ? '✓' : '✗'}
-                        </span>
-                    )}
-                    <div class="[ sr-only ]">{character.character_name}</div>
+                <div class="[ relative ]">
+                    <div
+                        class="[ relative ]"
+                        data-tippy-content={character.character_name}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <CharacterPicture
+                            character_id={character.character_id}
+                            character_name={character.character_name}
+                            size={32}
+                        />
+                        <div class="[ sr-only ]">{character.character_name}</div>
+                    </div>
+
+                    <span
+                        class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
+                        color={character.qualifies ? 'green' : 'fleet-red'}
+                        data-tippy-content={statusLabel}
+                        x-init={init_tooltips && statusLabel ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        {character.qualifies ? '▲' : '▼'}
+                    </span>
                 </div>
             )
         })}
@@ -101,23 +101,9 @@ import Button from '@components/blocks/Button.astro';
 </FlexInline>
 
 <style lang="scss">
-    .membership-character-item {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
-    .membership-character-status {
-        font-size: var(--step--2);
-        font-weight: 600;
-    }
-
-    .membership-character-status--qualified {
-        color: var(--green);
-    }
-
-    .membership-character-status--unqualified {
-        color: var(--fleet-red);
+    .membership-status {
+        position: absolute;
+        bottom: -5px;
+        right: -8px;
     }
 </style>

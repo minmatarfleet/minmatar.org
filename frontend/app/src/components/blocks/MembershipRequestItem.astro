@@ -34,22 +34,48 @@ import Button from '@components/blocks/Button.astro';
     </Flexblock>
 
     <FlexInline
-        gap='var(--space-3xs)'
+        gap='var(--space-2xs)'
         class="[ membership-characters ][ basis-[350px] ]"
     >
-        {request.characters.map(character =>
-            <div
-                data-tippy-content={character.character_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <CharacterPicture
-                    character_id={character.character_id}
-                    character_name={character.character_name}
-                    size={32}
-                />
-                <div class="[ sr-only ]">{character.character_name}</div>
-            </div>
-        )}
+        {request.characters.map(character => {
+            const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+            const statusLabel = hasStatus
+                ? (character.qualifies
+                    ? t('tribes.detail.qualified')
+                    : character.missing_skills && character.missing_assets
+                        ? t('tribes.detail.missing_skills_and_assets')
+                        : character.missing_skills
+                            ? t('tribes.detail.missing_skills')
+                            : character.missing_assets
+                                ? t('tribes.detail.missing_assets')
+                                : t('tribes.detail.unqualified'))
+                : undefined
+            return (
+                <div class="[ relative ]">
+                    <div
+                        class="[ relative ]"
+                        data-tippy-content={character.character_name}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <CharacterPicture
+                            character_id={character.character_id}
+                            character_name={character.character_name}
+                            size={32}
+                        />
+                        <div class="[ sr-only ]">{character.character_name}</div>
+                    </div>
+
+                    <span
+                        class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
+                        color={character.qualifies ? 'green' : 'fleet-red'}
+                        data-tippy-content={statusLabel}
+                        x-init={init_tooltips && statusLabel ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        {character.qualifies ? '▲' : '▼'}
+                    </span>
+                </div>
+            )
+        })}
     </FlexInline>
     <FlexInline>
         <Button
@@ -87,3 +113,11 @@ import Button from '@components/blocks/Button.astro';
         </ButtonConfirm>
     </FlexInline>
 </FlexInline>
+
+<style lang="scss">
+    .membership-status {
+        position: absolute;
+        bottom: -5px;
+        right: -8px;
+    }
+</style>
