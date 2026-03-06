@@ -140,6 +140,16 @@ import NotificationBadge from './NotificationBadge.astro'
             class="[ justify-between! h-full ]"
             gap='var(--space-l)'
         >
+            <Flexblock>
+                <FlexInline>
+                    <Button
+                        href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
+                        size='sm'
+                    >
+                        {t('activities')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
             {tribe_group.requirements.length > 0 ?
                 <Flexblock gap='var(--space-m)'>
                     <Flexblock gap='var(--space-3xs)'>
@@ -208,7 +218,9 @@ import NotificationBadge from './NotificationBadge.astro'
                             </Button>
                         }</>
                         :
-                        <Button href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}>
+                        <Button
+                            href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
+                        >
                             {t('manage_membership')}
                         </Button>
                     }

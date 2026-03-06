@@ -1,0 +1,99 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+const page = parseInt(Astro.url.searchParams.get('page') ?? '1')
+const is_pagination = JSON.parse(Astro.url.searchParams.get('is_pagination') ?? 'false')
+
+if (isNaN(tribe_id) || isNaN(group_id))
+    return HTTP_400_Bad_Request()
+
+import type { TribeGroup, TribeGroupActivityRecord } from '@dtypes/api.minmatar.org'
+import { get_tribe_group, get_tribe_group_activity } from '@helpers/api.minmatar.org/tribes'
+
+const PAGE_SIZE = 20
+
+let tribe_group: TribeGroup | null = null
+let activities: TribeGroupActivityRecord[] = []
+let total_activities = 0
+let total_pages:number = 0
+let fetch_error: string | false = false
+
+try {
+    tribe_group = await get_tribe_group(tribe_id, group_id)
+    const activity = await get_tribe_group_activity(tribe_id, group_id, PAGE_SIZE, page)
+    activities = activity.items
+    total_activities = activity.total
+    total_pages = Math.ceil(total_activities/PAGE_SIZE)
+} catch (error) {
+    fetch_error = prod_error_messages() ? t('fetch_tribe_error') : (error as Error).message
+}
+
+const count_text = t('activity_count_text').replace('{count}', String(activities.length)).replace('{total}', String(total_activities))
+
+const TRIBE_GROUP_ACTIVITY_PARTIAL_URL = translatePath(`/partials/tribe_group_activity_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Button from '@components/blocks/Button.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+import ActivityList from '@components/blocks/ActivityList.astro'
+
+const reload_page_header = !is_pagination
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activity')}` : t('tribes.detail.activity')
+---
+
+{fetch_error ? (
+    <ErrorRefetch
+        args={{
+            partial: TRIBE_GROUP_ACTIVITY_PARTIAL_URL,
+            message: fetch_error,
+            delay: delay,
+        }}
+    />
+) : tribe_group ? (
+    <>{reload_page_header ?
+        <FlexInline id="header-oob" hx-swap-oob="true" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle no_link={true}>{page_title}</PageTitle>
+                <small x-text="count_text">{count_text}</small>
+            </Flexblock>
+            <FlexInline>
+                <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)}>
+                    {t('back_to_name').replace('{name}', tribe_group?.name ?? t('group'))}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+        :
+        <div x-init="window.scrollTo({ top: 0 }); $el.remove()" />
+    }</>
+
+    <ActivityList
+        activities={activities}
+        total_pages={total_pages}
+        current_page={page}
+        tribe_id={tribe_id}
+        group_id={group_id}
+    />
+
+    <UpdateAlpineVariables
+        variables={{
+            count_text: count_text,
+        }}
+    />
+) : (
+    <DebugTag set:html={t('no_tribe_group_unexpected_error')} />
+)}

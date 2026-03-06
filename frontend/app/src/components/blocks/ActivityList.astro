@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupActivityRecord } from '@dtypes/api.minmatar.org'
+
+interface Porps {
+    activities:     TribeGroupActivityRecord[];
+    total_pages:    number;
+    current_page:   number;
+    tribe_id:       number;
+    group_id:       number;
+}
+
+const {
+    activities,
+    total_pages,
+    current_page,
+    tribe_id,
+    group_id,
+} = Astro.props
+
+const pages:number[] = []
+if (current_page - 2 > 0 && current_page + 1 > total_pages)
+    pages.push(current_page - 2)
+if (current_page - 1 > 0)
+    pages.push(current_page - 1)
+
+pages.push(current_page)
+
+if (current_page + 1 <= total_pages)
+    pages.push(current_page + 1)
+if (current_page - 1 < 1 && current_page + 2 <= total_pages)
+    pages.push(current_page + 2)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BlockList from '@components/compositions/BlockList.astro';
+
+import GenericActivityItem from '@components/blocks/GenericActivityItem.astro'
+import ActivityPaginationButton from '@components/blocks/ActivityPaginationButton.astro'
+---
+<Flexblock id="activity-list" gap='var(--space-xl)'>
+    <BlockList role="list">
+        {activities.map(activity =>
+            <GenericActivityItem activity={activity} />
+        )}
+    </BlockList>
+
+    <FlexInline justification='center'>
+        {total_pages > 4 &&
+            <ActivityPaginationButton
+                page={1}
+                text={t('first_page')}
+                active={current_page === 1 ? true : undefined}
+                tribe_id={tribe_id}
+                group_id={group_id}
+            />
+        }
+        {pages.map(page =>
+            <ActivityPaginationButton
+                page={page}
+                text={page.toString()}
+                active={page === current_page ? true : undefined}
+                tribe_id={tribe_id}
+                group_id={group_id}
+            />
+        )}
+        {total_pages > 4 &&
+            <ActivityPaginationButton
+                page={total_pages}
+                text={t('last_page')}
+                active={current_page === total_pages ? true : undefined}
+                tribe_id={tribe_id}
+                group_id={group_id}
+            />
+        }
+    </FlexInline>
+</Flexblock>

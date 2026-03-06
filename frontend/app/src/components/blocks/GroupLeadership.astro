@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeCharacterRef } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    chief:              TribeCharacterRef | null;
+    elders:             TribeCharacterRef[];
+}
+
+const {
+    chief,
+    elders,
+} = Astro.props
+
+const leaders = chief ? [ chief /*, ...(elders ?? [])*/ ] : []
+
+import BlockList from '@components/compositions/BlockList.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+---
+
+{leaders.length > 0 &&
+    <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('group_leadership')}</h3>
+
+        <FlexInline>
+            {leaders.map((tribe_leader, index) =>
+                tribe_leader &&
+                    <PilotBadge
+                        class="[ pr-(--space-l) ]"
+                        character_id={tribe_leader?.character_id}
+                        character_name={tribe_leader?.character_name}
+                        size={32}
+                        centered={true}
+                    >
+                        <small>{chief && index === 0 ? t('group_chief') : t('group_elder')}</small>
+                    </PilotBadge>
+            )}
+        </FlexInline>
+    </Flexblock>
+}
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>

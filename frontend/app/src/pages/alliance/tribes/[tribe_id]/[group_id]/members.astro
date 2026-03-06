@@ -40,6 +40,13 @@ try {
     fetch_membership_error = prod_error_messages() ? t('fetch_membership_error') : error.message
 }
 
+let count_text = ''
+
+if (pending.length > 0)
+    count_text = t(pending.length !== 1 ? 'pending_applications_plural' : 'pending_applications_singular').replace('{count}', String(pending.length))
+else
+    count_text = t(approved.length !== 1 ? 'memebrship_plural' : 'memebrship_singular').replace('{count}', String(approved.length))
+
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
 import Viewport from '@layouts/Viewport.astro';
@@ -53,9 +60,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
-import PilotBadge from '@components/blocks/PilotBadge.astro'
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
+import GroupLeadership from '@components/blocks/GroupLeadership.astro';
 import DebugTag from '@components/blocks/DebugTag.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
@@ -80,6 +87,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
         }}
         wide={true}
         x-data={`{
+            count_text: '${count_text}',
             item_name_filter: '',
             show_item(el) {
                 const name_filter_element = el.querySelectorAll('.membership-characters')
@@ -93,16 +101,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                {tribe_group?.chief &&
-                    <PilotBadge
-                        character_id={tribe_group.chief.character_id}
-                        character_name={tribe_group.chief.character_name}
-                        size={32}
-                        centered={true}
-                    >
-                        <small>{t('group_chief')}</small>
-                    </PilotBadge>
-                }
+                <small x-text="count_text">{count_text}</small>
             </Flexblock>
             <FlexInline>
                 <Input type="text"
@@ -117,6 +116,13 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
 
         <FlexInline id="subheader-oob" slot="subheader">
             {tribe_group &&
+                <Button
+                    href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
+                    size='sm'
+                >
+                    {t('activities')}
+                </Button>
+
                 <Button
                     href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
                     size='sm'
@@ -138,6 +144,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
             tribe_group ?
                 <Flexblock id="members" gap='var(--space-2xl)'>
                     {pending.length > 0 || approved.length > 0 ?
+                        <GroupLeadership chief={tribe_group?.chief} elders={[]} />
                         <MembershipRequests requests={pending} init_tooltips={false} />
                         <MembershipTable memberships={approved} init_tooltips={false} />
                         :
