@@ -1963,5 +1963,6 @@ export const ui = {
         'second': 'second',
         'manage': 'Manage',
         'apply_character_selection_required': 'Select at least one character in order to apply.',
+        'group_join_request': '{group} join request',
     },
 } as const;

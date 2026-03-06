@@ -187,7 +187,7 @@ import NotificationBadge from './NotificationBadge.astro'
                 <p>{t('tribes.detail.no_requirements')}</p>
             }
 
-            {is_alliance_member &&
+            {(is_alliance_member || !is_auth) &&
                 <FlexInline>
                     {!is_leader ?
                         <TribeStatus
