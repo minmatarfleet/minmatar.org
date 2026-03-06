@@ -140,58 +140,59 @@ import NotificationBadge from './NotificationBadge.astro'
             class="[ justify-between! h-full ]"
             gap='var(--space-l)'
         >
-            <Flexblock>
-                <FlexInline>
-                    <Button
-                        href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
-                        size='sm'
-                    >
-                        {t('activities')}
-                    </Button>
-                </FlexInline>
-            </Flexblock>
             {tribe_group.requirements.length > 0 ?
-                <Flexblock gap='var(--space-m)'>
-                    <Flexblock gap='var(--space-3xs)'>
-                        <h3>{t(tribe_group.requirements.length !==1 ? 'requirements' : 'requirement')}</h3>
-                        {tribe_group.requirements?.length > 1 && <small>{t('tribal_group_requirement_text').replace('{count}', String(tribe_group.requirements?.length))}</small>}
-                    </Flexblock>
+                <Flexblock gap='var(--space-l)'>
+                    <FlexInline>
+                        <Button
+                            href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
+                            size='sm'
+                        >
+                            {t('activities')}
+                        </Button>
+                    </FlexInline>
 
-                    <Wrapper
-                        class="[ requirements-reel ]"
-                        padding_block='0'
-                        padding_inline='0'
-                        max_width='100%'
-                    >
-                        <div id={`${id}-requirements-reel`} class="[ swiper ][ w-full ]">
-                            <RequirementSwiper
-                                swiper_selector={`#${id}-requirements-reel`}
-                                pagination={false}
-                                gap={60}
-                                index={index}
-                            >
-                                {tribe_group.requirements.map((req, index) =>
-                                    <div class="[ swiper-slide ]" style="margin-right: 60px" >
-                                        {tribe_group.requirements?.length > 1 &&
-                                            <NotificationBadge
-                                                class="[ requirement-number ]"
-                                                number={index + 1}
-                                                color='fleet-yellow'
-                                                text_color='var(--background)'
+                    <Flexblock gap='var(--space-m)'>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{t(tribe_group.requirements.length !==1 ? 'requirements' : 'requirement')}</h3>
+                            {tribe_group.requirements?.length > 1 && <small>{t('tribal_group_requirement_text').replace('{count}', String(tribe_group.requirements?.length))}</small>}
+                        </Flexblock>
+
+                        <Wrapper
+                            class="[ requirements-reel ]"
+                            padding_block='0'
+                            padding_inline='0'
+                            max_width='100%'
+                        >
+                            <div id={`${id}-requirements-reel`} class="[ swiper ][ w-full ]">
+                                <RequirementSwiper
+                                    swiper_selector={`#${id}-requirements-reel`}
+                                    pagination={false}
+                                    gap={60}
+                                    index={index}
+                                >
+                                    {tribe_group.requirements.map((req, index) =>
+                                        <div class="[ swiper-slide ]" style="margin-right: 60px" >
+                                            {tribe_group.requirements?.length > 1 &&
+                                                <NotificationBadge
+                                                    class="[ requirement-number ]"
+                                                    number={index + 1}
+                                                    color='fleet-yellow'
+                                                    text_color='var(--background)'
+                                                />
+                                            }
+                                            <TribalGroupRequirements
+                                                requirement={req}
+                                                init_tooltips={init_tooltips}
                                             />
-                                        }
-                                        <TribalGroupRequirements
-                                            requirement={req}
-                                            init_tooltips={init_tooltips}
-                                        />
-                                    </div>
-                                )}
-                            </RequirementSwiper>
-                        </div>
+                                        </div>
+                                    )}
+                                </RequirementSwiper>
+                            </div>
 
-                        <div id={`${id}-requirements-reel-button-prev`} class="[ swiper-button-prev ]"></div>
-                        <div id={`${id}-requirements-reel-button-next`} class="[ swiper-button-next ]"></div>
-                    </Wrapper>
+                            <div id={`${id}-requirements-reel-button-prev`} class="[ swiper-button-prev ]"></div>
+                            <div id={`${id}-requirements-reel-button-next`} class="[ swiper-button-next ]"></div>
+                        </Wrapper>
+                    </Flexblock>
                 </Flexblock>
                 :
                 <p>{t('tribes.detail.no_requirements')}</p>
