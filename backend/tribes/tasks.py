@@ -14,7 +14,8 @@ from django.utils import timezone
 from app.celery import app
 from discord.client import DiscordClient
 
-from tribes.models import TribeGroupMembership
+from tribes.helpers.activity_processors import process_all_for_tribe_group
+from tribes.models import TribeGroup, TribeGroupMembership
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -132,3 +133,44 @@ def remove_tribe_members_without_permission():
                 membership.tribe_group,
                 exc,
             )
+
+
+# ---------------------------------------------------------------------------
+# Activity processing task
+# ---------------------------------------------------------------------------
+
+
+@app.task()
+def process_tribe_group_activities(tribe_group_id=None):
+    """
+    Scan source models and write TribeGroupActivityRecords for all active
+    TribeGroupActivity configs.
+
+    If tribe_group_id is given, only that group is processed; otherwise
+    all active configs across all groups are processed.
+    """
+    if tribe_group_id is not None:
+        try:
+            tribe_group = TribeGroup.objects.get(pk=tribe_group_id)
+        except TribeGroup.DoesNotExist:
+            logger.warning("TribeGroup pk=%s not found", tribe_group_id)
+            return 0
+        total = process_all_for_tribe_group(tribe_group)
+        logger.info(
+            "Processed tribe group %s: %s new activity records",
+            tribe_group,
+            total,
+        )
+        return total
+
+    tribe_groups = TribeGroup.objects.filter(
+        activities__is_active=True
+    ).distinct()
+    total = 0
+    for tribe_group in tribe_groups:
+        total += process_all_for_tribe_group(tribe_group)
+    if total:
+        logger.info(
+            "Processed all tribe group activities: %s new records", total
+        )
+    return total
