@@ -318,6 +318,7 @@ export const ui = {
         'tribes.detail.no_requirements': 'No specific requirements — open to all qualifying members.',
         'tribes.detail.member_count': 'members',
         'tribes.detail.activity': 'Group Activity',
+        'tribes.activity.view_more': 'View more',
         'tribes.detail.apply': 'Apply to join',
         'tribes.detail.select_pilots': 'Pilots to commit:',
         'tribes.detail.withdraw': 'Withdraw',

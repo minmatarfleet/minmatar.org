@@ -121,7 +121,10 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                     </PilotBadge>
                 }
             </Flexblock>
-            <FlexInline>
+            <FlexInline gap="var(--space-2xs)">
+                <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/activity`)} size="sm">
+                    {t('tribes.detail.activity')}
+                </Button>
                 <Button href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}>
                     {t('back_to_name').replace('{name}', tribe_group?.tribe_name ?? t('tribe'))}
                 </Button>

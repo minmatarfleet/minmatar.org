@@ -6,6 +6,7 @@ import type {
     TribeGroupOutputSummary,
     TribeLeaderboardEntry,
     TribeActivity,
+    TribeGroupActivityList,
     ActivityType,
     LogActivityPayload,
 } from '@dtypes/api.minmatar.org'
@@ -89,6 +90,25 @@ export async function get_tribe_group(tribe_id: number, group_id:number): Promis
         return await response.json() as TribeGroup
     } catch (error) {
         throw new Error(`Error fetching tribe groups: ${error.message}`)
+    }
+}
+
+export async function get_tribe_group_activity(
+    tribe_id: number,
+    group_id: number,
+    limit: number = 20,
+    offset: number = 0,
+): Promise<TribeGroupActivityList> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/activity?limit=${limit}&offset=${offset}`
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: { 'Content-Type': 'application/json' },
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+        return await response.json() as TribeGroupActivityList
+    } catch (error) {
+        throw new Error(`Error fetching tribe group activity: ${error.message}`)
     }
 }
 

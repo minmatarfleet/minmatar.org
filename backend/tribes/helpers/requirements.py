@@ -51,10 +51,13 @@ def _check_asset_condition(
         )
         if using:
             qs = qs.using(using)
-        if at.location_id:
-            qs = qs.filter(location_id=at.location_id)
+        # locations is M2M (staging only); empty = any location
+        location_ids = list(at.locations.values_list("location_id", flat=True))
+        if location_ids:
+            qs = qs.filter(location_id__in=location_ids)
         count = qs.count()
-        if count >= at.minimum_count:
+        minimum = getattr(at, "minimum_count", 1)
+        if count >= minimum:
             name = at.eve_type.name if at.eve_type else str(at.eve_type_id)
             return True, f"Matched {name} ({count} asset(s))"
 
@@ -129,8 +132,11 @@ def _build_requirement_display(
             if at.eve_type_id is None:
                 continue
             name = at.eve_type.name if at.eve_type else str(at.eve_type_id)
-            loc = f" @ {at.location_id}" if at.location_id else ""
-            labels.append(f"≥{at.minimum_count}× {name}{loc}")
+            loc = ""
+            if at.locations.exists():
+                loc = " @ staging"
+            minimum = getattr(at, "minimum_count", 1)
+            labels.append(f"≥{minimum}× {name}{loc}")
         parts.append(
             "Own any of: " + (" / ".join(labels) or "(no types configured)")
         )
@@ -178,6 +184,7 @@ def check_character_meets_requirements(
     if requirements is None:
         req_qs = tribe_group.requirements.prefetch_related(
             "asset_types__eve_type",
+            "asset_types__locations",
             "qualifying_skills__eve_type",
         )
         if using:
@@ -261,7 +268,7 @@ def characters_meeting_requirements_batch(  # noqa: C901
             if at.eve_type_id is not None:
                 asset_type_ids.add(at.eve_type_id)
                 asset_requirements.append(
-                    (req, at.eve_type_id, at.minimum_count)
+                    (req, at.eve_type_id, getattr(at, "minimum_count", 1))
                 )
         skill_requirements_per_req.append(
             [
