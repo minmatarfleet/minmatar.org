@@ -251,6 +251,10 @@ def characters_meeting_requirements_batch(  # noqa: C901
             req_qs = req_qs.using(using)
         requirements = list(req_qs.all())
 
+    # No requirements → all characters qualify
+    if not requirements:
+        return {c.character_id for c in characters}
+
     asset_type_ids = set()
     asset_requirements = (
         []

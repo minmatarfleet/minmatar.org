@@ -64,7 +64,10 @@ def get_membership_characters(
         missing_assets = None
         if user_can_manage_group(request.user, tg):
             req_snapshot = check_character_meets_requirements(c.character, tg)
-            qualifies = any(data["met"] for data in req_snapshot.values())
+            # No requirements → everyone qualifies; otherwise at least one requirement must be met
+            qualifies = not req_snapshot or any(
+                data["met"] for data in req_snapshot.values()
+            )
             missing_skills = any(
                 data.get("skill_met") is False
                 for data in req_snapshot.values()
