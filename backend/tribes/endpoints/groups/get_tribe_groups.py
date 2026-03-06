@@ -78,7 +78,9 @@ def get_tribe_groups(request, tribe_id: int):
                                     at.eve_type.name if at.eve_type else ""
                                 ),
                                 location_ids=list(
-                                    at.locations.values_list("id", flat=True)
+                                    at.locations.values_list(
+                                        "location_id", flat=True
+                                    )
                                 ),
                             )
                             for at in req.asset_types.all()

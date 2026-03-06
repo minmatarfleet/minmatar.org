@@ -151,6 +151,32 @@ export interface TribeActivity {
     created_at:     string;
 }
 
+/** Single activity record for group timeline (GET group activity). */
+export interface TribeGroupActivityRecord {
+    id:                   number;
+    created_at:           string;
+    activity_type:        string;
+    activity_type_display: string;
+    character_id:         number | null;
+    character_name:       string;
+    user_id:               number | null;
+    username:              string;
+    source_type_id:       number | null;
+    target_type_id:       number | null;
+    quantity:              number | null;
+    unit:                  string;
+    reference_type:        string;
+    reference_id:          string;
+}
+
+/** Paginated list of tribe group activity records. */
+export interface TribeGroupActivityList {
+    items:   TribeGroupActivityRecord[];
+    total:   number;
+    limit:   number;
+    offset:  number;
+}
+
 export const activity_types = [
     'fleet_participation',
     'kills',

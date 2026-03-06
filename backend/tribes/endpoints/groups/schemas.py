@@ -30,6 +30,22 @@ class TribeGroupActivityListSchema(BaseModel):
     offset: int
 
 
+class TribeActivityRecordSchema(TribeGroupActivityRecordSchema):
+    """Activity record with optional group context (for tribe-level activity list)."""
+
+    group_id: Optional[int] = None
+    group_name: str = ""
+
+
+class TribeActivityListSchema(BaseModel):
+    """Paginated list of tribe activity records (all groups)."""
+
+    items: List[TribeActivityRecordSchema]
+    total: int
+    limit: int
+    offset: int
+
+
 class CharacterRefSchema(BaseModel):
     character_id: int
     character_name: str = ""
