@@ -88,13 +88,14 @@ def process_killmail(activity):
     if not members:
         return 0
 
-    char_ids = {c.character_id for c, _ in members}
-    char_user = {c.character_id: u for c, u in members}
+    # EveCharacterKillmail.character_id is FK to EveCharacter (Django pk), not EVE character_id
+    char_pks = {c.id for c, _ in members}
+    char_user = {c.id: u for c, u in members}
 
     # Killmails where our members' characters are linked (character FK = owner of killboard).
     # It's a kill when victim_character_id != character.character_id.
     qs = (
-        EveCharacterKillmail.objects.filter(character_id__in=char_ids)
+        EveCharacterKillmail.objects.filter(character_id__in=char_pks)
         .exclude(victim_character_id=F("character__character_id"))
         .select_related("character")
     )
@@ -141,11 +142,12 @@ def process_lossmail(activity):
     if not members:
         return 0
 
-    char_ids = {c.character_id for c, _ in members}
-    char_user = {c.character_id: u for c, u in members}
+    # EveCharacterKillmail.character_id is FK to EveCharacter (Django pk), not EVE character_id
+    char_pks = {c.id for c, _ in members}
+    char_user = {c.id: u for c, u in members}
 
     qs = EveCharacterKillmail.objects.filter(
-        character_id__in=char_ids,
+        character_id__in=char_pks,
         victim_character_id=F("character__character_id"),
     ).select_related("character")
 
