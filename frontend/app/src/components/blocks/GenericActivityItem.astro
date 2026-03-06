@@ -1,0 +1,58 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupActivityRecord } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    activity:       TribeGroupActivityRecord;
+}
+
+const {
+    activity,
+} = Astro.props
+
+import { format_date_time } from '@helpers/date'
+import { get_bpc_icon } from '@helpers/eve_image_server';
+
+console.log(activity.character_id)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import Picture from '@components/blocks/Picture.astro';
+---
+
+<FlexInline>
+    <span class="[ basis-[200px] ]">
+        {format_date_time(lang, activity.created_at)}
+    </span>
+    <PilotBadge
+        class="[ basis-[250px] ]"
+        character_id={activity.character_id ?? 0}
+        character_name={activity.character_name}
+        size={32}
+        centered={true}
+    />
+    <span class="[ basis-[220px] ]">{activity.activity_type_display}</span>
+    <FlexInline gap='var(--space-2xs)'>
+        {activity.source_type_id &&
+            <>{activity.activity_type === 'industry' ?
+                <Picture
+                    src={get_bpc_icon(activity.source_type_id, false, 32)}
+                    size={24}
+                    placeholder={get_bpc_icon(activity.source_type_id, true, 32)}
+                />
+                :
+                <ItemPicture
+                    item_id={activity.source_type_id}
+                    size={24}
+                />
+            }</>
+        }
+        {activity.quantity &&
+            <span>{activity.quantity} {activity.unit}</span>
+        }
+    </FlexInline>
+</FlexInline>
