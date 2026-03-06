@@ -142,6 +142,16 @@ def user_affiliation_post_save(sender, instance, created, **kwargs):
             user=instance.user,
             defaults={"status": UserCommunityStatus.STATUS_TRIAL},
         )
+    else:
+        # Current affiliation does not require trial; clear trial if they have it
+        # (e.g. they were Alliance and are now Guest/Militia).
+        try:
+            ucs = UserCommunityStatus.objects.get(user=instance.user)
+            if ucs.status == UserCommunityStatus.STATUS_TRIAL:
+                ucs.status = UserCommunityStatus.STATUS_ACTIVE
+                ucs.save(update_fields=["status"])
+        except UserCommunityStatus.DoesNotExist:
+            pass
     logger.info("User affiliation saved, syncing user community groups")
     instance.user.refresh_from_db()
     sync_user_community_groups(instance.user)

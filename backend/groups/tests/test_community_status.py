@@ -170,3 +170,27 @@ class RequiresTrialTestCase(TestCase):
         )
         ucs = UserCommunityStatus.objects.get(user=self.user)
         self.assertEqual(ucs.status, UserCommunityStatus.STATUS_TRIAL)
+
+    def test_affiliation_without_requires_trial_clears_trial_status(self):
+        """When user's affiliation changes from requires_trial to non-requires_trial, status becomes active."""
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.affiliation_type
+        )
+        ucs = UserCommunityStatus.objects.get(user=self.user)
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_TRIAL)
+
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        guest_affiliation = AffiliationType.objects.create(
+            name="Guest",
+            description="",
+            image_url="",
+            group=guest_group,
+            priority=0,
+            requires_trial=False,
+        )
+        UserAffiliation.objects.filter(user=self.user).delete()
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=guest_affiliation
+        )
+        ucs.refresh_from_db()
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_ACTIVE)
