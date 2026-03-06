@@ -1,15 +1,22 @@
 """
-SIG → Tribe migration executor (writes to default DB).
+Industry SIG → Tribe migration executor (writes to default DB).
 
-Applies the migration list produced by sig_tribe_migration_report.py: creates
-active TribeGroupMembership with qualifying characters; tribes.signals add
-the user to the correct auth.Group. Uses SigRequest for approved_at/approved_by
+Applies the migration list produced by industry_sig_tribe_migration_report.py:
+creates active TribeGroupMembership with the characters from the list; tribes.signals
+add the user to the correct auth.Group. Uses SigRequest for approved_at/approved_by
 when available.
 
-Usage (Django runscript, from backend/):
-    python manage.py runscript capitals_sig_tribe_migration_execute
+The report builds the list as follows:
+- Mining: characters that meet tribe requirements and mined in the past 30 days.
+- Subcapital / Capital Production: characters that have been assigned to an industry
+  order (assignment is proof of building; tribe requirements are not required for the list).
+- Freighters: characters that delivered a freight courier contract in the past 30 days.
 
-Loads migration list from scripts/outputs/sig_tribe_migration_list.json (written by the report).
+Usage (Django runscript, from backend/):
+    python manage.py runscript industry_sig_tribe_migration_execute
+
+Loads migration list from scripts/outputs/industry_sig_tribe_migration_list.json
+(written by the report).
 Optional env: SIG_TRIBE_APPROVED_BY=username (fallback approver), SIG_TRIBE_DRY_RUN=1 (preview).
 """
 
@@ -37,10 +44,13 @@ logger = logging.getLogger(__name__)
 
 # TribeGroup name → SIG auth.Group name (for SigRequest lookup)
 TRIBE_GROUP_TO_SIG_GROUP = {
-    "Dreads": "DREADS",
-    "Carriers": "CARRIERS",
-    "Faxes": "FAXES",
+    "Mining": "SIG - Mining",
+    "Subcapital Production": "SIG - Ship Production",
+    "Capital Production": "SIG - Capital Production",
+    "Freighters": "SIG - Freighters",
 }
+
+MIGRATION_LIST_JSON = "industry_sig_tribe_migration_list.json"
 
 
 def _approved_from_sig_request(
@@ -168,25 +178,21 @@ def run_sig_to_tribe_migration(
     dry_run: bool = False,
 ) -> None:
     """
-    Execute the SIG-to-tribe migration.
+    Execute the Industry SIG-to-tribe migration.
 
     Parameters
     ----------
     migration_list:
-        List of dicts produced by sig_tribe_migration_report.py, each with keys:
-            user_id (int), tribe_group_id (int), character_ids (list[int])
+        List of dicts produced by industry_sig_tribe_migration_report.py, each with keys:
+            user_id (int), tribe_group_id (int), character_ids (list[int]).
+        For Mining, character_ids are those meeting requirements with recent mining.
+        For Subcapital/Capital Production, character_ids are those with order assignments.
+        For Freighters, character_ids are those who delivered a freight courier in past 30 days.
     approved_by_user:
         The User who is authorising the migration (recorded as approved_by on
         the membership). If None, the membership is created without an approver.
     dry_run:
         If True, prints what would happen without writing anything to the DB.
-
-    Usage example
-    -------------
-    >>> exec(open("scripts/sig_tribe_migration_report.py").read())
-    >>> exec(open("scripts/sig_tribe_migration_execute.py").read())
-    >>> approved_by = User.objects.get(username="your_username")
-    >>> run_sig_to_tribe_migration(MIGRATION_LIST, approved_by_user=approved_by)
     """
     if dry_run:
         print("[DRY-RUN MODE — no changes will be written]\n")
@@ -268,13 +274,10 @@ def run_sig_to_tribe_migration(
     )
 
 
-MIGRATION_LIST_JSON = "sig_tribe_migration_list.json"
-
-
 def run():
     """
     Entry point for django-extensions runscript. Loads migration list from
-    scripts/sig_tribe_migration_list.json and runs the migration.
+    scripts/outputs/industry_sig_tribe_migration_list.json and runs the migration.
     """
     outputs_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "outputs"
@@ -282,7 +285,9 @@ def run():
     list_path = os.path.join(outputs_dir, MIGRATION_LIST_JSON)
     if not os.path.isfile(list_path):
         print("No migration list found at %s" % list_path)
-        print("Run the report first: python manage.py runscript capitals_sig_tribe_migration_report")
+        print(
+            "Run the report first: python manage.py runscript industry_sig_tribe_migration_report"
+        )
         return
     with open(list_path) as f:
         migration_list = json.load(f)

@@ -10,7 +10,7 @@ All reads go through the "production_readonly" database alias — this script
 NEVER writes anything to the database.
 
 Usage (Django runscript, from backend/):
-    pipenv run python manage.py runscript sig_tribe_migration_report --script-path scripts
+    python manage.py runscript capitals_sig_tribe_migration_report
 
 Output files written to scripts/outputs/:
     sig_tribe_migration_<SIG>.txt  — per-SIG report (migrating / not migrating).
