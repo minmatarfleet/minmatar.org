@@ -15,7 +15,7 @@ const {
 import { format_date_time } from '@helpers/date'
 import { get_bpc_icon } from '@helpers/eve_image_server';
 
-console.log(activity.character_id)
+import { number_thousand_separator } from '@helpers/numbers'
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -52,7 +52,7 @@ import Picture from '@components/blocks/Picture.astro';
             }</>
         }
         {activity.quantity &&
-            <span>{activity.quantity} {activity.unit}</span>
+            <span>{number_thousand_separator(activity.quantity)} {activity.unit}</span>
         }
     </FlexInline>
 </FlexInline>
