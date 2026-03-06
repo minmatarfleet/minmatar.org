@@ -52,8 +52,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
         !is_auth ?
             <ButtonAuth
                 color='green'
-                size='sm'
-                dialog_title={group.name}
+                dialog_title={t('group_join_request').replace('{group}', group.name)}
             >
                 {t('tribes.detail.login_to_apply')}
             </ButtonAuth> :
