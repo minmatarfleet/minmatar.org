@@ -8,6 +8,7 @@ repos:
       - id: black
         name: black (backend)
         files: ^backend/.*\.py$
+        exclude: ^backend/scripts/
         args: [--config, backend/pyproject.toml]
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.1
@@ -15,6 +16,7 @@ repos:
       - id: flake8
         name: flake8 (backend)
         files: ^backend/.*\.py$
+        exclude: ^backend/scripts/
         args: [--config, backend/.flake8]
   - repo: https://github.com/pycqa/pylint
     rev: v3.3.2
@@ -22,4 +24,5 @@ repos:
       - id: pylint
         name: pylint (backend)
         files: ^backend/.*\.py$
+        exclude: ^backend/scripts/
         args: [--rcfile=backend/.pylintrc]

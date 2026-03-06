@@ -4,6 +4,10 @@ Requirement evaluation helpers.
 check_character_meets_requirements: evaluates one EveCharacter against all
 TribeGroupRequirements for a TribeGroup and returns a per-requirement compliance dict.
 
+characters_meeting_requirements_batch: evaluates many characters in bulk (2 queries
+total for assets + skills) and returns the set of character_ids that meet at least
+one requirement. Use for reports over many users/characters.
+
 build_membership_snapshot: evaluates all committed characters at application time
 and returns a snapshot suitable for storing as TribeGroupMembership.requirement_snapshot.
 
@@ -18,6 +22,7 @@ Logic:
 """
 
 import logging
+from collections import defaultdict
 from typing import Any
 
 from eveonline.models import EveCharacter, EveCharacterAsset
@@ -28,11 +33,12 @@ logger = logging.getLogger(__name__)
 
 
 def _check_asset_condition(
-    character: EveCharacter, asset_types: list
+    character: EveCharacter, asset_types: list, using: str | None = None
 ) -> tuple["bool | None", str]:
     """
     OR across asset types: satisfied if the character owns >= minimum_count of any one.
     Returns (None, "") when no asset types are configured.
+    Pass `using` to route asset queries to an alternate DB alias (e.g. "production_readonly").
     """
     if not asset_types:
         return None, ""
@@ -43,6 +49,8 @@ def _check_asset_condition(
         qs = EveCharacterAsset.objects.filter(
             character=character, type_id=at.eve_type_id
         )
+        if using:
+            qs = qs.using(using)
         if at.location_id:
             qs = qs.filter(location_id=at.location_id)
         count = qs.count()
@@ -54,11 +62,14 @@ def _check_asset_condition(
 
 
 def _check_skill_condition(
-    character: EveCharacter, qualifying_skills: list
+    character: EveCharacter,
+    qualifying_skills: list,
+    using: str | None = None,
 ) -> tuple["bool | None", str]:
     """
     AND across skills: satisfied only when the character has ALL listed skills at level.
     Returns (None, "") when no skills are configured.
+    Pass `using` to route skill queries to an alternate DB alias (e.g. "production_readonly").
     """
     if not qualifying_skills:
         return None, ""
@@ -67,11 +78,14 @@ def _check_skill_condition(
     for entry in qualifying_skills:
         if entry.eve_type_id is None:
             continue
-        trained = EveCharacterSkill.objects.filter(
+        qs = EveCharacterSkill.objects.filter(
             character=character,
             skill_id=entry.eve_type_id,
             skill_level__gte=entry.minimum_level,
-        ).exists()
+        )
+        if using:
+            qs = qs.using(using)
+        trained = qs.exists()
         if not trained:
             name = (
                 entry.eve_type.name
@@ -134,7 +148,10 @@ def _build_requirement_display(
 
 
 def check_character_meets_requirements(
-    character: EveCharacter, tribe_group: TribeGroup
+    character: EveCharacter,
+    tribe_group: TribeGroup,
+    using: str | None = None,
+    requirements: list | None = None,
 ) -> dict[str, Any]:
     """
     Evaluate a single EveCharacter against all TribeGroupRequirements for a TribeGroup.
@@ -151,24 +168,36 @@ def check_character_meets_requirements(
 
     A requirement is "met" when all of its defined conditions are satisfied (AND).
     The caller can determine overall eligibility by OR-ing the "met" values.
+
+    Pass `using` to route all DB queries through an alternate alias
+    (e.g. "production_readonly" for reporting against production data).
+    Pass `requirements` to use a pre-loaded list (e.g. from characters_meeting_requirements_batch
+    or prefetched once per tribe_group) and avoid re-querying.
     """
     snapshot: dict[str, Any] = {}
-    requirements = tribe_group.requirements.prefetch_related(
-        "asset_types__eve_type",
-        "qualifying_skills__eve_type",
-    ).all()
+    if requirements is None:
+        req_qs = tribe_group.requirements.prefetch_related(
+            "asset_types__eve_type",
+            "qualifying_skills__eve_type",
+        )
+        if using:
+            req_qs = req_qs.using(using)
+        requirements = list(req_qs.all())
 
     for req in requirements:
-        asset_types = list(req.asset_types.select_related("eve_type").all())
-        qualifying_skills = list(
-            req.qualifying_skills.select_related("eve_type").all()
-        )
+        asset_qs = req.asset_types.select_related("eve_type")
+        skill_qs = req.qualifying_skills.select_related("eve_type")
+        if using:
+            asset_qs = asset_qs.using(using)
+            skill_qs = skill_qs.using(using)
+        asset_types = list(asset_qs.all())
+        qualifying_skills = list(skill_qs.all())
 
         asset_met, asset_detail = _check_asset_condition(
-            character, asset_types
+            character, asset_types, using=using
         )
         skill_met, skill_detail = _check_skill_condition(
-            character, qualifying_skills
+            character, qualifying_skills, using=using
         )
         met, detail = _combine_conditions(
             asset_met, asset_detail, skill_met, skill_detail
@@ -185,6 +214,136 @@ def check_character_meets_requirements(
         }
 
     return snapshot
+
+
+def characters_meeting_requirements_batch(  # noqa: C901
+    characters: list[EveCharacter],
+    tribe_group: TribeGroup,
+    using: str | None = None,
+    requirements: list | None = None,
+) -> set[int]:
+    """
+    Check many characters against the tribe group's requirements using at most
+    2 queries (assets + skills). Returns the set of EVE character_ids that meet
+    at least one requirement.
+
+    Use this for reports over many users/characters instead of calling
+    check_character_meets_requirements per character.
+    """
+    if not characters:
+        return set()
+
+    char_pks = [c.pk for c in characters]
+
+    if requirements is None:
+        req_qs = tribe_group.requirements.prefetch_related(
+            "asset_types__eve_type",
+            "qualifying_skills__eve_type",
+        )
+        if using:
+            req_qs = req_qs.using(using)
+        requirements = list(req_qs.all())
+
+    asset_type_ids = set()
+    asset_requirements = (
+        []
+    )  # (req, eve_type_id, minimum_count) — location excluded in batch
+    skill_requirements_per_req = []  # list of [(skill_id, min_level), ...]
+    for req in requirements:
+        asset_qs = req.asset_types.all()
+        skill_qs = req.qualifying_skills.all()
+        if using:
+            asset_qs = asset_qs.using(using)
+            skill_qs = skill_qs.using(using)
+        at_list = list(asset_qs)
+        sq_list = list(skill_qs)
+        for at in at_list:
+            if at.eve_type_id is not None:
+                asset_type_ids.add(at.eve_type_id)
+                asset_requirements.append(
+                    (req, at.eve_type_id, at.minimum_count)
+                )
+        skill_requirements_per_req.append(
+            [
+                (s.eve_type_id, s.minimum_level)
+                for s in sq_list
+                if s.eve_type_id is not None
+            ]
+        )
+
+    # (char_pk, type_id) -> count (location excluded in batch)
+    asset_counts = defaultdict(lambda: defaultdict(int))
+    if asset_type_ids:
+        qs = EveCharacterAsset.objects.filter(
+            character_id__in=char_pks,
+            type_id__in=asset_type_ids,
+        ).values_list("character_id", "type_id")
+        if using:
+            qs = qs.using(using)
+        for char_pk, type_id in qs.iterator():
+            asset_counts[char_pk][type_id] += 1
+
+    # (char_pk, skill_id) -> level
+    skill_levels = defaultdict(dict)
+    all_skill_ids = set()
+    for skills in skill_requirements_per_req:
+        for skill_id, _ in skills:
+            all_skill_ids.add(skill_id)
+    if all_skill_ids:
+        qs = EveCharacterSkill.objects.filter(
+            character_id__in=char_pks,
+            skill_id__in=all_skill_ids,
+        ).values_list("character_id", "skill_id", "skill_level")
+        if using:
+            qs = qs.using(using)
+        for char_pk, skill_id, skill_level in qs.iterator():
+            skill_levels[char_pk][skill_id] = max(
+                skill_levels[char_pk].get(skill_id, 0), skill_level
+            )
+
+    req_asset_map = defaultdict(list)
+    for req, eve_type_id, min_count in asset_requirements:
+        req_asset_map[req.pk].append((eve_type_id, min_count))
+
+    meeting = set()
+    for char in characters:
+        char_pk = char.pk
+        for req_idx, req in enumerate(requirements):
+            asset_tuples = req_asset_map.get(req.pk, [])
+            skill_tuples = skill_requirements_per_req[req_idx]
+
+            asset_met = None
+            if asset_tuples:
+                for eve_type_id, min_count in asset_tuples:
+                    count = asset_counts[char_pk].get(eve_type_id, 0)
+                    if count >= min_count:
+                        asset_met = True
+                        break
+                if asset_met is None:
+                    asset_met = False
+
+            skill_met = None
+            if skill_tuples:
+                for skill_id, min_level in skill_tuples:
+                    if skill_levels[char_pk].get(skill_id, 0) < min_level:
+                        skill_met = False
+                        break
+                if skill_met is None:
+                    skill_met = True
+
+            if asset_met is None and skill_met is None:
+                continue
+            if asset_met is None:
+                met = skill_met
+            elif skill_met is None:
+                met = asset_met
+            else:
+                met = asset_met and skill_met
+            if met:
+                meeting.add(char.character_id)
+                break
+
+    return meeting
 
 
 def build_membership_snapshot(

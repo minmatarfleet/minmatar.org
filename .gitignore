@@ -175,5 +175,5 @@ artifacts/
 .vscode/
 
 
-# debugging
-backend/scripts/
+# debugging / script outputs
+backend/scripts/outputs/
