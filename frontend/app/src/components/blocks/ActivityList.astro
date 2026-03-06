@@ -45,35 +45,38 @@ import ActivityPaginationButton from '@components/blocks/ActivityPaginationButto
         {activities.map(activity =>
             <GenericActivityItem activity={activity} />
         )}
+        {activities.length === 0 && <p>{t('no_activities')}</p>}
     </BlockList>
 
-    <FlexInline justification='center'>
-        {total_pages > 4 &&
-            <ActivityPaginationButton
-                page={1}
-                text={t('first_page')}
-                active={current_page === 1 ? true : undefined}
-                tribe_id={tribe_id}
-                group_id={group_id}
-            />
-        }
-        {pages.map(page =>
-            <ActivityPaginationButton
-                page={page}
-                text={page.toString()}
-                active={page === current_page ? true : undefined}
-                tribe_id={tribe_id}
-                group_id={group_id}
-            />
-        )}
-        {total_pages > 4 &&
-            <ActivityPaginationButton
-                page={total_pages}
-                text={t('last_page')}
-                active={current_page === total_pages ? true : undefined}
-                tribe_id={tribe_id}
-                group_id={group_id}
-            />
-        }
-    </FlexInline>
+    {total_pages > 1 &&
+        <FlexInline justification='center'>
+            {total_pages > 4 &&
+                <ActivityPaginationButton
+                    page={1}
+                    text={t('first_page')}
+                    active={current_page === 1 ? true : undefined}
+                    tribe_id={tribe_id}
+                    group_id={group_id}
+                />
+            }
+            {pages.map(page =>
+                <ActivityPaginationButton
+                    page={page}
+                    text={page.toString()}
+                    active={page === current_page ? true : undefined}
+                    tribe_id={tribe_id}
+                    group_id={group_id}
+                />
+            )}
+            {total_pages > 4 &&
+                <ActivityPaginationButton
+                    page={total_pages}
+                    text={t('last_page')}
+                    active={current_page === total_pages ? true : undefined}
+                    tribe_id={tribe_id}
+                    group_id={group_id}
+                />
+            }
+        </FlexInline>
+    }
 </Flexblock>

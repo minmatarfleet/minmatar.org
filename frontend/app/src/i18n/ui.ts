@@ -1973,5 +1973,6 @@ export const ui = {
         'memebrship_singular': '1 membership',
         'group_leadership': 'Group leadership',
         'group_elder': 'Group elder',
+        'no_activities': 'There are currently no activities to show.',
     },
 } as const;
