@@ -906,6 +906,45 @@ export interface Product extends ProductBase {
     corporation_producers:          Producer[]
 }
 
+/** Planetary (PI) API types */
+export interface PlanetaryCharacterRef {
+    character_id:   number;
+    character_name: string;
+}
+
+export interface HarvestOverviewItem {
+    type_id:                number;
+    name:                   string;
+    total_extractors:       number;
+    total_daily_quantity?:  number | null;
+}
+
+export interface HarvestDrillDownItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+    extractor_count:    number;
+    daily_quantity?:    number | null;
+}
+
+export interface ProductionOverviewItem {
+    type_id:                number;
+    name:                   string;
+    total_factories:        number;
+    total_daily_quantity?:  number | null;
+}
+
+export interface ProductionDrillDownItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+    factory_count:      number;
+    daily_quantity?:    number | null;
+}
+
+export interface PlanetSummaryItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+}
+
 export interface RootItem {
     eve_type_id:    number;
     eve_type_name:  string;

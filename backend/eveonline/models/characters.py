@@ -353,6 +353,16 @@ class EveCharacterPlanetOutput(models.Model):
         default=0,
         help_text="Estimated units produced or harvested per day.",
     )
+    extractor_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of extractor pins for this type (harvested only).",
+    )
+    factory_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of end-result factory pins for this type (produced only).",
+    )
 
     class Meta:
         unique_together = ("planet", "eve_type", "output_type")

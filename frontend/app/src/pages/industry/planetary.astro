@@ -1,0 +1,362 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    HarvestOverviewItem,
+    HarvestDrillDownItem,
+    ProductionOverviewItem,
+    ProductionDrillDownItem,
+    PlanetSummaryItem,
+} from '@dtypes/api.minmatar.org'
+import {
+    get_planetary_harvest,
+    get_planetary_harvest_drilldown,
+    get_planetary_production,
+    get_planetary_production_drilldown,
+    get_planetary_planets,
+} from '@helpers/api.minmatar.org/industry'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const harvestTypeId = Astro.url.searchParams.get('harvest')
+const productionTypeId = Astro.url.searchParams.get('production')
+const planetIdParam = Astro.url.searchParams.get('planet_id')
+const solarSystemIdParam = Astro.url.searchParams.get('solar_system_id')
+
+let harvestOverview: HarvestOverviewItem[] = []
+let productionOverview: ProductionOverviewItem[] = []
+let harvestDrillDown: HarvestDrillDownItem[] | null = null
+let productionDrillDown: ProductionDrillDownItem[] | null = null
+let planetSummary: PlanetSummaryItem[] | null = null
+let fetchError: string | false = false
+
+try {
+    harvestOverview = await get_planetary_harvest()
+    productionOverview = await get_planetary_production()
+
+    if (harvestTypeId) {
+        const typeId = parseInt(harvestTypeId, 10)
+        if (!Number.isNaN(typeId)) {
+            harvestDrillDown = await get_planetary_harvest_drilldown(typeId)
+        }
+    }
+    if (productionTypeId) {
+        const typeId = parseInt(productionTypeId, 10)
+        if (!Number.isNaN(typeId)) {
+            productionDrillDown = await get_planetary_production_drilldown(typeId)
+        }
+    }
+    if (planetIdParam || solarSystemIdParam) {
+        const planet_id = planetIdParam ? parseInt(planetIdParam, 10) : undefined
+        const solar_system_id = solarSystemIdParam
+            ? parseInt(solarSystemIdParam, 10)
+            : undefined
+        const validPlanet =
+            planetIdParam && planet_id != null && !Number.isNaN(planet_id)
+        const validSystem =
+            solarSystemIdParam &&
+            solar_system_id != null &&
+            !Number.isNaN(solar_system_id)
+        if (validPlanet || validSystem) {
+            planetSummary = await get_planetary_planets({
+                ...(validPlanet && { planet_id }),
+                ...(validSystem && { solar_system_id }),
+            })
+        }
+    }
+} catch (err) {
+    fetchError = err instanceof Error ? err.message : String(err)
+}
+
+const pageTitle = t('industry.planetary.page_title') || 'Planetary interaction'
+const basePath = translatePath('/industry/planetary/')
+---
+
+<Viewport
+    title={pageTitle}
+    meta_description={t('industry.planetary.meta_description') || 'Alliance harvest, production and planet summary'}
+>
+    <PageWide>
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{pageTitle}</PageTitle>
+        </Flexblock>
+
+        {fetchError !== false ? (
+            <ErrorRefetch
+                args={{
+                    partial: `${basePath}?${Astro.url.searchParams.toString()}`,
+                    message: fetchError,
+                    delay: 0,
+                }}
+            />
+        ) : (
+            <BlockList gap="var(--space-l)">
+                <section>
+                    <h2 class="section-title">
+                        {t('industry.planetary.harvest_summary') || 'Harvest summary'}
+                    </h2>
+                    <p class="section-desc">
+                        {t('industry.planetary.harvest_desc') ||
+                            'P0 extractor counts across the alliance.'}
+                    </p>
+                    {harvestOverview.length === 0 ? (
+                        <p>{t('industry.planetary.no_data') || 'No harvest data.'}</p>
+                    ) : (
+                        <table class="planetary-table">
+                            <thead>
+                                <tr>
+                                    <th>{t('industry.planetary.type') || 'Type'}</th>
+                                    <th>{t('industry.planetary.extractors') || 'Extractors'}</th>
+                                    <th>{t('industry.planetary.daily_quantity') || 'Daily (est.)'}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {harvestOverview.map((row) => (
+                                    <tr>
+                                        <td>{row.name}</td>
+                                        <td>{row.total_extractors}</td>
+                                        <td>
+                                            {row.total_daily_quantity != null
+                                                ? Number(row.total_daily_quantity).toLocaleString(undefined, {
+                                                      maximumFractionDigits: 0,
+                                                  })
+                                                : '—'}
+                                        </td>
+                                        <td>
+                                            <a
+                                                href={`${basePath}?harvest=${row.type_id}`}
+                                                class="link"
+                                            >
+                                                {t('industry.planetary.who_harvests') || 'Who'}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                    {harvestDrillDown !== null && (
+                        <div class="drilldown">
+                            <h3>
+                                {t('industry.planetary.who_harvests') || 'Who harvests this'}
+                                {harvestTypeId && ` (type ${harvestTypeId})`}
+                            </h3>
+                            <a href={basePath} class="link">Clear</a>
+                            <ul>
+                                {harvestDrillDown.map((item) => (
+                                    <li>
+                                        <strong>{item.actual_character.character_name}</strong>
+                                        {item.primary_character.character_id !==
+                                        item.actual_character.character_id
+                                            ? ` (primary: ${item.primary_character.character_name})`
+                                            : ''}
+                                        — {item.extractor_count} extractors
+                                        {item.daily_quantity != null &&
+                                            `, ${Number(item.daily_quantity).toLocaleString(undefined, { maximumFractionDigits: 0 })}/day`}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </section>
+
+                <section>
+                    <h2 class="section-title">
+                        {t('industry.planetary.production_summary') || 'Production summary'}
+                    </h2>
+                    <p class="section-desc">
+                        {t('industry.planetary.production_desc') ||
+                            'End-result factory counts (P2 feeding P3 counts only P3).'}
+                    </p>
+                    {productionOverview.length === 0 ? (
+                        <p>{t('industry.planetary.no_data') || 'No production data.'}</p>
+                    ) : (
+                        <table class="planetary-table">
+                            <thead>
+                                <tr>
+                                    <th>{t('industry.planetary.type') || 'Type'}</th>
+                                    <th>{t('industry.planetary.factories') || 'Factories'}</th>
+                                    <th>{t('industry.planetary.daily_quantity') || 'Daily (est.)'}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {productionOverview.map((row) => (
+                                    <tr>
+                                        <td>{row.name}</td>
+                                        <td>{row.total_factories}</td>
+                                        <td>
+                                            {row.total_daily_quantity != null
+                                                ? Number(row.total_daily_quantity).toLocaleString(undefined, {
+                                                      maximumFractionDigits: 0,
+                                                  })
+                                                : '—'}
+                                        </td>
+                                        <td>
+                                            <a
+                                                href={`${basePath}?production=${row.type_id}`}
+                                                class="link"
+                                            >
+                                                {t('industry.planetary.who_has_factories') || 'Who'}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                    {productionDrillDown !== null && (
+                        <div class="drilldown">
+                            <h3>
+                                {t('industry.planetary.who_has_factories') || 'Who has factories'}
+                                {productionTypeId && ` (type ${productionTypeId})`}
+                            </h3>
+                            <a href={basePath} class="link">Clear</a>
+                            <ul>
+                                {productionDrillDown.map((item) => (
+                                    <li>
+                                        <strong>{item.actual_character.character_name}</strong>
+                                        {item.primary_character.character_id !==
+                                        item.actual_character.character_id
+                                            ? ` (primary: ${item.primary_character.character_name})`
+                                            : ''}
+                                        — {item.factory_count} factories
+                                        {item.daily_quantity != null &&
+                                            `, ${Number(item.daily_quantity).toLocaleString(undefined, { maximumFractionDigits: 0 })}/day`}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </section>
+
+                <section>
+                    <h2 class="section-title">
+                        {t('industry.planetary.planet_summary') || 'Planet summary'}
+                    </h2>
+                    <p class="section-desc">
+                        {t('industry.planetary.planet_desc') ||
+                            'List characters with colonies on a planet or in a system.'}
+                    </p>
+                    <form
+                        method="get"
+                        action={basePath}
+                        class="planet-form"
+                    >
+                        <label>
+                            {t('industry.planetary.planet_id') || 'Planet ID'}
+                            <input
+                                type="number"
+                                name="planet_id"
+                                value={planetIdParam ?? ''}
+                                placeholder="e.g. 40161763"
+                            />
+                        </label>
+                        <label>
+                            {t('industry.planetary.solar_system_id') || 'Solar system ID'}
+                            <input
+                                type="number"
+                                name="solar_system_id"
+                                value={solarSystemIdParam ?? ''}
+                                placeholder="e.g. 30000142"
+                            />
+                        </label>
+                        <button type="submit">
+                            {t('industry.planetary.show_colonies') || 'Show colonies'}
+                        </button>
+                    </form>
+                    {planetSummary !== null && (
+                        <div class="drilldown">
+                            <h3>
+                                {t('industry.planetary.characters_on_planet') || 'Characters'}
+                                {planetIdParam && ` (planet ${planetIdParam})`}
+                                {solarSystemIdParam && !planetIdParam && ` (system ${solarSystemIdParam})`}
+                            </h3>
+                            {planetSummary.length === 0 ? (
+                                <p>{t('industry.planetary.no_colonies') || 'No colonies found.'}</p>
+                            ) : (
+                                <ul>
+                                    {planetSummary.map((item) => (
+                                        <li>
+                                            <strong>{item.actual_character.character_name}</strong>
+                                            {item.primary_character.character_id !==
+                                            item.actual_character.character_id
+                                                ? ` (primary: ${item.primary_character.character_name})`
+                                                : ''}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+                </section>
+            </BlockList>
+        )}
+    </PageWide>
+</Viewport>
+
+<style>
+    .section-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+    .section-desc {
+        color: var(--color-fg-muted, #666);
+        margin-bottom: 1rem;
+    }
+    .planetary-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .planetary-table th,
+    .planetary-table td {
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--color-border, #eee);
+    }
+    .planetary-table th {
+        font-weight: 600;
+    }
+    .drilldown {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: var(--color-bg-subtle, #f5f5f5);
+        border-radius: 4px;
+    }
+    .drilldown h3 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .drilldown ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    .drilldown li {
+        padding: 0.25rem 0;
+    }
+    .link {
+        margin-left: 0.5rem;
+    }
+    .planet-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+    .planet-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .planet-form input[type="number"] {
+        width: 12rem;
+        padding: 0.35rem 0.5rem;
+    }
+</style>
