@@ -57,5 +57,10 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
     :global(.page-title .referral-link) {
         position: absolute;
         left: -35px;
+
+        @media screen and (max-width: 600px) {
+            left: 0;
+            top: -22px;
+        }
     }
 </style>
