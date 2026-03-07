@@ -76,16 +76,16 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
     document.addEventListener('astro:page-load', () => {
         tippy('[data-tippy-content]', tippy_options)
-        document.querySelector('.loader').classList.remove('active')
+        document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
     }, { once: true })
 
     document.addEventListener('astro:before-preparation', () => {
-        document.querySelector('.loader').classList.add('active')
+        document.querySelectorAll('.loader').forEach(e => e.classList.add('active'))
     })
 
     document.addEventListener('astro:after-swap', () => {
         tippy('[data-tippy-content]', tippy_options)
-        document.querySelector('.loader').classList.remove('active')
+        document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
         htmx.process(document.body)
 
         if (ccpwgl_context)
