@@ -11,6 +11,8 @@ class TribeGroupActivityRecordSchema(BaseModel):
     activity_type_display: str
     character_id: Optional[int] = None
     character_name: str = ""
+    primary_character_id: Optional[int] = None
+    primary_character_name: str = ""
     user_id: Optional[int] = None
     username: str = ""
     source_type_id: Optional[int] = None

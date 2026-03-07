@@ -49,6 +49,7 @@ def get_tribe_group_activity(
         .select_related(
             "character",
             "user",
+            "user__eveplayer__primary_character",
             "tribe_group_activity",
         )
         .order_by("-created_at")
@@ -60,6 +61,13 @@ def get_tribe_group_activity(
     items = []
     for r in records:
         activity_type = r.tribe_group_activity.activity_type
+        primary = None
+        if (
+            r.user
+            and getattr(r.user, "eveplayer", None)
+            and r.user.eveplayer.primary_character
+        ):
+            primary = r.user.eveplayer.primary_character
         items.append(
             TribeGroupActivityRecordSchema(
                 id=r.pk,
@@ -68,9 +76,13 @@ def get_tribe_group_activity(
                 activity_type_display=activity_type_labels.get(
                     activity_type, activity_type
                 ),
-                character_id=r.character_id,
+                character_id=r.character.character_id if r.character else None,
                 character_name=(
                     r.character.character_name if r.character else ""
+                ),
+                primary_character_id=primary.character_id if primary else None,
+                primary_character_name=(
+                    (primary.character_name or "") if primary else ""
                 ),
                 user_id=r.user_id,
                 username=r.user.username if r.user else "",
