@@ -4,7 +4,6 @@ import type {
     NestedIndustryOrder,
     Product,
     Blueprint,
-    MiningSystemResponse,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
@@ -218,45 +217,5 @@ export async function get_blueprints(is_copy:boolean = false) {
         return await response.json() as Blueprint[];
     } catch (error) {
         throw new Error(`Error fetching blueprints: ${error.message}`);
-    }
-}
-
-export async function get_mining_systems(): Promise<MiningSystemResponse[]> {
-    const ENDPOINT = `${API_ENDPOINT}/mining/systems`;
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: { 'Content-Type': 'application/json' },
-        });
-        if (!response.ok) {
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`));
-        }
-        return await response.json() as MiningSystemResponse[];
-    } catch (error) {
-        throw new Error(`Error fetching mining systems: ${error.message}`);
-    }
-}
-
-export async function post_mining_completion(
-    auth_token: string,
-    system_id: number,
-    completed_at?: string
-): Promise<{ system_id: number; system_name: string; last_completion: string; next_available_at: string | null }> {
-    const ENDPOINT = `${API_ENDPOINT}/mining/systems/${system_id}/completion`;
-    const body = completed_at ? { completed_at } : {};
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${auth_token}`,
-            },
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) {
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`));
-        }
-        return await response.json();
-    } catch (error) {
-        throw new Error(`Error posting mining completion: ${error.message}`);
     }
 }

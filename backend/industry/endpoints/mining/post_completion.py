@@ -25,12 +25,17 @@ ROUTE_SPEC = {
     "response": {
         200: PostCompletionResponse,
         400: ErrorResponse,
+        403: ErrorResponse,
         404: ErrorResponse,
     },
 }
 
 
 def post_completion(request, system_id: int, payload: PostCompletionRequest):
+    if not request.user.has_perm("industry.add_miningupgradecompletion"):
+        return 403, ErrorResponse(
+            detail="You do not have permission to record mining completions."
+        )
     systems_qs = get_mining_systems_queryset()
     config = systems_qs.filter(system_id=system_id).first()
     if not config:
@@ -43,21 +48,26 @@ def post_completion(request, system_id: int, payload: PostCompletionRequest):
         return 400, ErrorResponse(
             detail=f"System {system_id} has no mining upgrade level."
         )
+    site_name = (payload.site_name or "").strip()
     completed_at = (
         payload.completed_at if payload.completed_at else timezone.now()
     )
-    MiningUpgradeCompletion.objects.create(
-        system_id=system_id,
-        system_name=system_name,
+    completion = MiningUpgradeCompletion.objects.create(
+        sov_system=config,
+        site_name=site_name,
         completed_at=completed_at,
         completed_by=request.user,
     )
-    duration_min = MINING_LEVEL_DURATION_MINUTES.get(level, 60)
-    next_available_at = completed_at + timedelta(minutes=duration_min)
+    respawn_min = completion.get_respawn_minutes()
+    if respawn_min is None:
+        respawn_min = MINING_LEVEL_DURATION_MINUTES.get(level, 60)
+    next_available_at = completed_at + timedelta(minutes=respawn_min)
     return 200, PostCompletionResponse(
         system_id=system_id,
         system_name=system_name,
         mining_upgrade_level=level,
+        site_name=completion.site_name,
         last_completion=completed_at,
         next_available_at=next_available_at,
+        respawn_minutes=respawn_min,
     )

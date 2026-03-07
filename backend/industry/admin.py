@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 
 from eveuniverse.models import EveGroup
 
+from industry.forms import MiningUpgradeCompletionAdminForm
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryOrder,
@@ -337,12 +338,19 @@ class IndustryProductAdmin(admin.ModelAdmin):
 
 @admin.register(MiningUpgradeCompletion)
 class MiningUpgradeCompletionAdmin(admin.ModelAdmin):
-    list_display = ("system_id", "system_name", "completed_at", "completed_by")
-    list_filter = ("system_id",)
+    form = MiningUpgradeCompletionAdminForm
+    list_display = (
+        "sov_system",
+        "site_name",
+        "completed_at",
+        "completed_by",
+    )
+    list_filter = ("sov_system",)
     date_hierarchy = "completed_at"
     ordering = ("-completed_at",)
     raw_id_fields = ("completed_by",)
-    search_fields = ("system_name",)
+    search_fields = ("site_name", "sov_system__system_name")
+    fields = ("sov_system", "site_name", "completed_at", "completed_by")
 
 
 INDUSTRY_INDEX_MODELS = {
