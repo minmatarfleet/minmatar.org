@@ -236,6 +236,7 @@ export const ui = {
         'industry.products.page_title': 'Products',
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
+
         'page_finder.products.description': 'Products and materials with production strategies and producers.',
 
         'industry.blueprints.page_title': 'Blueprints',
