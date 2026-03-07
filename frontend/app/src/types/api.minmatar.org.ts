@@ -924,6 +924,22 @@ export interface IndustryOrder {
     assigned_to:        Character[];
 }
 
+export interface MiningCompletionRecord {
+    completed_at:       string;  // ISO datetime
+    completed_by_username: string | null;
+}
+
+export interface MiningSystemResponse {
+    system_id:          number;
+    system_name:        string;
+    mining_upgrade_level: number;
+    power:              number;
+    workforce:          number;
+    last_completion:    string | null;  // ISO datetime
+    next_available_at:  string | null;  // ISO datetime
+    completions:        MiningCompletionRecord[];
+}
+
 export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
 export type FreightContractStatus = typeof freight_contract_statuses[number]
 

@@ -236,6 +236,18 @@ export const ui = {
         'industry.products.page_title': 'Products',
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
+
+        'industry.mining_systems.page_title': 'Mining systems',
+        'industry.mining_systems.leading_text': 'Systems with sovereignty mining upgrades. Track anomaly completions and timers (small 1h, medium 4h 20m, large 12h).',
+        'industry.mining_systems.meta_description': 'Mining systems with sovereignty upgrades, completion timers and history.',
+        'industry.mining_systems.mark_completed': 'Mark completed',
+        'industry.mining_systems.next_available': 'Next available',
+        'industry.mining_systems.last_completion': 'Last completed',
+        'industry.mining_systems.history': 'History',
+        'industry.mining_systems.power': 'Power',
+        'industry.mining_systems.workforce': 'Workforce',
+        'industry.mining_systems.level': 'Level',
+        'industry.mining_systems.system': 'System',
         'page_finder.products.description': 'Products and materials with production strategies and producers.',
 
         'industry.blueprints.page_title': 'Blueprints',

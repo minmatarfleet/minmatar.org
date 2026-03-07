@@ -14,6 +14,7 @@ from industry.models import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
     IndustryProduct,
+    MiningUpgradeCompletion,
 )
 
 
@@ -333,9 +334,21 @@ class IndustryProductAdmin(admin.ModelAdmin):
 
 # ----- Industry admin index: only Orders -----
 
+
+@admin.register(MiningUpgradeCompletion)
+class MiningUpgradeCompletionAdmin(admin.ModelAdmin):
+    list_display = ("system_id", "system_name", "completed_at", "completed_by")
+    list_filter = ("system_id",)
+    date_hierarchy = "completed_at"
+    ordering = ("-completed_at",)
+    raw_id_fields = ("completed_by",)
+    search_fields = ("system_name",)
+
+
 INDUSTRY_INDEX_MODELS = {
     "industryorder": "Orders",
     "industryproduct": "Products",
+    "miningupgradecompletion": "Mining completions",
 }
 
 

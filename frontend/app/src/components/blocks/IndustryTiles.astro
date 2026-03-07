@@ -64,5 +64,15 @@ import Tile from '@components/blocks/Tile.astro';
                 {t('imported')}
             </Button>
         </Tile>
+
+        <Tile
+            title={t('industry.mining_systems.page_title')}
+            description={t('industry.mining_systems.leading_text')}
+            cover='/images/products-tile-background.webp'
+        >
+            <Button size='sm' href={translatePath('/industry/mining/systems/')}>
+                {t('browse')}
+            </Button>
+        </Tile>
     </Grid>
 </Wrapper>
