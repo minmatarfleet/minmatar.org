@@ -2,6 +2,7 @@
 #   from industry.models import SomeModel
 # continues to work when models are split across files in this package.
 
+from industry.models.mining import MiningUpgradeCompletion
 from industry.models.order import (
     IndustryOrder,
     IndustryOrderItem,
@@ -17,5 +18,6 @@ __all__ = [
     "IndustryOrderItem",
     "IndustryOrderItemAssignment",
     "IndustryProduct",
+    "MiningUpgradeCompletion",
     "Strategy",
 ]

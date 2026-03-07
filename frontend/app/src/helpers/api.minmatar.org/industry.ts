@@ -3,7 +3,7 @@ import type {
     BaseIndustryOrder,
     NestedIndustryOrder,
     Product,
-    Blueprint
+    Blueprint,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 

@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "market.apps.MarketConfig",
     # Industry (type breakdown, etc.)
     "industry.apps.IndustryConfig",
+    "sovereignty.apps.SovereigntyConfig",
     "eveuniverse",
     # 'colorfield',
     # "bootstrap_datepicker_plus",
