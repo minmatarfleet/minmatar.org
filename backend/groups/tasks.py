@@ -85,7 +85,7 @@ def update_affiliations():
 @app.task
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
-    logger.debug("Checking affiliations for user %s", user)
+    logger.info("Checking affiliations for user %s", user)
 
     primary_character = user_primary_character(user)
     if not primary_character:
@@ -95,7 +95,7 @@ def update_affiliation(user_id: int):
 
     # loop through affiliations in priority to find highest qualifying
     for affiliation in AffiliationType.objects.order_by("-priority"):
-        logger.debug("Checking if qualified for affiliation %s", affiliation)
+        logger.info("Checking if qualified for affiliation %s", affiliation)
         is_qualifying = False
         if affiliation.default:
             is_qualifying = True
@@ -105,7 +105,7 @@ def update_affiliation(user_id: int):
                 corporation_id=primary_character.corporation_id
             ).exists()
         ):
-            logger.debug(
+            logger.info(
                 "User %s is in corporation %s",
                 user,
                 primary_character.corporation_id,
@@ -118,7 +118,7 @@ def update_affiliation(user_id: int):
                 alliance_id=primary_character.alliance_id
             ).exists()
         ):
-            logger.debug(
+            logger.info(
                 "User %s is in alliance %s",
                 user,
                 primary_character.alliance_id,
@@ -131,7 +131,7 @@ def update_affiliation(user_id: int):
                 id=primary_character.faction_id
             ).exists()
         ):
-            logger.debug(
+            logger.info(
                 "User %s is in faction %s",
                 user,
                 primary_character.faction_id,
@@ -139,7 +139,7 @@ def update_affiliation(user_id: int):
             is_qualifying = True
 
         if is_qualifying:
-            logger.debug(
+            logger.info(
                 "User %s qualifies for affiliation %s",
                 user,
                 affiliation,
@@ -147,7 +147,7 @@ def update_affiliation(user_id: int):
             if UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
             ).exists():
-                logger.debug(
+                logger.info(
                     "User %s already has affiliation %s",
                     user,
                     affiliation,
@@ -155,13 +155,13 @@ def update_affiliation(user_id: int):
                 return
 
             if UserAffiliation.objects.filter(user=user).exists():
-                logger.debug(
+                logger.info(
                     "User %s already has an affiliation, removing",
                     user,
                 )
                 UserAffiliation.objects.filter(user=user).delete()
 
-            logger.debug(
+            logger.info(
                 "Creating affiliation for user %s with %s",
                 user,
                 affiliation,
@@ -169,7 +169,7 @@ def update_affiliation(user_id: int):
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
             return
         else:
-            logger.debug(
+            logger.info(
                 "User %s does not qualify for affiliation %s",
                 user,
                 affiliation,
@@ -177,7 +177,7 @@ def update_affiliation(user_id: int):
             if UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
             ).exists():
-                logger.debug(
+                logger.info(
                     "User %s has affiliation %s, removing",
                     user,
                     affiliation,
@@ -186,7 +186,7 @@ def update_affiliation(user_id: int):
                     user=user, affiliation=affiliation
                 ).delete()
             else:
-                logger.debug(
+                logger.info(
                     "User %s does not have affiliation %s",
                     user,
                     affiliation,
@@ -200,7 +200,7 @@ def log_affiliation_update_error(user: User, e):
     else:
         # If user has no primary character then assume it isn't important.
         # We were ignoring these anyway, so no point logging them as errors.
-        logger.debug("Couldn't update affiliations for unlinked user %s", user)
+        logger.info("Couldn't update affiliations for unlinked user %s", user)
 
 
 def _user_qualifies_for_corporation_group(user, corporation_group):
