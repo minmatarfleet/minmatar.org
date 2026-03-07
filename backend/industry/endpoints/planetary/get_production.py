@@ -2,7 +2,8 @@
 
 from typing import List
 
-from django.db.models import Sum
+from django.db.models import F, Sum, Value
+from django.db.models.functions import Coalesce
 
 from eveonline.models import EveCharacterPlanetOutput
 from eveuniverse.models import EveType
@@ -27,7 +28,9 @@ def get_production(request):
         )
         .values("eve_type_id")
         .annotate(
-            total_factories=Sum("factory_count"),
+            total_factories=Coalesce(
+                Sum(Coalesce(F("factory_count"), Value(0))), Value(0)
+            ),
             total_daily_quantity=Sum("daily_quantity"),
         )
         .order_by("eve_type_id")
@@ -40,7 +43,7 @@ def get_production(request):
         ProductionOverviewItem(
             type_id=r["eve_type_id"],
             name=names.get(r["eve_type_id"], ""),
-            total_factories=r["total_factories"] or 0,
+            total_factories=int(r["total_factories"] or 0),
             total_daily_quantity=(
                 float(r["total_daily_quantity"])
                 if r["total_daily_quantity"] is not None

@@ -6,9 +6,11 @@ import type {
     Blueprint,
     HarvestOverviewItem,
     HarvestDrillDownItem,
+    HarvestDrillDownResponse,
     ProductionOverviewItem,
     ProductionDrillDownItem,
-    PlanetSummaryItem,
+    ProductionDrillDownResponse,
+    PlanetWithColoniesItem,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
@@ -241,7 +243,7 @@ export async function get_planetary_harvest(): Promise<HarvestOverviewItem[]> {
 
 export async function get_planetary_harvest_drilldown(
     typeId: number
-): Promise<HarvestDrillDownItem[]> {
+): Promise<HarvestDrillDownResponse> {
     const response = await fetch(
         `${PLANETARY_ENDPOINT}/harvest/${typeId}`,
         { headers: { 'Content-Type': 'application/json' } }
@@ -274,7 +276,7 @@ export async function get_planetary_production(): Promise<ProductionOverviewItem
 
 export async function get_planetary_production_drilldown(
     typeId: number
-): Promise<ProductionDrillDownItem[]> {
+): Promise<ProductionDrillDownResponse> {
     const response = await fetch(
         `${PLANETARY_ENDPOINT}/production/${typeId}`,
         { headers: { 'Content-Type': 'application/json' } }
@@ -293,7 +295,7 @@ export async function get_planetary_production_drilldown(
 export async function get_planetary_planets(params: {
     planet_id?: number
     solar_system_id?: number
-}): Promise<PlanetSummaryItem[]> {
+}): Promise<PlanetWithColoniesItem[]> {
     const search = new URLSearchParams()
     if (params.planet_id != null) search.set('planet_id', String(params.planet_id))
     if (params.solar_system_id != null) search.set('solar_system_id', String(params.solar_system_id))

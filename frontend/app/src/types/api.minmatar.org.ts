@@ -940,6 +940,31 @@ export interface ProductionDrillDownItem {
     daily_quantity?:    number | null;
 }
 
+/** One colony on a planet (primary + actual character). */
+export interface ColonyEntry {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+}
+
+/** One planet with list of characters that have colonies on it. */
+export interface PlanetWithColoniesItem {
+    planet_id:        number;
+    solar_system_id:  number;
+    planet_type:     string;
+    colonies:        ColonyEntry[];
+}
+
+export interface HarvestDrillDownResponse {
+    characters:  PlanetaryCharacterRef[];
+    entries:     HarvestDrillDownItem[];
+}
+
+export interface ProductionDrillDownResponse {
+    characters:  PlanetaryCharacterRef[];
+    entries:     ProductionDrillDownItem[];
+}
+
+/** @deprecated Use PlanetWithColoniesItem for GET /planetary/planets */
 export interface PlanetSummaryItem {
     primary_character:  PlanetaryCharacterRef;
     actual_character:   PlanetaryCharacterRef;

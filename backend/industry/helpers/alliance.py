@@ -5,8 +5,10 @@ from eveonline.models import EveAlliance, EveCharacter
 
 def get_alliance_character_ids():
     """
-    Return the set of EVE character IDs for characters in tracked alliances.
-    Use for filtering planetary output, planets, etc. to "our alliance".
+    Return the set of EVE character IDs for characters in scope.
+
+    Any character whose alliance_id appears in any EveAlliance row is in scope.
+    Use for filtering planetary output, planets, etc. to "our" alliances.
     """
     alliance_ids = set(
         EveAlliance.objects.values_list("alliance_id", flat=True)

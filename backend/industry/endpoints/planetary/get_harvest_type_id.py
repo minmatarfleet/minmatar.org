@@ -1,8 +1,7 @@
-"""GET "/{type_id}" - harvest drill-down: who harvests this P0 (primary + actual character, counts)."""
+"""GET "/{type_id}" - harvest drill-down: who harvests this P0 (characters list + per-character entries)."""
 
-from typing import List
-
-from django.db.models import Sum
+from django.db.models import F, Sum, Value
+from django.db.models.functions import Coalesce
 
 from eveonline.models import EveCharacter, EveCharacterPlanetOutput
 from eveonline.helpers.characters import character_primary
@@ -10,14 +9,15 @@ from eveonline.helpers.characters import character_primary
 from industry.endpoints.planetary.schemas import (
     CharacterRef,
     HarvestDrillDownItem,
+    HarvestDrillDownResponse,
 )
 from industry.helpers.alliance import get_alliance_character_ids
 
 PATH = "{int:type_id}"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "Who harvests this P0 type: primary + actual character, extractor count, daily quantity",
-    "response": {200: List[HarvestDrillDownItem]},
+    "summary": "Who harvests this P0 type: list of characters and per-character extractor count, daily quantity",
+    "response": {200: HarvestDrillDownResponse},
 }
 
 
@@ -34,7 +34,9 @@ def get_harvest_type_id(request, type_id: int):
             "planet__character__character_name",
         )
         .annotate(
-            extractor_count=Sum("extractor_count"),
+            extractor_count=Coalesce(
+                Sum(Coalesce(F("extractor_count"), Value(0))), Value(0)
+            ),
             daily_quantity=Sum("daily_quantity"),
         )
     )
@@ -68,7 +70,7 @@ def get_harvest_type_id(request, type_id: int):
             HarvestDrillDownItem(
                 primary_character=primary_ref,
                 actual_character=actual,
-                extractor_count=r["extractor_count"] or 0,
+                extractor_count=int(r["extractor_count"] or 0),
                 daily_quantity=(
                     float(r["daily_quantity"])
                     if r["daily_quantity"] is not None
@@ -76,4 +78,14 @@ def get_harvest_type_id(request, type_id: int):
                 ),
             )
         )
-    return result
+
+    # Unique list of actual characters (for "who harvests this" list)
+    seen = set()
+    characters = []
+    for item in result:
+        cid = item.actual_character.character_id
+        if cid not in seen:
+            seen.add(cid)
+            characters.append(item.actual_character)
+
+    return HarvestDrillDownResponse(characters=characters, entries=result)

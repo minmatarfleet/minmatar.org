@@ -1,8 +1,7 @@
-"""GET "/{type_id}" - production drill-down: who has factories for this type (primary + actual, counts)."""
+"""GET "/{type_id}" - production drill-down: who has factories for this type (characters list + per-character entries)."""
 
-from typing import List
-
-from django.db.models import Sum
+from django.db.models import F, Sum, Value
+from django.db.models.functions import Coalesce
 
 from eveonline.models import EveCharacter, EveCharacterPlanetOutput
 from eveonline.helpers.characters import character_primary
@@ -10,14 +9,15 @@ from eveonline.helpers.characters import character_primary
 from industry.endpoints.planetary.schemas import (
     CharacterRef,
     ProductionDrillDownItem,
+    ProductionDrillDownResponse,
 )
 from industry.helpers.alliance import get_alliance_character_ids
 
 PATH = "{int:type_id}"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "Who has factories for this type: primary + actual character, factory count",
-    "response": {200: List[ProductionDrillDownItem]},
+    "summary": "Who has factories for this type: list of characters and per-character factory count",
+    "response": {200: ProductionDrillDownResponse},
 }
 
 
@@ -34,7 +34,9 @@ def get_production_type_id(request, type_id: int):
             "planet__character__character_name",
         )
         .annotate(
-            factory_count=Sum("factory_count"),
+            factory_count=Coalesce(
+                Sum(Coalesce(F("factory_count"), Value(0))), Value(0)
+            ),
             daily_quantity=Sum("daily_quantity"),
         )
     )
@@ -68,7 +70,7 @@ def get_production_type_id(request, type_id: int):
             ProductionDrillDownItem(
                 primary_character=primary_ref,
                 actual_character=actual,
-                factory_count=r["factory_count"] or 0,
+                factory_count=int(r["factory_count"] or 0),
                 daily_quantity=(
                     float(r["daily_quantity"])
                     if r["daily_quantity"] is not None
@@ -76,4 +78,14 @@ def get_production_type_id(request, type_id: int):
                 ),
             )
         )
-    return result
+
+    # Unique list of actual characters (for "who has factories" list)
+    seen = set()
+    characters = []
+    for item in result:
+        cid = item.actual_character.character_id
+        if cid not in seen:
+            seen.add(cid)
+            characters.append(item.actual_character)
+
+    return ProductionDrillDownResponse(characters=characters, entries=result)

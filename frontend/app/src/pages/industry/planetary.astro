@@ -5,9 +5,11 @@ const { t, translatePath } = i18n(Astro.url)
 import type {
     HarvestOverviewItem,
     HarvestDrillDownItem,
+    HarvestDrillDownResponse,
     ProductionOverviewItem,
     ProductionDrillDownItem,
-    PlanetSummaryItem,
+    ProductionDrillDownResponse,
+    PlanetWithColoniesItem,
 } from '@dtypes/api.minmatar.org'
 import {
     get_planetary_harvest,
@@ -31,9 +33,9 @@ const solarSystemIdParam = Astro.url.searchParams.get('solar_system_id')
 
 let harvestOverview: HarvestOverviewItem[] = []
 let productionOverview: ProductionOverviewItem[] = []
-let harvestDrillDown: HarvestDrillDownItem[] | null = null
-let productionDrillDown: ProductionDrillDownItem[] | null = null
-let planetSummary: PlanetSummaryItem[] | null = null
+let harvestDrillDown: HarvestDrillDownResponse | null = null
+let productionDrillDown: ProductionDrillDownResponse | null = null
+let planetList: PlanetWithColoniesItem[] = []
 let fetchError: string | false = false
 
 try {
@@ -52,24 +54,21 @@ try {
             productionDrillDown = await get_planetary_production_drilldown(typeId)
         }
     }
-    if (planetIdParam || solarSystemIdParam) {
-        const planet_id = planetIdParam ? parseInt(planetIdParam, 10) : undefined
-        const solar_system_id = solarSystemIdParam
-            ? parseInt(solarSystemIdParam, 10)
-            : undefined
-        const validPlanet =
-            planetIdParam && planet_id != null && !Number.isNaN(planet_id)
-        const validSystem =
-            solarSystemIdParam &&
-            solar_system_id != null &&
-            !Number.isNaN(solar_system_id)
-        if (validPlanet || validSystem) {
-            planetSummary = await get_planetary_planets({
-                ...(validPlanet && { planet_id }),
-                ...(validSystem && { solar_system_id }),
-            })
-        }
-    }
+
+    const planet_id = planetIdParam ? parseInt(planetIdParam, 10) : undefined
+    const solar_system_id = solarSystemIdParam
+        ? parseInt(solarSystemIdParam, 10)
+        : undefined
+    const validPlanet =
+        planetIdParam != null && planet_id != null && !Number.isNaN(planet_id)
+    const validSystem =
+        solarSystemIdParam != null &&
+        solar_system_id != null &&
+        !Number.isNaN(solar_system_id)
+    planetList = await get_planetary_planets({
+        ...(validPlanet && { planet_id }),
+        ...(validSystem && { solar_system_id }),
+    })
 } catch (err) {
     fetchError = err instanceof Error ? err.message : String(err)
 }
@@ -149,8 +148,13 @@ const basePath = translatePath('/industry/planetary/')
                                 {harvestTypeId && ` (type ${harvestTypeId})`}
                             </h3>
                             <a href={basePath} class="link">Clear</a>
+                            {harvestDrillDown.characters.length > 0 && (
+                                <p class="drilldown-characters">
+                                    {t('industry.planetary.characters_on_planet') || 'Characters'}: {harvestDrillDown.characters.map((c) => c.character_name).join(', ')}
+                                </p>
+                            )}
                             <ul>
-                                {harvestDrillDown.map((item) => (
+                                {harvestDrillDown.entries.map((item) => (
                                     <li>
                                         <strong>{item.actual_character.character_name}</strong>
                                         {item.primary_character.character_id !==
@@ -219,8 +223,13 @@ const basePath = translatePath('/industry/planetary/')
                                 {productionTypeId && ` (type ${productionTypeId})`}
                             </h3>
                             <a href={basePath} class="link">Clear</a>
+                            {productionDrillDown.characters.length > 0 && (
+                                <p class="drilldown-characters">
+                                    {t('industry.planetary.characters_on_planet') || 'Characters'}: {productionDrillDown.characters.map((c) => c.character_name).join(', ')}
+                                </p>
+                            )}
                             <ul>
-                                {productionDrillDown.map((item) => (
+                                {productionDrillDown.entries.map((item) => (
                                     <li>
                                         <strong>{item.actual_character.character_name}</strong>
                                         {item.primary_character.character_id !==
@@ -243,7 +252,7 @@ const basePath = translatePath('/industry/planetary/')
                     </h2>
                     <p class="section-desc">
                         {t('industry.planetary.planet_desc') ||
-                            'List characters with colonies on a planet or in a system.'}
+                            'All planets with colonies and the characters on each. Optionally filter by planet or system.'}
                     </p>
                     <form
                         method="get"
@@ -271,30 +280,32 @@ const basePath = translatePath('/industry/planetary/')
                         <button type="submit">
                             {t('industry.planetary.show_colonies') || 'Show colonies'}
                         </button>
+                        {(planetIdParam || solarSystemIdParam) && (
+                            <a href={basePath} class="link">Show all planets</a>
+                        )}
                     </form>
-                    {planetSummary !== null && (
-                        <div class="drilldown">
-                            <h3>
-                                {t('industry.planetary.characters_on_planet') || 'Characters'}
-                                {planetIdParam && ` (planet ${planetIdParam})`}
-                                {solarSystemIdParam && !planetIdParam && ` (system ${solarSystemIdParam})`}
-                            </h3>
-                            {planetSummary.length === 0 ? (
-                                <p>{t('industry.planetary.no_colonies') || 'No colonies found.'}</p>
-                            ) : (
-                                <ul>
-                                    {planetSummary.map((item) => (
-                                        <li>
-                                            <strong>{item.actual_character.character_name}</strong>
-                                            {item.primary_character.character_id !==
-                                            item.actual_character.character_id
-                                                ? ` (primary: ${item.primary_character.character_name})`
-                                                : ''}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
+                    {planetList.length === 0 ? (
+                        <p>{t('industry.planetary.no_colonies') || 'No colonies found.'}</p>
+                    ) : (
+                        <ul class="planet-list">
+                            {planetList.map((planet) => (
+                                <li class="planet-item">
+                                    <strong>Planet {planet.planet_id}</strong>
+                                    {' '}({planet.planet_type}, system {planet.solar_system_id})
+                                    <ul class="colony-list">
+                                        {planet.colonies.map((colony) => (
+                                            <li>
+                                                <strong>{colony.actual_character.character_name}</strong>
+                                                {colony.primary_character.character_id !==
+                                                colony.actual_character.character_id
+                                                    ? ` (primary: ${colony.primary_character.character_name})`
+                                                    : ''}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </section>
             </BlockList>
@@ -323,6 +334,21 @@ const basePath = translatePath('/industry/planetary/')
     }
     .planetary-table th {
         font-weight: 600;
+    }
+    .drilldown-characters {
+        margin-bottom: 0.5rem;
+        color: var(--color-fg-muted, #666);
+    }
+    .planet-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    .planet-item {
+        margin-bottom: 1rem;
+    }
+    .colony-list {
+        margin-top: 0.25rem;
+        padding-left: 1.5rem;
     }
     .drilldown {
         margin-top: 1.5rem;
