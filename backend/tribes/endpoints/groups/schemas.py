@@ -82,3 +82,59 @@ class TribeGroupSchema(BaseModel):
     is_active: bool
     member_count: int = 0
     requirements: List[RequirementSchema] = []
+
+
+# --- Activity metrics, member activity, leaderboard ---
+
+
+class TribeActivityMetricsSchema(BaseModel):
+    """Per-activity metrics for one TribeGroupActivity."""
+
+    activity_id: int
+    activity_type: str
+    activity_type_display: str
+    group_id: int
+    group_name: str = ""
+    unit: str = ""
+    record_count: int
+    total_quantity: Optional[float] = None
+    total_points: float = 0.0
+
+
+class TribeMemberActivityBreakdownItemSchema(BaseModel):
+    """Per-activity-type breakdown for member activity."""
+
+    activity_type: str
+    unit: str = ""
+    record_count: int = 0
+    total_quantity: Optional[float] = None
+
+
+class TribeMemberActivitySchema(BaseModel):
+    """Activity summary for one tribe member (primary + alts + metrics)."""
+
+    primary_character_id: Optional[int] = None
+    primary_character_name: str = ""
+    alts: List[CharacterRefSchema] = []
+    total_points: float = 0.0
+    record_count: int = 0
+    breakdown: List[TribeMemberActivityBreakdownItemSchema] = []
+
+
+class TribeActivityLeaderboardEntrySchema(BaseModel):
+    """One leaderboard row; points only."""
+
+    user_id: int
+    primary_character_id: Optional[int] = None
+    primary_character_name: str = ""
+    alts: List[CharacterRefSchema] = []
+    total_points: float = 0.0
+
+
+class TribeActivityLeaderboardListSchema(BaseModel):
+    """Paginated leaderboard."""
+
+    items: List[TribeActivityLeaderboardEntrySchema]
+    total: int
+    limit: int
+    offset: int

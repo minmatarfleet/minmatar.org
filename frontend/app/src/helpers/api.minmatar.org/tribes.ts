@@ -7,6 +7,9 @@ import type {
     TribeLeaderboardEntry,
     TribeActivity,
     TribeGroupActivityList,
+    TribeActivityMetrics,
+    TribeMemberActivity,
+    TribeActivityLeaderboardList,
     ActivityType,
     LogActivityPayload,
 } from '@dtypes/api.minmatar.org'
@@ -472,4 +475,50 @@ export async function get_group_leaderboard(
     } catch (error) {
         throw new Error(`Error fetching group leaderboard: ${error.message}`)
     }
+}
+
+export async function get_tribe_activity_metrics(
+    tribe_id: number,
+    activity_id: number,
+    params?: { since?: string; until?: string }
+): Promise<TribeActivityMetrics> {
+    const query = query_string(params ?? {})
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/${activity_id}/metrics${query ? `?${query}` : ''}`
+    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
+    if (!response.ok)
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+    return await response.json() as TribeActivityMetrics
+}
+
+export async function get_tribe_member_activity(
+    tribe_id: number,
+    member_id: number,
+    params?: { since?: string; until?: string }
+): Promise<TribeMemberActivity> {
+    const query = query_string(params ?? {})
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/members/${member_id}/activity${query ? `?${query}` : ''}`
+    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
+    if (!response.ok)
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+    return await response.json() as TribeMemberActivity
+}
+
+export async function get_tribe_activity_leaderboard(
+    tribe_id: number,
+    params?: {
+        group_id?: number;
+        activity_type?: string;
+        since?: string;
+        until?: string;
+        limit?: number;
+        offset?: number;
+        order?: string;
+    }
+): Promise<TribeActivityLeaderboardList> {
+    const query = query_string(params ?? {})
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/leaderboard${query ? `?${query}` : ''}`
+    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
+    if (!response.ok)
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+    return await response.json() as TribeActivityLeaderboardList
 }
