@@ -6,6 +6,7 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupActivityListSchema,
     TribeGroupActivityRecordSchema,
 )
+from tribes.helpers import user_can_manage_group
 from tribes.models import (
     TribeGroup,
     TribeGroupActivity,
@@ -41,6 +42,8 @@ def get_tribe_group_activity(
     if not group:
         return 404, {"detail": "Tribe group not found."}
 
+    can_view_members = user_can_manage_group(request.user, group)
+
     qs = (
         TribeGroupActivityRecord.objects.filter(
             tribe_group_activity__tribe_group_id=group_id,
@@ -68,6 +71,13 @@ def get_tribe_group_activity(
             and r.user.eveplayer.primary_character
         ):
             primary = r.user.eveplayer.primary_character
+        # Non-chiefs only see primary; hide which character performed the activity
+        if can_view_members:
+            char_id = r.character.character_id if r.character else None
+            char_name = r.character.character_name if r.character else ""
+        else:
+            char_id = None
+            char_name = ""
         items.append(
             TribeGroupActivityRecordSchema(
                 id=r.pk,
@@ -76,10 +86,8 @@ def get_tribe_group_activity(
                 activity_type_display=activity_type_labels.get(
                     activity_type, activity_type
                 ),
-                character_id=r.character.character_id if r.character else None,
-                character_name=(
-                    r.character.character_name if r.character else ""
-                ),
+                character_id=char_id,
+                character_name=char_name,
                 primary_character_id=primary.character_id if primary else None,
                 primary_character_name=(
                     (primary.character_name or "") if primary else ""

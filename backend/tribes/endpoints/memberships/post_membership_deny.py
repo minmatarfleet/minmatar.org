@@ -45,7 +45,18 @@ def post_membership_deny(
     membership.history_changed_by = request.user
     membership.save()
 
-    return 200, serialize_membership(membership)
+    membership = (
+        TribeGroupMembership.objects.select_related(
+            "user__eveplayer__primary_character",
+        )
+        .prefetch_related("characters__character")
+        .get(pk=membership.pk)
+    )
+    return 200, serialize_membership(
+        membership,
+        include_requirement_status=True,
+        include_characters=True,
+    )
 
 
 router.post(PATH, **ROUTE_SPEC)(post_membership_deny)

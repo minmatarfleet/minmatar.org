@@ -1,5 +1,7 @@
 """Shared serializer helpers for membership endpoints."""
 
+from eveonline.helpers.characters import user_primary_character
+
 from tribes.endpoints.memberships.schemas import MembershipSchema
 from tribes.helpers.requirements import check_character_meets_requirements
 from tribes.models import (
@@ -29,44 +31,47 @@ def serialize_membership(
     m: TribeGroupMembership,
     *,
     include_requirement_status: bool = False,
+    include_characters: bool = True,
 ):
     """
     Serialize a TribeGroupMembership to MembershipSchema.
 
-    The character list contains only currently committed characters (the
-    current-roster link table).  committed_at is derived from
-    TribeGroupMembershipCharacterHistory.
-
-    When include_requirement_status is True, each character gets
-    qualifies, missing_skills, missing_assets (for chief view).
+    Always includes primary_character_id/primary_character_name for the
+    membership's user. The characters list (committed alts) is only
+    populated when include_characters is True (viewer has permission).
     """
-    chars = m.characters.select_related("character").all()
+    primary = user_primary_character(m.user)
+    primary_character_id = primary.character_id if primary else None
+    primary_character_name = (primary.character_name or "") if primary else ""
+
     character_list = []
-    for c in chars:
-        char_data = {
-            "id": c.pk,
-            "character_id": c.character.character_id,
-            "character_name": c.character.character_name,
-            "committed_at": _character_committed_at(m.pk, c.character_id),
-            "left_at": None,
-        }
-        if include_requirement_status:
-            req_snapshot = check_character_meets_requirements(
-                c.character, m.tribe_group
-            )
-            # No requirements → everyone qualifies; otherwise at least one requirement must be met
-            char_data["qualifies"] = not req_snapshot or any(
-                data["met"] for data in req_snapshot.values()
-            )
-            char_data["missing_skills"] = any(
-                data.get("skill_met") is False
-                for data in req_snapshot.values()
-            )
-            char_data["missing_assets"] = any(
-                data.get("asset_met") is False
-                for data in req_snapshot.values()
-            )
-        character_list.append(char_data)
+    if include_characters:
+        chars = m.characters.select_related("character").all()
+        for c in chars:
+            char_data = {
+                "id": c.pk,
+                "character_id": c.character.character_id,
+                "character_name": c.character.character_name,
+                "committed_at": _character_committed_at(m.pk, c.character_id),
+                "left_at": None,
+            }
+            if include_requirement_status:
+                req_snapshot = check_character_meets_requirements(
+                    c.character, m.tribe_group
+                )
+                # No requirements → everyone qualifies; otherwise at least one requirement must be met
+                char_data["qualifies"] = not req_snapshot or any(
+                    data["met"] for data in req_snapshot.values()
+                )
+                char_data["missing_skills"] = any(
+                    data.get("skill_met") is False
+                    for data in req_snapshot.values()
+                )
+                char_data["missing_assets"] = any(
+                    data.get("asset_met") is False
+                    for data in req_snapshot.values()
+                )
+            character_list.append(char_data)
 
     return MembershipSchema(
         id=m.pk,
@@ -81,5 +86,7 @@ def serialize_membership(
         approved_by_id=m.approved_by_id,
         approved_at=m.approved_at.isoformat() if m.approved_at else None,
         left_at=m.left_at.isoformat() if m.left_at else None,
+        primary_character_id=primary_character_id,
+        primary_character_name=primary_character_name,
         characters=character_list,
     )
