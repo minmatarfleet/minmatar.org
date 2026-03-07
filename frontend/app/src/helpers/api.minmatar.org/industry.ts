@@ -4,6 +4,13 @@ import type {
     NestedIndustryOrder,
     Product,
     Blueprint,
+    HarvestOverviewItem,
+    HarvestDrillDownItem,
+    HarvestDrillDownResponse,
+    ProductionOverviewItem,
+    ProductionDrillDownItem,
+    ProductionDrillDownResponse,
+    PlanetWithColoniesItem,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
@@ -218,4 +225,89 @@ export async function get_blueprints(is_copy:boolean = false) {
     } catch (error) {
         throw new Error(`Error fetching blueprints: ${error.message}`);
     }
+}
+
+const PLANETARY_ENDPOINT = `${API_ENDPOINT}/planetary`
+
+export async function get_planetary_harvest(): Promise<HarvestOverviewItem[]> {
+    const response = await fetch(PLANETARY_ENDPOINT + '/harvest', {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(response.status, `GET ${PLANETARY_ENDPOINT}/harvest`)
+        )
+    }
+    return await response.json()
+}
+
+export async function get_planetary_harvest_drilldown(
+    typeId: number
+): Promise<HarvestDrillDownResponse> {
+    const response = await fetch(
+        `${PLANETARY_ENDPOINT}/harvest/${typeId}`,
+        { headers: { 'Content-Type': 'application/json' } }
+    )
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(
+                response.status,
+                `GET ${PLANETARY_ENDPOINT}/harvest/${typeId}`
+            )
+        )
+    }
+    return await response.json()
+}
+
+export async function get_planetary_production(): Promise<ProductionOverviewItem[]> {
+    const response = await fetch(PLANETARY_ENDPOINT + '/production', {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(
+                response.status,
+                `GET ${PLANETARY_ENDPOINT}/production`
+            )
+        )
+    }
+    return await response.json()
+}
+
+export async function get_planetary_production_drilldown(
+    typeId: number
+): Promise<ProductionDrillDownResponse> {
+    const response = await fetch(
+        `${PLANETARY_ENDPOINT}/production/${typeId}`,
+        { headers: { 'Content-Type': 'application/json' } }
+    )
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(
+                response.status,
+                `GET ${PLANETARY_ENDPOINT}/production/${typeId}`
+            )
+        )
+    }
+    return await response.json()
+}
+
+export async function get_planetary_planets(params: {
+    planet_id?: number
+    solar_system_id?: number
+}): Promise<PlanetWithColoniesItem[]> {
+    const search = new URLSearchParams()
+    if (params.planet_id != null) search.set('planet_id', String(params.planet_id))
+    if (params.solar_system_id != null) search.set('solar_system_id', String(params.solar_system_id))
+    const query = search.toString()
+    const url = `${PLANETARY_ENDPOINT}/planets${query ? `?${query}` : ''}`
+    const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(response.status, `GET ${url}`)
+        )
+    }
+    return await response.json()
 }

@@ -54,14 +54,16 @@ def _resolve_extractors(pins, outbound):
     """
     Compute extractor daily outputs and seed node_inflow for their destinations.
 
-    Returns (pin_resolved, node_inflow, harvested).
+    Returns (pin_resolved, node_inflow, harvested, extractor_counts).
     pin_resolved[pin_id][type_id]  = daily output of this extractor pin.
     node_inflow[dst_pin][type_id]  = daily units arriving at dst from extractors.
     harvested[type_id]             = total daily harvested across all extractors.
+    extractor_counts[type_id]      = number of extractor pins for this type.
     """
     pin_resolved: dict[int, dict[int, Decimal]] = {}
     node_inflow: dict[int, dict[int, Decimal]] = {}
     harvested: dict[int, Decimal] = {}
+    extractor_counts: dict[int, int] = {}
 
     for pin in pins:
         ext = pin.get("extractor_details")
@@ -76,6 +78,7 @@ def _resolve_extractors(pins, outbound):
 
         pin_resolved[pin["pin_id"]] = {tid: daily}
         harvested[tid] = harvested.get(tid, Decimal(0)) + daily
+        extractor_counts[tid] = extractor_counts.get(tid, 0) + 1
 
         # Propagate via each outbound route, capped by that route's configured
         # delivery rate (handles extractors that split output to multiple pins).
@@ -92,7 +95,7 @@ def _resolve_extractors(pins, outbound):
                 node_inflow[dst].get(tid, Decimal(0)) + route_daily
             )
 
-    return pin_resolved, node_inflow, harvested
+    return pin_resolved, node_inflow, harvested, extractor_counts
 
 
 def _outbound_by_type(fpid, outbound):
@@ -233,6 +236,179 @@ def _propagate_factory_output(
 # ---------------------------------------------------------------------------
 
 
+def _resolve_one_factory_daily(
+    fpid,
+    inbound,
+    outbound,
+    extractor_pin_ids,
+    factory_pin_ids,
+    unresolved,
+    pin_by_id,
+    schematic_cycle_seconds,
+    node_inflow,
+    pin_resolved,
+):
+    """
+    Compute daily output for one factory pin.
+    Returns (daily, required_by_type, out_type) or (None, None, None) if
+    deferred. When out_by_type is empty, returns (0, {}, None) (resolved, no
+    output).
+    """
+    fp = pin_by_id[fpid]
+    factory_cycle = Decimal(
+        schematic_cycle_seconds.get(fp.get("schematic_id")) or 3600
+    )
+    out_by_type = _outbound_by_type(fpid, outbound)
+    if not out_by_type:
+        return 0, {}, None
+
+    out_type, out_qty = next(iter(out_by_type.items()))
+    capacity_daily = (out_qty / factory_cycle) * SECONDS_PER_DAY
+    in_rs = inbound.get(fpid, [])
+    if not in_rs:
+        return capacity_daily, {}, out_type
+
+    defer, use_capacity, supply_by_type, required_by_type = (
+        _inbound_supply_for_factory(
+            fpid,
+            in_rs,
+            extractor_pin_ids,
+            factory_pin_ids,
+            unresolved,
+            pin_by_id,
+            schematic_cycle_seconds,
+            node_inflow,
+            pin_resolved,
+            factory_cycle,
+            outbound,
+        )
+    )
+    if defer:
+        return None, None, None
+    daily = (
+        capacity_daily
+        if use_capacity
+        else _apply_supply_cap(
+            capacity_daily, supply_by_type, required_by_type
+        )
+    )
+    return daily, required_by_type, out_type
+
+
+def _apply_factory_consumption(
+    consumed, daily, capacity_daily, required_by_type
+):
+    """Update consumed dict with this factory's input usage."""
+    if capacity_daily <= 0 or not required_by_type:
+        return
+    factor = daily / capacity_daily
+    for in_type, req in required_by_type.items():
+        consumed[in_type] = consumed.get(in_type, Decimal(0)) + factor * req
+
+
+def _resolve_factories_loop(
+    factory_pin_ids,
+    inbound,
+    outbound,
+    extractor_pin_ids,
+    pin_by_id,
+    schematic_cycle_seconds,
+    node_inflow,
+    pin_resolved,
+    produced,
+    consumed,
+):
+    """Resolve factory outputs in passes until no progress or max passes."""
+    unresolved = list(factory_pin_ids)
+    max_passes = len(factory_pin_ids) + 2
+    passes = 0
+
+    while unresolved and passes < max_passes:
+        passes += 1
+        resolved_now = []
+        for fpid in unresolved:
+            daily, required_by_type, out_type = _resolve_one_factory_daily(
+                fpid,
+                inbound,
+                outbound,
+                extractor_pin_ids,
+                factory_pin_ids,
+                unresolved,
+                pin_by_id,
+                schematic_cycle_seconds,
+                node_inflow,
+                pin_resolved,
+            )
+            if daily is None:
+                continue
+            resolved_now.append(fpid)
+            if out_type is not None:
+                fp = pin_by_id[fpid]
+                factory_cycle = Decimal(
+                    schematic_cycle_seconds.get(fp.get("schematic_id")) or 3600
+                )
+                out_by_type = _outbound_by_type(fpid, outbound)
+                _, out_qty = next(iter(out_by_type.items()))
+                capacity_daily = (out_qty / factory_cycle) * SECONDS_PER_DAY
+                _apply_factory_consumption(
+                    consumed, daily, capacity_daily, required_by_type
+                )
+                _propagate_factory_output(
+                    fpid,
+                    out_type,
+                    daily,
+                    factory_cycle,
+                    outbound,
+                    node_inflow,
+                    pin_resolved,
+                    produced,
+                )
+        if not resolved_now:
+            break
+        unresolved = [f for f in unresolved if f not in set(resolved_now)]
+    return unresolved
+
+
+def _fallback_unresolved_factories(
+    unresolved, pin_by_id, outbound, schematic_cycle_seconds, produced
+):
+    """Add capacity-based output for any factories that did not resolve."""
+    for fpid in unresolved:
+        fp = pin_by_id[fpid]
+        factory_cycle = Decimal(
+            schematic_cycle_seconds.get(fp.get("schematic_id")) or 3600
+        )
+        for ot, oq in _outbound_by_type(fpid, outbound).items():
+            produced[ot] = (
+                produced.get(ot, Decimal(0))
+                + (oq / factory_cycle) * SECONDS_PER_DAY
+            )
+
+
+def _net_produced(produced, consumed):
+    """Subtract consumed on-planet from produced; remove zero entries."""
+    for type_id in list(produced.keys()):
+        used = consumed.get(type_id, Decimal(0))
+        produced[type_id] = max(Decimal(0), produced[type_id] - used)
+        if produced[type_id] == 0:
+            del produced[type_id]
+
+
+def _end_result_factory_counts(factory_pin_ids, inbound, pin_resolved):
+    """Count factory pins per output type (only end-result types)."""
+    types_consumed_by_factories = {
+        r["content_type_id"]
+        for fpid in factory_pin_ids
+        for r in inbound.get(fpid, [])
+    }
+    factory_counts = {}
+    for fpid in factory_pin_ids:
+        for out_type in pin_resolved.get(fpid, {}):
+            if out_type not in types_consumed_by_factories:
+                factory_counts[out_type] = factory_counts.get(out_type, 0) + 1
+    return factory_counts
+
+
 def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
     """
     Analyse a planet's pins and routes; return harvested and produced
@@ -262,114 +438,37 @@ def _extract_planet_outputs_with_daily(planet_detail, schematic_cycle_seconds):
     pins = planet_detail.get("pins", [])
     routes = planet_detail.get("routes", [])
     pin_by_id = {p["pin_id"]: p for p in pins}
-
     inbound, outbound = _build_route_indexes(routes)
     extractor_pin_ids = {
         p["pin_id"] for p in pins if p.get("extractor_details")
     }
     factory_pin_ids = {p["pin_id"] for p in pins if p.get("schematic_id")}
 
-    pin_resolved, node_inflow, harvested = _resolve_extractors(pins, outbound)
-
-    produced: dict[int, Decimal] = {}
-    # consumed[type_id] = daily units of this type used as input by factories
-    consumed: dict[int, Decimal] = {}
-    unresolved = list(factory_pin_ids)
-    max_passes = len(factory_pin_ids) + 2
-    passes = 0
-
-    while unresolved and passes < max_passes:
-        passes += 1
-        resolved_now: list[int] = []
-
-        for fpid in unresolved:
-            fp = pin_by_id[fpid]
-            factory_cycle = Decimal(
-                schematic_cycle_seconds.get(fp.get("schematic_id")) or 3600
-            )
-            out_by_type = _outbound_by_type(fpid, outbound)
-            if not out_by_type:
-                resolved_now.append(fpid)
-                continue
-
-            out_type, out_qty = next(iter(out_by_type.items()))
-            capacity_daily = (out_qty / factory_cycle) * SECONDS_PER_DAY
-
-            in_rs = inbound.get(fpid, [])
-            required_by_type: dict[int, Decimal] = {}
-            if not in_rs:
-                # No inbound routes: fall back to capacity.
-                daily = capacity_daily
-            else:
-                defer, use_capacity, supply_by_type, required_by_type = (
-                    _inbound_supply_for_factory(
-                        fpid,
-                        in_rs,
-                        extractor_pin_ids,
-                        factory_pin_ids,
-                        unresolved,
-                        pin_by_id,
-                        schematic_cycle_seconds,
-                        node_inflow,
-                        pin_resolved,
-                        factory_cycle,
-                        outbound,
-                    )
-                )
-                if defer:
-                    continue
-                daily = (
-                    capacity_daily
-                    if use_capacity
-                    else _apply_supply_cap(
-                        capacity_daily, supply_by_type, required_by_type
-                    )
-                )
-                # Record consumption: this factory uses required_by_type at
-                # (daily/capacity_daily) of full rate.
-                if capacity_daily > 0 and required_by_type:
-                    factor = daily / capacity_daily
-                    for in_type, req in required_by_type.items():
-                        consumed[in_type] = (
-                            consumed.get(in_type, Decimal(0)) + factor * req
-                        )
-
-            resolved_now.append(fpid)
-            _propagate_factory_output(
-                fpid,
-                out_type,
-                daily,
-                factory_cycle,
-                outbound,
-                node_inflow,
-                pin_resolved,
-                produced,
-            )
-
-        if not resolved_now:
-            break
-        unresolved = [f for f in unresolved if f not in set(resolved_now)]
-
-    # Fallback: any factories still unresolved get capacity-based output.
-    for fpid in unresolved:
-        fp = pin_by_id[fpid]
-        factory_cycle = Decimal(
-            schematic_cycle_seconds.get(fp.get("schematic_id")) or 3600
-        )
-        for ot, oq in _outbound_by_type(fpid, outbound).items():
-            produced[ot] = (
-                produced.get(ot, Decimal(0))
-                + (oq / factory_cycle) * SECONDS_PER_DAY
-            )
-
-    # Report net production (leftovers): gross produced minus consumed on-planet.
-    for type_id in list(produced.keys()):
-        used = consumed.get(type_id, Decimal(0))
-        produced[type_id] = max(Decimal(0), produced[type_id] - used)
-        if produced[type_id] == 0:
-            del produced[type_id]
-
-    return harvested, produced
+    pin_resolved, node_inflow, harvested, extractor_counts = (
+        _resolve_extractors(pins, outbound)
+    )
+    produced = {}
+    consumed = {}
+    unresolved = _resolve_factories_loop(
+        factory_pin_ids,
+        inbound,
+        outbound,
+        extractor_pin_ids,
+        pin_by_id,
+        schematic_cycle_seconds,
+        node_inflow,
+        pin_resolved,
+        produced,
+        consumed,
+    )
+    _fallback_unresolved_factories(
+        unresolved, pin_by_id, outbound, schematic_cycle_seconds, produced
+    )
+    _net_produced(produced, consumed)
+    factory_counts = _end_result_factory_counts(
+        factory_pin_ids, inbound, pin_resolved
+    )
+    return harvested, produced, extractor_counts, factory_counts
 
 
 def _schematic_ids_from_planet_detail(planet_detail):
@@ -487,11 +586,13 @@ def update_character_planets(eve_character_id: int) -> int:
                 schematic_id__in=planet_schematic_ids
             ).values_list("schematic_id", "cycle_time")
         )
-        harvested, produced = _extract_planet_outputs_with_daily(
-            detail_data, cycle_map
+        harvested, produced, harvest_counts, factory_counts = (
+            _extract_planet_outputs_with_daily(detail_data, cycle_map)
         )
 
-        _sync_planet_outputs(planet_obj, harvested, produced)
+        _sync_planet_outputs(
+            planet_obj, harvested, produced, harvest_counts, factory_counts
+        )
 
         # Record that we successfully synced this planet (used to exclude stale
         # planets from industry producer lists).
@@ -513,11 +614,23 @@ def update_character_planets(eve_character_id: int) -> int:
     return len(planets_data)
 
 
-def _sync_planet_outputs(planet_obj, harvested_dict, produced_dict):
+def _sync_planet_outputs(
+    planet_obj,
+    harvested_dict,
+    produced_dict,
+    harvest_counts=None,
+    factory_counts=None,
+):
     """
     Replace the planet's output rows with the current set.
     harvested_dict and produced_dict are type_id -> daily_quantity.
+    harvest_counts and factory_counts are type_id -> count (extractor/factory pins).
     """
+    if harvest_counts is None:
+        harvest_counts = {}
+    if factory_counts is None:
+        factory_counts = {}
+
     desired = set()
     for type_id in harvested_dict:
         desired.add((type_id, EveCharacterPlanetOutput.OutputType.HARVESTED))
@@ -542,11 +655,23 @@ def _sync_planet_outputs(planet_obj, harvested_dict, produced_dict):
             if output_type == EveCharacterPlanetOutput.OutputType.HARVESTED
             else produced_dict.get(type_id, Decimal(0))
         )
+        ext_count = (
+            harvest_counts.get(type_id)
+            if output_type == EveCharacterPlanetOutput.OutputType.HARVESTED
+            else None
+        )
+        fact_count = (
+            factory_counts.get(type_id)
+            if output_type == EveCharacterPlanetOutput.OutputType.PRODUCED
+            else None
+        )
         EveCharacterPlanetOutput.objects.create(
             planet=planet_obj,
             eve_type=eve_type,
             output_type=output_type,
             daily_quantity=daily,
+            extractor_count=ext_count,
+            factory_count=fact_count,
         )
 
     for (type_id, output_type), obj in existing.items():
@@ -556,6 +681,25 @@ def _sync_planet_outputs(planet_obj, harvested_dict, produced_dict):
                 if output_type == EveCharacterPlanetOutput.OutputType.HARVESTED
                 else produced_dict.get(type_id, Decimal(0))
             )
+            ext_count = (
+                harvest_counts.get(type_id)
+                if output_type == EveCharacterPlanetOutput.OutputType.HARVESTED
+                else None
+            )
+            fact_count = (
+                factory_counts.get(type_id)
+                if output_type == EveCharacterPlanetOutput.OutputType.PRODUCED
+                else None
+            )
+            update_fields = []
             if obj.daily_quantity != daily:
                 obj.daily_quantity = daily
-                obj.save(update_fields=["daily_quantity"])
+                update_fields.append("daily_quantity")
+            if obj.extractor_count != ext_count:
+                obj.extractor_count = ext_count
+                update_fields.append("extractor_count")
+            if obj.factory_count != fact_count:
+                obj.factory_count = fact_count
+                update_fields.append("factory_count")
+            if update_fields:
+                obj.save(update_fields=update_fields)

@@ -507,7 +507,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
         Expected produced P1: (20/1800 * 86400) * 0.5 = 480/day
         """
         detail = self._planet(extractor_cycle=3600, extractor_qty=3000)
-        harvested, produced = _extract_planet_outputs_with_daily(
+        harvested, produced, _, _ = _extract_planet_outputs_with_daily(
             detail, self.SCHEMATIC_CYCLE
         )
 
@@ -531,7 +531,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
         Expected produced P1: 20/1800 * 86400 = 960/day (full capacity).
         """
         detail = self._planet(extractor_cycle=1800, extractor_qty=3000)
-        _, produced = _extract_planet_outputs_with_daily(
+        _, produced, _, _ = _extract_planet_outputs_with_daily(
             detail, self.SCHEMATIC_CYCLE
         )
 
@@ -549,7 +549,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
             extractor_qty=3000,
             include_storage_to_factory=False,
         )
-        _, produced = _extract_planet_outputs_with_daily(
+        _, produced, _, _ = _extract_planet_outputs_with_daily(
             detail, self.SCHEMATIC_CYCLE
         )
 
@@ -583,7 +583,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
                 },
             ],
         }
-        _, produced = _extract_planet_outputs_with_daily(
+        _, produced, _, _ = _extract_planet_outputs_with_daily(
             detail, self.SCHEMATIC_CYCLE
         )
 
@@ -592,7 +592,7 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
             float(produced.get(2398, 0)), float(capacity), places=4
         )
         # No harvested either — pure factory planet
-        harvested, _ = _extract_planet_outputs_with_daily(
+        harvested, _, _, _ = _extract_planet_outputs_with_daily(
             detail, self.SCHEMATIC_CYCLE
         )
         self.assertEqual(harvested, {})
@@ -672,7 +672,9 @@ class ExtractPlanetOutputsSupplyCapTest(TestCase):
             ],
         }
         schematics = {126: 1800, 127: 3600}
-        _, produced = _extract_planet_outputs_with_daily(detail, schematics)
+        _, produced, _, _ = _extract_planet_outputs_with_daily(
+            detail, schematics
+        )
 
         # P1 (2398) is fully consumed by the advanced factory → net 0 (leftovers).
         self.assertAlmostEqual(float(produced.get(2398, 0)), 0.0, places=2)

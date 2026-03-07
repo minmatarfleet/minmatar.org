@@ -282,6 +282,13 @@
         "keywords": [ "products", "mining", "harvesting", "production", "imports" ]
     },
     {
+        "slug": "industry.planetary",
+        "path": "/industry/planetary/",
+        "publish": true,
+        "description": "page_finder.planetary.description",
+        "keywords": [ "planetary", "PI", "harvest", "extractors", "factories", "colonies" ]
+    },
+    {
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",

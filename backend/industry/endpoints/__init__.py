@@ -19,10 +19,12 @@ from industry.endpoints.get_types_type_id_breakdown import (
 from industry.endpoints.blueprints import router as blueprints_router
 from industry.endpoints.mining import router as mining_router
 from industry.endpoints.orders import router as orders_router
+from industry.endpoints.planetary import router as planetary_router
 from industry.endpoints.products import router as products_router
 
 router = Router(tags=["Industry"])
 router.add_router("blueprints", blueprints_router)
+router.add_router("planetary", planetary_router)
 router.add_router("mining/systems", mining_router)
 router.add_router("", get_types_type_id_breakdown_router)
 router.add_router("orders", orders_router)

@@ -956,6 +956,70 @@ export interface Product extends ProductBase {
     corporation_producers:          Producer[]
 }
 
+/** Planetary (PI) API types */
+export interface PlanetaryCharacterRef {
+    character_id:   number;
+    character_name: string;
+}
+
+export interface HarvestOverviewItem {
+    type_id:                number;
+    name:                   string;
+    total_extractors:       number;
+    total_daily_quantity?:  number | null;
+}
+
+export interface HarvestDrillDownItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+    extractor_count:    number;
+    daily_quantity?:    number | null;
+}
+
+export interface ProductionOverviewItem {
+    type_id:                number;
+    name:                   string;
+    total_factories:        number;
+    total_daily_quantity?:  number | null;
+}
+
+export interface ProductionDrillDownItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+    factory_count:      number;
+    daily_quantity?:    number | null;
+}
+
+/** One colony on a planet (primary + actual character). */
+export interface ColonyEntry {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+}
+
+/** One planet with list of characters that have colonies on it. */
+export interface PlanetWithColoniesItem {
+    planet_id:        number;
+    solar_system_id:  number;
+    planet_type:     string;
+    colonies:        ColonyEntry[];
+}
+
+export interface HarvestDrillDownResponse {
+    characters:  PlanetaryCharacterRef[];
+    entries:     HarvestDrillDownItem[];
+}
+
+export interface ProductionDrillDownResponse {
+    characters:  PlanetaryCharacterRef[];
+    entries:     ProductionDrillDownItem[];
+}
+
+/** @deprecated Use PlanetWithColoniesItem for GET /planetary/planets */
+export interface PlanetSummaryItem {
+    primary_character:  PlanetaryCharacterRef;
+    actual_character:   PlanetaryCharacterRef;
+}
+
 export interface RootItem {
     eve_type_id:    number;
     eve_type_name:  string;
