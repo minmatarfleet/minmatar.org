@@ -154,9 +154,16 @@ def sync_user_community_groups(user: User) -> None:
     except UserCommunityStatus.DoesNotExist:
         status = UserCommunityStatus.STATUS_ACTIVE
 
-    community_groups = [
-        g for g in (trial_group, on_leave_group, affiliation_group) if g
-    ]
+    # Include ALL affiliation type groups (not just the current one) so that
+    # when a user moves from e.g. Alliance → Guest, the old Alliance group is
+    # correctly identified as a community group and removed.
+    all_affiliation_groups = list(
+        AuthGroup.objects.filter(affiliationtype__isnull=False).distinct()
+    )
+    community_groups = list(
+        {g for g in (trial_group, on_leave_group) if g}
+        | set(all_affiliation_groups)
+    )
     if not community_groups:
         return
 
