@@ -13,11 +13,12 @@ const {
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FluidFixed from '@components/compositions/FluidFixed.astro'
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 import PostItem from '@components/blocks/PostItem.astro';
 import Button from '@components/blocks/Button.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 ---
 
 <div class="[ swiper news-swiper ][ w-full ]">
@@ -49,17 +50,19 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             const slides = [
                 <div class="[ swiper-slide ]">
                     <Wrapper max_width="656px" padding_inline="var(--space-s)" padding_block="var(--component-padding-block)">
-                        <FluidFixed width='135px' breakpoint='20%' class="[ !items-center ]">
+                        <FlexInlineSiblings
+                            class="[ !items-center ]"
+                            min-shink-width='200px'
+                            shrinkable-sibbling='first'
+                        >
                             <PostItem post={post} />
-                            <FlexInline justification='flex-end'>
-                                <Button class="[ hidden sm:!flex ]" size='sm' href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
-                                    {post.tags.find(tag => (tag === 'The Cope' || tag === 'Metro Daily News' || tag === 'Video' )) ?
-                                        t('watch_it') :
-                                        t('read_more')
-                                    }
-                                </Button>
-                            </FlexInline>
-                        </FluidFixed>
+                            <Button class="[ hidden! md:flex! ]" size='sm' href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
+                                {post.tags.find(tag => (tag === 'The Cope' || tag === 'Metro Daily News' || tag === 'Video' )) ?
+                                    t('watch_it') :
+                                    t('read_more')
+                                }
+                            </Button>
+                        </FlexInlineSiblings>
                     </Wrapper>
                 </div>
             ]
