@@ -2,13 +2,17 @@
 
 from ninja import Router
 
-from tribes.endpoints.tribes import router as tribes_router
+from tribes.endpoints.activity import router as activity_router
 from tribes.endpoints.groups import router as groups_router
+from tribes.endpoints.members import router as members_router
 from tribes.endpoints.memberships import router as memberships_router
+from tribes.endpoints.tribes import router as tribes_router
 
 router = Router(tags=["Tribes"])
 router.add_router("", tribes_router)
 router.add_router("", groups_router)
+router.add_router("", activity_router)
+router.add_router("", members_router)
 router.add_router("", memberships_router)
 
 __all__ = ["router"]

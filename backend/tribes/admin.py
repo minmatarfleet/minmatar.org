@@ -172,6 +172,8 @@ class TribeGroupActivityAdmin(admin.ModelAdmin):
         "target_eve_type_id",
         "description",
         "is_active",
+        "points_per_record",
+        "points_per_unit",
         "created_at",
     )
     list_filter = ("activity_type", "is_active", "tribe_group__tribe")

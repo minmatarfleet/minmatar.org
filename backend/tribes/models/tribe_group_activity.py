@@ -56,6 +56,16 @@ class TribeGroupActivity(models.Model):
     )
     description = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
+    points_per_record = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Points awarded per record (count-based: killmail, fleet).",
+    )
+    points_per_unit = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Points per unit of quantity (e.g. mining m³, industry ISK).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
