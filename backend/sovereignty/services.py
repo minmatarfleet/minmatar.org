@@ -15,7 +15,6 @@ from sovereignty.models import (
 )
 from sovereignty.upgrade_stats import get_upgrade_stats
 
-
 # Default base power/workforce when registering a system (typical nullsec star ~650 power).
 DEFAULT_BASE_POWER = 650
 DEFAULT_BASE_WORKFORCE = 0
