@@ -197,7 +197,7 @@ const page_description = t('index.leading_text');
 		{alert && <ShowAlert alert={alert} /> }
 
 		{is_referral_page && user &&
-			<div class="[ fixed top-[var(--space-2xs)] left-[var(--space-xl)] ]">
+			<div class="[ absolute top-[var(--space-2xs)] left-[var(--space-xl)] ]">
 				<ReferralLink user_id={user.user_id} />
 			</div>
 		}
