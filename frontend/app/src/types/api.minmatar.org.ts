@@ -159,6 +159,8 @@ export interface TribeGroupActivityRecord {
     activity_type_display: string;
     character_id:         number | null;
     character_name:       string;
+    primary_character_id: number | null;
+    primary_character_name: string;
     user_id:               number | null;
     username:              string;
     source_type_id:       number | null;

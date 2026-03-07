@@ -20,21 +20,30 @@ import { number_thousand_separator } from '@helpers/numbers'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Picture from '@components/blocks/Picture.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 ---
 
 <FlexInline>
     <span class="[ basis-[200px] ]">
         {format_date_time(lang, activity.created_at)}
     </span>
-    <PilotBadge
-        class="[ basis-[250px] ]"
-        character_id={activity.character_id ?? 0}
-        character_name={activity.character_name}
-        size={32}
-        centered={true}
-    />
+    <FlexInline class="[ basis-[250px] ]" gap="var(--space-2xs)">
+        <PilotBadge
+            character_id={activity.primary_character_id ?? activity.character_id ?? 0}
+            character_name={activity.primary_character_name || activity.character_name}
+            size={32}
+            centered={true}
+        />
+        {activity.character_id != null && activity.primary_character_id != null && activity.character_id !== activity.primary_character_id &&
+            <FixedFluid width="16px" gap="var(--space-3xs)" class="[ items-center ]">
+                <CharacterPicture character_id={activity.character_id} character_name={activity.character_name} size={16} icon_quality={32} />
+                <small>{activity.character_name}</small>
+            </FixedFluid>
+        }
+    </FlexInline>
     <span class="[ basis-[220px] ]">{activity.activity_type_display}</span>
     <FlexInline gap='var(--space-2xs)'>
         {activity.source_type_id &&
