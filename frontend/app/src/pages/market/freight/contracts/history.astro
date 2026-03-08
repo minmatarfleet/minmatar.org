@@ -138,16 +138,17 @@ const page_title = t('freight_contracts.history.page_title');
                 }}
             />
             :
-            active_contracts_location !== undefined ?
+            <>{active_contracts_location !== undefined ?
                 <FreightContractsTable
                     active_contracts_location={active_contracts_location}
                     non_active_contracts_location={non_active_contracts_location}
                     init_tooltips={false}
                     is_history={true}
                 />
-                <SpaceTruckersReel space_truckers={space_truckers} />
                 :
                 <p>{t('no_freighter_contracts')}</p>
+            }</>
+            <SpaceTruckersReel space_truckers={space_truckers} />
         }
     </PageWide>
 
