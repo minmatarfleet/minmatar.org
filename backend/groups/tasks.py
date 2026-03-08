@@ -15,10 +15,6 @@ from .helpers import process_bulk_community_status_row
 from .models import (
     AffiliationType,
     EveCorporationGroup,
-    Sig,
-    SigRequest,
-    Team,
-    TeamRequest,
     UserAffiliation,
 )
 
@@ -330,95 +326,5 @@ def sync_eve_corporation_groups():
                     corporation_group,
                     user,
                     e,
-                )
-                continue
-
-
-@app.task()
-def create_team_request_reminders():
-    for team in Team.objects.all():
-        if not team.discord_channel_id:
-            logger.info("Team %s has no discord channel", team)
-            continue
-
-        if not TeamRequest.objects.filter(approved=None, team=team).exists():
-            logger.info("Team %s has no pending requests", team)
-            continue
-
-        message = "**Pending Request Notifications**\n"
-        for team_request in TeamRequest.objects.filter(
-            approved=None, team=team
-        ):
-            message += f"- <@{team_request.user.discord_user.id}>\n"
-
-        message += "Please review and approve or deny these requests [here](https://my.minmatar.org/alliance/teams/requests/).\n"
-
-        director_mentions = ""
-        for user in team.directors.all():
-            director_mentions += f"<@{user.discord_user.id}> "
-        if director_mentions:
-            message += f"{director_mentions}\n"
-
-        discord.create_message(team.discord_channel_id, message)
-
-
-@app.task()
-def create_sig_request_reminders():
-    for sig in Sig.objects.all():
-        if not sig.discord_channel_id:
-            logger.info("Sig %s has no discord channel", sig)
-            continue
-
-        if not SigRequest.objects.filter(approved=None, sig=sig).exists():
-            logger.info("Sig %s has no pending requests", sig)
-            continue
-
-        message = "**Pending Request Notifications**\n"
-        for sig_request in SigRequest.objects.filter(approved=None, sig=sig):
-            message += f"- <@{sig_request.user.discord_user.id}>\n"
-
-        message += "Please review and approve or deny these requests [here](https://my.minmatar.org/alliance/sigs/requests/).\n"
-
-        officer_mentions = ""
-        for user in sig.officers.all():
-            officer_mentions += f"<@{user.discord_user.id}> "
-        if officer_mentions:
-            message += f"{officer_mentions}\n"
-
-        discord.create_message(sig.discord_channel_id, message)
-
-
-@app.task()
-def remove_sigs():
-    """
-    Remove all sigs for users that don't have the required permissions to request sigs
-    """
-    for sig in Sig.objects.all():
-        for user in sig.members.all():
-            try:
-                if not user.has_perm("groups.add_sigrequest"):
-                    sig.members.remove(user)
-                    logger.info("Removing user %s from sig %s", user, sig)
-            except Exception as e:
-                logger.error(
-                    "Error removing user %s from sig %s: %s", user, sig, e
-                )
-                continue
-
-
-@app.task()
-def remove_teams():
-    """
-    Remove all teams for users that don't have the required permissions to request teams
-    """
-    for team in Team.objects.all():
-        for user in team.members.all():
-            try:
-                if not user.has_perm("groups.add_teamrequest"):
-                    team.members.remove(user)
-                    logger.info("Removing user %s from team %s", user, team)
-            except Exception as e:
-                logger.error(
-                    "Error removing user %s from team %s: %s", user, team, e
                 )
                 continue

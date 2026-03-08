@@ -111,6 +111,5 @@ class EveDoctrineAdmin(admin.ModelAdmin):
                     doctrine=obj, fitting=fitting, role="support"
                 ).delete()
 
-        # Handle ManyToMany fields (sigs and locations)
-        obj.sigs.set(form.cleaned_data["sigs"])
+        # Handle ManyToMany fields (locations)
         obj.locations.set(form.cleaned_data["locations"])

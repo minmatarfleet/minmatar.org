@@ -1,92 +1,34 @@
-import factory
-
+from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.test import Client
-from django.contrib.auth.models import Group
 
 from app.test import TestCase
-from groups.models import Team, Sig
-from groups.helpers import user_in_team
+from discord.signals import user_group_changed
+from groups.helpers import user_in_group_named
 
 
-class SigTeamsRouterTestCase(TestCase):
-    """Combined tests for Sig and Teams routers"""
+class GroupsRouterTestCase(TestCase):
+    """Tests for groups helpers (tribe/group permission checks)."""
 
     def setUp(self):
         self.client = Client()
-
         super().setUp()
 
-    def verify(self, item_type, item_name, path):
-        self.make_superuser()
+    def test_user_in_group_named(self):
+        """user_in_group_named returns True when user is in the named auth group."""
+        self.assertFalse(user_in_group_named(self.user, "Nonexistent Group"))
 
-        self.make_team_or_sig(item_type, item_name)
-
-        response = self.client.get(
-            f"/api/{path}/",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        signals.m2m_changed.disconnect(
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
         )
-
-        self.assertEqual(200, response.status_code)
-        items = response.json()
-        self.assertEqual(1, len(items))
-
-        item_id = items[0]["id"]
-        response = self.client.get(
-            f"/api/{path}/{item_id}",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(item_name, response.json()["name"])
-
-        response = self.client.get(
-            f"/api/{path}/current",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-
-        response = self.client.post(
-            f"/api/{path}/{item_id}/requests",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-
-        response = self.client.get(
-            f"/api/{path}/{item_id}/requests",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertEqual(1, len(data))
-        self.assertFalse(data[0]["approved"])
-        request_id = data[0]["id"]
-
-        response = self.client.post(
-            f"/api/{path}/{item_id}/requests/{request_id}/approve",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertTrue(data["approved"])
-
-    def make_team_or_sig(self, item_type, item_name):
-        group = Group.objects.create(name=item_name)
-        item = item_type.objects.create(name=item_name, group=group)
-        item.members.add(self.user)
-
-    @factory.django.mute_signals(signals.m2m_changed, signals.post_save)
-    def test_sigs(self):
-        self.verify(Sig, "Sig 1", "sigs")
-
-    @factory.django.mute_signals(signals.m2m_changed, signals.post_save)
-    def test_teams(self):
-        self.verify(Team, "Team 1", "teams")
-
-    @factory.django.mute_signals(signals.m2m_changed, signals.post_save)
-    def test_user_in_team(self):
-        with self.assertRaises(ValueError):
-            self.assertFalse(user_in_team(self.user, "x"))
-
-        self.make_team_or_sig(Team, "Test Team")
-
-        self.assertTrue(user_in_team(self.user, "Test Team"))
+        try:
+            group = Group.objects.create(name="Test Group")
+            self.user.groups.add(group)
+            self.assertTrue(user_in_group_named(self.user, "Test Group"))
+        finally:
+            signals.m2m_changed.connect(
+                user_group_changed,
+                sender=User.groups.through,
+                dispatch_uid="user_group_changed",
+            )

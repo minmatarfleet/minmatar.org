@@ -92,7 +92,7 @@ def get_doctrines(request):
             primary_fittings=primary_fittings,
             secondary_fittings=secondary_fittings,
             support_fittings=support_fittings,
-            sig_ids=[sig.id for sig in doctrine.sigs.all()],
+            sig_ids=[],
             location_ids=[
                 location.location_id for location in doctrine.locations.all()
             ],
@@ -139,7 +139,7 @@ def get_doctrine(request, doctrine_id: int):
         primary_fittings=primary_fittings,
         secondary_fittings=secondary_fittings,
         support_fittings=support_fittings,
-        sig_ids=[sig.id for sig in doctrine.sigs.all()],
+        sig_ids=[],
         location_ids=[
             location.location_id for location in doctrine.locations.all()
         ],

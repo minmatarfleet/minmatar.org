@@ -13,7 +13,7 @@ from eveonline.models import (
 )
 from posts.models import EveTag as PostsEveTag
 from market.models import EveMarketContractExpectation
-from groups.models import AffiliationType, EveCorporationGroup, Team, Sig
+from groups.models import AffiliationType, EveCorporationGroup
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 from fleets.models import EveFleetAudience, EveLocation
 
@@ -52,8 +52,6 @@ def seed_database_for_development():
             seed_market_expectations()
             sync_tag_definitions()
             sync_post_tags()
-            sync_teams_and_sigs()
-
         logger.info("Database seeding completed successfully")
         return True
     except Exception as e:
@@ -412,111 +410,6 @@ def sync_post_tags():
             tags_created += 1
 
     logger.info(f"Post tags synced successfully ({tags_created} created)")
-
-
-@transaction.atomic
-def sync_teams_and_sigs():
-    """Sync teams and sigs from production API with Discord channel mapping"""
-    logger.info("Syncing teams and sigs")
-
-    # Manual mapping data: team/sig name -> (group_name, discord_channel_name)
-    mappings = {
-        "People Team": ("People Team", None),
-        "Conversion Team": ("Conversion Team", "conversion"),
-        "Supply Team": ("Supply Team", "supply"),
-        "Technology Team": ("Technology Team", "technology"),
-        "Thinkspeak Team": ("Thinkspeak Team", "thinkspeak"),
-        "FC Team": ("FC", "fcs"),
-        "Internal Affairs": ("Internal Affairs", "internal-affairs"),
-        "External Affairs": ("External Affairs", "external-affairs"),
-        "Readiness Division": (
-            "Readiness Divison",
-            "readiness",
-        ),  # Note: typo in group name
-        "Advocate": ("Advocate", None),
-        "Black Ops": ("SIG - Black Ops", "blackops"),
-        "FAXES": ("FAXES", "faxes"),
-        "DREADS": ("DREADS", "dreads"),
-        "CARRIERS": ("CARRIERS", "carriers"),
-        "TOURNAMENTS": ("SIG - Tournaments", "tournaments"),
-    }
-
-    discord_channels = get_discord_channels()
-
-    # Process teams
-    teams_response = requests.get(
-        "https://api.minmatar.org/api/teams/", timeout=10
-    )
-    teams_response.raise_for_status()
-    teams_data = teams_response.json()
-
-    teams_processed = 0
-    for team in teams_data:
-        if process_entity(team, "team", mappings, discord_channels):
-            teams_processed += 1
-
-    # Process sigs
-    sigs_response = requests.get(
-        "https://api.minmatar.org/api/sigs/", timeout=10
-    )
-    sigs_response.raise_for_status()
-    sigs_data = sigs_response.json()
-
-    sigs_processed = 0
-    for sig in sigs_data:
-        if process_entity(sig, "sig", mappings, discord_channels):
-            sigs_processed += 1
-
-    logger.info(
-        f"Teams and sigs synced successfully ({teams_processed}/{len(teams_data)} teams, {sigs_processed}/{len(sigs_data)} sigs)"
-    )
-
-
-def process_entity(entity_data, entity_type, mappings, discord_channels):
-    """Process a single team or sig entity"""
-    entity_name = entity_data["name"]
-    entity_id = entity_data["id"]
-
-    if entity_name not in mappings:
-        logger.warning(
-            f"No mapping found for {entity_type} '{entity_name}', skipping"
-        )
-        return False
-
-    group_name, discord_channel_name = mappings[entity_name]
-
-    try:
-        group = Group.objects.get(name=group_name) if group_name else None
-    except Group.DoesNotExist:
-        logger.error(
-            f"Group '{group_name}' not found for {entity_type} '{entity_name}', skipping"
-        )
-        return False
-
-    discord_channel_id = find_discord_channel_id(
-        discord_channel_name, discord_channels
-    )
-
-    if discord_channel_name and not discord_channel_id:
-        logger.warning(
-            f"Discord channel '{discord_channel_name}' not found for {entity_type} '{entity_name}'"
-        )
-
-    entity_class = Team if entity_type == "team" else Sig
-    _, created = entity_class.objects.get_or_create(
-        id=entity_id,
-        defaults={
-            "name": entity_name,
-            "description": entity_data.get("description", ""),
-            "image_url": entity_data.get("image_url", ""),
-            "discord_channel_id": discord_channel_id,
-            "group": group,
-        },
-    )
-
-    if created:
-        logger.info(f"Created {entity_type}: {entity_name}")
-    return True
 
 
 def find_discord_channel_id(channel_name, discord_channels):

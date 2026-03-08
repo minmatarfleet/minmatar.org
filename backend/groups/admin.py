@@ -15,8 +15,6 @@ from eveonline.models import EveCorporation
 from .models import (
     AffiliationType,
     EveCorporationGroup,
-    Sig,
-    Team,
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
@@ -282,19 +280,3 @@ class UserCommunityStatusHistoryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
-
-
-@admin.register(Team)
-class TeamAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
-    search_fields = ("name", "description", "content")
-    ordering = ("name",)
-    filter_horizontal = ("directors", "members")
-
-
-@admin.register(Sig)
-class SigAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
-    search_fields = ("name", "description", "content")
-    ordering = ("name",)
-    filter_horizontal = ("officers", "members")

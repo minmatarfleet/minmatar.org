@@ -1,5 +1,4 @@
 import factory
-from unittest.mock import patch
 
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
@@ -18,16 +17,10 @@ from discord.models import DiscordUser
 from groups.models import (
     AffiliationType,
     UserAffiliation,
-    Sig,
-    SigRequest,
-    Team,
-    TeamRequest,
     EveCorporationGroup,
 )
 from groups.tasks import (
     update_affiliations,
-    create_sig_request_reminders,
-    create_team_request_reminders,
     sync_eve_corporation_groups,
 )
 
@@ -183,46 +176,6 @@ class UserAffiliationTestCase(TestCase):
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type_2
-
-    @patch("groups.tasks.discord")
-    def test_sig_reminders(self, discord_mock):
-        DiscordUser.objects.create(
-            id=12345,
-            discord_tag="testuser",
-            user=self.user,
-        )
-        group = Group.objects.create(name="Test SIG")
-        sig = Sig.objects.create(
-            name="Test SIG", group=group, discord_channel_id=12345
-        )
-        SigRequest.objects.create(
-            user=self.user,
-            sig=sig,
-            approved=None,
-        )
-        create_sig_request_reminders()
-
-        discord_mock.create_message.assert_called()
-
-    @patch("groups.tasks.discord")
-    def test_team_reminders(self, discord_mock):
-        DiscordUser.objects.create(
-            id=12345,
-            discord_tag="testuser",
-            user=self.user,
-        )
-        group = Group.objects.create(name="Test Team")
-        team = Team.objects.create(
-            name="Test Team", group=group, discord_channel_id=12345
-        )
-        TeamRequest.objects.create(
-            user=self.user,
-            team=team,
-            approved=None,
-        )
-        create_team_request_reminders()
-
-        discord_mock.create_message.assert_called()
 
 
 class GroupTasksTestCase(TestCase):

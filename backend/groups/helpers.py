@@ -6,7 +6,6 @@ from users.helpers import offboard_group
 
 from .models import (
     EveCorporationGroup,
-    Team,
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
@@ -189,10 +188,10 @@ def sync_user_community_groups(user: User) -> None:
         user.groups.add(*user.groups.model.objects.filter(pk__in=to_add))
 
 
-def user_in_team(user: User, team_name: str) -> bool:
-    team = Team.objects.filter(name=team_name).first()
+def user_in_group_named(user: User, group_name: str) -> bool:
+    """Return True if user is in the auth Group with the given name (e.g. for tribe/legacy group checks)."""
+    return user.groups.filter(name=group_name).exists()
 
-    if not team:
-        raise ValueError(f"Unknown team: {team_name}")
 
-    return team.members.contains(user)
+# Alias for callers that still use "team" naming (e.g. People Team, Technology Team); now checks auth group.
+user_in_team = user_in_group_named
