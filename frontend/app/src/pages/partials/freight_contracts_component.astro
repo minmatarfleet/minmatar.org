@@ -27,7 +27,6 @@ if (location_contracts.length > 0) {
 
 const active_contracts_location = location_contracts.find(location => location.location_name === active_location_name)
 const contracts_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
-const contracts_count_text = t(contracts_count != 1 ? 'showing_orders_plural' : 'showing_orders_singular').replace('{count}', String(contracts_count))
 
 const non_active_contracts_location = location_contracts.filter(location => location.location_name !== active_location_name)
 
@@ -54,18 +53,19 @@ import SpaceTruckersReel from '@components/blocks/SpaceTruckersReel.astro'
         }}
     />
     :
-    active_contracts_location !== undefined ?
+    <>{active_contracts_location !== undefined ?
         <FreightContractsTable
             active_contracts_location={active_contracts_location}
             non_active_contracts_location={non_active_contracts_location}
             init_tooltips={false}
         />
-        <SpaceTruckersReel space_truckers={space_truckers} />
-        <UpdateAlpineVariables
-            variables={{
-                contracts_count: contracts_count,
-            }}
-        />
         :
         <p>{t('no_freighter_contracts')}</p>
+    }</>
+    <SpaceTruckersReel space_truckers={space_truckers} />
+    <UpdateAlpineVariables
+        variables={{
+            contracts_count: contracts_count,
+        }}
+    />
 }
