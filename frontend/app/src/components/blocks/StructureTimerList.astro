@@ -16,19 +16,17 @@ const {
     create_fleet = false,
 } = Astro.props
 
-import BlockList from '@components/compositions/BlockList.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import StructureTimerListItem from '@components/blocks/StructureTimerListItem.astro';
 ---
 
-<BlockList
-    role="list"
-    gap='var(--space-3xs)'
+<Grid
+    class="[ w-full grid-fill ]"
+    row_gap="var(--space-3xs)"
+    column_gap="var(--space-3xs)"
+    min_item_width="350px"
 >
-    {structure_timers.length == 0 &&
-        <p class="[ text-center ]">{t('no_structure_timers')}</p>
-    }
-    
     {structure_timers.map((structure_timer) =>
         <StructureTimerListItem
             role="listitem"
@@ -37,5 +35,8 @@ import StructureTimerListItem from '@components/blocks/StructureTimerListItem.as
             create_fleet={create_fleet}
         />
     )}
+</Grid>
 
-</BlockList>
+{structure_timers.length == 0 &&
+    <p class="[ text-center ]">{t('no_structure_timers')}</p>
+}

@@ -20,25 +20,22 @@ const {
     ...attributes
 } = Astro.props
 
-import { get_item_icon, get_alliance_logo } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import ThumbCard from '@components/blocks/ThumbCard.astro';
 import Countdown from '@components/blocks/Countdown.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import Button from '@components/blocks/Button.astro';
-
-import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
-import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 
 const ITEM_ID = `structure-timer-${structure_timer.id}`
 
 import { query_string } from '@helpers/string';
 
+import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import Tile from '@components/blocks/Tile.astro';
 import Tag from '@components/blocks/Tag.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -49,172 +46,129 @@ const eve_time = new Date(structure_timer.timer);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
-<ThumbCard
+<Flexblock
     id={ITEM_ID}
-    thumb_image={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
-    thumb_image_small={get_item_icon(structure_timer.structure_type_id, 512)}
-    thumb_image_alt={t(structure_timer.structure_type as any) ?? structure_timer.structure_type}
-    thumb_name={structure_timer.corporation_name}
-    thumb_sub={t(structure_timer.structure_type as any) ?? structure_timer.structure_type}
-    items_width='200px'
-    class="[ timer-item ]"
-    {...attributes}
+    class="[ card component border light-transparency ]"
+    gap='0'
 >
-    <FlexInline
-        slot="absolute"
-        class="[ absolute !w-auto top-[var(--space-2xs)] right-[var(--space-2xs)] left-[var(--space-2xs)] !items-start ]"
-        justification='space-between'
+    <Tile
+        title={structure_timer.corporation_name}
+        cover={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
+        transparent={true}
     >
-        <ClipboardButton
-            id={`structure-timer-copy-${structure_timer.id}`}
-            class="[ copy-button ]"
-            iconed={false}
-        >
-            {`${structure_timer.timer}: ${t(structure_timer.structure_type as any) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
-        </ClipboardButton>
-        <FlexInline class="[ !w-auto item ]" gap='var(--space-3xs)'>
-            {create_fleet &&
-                <a
-                    class="[ w-[32px] neocom-button ]"
-                    data-tippy-content={t('create_fleet_from_timer')}
-                    href={`${translatePath('/fleets/add/')}?${query_string({
-                        timer: structure_timer.timer,
-                    })}`}
-                    target="_blank"
-                    rel="nofollow noopener noreferrer"
-                    x-init="tippy($el, tippy_options)"
-                >
-                    <FleetEvEIcon />
-                </a>
-            }
-            <a
-                class="[ w-[32px] neocom-button ]"
-                data-tippy-content={t('view_on_dotlan')}
-                href={`https://evemaps.dotlan.net/system/${structure_timer.system_name}`}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-                x-init="tippy($el, tippy_options)"
-            >
-                <MapEvEIcon />
-            </a>
-        </FlexInline>
-    </FlexInline>
-    
-    <VerticalCenter>
-        <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('location')}>
-                <span>{structure_timer.system_name} - {structure_timer.name}</span>
-            </TextGroup>
-            <TextGroup title={t('state')}>
-                {t(structure_timer.state as any) ?? structure_timer.state}
-            </TextGroup>
-        </Flexblock>
-    </VerticalCenter>
-    
-    <VerticalCenter>
-        <Flexblock gap="var(--space-s-m)">
-            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                {eve_time_text}
-            </TextGroup>
-            <LocalTimeGroup eve_time={eve_time} />
-        </Flexblock>
-    </VerticalCenter>
-    
-    {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
-        <VerticalCenter>
-            <Countdown
-                date={structure_timer.timer}
-                id={structure_timer.id}
-                tag='countdown-structure'
-            />
-        </VerticalCenter>
-        :
-        <VerticalCenter>
-            <p class="[ timer-status-text ]">Expired</p>
-        </VerticalCenter>
-    }
-
-    <VerticalCenter slot="actions" class="[ justify-end ]">
-        {can_verify_timer && !structure_timer.verified &&
-            <Button
-                type="button"
-                x-bind:disabled="disabled"
-                x-data={`{
-                    disabled: false,
-                    show_verify_dialog() {
-                        this.disabled = true
-                        
-                        show_confirm_dialog({
-                            title: '${t('structure_timer_verify_dialog_title')}',
-                            partial: '${translatePath('/partials/dialog_verify_structure_timer/')}?${query_string({
-                                location: `${structure_timer.system_name} - ${structure_timer.name}`,
-                                alliance_id: structure_timer.alliance_id,
-                                alliance_name: structure_timer.alliance_name ?? t('unknown_alliance'),
-                                timer: eve_time_text,
-                                structure_type: structure_timer.structure_type,
-                                message: t('verify_structure_timer_dialog_text')
-                            })}',
-                            return_on_accept: true,
-                            hx: {
-                                method: 'post',
-                                url: '${STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL}?${query_string({
-                                    timer_id: structure_timer.id
-                                })}',
-                                vals: ${JSON.stringify({
-                                        alliance_name: structure_timer.alliance_name,
-                                        corporation_name: structure_timer.corporation_name,
-                                    } as VerifyStructureTimerRequest)
-                                },
-                                target: '#${ITEM_ID}',
-                                swap: 'outerHTML transition:true'
-                            }
-                        }).then( (accepted) => { this.disabled = !!accepted } )
-                    }
-                }`}
-                x-on:click="show_verify_dialog()"
-                type="button"
-            >
-                {t('verify_timer')}
-            </Button>
-        }
-        {structure_timer.verified &&
-            <Tag color='green' text={t('verified')} />
-        }
-    </VerticalCenter>
-</ThumbCard>
-
-<style lang="scss">
-    .timer-status-text {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        margin-left: -10px;
-        margin-right: -10px;
-        color: var(--highlight);
-		letter-spacing: 12px;
-        text-indent: 12px;
-		line-height: 1;
-        white-space: nowrap;
-        text-transform: uppercase;
-    }
-
-    .neocom-button {
-        margin-top: calc(-1 * var(--space-3xs));
-        margin-right: calc(-1 * var(--space-3xs));
-    }
-
-    .timer-item {
-        @media (hover: hover) {
-            .copy-button {
-                transition: var(--fast-transition);
-                opacity: 0;
-            }
-
-            &:hover,
-            &:focus-within {
-                .copy-button {
-                    opacity: 1;
+        <Flexblock slot="subtitle">
+            <FlexInline gap='var(--space-2xs)'>
+                <span><b>{structure_timer.system_name}</b> - {structure_timer.name}</span>
+                {structure_timer.verified &&
+                    <Tag color='green' text={t('verified')} />
                 }
+            </FlexInline>
+
+            {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
+                <div class="[ -ml-2.5 ]">
+                    <Countdown
+                        date={structure_timer.timer}
+                        id={structure_timer.id}
+                        tag='countdown-structure'
+                    />
+                </div>
+                :
+                <p class="[ timer-status-text ]">Expired</p>
             }
-        }
-    }
-</style>
+        </Flexblock>
+    </Tile>
+
+    <Wrapper
+        class="[ pb-(--component-padding-block)! grow ]"
+        padding_inline='var(--component-padding-block)'
+        padding_block='0'
+        max_width='100%'
+    >
+        <Flexblock
+            class="[ justify-between! h-full ]"
+            gap='var(--space-l)'
+        >
+            <Flexblock gap='var(--space-l)'>
+                <FlexInline class="[ !w-auto item ]">
+                    <ClipboardButton
+                        id={`structure-timer-copy-${structure_timer.id}`}
+                        class="[ copy-button ]"
+                        iconed={false}
+                    >
+                        {`${structure_timer.timer}: ${t(structure_timer.structure_type as any) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
+                    </ClipboardButton>
+
+                    {can_verify_timer && !structure_timer.verified &&
+                        <Button
+                            type="button"
+                            size='sm'
+                            x-bind:disabled="disabled"
+                            x-data={`{
+                                disabled: false,
+                                show_verify_dialog() {
+                                    this.disabled = true
+                                    
+                                    show_confirm_dialog({
+                                        title: '${t('structure_timer_verify_dialog_title')}',
+                                        partial: '${translatePath('/partials/dialog_verify_structure_timer/')}?${query_string({
+                                            location: `${structure_timer.system_name} - ${structure_timer.name}`,
+                                            alliance_id: structure_timer.alliance_id,
+                                            alliance_name: structure_timer.alliance_name ?? t('unknown_alliance'),
+                                            timer: eve_time_text,
+                                            structure_type: structure_timer.structure_type,
+                                            message: t('verify_structure_timer_dialog_text')
+                                        })}',
+                                        return_on_accept: true,
+                                        hx: {
+                                            method: 'post',
+                                            url: '${STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL}?${query_string({
+                                                timer_id: structure_timer.id
+                                            })}',
+                                            vals: ${JSON.stringify({
+                                                    alliance_name: structure_timer.alliance_name,
+                                                    corporation_name: structure_timer.corporation_name,
+                                                } as VerifyStructureTimerRequest)
+                                            },
+                                            target: '#${ITEM_ID}',
+                                            swap: 'outerHTML transition:true'
+                                        }
+                                    }).then( (accepted) => { this.disabled = !!accepted } )
+                                }
+                            }`}
+                            x-on:click="show_verify_dialog()"
+                            type="button"
+                        >
+                            {t('verify_timer')}
+                        </Button>
+                    }
+                </FlexInline>
+
+                <Flexblock>
+                    <TextGroup title={t('state')}>
+                        {t(structure_timer.state as any) ?? structure_timer.state}
+                    </TextGroup>
+                    <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                        {eve_time_text}
+                    </TextGroup>
+                    <LocalTimeGroup eve_time={eve_time} />
+                </Flexblock>
+            </Flexblock>
+
+            <FlexInline>
+                {create_fleet &&
+                    <Button
+                        color='green'
+                        href={`${translatePath('/fleets/add/')}?${query_string({
+                            timer: structure_timer.timer,
+                        })}`}
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                        x-init="tippy($el, tippy_options)"
+                    >
+                        {t('create_fleet')}
+                    </Button>
+                }
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+</Flexblock>

@@ -1975,5 +1975,6 @@ export const ui = {
         'group_leadership': 'Group leadership',
         'group_elder': 'Group elder',
         'no_activities': 'There are currently no activities to show.',
+        'create_fleet': 'Create fleet',
     },
 } as const;

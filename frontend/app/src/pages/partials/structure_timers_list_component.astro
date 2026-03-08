@@ -23,6 +23,7 @@ const can_verify_timer = is_superuser || user_permissions.includes('structures.c
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
 import { get_unique_by_key } from '@helpers/array'
+import { hours_diff } from '@helpers/date'
 
 const active = JSON.parse(Astro.url.searchParams.get('active') ?? '') as boolean
 const duplicated = JSON.parse(Astro.url.searchParams.get('duplicated') ?? '') as boolean
@@ -32,6 +33,7 @@ let structure_timers:StructureTimerUI[] = []
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, active)
+    structure_timers = structure_timers.filter(timer => hours_diff(new Date(), timer.timer) < 200)
     structure_timers.sort(function(a, b) {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
