@@ -142,38 +142,10 @@ CELERYBEAT_INDUSTRY = [
 # Groups
 CELERYBEAT_GROUPS = [
     (
-        "[Groups] Remove Invalid Sig Members",
-        {
-            "task": "groups.tasks.remove_sigs",
-            "schedule": schedule(timedelta(hours=1)),
-        },
-    ),
-    (
-        "[Groups] Remove Invalid Team Members",
-        {
-            "task": "groups.tasks.remove_teams",
-            "schedule": schedule(timedelta(hours=1)),
-        },
-    ),
-    (
-        "[Groups] Sig Request Reminders",
-        {
-            "task": "groups.tasks.create_sig_request_reminders",
-            "schedule": crontab(minute=0, hour=14, day_of_week=1),
-        },
-    ),
-    (
         "[Groups] Sync Corporation Groups",
         {
             "task": "groups.tasks.sync_eve_corporation_groups",
             "schedule": crontab(minute="19,49", hour="*"),
-        },
-    ),
-    (
-        "[Groups] Team Request Reminders",
-        {
-            "task": "groups.tasks.create_team_request_reminders",
-            "schedule": crontab(minute=0, hour=14, day_of_week=1),
         },
     ),
     (

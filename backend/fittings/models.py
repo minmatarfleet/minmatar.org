@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from eveonline.models import EveLocation
-from groups.models import Sig
 
 # Create your models here.
 
@@ -110,7 +109,6 @@ class EveDoctrine(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
-    sigs = models.ManyToManyField(Sig, blank=True)
     locations = models.ManyToManyField(EveLocation, blank=True)
 
     @property
