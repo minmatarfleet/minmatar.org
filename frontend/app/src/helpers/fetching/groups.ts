@@ -161,28 +161,12 @@ export async function get_all_groups_members(access_token:string, group_type:Gro
     return groups_members
 }
 
-export async function is_director(access_token:string, user_id:number) {
-    let groups:Group[]
-    
-    try {
-        groups = await get_current_teams(access_token, true)
-    } catch (error) {
-        return undefined
-    }
-    
-    return groups.find( (group) => group.directors?.includes(user_id) ) !== undefined
+export function is_director(access_token:string, user_id:number) {
+    return false
 }
 
-export async function is_officer(access_token:string, user_id:number) {
-    let groups:Group[]
-    
-    try {
-        groups = await get_current_sigs(access_token, true)
-    } catch (error) {
-        return undefined
-    }
-    
-    return groups.find( (group) => group?.officers?.includes(user_id) ) !== undefined
+export function is_officer(access_token:string, user_id:number) {
+    return false
 }
 
 export async function get_all_members(access_token:string, user_id:number, superadmin?:boolean) {
@@ -191,8 +175,8 @@ export async function get_all_members(access_token:string, user_id:number, super
     let character_ids:number[] = []
     let members:CharacterBasic[] = []
     
-    const user_is_officer = await is_officer(access_token, user_id)
-    const user_is_director = await is_director(access_token, user_id)
+    const user_is_officer = is_officer(access_token, user_id)
+    const user_is_director = is_director(access_token, user_id)
 
     if (user_is_officer)
         groups_members = await get_all_groups_members(access_token, 'group', user_id, superadmin)

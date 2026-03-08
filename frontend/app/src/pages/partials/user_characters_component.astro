@@ -13,8 +13,8 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? await is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? await is_director(auth_token, user.user_id) : false)
+const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
+const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
 
 const can_view_page = is_superuser || user_is_officer || user_is_director
 

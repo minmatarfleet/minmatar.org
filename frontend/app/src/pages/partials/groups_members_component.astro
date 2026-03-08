@@ -20,7 +20,7 @@ if (!auth_token || !user)
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (
     auth_token && user ?
-    ( group_type === 'group' ? await is_officer(auth_token, user.user_id) : await is_director(auth_token, user.user_id) ) :
+    ( group_type === 'group' ? is_officer(auth_token, user.user_id) : is_director(auth_token, user.user_id) ) :
     false
 )
 

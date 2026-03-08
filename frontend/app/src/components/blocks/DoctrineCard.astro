@@ -44,22 +44,20 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
         />
         <Wrapper class="[ doctrine-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='var(--space-xs)'>
-                {!doctrine?.sigs?.length &&
-                    <picture
-                        class='[ w-fit ]'
-                        data-tippy-content={t('alliance_doctrine_description')}
-                        x-init={`tippy($el, {
-                            delay: [ 100, 200 ],
-                            arrow: true,
-                        })`}
-                    >
-                        <FleetLogo
-                            square={true}
-                            slot="picture"
-                            width="32"
-                        />
-                    </picture>
-                }
+                <picture
+                    class='[ w-fit ]'
+                    data-tippy-content={t('alliance_doctrine_description')}
+                    x-init={`tippy($el, {
+                        delay: [ 100, 200 ],
+                        arrow: true,
+                    })`}
+                >
+                    <FleetLogo
+                        square={true}
+                        slot="picture"
+                        width="32"
+                    />
+                </picture>
 
                 <Flexblock gap='var(--space-3xs)'>
                     {subtitle && <small>{subtitle}</small>}
@@ -102,27 +100,6 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                     <NonStrategicIcon />
                 }
             </div>
-        </div>
-
-        <div class="[ doctrine-sigs ]">
-            <FlexInline gap='var(--space-3xs)'>
-                {doctrine?.sigs?.length > 0 && doctrine.sigs.map((sig) =>
-                    <picture
-                        data-tippy-content={t('doctrine_flayable_description').replace('GROUP', sig.name)}
-                        x-init={`tippy($el, {
-                            delay: [ 100, 200 ],
-                            arrow: true,
-                        })`}
-                    >
-                        <img
-                            src={sig?.image_url ? sig.image_url : '/images/icons/48px-Grouplist.png'}
-                            height="32"
-                            width="32"
-                            alt={`${sig.name} icon`}
-                        />
-                    </picture>
-                )}
-            </FlexInline>
         </div>
     </Flexblock>
 </ComponentBlock>

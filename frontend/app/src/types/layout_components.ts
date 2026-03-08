@@ -644,7 +644,6 @@ export interface DoctrineType {
     primary_fittings:       FittingItem[];
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
-    sigs:                   GroupBasic[];
     location_ids:           number[];
 }
 
