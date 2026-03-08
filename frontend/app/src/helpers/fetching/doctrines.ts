@@ -23,7 +23,7 @@ export async function fetch_doctrines() {
     let api_doctrines:Doctrine[]
 
     api_doctrines = await get_doctrines()
-    const sigs = await get_groups('group')
+    // const sigs = await get_groups('group')
 
     // Collect all unique location_ids from all doctrines
     const all_location_ids: number[] = []
@@ -61,16 +61,6 @@ export async function fetch_doctrines() {
             primary_fittings: await Promise.all(doctrine.primary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
-            sigs: doctrine.sig_ids.map((sig_id) => {
-                const sig = sigs.find((sig) => sig.id === sig_id)
-                
-                return {
-                    id: sig?.id ?? 0,
-                    name: sig?.name ?? t('unknown_sig'),
-                    image_url: sig?.image_url,
-                    description: sig?.description,
-                }
-            }),
             location_ids: doctrine.location_ids ?? []
         } as DoctrineType
     }))

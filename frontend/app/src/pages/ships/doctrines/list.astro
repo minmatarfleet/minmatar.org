@@ -82,8 +82,6 @@ const active_doctrine_locations_ui = all_locations_ui.find(location => location.
 
 const non_active_doctrine_locations_ui = all_locations_ui.filter(location => location.id !== active_location_id)
 
-const are_sigs_doctrines = active_doctrine_locations_ui?.doctrines.find((doctrine) => doctrine.sigs.length > 0)
-
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
 import Viewport from '@layouts/Viewport.astro';
@@ -130,19 +128,6 @@ const leading_text = t('doctrines.alliance.page_leading_text')
                 </Flexblock>
             </FlexInline>
         </FlexInline>
-
-        {are_sigs_doctrines &&
-            <FlexInline slot="subheader">
-                <Button
-                    type="button"
-                    size='sm'
-                    x-on:click="show_all = !show_all"
-                    x-text={`show_all ? '${t('hide_sigs_doctrines')}' : '${t('show_sigs_doctrines')}'`}
-                >
-                    {t('show_sigs_doctrines')}
-                </Button>
-            </FlexInline>
-        }
 
         <Flexblock gap='var(--space-xl)'>
             <TextBox>
