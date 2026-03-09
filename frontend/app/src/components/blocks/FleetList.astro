@@ -18,9 +18,9 @@ const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upc
 const REFRESH_RATE_SECONDS = 300
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 
 const hx_attrs = {
     ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
@@ -31,22 +31,41 @@ const hx_attrs = {
 }
 ---
 
-<BlockList
-    role="list"
-    gap='var(--space-3xs)'
+<div
     {...hx_attrs}
     @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
     @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
 >
+    
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width="350px"
+        x-data={`{
+            init() {
+                const timer = setInterval(() => {
+                    $dispatch('tick')
+                }, 5000)
+
+                function clearTimer(event) {
+                    clearInterval(timer)
+                    event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                }
+
+                document.addEventListener('astro:after-swap', clearTimer)
+            }
+        }`}
+    >
+        {fleets.map((fleet) =>
+            <FleetListItem role="listitem" fleet={fleet} history={history} />
+        )}
+    </Grid>
 
     {fleets.length == 0 &&
         <Flexblock gap='var(--space-xl)' centered={true}>
             <p>{t('fleets.upcoming.empty_message')}</p>
         </Flexblock>
     }
-    
-    {fleets.map((fleet) =>
-        <FleetListItem role="listitem" fleet={fleet} history={history} />
-    )}
 
-</BlockList>
+</div>

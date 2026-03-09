@@ -69,7 +69,7 @@ let fleet_tracking_texts:FleetTrackingTexts | false = false
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet)
+    fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
     return HTTP_403_Forbidden()
@@ -85,6 +85,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import FleetStatus from '@components/blocks/FleetStatus.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import DebugTag from '@components/blocks/DebugTag.astro';
 ---
 
 {fetch_fleets_error ?
@@ -96,11 +97,17 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <FleetStatus
-        fleet={fleet as FleetUI }
-        is_fleet_commander={is_fleet_commander}
-        alert={alert}
-        start_tracking={start_tracking === true}
-        fleet_tracking_texts={fleet_tracking_texts}
-    />
+    fleet ?
+        <FleetStatus
+            fleet_id={fleet.id}
+            start_time={fleet.start_time}
+            fleet_tracking={fleet.tracking}
+            fleet_status={fleet.status}
+            is_fleet_commander={is_fleet_commander}
+            alert={alert}
+            start_tracking={start_tracking === true}
+            fleet_tracking_texts={fleet_tracking_texts}
+        />
+        :
+        <DebugTag>{t('no_fleet_unexpected_error')}</DebugTag>
 }

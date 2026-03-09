@@ -44,7 +44,7 @@ const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
 const pre_pingable = minutes_to_fleet >= 30
 
 import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
-const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet)
+const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
@@ -157,7 +157,14 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </TextBox>
                 </Flexblock>
 
-                <FleetStatus fleet={fleet} is_fleet_commander={is_fleet_commander} fleet_tracking_texts={fleet_tracking_texts} />
+                <FleetStatus
+                    fleet_id={fleet.id}
+                    start_time={fleet.start_time}
+                    fleet_tracking={fleet.tracking}
+                    fleet_status={fleet.status}
+                    is_fleet_commander={is_fleet_commander}
+                    fleet_tracking_texts={fleet_tracking_texts}
+                />
 
                 {history &&
                     <AARLinkButton

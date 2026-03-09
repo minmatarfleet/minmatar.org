@@ -33,34 +33,37 @@ const APPLY_HINT_TEXT = (marked.parseInline(t('apply_hint')) as string)
         'CORPORATIONS_PAGE_LINK', translatePath('/alliance/corporations/list/')
     )
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
+import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
+const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
-import Button from '@components/blocks/Button.astro';
-import ThumbCard from '@components/blocks/ThumbCard.astro';
-import Countdown from '@components/blocks/Countdown.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro'
+const [ system, station ] = fleet.location?.split(' - ') ?? []
 
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
 
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Countdown from '@components/blocks/Countdown.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import Button from '@components/blocks/Button.astro';
+import Tile from '@components/blocks/Tile.astro';
+import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
+import TimeAlternator from '@components/blocks/TimeAlternator.astro'
+import CompletedStatus from '@components/blocks/CompletedStatus.astro'
+
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
-<ThumbCard
-    thumb_sub={t('fleet_commander')}
-    thumb_image={get_player_icon(fleet.fleet_commander_id, 512)}
-    thumb_image_small={get_player_icon(fleet.fleet_commander_id, 512)}
-    thumb_image_alt={fleet.fleet_commander_name}
-    thumb_name={fleet.fleet_commander_name}
-    {...attributes}
+<Flexblock
+    class="[ card component border light-transparency relative ]"
+    gap='0'
 >
     <div
-        class="[ absolute top-0 left-0 ]"
+        class="[ absolute top-0 left-0 z-10 ]"
         data-tippy-content={
             fleet.type === 'strategic' ?
             t('strategic_fleet') :
@@ -79,75 +82,83 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         }
     </div>
 
-    {fleet.fleet_commander_id === 0 &&
-        <VerticalCenter class="[ grow ]">
-            <FlexInline justification='space-between'>
-                <Flexblock gap='0'>
-                    <p class="[ text-[var(--highlight)] ]">{t('cant_view_fleet_details')}</p>
-                    
-                    {user && fleet.audience === 'Alliance' &&
-                        <small set:html={APPLY_HINT_TEXT} />
-                    }
-                    {user && fleet.audience === 'Militia' &&
-                        <small>{t('enlist_fw_hint')}</small>
-                    }
-                </Flexblock>
+    <Tile
+        title={fleet.fleet_commander_name}
+        cover={get_player_icon(fleet.fleet_commander_id, 512)}
+        transparent={true}
+        soft={false}
+    >
+        <Flexblock slot="subtitle">
+            <FlexInline gap='var(--space-2xs)'>
+                <span><b>{system}</b> - {station}</span>
             </FlexInline>
-        </VerticalCenter>
-    }
 
-    {fleet.fleet_commander_id > 0 &&
-        <VerticalCenter>
-            <Flexblock gap="var(--space-s-m)">
-                <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                    {eve_time_text}
-                </TextGroup>
-                <LocalTimeGroup eve_time={eve_time} />
-            </Flexblock>
-        </VerticalCenter>
-
-        <TextGroup title={t('description')} full={true}>
             <Flexblock
-                slot="outside"
-                class="[ wrap-break-word max-w-full pr-1.5 max-h-[300px] overflow-y-auto ]"
+                class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto ]"
                 gap="var(--space-s-m)"
                 set:html={marked.parse(fleet.description ?? '', { renderer })}
             />
-        </TextGroup>
+        </Flexblock>
+    </Tile>
 
-        <VerticalCenter class="[ justify-center ]">
-            <Flexblock>
-                {fleet?.status === 'cancelled' &&
-                    <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
-                }
-                
-                {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
-                    <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
-                }
+    <Wrapper
+        class="[ pb-(--component-padding-block)! grow ]"
+        padding_inline='var(--component-padding-block)'
+        padding_block='0'
+        max_width='100%'
+    >
+        <Flexblock
+            class="[ justify-between! h-full ]"
+            gap='var(--space-l)'
+        >
+            <Flexblock gap='var(--space-l)'>
+                <FlexInline class="[ !w-auto item ]">
+                    <Button
+                        href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}
+                        size='sm'
+                    >
+                        {t('view_details')}
+                    </Button>
+                </FlexInline>
 
-                {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
-                    <p class="[ fleet-status-text ]">{t('completed')}</p>
-                }
+                {
+                    fleet?.status === 'cancelled' ?
+                        <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p> :
+                    fleet?.tracking && !fleet?.tracking?.end_time ?
+                        <p class="[ fleet-status-text blink-animation ]">{t('active')}</p> :
+                    fleet?.tracking && fleet?.tracking?.end_time ?
+                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
+                    !history && !fleet?.tracking ?
+                        <TimeAlternator>
+                            <Flexblock slot="time">
+                                <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                                    {eve_time_text}
+                                </TextGroup>
+                                <LocalTimeGroup eve_time={eve_time} />
+                            </Flexblock>
 
-                {fleet?.status !== 'cancelled' && !history && !fleet?.tracking &&
-                    <Countdown
-                        date={fleet.start_time}
-                        id={fleet.id}
-                        tag='countdown-fleet'
-                    />
+                            <div slot="countdown" class="[ -ml-2.5 ]">
+                                <Countdown
+                                    date={fleet.start_time}
+                                    id={fleet.id}
+                                    tag='countdown-fleet'
+                                />
+                            </div>
+                        </TimeAlternator> :
+                        <p>{t('no_tracking_data')}</p>
                 }
-            </Flexblock>
-        </VerticalCenter>
-    }
+            </CompletedStatus>
 
-    {fleet.fleet_commander_id > 0 &&
-        <VerticalCenter slot="actions">
-            <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}>
-                {t('view_details')}
-            </Button>
-        </VerticalCenter>
-    }
-</ThumbCard>
+            {!history &&
+                <FlexInline>
+                    <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}/volunteer`)}>
+                        {t('volunteer')}
+                    </Button>
+                </FlexInline>
+            }
+        </Flexblock>
+    </Wrapper>
+</Flexblock>
 
 <style lang="scss">
     .wrap-break-word {

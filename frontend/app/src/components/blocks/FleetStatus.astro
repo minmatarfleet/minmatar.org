@@ -2,10 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FleetUI, Alert, FleetTrackingTexts } from '@dtypes/layout_components'
+import type { TrackingStatus } from '@dtypes/api.minmatar.org'
+import type { Tracking, Alert, FleetTrackingTexts } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:                      FleetUI;
+    fleet_id:                   number;
+    start_time:                 Date;
+    fleet_tracking?:            Tracking;
+    fleet_status?:              TrackingStatus;
     is_fleet_commander:         boolean;
     alert?:                     false | Alert;
     start_tracking?:            boolean;
@@ -13,7 +17,10 @@ interface Props {
 }
 
 const {
-    fleet,
+    fleet_id,
+    start_time,
+    fleet_tracking,
+    fleet_status,
     is_fleet_commander,
     alert = false,
     start_tracking = false,
@@ -22,11 +29,11 @@ const {
 
 import { minutes_to } from '@helpers/date';
 
-const diff_time = minutes_to(fleet.start_time)
+const diff_time = minutes_to(start_time)
 const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
 const is_fleet_time = minutes_to_fleet < 30
 
-const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet.id}`
+const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet_id}`
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -35,6 +42,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import Countdown from '@components/blocks/Countdown.astro';
+import CompletedStatus from '@components/blocks/CompletedStatus.astro';
 ---
 
 <div
@@ -46,19 +54,19 @@ import Countdown from '@components/blocks/Countdown.astro';
             ${JSON.stringify(start_tracking)} && $dispatch('tracking_started')
         }
     }`}
-    hx-get={!fleet?.tracking?.end_time ? FLEET_STATUS_PARTIAL_URL: undefined}
-    hx-trigger={!fleet?.tracking?.end_time ? 'load delay:60s' : undefined}
-    hx-swap={!fleet?.tracking?.end_time ? 'outerHTML transition:true' : undefined}
-    hx-indicator={!fleet?.tracking?.end_time ? '.loader' : undefined}
+    hx-get={!fleet_tracking?.end_time ? FLEET_STATUS_PARTIAL_URL: undefined}
+    hx-trigger={!fleet_tracking?.end_time ? 'load delay:60s' : undefined}
+    hx-swap={!fleet_tracking?.end_time ? 'outerHTML transition:true' : undefined}
+    hx-indicator={!fleet_tracking?.end_time ? '.loader' : undefined}
 >
     <Flexblock
         class="[ grow text-center ]"
         centered={true}
     >
-        {fleet?.tracking === null && fleet?.status !== 'cancelled' &&
+        {fleet_tracking === null && fleet_status !== 'cancelled' &&
             <Countdown
-                date={fleet.start_time}
-                id={fleet.id}
+                date={start_time}
+                id={fleet_id}
                 tag='countdown-fleet'
                 x-data={`{
                     init() {
@@ -70,35 +78,30 @@ import Countdown from '@components/blocks/Countdown.astro';
             />
         }
 
-        {fleet?.status === 'cancelled' &&
+        {fleet_status === 'cancelled' &&
             <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
         }
 
-        {fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time &&
+        {fleet_status !== 'cancelled' && fleet_tracking && !fleet_tracking?.end_time &&
             <Flexblock>
                 <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
 
                 {is_fleet_commander &&
-                    <EndFleetButton id={fleet.id} />
+                    <EndFleetButton id={fleet_id} />
                 }
             </Flexblock>
 
         }
 
-        {fleet?.status !== 'cancelled' && fleet?.tracking && fleet?.tracking?.end_time &&
-            <Flexblock>
-                <p class="[ fleet-status-text ]">{t('completed')}</p>
-                {fleet_tracking_texts &&
-                    <p>{fleet_tracking_texts.fleet_end_eve_time_text} (<span data-tippy-content={fleet_tracking_texts.fleet_tracking_hint}>{fleet_tracking_texts.fleet_duration_text}</span>)</p>
-                }
-            </Flexblock>
+        {fleet_status !== 'cancelled' && fleet_tracking && fleet_tracking?.end_time &&
+            <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} />
         }
 
-        {is_fleet_commander && is_fleet_time && !fleet?.tracking && fleet?.status !== 'cancelled' &&
-            <StartFleetButton id={fleet.id} />
+        {is_fleet_commander && is_fleet_time && !fleet_tracking && fleet_status !== 'cancelled' &&
+            <StartFleetButton id={fleet_id} />
         }
 
-        {is_fleet_commander && !is_fleet_time && !fleet?.tracking && fleet?.status !== 'cancelled' &&
+        {is_fleet_commander && !is_fleet_time && !fleet_tracking && fleet_status !== 'cancelled' &&
             <template
                 id="fleet-tick"
                 x-if="is_fleet_time"
@@ -107,7 +110,7 @@ import Countdown from '@components/blocks/Countdown.astro';
                         if (is_fleet_time) return
 
                         const timer = setInterval(function () {
-                            const countDownDate = new Date('${fleet.start_time}').getTime();
+                            const countDownDate = new Date('${start_time}').getTime();
                             const now = new Date().getTime();
                             const distance = countDownDate - now;
                             const DISTANCE_30_MINUTES = 30*60*1000
@@ -124,11 +127,11 @@ import Countdown from '@components/blocks/Countdown.astro';
                     }
                 }`}
             >
-                <StartFleetButton id={fleet.id} />
+                <StartFleetButton id={fleet_id} />
             </template>
         }
 
-        {fleet?.tracking && !fleet?.tracking?.is_registered && !fleet?.tracking?.end_time &&
+        {fleet_tracking && !fleet_tracking?.is_registered && !fleet_tracking?.end_time &&
             <TextBox max_width='40rem'>
                 <Flexblock gap='var(--space-xs)' class="[ text-left ]">
                     <p>{t('missing_advert')}</p>

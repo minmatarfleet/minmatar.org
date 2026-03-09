@@ -83,7 +83,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }`}
     >
         {(fleets?.length ?? 0) > 0 &&
-            <small class="[ absolute right-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+            <small class="[ absolute left-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
         }
 
         <FleetList

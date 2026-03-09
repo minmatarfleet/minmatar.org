@@ -1978,5 +1978,9 @@ export const ui = {
         'create_fleet': 'Create fleet',
         'ui_scaling': 'UI scaling',
         'ui_scaling_description': 'Alternatively you may use the browser zooming built in support',
+        'missing_time_slot': 'Define the time slot',
+        'missing_countdown_slot': 'Define the countdown slot',
+        'no_fleet_unexpected_error': 'An unexpected error ocurred: No fleet object.',
+        'no_tracking_data': '⚠️ No tracking data',
     },
 } as const;
