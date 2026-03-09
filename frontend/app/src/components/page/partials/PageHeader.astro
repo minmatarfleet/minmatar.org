@@ -1,6 +1,7 @@
 ---
 interface Props {
     max_width?:         string;
+    sticky:             boolean;
     neocom?:            boolean;
     [propName: string]: any;
 }
@@ -8,6 +9,7 @@ interface Props {
 const {
     max_width = '80rem',
     neocom = true,
+    sticky,
 } = Astro.props;
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -17,7 +19,7 @@ const subheader_content = await Astro.slots.render('subheader');
 
 <div id="top-sentinel"></div>
 <div
-    class="[ post-header ][ relative lg:sticky! lg:top-0 ]"
+    class:list={[ 'post-header relative lg:top-0', { 'lg:sticky!': sticky } ]}
     x-data={`{
         sticky: false,
         init() {
