@@ -1984,5 +1984,6 @@ export const ui = {
         'no_tracking_data': '⚠️ No tracking data',
         'structure_timer_template': '{state} timer',
         'expired': 'Expired',
+        'no_access_to_fleets': 'You don’t have access to view the fleets.'
     },
 } as const;
