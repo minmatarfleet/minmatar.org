@@ -33,7 +33,11 @@ let structure_timers:StructureTimerUI[] = []
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, active)
-    structure_timers = structure_timers.filter(timer => hours_diff(new Date(), timer.timer) < 200)
+    if (active)
+        structure_timers = structure_timers.filter(timer => hours_diff(new Date(), timer.timer) < 200)
+    else
+        structure_timers = structure_timers.filter(timer => new Date(timer.timer) < new Date())
+    
     structure_timers.sort(function(a, b) {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });

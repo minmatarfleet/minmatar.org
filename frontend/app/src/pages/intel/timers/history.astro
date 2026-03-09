@@ -32,6 +32,8 @@ const MAX_TIMERS_COUNT = 50
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, false)
+    structure_timers = structure_timers.filter(timer => new Date(timer.timer) < new Date())
+    
     structure_timers.sort(function(a, b) {
         return new Date(b.timer).getTime() - new Date(a.timer).getTime();
     });
