@@ -36,6 +36,7 @@ let timers_clipboard = ''
 try {
     structure_timers = await fetch_structure_timers(auth_token as string)
     structure_timers = structure_timers.filter(timer => hours_diff(new Date(), timer.timer) < 200)
+    
     structure_timers.sort(function(a, b) {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
