@@ -26,6 +26,20 @@ import StructureTimerListItem from '@components/blocks/StructureTimerListItem.as
     row_gap="var(--space-3xs)"
     column_gap="var(--space-3xs)"
     min_item_width="350px"
+    x-data={`{
+        init() {
+            const timer = setInterval(() => {
+                $dispatch('tick')
+            }, 5000)
+
+            function clearTimer(event) {
+                clearInterval(timer)
+                event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+            }
+
+            document.addEventListener('astro:after-swap', clearTimer)
+        }
+    }`}
 >
     {structure_timers.map((structure_timer) =>
         <StructureTimerListItem

@@ -1982,5 +1982,7 @@ export const ui = {
         'missing_countdown_slot': 'Define the countdown slot',
         'no_fleet_unexpected_error': 'An unexpected error ocurred: No fleet object.',
         'no_tracking_data': '⚠️ No tracking data',
+        'structure_timer_template': '{state} timer',
+        'expired': 'Expired',
     },
 } as const;
