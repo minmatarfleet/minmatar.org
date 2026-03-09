@@ -2,17 +2,19 @@
 import CaretIcon from '@components/icons/CaretIcon.astro';
 interface Props {
     width?: string;
+    size?:  'lg' | 'sm';
     [propName: string]: any;
 }
 
 const {
     width = '100%',
+    size = 'lg',
     ...attributes
 } = Astro.props
 ---
 
 <div class="max-h-[66px] relative">
-    <select {...attributes}>
+    <select {...attributes} data-size={size}>
         <slot />
     </select>
     
@@ -57,6 +59,10 @@ const {
 
         -webkit-appearance: none;
         appearance: none;
+
+        &[data-size="sm"] {
+            padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-xs-s);
+        }
 
         &:hover {
             border-color: var(--border-color-hover);

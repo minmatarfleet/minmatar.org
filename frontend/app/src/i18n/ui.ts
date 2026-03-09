@@ -1976,5 +1976,7 @@ export const ui = {
         'group_elder': 'Group elder',
         'no_activities': 'There are currently no activities to show.',
         'create_fleet': 'Create fleet',
+        'ui_scaling': 'UI scaling',
+        'ui_scaling_description': 'Alternatively you may use the browser zooming built in support',
     },
 } as const;

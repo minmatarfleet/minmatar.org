@@ -38,7 +38,7 @@ const optional_attributes = {
             x-init="loaded = $refs.img.complete"
             x-bind:class="{ '!hidden': !loaded }"
         >
-            <source srcset={image_990} media="(max-width: 990px)">
+            <source srcset={image_990} media="(max-width: 990px)" />
             <img
                 src={image}
                 role={!alt ? 'presentation' : undefined}
@@ -56,7 +56,7 @@ const optional_attributes = {
             autoplay
             loop
         >
-            <source src={video} type="video/webm">
+            <source src={video} type="video/webm" />
         </video>
     }
 </div>
@@ -77,7 +77,8 @@ const optional_attributes = {
             transform: translateY(0);
 
             @media only screen and (min-device-width: 1366px) {
-                animation: parallax linear;
+                animation-name: parallax100;
+                animation-timing-function: linear;
                 animation-timeline: view();
                 animation-range: -45% 145%;
             }
@@ -125,9 +126,35 @@ const optional_attributes = {
             image-rendering: pixelated;
         }
     }
+
+    .ui-scaling-90 .viewport-cover {
+        &.scrollable {
+            @media only screen and (min-device-width: 1366px) {
+                animation-name: parallax90;
+            }
+        }
+    }
+        
+    .ui-scaling-80 .viewport-cover {
+        &.scrollable {
+            @media only screen and (min-device-width: 1366px) {
+                animation-name: parallax80;
+            }
+        }
+    }
     
-    @keyframes parallax {
+    @keyframes parallax100 {
         from { transform: translateY(-1000px) }
+        to { transform: translateY(1000px) }
+    }
+    
+    @keyframes parallax90 {
+        from { transform: translateY(-1057px) }
+        to { transform: translateY(1000px) }
+    }
+    
+    @keyframes parallax80 {
+        from { transform: translateY(-1124px) }
         to { transform: translateY(1000px) }
     }
 </style>

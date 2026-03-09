@@ -135,8 +135,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 	<body
 		class="[ viewport-layout ]"
-		x-bind:class="(color_blind_mode ? 'color-blind-mode' : '')"
+		x-bind:class="[ color_blind_mode ? 'color-blind-mode' : '', `ui-scaling-${ui_scaling}` ]"
 		x-data={`{
+        	ui_scaling: $persist(100),
         	show_color_blind_prompt: $persist(true),
         	color_blind_mode: $persist(false),
 			post_header_height: null,
