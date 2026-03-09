@@ -163,7 +163,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 />
                             </div>
                         </TimeAlternator> :
-                        <p class="[ timer-status-text ]">{t('expired')}</p>
+                        <Flexblock gap='var(--space-2xs)'>
+                            <p class="[ timer-status-text ]">{t('expired')}</p>
+                            <small class="[ text-red ]">{eve_time_text}</small>
+                        </Flexblock>
                     }
                 </Flexblock>
             </Flexblock>
