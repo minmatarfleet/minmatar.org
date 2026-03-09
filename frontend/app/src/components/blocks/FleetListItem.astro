@@ -45,6 +45,7 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro'
 
 import Countdown from '@components/blocks/Countdown.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
@@ -130,11 +131,27 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
                     !history && !fleet?.tracking ?
                         <TimeAlternator>
-                            <Flexblock slot="time">
-                                <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                                    {eve_time_text}
-                                </TextGroup>
-                                <LocalTimeGroup eve_time={eve_time} />
+                            <BlockList
+                                slot="time"
+                                x-data={`{
+                                    tick: 0,
+                                    alternate() {
+                                        this.tick = (this.tick + 1) % 4
+                                    }
+                                }`}
+                                @tick.window="alternate()"
+                            >
+                                <div x-show="tick < 2">
+                                    <TextGroup
+                                        title={t('eve_time')}
+                                        class="[ sentence-cap ]"
+                                    >
+                                        {eve_time_text}
+                                    </TextGroup>
+                                </div>
+                                <div x-show="tick > 1" style="display: none">
+                                    <LocalTimeGroup eve_time={eve_time} />
+                                </div>
                             </Flexblock>
 
                             <div slot="countdown" class="[ -ml-2.5 ]">
@@ -151,7 +168,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
             {!history &&
                 <FlexInline>
-                    <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}/volunteer`)}>
+                    <Button
+                        href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}/volunteer`)}
+                        color='green'
+                    >
                         {t('volunteer')}
                     </Button>
                 </FlexInline>

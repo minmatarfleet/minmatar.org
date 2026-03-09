@@ -28,6 +28,7 @@ const ITEM_ID = `structure-timer-${structure_timer.id}`
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import Countdown from '@components/blocks/Countdown.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
@@ -134,12 +135,25 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 <Flexblock>
                     {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
                         <TimeAlternator>
-                            <Flexblock slot="time">
-                                <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                                    {eve_time_text}
-                                </TextGroup>
-                                <LocalTimeGroup eve_time={eve_time} />
-                            </Flexblock>
+                            <BlockList
+                                slot="time"
+                                x-data={`{
+                                    tick: 0,
+                                    alternate() {
+                                        this.tick = (this.tick + 1) % 4
+                                    }
+                                }`}
+                                @tick.window="alternate()"
+                            >
+                                <div x-show="tick < 2">
+                                    <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                                        {eve_time_text}
+                                    </TextGroup>
+                                </div>
+                                <div x-show="tick > 1" style="display: none">
+                                    <LocalTimeGroup eve_time={eve_time} />
+                                </div>
+                            </BlockList>
 
                             <div slot="countdown" class="[ -ml-2.5 ]">
                                 <Countdown
