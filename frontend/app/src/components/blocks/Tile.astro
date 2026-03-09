@@ -4,6 +4,7 @@ interface Props {
     description?:       string;
     cover:              string;
     transparent?:       boolean;
+    soft?:              boolean;
     [propName: string]: any;
 }
 
@@ -12,6 +13,7 @@ const {
     description,
     cover,
     transparent = false,
+    soft = true,
     ...attributes
 } = Astro.props
 
@@ -28,7 +30,7 @@ import Markdown from '@components/blocks/Markdown.astro';
 ---
 
 <Wrapper
-    class:list={[`card component relative tile ${transparent_class}`, Astro.props.class ]}
+    class:list={[`card component relative tile ${transparent_class}`, { soft: soft }, Astro.props.class ]}
     padding_inline='var(--component-padding-block)'
     padding_block='var(--component-padding-block)'
     max_width='100%'
@@ -59,7 +61,11 @@ import Markdown from '@components/blocks/Markdown.astro';
         left: 0;
         height: 100%;
         width: 100%;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 65%, transparent 90%);
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.1) 65%, transparent 90%);
+    }
+
+    .soft img {
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.1) 65%, transparent 90%);
     }
 
     h2 {

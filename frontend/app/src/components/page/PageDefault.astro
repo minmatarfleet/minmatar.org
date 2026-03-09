@@ -9,12 +9,14 @@ import type { PageCoverOptions } from '@dtypes/layout_components'
 interface Props {
     cover?:                 false | PageCoverOptions;
     neocom?:                boolean;
+    sticky?:                boolean;
     [propName: string]:     any;
 }
 
 const {
     cover,
     neocom = true,
+    sticky = false,
     ...attributes
 } = Astro.props;
 
@@ -28,7 +30,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 
-    <PageHeader max_width="var(--max-content-width)" neocom={neocom}>
+    <PageHeader max_width="var(--max-content-width)" neocom={neocom} sticky={sticky}>
         <slot name="header">
             <DebugTag set:html={marked.parse(t('missing_header_slot'))} />
         </slot>

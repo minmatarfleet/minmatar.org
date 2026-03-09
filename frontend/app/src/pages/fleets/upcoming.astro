@@ -22,12 +22,15 @@ import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
+let cant_see_fleets = true
 
 try {
     fleets = can_view_srp ? await fetch_fleets_auth(auth_token as string) : await fetch_fleets()
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
+
+    cant_see_fleets = fleets.filter(fleet => fleet.fleet_commander_id === 0).length === fleets.length && fleets.length > 0
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -168,9 +171,13 @@ const page_title = t('fleets.upcoming.page_title');
                     </FlexInline>
                 }
 
-                <div class="[ fleet-list-container relative ]">
-                    <FleetList fleets={fleets} />
-                </div>
+                {cant_see_fleets ?
+                    <p>{t('no_access_to_fleets')}</p>
+                    :
+                    <div class="[ fleet-list-container relative ]">
+                        <FleetList fleets={fleets} />
+                    </div>
+                }
             </Flexblock>
         }
 	</PageWide>

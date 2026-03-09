@@ -1,0 +1,38 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetTrackingTexts } from '@dtypes/layout_components'
+
+interface Props {
+    fleet_tracking_texts:   FleetTrackingTexts | false;
+}
+
+const {
+    fleet_tracking_texts,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+---
+
+<Flexblock gap='var(--space-2xs)'>
+    <p class="[ fleet-status-text ]">{t('completed')}</p>
+    {fleet_tracking_texts &&
+        <small class="[ text-highlight ]">{fleet_tracking_texts.fleet_end_eve_time_text} (<span data-tippy-content={fleet_tracking_texts.fleet_tracking_hint}>{fleet_tracking_texts.fleet_duration_text}</span>)</small>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .fleet-status-text {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        margin-left: -10px;
+        margin-right: -10px;
+        color: var(--highlight);
+		letter-spacing: 12px;
+        text-indent: 12px;
+		line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
+    }
+</style>

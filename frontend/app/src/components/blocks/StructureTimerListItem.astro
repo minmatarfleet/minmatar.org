@@ -21,24 +21,23 @@ const {
 } = Astro.props
 
 import { get_item_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string';
+
+const ITEM_ID = `structure-timer-${structure_timer.id}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import Countdown from '@components/blocks/Countdown.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import Button from '@components/blocks/Button.astro';
-
-const ITEM_ID = `structure-timer-${structure_timer.id}`
-
-import { query_string } from '@helpers/string';
-
-import Wrapper from '@components/compositions/Wrapper.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-
 import Tile from '@components/blocks/Tile.astro';
 import Tag from '@components/blocks/Tag.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import TimeAlternator from '@components/blocks/TimeAlternator.astro';
 
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
@@ -55,26 +54,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         title={structure_timer.corporation_name}
         cover={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
         transparent={true}
+        soft={false}
     >
-        <Flexblock slot="subtitle">
+        <Flexblock slot="subtitle" gap='var(--space-3xs)'>
             <FlexInline gap='var(--space-2xs)'>
                 <span><b>{structure_timer.system_name}</b> - {structure_timer.name}</span>
                 {structure_timer.verified &&
                     <Tag color='green' text={t('verified')} />
                 }
             </FlexInline>
-
-            {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
-                <div class="[ -ml-2.5 ]">
-                    <Countdown
-                        date={structure_timer.timer}
-                        id={structure_timer.id}
-                        tag='countdown-structure'
-                    />
-                </div>
-                :
-                <p class="[ timer-status-text ]">Expired</p>
-            }
+            <small>{t('structure_timer_template').replace('{state}', t(structure_timer.state as any) ?? structure_timer.state)}</small>
         </Flexblock>
     </Tile>
 
@@ -144,13 +133,38 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 </FlexInline>
 
                 <Flexblock>
-                    <TextGroup title={t('state')}>
-                        {t(structure_timer.state as any) ?? structure_timer.state}
-                    </TextGroup>
-                    <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                        {eve_time_text}
-                    </TextGroup>
-                    <LocalTimeGroup eve_time={eve_time} />
+                    {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
+                        <TimeAlternator>
+                            <BlockList
+                                slot="time"
+                                x-data={`{
+                                    tick: 0,
+                                    alternate() {
+                                        this.tick = (this.tick + 1) % 4
+                                    }
+                                }`}
+                                @tick.window="alternate()"
+                            >
+                                <div x-show="tick < 2">
+                                    <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                                        {eve_time_text}
+                                    </TextGroup>
+                                </div>
+                                <div x-show="tick > 1" style="display: none">
+                                    <LocalTimeGroup eve_time={eve_time} />
+                                </div>
+                            </BlockList>
+
+                            <div slot="countdown" class="[ -ml-2.5 ]">
+                                <Countdown
+                                    date={structure_timer.timer}
+                                    id={structure_timer.id}
+                                    tag='countdown-structure'
+                                />
+                            </div>
+                        </TimeAlternator> :
+                        <p class="[ timer-status-text ]">{t('expired')}</p>
+                    }
                 </Flexblock>
             </Flexblock>
 

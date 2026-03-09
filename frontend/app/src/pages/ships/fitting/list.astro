@@ -91,6 +91,7 @@ const page_title = t('fitting.list.page_title');
             scrollable: true,
             overlay: true
         }}
+        sticky={true}
         x-data={`{
             fitting_name_filter: '',
             fitting_type_filter: '${!fitting_type_filter.includes(search_type ?? '') ? -1 : search_type}',

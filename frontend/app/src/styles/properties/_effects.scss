@@ -18,102 +18,60 @@
 
 .light-transparency {
     position: relative;
+    background-color: var(--light-transparency-background-mobile);
 
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--light-transparency-background-mobile);
-
-        @media screen and (min-width: 980px) {
-            background-color: var(--light-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
-        }
+    @media screen and (min-width: 980px) {
+        background-color: var(--light-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 }
 
 .light-transparency-heavier {
     position: relative;
-
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--light-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--light-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
-        }
+    background-color: var(--light-transparency-background-mobile);
+    
+    @media screen and (min-width: 980px) {
+        background-color: var(--light-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
     }
 }
 
 .transparency {
     position: relative;
+    background-color: var(--transparency-background-mobile);
     
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
-        }
+    @media screen and (min-width: 980px) {
+        background-color: var(--transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 }
 
 .dark-transparency {
     position: relative;
+    background-color: var(--dark-transparency-background-mobile);
     
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--dark-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--dark-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
-        }
+    @media screen and (min-width: 980px) {
+        background-color: var(--dark-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 }
 
 .darker-transparency {
     position: relative;
+    background-color: var(--darker-transparency-background-mobile);
     
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--darker-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--darker-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
-        }
+    @media screen and (min-width: 980px) {
+        background-color: var(--darker-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 }
 
 .solid-transparency {
     position: relative;
+    background-color: var(--solid-transparency-background-mobile);
     
-    &:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background-color: var(--solid-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--solid-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
-        }
+    @media screen and (min-width: 980px) {
+        background-color: var(--solid-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 }

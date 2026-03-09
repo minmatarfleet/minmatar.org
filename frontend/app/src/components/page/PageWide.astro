@@ -14,18 +14,20 @@ import type { PageCoverOptions } from '@dtypes/layout_components'
 
 interface Props {
     cover?:                 false | PageCoverOptions;
+    sticky?:                boolean;
     [propName: string]:     any;
 }
 
 const {
     cover,
+    sticky = false,
     ...attributes
 } = Astro.props;
 ---
 <main id="content" {...attributes}>
     {cover && <PageCover {...cover} /> }
 
-    <PageHeader max_width="var(--max-content-width)">
+    <PageHeader max_width="var(--max-content-width)" sticky={sticky}>
         <slot name="header">
             <DebugTag set:html={marked.parse(t('missing_header_slot'))} />
         </slot>

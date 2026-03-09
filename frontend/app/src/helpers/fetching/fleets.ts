@@ -10,6 +10,7 @@ import type {
     CharacterBasic,
     Locales,
     FleetTrackingTexts,
+    Tracking,
 } from '@dtypes/layout_components'
 import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic } from '@dtypes/api.minmatar.org'
 import { get_fleets_v3, get_fleets_v2, get_fleet_by_id } from '@helpers/api.minmatar.org/fleets'
@@ -149,17 +150,18 @@ export async function fetch_fleet_users(fleet_id:number) {
     return []
 }
 
-export function get_fleet_tracking_texts(locale:Locales = 'en', fleet:FleetUI): FleetTrackingTexts | false {
+export function get_fleet_tracking_texts(locale:Locales = 'en', fleet_tracking?:Tracking): FleetTrackingTexts | false {
     try {
         const t = useTranslations(locale)
+        const date_format = import.meta.env.DATETIME_FORMAT_SHORT ?? '{"year":"numeric","month":"short","day":"numeric","hour":"numeric","hourCycle":"h23","minute":"2-digit"}'
 
-        if (fleet?.tracking?.end_time) {
-            const fleet_start_eve_time = new Date(fleet.tracking.start_time)
-            const fleet_end_eve_time = new Date(fleet.tracking.end_time)
-            const fleet_start_eve_time_text = fleet_start_eve_time.toLocaleDateString(locale, JSON.parse(import.meta.env.DATETIME_FORMAT))
-            const fleet_end_eve_time_text = fleet_end_eve_time.toLocaleDateString(locale, JSON.parse(import.meta.env.DATETIME_FORMAT))
+        if (fleet_tracking?.end_time) {
+            const fleet_start_eve_time = new Date(fleet_tracking.start_time)
+            const fleet_end_eve_time = new Date(fleet_tracking.end_time)
+            const fleet_start_eve_time_text = fleet_start_eve_time.toLocaleDateString(locale, JSON.parse(date_format))
+            const fleet_end_eve_time_text = fleet_end_eve_time.toLocaleDateString(locale, JSON.parse(date_format))
             const fleet_tracking_hint = t('fleet_tracking_hint').replace('FLEET_START', fleet_start_eve_time_text).replace('FLEET_END', fleet_end_eve_time_text)
-            const fleet_duration_text = time_diff_text(locale, fleet.tracking.start_time, fleet.tracking.end_time)
+            const fleet_duration_text = time_diff_text(locale, fleet_tracking.start_time, fleet_tracking.end_time)
 
             return {
                 fleet_end_eve_time_text: fleet_end_eve_time_text,

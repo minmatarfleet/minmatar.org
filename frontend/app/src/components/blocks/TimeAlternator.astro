@@ -1,0 +1,64 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import DebugTag from '@components/blocks/DebugTag.astro';
+---
+
+<div
+    class="[ time-alternator ]"
+    x-data={`{
+        show_time: true,
+        alternate() {
+            this.show_time = !this.show_time
+        }
+    }`}
+    @tick.window="alternate()"
+>
+    <div class="[ time ]" x-bind:data-show="show_time" data-show>
+        <slot name="time">
+            <DebugTag>{t('missing_time_slot')}</DebugTag>
+        </slot>
+    </div>
+    <div class="[ countdown ]" x-bind:data-show="!show_time">
+        <slot name="countdown">
+            <DebugTag>{t('missing_countdown_slot')}</DebugTag>
+        </slot>
+    </div>
+</div>
+
+<style lang="scss">
+    .time-alternator {
+        display: grid;
+        grid-template-areas: "stack";
+    }
+
+    .time,
+    .countdown {
+        grid-area: stack;
+        opacity: 0;
+        pointer-events: none;
+        transition: var(--fast-transition);
+        
+        &[data-show] {
+            transition-delay: 0.3s;
+            opacity: 1;
+            pointer-events: all;
+        }
+    }
+
+    .countdown {
+        width: 0;
+        opacity: 1;
+        overflow: hidden;
+        transition: var(--normal-transition);
+
+        :global(> p) {
+            text-wrap: nowrap !important;
+        }
+
+        &[data-show] {
+            width: 100%;
+        }
+    }
+</style>
