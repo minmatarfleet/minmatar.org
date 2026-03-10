@@ -1,0 +1,26 @@
+---
+interface Props {
+    quantity:       number;
+    show_above?:    number;
+}
+
+const {
+    quantity,
+    show_above = 0,
+} = Astro.props
+
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+---
+
+<div class="[ relative ]">
+    <slot/>
+    {quantity > show_above && <NotificationBadge class="[ quantity-badge ]" number={quantity} />}
+</div>
+
+<style lang="scss">
+    .quantity-badge {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+    }
+</style>

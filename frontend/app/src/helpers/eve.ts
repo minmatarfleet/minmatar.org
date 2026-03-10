@@ -415,3 +415,14 @@ export const SHIP_WEIGHT = {
     'Jump Freighters': 500,
     'Industrialcommand': 700,
 }
+
+export const PLANET_TYPES = {
+    'strom': 2017,
+    'temperate': 11,
+    'gas': 13,
+    'ice': 12,
+    'barren': 2016,
+    'lava': 2015,
+    'plasma': 2063,
+    'oceanic': 2014,
+}

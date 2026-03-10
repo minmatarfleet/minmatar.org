@@ -63,10 +63,12 @@ import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
 import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
 import FleetRoles from '@components/blocks/FleetRoles.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
 
 const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_id.toString())
 ---
@@ -87,7 +89,19 @@ const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_
         }}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
+            <Flexblock id="header-oob" gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                {fleet?.fleet_commander_id &&
+                    <PilotBadge
+                        character_id={fleet.fleet_commander_id}
+                        character_name={fleet.fleet_commander_name}
+                        size={32}
+                        centered={true}
+                    >
+                        <small>{t('fleet_commander')}</small>
+                    </PilotBadge>
+                }
+            </Flexblock>
             <FlexInline gap="var(--space-s)">
                 <Button href={translatePath(`/fleets/upcoming/${fleet_id}`)}>
                     {t('back_to_fleet_details')}

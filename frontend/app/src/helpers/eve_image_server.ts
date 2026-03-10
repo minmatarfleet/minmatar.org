@@ -24,3 +24,14 @@ export const get_alliance_logo = (id:number, size:EvEImageServiceSize = 32):stri
 export const get_corporation_logo = (id:number, size:EvEImageServiceSize = 32):string => {
     return `https://images.evetech.net/corporations/${id}/logo?size=${size}`;
 }
+
+export const PLANET_THUMBS = {
+    'temperate': '/images/temperate_planet.png',
+    'gas': '/images/gas_planet.png',
+    'ice': '/images/ice_planet.png',
+    'barren': '/images/barren_planet.png',
+    'lava': '/images/lava_planet.png',
+    'plasma': '/images/plasma_planet.png',
+    'storm': '/images/storm_planet.png',
+    'oceanic': '/images/oceanic_planet.png',
+}

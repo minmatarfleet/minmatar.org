@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { HarvestOverviewItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    resource:                   HarvestOverviewItem;
+    init_tooltips?:             boolean;
+}
+
+const {
+    resource,
+    init_tooltips = false,
+} = Astro.props
+
+import { number_name } from '@helpers/numbers.ts';
+
+const PLANETARY_HARVEST_DRILLDOWN_PARTIAL_URL = `${translatePath('/partials/planetary_harvest_drilldown_component')}?type_id=${resource.type_id}`
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+
+import VolumenIcon from '@components/icons/VolumenIcon.astro';
+import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
+---
+
+<CollapsibleBlock padding_inline='var(--space-2xl)'>
+    <div slot="head" class="[ w-full ]">
+        <FixedFluid width='450px' class="[ harvest-resource-item ][ w-full ]">
+            <div>
+                <FixedFluid class="[ items-center! basis-[450px] ]" width='64px'>
+                    <ItemPicture
+                        item_name={resource.name}
+                        item_id={resource.type_id}
+                        size={64}
+                    />
+                    <h3 class="[ title ]">{resource.name}</h3>
+                </FixedFluid>
+            </div>
+
+            <FlexInline gap='var(--space-3xs)'>
+                <FixedFluid class="[ items-center! basis-[300px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                    <div
+                        class="[ text-highlight h-[32px] ]"
+                        data-tippy-content={t('daily_quantity')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <VolumenIcon xlink='#volumen_icon' size={32} />
+                    </div>
+                    <div><span data-tippy-content={number_name(resource.total_daily_quantity ?? 0, lang)}>{(resource.total_daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
+                </FixedFluid>
+                
+                <FixedFluid class="[ items-center! basis-[100px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                    <div
+                        class="[ text-highlight h-[32px] ]"
+                        data-tippy-content={t('extractors')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <ExtractorIcon xlink='#extractor_icon' size={32} />
+                    </div>
+                    <div><span data-tippy-content={number_name(resource.total_extractors, lang)}>{(resource.total_extractors ?? 0).toLocaleString()}</span></div>
+                </FixedFluid>
+            </FlexInline>
+        </FixedFluid>
+    </div>
+
+    <div class="[ harvest-drilldown-container ]">
+        <small
+            hx-get={PLANETARY_HARVEST_DRILLDOWN_PARTIAL_URL}
+            hx-trigger="intersect"
+            hx-indicator=".loader"
+            hx-swap="outerHTML transition:true"
+        >
+            {t('fetching_drilldown')}
+        </small>
+    </div>
+</CollapsibleBlock>
+
+<style lang="scss">
+    .harvest-drilldown-container {
+        padding-top: var(--space-s);
+    }
+</style>

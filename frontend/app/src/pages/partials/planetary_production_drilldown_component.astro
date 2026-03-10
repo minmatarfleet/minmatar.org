@@ -1,0 +1,41 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const type_id = parseInt(Astro.url.searchParams.get('type_id') ?? '0')
+
+import type { ProductionDrillDownResponse } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import { get_planetary_production_drilldown } from '@helpers/api.minmatar.org/industry'
+
+let production_drilldown: ProductionDrillDownResponse | null = null
+let alert:Alert | false = false
+
+if (!isNaN(type_id)) {
+    try {
+        production_drilldown = await get_planetary_production_drilldown(type_id)
+        production_drilldown.entries = production_drilldown.entries.sort((a, b) => (b.daily_quantity ?? 0) - (a.daily_quantity ?? 0))
+    } catch (error) {
+        alert = {
+            title: t('planetary_production_drilldown'),
+            content: error.message
+        }
+    }
+} else {
+    alert = {
+        title: t('planetary_production_drilldown'),
+        content: t('invalid_resource_type')
+    }
+}
+
+import ProductionDrilldown from '@components/blocks/ProductionDrilldown.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+---
+
+{alert ?
+    <ShowAlert alert={alert} /> :       
+    <ProductionDrilldown
+        production_drilldown={production_drilldown as ProductionDrillDownResponse }
+        init_tooltips={true}
+    />
+}

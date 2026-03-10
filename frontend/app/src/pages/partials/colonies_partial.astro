@@ -1,0 +1,68 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const valid_user = user !== false && user?.user_id > 0
+
+import type { ColonySystems, SelectOptions } from '@dtypes/layout_components'
+import { fetch_colonies } from '@helpers/fetching/industry'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
+let colonies:ColonySystems[] = []
+let user_characters_ids:number[] = []
+let data_fetching_error = ''
+
+try {
+    colonies = await fetch_colonies()
+    const user_characters = valid_user ? await get_characters(auth_token as string) : []
+    user_characters_ids = user_characters.map(character => character.character_id)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const COLONIES_PARTIAL_URL = translatePath('/partials/colonies_component')
+
+const planets_with_cololies_count = colonies.reduce((c, colony) => c + colony.planets.length, 0)
+
+const solar_systems = colonies.map(colony => colony.solar_system_name)
+const solar_systems_options = solar_systems.map(solar_system => {
+    return { label: solar_system, value: solar_system } as SelectOptions
+})
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+
+import ColoniesList from '@components/blocks/ColoniesList.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+---
+    
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: COLONIES_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <>{colonies.length > 0 ?
+        <ColoniesList
+            colony_systems={colonies}
+            user_characters_ids={user_characters_ids}
+            init_tooltips={false}
+        /> :
+        <p>{t('no_planetary_colonies')}</p>
+    }</>
+    <UpdateAlpineVariables
+        variables={{
+            planets_with_cololies_count: planets_with_cololies_count,
+            solar_systems_options: solar_systems_options,
+        }}
+    />
+}

@@ -3,8 +3,12 @@ interface Props {
     title:              string;
     description?:       string;
     cover:              string;
+    alt?:               string;
     transparent?:       boolean;
     soft?:              boolean;
+    optimize?:          boolean;
+    width?:             number;
+    height?:            number;
     [propName: string]: any;
 }
 
@@ -12,8 +16,12 @@ const {
     title,
     description,
     cover,
+    alt,
     transparent = false,
     soft = true,
+    optimize,
+    width = '512',
+    height = '512',
     ...attributes
 } = Astro.props
 
@@ -25,6 +33,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import { Image } from 'astro:assets';
 
 import Markdown from '@components/blocks/Markdown.astro';
 ---
@@ -35,7 +44,16 @@ import Markdown from '@components/blocks/Markdown.astro';
     padding_block='var(--component-padding-block)'
     max_width='100%'
 >
-    <img class="[ z-0 ]" src={cover} />
+    {optimize ?
+        <Image
+            src={cover}
+            alt={alt ?? title}
+            width={width}
+            height={height}
+            quality={90}
+        /> :
+        <img class="[ z-0 ]" src={cover} alt={alt ?? title} />
+    }
     
     <BlockList class="[ relative z-10 !justify-end min-h-[420px] ]">
         <Flexblock gap='var(--space-3xs)'>

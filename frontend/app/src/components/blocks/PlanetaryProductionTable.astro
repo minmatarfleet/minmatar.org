@@ -1,0 +1,66 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { HarvestOverviewItem, ProductionOverviewItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    harvest:            HarvestOverviewItem[];
+    production:         ProductionOverviewItem[];
+    init_tooltips?:     boolean;
+}
+
+const {
+    harvest,
+    production,
+    init_tooltips,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import HarvestResourceItem from '@components/blocks/HarvestResourceItem.astro';
+import ProductionResourceItem from '@components/blocks/ProductionResourceItem.astro';
+---
+
+<Flexblock gap='var(--space-2xl)'>
+    <Flexblock gap='var(--space-l)'>
+        <h3 class="[ group-title ]">{t('harvest_summary')}</h3>
+        <BlockList role="list" gap='var(--space-l)'>
+            {harvest.map((resource) =>
+                <div x-show="show_item($el)">
+                    <HarvestResourceItem
+                        resource={resource}
+                        init_tooltips={init_tooltips}
+                    />
+                </div>
+            )}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </BlockList>
+    </Flexblock>
+
+    <Flexblock gap='var(--space-l)'>
+        <h3 class="[ group-title ]">{t('production_summary')}</h3>
+        <BlockList role="list" gap='var(--space-l)'>
+            {production.map((resource) =>
+                <div x-show="show_item($el)">
+                    <ProductionResourceItem
+                        resource={resource}
+                        init_tooltips={init_tooltips}
+                    />
+                </div>
+            )}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </BlockList>
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>

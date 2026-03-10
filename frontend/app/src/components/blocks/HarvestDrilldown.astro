@@ -1,0 +1,65 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { HarvestDrillDownResponse } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    harvest_drilldown:          HarvestDrillDownResponse;
+    init_tooltips?:             boolean;
+}
+
+const {
+    harvest_drilldown,
+    init_tooltips = false,
+} = Astro.props
+
+import { number_name } from '@helpers/numbers.ts';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+
+import VolumenIcon from '@components/icons/VolumenIcon.astro';
+import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
+---
+
+<Flexblock>
+    {harvest_drilldown.entries.map(entity =>
+        <FixedFluid width='370px' class="[ harvest-drilldown-item ][ w-full ]">
+            <div>
+                <PilotBadge
+                    character_id={entity.actual_character.character_id}
+                    character_name={entity.actual_character.character_name}
+                    size={32}
+                />
+            </div>
+
+            <FlexInline gap='var(--space-3xs)'>
+                <FixedFluid class="[ items-center! basis-[320px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                    <div
+                        class="[ text-highlight h-[32px] ]"
+                        data-tippy-content={t('daily_quantity')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <VolumenIcon xlink='#volumen_icon' size={32} />
+                    </div>
+                    <div><span data-tippy-content={number_name(entity.daily_quantity ?? 0, lang)}>{(entity.daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
+                </FixedFluid>
+                
+                <FixedFluid class="[ items-center! basis-[100px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                    <div
+                        class="[ text-highlight h-[32px] ]"
+                        data-tippy-content={t('extractors')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <ExtractorIcon xlink='#extractor_icon' size={32} />
+                    </div>
+                    <div><span data-tippy-content={number_name(entity.extractor_count, lang)}>{(entity.extractor_count ?? 0).toLocaleString()}</span></div>
+                </FixedFluid>
+            </FlexInline>
+        </FixedFluid>
+    )}
+</Flexblock>
