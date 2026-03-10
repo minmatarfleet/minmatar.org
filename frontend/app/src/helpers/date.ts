@@ -1,6 +1,7 @@
 import { useTranslations } from '@i18n/utils';
 import type { Locales } from '@dtypes/layout_components'
 import { semantic_list } from '@helpers/array'
+import { number_thousand_separator } from '@helpers/numbers'
 import moment from 'moment';
 
 const datetime_options = JSON.parse(import.meta.env.DATETIME_FORMAT)
@@ -156,8 +157,9 @@ export const time_diff_text = (locale:Locales = 'en', from:Date, to:Date):string
     const duration = moment.duration(end.diff(start))
 
     const parts:string[] = []
+    const hours = Math.floor(moment.duration(end.diff(start)).asHours())
 
-    if (duration.hours()) parts.push(duration.hours() + ` ${t('hour')}` + (duration.hours() > 1 ? 's' : ''))
+    if (hours) parts.push(number_thousand_separator(hours, locale) + ` ${t('hour')}` + (hours > 1 ? 's' : ''))
     if (duration.minutes()) parts.push(duration.minutes() + ` ${t('minute')}` + (duration.minutes() > 1 ? 's' : ''))
     if (duration.hours() === 0 && duration.minutes() === 0 && duration.seconds()) parts.push(duration.seconds() + ` ${t('second')}` + (duration.seconds() > 1 ? 's' : ''))
 
