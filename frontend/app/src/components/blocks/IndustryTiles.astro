@@ -64,5 +64,18 @@ import Tile from '@components/blocks/Tile.astro';
                 {t('imported')}
             </Button>
         </Tile>
+
+        <Tile
+            title={t('planetary_interaction')}
+            description={t('planetary_interaction.description')}
+            cover='/images/planetary-tile-background.webp'
+        >
+            <Button size='sm' href={translatePath('/industry/colonies/')}>
+                {t('industry.colonies.page_title')}
+            </Button>
+            <Button size='sm' href={translatePath('/industry/planetary_production/')}>
+                {t('industry.planetary_production.page_title')}
+            </Button>
+        </Tile>
     </Grid>
 </Wrapper>

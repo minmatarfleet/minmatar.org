@@ -295,19 +295,27 @@ export async function get_planetary_production_drilldown(
 export async function get_planetary_planets(params: {
     planet_id?: number
     solar_system_id?: number
-}): Promise<PlanetWithColoniesItem[]> {
-    const search = new URLSearchParams()
-    if (params.planet_id != null) search.set('planet_id', String(params.planet_id))
-    if (params.solar_system_id != null) search.set('solar_system_id', String(params.solar_system_id))
-    const query = search.toString()
-    const url = `${PLANETARY_ENDPOINT}/planets${query ? `?${query}` : ''}`
-    const response = await fetch(url, {
+} = {}): Promise<PlanetWithColoniesItem[]> {
+    const { planet_id, solar_system_id } = params
+
+    const query_params = {
+        ...(planet_id && { planet_id }),
+        ...(solar_system_id && { solar_system_id }),
+    };
+
+    const query = query_string(query_params)
+
+    const ENDPOINT = `${PLANETARY_ENDPOINT}/planets${query ? `?${query}` : ''}`
+
+    const response = await fetch(ENDPOINT, {
         headers: { 'Content-Type': 'application/json' },
     })
+
     if (!response.ok) {
         throw new Error(
-            get_error_message(response.status, `GET ${url}`)
+            get_error_message(response.status, `GET ${ENDPOINT}`)
         )
     }
+    
     return await response.json()
 }

@@ -1033,3 +1033,20 @@ export interface MarketLocationUI {
     completion:         number;
     items:              SellOrderItem[];
 }
+
+import type { ColonyEntry } from '@dtypes/api.minmatar.org'
+
+export interface ColonyPlanet {
+    planet_id:          number;
+    planet_name:        string;
+    planet_type:        string;
+    planet_type_id:     number;
+    colonies:           ColonyEntry[];
+}
+
+export interface ColonySystems {
+    solar_system_id:        number;
+    solar_system_name:      string;
+    system_sun_type_id:     number;
+    planets:                ColonyPlanet[];
+}

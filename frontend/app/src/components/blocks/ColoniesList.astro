@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ColonySystems } from '@dtypes/layout_components'
+
+interface Props {
+    colony_systems:         ColonySystems[];
+    user_characters_ids:    number[];
+    init_tooltips:          boolean;
+}
+
+const {
+    colony_systems,
+    user_characters_ids,
+    init_tooltips,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import ColonyPlanetItem from '@components/blocks/ColonyPlanetItem.astro';
+---
+
+<BlockList gap='var(--space-2xl)'>
+    {colony_systems.map(system =>
+        <div class="[ system-container ]" x-show="show_system($el)">
+            <Flexblock class="[ systems-group ]" gap='var(--space-l)'>
+                <FlexInline>
+                    <ItemPicture
+                        item_id={system.system_sun_type_id}
+                        size={64}
+                    />
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h2>{system.solar_system_name}</h2>
+                        <small>{t(system.planets.length !== 1 ? 'planets_colonies_plural' : 'planets_colonies_singular').replace('{count}', String(system.planets.length))}</small>
+                    </Flexblock>
+                </FlexInline>
+
+                <Grid
+                    class="[ w-full grid-fill ]"
+                    row_gap="var(--space-3xs)"
+                    column_gap="var(--space-3xs)"
+                    min_item_width="300px"
+                >
+                    {system.planets.map((planet) =>
+                        <div class="[ planet-container ]" x-show="show_item($el)">
+                            <ColonyPlanetItem
+                                planet={planet}
+                                user_characters_ids={user_characters_ids}
+                                init_tooltips={init_tooltips}
+                            />
+                        </div>
+                    )}
+                </Grid>
+            </Flexblock>
+        </div>
+    )}
+    <p x-show="planets_with_cololies_count === 0">{t('no_planetary_colonies')}</p>
+</BlockList>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .group-title {
+        font-size: var(--step-1);
+    }
+
+    .system-container:not(:has(.planet-container:not([style="display: none;"]))) {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+        left: 0;
+        top: 0;
+    }
+</style>

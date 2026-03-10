@@ -276,3 +276,51 @@ export async function get_constellations() {
     
     return q as ConstellationBasic[]
 }
+
+export async function get_system_name(solar_system_id:number) {
+    console.log(`Requesting: sde_db.get_system_name(${solar_system_id})`)
+
+    const q = await sde_db.select({
+        solarSystemName: schema.mapSolarSystems.solarSystemName,
+    })
+    .from(schema.mapSolarSystems)
+    .where(
+        eq(schema.mapSolarSystems.solarSystemID, solar_system_id),
+    )
+    .limit(1);
+    
+    if (q.length > 0) {
+        return q[0].solarSystemName
+    } else {
+        return null
+    }
+}
+
+export async function get_planet_info(planet_id:number) {
+    console.log(`Requesting: sde_db.get_planet_info(${planet_id})`)
+
+    const SDE_PLANETS_GROUP_ID = 7
+
+    const q = await sde_db.select({
+        id: schema.invItems.itemID,
+        name: schema.invUniqueNames.itemName,
+        type_id: schema.invItems.typeID,
+    })
+    .from(schema.invItems)
+    .innerJoin(
+        schema.invUniqueNames,
+        eq(schema.invUniqueNames.itemID, schema.invItems.itemID),
+    )
+    .where(
+        and(
+            eq(schema.invItems.itemID, planet_id)
+        )
+    )
+    .limit(1);
+
+    if (q.length > 0) {
+        return q[0] as PlanetBasic
+    } else {
+        return null
+    }
+}

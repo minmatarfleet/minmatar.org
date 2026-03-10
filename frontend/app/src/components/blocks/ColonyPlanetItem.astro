@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ColonyPlanet } from '@dtypes/layout_components';
+import type { PlanetaryCharacterRef } from '@dtypes/api.minmatar.org';
+
+interface Props {
+    planet:                 ColonyPlanet;
+    user_characters_ids:    number[];
+    init_tooltips:          boolean;
+}
+
+const {
+    planet,
+    user_characters_ids,
+    init_tooltips,
+} = Astro.props
+
+const duplicates:Record<string, {
+    count: number;
+    character: PlanetaryCharacterRef;
+}> = {}
+
+planet.colonies.forEach(colony => {
+    const character = user_characters_ids.includes(colony.actual_character.character_id) ?
+                        colony.actual_character :
+                        colony.primary_character
+
+    duplicates[String(character.character_id)] = {
+        count: (duplicates[String(character.character_id)]?.count ?? 0) + 1,
+        character: character
+    }
+})
+
+const deduple_characters:{
+    count: number;
+    character: PlanetaryCharacterRef;
+}[] = []
+
+for (let i in duplicates)
+    deduple_characters.push(duplicates[i])
+
+import { PLANET_THUMBS } from '@helpers/eve_image_server'
+
+const PLANET_FALLBACK_COVER = '/images/fallback_planet.png'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Tile from '@components/blocks/Tile.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import PictureQuantity from '@components/blocks/PictureQuantity.astro'
+---
+
+<Flexblock
+    class="[ card component border light-transparency relative ]"
+    gap='0'
+>
+    <Tile
+        title={planet.planet_name}
+        cover={PLANET_THUMBS[planet.planet_type] ?? PLANET_FALLBACK_COVER}
+        alt={planet.planet_type}
+        optimize={true}
+        transparent={true}
+        soft={false}
+        narrow={true}
+    >
+        <Flexblock slot="subtitle">
+            <small>{t(planet.colonies.length !== 1 ? 'colonies_plural' : 'colonies_singular').replace('{count}', String(planet.colonies.length))}</small>
+
+            <FlexInline class="[ !w-auto item ]" data-filter-characters gap='var(--space-2xs)'>
+                {deduple_characters.map(colony =>
+                    <PictureQuantity quantity={colony.count} show_above={1}>
+                        <div
+                            data-tippy-content={colony.character.character_name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <CharacterPicture
+                                character_id={colony.character.character_id}
+                                character_name={colony.character.character_name}
+                                size={32}
+                            />
+                            <div class="[ sr-only ]">{colony.character.character_name}</div>
+                        </div>
+                    </PictureQuantity>
+                )}
+            </FlexInline>
+        </Flexblock>
+    </Tile>
+</Flexblock>

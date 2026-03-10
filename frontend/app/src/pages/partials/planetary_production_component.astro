@@ -1,0 +1,73 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const valid_user = user !== false && user?.user_id > 0
+
+import type { HarvestOverviewItem, ProductionOverviewItem } from '@dtypes/api.minmatar.org'
+import { get_planetary_harvest, get_planetary_production } from '@helpers/api.minmatar.org/industry'
+
+import type {  SelectOptions } from '@dtypes/layout_components'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
+let user_characters_ids:number[] = []
+let data_fetching_error = ''
+let harvest: HarvestOverviewItem[] = []
+let production: ProductionOverviewItem[] = []
+
+try {
+    harvest = await get_planetary_harvest()
+    harvest = harvest.sort((a, b) => (a.total_daily_quantity ?? 0) - (b.total_daily_quantity ?? 0))
+    production = await get_planetary_production()
+    production = production.sort((a, b) => (a.total_daily_quantity ?? 0) - (b.total_daily_quantity ?? 0))
+
+    const user_characters = valid_user ? await get_characters(auth_token as string) : []
+    user_characters_ids = user_characters.map(character => character.character_id)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const PLANETARY_PRODUCTION_PARTIAL_URL = translatePath('/partials/planetary_production_component')
+
+const resources = [ ...harvest, ...production ]
+const resources_type_count = resources.length
+
+const resources_names = resources.map(resource => resource.name)
+const resources_options = resources_names.map(resource_name => {
+    return { label: resource_name, value: resource_name } as SelectOptions
+})
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import PlanetaryProductionTable from '@components/blocks/PlanetaryProductionTable.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+---
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: PLANETARY_PRODUCTION_PARTIAL_URL,
+            message: data_fetching_error,
+            delay: 0,
+        }}
+    />
+    :
+    <>{resources.length > 0 ?
+        <PlanetaryProductionTable
+            harvest={harvest}
+            production={production}
+            init_tooltips={true}
+        /> :
+        <p>{t('no_planetary_resources')}</p>
+    }</>
+    <UpdateAlpineVariables
+        variables={{
+            resources_type_count: resources_type_count,
+            resources_options: resources_options,
+        }}
+    />
+}

@@ -1,0 +1,150 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const valid_user = user !== false && user?.user_id > 0
+
+import type { ColonySystems, SelectOptions } from '@dtypes/layout_components'
+import { fetch_colonies } from '@helpers/fetching/industry'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+
+let colonies:ColonySystems[] = []
+let user_characters_ids:number[] = []
+let data_fetching_error = ''
+
+try {
+    colonies = await fetch_colonies()
+    const user_characters = valid_user ? await get_characters(auth_token as string) : []
+    user_characters_ids = user_characters.map(character => character.character_id)
+} catch (error) {
+    data_fetching_error = error.message
+}
+
+const COLONIES_PARTIAL_URL = translatePath('/partials/colonies_component')
+
+const planets_with_cololies_count = colonies.reduce((c, colony) => c + colony.planets.length, 0)
+const planets_with_cololies_count_text = (planets_with_cololies_count != 1 ? t('showing_orders_plural') : t('showing_orders_singular')).replace('{count}', String(planets_with_cololies_count))
+
+const solar_systems = colonies.map(colony => colony.solar_system_name)
+const solar_systems_options = solar_systems.map(solar_system => {
+    return { label: solar_system, value: solar_system } as SelectOptions
+})
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import ColoniesList from '@components/blocks/ColoniesList.astro'
+
+const page_title = t('industry.colonies.page_title')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.colonies.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/planetary-cover.jpg",
+            image_990: "/images/planetary-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+        x-data={`{
+            planets_with_cololies_count: ${planets_with_cololies_count},
+            item_name_filter: '',
+            solar_system_filter: '-1',
+            solar_systems_options: ${JSON.stringify(solar_systems_options)},
+            showing_planets_colonies_plural: '${t('showing_planets_colonies_plural')}',
+            showing_planets_colonies_singular: '${t('showing_planets_colonies_singular')}',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_system(el) {
+                const solar_system_filter_element = el.querySelectorAll('h2')
+                return ( this.solar_system_filter === '-1' || solar_system_filter_element[0].textContent.toLowerCase().includes(this.solar_system_filter.toLowerCase()) )
+            },
+            show_item(el) {
+                const name_filter_element = el.querySelectorAll('[data-filter-characters]')
+                return ( this.item_name_filter === '' || name_filter_element[0].textContent.toLowerCase().includes(this.item_name_filter.toLowerCase()) )
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                <small x-text="(planets_with_cololies_count != 1 ? showing_planets_colonies_plural : showing_planets_colonies_singular).replace('{count}', String(planets_with_cololies_count))">
+                    {planets_with_cololies_count_text}
+                </small>
+            </Flexblock>
+            <FlexInline>
+                <Input type="text"
+                    placeholder={t('search_character')}
+                    x-model="item_name_filter"
+                    x-on:keyup="setTimeout(function () { planets_with_cololies_count = countVisibleElements('.planet-container') }, 200)"
+                    x-init="$el.focus()"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+
+                <Select
+                    x-model="solar_system_filter"
+                    x-on:change="setTimeout(function () { planets_with_cololies_count = countVisibleElements('.planet-container') }, 200)"
+                >
+                    <option selected value="-1">{t('all_solar_systems')}</option>
+                    <template x-for="option in solar_systems_options">
+                        <option x-bind:value="option.value" x-text="option.label" />
+                    </template>
+                </Select>
+            </FlexInline>
+        </FlexInline>
+    
+        {data_fetching_error ?
+            <ErrorRefetch
+                args={{
+                    partial: COLONIES_PARTIAL_URL,
+                    message: data_fetching_error,
+                    delay: 0,
+                }}
+            />
+            :
+            colonies.length > 0 ?
+                <ColoniesList
+                    colony_systems={colonies}
+                    user_characters_ids={user_characters_ids}
+                    init_tooltips={false}
+                /> :
+                <p>{t('no_planetary_colonies')}</p>
+        }
+	</PageWide>
+</Viewport>
