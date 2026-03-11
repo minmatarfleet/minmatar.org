@@ -2020,5 +2020,7 @@ export const ui = {
         'invalid_resource_type': 'The resource type is not valid.',
         'fetching_drilldown': 'Fetching drill down...',
         'planetary_production_drilldown': 'Planetary production drill down',
+        'colonies': 'Colonies',
+        'production': 'Production',
     },
 } as const;
