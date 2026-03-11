@@ -2022,5 +2022,9 @@ export const ui = {
         'planetary_production_drilldown': 'Planetary production drill down',
         'colonies': 'Colonies',
         'production': 'Production',
+        'restore': 'Restore',
+        'invalid_tracking_status': 'The fleet trackins status is not valid.',
+        'restore_fleet_dialog_title': 'Restore fleet',
+        'restore_fleet_dialog_text': 'Proceed restoring the fleet?',
     },
 } as const;

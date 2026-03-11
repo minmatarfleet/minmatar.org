@@ -18,26 +18,27 @@ import Button from '@components/blocks/Button.astro';
 ---
 
 <Button
-    id="cancel-fleet-button"
+    id="restore-fleet-button"
     size='sm'
+    color='green'
     x-data={`{
-        show_cancel_fleet_dialog() {
+        show_restore_fleet_dialog() {
             show_confirm_dialog({
-                title: '${t('cancel_fleet_dialog_title')}',
-                content: '${t('cancel_fleet_dialog_text')}',
+                title: '${t('restore_fleet_dialog_title')}',
+                content: '${t('restore_fleet_dialog_text')}',
                 hx: {
                     method: 'patch',
                     url: '${FLEET_STATE_BUTTON_PARTIAL_URL}?${query_string({
                         fleet_id: fleet_id,
-                        status: 'cancelled',
+                        status: 'pending',
                     })}',
-                    target: '#cancel-fleet-button',
+                    target: '#restore-fleet-button',
                     swap: 'outerHTML transition:true'
                 }
             })
         }
     }`}
-    x-on:click="show_cancel_fleet_dialog"
+    x-on:click="show_restore_fleet_dialog"
 >
-    {t('cancel')}
+    {t('restore')}
 </Button>

@@ -21,14 +21,21 @@ import type { FleetPatchRequest } from '@dtypes/api.minmatar.org'
 let alert:Alert | false = false
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
+const status = Astro.url.searchParams.get('status') as string
 let redirect:string | null = null
 
 if (Astro.request.method === "PATCH") {
     let cancel_fleet_error:string | false = false
 
     try {
+        if (isNaN(fleet_id) || !fleet_id)
+            throw new Error(t('invalid_fleet_id'))
+
+        if (status !== 'pending' && status !== 'cancelled')
+            throw new Error(t('invalid_tracking_status'))
+
         const fleet_data = {
-            status: 'cancelled'
+            status: status
         } as FleetPatchRequest
         
         await update_fleet(auth_token as string, fleet_data, fleet_id)
