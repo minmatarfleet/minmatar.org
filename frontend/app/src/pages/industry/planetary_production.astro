@@ -54,7 +54,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Select from '@components/blocks/Select.astro';
 import PlanetaryProductionTable from '@components/blocks/PlanetaryProductionTable.astro'
-
+import Button from '@components/blocks/Button.astro'
 
 const page_title = t('industry.planetary_production.page_title')
 ---
@@ -121,6 +121,15 @@ const page_title = t('industry.planetary_production.page_title')
             </FlexInline>
         </FlexInline>
     
+        <FlexInline slot="subheader">
+            <Button
+                href={translatePath('/industry/colonies/')}
+                size='sm'
+            >
+                {t('industry.colonies.page_title')}
+            </Button>
+        </FlexInline>
+
         {data_fetching_error ?
             <ErrorRefetch
                 args={{
