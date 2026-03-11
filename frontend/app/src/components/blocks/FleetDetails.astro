@@ -59,6 +59,7 @@ import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astr
 import Button from '@components/blocks/Button.astro';
 // import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
 import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
+import RestoreFleetButton from '@components/blocks/RestoreFleetButton.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import DoctrineItem from '@components/blocks/DoctrineItem.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
@@ -115,8 +116,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 </form>
                             }
 
-                            {(!history && fleet.tracking === null && fleet.status !== 'cancelled') &&
-                                <CancelFleetButton fleet_id={fleet.id} />
+                            {!history && fleet.tracking === null &&
+                                <>{fleet.status !== 'cancelled' ?
+                                    <CancelFleetButton fleet_id={fleet.id} /> :
+                                    <RestoreFleetButton fleet_id={fleet.id} />
+                                }</>
                             }
                         </FlexInline>
                     }
