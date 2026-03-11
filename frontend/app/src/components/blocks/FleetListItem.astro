@@ -130,38 +130,27 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     fleet?.tracking && fleet?.tracking?.end_time ?
                         <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
                     !history && !fleet?.tracking ?
-                        <TimeAlternator>
-                            <BlockList
-                                slot="time"
-                                x-data={`{
-                                    tick: 0,
-                                    alternate() {
-                                        this.tick = (this.tick + 1) % 4
-                                    }
-                                }`}
-                                @tick.window="alternate()"
+                        <Flexblock>
+                            <TextGroup
+                                title={t('eve_time')}
+                                class="[ sentence-cap ]"
                             >
-                                <div x-show="tick < 2">
-                                    <TextGroup
-                                        title={t('eve_time')}
-                                        class="[ sentence-cap ]"
-                                    >
-                                        {eve_time_text}
-                                    </TextGroup>
-                                </div>
-                                <div x-show="tick > 1" style="display: none">
+                                {eve_time_text}
+                            </TextGroup>
+                            <TimeAlternator>
+                                <div slot="time">
                                     <LocalTimeGroup eve_time={eve_time} />
                                 </div>
-                            </Flexblock>
 
-                            <div slot="countdown" class="[ -ml-2.5 ]">
-                                <Countdown
-                                    date={fleet.start_time}
-                                    id={fleet.id}
-                                    tag='countdown-fleet'
-                                />
-                            </div>
-                        </TimeAlternator> :
+                                <div slot="countdown" class="[ -ml-2.5 ]">
+                                    <Countdown
+                                        date={fleet.start_time}
+                                        id={fleet.id}
+                                        tag='countdown-fleet'
+                                    />
+                                </div>
+                            </TimeAlternator>
+                        </Flexblock> :
                         <p>{t('no_tracking_data')}</p>
                 }
             </CompletedStatus>

@@ -134,35 +134,24 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
                 <Flexblock>
                     {new Date(structure_timer.timer).getTime() > new Date().getTime() ?
-                        <TimeAlternator>
-                            <BlockList
-                                slot="time"
-                                x-data={`{
-                                    tick: 0,
-                                    alternate() {
-                                        this.tick = (this.tick + 1) % 4
-                                    }
-                                }`}
-                                @tick.window="alternate()"
-                            >
-                                <div x-show="tick < 2">
-                                    <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                                        {eve_time_text}
-                                    </TextGroup>
-                                </div>
-                                <div x-show="tick > 1" style="display: none">
+                        <Flexblock>
+                            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                                {eve_time_text}
+                            </TextGroup>
+                            <TimeAlternator>
+                                <div slot="time">
                                     <LocalTimeGroup eve_time={eve_time} />
                                 </div>
-                            </BlockList>
 
-                            <div slot="countdown" class="[ -ml-2.5 ]">
-                                <Countdown
-                                    date={structure_timer.timer}
-                                    id={structure_timer.id}
-                                    tag='countdown-structure'
-                                />
-                            </div>
-                        </TimeAlternator> :
+                                <div slot="countdown" class="[ -ml-2.5 ]">
+                                    <Countdown
+                                        date={structure_timer.timer}
+                                        id={structure_timer.id}
+                                        tag='countdown-structure'
+                                    />
+                                </div>
+                            </TimeAlternator>
+                        </Flexblock> :
                         <Flexblock gap='var(--space-2xs)'>
                             <p class="[ timer-status-text ]">{t('expired')}</p>
                             <small class="[ text-red ]">{eve_time_text}</small>
