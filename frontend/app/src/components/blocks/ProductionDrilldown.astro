@@ -51,7 +51,14 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
                     >
                         <VolumenIcon xlink='#volumen_icon' size={32} />
                     </div>
-                    <div><span data-tippy-content={number_name(entity.daily_quantity ?? 0, lang)}>{(entity.daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
+                    <div>
+                        <span
+                            data-tippy-content={number_name(entity.daily_quantity ?? 0, lang)}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            {(entity.daily_quantity ?? 0).toLocaleString()} {t('units')}
+                        </span>
+                    </div>
                 </FixedFluid>
 
                 <Flexblock class="[ basis-[140px] pr-[60px]! ]">
@@ -74,7 +81,14 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
                     >
                         <FactoryIcon xlink='#factory_icon' size={32} />
                     </div>
-                    <div><span data-tippy-content={number_name(entity.factory_count, lang)}>{(entity.factory_count ?? 0).toLocaleString()}</span></div>
+                    <div>
+                        <span
+                            data-tippy-content={number_name(entity.factory_count, lang)}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            {(entity.factory_count ?? 0).toLocaleString()}
+                        </span>
+                    </div>
                 </FixedFluid>
             </FlexInline>
         </FixedFluid>)
