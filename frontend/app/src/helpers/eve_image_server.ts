@@ -26,12 +26,12 @@ export const get_corporation_logo = (id:number, size:EvEImageServiceSize = 32):s
 }
 
 export const PLANET_THUMBS = {
-    'temperate': '/images/temperate_planet.png',
-    'gas': '/images/gas_planet.png',
-    'ice': '/images/ice_planet.png',
-    'barren': '/images/barren_planet.png',
-    'lava': '/images/lava_planet.png',
-    'plasma': '/images/plasma_planet.png',
-    'storm': '/images/storm_planet.png',
-    'oceanic': '/images/oceanic_planet.png',
+    'temperate': '/images/temperate_planet.webp',
+    'gas': '/images/gas_planet.webp',
+    'ice': '/images/ice_planet.webp',
+    'barren': '/images/barren_planet.webp',
+    'lava': '/images/lava_planet.webp',
+    'plasma': '/images/plasma_planet.webp',
+    'storm': '/images/storm_planet.webp',
+    'oceanic': '/images/oceanic_planet.webp',
 }

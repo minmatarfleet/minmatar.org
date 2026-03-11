@@ -25,7 +25,7 @@ try {
     data_fetching_error = error.message
 }
 
-const COLONIES_PARTIAL_URL = translatePath('/partials/colonies_component')
+const COLONIES_PARTIAL_URL = translatePath('/partials/colonies_component/')
 
 const planets_with_cololies_count = colonies.reduce((c, colony) => c + colony.planets.length, 0)
 const planets_with_cololies_count_text = (planets_with_cololies_count != 1 ? t('showing_orders_plural') : t('showing_orders_singular')).replace('{count}', String(planets_with_cololies_count))
