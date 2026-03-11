@@ -14,6 +14,8 @@ const {
     init_tooltips = false,
 } = Astro.props
 
+const max_harvest = Math.max(...production_drilldown.entries.map(entry => entry.daily_quantity ?? 0));
+
 import { number_name } from '@helpers/numbers.ts';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -21,14 +23,17 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Progress from '@components/blocks/Progress.astro';
 
 import VolumenIcon from '@components/icons/VolumenIcon.astro';
 import FactoryIcon from '@components/icons/FactoryIcon.astro';
 ---
 
 <Flexblock>
-    {production_drilldown.entries.map(entity =>
-        <FixedFluid width='370px' class="[ production-drilldown-item ][ w-full ]">
+    {production_drilldown.entries.map(entity => {
+        const comparative = max_harvest > 0 ? (entity.daily_quantity ?? 0) * 100 / max_harvest : 0
+
+        return(<FixedFluid width='370px' class="[ production-drilldown-item ][ w-full ]">
             <div class="basis-[370px]">
                 <PilotBadge
                     character_id={entity.actual_character.character_id}
@@ -38,7 +43,7 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
             </div>
 
             <FlexInline gap='var(--space-3xs)'>
-                <FixedFluid class="[ items-center! basis-[320px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                <FixedFluid class="[ items-center! basis-[175px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
                     <div
                         class="[ text-highlight h-[32px] ]"
                         data-tippy-content={t('daily_quantity')}
@@ -48,6 +53,18 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
                     </div>
                     <div><span data-tippy-content={number_name(entity.daily_quantity ?? 0, lang)}>{(entity.daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
                 </FixedFluid>
+
+                <Flexblock class="[ basis-[140px] pr-[60px]! ]">
+                    <Progress
+                        class="[ w-full ]"
+                        max="100"
+                        value={comparative > 0 ? comparative : 0.1}
+                        data-tippy-content={`${comparative.toFixed(0)}%`}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        {comparative.toFixed(2)}%
+                    </Progress>
+                </Flexblock>
                 
                 <FixedFluid class="[ items-center! basis-[100px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
                     <div
@@ -60,6 +77,6 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
                     <div><span data-tippy-content={number_name(entity.factory_count, lang)}>{(entity.factory_count ?? 0).toLocaleString()}</span></div>
                 </FixedFluid>
             </FlexInline>
-        </FixedFluid>
-    )}
+        </FixedFluid>)
+    })}
 </Flexblock>
