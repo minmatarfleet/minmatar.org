@@ -22,9 +22,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ProducersList from '@components/blocks/ProducersList.astro';
-import ItemPicture from '@components/blocks/ItemPicture.astro';
 
-import IndustryIcon from '@components/icons/IndustryIcon.astro';
 import ClipboardButton from './ClipboardButton.astro';
 ---
 
@@ -62,7 +60,7 @@ import ClipboardButton from './ClipboardButton.astro';
                         id={`materials-copy-${index}-${item.type_id}`}
                         text={t('materials')}
                         narrow={true}
-                    >{`${item.name}\t${item.quantity}\n${
+                    >{`${item.quantity}×${item.name}\n${
                     item.materials
                         .map(material => `${material.eve_type_name}\t${material.quantity}`)
                         .join('\n')
