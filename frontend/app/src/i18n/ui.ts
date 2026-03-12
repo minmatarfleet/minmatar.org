@@ -2043,5 +2043,9 @@ export const ui = {
         'not_tracking': 'Currently not tracked',
         'show_my_alts': 'Show my alts',
         'collapse_my_alts': 'Collapse my alts',
+        'fetching_order_breakdown': 'Fetching order breakdown...',
+        'order_breakdown': 'Order breakdown',
+        'breakdown': 'Breakdown',
+        'asignee': 'Asignee',
     },
 } as const;

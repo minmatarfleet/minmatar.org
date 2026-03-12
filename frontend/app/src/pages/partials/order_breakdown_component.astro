@@ -1,0 +1,40 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+
+import type { OrderBreakdownUI } from '@dtypes/layout_components'
+import type { Alert } from '@dtypes/layout_components'
+import { fetch_order_breakdown } from '@helpers/fetching/industry'
+
+let order_breakdown: OrderBreakdownUI[] = []
+let alert:Alert | false = false
+
+if (!isNaN(order_id)) {
+    try {
+        order_breakdown = await fetch_order_breakdown(order_id)
+    } catch (error) {
+        alert = {
+            title: t('order_breakdown'),
+            content: error.message
+        }
+    }
+} else {
+    alert = {
+        title: t('order_breakdown'),
+        content: t('invalid_resource_type')
+    }
+}
+
+import OrderBreakdown from '@components/blocks/OrderBreakdown.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+---
+
+{alert ?
+    <ShowAlert alert={alert} /> :       
+    <OrderBreakdown
+        order_breakdown={order_breakdown}
+        init_tooltips={true}
+    />
+}

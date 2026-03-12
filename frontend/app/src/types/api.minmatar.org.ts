@@ -1154,3 +1154,43 @@ export interface SellOrderLocation {
     is_price_baseline:  boolean;
     items:              SellOrderItem[];
 }
+
+export interface OrderAssignmentsBreakdownItem {
+    name:                   string;
+    type_id:                number;
+    quantity:               number;
+    source:                 string;
+    depth:                  number;
+    children:               OrderAssignmentsBreakdownItem[],
+    industry_product_id:    number;
+}
+
+export interface OrderAssignmentsBreakdown {
+    character_id:       number;
+    character_name:     string;
+    quantity:           number;
+    breakdown:          OrderAssignmentsBreakdownItem;
+}
+
+export interface CharacterQuantity extends Character {
+    quantity:   number;
+}
+
+export interface RootSingleItem {
+    id:                 number;
+    eve_type_id:        number;
+    eve_type_name:      string;
+    quantity:           number;
+    assignments:        CharacterQuantity[];
+}
+
+export interface IndustrySingleOrder {
+    id:                 number;
+    created_at:         Date;
+    needed_by:          Date;
+    fulfilled_at:       Date | null;
+    character_id:       number;
+    character_name:     string;
+    location:           BaseLocation;
+    items:              RootSingleItem[];
+}
