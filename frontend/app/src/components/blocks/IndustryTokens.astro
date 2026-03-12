@@ -2,7 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, ESITokenRoles } from '@dtypes/api.minmatar.org'
+import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
 interface Props {
     pilots:     SummaryCharacter[];
@@ -12,8 +13,10 @@ const {
     pilots,
 } = Astro.props
 
-const pilots_missing_token = pilots.filter(pilot => pilot.esi_token !== 'Industry')
-const pilots_with_token = pilots.filter(pilot => pilot.esi_token === 'Industry')
+const INDUSTRY_INDEX = esi_token_roles.indexOf('Industry')
+
+const pilots_missing_token = pilots.filter(pilot => esi_token_roles.indexOf(pilot.esi_token as ESITokenRoles) < INDUSTRY_INDEX)
+const pilots_with_token = pilots.filter(pilot => esi_token_roles.indexOf(pilot.esi_token as ESITokenRoles) >= INDUSTRY_INDEX)
 
 import { get_api_url, get_app_url } from '@helpers/env'
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
