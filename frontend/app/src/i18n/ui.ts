@@ -2047,5 +2047,7 @@ export const ui = {
         'order_breakdown': 'Order breakdown',
         'breakdown': 'Breakdown',
         'asignee': 'Asignee',
+        'doctrines_plural': '{count} doctrines',
+        'doctrines_singular': '1 doctrine',
     },
 } as const;

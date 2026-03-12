@@ -5,62 +5,78 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { DoctrineLocationUI } from '@dtypes/layout_components'
 
 interface Props {
-    active_doctrine_locations_ui:       DoctrineLocationUI;
-    non_active_doctrine_locations_ui:   DoctrineLocationUI[];
+    active_doctrine_location_ui:        DoctrineLocationUI;
+    non_active_doctrine_location_ui:    DoctrineLocationUI[];
 }
 
 const {
-    active_doctrine_locations_ui,
-    non_active_doctrine_locations_ui
+    active_doctrine_location_ui,
+    non_active_doctrine_location_ui
 } = Astro.props
 
 import { semantic_list } from '@helpers/array';
 import { query_string } from '@helpers/string';
+
+const REEL_GAP = 80
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import DoctrineCard from '@components/blocks/DoctrineCard.astro';
+import LocationsReel from '@components/blocks/LocationsReel.astro';
+import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 ---
 
-<FlexInline gap='var(--space-2xl)'>
-    <Flexblock gap='var(--space-3xs)'>
-        <h2>{active_doctrine_locations_ui.name}</h2>
-        <small>{`${active_doctrine_locations_ui.doctrine_count} ${active_doctrine_locations_ui.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
-    </Flexblock>
 
-    {non_active_doctrine_locations_ui.map(location =>
-        <Flexblock gap='var(--space-3xs)'>
-            <h3>
-                <a href={translatePath(location.id > 0 ? `/ships/doctrines/list?${query_string({
-                        location_id: location.id
-                    })}` : '/ships/doctrines/list/')}
-                >
-                    {location.name}
-                </a>
-            </h3>
-            <small>{`${location.doctrine_count} ${location.doctrine_count != 1 ? t('doctrines').toLowerCase() : t('doctrine').toLowerCase()}`}</small>
-        </Flexblock>
-    )}
-</FlexInline>
+<Flexblock class="[ order-table ]" gap='var(--space-xl)'>
+    <LocationsReel gap={REEL_GAP}>
+        <LocationsReelSlide gap={REEL_GAP}>
+            <Flexblock gap='var(--space-3xs)'>
+                <h2>
+                    <a href={translatePath(active_doctrine_location_ui.id > 0 ? `/ships/doctrines?${query_string({
+                        location_id: active_doctrine_location_ui.id
+                    })}` : '/ships/doctrines/')}>
+                        {active_doctrine_location_ui.name}
+                    </a>
+                </h2>
+                <small>{t(active_doctrine_location_ui.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(active_doctrine_location_ui.doctrines.length))}</small>
+            </Flexblock>
+        </LocationsReelSlide>
 
-<Grid
-    role="list"
-    class="[ w-full grid-fill ]"
-    min_item_width='240px'
-    row_gap='var(--space-3xs)'
-    column_gap='var(--space-3xs)'
->
-    {active_doctrine_locations_ui.doctrines.map((doctrine) =>
-        <a
-            class="[ doctrine-card-container ]"
-            href={translatePath(`/ships/doctrines/list/${doctrine.id}${active_doctrine_locations_ui.id ? `?location_id=${active_doctrine_locations_ui.id}` : '' }`)}
-        >
-            <DoctrineCard
-                doctrine={doctrine}
-                subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
-            />
-        </a>
-    )}
-</Grid>
+        {non_active_doctrine_location_ui.map(location =>
+            <LocationsReelSlide gap={REEL_GAP}>
+                <Flexblock gap='var(--space-3xs)'>
+                    <h3>
+                        <a href={translatePath(location.id > 0 ? `/ships/doctrines?${query_string({
+                            location_id: location.id
+                        })}` : '/ships/doctrines/')}>
+                            {location.name}
+                        </a>
+                    </h3>
+                    <small>{t(location.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(location.doctrines.length))}</small>
+                </Flexblock>
+            </LocationsReelSlide>
+        )}
+    </LocationsReel>
+
+    <Grid
+        role="list"
+        class="[ w-full grid-fill ]"
+        min_item_width='240px'
+        row_gap='var(--space-3xs)'
+        column_gap='var(--space-3xs)'
+    >
+        {active_doctrine_location_ui.doctrines.map((doctrine) =>
+            <a
+                class="[ doctrine-card-container ]"
+                href={translatePath(`/ships/doctrines/${doctrine.id}${active_doctrine_location_ui.id ? `?location_id=${active_doctrine_location_ui.id}` : '/' }`)}
+            >
+                <DoctrineCard
+                    doctrine={doctrine}
+                    subtitle={semantic_list(lang, doctrine.primary_fittings.map((primary_fitting) => primary_fitting.ship_name))}
+                />
+            </a>
+        )}
+    </Grid>
+</Flexblock>

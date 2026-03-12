@@ -151,7 +151,7 @@
     {
         "slug": "fitting.list",
         "alt": "icon.fits.alt",
-        "path": "/ships/fitting/list/",
+        "path": "/ships/fittings/",
         "publish": true,
         "icon": "/images/icons/48px-Fitting.png",
         "description": "page_finder.ships.fitting.list.description"
@@ -159,7 +159,7 @@
     {
         "slug": "doctrines",
         "alt": "icon.doctrines.alt",
-        "path": "/ships/doctrines/list/",
+        "path": "/ships/doctrines/",
         "publish": true,
         "icon": "/images/icons/48px-Doctrines.png",
         "description": "page_finder.ships.doctrines.description"
