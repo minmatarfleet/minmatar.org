@@ -7,7 +7,18 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_valid_user = (user && user.user_id > 0)
 const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+let is_alliance = false
+
+try {
+    const user_permissions = is_valid_user ? await get_user_permissions(user?.username) : []
+    is_alliance = user_permissions.includes('eveonline.add_evecharactertag')
+} catch (error) {
+    console.log(error)
+}
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -44,11 +55,13 @@ const leading_text = t('industry.leading_text');
                 <TextBox>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                 </TextBox>
-                <FlexInline class="[ !items-start ]">
-                    <Button href={translatePath('/industry/industrialists/')}>
-                        {t('set_your_industrialists')}
-                    </Button>
-                </FlexInline>
+                {is_alliance &&
+                    <FlexInline class="[ !items-start ]">
+                        <Button href={translatePath('/industry/industrialists/')}>
+                            {t('set_your_industrialists')}
+                        </Button>
+                    </FlexInline>
+                }
             </FlexInline>
             
             <TextBox>

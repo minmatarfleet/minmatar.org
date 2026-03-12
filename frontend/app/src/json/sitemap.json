@@ -259,7 +259,10 @@
         "path": "/industry/industrialists/",
         "publish": true,
         "description": "page_finder.industrialists.description",
-        "keywords": [ "token", "ESI", "tracking", "indy" ]
+        "keywords": [ "token", "ESI", "tracking", "indy" ],
+        "permissions" : {
+            "user": [ "eveonline.add_evecharactertag" ]
+        }
     },
     {
         "slug": "industry.orders",
