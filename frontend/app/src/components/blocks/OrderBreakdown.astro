@@ -14,11 +14,13 @@ const {
     init_tooltips = false,
 } = Astro.props
 
+import { number_thousand_separator } from '@helpers/numbers'
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import PilotBadge from '@components/blocks/PilotBadge.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 
@@ -30,40 +32,25 @@ import ClipboardButton from './ClipboardButton.astro';
     {order_breakdown.map((item, index) => 
         <FixedFluid width='270px' class="[ production-drilldown-item ][ w-full items-center! ]">
             <div>
-                <PilotBadge
-                    character_id={item.character_id}
-                    character_name={item.character_name}
+                <ItemBadge
+                    item_name={item.name}
+                    type_id={item.type_id}
                     size={32}
                     centered={true}
                 >
-                    <small>{t('asignee')}</small>
-                </PilotBadge>
+                    <small>{t(item.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(item.quantity))}</small>
+                </ItemBadge>
             </div>
 
             <FlexInline gap='var(--space-3xs)'>
                 <div class="[ basis-[200px] ]">
-                    <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                        <div
-                            class="[ text-highlight h-[32px] ]"
-                            data-tippy-content={t('manufacturing')}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                        >
-                            <IndustryIcon size={32} />
-                        </div>
-                        <FlexInline gap='var(--space-2xs)'>
-                            <div
-                                data-tippy-content={item.type_id}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                <ItemPicture
-                                    item_name={item.name}
-                                    item_id={item.type_id}
-                                    quantity={item.quantity}
-                                    size={32}
-                                />
-                            </div>
-                        </FlexInline>
-                    </FixedFluid>
+                    <ProducersList
+                        character_producers={[{
+                            id: item.character_id,
+                            name: item.character_name,
+                        }]}
+                        init_tooltips={init_tooltips}
+                    />
                 </div>
                 <FlexInline>
                     <ClipboardButton
