@@ -2041,5 +2041,7 @@ export const ui = {
         'no_action_required': 'No action required',
         'set_your_industrialists': 'Set your industrialists',
         'not_tracking': 'Currently not tracked',
+        'show_my_alts': 'Show my alts',
+        'collapse_my_alts': 'Collapse my alts',
     },
 } as const;

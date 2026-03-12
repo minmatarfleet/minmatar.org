@@ -15,12 +15,20 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 let colonies:ColonySystems[] = []
 let user_characters_ids:number[] = []
+let alts_collapsing = false
 let data_fetching_error = ''
 
 try {
     colonies = await fetch_colonies()
-    const user_characters = valid_user ? await get_characters(auth_token as string) : []
-    user_characters_ids = user_characters.map(character => character.character_id)
+    
+    alts_collapsing = Astro.cookies.has('alts_collapsing') ?
+                        JSON.parse(Astro.cookies.get('alts_collapsing')?.value as string) :
+                        false
+
+    if (!alts_collapsing) {
+        const user_characters = valid_user ? await get_characters(auth_token as string) : []
+        user_characters_ids = user_characters.map(character => character.character_id)
+    }
 } catch (error) {
     data_fetching_error = error.message
 }
@@ -40,6 +48,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import ColoniesList from '@components/blocks/ColoniesList.astro'
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import Button from '@components/blocks/Button.astro'
 ---
     
 {data_fetching_error ?
@@ -51,14 +60,35 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
         }}
     />
     :
-    <>{colonies.length > 0 ?
-        <ColoniesList
-            colony_systems={colonies}
-            user_characters_ids={user_characters_ids}
-            init_tooltips={false}
-        /> :
-        <p>{t('no_planetary_colonies')}</p>
-    }</>
+    <>
+        {alts_collapsing ?
+            <Button
+                id="alts-collapsing-oob"
+                hx-swap-oob="true"
+                href={translatePath('/industry/colonies?set_alts_collapsing=false')}
+                size='sm'
+            >
+                {t('show_my_alts')}
+            </Button> :
+            <Button
+                id="alts-collapsing-oob"
+                hx-swap-oob="true"
+                href={translatePath('/industry/colonies?set_alts_collapsing=true')}
+                size='sm'
+            >
+                {t('collapse_my_alts')}
+            </Button>
+        }
+        
+        {colonies.length > 0 ?
+            <ColoniesList
+                colony_systems={colonies}
+                user_characters_ids={user_characters_ids}
+                init_tooltips={false}
+            /> :
+            <p>{t('no_planetary_colonies')}</p>
+        }
+    </>
     <UpdateAlpineVariables
         variables={{
             planets_with_cololies_count: planets_with_cololies_count,
