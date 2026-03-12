@@ -70,7 +70,7 @@ import ArrowRightIcon from '@components/icons/ArrowRightIcon.astro';
                                 {STATIONS_NAMES[non_active_contracts_location.location_name] ?? non_active_contracts_location.location_name}
                             </a>
                         </h3>
-                        <small>{t(non_active_contracts_location_count != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(non_active_contracts_location_count))}</small>
+                        <small>{t(non_active_contracts_location_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(non_active_contracts_location_count))}</small>
                     </Flexblock>
                 </LocationsReelSlide>
             )
