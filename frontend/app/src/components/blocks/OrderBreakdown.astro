@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { OrderBreakdownUI } from '@dtypes/layout_components'
+
+interface Props {
+    order_breakdown:            OrderBreakdownUI[];
+    init_tooltips?:             boolean;
+}
+
+const {
+    order_breakdown,
+    init_tooltips = false,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import ProducersList from '@components/blocks/ProducersList.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+
+import IndustryIcon from '@components/icons/IndustryIcon.astro';
+import ClipboardButton from './ClipboardButton.astro';
+---
+
+<Flexblock>
+    {order_breakdown.map((item, index) => 
+        <FixedFluid width='270px' class="[ production-drilldown-item ][ w-full items-center! ]">
+            <div>
+                <PilotBadge
+                    character_id={item.character_id}
+                    character_name={item.character_name}
+                    size={32}
+                    centered={true}
+                >
+                    <small>{t('asignee')}</small>
+                </PilotBadge>
+            </div>
+
+            <FlexInline gap='var(--space-3xs)'>
+                <div class="[ basis-[200px] ]">
+                    <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
+                        <div
+                            class="[ text-highlight h-[32px] ]"
+                            data-tippy-content={t('manufacturing')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <IndustryIcon size={32} />
+                        </div>
+                        <FlexInline gap='var(--space-2xs)'>
+                            <div
+                                data-tippy-content={item.type_id}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                <ItemPicture
+                                    item_name={item.name}
+                                    item_id={item.type_id}
+                                    quantity={item.quantity}
+                                    size={32}
+                                />
+                            </div>
+                        </FlexInline>
+                    </FixedFluid>
+                </div>
+                <FlexInline>
+                    <ClipboardButton
+                        id={`breakdown-copy-${index}-${item.type_id}`}
+                        text={t('breakdown')}
+                        narrow={true}
+                    >{item.copy_breakdown}</ClipboardButton>
+                    <ClipboardButton
+                        id={`materials-copy-${index}-${item.type_id}`}
+                        text={t('materials')}
+                        narrow={true}
+                    >{`${item.name}\t${item.quantity}\n${
+                    item.materials
+                        .map(material => `${material.eve_type_name}\t${material.quantity}`)
+                        .join('\n')
+                    }\n`}</ClipboardButton>
+                </FlexInline>
+            </FlexInline>
+        </FixedFluid>
+    )}
+</Flexblock>

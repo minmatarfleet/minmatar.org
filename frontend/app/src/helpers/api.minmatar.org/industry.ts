@@ -5,12 +5,12 @@ import type {
     Product,
     Blueprint,
     HarvestOverviewItem,
-    HarvestDrillDownItem,
     HarvestDrillDownResponse,
     ProductionOverviewItem,
-    ProductionDrillDownItem,
     ProductionDrillDownResponse,
     PlanetWithColoniesItem,
+    OrderAssignmentsBreakdown,
+    IndustrySingleOrder,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string, parse_error_message } from '@helpers/string'
 
@@ -318,4 +318,62 @@ export async function get_planetary_planets(params: {
     }
     
     return await response.json()
+}
+
+export async function get_order_assignments_breakdown(order_id: number, order_item_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/assignments/breakdown`
+    
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as { assignments: OrderAssignmentsBreakdown[] };
+    } catch (error) {
+        throw new Error(`Error fetching contracts: ${error.message}`);
+    }
+}
+
+export async function get_order_by_id(order_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as IndustrySingleOrder;
+    } catch (error) {
+        throw new Error(`Error fetching industry orders: ${error.message}`);
+    }
 }

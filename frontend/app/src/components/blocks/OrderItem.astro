@@ -27,6 +27,8 @@ if (order.fulfilled_at)
 else if (time_to_deadline === 100)
     completion_tooltip = t('overdue')
 
+const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?order_id=${order.id}`
+
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
 import FlexInline from "@components/compositions/FlexInline.astro";
@@ -35,80 +37,92 @@ import PilotBadge from "@components/blocks/PilotBadge.astro";
 import Progress from "@components/blocks/Progress.astro";
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
-import Button from '@components/blocks/Button.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
 ---
 
-<FixedFluid width='350px' class="[ order-item ]">
-    <div>
-        <PilotBadge
-            character_id={order.character_id}
-            character_name={order.character_name}
-            heading={true}
-        >
-            <small>{t('contractor')}</small>
-        </PilotBadge>
-    </div>
-    <FlexInline>
-        <div class="[ basis-[200px] ]">
-            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div
-                    class="[ text-highlight h-[32px] ]"
-                    data-tippy-content={t('manufacturing')}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+<CollapsibleBlock padding_inline='var(--space-2xl)'>
+    <div slot="head" class="[ w-full ]">
+        <FixedFluid width='350px' class="[ order-item ]">
+            <div>
+                <PilotBadge
+                    character_id={order.character_id}
+                    character_name={order.character_name}
+                    heading={true}
                 >
-                    <IndustryIcon size={32} />
-                </div>
-                <FlexInline gap='var(--space-2xs)'>
-                    {order.items.map(item =>
+                    <small>{t('contractor')}</small>
+                </PilotBadge>
+            </div>
+            <FlexInline>
+                <div class="[ basis-[200px] ]">
+                    <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
                         <div
-                            data-tippy-content={item.eve_type_name}
+                            class="[ text-highlight h-[32px] ]"
+                            data-tippy-content={t('manufacturing')}
                             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
-                            <ItemPicture
-                                item_name={item.eve_type_name}
-                                item_id={item.eve_type_id}
-                                quantity={item.quantity}
-                                size={32}
-                            />
-                            <div class="[ sr-only ]">{item.eve_type_name}</div>
+                            <IndustryIcon size={32} />
                         </div>
-                    )}
-                </FlexInline>
-            </FixedFluid>
-        </div>
-        <Flexblock class="[ basis-[350px] pr-10 ]" gap='var(--space-3xs)'>
-            <FlexInline justification='space-between'>
-                <small>{format_date(lang, order.created_at)}</small>
-                <small>{format_date(lang, order.needed_by)}</small>
+                        <FlexInline gap='var(--space-2xs)'>
+                            {order.items.map(item =>
+                                <div
+                                    data-tippy-content={item.eve_type_name}
+                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <ItemPicture
+                                        item_name={item.eve_type_name}
+                                        item_id={item.eve_type_id}
+                                        quantity={item.quantity}
+                                        size={32}
+                                    />
+                                    <div class="[ sr-only ]">{item.eve_type_name}</div>
+                                </div>
+                            )}
+                        </FlexInline>
+                    </FixedFluid>
+                </div>
+                <Flexblock class="[ basis-[300px] pr-10 ]" gap='var(--space-3xs)'>
+                    <FlexInline justification='space-between'>
+                        <small>{format_date(lang, order.created_at)}</small>
+                        <small>{format_date(lang, order.needed_by)}</small>
+                    </FlexInline>
+                    <div class="[ timeline ]">
+                        <Progress
+                            class:list={[
+                                'w-full',
+                                { success: order.fulfilled_at },
+                                { danger: !order.fulfilled_at && time_to_deadline > 90 }
+                            ]}
+                            max="100"
+                            value={time_to_deadline}
+                            data-tippy-content={completion_tooltip}
+                        >
+                            {completion_tooltip}
+                        </Progress>
+                    </div>
+                </Flexblock>
+                <div class="[ basis-[145px] ]">
+                    <ProducersList
+                        character_producers={order.assigned_to}
+                        init_tooltips={init_tooltips}
+                    />
+                </div>
             </FlexInline>
-            <div class="[ timeline ]">
-                <Progress
-                    class:list={[
-                        'w-full',
-                        { success: order.fulfilled_at },
-                        { danger: !order.fulfilled_at && time_to_deadline > 90 }
-                    ]}
-                    max="100"
-                    value={time_to_deadline}
-                    data-tippy-content={completion_tooltip}
-                >
-                    {completion_tooltip}
-                </Progress>
-            </div>
-        </Flexblock>
-        <div class="[ basis-[200px] ]">
-            <ProducersList
-                character_producers={order.assigned_to}
-                init_tooltips={init_tooltips}
-            />
-        </div>
-        <Button size='sm' href={translatePath(`/industry/orders/${order.id}`)}>
-            {t('view_details')}
-        </Button>
-    </FlexInline>
-</FixedFluid>
+        </FixedFluid>
+    </div>
+
+    <div class="[ order-breakdown-container ]">
+        <small
+            hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
+            hx-trigger="intersect"
+            hx-indicator=".loader"
+            hx-swap="outerHTML transition:true"
+        >
+            {t('fetching_order_breakdown')}
+        </small>
+    </div>
+</CollapsibleBlock>
 
 <style lang="scss">
     .timeline {
@@ -136,5 +150,9 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
             left: 50%;
             border-left: solid 1px var(--highlight);
         }
+    }
+
+    .order-breakdown-container {
+        padding-top: var(--space-s);
     }
 </style>

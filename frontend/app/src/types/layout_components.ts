@@ -1050,3 +1050,12 @@ export interface ColonySystems {
     system_sun_type_id:     number;
     planets:                ColonyPlanet[];
 }
+
+import type { BaseIndustryOrder } from '@dtypes/api.minmatar.org'
+
+export interface OrderBreakdownUI extends BaseIndustryOrder {
+    character_id:       number;
+    character_name:     string;
+    materials:          RootItem[];
+    copy_breakdown:     string;
+}
