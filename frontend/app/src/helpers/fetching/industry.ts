@@ -173,17 +173,14 @@ export async function fetch_order_breakdown(order_id: number) {
     await Promise.all(order?.items.map(async (item) => {
         const assignments_breakdown = (await get_order_assignments_breakdown(order_id, item.id))?.assignments ?? []
 
-        assignments_breakdown.map(assignment => {
-            console.log(assignment)
-            
+        assignments_breakdown.map(assignment => {            
             const breakdown = assignment.breakdown
-            let materials:RootItem[] = []
-            let copy_breakdown = ''
-
-            const tabs = '\t'.repeat(breakdown.depth)
-            copy_breakdown = copy_breakdown.concat(`${tabs}${breakdown.name}\t${breakdown.quantity}\n`)
-
-            console.log(breakdown)
+            let materials:RootItem[] = [{
+                eve_type_id: breakdown.type_id,
+                eve_type_name: breakdown.name,
+                quantity: breakdown.quantity,
+            }]
+            let copy_breakdown = `${breakdown.quantity}×${breakdown.name}\n`
 
             const { children_materials, children_copy_breakdown } = get_children_materials(breakdown.children)
 
