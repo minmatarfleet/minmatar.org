@@ -2,12 +2,29 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_valid_user = (user && user.user_id > 0)
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+let is_alliance = false
+
+try {
+    const user_permissions = is_valid_user ? await get_user_permissions(user?.username) : []
+    is_alliance = user_permissions.includes('eveonline.add_evecharactertag')
+} catch (error) {
+    console.log(error)
+}
+
+if (!is_alliance)
+    return HTTP_404_Not_Found()
 
 import { prod_error_messages } from '@helpers/env'
 
