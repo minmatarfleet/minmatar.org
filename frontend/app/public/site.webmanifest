@@ -5,7 +5,7 @@
     "display_override": ["fullscreen", "minimal-ui"],
     "display": "standalone",
     "background_color": "#B53620",
-    "theme_color": "#000000",
+    "theme_color": "#121212",
     "scope": "/",
     "description": "Minmatar Fleet",
     "icons": [
