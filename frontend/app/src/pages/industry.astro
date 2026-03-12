@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -14,10 +14,13 @@ import Viewport from '@layouts/Viewport.astro';
 import PageLanding from '@components/page/PageLanding.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
+import TextBox from '@components/layout/TextBox.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import IndustryTiles from '@components/blocks/IndustryTiles.astro';
+import Button from '@components/blocks/Button.astro';
 
 const page_title = t('industry.page_title');
 const leading_text = t('industry.leading_text');
@@ -37,17 +40,21 @@ const leading_text = t('industry.leading_text');
         wide={true}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <Wrapper
-                max_width="var(--max-text-width)"
-                padding_inline="0"
-                padding_block="0"
-            >
-                <Flexblock gap='var(--space-xl)'>
+            <FlexInline class="[ !items-start ]" justification='space-between'>
+                <TextBox>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p class="[ excerpt ]">{leading_text}</p>
-                </Flexblock>
-            </Wrapper>
+                </TextBox>
+                <FlexInline class="[ !items-start ]">
+                    <Button href={translatePath('/industry/industrialists/')}>
+                        {t('set_your_industrialists')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
             
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
+
             <IndustryTiles is_superuser={is_superuser} />
         </Flexblock>
     </PageLanding>

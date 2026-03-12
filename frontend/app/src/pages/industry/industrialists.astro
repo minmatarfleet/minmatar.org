@@ -1,0 +1,88 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_valid_user = (user && user.user_id > 0)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+
+let pilots:SummaryCharacter[] = []
+let fetching_error:string | false = false
+
+try {
+    if (!is_valid_user)
+        throw new Error(t('invalid_user'))
+
+    const character_summary = await get_characters_summary_sorted(auth_token as string)
+    pilots = character_summary.characters ?? []
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_characters_summary_error') : error.message)
+}
+
+const INDUSTRIALISTS_PARTIAL_URL = translatePath('/partials/industrialists_component')
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import IndustryTokens from '@components/blocks/IndustryTokens.astro'
+
+const page_title = t('industry.industrialists.page_title');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.industrialists.meta_description')}
+>
+    <PageDefault
+        cover={{
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </Flexblock>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p class="[ excerpt ]">{t('industry.industrialists.leading_text')}</p>
+            </TextBox>
+
+            {fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: INDUSTRIALISTS_PARTIAL_URL,
+                        message: fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <IndustryTokens
+                    pilots={pilots}
+                />
+            }
+        </Flexblock>
+    </PageDefault>
+</Viewport>

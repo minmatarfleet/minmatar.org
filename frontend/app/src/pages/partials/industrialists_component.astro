@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_valid_user = (user && user.user_id > 0)
+
+import { prod_error_messages } from '@helpers/env'
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+
+let pilots:SummaryCharacter[] = []
+let fetching_error:string | false = false
+
+try {
+    if (!is_valid_user)
+        throw new Error(t('invalid_user'))
+
+    const character_summary = await get_characters_summary_sorted(auth_token as string)
+    pilots = character_summary.characters ?? []
+} catch (error) {
+    fetching_error = (prod_error_messages() ? t('get_characters_summary_error') : error.message)
+}
+
+const INDUSTRIALISTS_PARTIAL_URL = translatePath('/partials/industrialists_component')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import IndustryTokens from '@components/blocks/IndustryTokens.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: INDUSTRIALISTS_PARTIAL_URL,
+            message: fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <IndustryTokens
+        pilots={pilots}
+    />
+}

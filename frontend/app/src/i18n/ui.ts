@@ -237,6 +237,11 @@ export const ui = {
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
 
+        'industry.industrialists.page_title': 'Industrialists',
+        'industry.industrialists.leading_text': 'Industry tokens allow the site to access the data needed to track your characters’ industrial activity. Please assign a valid token to each character you want included. Without one, industry tracking features will not work.',
+        'industry.industrialists.meta_description': 'Industry tokens allow the site to access the data needed to track your characters’ industrial activity.',
+        'page_finder.industrialists.description': 'Set your industrialist characters.',
+
         'industry.colonies.page_title': 'Planetary colonies',
         'industry.colonies.leading_text': 'Alliance harvest, production and planet summary.',
         'industry.colonies.meta_description': 'Alliance harvest, production and planet summary.',
@@ -2026,5 +2031,15 @@ export const ui = {
         'invalid_tracking_status': 'The fleet trackins status is not valid.',
         'restore_fleet_dialog_title': 'Restore fleet',
         'restore_fleet_dialog_text': 'Proceed restoring the fleet?',
+        'invalid_user': 'User is no valid.',
+        'get_characters_summary_error': 'An error ocurred fetching the characters summary.',
+        'missing_industry_tokens_plural': '{count} missing industry tokens',
+        'missing_industry_tokens_singular': '1 missing industry token',
+        'pilots_missing_industry_token': 'Pilots missing industry token',
+        'pilots_with_industry_token': 'Pilots with industry token',
+        'set_industry_token': 'Set industry token',
+        'no_action_required': 'No action required',
+        'set_your_industrialists': 'Set your industrialists',
+        'not_tracking': 'Currently not tracked',
     },
 } as const;

@@ -1,0 +1,80 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    pilots:     SummaryCharacter[];
+}
+
+const {
+    pilots,
+} = Astro.props
+
+const pilots_missing_token = pilots.filter(pilot => pilot.esi_token !== 'Industry')
+const pilots_with_token = pilots.filter(pilot => pilot.esi_token === 'Industry')
+
+import { get_api_url, get_app_url } from '@helpers/env'
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+<Flexblock gap='var(--space-xl)'>
+    {pilots_missing_token.length > 0 &&
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('pilots_missing_industry_token')}</h3>
+
+            <Flexblock gap='var(--space-l)'>
+                {pilots_missing_token.map(pilot =>
+                    <FlexInline gap='var(--space-3xs)'>
+                        <div class="[ basis-[450px] ]">
+                            <PilotBadge
+                                character_id={pilot.character_id}
+                                character_name={pilot.character_name}
+                                heading={true}
+                            >
+                                <small class="[ text-red ]">{t('not_tracking')}</small>
+                            </PilotBadge>
+                        </div>
+                        <Button
+                            href={`${FIX_CHARACTER_URL}&token_type=Industry&character_id=${pilot.character_id}`}
+                            size='sm'
+                        >
+                            {t('set_industry_token')}
+                        </Button>
+                    </FlexInline>
+                )}
+            </Flexblock>
+        </Flexblock>
+    }
+
+    {pilots_with_token.length > 0 &&
+        <Flexblock gap='var(--space-l)'>
+            <h3 class="[ group-title ]">{t('pilots_with_industry_token')}</h3>
+
+            <Flexblock gap='var(--space-l)'>
+                {pilots_with_token.map(pilot =>
+                    <PilotBadge
+                        character_id={pilot.character_id}
+                        character_name={pilot.character_name}
+                        heading={true}
+                    >
+                        <small class="[ text-green ]">{t('no_action_required')}</small>
+                    </PilotBadge>
+                )}
+            </Flexblock>
+        </Flexblock>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .group-title {
+        font-size: var(--step-1);
+    }
+</style>

@@ -254,6 +254,14 @@
         "keywords": [ "industry", "supply chain", "manufacturing" ]
     },
     {
+        "slug": "industry.industrialists",
+        "alt": "icon.orders.alt",
+        "path": "/industry/industrialists/",
+        "publish": true,
+        "description": "page_finder.industrialists.description",
+        "keywords": [ "token", "ESI", "tracking", "indy" ]
+    },
+    {
         "slug": "industry.orders",
         "alt": "icon.orders.alt",
         "path": "/industry/orders/",
