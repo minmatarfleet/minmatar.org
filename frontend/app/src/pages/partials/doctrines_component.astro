@@ -78,9 +78,9 @@ try {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
 }
 
-const active_doctrine_locations_ui = all_locations_ui.find(location => location.id === active_location_id)
+const active_doctrine_location_ui = all_locations_ui.find(location => location.id === active_location_id)
 
-const non_active_doctrine_locations_ui = all_locations_ui.filter(location => location.id !== active_location_id)
+const non_active_doctrine_location_ui = all_locations_ui.filter(location => location.id !== active_location_id)
 
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
@@ -97,9 +97,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    active_doctrine_locations_ui !== undefined &&
+    active_doctrine_location_ui !== undefined &&
         <DoctrinesList
-            active_doctrine_locations_ui={active_doctrine_locations_ui}
-            non_active_doctrine_locations_ui={non_active_doctrine_locations_ui}
+            active_doctrine_location_ui={active_doctrine_location_ui}
+            non_active_doctrine_location_ui={non_active_doctrine_location_ui}
         />
 }

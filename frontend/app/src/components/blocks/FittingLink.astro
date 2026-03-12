@@ -24,8 +24,8 @@ const {
 
 const DOM_ELEMENT = is_button ? Button : 'a'
 
-const render_view = translatePath(`/ships/fitting/render/${fitting_id}`)
-const normal_view = translatePath(`/ships/fitting/normal/${fitting_id}`)
+const render_view = translatePath(`/ships/fittings/render/${fitting_id}`)
+const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
 
 import { is_disabled_ccpwgl } from '@helpers/env';
 
@@ -35,7 +35,7 @@ import Button from '@components/blocks/Button.astro';
 ---
 
 <DOM_ELEMENT
-    href={translatePath(`/ships/fitting/${fitting_id}`)}
+    href={translatePath(`/ships/fittings/${fitting_id}`)}
     size={is_button ? size : undefined}
     color={is_button ? color : undefined}
     narrow={is_button ? narrow : undefined}

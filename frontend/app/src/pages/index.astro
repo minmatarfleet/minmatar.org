@@ -225,7 +225,7 @@ const page_description = t('index.leading_text');
 						<a
 							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
 							data-tippy-content={t('view_station_doctrines')}
-							href={translatePath(`/ships/doctrines/list?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
+							href={translatePath(`/ships/doctrines?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
 						>
 							<DoctrinesEvEIcon />
 						</a>

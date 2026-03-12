@@ -43,7 +43,7 @@ const show_subtitles = ((show_primary_fittings ? 1 : 0) + (show_secondary_fittin
                 <small>{t(doctrine.type as any) ?? doctrine.type}</small>
             </Flexblock>
         </FlexInline>
-        <Button href={translatePath(`/ships/doctrines/list/${doctrine.id}`)}>
+        <Button href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
             <MagnifierIcon slot="icon" />
             {t('view_details')}
         </Button>
