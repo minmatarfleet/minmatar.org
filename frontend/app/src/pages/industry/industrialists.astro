@@ -27,6 +27,8 @@ try {
     fetching_error = (prod_error_messages() ? t('get_characters_summary_error') : error.message)
 }
 
+const fix_esi_token_error = Astro.url.searchParams.get('error') as string
+
 const INDUSTRIALISTS_PARTIAL_URL = translatePath('/partials/industrialists_component')
 
 import Viewport from '@layouts/Viewport.astro';
@@ -57,6 +59,10 @@ const page_title = t('industry.industrialists.page_title');
             scrollable: true,
         }}
     >
+        {fix_esi_token_error &&
+            <div class="[ toast ][ animate-fade-in-up ]" set:html={t(fix_esi_token_error as any) ?? fix_esi_token_error} x-on:click="$el.remove()"></div>
+        }
+        
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
                 <PageTitle>
