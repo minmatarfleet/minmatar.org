@@ -19,7 +19,7 @@ const pilots_missing_token = pilots.filter(pilot => esi_token_roles.indexOf(pilo
 const pilots_with_token = pilots.filter(pilot => esi_token_roles.indexOf(pilot.esi_token as ESITokenRoles) >= INDUSTRY_INDEX)
 
 import { get_api_url, get_app_url } from '@helpers/env'
-const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/industry/industrialists/')}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
