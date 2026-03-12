@@ -15,12 +15,27 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 let colonies:ColonySystems[] = []
 let user_characters_ids:number[] = []
+let alts_collapsing = false
 let data_fetching_error = ''
+
+const set_alts_collapsing = Astro.url.searchParams.get('set_alts_collapsing') ?
+                            JSON.parse(Astro.url.searchParams.get('set_alts_collapsing') ?? 'false') :
+                            null
+
+if (typeof set_alts_collapsing === 'boolean')
+    Astro.cookies.set('alts_collapsing', JSON.stringify(set_alts_collapsing), { path: '/industry/colonies/' })
 
 try {
     colonies = await fetch_colonies()
-    const user_characters = valid_user ? await get_characters(auth_token as string) : []
-    user_characters_ids = user_characters.map(character => character.character_id)
+
+    alts_collapsing = Astro.cookies.has('alts_collapsing') ?
+                        JSON.parse(Astro.cookies.get('alts_collapsing')?.value as string) :
+                        false
+
+    if (!alts_collapsing) {
+        const user_characters = valid_user ? await get_characters(auth_token as string) : []
+        user_characters_ids = user_characters.map(character => character.character_id)
+    }
 } catch (error) {
     data_fetching_error = error.message
 }
@@ -131,6 +146,22 @@ const page_title = t('industry.colonies.page_title')
         </FlexInline>
     
         <FlexInline slot="subheader">
+            {alts_collapsing ?
+                <Button
+                    id="alts-collapsing-oob"
+                    href={translatePath('/industry/colonies?set_alts_collapsing=false')}
+                    size='sm'
+                >
+                    {t('show_my_alts')}
+                </Button> :
+                <Button
+                    id="alts-collapsing-oob"
+                    href={translatePath('/industry/colonies?set_alts_collapsing=true')}
+                    size='sm'
+                >
+                    {t('collapse_my_alts')}
+                </Button>
+            }
             <Button
                 href={translatePath('/industry/planetary_production/')}
                 size='sm'
